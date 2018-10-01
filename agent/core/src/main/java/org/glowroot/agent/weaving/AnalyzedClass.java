@@ -38,6 +38,7 @@ abstract class AnalyzedClass {
     abstract ImmutableList<PublicFinalMethod> publicFinalMethods();
     abstract ImmutableList<ShimType> shimTypes();
     abstract ImmutableList<MixinType> mixinTypes();
+    abstract ImmutableList<MixinType> nonReweavableMixinTypes();
 
     abstract boolean ejbRemote();
 

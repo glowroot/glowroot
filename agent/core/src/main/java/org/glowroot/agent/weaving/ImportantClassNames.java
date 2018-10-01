@@ -18,8 +18,6 @@ package org.glowroot.agent.weaving;
 // LIMIT DEPENDENCY USAGE IN THIS CLASS SO IT DOESN'T TRIGGER ANY CLASS LOADING ON ITS OWN
 public class ImportantClassNames {
 
-    public static final String MANAGEMENT_FACTORY_CLASS_NAME =
-            "java/lang/management/ManagementFactory";
     public static final String JBOSS_WELD_HACK_CLASS_NAME = "org/jboss/weld/util/Decorators";
     public static final String JBOSS_MODULES_HACK_CLASS_NAME = "org/jboss/modules/Module";
     public static final String JBOSS_URL_HACK_CLASS_NAME =

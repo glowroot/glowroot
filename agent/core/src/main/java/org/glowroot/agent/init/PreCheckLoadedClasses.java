@@ -47,7 +47,6 @@ public class PreCheckLoadedClasses {
 
     static {
         List<String> importantClassNames = Arrays.asList(
-                ImportantClassNames.MANAGEMENT_FACTORY_CLASS_NAME.replace('/', '.'),
                 ImportantClassNames.JBOSS_WELD_HACK_CLASS_NAME.replace('/', '.'),
                 ImportantClassNames.JBOSS_MODULES_HACK_CLASS_NAME.replace('/', '.'),
                 ImportantClassNames.JBOSS_URL_HACK_CLASS_NAME.replace('/', '.'),

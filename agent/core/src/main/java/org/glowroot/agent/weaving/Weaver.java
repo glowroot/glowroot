@@ -46,7 +46,6 @@ import org.objectweb.asm.commons.AdviceAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.bytecode.api.Bytecode;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.ThreadContextImpl;
 import org.glowroot.agent.impl.TimerImpl;
@@ -191,12 +190,6 @@ public class Weaver {
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
             maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals(ImportantClassNames.MANAGEMENT_FACTORY_CLASS_NAME)) {
-            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            ClassVisitor cv = new ManagementFactoryHackClassVisitor(cw);
-            ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
-            maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.JBOSS_WELD_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBossWeldHackClassVisitor(cw);
@@ -242,7 +235,7 @@ public class Weaver {
             maybeProcessedBytes = cw.toByteArray();
         }
         ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
-                mixinTypes, loader, analyzedWorld, codeSource, classBytes,
+                mixinTypes, loader, analyzedWorld, codeSource, classBytes, classBeingRedefined,
                 noLongerNeedToWeaveMainMethods);
         classAnalyzer.analyzeMethods();
         if (!classAnalyzer.isWeavingRequired()) {
@@ -250,30 +243,29 @@ public class Weaver {
             return maybeProcessedBytes;
         }
         List<ShimType> matchedShimTypes = classAnalyzer.getMatchedShimTypes();
-        List<MixinType> matchedMixinTypes = classAnalyzer.getMatchedMixinTypes();
-        if (className.equals("java/lang/Thread")) {
-            matchedMixinTypes = ImmutableList.of();
-        }
+        List<MixinType> reweavableMatchedMixinTypes =
+                classAnalyzer.getMatchedReweavableMixinTypes();
         if (classBeingRedefined != null
-                && (!matchedShimTypes.isEmpty() || !matchedMixinTypes.isEmpty())) {
+                && (!matchedShimTypes.isEmpty() || !reweavableMatchedMixinTypes.isEmpty())) {
             Set<String> interfaceNames = Sets.newHashSet();
             for (Class<?> iface : classBeingRedefined.getInterfaces()) {
                 interfaceNames.add(iface.getName());
             }
+            matchedShimTypes = Lists.newArrayList(matchedShimTypes);
             for (ShimType matchedShimType : matchedShimTypes) {
                 if (!interfaceNames.contains(matchedShimType.iface().getClassName())) {
                     // re-weaving would fail with "attempted to change superclass or interfaces"
-                    logger.warn("not reweaving {} because cannot add shim type: {}",
+                    logger.error("not reweaving {} because cannot add shim type: {}",
                             ClassNames.fromInternalName(className),
                             matchedShimType.iface().getClassName());
                     return null;
                 }
             }
-            for (MixinType matchedMixinType : matchedMixinTypes) {
+            for (MixinType matchedMixinType : reweavableMatchedMixinTypes) {
                 for (Type mixinInterface : matchedMixinType.interfaces()) {
                     if (!interfaceNames.contains(mixinInterface.getClassName())) {
                         // re-weaving would fail with "attempted to change superclass or interfaces"
-                        logger.warn("not reweaving {} because cannot add mixin type: {}",
+                        logger.error("not reweaving {} because cannot add mixin type: {}",
                                 ClassNames.fromInternalName(className),
                                 mixinInterface.getClassName());
                         return null;
@@ -285,7 +277,7 @@ public class Weaver {
         WeavingClassVisitor cv = new WeavingClassVisitor(cw, loader, frames,
                 noLongerNeedToWeaveMainMethods, classAnalyzer.getAnalyzedClass(),
                 classAnalyzer.getMethodsThatOnlyNowFulfillAdvice(), matchedShimTypes,
-                matchedMixinTypes, classAnalyzer.getMethodAdvisors(), analyzedWorld);
+                reweavableMatchedMixinTypes, classAnalyzer.getMethodAdvisors(), analyzedWorld);
         ClassReader cr =
                 new ClassReader(maybeProcessedBytes == null ? classBytes : maybeProcessedBytes);
         byte[] transformedBytes;
@@ -415,44 +407,6 @@ public class Weaver {
         private ActiveWeaving(long threadId, long startTick) {
             this.threadId = threadId;
             this.startTick = startTick;
-        }
-    }
-
-    private static class ManagementFactoryHackClassVisitor extends ClassVisitor {
-
-        private final ClassWriter cw;
-
-        private ManagementFactoryHackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
-            this.cw = cw;
-        }
-
-        @Override
-        public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
-                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
-            if (name.equals("getPlatformMBeanServer")
-                    && desc.equals("()Ljavax/management/MBeanServer;")) {
-                return new ManagementFactoryHackMethodVisitor(mv, access, name, desc);
-            } else {
-                return mv;
-            }
-        }
-    }
-
-    private static class ManagementFactoryHackMethodVisitor extends AdviceAdapter {
-
-        private ManagementFactoryHackMethodVisitor(MethodVisitor mv, int access, String name,
-                String desc) {
-            super(ASM6, mv, access, name, desc);
-        }
-
-        @Override
-        protected void onMethodExit(int opcode) {
-            if (opcode != ATHROW) {
-                visitMethodInsn(INVOKESTATIC, Type.getType(Bytecode.class).getInternalName(),
-                        "exitingGetPlatformMBeanServer", "()V", false);
-            }
         }
     }
 

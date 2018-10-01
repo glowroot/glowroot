@@ -68,7 +68,7 @@ class ClassAnalyzer {
     private final ImmutableList<AdviceMatcher> adviceMatchers;
     private final ImmutableList<AnalyzedClass> superAnalyzedClasses;
     private final ImmutableList<ShimType> matchedShimTypes;
-    private final ImmutableList<MixinType> matchedMixinTypes;
+    private final MatchedMixinTypes matchedMixinTypes;
     private final boolean hasMainMethod;
 
     private final ImmutableSet<String> superClassNames;
@@ -86,7 +86,7 @@ class ClassAnalyzer {
     ClassAnalyzer(ThinClass thinClass, List<Advice> advisors, List<ShimType> shimTypes,
             List<MixinType> mixinTypes, @Nullable ClassLoader loader, AnalyzedWorld analyzedWorld,
             @Nullable CodeSource codeSource, byte[] classBytes,
-            boolean noLongerNeedToWeaveMainMethods) {
+            @Nullable Class<?> classBeingRedefined, boolean noLongerNeedToWeaveMainMethods) {
         this.thinClass = thinClass;
         ImmutableList<String> interfaceNames = ClassNames.fromInternalNames(thinClass.interfaces());
         className = ClassNames.fromInternalName(thinClass.name());
@@ -123,7 +123,7 @@ class ClassAnalyzer {
         if (intf) {
             matchedShimTypes = getMatchedShimTypes(shimTypes, className,
                     ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
-            matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className,
+            matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className, classBeingRedefined,
                     ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
             hasMainMethod = false;
         } else {
@@ -132,8 +132,8 @@ class ClassAnalyzer {
             superAnalyzedClasses.addAll(superAnalyzedHierarchy);
             matchedShimTypes = getMatchedShimTypes(shimTypes, className, superAnalyzedHierarchy,
                     interfaceAnalyzedHierarchy);
-            matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className, superAnalyzedHierarchy,
-                    interfaceAnalyzedHierarchy);
+            matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className, classBeingRedefined,
+                    superAnalyzedHierarchy, interfaceAnalyzedHierarchy);
             if (noLongerNeedToWeaveMainMethods) {
                 hasMainMethod = false;
             } else {
@@ -142,7 +142,8 @@ class ClassAnalyzer {
             }
         }
         analyzedClassBuilder.addAllShimTypes(matchedShimTypes);
-        analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes);
+        analyzedClassBuilder.addAllMixinTypes(matchedMixinTypes.reweavable());
+        analyzedClassBuilder.addAllNonReweavableMixinTypes(matchedMixinTypes.nonReweavable());
 
         if ((ejbRemote || ejbStateless) && !intf) {
             Set<String> ejbRemoteInterfaces =
@@ -178,7 +179,7 @@ class ClassAnalyzer {
         } else {
             shortCircuitBeforeAnalyzeMethods =
                     !hasSuperAdvice(this.superAnalyzedClasses) && matchedShimTypes.isEmpty()
-                            && matchedMixinTypes.isEmpty() && adviceMatchers.isEmpty();
+                            && matchedMixinTypes.reweavable().isEmpty() && adviceMatchers.isEmpty();
         }
         this.classBytes = classBytes;
     }
@@ -213,18 +214,19 @@ class ClassAnalyzer {
         checkNotNull(methodsThatOnlyNowFulfillAdvice);
         if (Modifier.isInterface(thinClass.access())) {
             // FIXME only need to return true if any default methods have advice
-            return !methodAdvisors.isEmpty() || !matchedMixinTypes.isEmpty();
+            return !methodAdvisors.isEmpty() || !matchedMixinTypes.reweavable().isEmpty();
         }
         return !methodAdvisors.isEmpty() || !methodsThatOnlyNowFulfillAdvice.isEmpty()
-                || !matchedShimTypes.isEmpty() || !matchedMixinTypes.isEmpty() || hasMainMethod;
+                || !matchedShimTypes.isEmpty() || !matchedMixinTypes.reweavable().isEmpty()
+                || hasMainMethod;
     }
 
     ImmutableList<ShimType> getMatchedShimTypes() {
         return matchedShimTypes;
     }
 
-    ImmutableList<MixinType> getMatchedMixinTypes() {
-        return matchedMixinTypes;
+    List<MixinType> getMatchedReweavableMixinTypes() {
+        return matchedMixinTypes.reweavable();
     }
 
     Map<String, List<Advice>> getMethodAdvisors() {
@@ -484,8 +486,9 @@ class ClassAnalyzer {
         return ImmutableList.copyOf(matchedShimTypes);
     }
 
-    private static ImmutableList<MixinType> getMatchedMixinTypes(List<MixinType> mixinTypes,
-            String className, List<AnalyzedClass> superAnalyzedHierarchy,
+    private static MatchedMixinTypes getMatchedMixinTypes(List<MixinType> mixinTypes,
+            String className, @Nullable Class<?> classBeingRedefined,
+            List<AnalyzedClass> superAnalyzedHierarchy,
             List<AnalyzedClass> interfaceAnalyzedHierarchy) {
         Set<MixinType> matchedMixinTypes = Sets.newHashSet();
         for (MixinType mixinType : mixinTypes) {
@@ -498,18 +501,39 @@ class ClassAnalyzer {
             matchedMixinTypes.addAll(interfaceAnalyzedClass.mixinTypes());
         }
         for (AnalyzedClass superAnalyzedClass : superAnalyzedHierarchy) {
-            if (superAnalyzedClass.name().equals("java.lang.Thread")) {
-                matchedMixinTypes.addAll(superAnalyzedClass.mixinTypes());
-            }
+            matchedMixinTypes.addAll(superAnalyzedClass.nonReweavableMixinTypes());
         }
         // remove mixins that were already implemented in a super class
         for (AnalyzedClass superAnalyzedClass : superAnalyzedHierarchy) {
-            if (!superAnalyzedClass.isInterface()
-                    && !superAnalyzedClass.name().equals("java.lang.Thread")) {
+            if (!superAnalyzedClass.isInterface()) {
                 matchedMixinTypes.removeAll(superAnalyzedClass.mixinTypes());
             }
         }
-        return ImmutableList.copyOf(matchedMixinTypes);
+        List<MixinType> nonReweavableMatchedMixinTypes = Lists.newArrayList();
+        if (classBeingRedefined != null) {
+            Set<String> interfaceNames = Sets.newHashSet();
+            for (Class<?> iface : classBeingRedefined.getInterfaces()) {
+                interfaceNames.add(iface.getName());
+            }
+            for (Iterator<MixinType> i = matchedMixinTypes.iterator(); i.hasNext();) {
+                MixinType matchedMixinType = i.next();
+                for (Type mixinInterface : matchedMixinType.interfaces()) {
+                    if (!interfaceNames.contains(mixinInterface.getClassName())) {
+                        // re-weaving would fail with "attempted to change superclass or interfaces"
+                        logger.debug("not reweaving {} because cannot add mixin type: {}",
+                                ClassNames.fromInternalName(className),
+                                mixinInterface.getClassName());
+                        nonReweavableMatchedMixinTypes.add(matchedMixinType);
+                        i.remove();
+                        break;
+                    }
+                }
+            }
+        }
+        return ImmutableMatchedMixinTypes.builder()
+                .addAllReweavable(matchedMixinTypes)
+                .addAllNonReweavable(nonReweavableMatchedMixinTypes)
+                .build();
     }
 
     private static boolean hasMainMethod(List<ThinMethod> methods) {
@@ -671,6 +695,18 @@ class ClassAnalyzer {
                     .analyzedMethod(analyzedMethod)
                     .build();
         }
+    }
+
+    @Value.Immutable
+    interface MatchedShimTypes {
+        List<ShimType> reweavable();
+        List<ShimType> nonReweavable();
+    }
+
+    @Value.Immutable
+    interface MatchedMixinTypes {
+        List<MixinType> reweavable();
+        List<MixinType> nonReweavable();
     }
 
     private static class BridgeMethodClassVisitor extends ClassVisitor {

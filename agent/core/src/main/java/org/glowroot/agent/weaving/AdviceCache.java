@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
@@ -38,6 +39,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.InstrumentationConfig;
 import org.glowroot.agent.config.PluginDescriptor;
+import org.glowroot.agent.live.LiveWeavingServiceImpl;
+import org.glowroot.agent.live.LiveWeavingServiceImpl.PointcutClassName;
 import org.glowroot.agent.plugin.api.weaving.Mixin;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
@@ -140,6 +143,26 @@ public class AdviceCache {
         return mixinTypes;
     }
 
+    public void initialReweave(Class<?>[] initialLoadedClasses) {
+        Set<PointcutClassName> pointcutClassNames = Sets.newHashSet();
+        for (Advice advice : allAdvisors) {
+            PointcutClassName pointcutClassName = getPointcutClassName(advice);
+            // don't add Runnable/Callable subclasses to initial reweave, since they won't work
+            // anyways since too late to add mixin interface
+            // this is just an optimization, and (importantly) to keep class retransformation down
+            // to a minimum since it has been known to have some problems on some JVMs
+            if (pointcutClassName != null
+                    && !advice.adviceType().getInternalName().startsWith(
+                            "org/glowroot/agent/plugin/executor/ExecutorAspect$RunnableAdvice")
+                    && !advice.adviceType().getInternalName().startsWith(
+                            "org/glowroot/agent/plugin/executor/ExecutorAspect$CallableAdvice")) {
+                pointcutClassNames.add(pointcutClassName);
+            }
+        }
+        LiveWeavingServiceImpl.initialReweave(pointcutClassNames, initialLoadedClasses,
+                checkNotNull(instrumentation));
+    }
+
     public void updateAdvisors(List<InstrumentationConfig> reweavableConfigs) throws Exception {
         reweavableAdvisors =
                 createReweavableAdvisors(reweavableConfigs, instrumentation, tmpDir, false);
@@ -229,6 +252,33 @@ public class AdviceCache {
             versions.add(Versions.getVersion(reweavableConfig.toProto()));
         }
         return ImmutableSet.copyOf(versions);
+    }
+
+    private static @Nullable PointcutClassName getPointcutClassName(Advice advice) {
+        PointcutClassName subTypeRestrictionPointcutClassName = null;
+        Pattern subTypeRestrictionPattern = advice.pointcutSubTypeRestrictionPattern();
+        if (subTypeRestrictionPattern != null) {
+            subTypeRestrictionPointcutClassName =
+                    PointcutClassName.fromPattern(subTypeRestrictionPattern, null, false);
+        } else {
+            String subTypeRestriction = advice.pointcut().subTypeRestriction();
+            if (!subTypeRestriction.isEmpty()) {
+                subTypeRestrictionPointcutClassName =
+                        PointcutClassName.fromNonPattern(subTypeRestriction, null, false);
+            }
+        }
+        Pattern classNamePattern = advice.pointcutClassNamePattern();
+        if (classNamePattern != null) {
+            return PointcutClassName.fromPattern(classNamePattern,
+                    subTypeRestrictionPointcutClassName,
+                    advice.pointcut().methodName().equals("<init>"));
+        }
+        String className = advice.pointcut().className();
+        if (!className.isEmpty()) {
+            return PointcutClassName.fromNonPattern(className, subTypeRestrictionPointcutClassName,
+                    advice.pointcut().methodName().equals("<init>"));
+        }
+        return null;
     }
 
     // this method exists because tests cannot use (sometimes) shaded guava Supplier

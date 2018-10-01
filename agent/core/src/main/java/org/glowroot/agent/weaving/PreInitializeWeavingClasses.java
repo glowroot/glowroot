@@ -320,6 +320,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$ClassMetaHolder");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$MethodMetaHolder");
         types.add("org.glowroot.agent.weaving.ClassAnalyzer");
+        types.add("org.glowroot.agent.weaving.ClassAnalyzer$MatchedMixinTypes");
         types.add("org.glowroot.agent.weaving.ClassAnalyzer$AnalyzedMethodKey");
         types.add("org.glowroot.agent.weaving.ClassAnalyzer$BridgeMethodClassVisitor");
         types.add("org.glowroot.agent.weaving.ClassAnalyzer$BridgeMethodClassVisitor"
@@ -337,8 +338,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.Weaver$JBossUrlHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$JBossWeldHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$JBossWeldHackMethodVisitor");
-        types.add("org.glowroot.agent.weaving.Weaver$ManagementFactoryHackClassVisitor");
-        types.add("org.glowroot.agent.weaving.Weaver$ManagementFactoryHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$OpenEJBHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$OpenEJBHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$OsgiHackClassVisitor");
@@ -358,6 +357,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ImmutableCatchHandler");
         types.add("org.glowroot.agent.weaving.ImmutableLazyDefinedClass");
         types.add("org.glowroot.agent.weaving.ImmutableLazyDefinedClass$Builder");
+        types.add("org.glowroot.agent.weaving.ImmutableMatchedMixinTypes");
+        types.add("org.glowroot.agent.weaving.ImmutableMatchedMixinTypes$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableMethodMetaGroup");
         types.add("org.glowroot.agent.weaving.ImmutableMethodMetaGroup$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableParseContext");
@@ -516,6 +517,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ImmutableAdvice$1");
         types.add("org.glowroot.agent.weaving.ImmutableAdviceParameter$1");
         types.add("org.glowroot.agent.weaving.ImmutableLazyDefinedClass$1");
+        types.add("org.glowroot.agent.weaving.ImmutableMatchedMixinTypes$1");
         types.add("org.glowroot.agent.weaving.ImmutableMethodMetaGroup$1");
         types.add("org.glowroot.agent.weaving.ImmutablePublicFinalMethod$1");
         types.add("org.glowroot.agent.weaving.ImmutableThinClass$1");

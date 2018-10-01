@@ -21,8 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -83,28 +83,22 @@ public class MainEntryPoint {
             // glowroot is already running, probably due to multiple glowroot -javaagent JVM args
             return;
         }
+        // DO NOT USE ANY GUAVA CLASSES before initLogging() because they trigger loading of jul
+        // (and thus org.glowroot.agent.jul.Logger and thus glowroot's shaded slf4j)
         PreCheckClassFileTransformer preCheckClassFileTransformer = null;
-        if (PRE_CHECK_LOADED_CLASSES) {
-            preCheckClassFileTransformer = new PreCheckClassFileTransformer();
-            instrumentation.addTransformer(preCheckClassFileTransformer);
-        }
-        if (PRINT_CLASS_LOADING) {
-            DebuggingClassFileTransformer transformer = new DebuggingClassFileTransformer();
-            try {
+        Directories directories;
+        try {
+            if (PRE_CHECK_LOADED_CLASSES) {
+                preCheckClassFileTransformer = new PreCheckClassFileTransformer();
+                instrumentation.addTransformer(preCheckClassFileTransformer);
+            }
+            if (PRINT_CLASS_LOADING) {
+                DebuggingClassFileTransformer transformer = new DebuggingClassFileTransformer();
                 instrumentation.addTransformer(transformer, true);
                 instrumentation
                         .retransformClasses(Class.forName("sun.misc.Launcher$AppClassLoader"));
-            } catch (Throwable t) {
-                System.err.println("Could not add debugging class file transformer");
-                t.printStackTrace();
-                return;
+                instrumentation.removeTransformer(transformer);
             }
-            instrumentation.removeTransformer(transformer);
-        }
-        // DO NOT USE ANY GUAVA CLASSES before initLogging() because they trigger loading of jul
-        // (and thus org.glowroot.agent.jul.Logger and thus glowroot's shaded slf4j)
-        Directories directories;
-        try {
             directories = new Directories(glowrootJarFile);
             // init logger as early as possible
             initLogging(directories.getConfDirs(), directories.getLogDir(), instrumentation);
@@ -144,8 +138,14 @@ public class MainEntryPoint {
                 startupLogger.info("PRE-CHECK: successful");
             }
         }
-        if (JavaVersion.isGreaterThanOrEqualToJava9()) {
-            try {
+        try {
+            instrumentation.addTransformer(new ManagementFactoryHackClassFileTransformer());
+            // need to load ThreadMXBean before it's possible to start any transactions since
+            // starting transactions depends on ThreadMXBean and so can lead to problems
+            // (e.g. see FileInstrumentationPresentAtStartupIT)
+            ManagementFactory.getThreadMXBean();
+            // don't remove transformer in case the class is retransformed later
+            if (JavaVersion.isGreaterThanOrEqualToJava9()) {
                 Object baseModule = Java9.getModule(ClassLoader.class);
                 Java9.grantAccessToGlowroot(instrumentation, baseModule);
                 Java9.grantAccess(instrumentation, "org.glowroot.agent.weaving.ClassLoaders",
@@ -154,22 +154,14 @@ public class MainEntryPoint {
                         "java.nio.DirectByteBuffer", false);
                 Java9.grantAccess(instrumentation, "io.netty.util.internal.ReflectionUtil",
                         "sun.nio.ch.SelectorImpl", false);
-                ClassFileTransformer transformer = new Java9HackClassFileTransformer();
-                instrumentation.addTransformer(transformer);
+                instrumentation.addTransformer(new Java9HackClassFileTransformer());
                 Class.forName("org.glowroot.agent.weaving.WeavingClassFileTransformer");
-                instrumentation.removeTransformer(transformer);
-            } catch (Throwable t) {
-                // log error but don't re-throw which would prevent monitored app from starting
-                startupLogger.error("Glowroot not started: {}", t.getMessage(), t);
-                return;
+                // don't remove transformer in case the class is retransformed later
             }
-        }
-        try {
             if (JavaVersion.isIbmJvm() && JavaVersion.isJava6()) {
-                ClassFileTransformer transformer = new IbmJava6HackClassFileTransformer();
-                instrumentation.addTransformer(transformer);
+                instrumentation.addTransformer(new IbmJava6HackClassFileTransformer());
                 Class.forName("com.google.protobuf.UnsafeUtil");
-                instrumentation.removeTransformer(transformer);
+                // don't remove transformer in case the class is retransformed later
             }
             ImmutableMap<String, String> properties =
                     getGlowrootProperties(directories.getConfDirs());
@@ -204,11 +196,9 @@ public class MainEntryPoint {
     @EnsuresNonNull("startupLogger")
     public static void initLogging(List<File> confDirs, File logDir,
             @Nullable Instrumentation instrumentation) {
-        ClassFileTransformer transformer = null;
         if (JavaVersion.isJava6() && "IBM J9 VM".equals(System.getProperty("java.vm.name"))
                 && instrumentation != null) {
-            transformer = new IbmJava6HackClassFileTransformer2();
-            instrumentation.addTransformer(transformer);
+            instrumentation.addTransformer(new IbmJava6HackClassFileTransformer2());
         }
         for (File confDir : confDirs) {
             File logbackXmlOverride = new File(confDir, "glowroot.logback.xml");
@@ -247,10 +237,7 @@ public class MainEntryPoint {
                 System.setProperty("glowroot.log.dir", priorProperty);
             }
             System.clearProperty("glowroot.logback.configurationFile");
-            if (transformer != null) {
-                // checkNotNull is safe b/c instrumentation is non-null when transformer is non-null
-                checkNotNull(instrumentation).removeTransformer(transformer);
-            }
+            // don't remove transformer in case the class is retransformed later
         }
         // TODO report checker framework issue that occurs without checkNotNull
         checkNotNull(startupLogger);

@@ -18,7 +18,6 @@ package org.glowroot.agent.init;
 import java.io.File;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
-import java.lang.instrument.UnmodifiableClassException;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.Map;
@@ -187,7 +186,7 @@ public class AgentModule {
             jvmRetransformClassesSupported = false;
         } else {
             PreInitializeWeavingClasses.preInitializeClasses();
-            ClassFileTransformer transformer =
+            WeavingClassFileTransformer transformer =
                     new WeavingClassFileTransformer(weaver, instrumentation);
             if (instrumentation.isRetransformClassesSupported()) {
                 instrumentation.addTransformer(transformer, true);
@@ -204,18 +203,10 @@ public class AgentModule {
                 }
                 instrumentation.removeTransformer(preCheckClassFileTransformer);
             }
-            logAnyImportantClassLoadedPriorToWeavingInit(instrumentation.getAllLoadedClasses(),
-                    glowrootJarFile, false);
-            if (instrumentation.isRetransformClassesSupported()
-                    && instrumentation.isModifiableClass(Thread.class)) {
-                try {
-                    instrumentation.retransformClasses(Thread.class);
-                } catch (UnmodifiableClassException e) {
-                    // IBM JDK 6 throws UnmodifiableClassException even though isModifiableClass()
-                    // above returns true
-                    logger.debug(e.getMessage(), e);
-                }
-            }
+            Class<?>[] initialLoadedClasses = instrumentation.getAllLoadedClasses();
+            adviceCache.initialReweave(initialLoadedClasses);
+            logAnyImportantClassLoadedPriorToWeavingInit(initialLoadedClasses, glowrootJarFile,
+                    false);
         }
 
         ManagementFactory.getThreadMXBean().setThreadCpuTimeEnabled(true);
@@ -356,12 +347,11 @@ public class AgentModule {
     }
 
     public static boolean logAnyImportantClassLoadedPriorToWeavingInit(
-            Class<?>[] classesLoadedPriorToWeavingInit, @Nullable File glowrootJarFile,
-            boolean preCheck) {
+            Class<?>[] initialLoadedClasses, @Nullable File glowrootJarFile, boolean preCheck) {
         List<String> loadedImportantClassNames = Lists.newArrayList();
-        for (Class<?> clazz : classesLoadedPriorToWeavingInit) {
-            String className = clazz.getName();
-            if (PreCheckLoadedClasses.isImportantClass(className, clazz)) {
+        for (Class<?> initialLoadedClass : initialLoadedClasses) {
+            String className = initialLoadedClass.getName();
+            if (PreCheckLoadedClasses.isImportantClass(className, initialLoadedClass)) {
                 loadedImportantClassNames.add(className);
             }
         }
