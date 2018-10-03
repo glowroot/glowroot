@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.config;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -76,6 +78,8 @@ public abstract class PropertyDescriptor {
                 return value instanceof String;
             case DOUBLE:
                 return value instanceof Double;
+            case LIST:
+                return value instanceof List;
             default:
                 throw new AssertionError("Unexpected property type: " + type);
         }

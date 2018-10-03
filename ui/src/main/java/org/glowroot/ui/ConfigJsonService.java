@@ -40,6 +40,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConf
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.StringList;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SlowThreshold;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
@@ -445,7 +446,6 @@ class ConfigJsonService {
         abstract String name();
         abstract PropertyType type();
         abstract @Nullable Object value();
-        abstract @Nullable Object defaultValue();
         abstract @Nullable String label();
         abstract @Nullable String checkboxLabel();
         abstract @Nullable String description();
@@ -473,6 +473,13 @@ class ConfigJsonService {
                 case STRING:
                     checkNotNull(value);
                     return PluginProperty.Value.newBuilder().setSval((String) value).build();
+                case LIST:
+                    checkNotNull(value);
+                    StringList.Builder lval = StringList.newBuilder();
+                    for (Object v : (List<?>) value) {
+                        lval.addVal((String) checkNotNull(v));
+                    }
+                    return PluginProperty.Value.newBuilder().setLval(lval).build();
                 default:
                     throw new IllegalStateException("Unexpected property type: " + type());
             }
@@ -483,7 +490,6 @@ class ConfigJsonService {
                     .name(property.getName())
                     .type(getPropertyType(property.getValue().getValCase()))
                     .value(getPropertyValue(property.getValue()))
-                    .defaultValue(getPropertyValue(property.getValue()))
                     .label(property.getLabel())
                     .checkboxLabel(property.getCheckboxLabel())
                     .description(property.getDescription())
@@ -499,6 +505,8 @@ class ConfigJsonService {
                     return PropertyType.DOUBLE;
                 case SVAL:
                     return PropertyType.STRING;
+                case LVAL:
+                    return PropertyType.LIST;
                 default:
                     throw new IllegalStateException("Unexpected property type: " + valCase);
             }
@@ -515,6 +523,8 @@ class ConfigJsonService {
                     return value.getDval();
                 case SVAL:
                     return value.getSval();
+                case LVAL:
+                    return value.getLval().getValList();
                 default:
                     throw new IllegalStateException("Unexpected property type: " + valCase);
             }
@@ -522,7 +532,7 @@ class ConfigJsonService {
     }
 
     enum PropertyType {
-        BOOLEAN, DOUBLE, STRING;
+        BOOLEAN, DOUBLE, STRING, LIST;
     }
 
     @Value.Immutable

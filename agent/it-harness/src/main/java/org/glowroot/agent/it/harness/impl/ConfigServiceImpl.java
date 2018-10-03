@@ -31,6 +31,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.Instrumenta
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MBeanAttribute;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.StringList;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
@@ -77,6 +78,13 @@ class ConfigServiceImpl implements ConfigService {
             throws Exception {
         updatePluginConfig(pluginId, propertyName,
                 PluginProperty.Value.newBuilder().setSval(propertyValue).build());
+    }
+
+    @Override
+    public void setPluginProperty(String pluginId, String propertyName, List<String> propertyValue)
+            throws Exception {
+        updatePluginConfig(pluginId, propertyName, PluginProperty.Value.newBuilder()
+                .setLval(StringList.newBuilder().addAllVal(propertyValue)).build());
     }
 
     @Override

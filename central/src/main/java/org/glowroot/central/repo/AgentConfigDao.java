@@ -125,6 +125,13 @@ public class AgentConfigDao {
                         properties.add(agentProperty);
                         continue;
                     }
+                    if (existingProperty.getValue().getValCase() != agentProperty.getValue()
+                            .getValCase()) {
+                        // the agent property type changed (e.g. was upgraded from comma-separated
+                        // string property to list property)
+                        properties.add(agentProperty);
+                        continue;
+                    }
                     // overlay existing property value
                     properties.add(agentProperty.toBuilder()
                             .setValue(existingProperty.getValue())
@@ -141,7 +148,7 @@ public class AgentConfigDao {
                     .addAllPluginConfig(pluginConfigs)
                     .build();
         }
-        if (existingAgentConfig == null || !updatedAgentConfig.equals(agentConfig)) {
+        if (existingAgentConfig == null || !updatedAgentConfig.equals(existingAgentConfig)) {
             BoundStatement boundStatement = insertPS.bind();
             int i = 0;
             boundStatement.setString(i++, agentId);

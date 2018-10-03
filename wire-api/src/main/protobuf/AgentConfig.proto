@@ -247,7 +247,12 @@ message AgentConfig {
         bool dval_null = 2; // simple one field OptionalDouble won't work inside "oneof"
         double dval = 3;
         string sval = 4;
+        StringList lval = 5;
       }
+    }
+
+    message StringList {
+      repeated string val = 1;
     }
   }
 }

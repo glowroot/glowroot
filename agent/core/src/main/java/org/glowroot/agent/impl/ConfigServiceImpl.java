@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapMaker;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -32,6 +33,7 @@ import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.config.DoubleProperty;
+import org.glowroot.agent.plugin.api.config.ListProperty;
 import org.glowroot.agent.plugin.api.config.StringProperty;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -115,6 +117,17 @@ public class ConfigServiceImpl
         DoublePropertyImpl doubleProperty = new DoublePropertyImpl(name);
         weakConfigListeners.put(doubleProperty, true);
         return doubleProperty;
+    }
+
+    @Override
+    public ListProperty getListProperty(String name) {
+        if (name == null) {
+            logger.error("getListProperty(): argument 'name' must be non-null");
+            return new ListPropertyImpl("");
+        }
+        ListPropertyImpl listProperty = new ListPropertyImpl(name);
+        weakConfigListeners.put(listProperty, true);
+        return listProperty;
     }
 
     @Override
@@ -207,6 +220,28 @@ public class ConfigServiceImpl
         public void onChange() {
             if (pluginConfig != null) {
                 value = pluginConfig.getDoubleProperty(name);
+            }
+        }
+    }
+
+    private class ListPropertyImpl implements ListProperty, ConfigListener {
+        private final String name;
+        // visibility is provided by memoryBarrier in outer class
+        private List<String> value = ImmutableList.of();
+        private ListPropertyImpl(String name) {
+            this.name = name;
+            if (pluginConfig != null) {
+                value = pluginConfig.getListProperty(name);
+            }
+        }
+        @Override
+        public List<String> value() {
+            return value;
+        }
+        @Override
+        public void onChange() {
+            if (pluginConfig != null) {
+                value = pluginConfig.getListProperty(name);
             }
         }
     }

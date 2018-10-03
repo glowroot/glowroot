@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -455,6 +456,9 @@ public class ConfigService {
         }
         if (PropertyDescriptor.isValidType(value, propertyType)) {
             return propertyValue;
+        } else if (value instanceof String && propertyType == PropertyType.LIST) {
+            // handle upgrading from comma-separated string properties to list properties
+            return new PropertyValue(Splitter.on(',').trimResults().splitToList((String) value));
         } else {
             logger.warn("invalid value for plugin property: {}", propertyName);
             return PropertyValue.getDefaultValue(propertyType);

@@ -20,13 +20,18 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.StringList;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 @Value.Immutable
 public abstract class PluginConfig {
@@ -88,6 +93,24 @@ public abstract class PluginConfig {
         return ImmutableMap.copyOf(doubleProperties);
     }
 
+    @Value.Derived
+    @JsonIgnore
+    ImmutableMap<String, List<String>> listProperties() {
+        Map<String, List<String>> listProperties = Maps.newHashMap();
+        for (Map.Entry<String, PropertyValue> entry : properties().entrySet()) {
+            PropertyValue propertyValue = entry.getValue();
+            Object value = propertyValue.value();
+            if (value instanceof List<?>) {
+                List<String> list = Lists.newArrayList();
+                for (Object v : (List<?>) value) {
+                    list.add((String) checkNotNull(v));
+                }
+                listProperties.put(entry.getKey(), list);
+            }
+        }
+        return ImmutableMap.copyOf(listProperties);
+    }
+
     public String getStringProperty(String name) {
         String value = stringProperties().get(name);
         return value == null ? "" : value;
@@ -101,6 +124,11 @@ public abstract class PluginConfig {
     public @Nullable Double getDoubleProperty(String name) {
         Optional<Double> value = doubleProperties().get(name);
         return value == null ? null : value.orNull();
+    }
+
+    public List<String> getListProperty(String name) {
+        List<String> value = listProperties().get(name);
+        return value == null ? ImmutableList.<String>of() : value;
     }
 
     public AgentConfig.PluginConfig toProto() {
@@ -155,6 +183,10 @@ public abstract class PluginConfig {
                 case SVAL:
                     properties.put(prop.getName(), new PropertyValue(propertyValue.getSval()));
                     break;
+                case LVAL:
+                    properties.put(prop.getName(), new PropertyValue(
+                            ImmutableList.copyOf(propertyValue.getLval().getValList())));
+                    break;
                 default:
                     throw new IllegalStateException(
                             "Unexpected plugin property type: " + propertyValue.getValCase());
@@ -164,8 +196,7 @@ public abstract class PluginConfig {
                 .build();
     }
 
-    private static PluginProperty.Value getPropertyValue(@Nullable Object value)
-            throws AssertionError {
+    private static PluginProperty.Value getPropertyValue(@Nullable Object value) {
         PluginProperty.Value.Builder propertyValue = PluginProperty.Value.newBuilder();
         if (value == null) {
             propertyValue.setDvalNull(true);
@@ -175,6 +206,12 @@ public abstract class PluginConfig {
             propertyValue.setSval((String) value);
         } else if (value instanceof Double) {
             propertyValue.setDval((Double) value);
+        } else if (value instanceof List) {
+            StringList.Builder lval = StringList.newBuilder();
+            for (Object v : (List<?>) value) {
+                lval.addVal((String) checkNotNull(v));
+            }
+            propertyValue.setLval(lval);
         } else {
             throw new AssertionError(
                     "Unexpected property value type: " + value.getClass().getName());

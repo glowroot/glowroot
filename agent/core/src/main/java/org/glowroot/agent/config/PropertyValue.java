@@ -16,6 +16,7 @@
 package org.glowroot.agent.config;
 
 import java.io.IOException;
+import java.util.List;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -26,6 +27,8 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.config.PropertyValue.PropertyValueDeserializer;
@@ -46,6 +49,8 @@ public class PropertyValue {
                 return new PropertyValue(null);
             case STRING:
                 return new PropertyValue("");
+            case LIST:
+                return new PropertyValue(ImmutableList.of());
             default:
                 throw new AssertionError("Unexpected property type: " + type);
         }
@@ -61,7 +66,7 @@ public class PropertyValue {
     }
 
     public enum PropertyType {
-        STRING, BOOLEAN, DOUBLE
+        STRING, BOOLEAN, DOUBLE, LIST
     }
 
     static class PropertyValueSerializer extends JsonSerializer<PropertyValue> {
@@ -78,6 +83,12 @@ public class PropertyValue {
                 jgen.writeString((String) value);
             } else if (value instanceof Double) {
                 jgen.writeNumber((Double) value);
+            } else if (value instanceof List) {
+                jgen.writeStartArray();
+                for (Object v : (List<?>) value) {
+                    jgen.writeString((String) v);
+                }
+                jgen.writeEndArray();
             } else {
                 throw new AssertionError(
                         "Unexpected property value type: " + value.getClass().getName());
@@ -100,6 +111,12 @@ public class PropertyValue {
                     return new PropertyValue(parser.getDoubleValue());
                 case VALUE_STRING:
                     return new PropertyValue(parser.getText());
+                case START_ARRAY:
+                    List<String> list = Lists.newArrayList();
+                    while (parser.nextToken() != JsonToken.END_ARRAY) {
+                        list.add(parser.getText());
+                    }
+                    return new PropertyValue(list);
                 default:
                     throw new AssertionError("Unexpected json type: " + token);
             }

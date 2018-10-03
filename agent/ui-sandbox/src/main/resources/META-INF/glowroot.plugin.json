@@ -28,6 +28,16 @@
       "type": "double",
       "label": "Lucky number",
       "description": "Good luck."
+    },
+    {
+      "name": "fifthName",
+      "type": "list",
+      "default": [
+        "one",
+        "2"
+      ],
+      "label": "A list!",
+      "description": "Stuff here."
     }
   ],
   "aspects": [
