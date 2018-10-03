@@ -286,25 +286,25 @@
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-core</artifactId>
         <!-- tomcat 8.0.0+ requires Java 7+ -->
-        <version>7.0.88</version>
+        <version>7.0.91</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-jasper</artifactId>
         <!-- tomcat 8.0.0+ requires Java 7+ -->
-        <version>7.0.88</version>
+        <version>7.0.91</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-logging-juli</artifactId>
         <!-- tomcat 8.0.0+ requires Java 7+ -->
-        <version>7.0.88</version>
+        <version>7.0.91</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-websocket</artifactId>
         <!-- tomcat 8.0.0+ requires Java 7+ -->
-        <version>7.0.88</version>
+        <version>7.0.91</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -835,7 +835,7 @@
         </property>
       </activation>
       <properties>
-        <checker.version>2.5.5</checker.version>
+        <checker.version>2.5.6</checker.version>
       </properties>
       <dependencies>
         <dependency>

@@ -94,6 +94,8 @@ public class Netty {
         runVertxJava8("3.5.0", "4.1.15.Final", "vertx-3.x");
         runVertxJava8("3.5.1", "4.1.19.Final", "vertx-3.x");
         runVertxJava8("3.5.2", "4.1.19.Final", "vertx-3.x");
+        runVertxJava8("3.5.3", "4.1.19.Final", "vertx-3.x");
+        runVertxJava8("3.5.4", "4.1.19.Final", "vertx-3.x");
     }
 
     private static void runNetty(String version, String... profile) throws Exception {

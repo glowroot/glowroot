@@ -182,7 +182,7 @@
     <profile>
       <id>vertx-3.x</id>
       <properties>
-        <vertx.version>3.5.2</vertx.version>
+        <vertx.version>3.5.4</vertx.version>
         <netty.version>4.1.19.Final</netty.version>
       </properties>
       <dependencies>

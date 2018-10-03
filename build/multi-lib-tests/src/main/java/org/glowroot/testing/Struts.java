@@ -126,6 +126,8 @@ public class Struts {
         run(test);
         updateLibVersion("struts2.version", "2.3.34");
         run(test);
+        updateLibVersion("struts2.version", "2.3.35");
+        run(test);
         updateLibVersion("struts2.version", "2.5");
         runJava7(test);
         updateLibVersion("struts2.version", "2.5.1");
