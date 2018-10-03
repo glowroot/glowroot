@@ -25,6 +25,8 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.BytecodeEarly;
 
@@ -32,24 +34,31 @@ import static org.objectweb.asm.Opcodes.ASM6;
 
 class IbmJava6HackClassFileTransformer2 implements ClassFileTransformer {
 
+    private static final Logger logger =
+            LoggerFactory.getLogger(IbmJava6HackClassFileTransformer.class);
+
     @Override
     public byte /*@Nullable*/ [] transform(@Nullable ClassLoader loader, @Nullable String className,
             @Nullable Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
             byte[] bytes) {
-        if ("org/slf4j/LoggerFactory".equals(className)) {
-            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            ClassVisitor cv =
-                    new IbmJava6HackClassVisitor2(cw, "findPossibleStaticLoggerBinderPathSet");
-            ClassReader cr = new ClassReader(bytes);
-            cr.accept(cv, ClassReader.EXPAND_FRAMES);
-            return cw.toByteArray();
-        }
-        if ("ch/qos/logback/core/util/Loader".equals(className)) {
-            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            ClassVisitor cv = new IbmJava6HackClassVisitor2(cw, "getResources");
-            ClassReader cr = new ClassReader(bytes);
-            cr.accept(cv, ClassReader.EXPAND_FRAMES);
-            return cw.toByteArray();
+        try {
+            if ("org/slf4j/LoggerFactory".equals(className)) {
+                ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+                ClassVisitor cv =
+                        new IbmJava6HackClassVisitor2(cw, "findPossibleStaticLoggerBinderPathSet");
+                ClassReader cr = new ClassReader(bytes);
+                cr.accept(cv, ClassReader.EXPAND_FRAMES);
+                return cw.toByteArray();
+            }
+            if ("ch/qos/logback/core/util/Loader".equals(className)) {
+                ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+                ClassVisitor cv = new IbmJava6HackClassVisitor2(cw, "getResources");
+                ClassReader cr = new ClassReader(bytes);
+                cr.accept(cv, ClassReader.EXPAND_FRAMES);
+                return cw.toByteArray();
+            }
+        } catch (Throwable t) {
+            logger.error(t.getMessage(), t);
         }
         return null;
     }

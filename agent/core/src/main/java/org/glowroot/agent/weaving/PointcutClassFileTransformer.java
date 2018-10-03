@@ -21,23 +21,29 @@ import java.security.ProtectionDomain;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PointcutClassFileTransformer implements ClassFileTransformer {
+
+    private static final Logger logger =
+            LoggerFactory.getLogger(PointcutClassFileTransformer.class);
 
     @Override
     public byte /*@Nullable*/ [] transform(@Nullable ClassLoader loader, @Nullable String className,
             @Nullable Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
             byte[] bytes) {
-
-        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-        PointcutClassVisitor cv = new PointcutClassVisitor(cw);
-        ClassReader cr = new ClassReader(bytes);
-        cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
-
-        if (cv.isConstructorPointcut() && cv.hasOnBeforeMethod()) {
-            return cw.toByteArray();
-        } else {
-            return null;
+        try {
+            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            PointcutClassVisitor cv = new PointcutClassVisitor(cw);
+            ClassReader cr = new ClassReader(bytes);
+            cr.accept(new JSRInlinerClassVisitor(cv), ClassReader.EXPAND_FRAMES);
+            if (cv.isConstructorPointcut() && cv.hasOnBeforeMethod()) {
+                return cw.toByteArray();
+            }
+        } catch (Throwable t) {
+            logger.error(t.getMessage(), t);
         }
+        return null;
     }
 }

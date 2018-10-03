@@ -23,6 +23,8 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.objectweb.asm.Opcodes.ACONST_NULL;
 import static org.objectweb.asm.Opcodes.ARETURN;
@@ -30,16 +32,23 @@ import static org.objectweb.asm.Opcodes.ASM6;
 
 class IbmJava6HackClassFileTransformer implements ClassFileTransformer {
 
+    private static final Logger logger =
+            LoggerFactory.getLogger(IbmJava6HackClassFileTransformer.class);
+
     @Override
     public byte /*@Nullable*/ [] transform(@Nullable ClassLoader loader, @Nullable String className,
             @Nullable Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
             byte[] bytes) {
-        if ("com/google/protobuf/UnsafeUtil".equals(className)) {
-            ClassWriter cw = new ClassWriter(0);
-            ClassVisitor cv = new IbmJava6HackClassVisitor(cw);
-            ClassReader cr = new ClassReader(bytes);
-            cr.accept(cv, 0);
-            return cw.toByteArray();
+        try {
+            if ("com/google/protobuf/UnsafeUtil".equals(className)) {
+                ClassWriter cw = new ClassWriter(0);
+                ClassVisitor cv = new IbmJava6HackClassVisitor(cw);
+                ClassReader cr = new ClassReader(bytes);
+                cr.accept(cv, 0);
+                return cw.toByteArray();
+            }
+        } catch (Throwable t) {
+            logger.error(t.getMessage(), t);
         }
         return null;
     }

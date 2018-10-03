@@ -23,6 +23,8 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ALOAD;
@@ -32,16 +34,23 @@ import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
 
 class Java9HackClassFileTransformer implements ClassFileTransformer {
 
+    private static final Logger logger =
+            LoggerFactory.getLogger(Java9HackClassFileTransformer.class);
+
     @Override
     public byte /*@Nullable*/ [] transform(@Nullable ClassLoader loader, @Nullable String className,
             @Nullable Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
             byte[] bytes) {
-        if ("org/glowroot/agent/weaving/WeavingClassFileTransformer".equals(className)) {
-            ClassWriter cw = new ClassWriter(0);
-            ClassVisitor cv = new Java9HackClassVisitor(cw);
-            ClassReader cr = new ClassReader(bytes);
-            cr.accept(cv, 0);
-            return cw.toByteArray();
+        try {
+            if ("org/glowroot/agent/weaving/WeavingClassFileTransformer".equals(className)) {
+                ClassWriter cw = new ClassWriter(0);
+                ClassVisitor cv = new Java9HackClassVisitor(cw);
+                ClassReader cr = new ClassReader(bytes);
+                cr.accept(cv, 0);
+                return cw.toByteArray();
+            }
+        } catch (Throwable t) {
+            logger.error(t.getMessage(), t);
         }
         return null;
     }

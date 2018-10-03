@@ -25,6 +25,8 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.Bytecode;
 
@@ -32,16 +34,23 @@ import static org.objectweb.asm.Opcodes.ASM6;
 
 class ManagementFactoryHackClassFileTransformer implements ClassFileTransformer {
 
+    private static final Logger logger =
+            LoggerFactory.getLogger(ManagementFactoryHackClassFileTransformer.class);
+
     @Override
     public byte /*@Nullable*/ [] transform(@Nullable ClassLoader loader, @Nullable String className,
             @Nullable Class<?> classBeingRedefined, @Nullable ProtectionDomain protectionDomain,
             byte[] bytes) {
-        if ("java/lang/management/ManagementFactory".equals(className)) {
-            ClassWriter cw = new ClassWriter(0);
-            ClassVisitor cv = new ManagementFactoryHackClassVisitor(cw);
-            ClassReader cr = new ClassReader(bytes);
-            cr.accept(cv, ClassReader.EXPAND_FRAMES);
-            return cw.toByteArray();
+        try {
+            if ("java/lang/management/ManagementFactory".equals(className)) {
+                ClassWriter cw = new ClassWriter(0);
+                ClassVisitor cv = new ManagementFactoryHackClassVisitor(cw);
+                ClassReader cr = new ClassReader(bytes);
+                cr.accept(cv, ClassReader.EXPAND_FRAMES);
+                return cw.toByteArray();
+            }
+        } catch (Throwable t) {
+            logger.error(t.getMessage(), t);
         }
         return null;
     }

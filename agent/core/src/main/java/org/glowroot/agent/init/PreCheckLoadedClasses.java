@@ -26,7 +26,10 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.weaving.ImportantClassNames;
 
@@ -84,6 +87,8 @@ public class PreCheckLoadedClasses {
 
     public static class PreCheckClassFileTransformer implements ClassFileTransformer {
 
+        private static volatile @MonotonicNonNull Logger logger;
+
         private final Set<String> importantInternalNames;
         private final String shadeProofJulLoggerInternalName =
                 SHADE_PROOF_JUL_LOGGER_CLASS_NAME.replace('.', '/');
@@ -107,16 +112,29 @@ public class PreCheckLoadedClasses {
         public byte /*@Nullable*/ [] transform(@Nullable ClassLoader loader,
                 @Nullable String className, @Nullable Class<?> classBeingRedefined,
                 @Nullable ProtectionDomain protectionDomain, byte[] bytes) {
-            if (className == null) {
-                return null;
-            }
-            if (importantInternalNames.contains(className)
-                    || className.equals("java/net/HttpURLConnection")
-                    || CHECK_FOR_JUL_LOGGER && className.equals(shadeProofJulLoggerInternalName)) {
-                importantClassLoadingPoints.put(className.replace('/', '.'),
-                        new Exception("location stack trace"));
+            try {
+                if (className == null) {
+                    return null;
+                }
+                if (importantInternalNames.contains(className)
+                        || className.equals("java/net/HttpURLConnection")
+                        || CHECK_FOR_JUL_LOGGER
+                                && className.equals(shadeProofJulLoggerInternalName)) {
+                    importantClassLoadingPoints.put(className.replace('/', '.'),
+                            new Exception("location stack trace"));
+                }
+            } catch (Throwable t) {
+                if (logger == null) {
+                    t.printStackTrace();
+                } else {
+                    logger.error(t.getMessage(), t);
+                }
             }
             return null;
+        }
+
+        public static void initLogger() {
+            logger = LoggerFactory.getLogger(PreCheckLoadedClasses.class);
         }
     }
 }
