@@ -21,8 +21,10 @@ import java.util.Set;
 
 import javax.annotation.concurrent.GuardedBy;
 import javax.management.InstanceAlreadyExistsException;
+import javax.management.InstanceNotFoundException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
 import javax.management.MalformedObjectNameException;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
@@ -30,6 +32,7 @@ import javax.management.QueryExp;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -40,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Styles;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -127,20 +131,20 @@ public class LazyPlatformMBeanServer {
             throws Exception {
         ensureInit();
         if (needsManualPatternMatching && name != null && name.isPattern()) {
-            return platformMBeanServer.queryNames(null, new ObjectNamePatternQueryExp(name));
+            return queryNamesAcrossAll(null, new ObjectNamePatternQueryExp(name));
         } else {
-            return platformMBeanServer.queryNames(name, query);
+            return queryNamesAcrossAll(name, query);
         }
     }
 
     public MBeanInfo getMBeanInfo(ObjectName name) throws Exception {
         ensureInit();
-        return platformMBeanServer.getMBeanInfo(name);
+        return getMBeanInfoAcrossAll(name);
     }
 
     public Object getAttribute(ObjectName name, String attribute) throws Exception {
         ensureInit();
-        return platformMBeanServer.getAttribute(name, attribute);
+        return getAttributeAcrossAll(name, attribute);
     }
 
     public void addInitListener(InitListener initListener) {
@@ -219,6 +223,45 @@ public class LazyPlatformMBeanServer {
         }
         toBeRegistered.clear();
         return platformMBeanServer;
+    }
+
+    private Set<ObjectName> queryNamesAcrossAll(@Nullable ObjectName name, @Nullable QueryExp query)
+            throws Exception {
+        Set<ObjectName> objects = Sets.newHashSet();
+        for (MBeanServer mbeanServer : MBeanServerFactory.findMBeanServer(null)) {
+            objects.addAll(mbeanServer.queryNames(name, query));
+        }
+        return objects;
+    }
+
+    private MBeanInfo getMBeanInfoAcrossAll(ObjectName name) throws Exception {
+        InstanceNotFoundException firstException = null;
+        for (MBeanServer mbeanServer : MBeanServerFactory.findMBeanServer(null)) {
+            try {
+                return mbeanServer.getMBeanInfo(name);
+            } catch (InstanceNotFoundException e) {
+                logger.debug(e.getMessage(), e);
+                if (firstException == null) {
+                    firstException = e;
+                }
+            }
+        }
+        throw checkNotNull(firstException);
+    }
+
+    private Object getAttributeAcrossAll(ObjectName name, String attribute) throws Exception {
+        InstanceNotFoundException firstException = null;
+        for (MBeanServer mbeanServer : MBeanServerFactory.findMBeanServer(null)) {
+            try {
+                return mbeanServer.getAttribute(name, attribute);
+            } catch (InstanceNotFoundException e) {
+                logger.debug(e.getMessage(), e);
+                if (firstException == null) {
+                    firstException = e;
+                }
+            }
+        }
+        throw checkNotNull(firstException);
     }
 
     @OnlyUsedByTests
