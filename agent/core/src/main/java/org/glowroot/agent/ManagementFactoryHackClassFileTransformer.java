@@ -40,7 +40,7 @@ class ManagementFactoryHackClassFileTransformer implements ClassFileTransformer 
             ClassWriter cw = new ClassWriter(0);
             ClassVisitor cv = new ManagementFactoryHackClassVisitor(cw);
             ClassReader cr = new ClassReader(bytes);
-            cr.accept(cv, 0);
+            cr.accept(cv, ClassReader.EXPAND_FRAMES);
             return cw.toByteArray();
         }
         return null;
