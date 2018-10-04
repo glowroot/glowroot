@@ -1,0 +1,5 @@
+{
+	"name" : "Axis 1.4 Plugin",
+	"id" : "axis",
+	"aspects" : ["org.glowroot.agent.plugin.axis.v.one.AxisAspect"]
+}
