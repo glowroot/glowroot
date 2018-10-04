@@ -11,12 +11,8 @@ repositories {
 }
 
 dependencies {
-    // https://mvnrepository.com/artifact/org.apache.axis/axis
-	compile group: 'org.apache.axis', name: 'axis', version: '1.4'
-	
 	// https://mvnrepository.com/artifact/org.glowroot/glowroot-agent
 	compile group: 'org.glowroot', name: 'glowroot-agent', version: '0.11.1'
-
 }
 
 jar {
