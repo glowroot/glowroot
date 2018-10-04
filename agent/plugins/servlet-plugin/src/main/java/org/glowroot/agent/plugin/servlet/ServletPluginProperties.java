@@ -249,8 +249,8 @@ class ServletPluginProperties {
                     DetailCapture.matchesOneOf("content-language", captureResponseHeaders);
             userAttributePath = buildSessionAttributePath(
                     configService.getStringProperty("sessionUserAttribute").value());
-            captureSessionAttributePaths = buildSessionAttributePaths(configService
-                    .getStringProperty("captureSessionAttributes").value());
+            captureSessionAttributePaths = buildSessionAttributePaths(
+                    configService.getListProperty("captureSessionAttributes").value());
             captureSessionAttributeNames = buildCaptureSessionAttributeNames();
             captureSessionAttributeNamesContainsId =
                     captureSessionAttributeNames.contains(HTTP_SESSION_ID_ATTR);
@@ -259,21 +259,20 @@ class ServletPluginProperties {
         }
 
         private static List<Pattern> buildPatternList(String propertyName) {
-            String captureRequestParametersText =
-                    configService.getStringProperty(propertyName).value();
-            List<Pattern> captureParameters = new ArrayList<Pattern>();
-            for (String parameter : Strings.split(captureRequestParametersText, ',')) {
+            List<String> values = configService.getListProperty(propertyName).value();
+            List<Pattern> patterns = new ArrayList<Pattern>();
+            for (String value : values) {
                 // converted to lower case for case-insensitive matching
-                captureParameters.add(buildRegexPattern(parameter.toLowerCase(Locale.ENGLISH)));
+                patterns.add(buildRegexPattern(value.trim().toLowerCase(Locale.ENGLISH)));
             }
-            return ImmutableList.copyOf(captureParameters);
+            return ImmutableList.copyOf(patterns);
         }
 
         private static List<SessionAttributePath> buildSessionAttributePaths(
-                String sessionAttributes) {
+                List<String> sessionAttributes) {
             List<SessionAttributePath> attributePaths = new ArrayList<SessionAttributePath>();
-            for (String sessionAttribute : Strings.split(sessionAttributes, ',')) {
-                attributePaths.add(buildSessionAttributePath(sessionAttribute));
+            for (String sessionAttribute : sessionAttributes) {
+                attributePaths.add(buildSessionAttributePath(sessionAttribute.trim()));
             }
             return ImmutableList.copyOf(attributePaths);
         }

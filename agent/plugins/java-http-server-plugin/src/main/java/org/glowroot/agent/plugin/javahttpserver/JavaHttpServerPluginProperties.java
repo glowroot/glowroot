@@ -99,14 +99,13 @@ class JavaHttpServerPluginProperties {
         }
 
         private static List<Pattern> buildPatternList(String propertyName) {
-            String captureRequestParametersText =
-                    configService.getStringProperty(propertyName).value();
-            List<Pattern> captureParameters = new ArrayList<Pattern>();
-            for (String parameter : Strings.split(captureRequestParametersText)) {
+            List<String> items = configService.getListProperty(propertyName).value();
+            List<Pattern> patterns = new ArrayList<Pattern>();
+            for (String parameter : items) {
                 // converted to lower case for case-insensitive matching
-                captureParameters.add(buildRegexPattern(parameter.toLowerCase(Locale.ENGLISH)));
+                patterns.add(buildRegexPattern(parameter.trim().toLowerCase(Locale.ENGLISH)));
             }
-            return ImmutableList.copyOf(captureParameters);
+            return ImmutableList.copyOf(patterns);
         }
 
         private static Pattern buildRegexPattern(String wildcardPattern) {

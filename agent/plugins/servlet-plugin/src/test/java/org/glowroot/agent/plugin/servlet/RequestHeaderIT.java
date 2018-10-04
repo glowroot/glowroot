@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -64,7 +65,7 @@ public class RequestHeaderIT {
     public void testStandardRequestHeaders() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
-                "Content-Type, Content-Length");
+                ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
         Trace trace = container.execute(SetStandardRequestHeaders.class, "Web");
@@ -81,7 +82,7 @@ public class RequestHeaderIT {
     public void testStandardRequestHeadersLowercase() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
-                "Content-Type, Content-Length");
+                ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
         Trace trace = container.execute(SetStandardRequestHeadersLowercase.class, "Web");
@@ -98,7 +99,7 @@ public class RequestHeaderIT {
     public void testLotsOfRequestHeaders() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
-                "One,Two");
+                ImmutableList.of("One", "Two"));
 
         // when
         Trace trace = container.execute(SetOtherRequestHeaders.class, "Web");
@@ -117,7 +118,7 @@ public class RequestHeaderIT {
     public void testBadRequestHeaders() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
-                "Content-Type, Content-Length");
+                ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
         Trace trace = container.execute(GetBadRequestHeaders.class, "Web");
@@ -132,7 +133,7 @@ public class RequestHeaderIT {
     public void testBadRequestHeaders2() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
-                "Content-Type, Content-Length, h1");
+                ImmutableList.of("Content-Type", " Content-Length", " h1"));
 
         // when
         Trace trace = container.execute(GetBadRequestHeaders2.class, "Web");

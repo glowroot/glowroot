@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.collect.ImmutableList;
 import com.ning.http.client.AsyncHttpClient;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -96,7 +97,8 @@ public class AsyncServletIT {
     private void testAsyncServlet(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
 
         // when
         Trace trace = container.execute(appUnderTestClass, "Web");
@@ -135,7 +137,8 @@ public class AsyncServletIT {
     private void testAsyncServlet2(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
 
         // when
         Trace trace = container.execute(appUnderTestClass, "Web");
@@ -174,7 +177,8 @@ public class AsyncServletIT {
     private void testAsyncServletWithDispatch(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
 
         // when
         Trace trace = container.execute(appUnderTestClass, "Web");
