@@ -27,6 +27,7 @@
     <cxf.version>3.1.15</cxf.version>
     <!-- Spring 5+ requires Java 8+ -->
     <spring.version>4.3.19.RELEASE</spring.version>
+    <axis.version>1.4</axis.version>
   </properties>
 
   <dependencies>
@@ -115,6 +116,26 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
       <version>${spring.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>axis</groupId>
+      <artifactId>axis</artifactId>
+      <version>1.4</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- axis dependency -->
+      <groupId>javax.xml.rpc</groupId>
+      <artifactId>javax.xml.rpc-api</artifactId>
+      <version>1.1.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- axis dependency -->
+      <groupId>commons-discovery</groupId>
+      <artifactId>commons-discovery</artifactId>
+      <version>0.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>

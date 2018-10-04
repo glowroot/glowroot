@@ -34,6 +34,7 @@ public class HttpClient {
         httpUrlConnection();
         okHttpClient();
         springWebClient();
+        axisClient();
     }
 
     private static void apacheHttpClient() throws Exception {
@@ -301,6 +302,23 @@ public class HttpClient {
             updateLibVersion("spring.version", "5.0." + i + ".RELEASE");
             runJava8(test);
         }
+    }
+
+    private static void axisClient() throws Exception {
+        final String test = "AxisClientPluginIT";
+        updateLibVersion("cxf.version", "3.0.15"); // need a Java 6 compatible CXF version
+        updateLibVersion("axis.version", "1.0");
+        run(test);
+        updateLibVersion("axis.version", "1.1");
+        run(test);
+        updateLibVersion("axis.version", "1.2");
+        run(test);
+        updateLibVersion("axis.version", "1.2.1");
+        run(test);
+        updateLibVersion("axis.version", "1.3");
+        run(test);
+        updateLibVersion("axis.version", "1.4");
+        run(test);
     }
 
     private static void runAsyncHttpClient1x(String asyncHttpClientVersion) throws Exception {
