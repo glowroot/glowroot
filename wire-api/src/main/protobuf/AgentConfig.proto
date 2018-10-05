@@ -8,8 +8,6 @@ option java_package = "org.glowroot.wire.api.model";
 
 message AgentConfig {
 
-  string agent_version = 1;
-
   GeneralConfig general_config = 16;
   TransactionConfig transaction_config = 2;
   JvmConfig jvm_config = 17;
