@@ -91,8 +91,9 @@ public class AgentConfigDao {
                 clusterManager.createCache("agentConfigCache", new AgentConfigCacheLoader());
     }
 
-    public AgentConfig store(String agentId, AgentConfig agentConfig) throws Exception {
-        AgentConfig existingAgentConfig = read(agentId);
+    public AgentConfig store(String agentId, AgentConfig agentConfig, boolean overwriteExisting)
+            throws Exception {
+        AgentConfig existingAgentConfig = overwriteExisting ? null : read(agentId);
         AgentConfig updatedAgentConfig;
         if (existingAgentConfig == null) {
             updatedAgentConfig = agentConfig.toBuilder()
@@ -197,10 +198,16 @@ public class AgentConfigDao {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.setString(0, agentRollupId);
             ResultSet results = session.execute(boundStatement);
-            Row row = checkNotNull(results.one());
+            Row row = results.one();
+            if (row == null) {
+                throw new IllegalStateException("No config found: " + agentRollupId);
+            }
             ByteString currValue = ByteString.copyFrom(checkNotNull(row.getBytes(0)));
             AgentConfig currAgentConfig = AgentConfig.parseFrom(currValue);
-
+            if (currAgentConfig.getConfigReadOnly()) {
+                throw new IllegalStateException("This agent is running with config.readOnly=true so"
+                        + " it does not allow config updates via the central collector");
+            }
             AgentConfig updatedAgentConfig = agentConfigUpdater.updateAgentConfig(currAgentConfig);
 
             boundStatement = updatePS.bind();

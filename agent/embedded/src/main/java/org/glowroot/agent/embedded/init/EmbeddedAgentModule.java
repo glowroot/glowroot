@@ -100,8 +100,8 @@ class EmbeddedAgentModule {
 
     private final CountDownLatch simpleRepoModuleInit = new CountDownLatch(1);
 
-    EmbeddedAgentModule(@Nullable File pluginsDir, List<File> confDirs, File logDir, File tmpDir,
-            @Nullable Instrumentation instrumentation,
+    EmbeddedAgentModule(@Nullable File pluginsDir, List<File> confDirs, boolean configReadOnly,
+            File logDir, File tmpDir, @Nullable Instrumentation instrumentation,
             @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer,
             @Nullable File glowrootJarFile, String glowrootVersion, boolean offlineViewer)
             throws Exception {
@@ -114,7 +114,8 @@ class EmbeddedAgentModule {
         pluginCache = PluginCache.create(pluginsDir, false);
         if (offlineViewer) {
             agentModule = null;
-            offlineViewerAgentModule = new OfflineViewerAgentModule(pluginsDir, confDirs);
+            offlineViewerAgentModule =
+                    new OfflineViewerAgentModule(pluginsDir, confDirs, configReadOnly);
         } else {
             // agent module needs to be started as early as possible, so that weaving will be
             // applied to as many classes as possible
@@ -122,7 +123,7 @@ class EmbeddedAgentModule {
             // which loads java.sql.DriverManager, which loads 3rd party jdbc drivers found via
             // services/java.sql.Driver, and those drivers need to be woven
             ConfigService configService =
-                    ConfigService.create(confDirs, pluginCache.pluginDescriptors());
+                    ConfigService.create(confDirs, configReadOnly, pluginCache.pluginDescriptors());
             agentModule = new AgentModule(clock, null, pluginCache, configService, instrumentation,
                     glowrootJarFile, tmpDir, preCheckClassFileTransformer);
             offlineViewerAgentModule = null;
@@ -138,7 +139,7 @@ class EmbeddedAgentModule {
         agentModule.setOnEnteringMain(onEnteringMain);
     }
 
-    void onEnteringMain(final List<File> confDirs, final File dataDir,
+    void onEnteringMain(final List<File> confDirs, boolean configReadOnly, final File dataDir,
             @Nullable File glowrootJarFile, Map<String, String> properties,
             @Nullable Instrumentation instrumentation,
             final @Nullable Class<? extends Collector> collectorProxyClass,
@@ -148,8 +149,9 @@ class EmbeddedAgentModule {
         final boolean h2MemDb = Boolean.parseBoolean(properties.get("glowroot.internal.h2.memdb"));
         if (agentModule == null) {
             checkNotNull(offlineViewerAgentModule);
-            ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(confDirs,
-                    WEB_PORT_OVERRIDE, offlineViewerAgentModule.getConfigService(), pluginCache);
+            ConfigRepositoryImpl configRepository =
+                    new ConfigRepositoryImpl(confDirs, configReadOnly, WEB_PORT_OVERRIDE,
+                            offlineViewerAgentModule.getConfigService(), pluginCache);
             DataSource dataSource = createDataSource(h2MemDb, dataDir);
             simpleRepoModule = new SimpleRepoModule(dataSource, dataDir, clock, ticker,
                     configRepository, null);
@@ -162,7 +164,7 @@ class EmbeddedAgentModule {
                     glowrootJarFile, mainClass);
 
             final ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(confDirs,
-                    WEB_PORT_OVERRIDE, agentModule.getConfigService(), pluginCache);
+                    configReadOnly, WEB_PORT_OVERRIDE, agentModule.getConfigService(), pluginCache);
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {

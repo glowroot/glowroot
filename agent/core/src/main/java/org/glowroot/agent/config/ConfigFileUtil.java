@@ -42,6 +42,10 @@ import static com.google.common.base.Charsets.UTF_8;
 public class ConfigFileUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigFile.class);
+
+    // log startup messages using logger name "org.glowroot"
+    private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
+
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private ConfigFileUtil() {}
@@ -96,17 +100,25 @@ public class ConfigFileUtil {
     }
 
     public static void writeToFileIfNeeded(File file, ObjectNode rootObjectNode,
-            List<String> keyOrder) throws IOException {
+            List<String> keyOrder, boolean logStartupMessageInstead) throws IOException {
         String content = writeConfigAsString(rootObjectNode, keyOrder);
+        String existingContent = "";
         if (file.exists()) {
-            String existingContent = Files.toString(file, UTF_8);
+            existingContent = Files.toString(file, UTF_8);
             if (content.equals(existingContent)) {
                 // it's nice to preserve the correct modification stamp on the file to track when it
                 // was last really changed
                 return;
             }
         }
-        Files.write(content, file, UTF_8);
+        if (!logStartupMessageInstead) {
+            Files.write(content, file, UTF_8);
+        } else if (!normalize(content).equals(normalize(existingContent))) {
+            startupLogger.info("tried to update {} during startup but the agent is running with"
+                    + " config.readOnly=true, you can prevent this message from re-occurring by"
+                    + " manually updating the file with these contents:\n{}", file.getName(),
+                    content);
+        }
     }
 
     private static String writeConfigAsString(ObjectNode rootObjectNode, List<String> keyOrder)
@@ -150,6 +162,10 @@ public class ConfigFileUtil {
             logger.warn("error making a copy of the invalid config file before overwriting it",
                     f);
         }
+    }
+
+    private static String normalize(String content) {
+        return content.replace("\r\n", "\n").trim();
     }
 
     private static class ExplicitOrdering extends Ordering<Map.Entry<String, JsonNode>> {

@@ -87,9 +87,11 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
 
         // need to perform jrebel workaround prior to loading any jackson classes
         JRebelWorkaround.perform();
+        final boolean configReadOnly =
+                Boolean.parseBoolean(properties.get("glowroot.config.readOnly"));
         final PluginCache pluginCache = PluginCache.create(pluginsDir, false);
         final ConfigService configService =
-                ConfigService.create(confDirs, pluginCache.pluginDescriptors());
+                ConfigService.create(confDirs, configReadOnly, pluginCache.pluginDescriptors());
 
         final CollectorProxy collectorProxy = new CollectorProxy();
 
@@ -129,7 +131,8 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
                 } else {
                     centralCollector = new CentralCollector(properties,
                             checkNotNull(collectorAddress), collectorAuthority, confDirs,
-                            agentModule.getLiveJvmService(), agentModule.getLiveWeavingService(),
+                            configReadOnly, agentModule.getLiveJvmService(),
+                            agentModule.getLiveWeavingService(),
                             agentModule.getLiveTraceRepository(), agentConfigUpdater,
                             configService);
                     if (collectorProxyConstructor == null) {

@@ -64,17 +64,20 @@ class EmbeddedGlowrootAgentInit implements GlowrootAgentInit {
             final String glowrootVersion, Closeable agentDirLockCloseable) throws Exception {
 
         this.agentDirLockCloseable = agentDirLockCloseable;
-        embeddedAgentModule = new EmbeddedAgentModule(pluginsDir, confDirs, logDir, tmpDir,
-                instrumentation, preCheckClassFileTransformer, glowrootJarFile, glowrootVersion,
-                offlineViewer);
+        final boolean configReadOnly =
+                Boolean.parseBoolean(properties.get("glowroot.config.readOnly"));
+        embeddedAgentModule = new EmbeddedAgentModule(pluginsDir, confDirs, configReadOnly, logDir,
+                tmpDir, instrumentation, preCheckClassFileTransformer, glowrootJarFile,
+                glowrootVersion, offlineViewer);
         OnEnteringMain onEnteringMain = new OnEnteringMain() {
             @Override
             public void run(@Nullable String mainClass) throws Exception {
                 NettyInit.run();
                 // TODO report checker framework issue that occurs without checkNotNull
                 checkNotNull(embeddedAgentModule);
-                embeddedAgentModule.onEnteringMain(confDirs, dataDir, glowrootJarFile, properties,
-                        instrumentation, collectorProxyClass, glowrootVersion, mainClass);
+                embeddedAgentModule.onEnteringMain(confDirs, configReadOnly, dataDir,
+                        glowrootJarFile, properties, instrumentation, collectorProxyClass,
+                        glowrootVersion, mainClass);
                 // starting new thread in order not to block startup
                 Thread thread = new Thread(new Runnable() {
                     @Override

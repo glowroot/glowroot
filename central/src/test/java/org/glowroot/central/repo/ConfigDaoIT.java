@@ -63,7 +63,7 @@ public class ConfigDaoIT {
     public void shouldStoreAgentConfig() throws Exception {
         // given
         AgentConfig agentConfig = AgentConfig.getDefaultInstance();
-        agentConfigDao.store("a", agentConfig);
+        agentConfigDao.store("a", agentConfig, false);
         // when
         AgentConfig readAgentConfig = agentConfigDao.read("a");
         // then
@@ -74,12 +74,12 @@ public class ConfigDaoIT {
     public void shouldNotOverwriteExistingAgentConfig() throws Exception {
         // given
         AgentConfig agentConfig = AgentConfig.getDefaultInstance();
-        agentConfigDao.store("a", agentConfig);
+        agentConfigDao.store("a", agentConfig, false);
         agentConfigDao.store("a", AgentConfig.newBuilder()
                 .setTransactionConfig(TransactionConfig.newBuilder()
                         .setSlowThresholdMillis(OptionalInt32.newBuilder()
                                 .setValue(1234)))
-                .build());
+                .build(), false);
         // when
         AgentConfig readAgentConfig = agentConfigDao.read("a");
         // then

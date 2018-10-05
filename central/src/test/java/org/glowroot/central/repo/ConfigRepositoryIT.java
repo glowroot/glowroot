@@ -108,7 +108,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateTransactionConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
         TransactionConfig config = configRepository.getTransactionConfig(agentId);
         TransactionConfig updatedConfig = TransactionConfig.newBuilder()
                 .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(1234))
@@ -129,7 +129,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateJvmConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
         JvmConfig config = configRepository.getJvmConfig(agentId);
         JvmConfig updatedConfig = JvmConfig.newBuilder()
                 .addMaskSystemProperty("x")
@@ -150,7 +150,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateUiConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
         UiDefaultsConfig config = configRepository.getUiDefaultsConfig(agentId);
         UiDefaultsConfig updatedConfig = UiDefaultsConfig.newBuilder()
                 .setDefaultTransactionType("xyz")
@@ -172,7 +172,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateUserRecordingConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
         UserRecordingConfig config = configRepository.getUserRecordingConfig(agentId);
         UserRecordingConfig updatedConfig = UserRecordingConfig.newBuilder()
                 .addUser("x")
@@ -194,7 +194,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateAdvancedConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
         AdvancedConfig config = configRepository.getAdvancedConfig(agentId);
         AdvancedConfig updatedConfig = AdvancedConfig.newBuilder()
                 .setWeavingTimer(true)
@@ -219,7 +219,7 @@ public class ConfigRepositoryIT {
     public void shouldCrudGaugeConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
         GaugeConfig gaugeConfig = GaugeConfig.newBuilder()
                 .setMbeanObjectName("x")
                 .addMbeanAttribute(MBeanAttribute.newBuilder()
@@ -267,7 +267,7 @@ public class ConfigRepositoryIT {
     public void shouldCrudAlertConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
         AlertConfig alertConfig = AlertConfig.newBuilder()
                 .setCondition(AlertCondition.newBuilder()
                         .setMetricCondition(MetricCondition.newBuilder()
@@ -326,7 +326,7 @@ public class ConfigRepositoryIT {
     public void shouldCrudInstrumentationConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
         InstrumentationConfig instrumentationConfig = InstrumentationConfig.newBuilder()
                 .setClassName("a")
                 .setMethodName("b")

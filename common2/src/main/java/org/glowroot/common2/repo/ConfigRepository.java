@@ -163,6 +163,8 @@ public interface ConfigRepository {
 
     HealthchecksIoConfig getHealthchecksIoConfig();
 
+    boolean isConfigReadOnly(String agentId) throws Exception;
+
     void updateGeneralConfig(String agentId, GeneralConfig config, String priorVersion)
             throws Exception;
 

@@ -431,6 +431,15 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public boolean isConfigReadOnly(String agentId) throws Exception {
+        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        if (agentConfig == null) {
+            throw new IllegalStateException("No config found: " + agentId);
+        }
+        return agentConfig.getConfigReadOnly();
+    }
+
+    @Override
     public void updateGeneralConfig(String agentId, GeneralConfig config, String priorVersion)
             throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {

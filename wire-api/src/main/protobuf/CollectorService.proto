@@ -27,6 +27,7 @@ message InitMessage {
   string v09_agent_rollup_id = 4; // deprecated in 0.10.0, now rollup is incorporated into agent_id
   Environment environment = 2;
   AgentConfig agent_config = 3;
+  bool overwrite_existing_agent_config = 5;
 
   message Environment {
     HostInfo host_info = 1;

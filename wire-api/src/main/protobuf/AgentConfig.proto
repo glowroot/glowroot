@@ -8,6 +8,9 @@ option java_package = "org.glowroot.wire.api.model";
 
 message AgentConfig {
 
+  // only used when sending to central and storing in central
+  bool config_read_only = 18;
+
   GeneralConfig general_config = 16;
   TransactionConfig transaction_config = 2;
   JvmConfig jvm_config = 17;

@@ -44,8 +44,9 @@ class AdminConfigFile {
 
     private final File file;
     private final ObjectNode rootObjectNode;
+    private final boolean readOnly;
 
-    AdminConfigFile(List<File> confDirs) {
+    AdminConfigFile(List<File> confDirs, boolean readOnly) {
         file = new File(confDirs.get(0), "admin.json");
         if (file.exists()) {
             rootObjectNode = readRootObjectNode(file);
@@ -57,6 +58,7 @@ class AdminConfigFile {
                 rootObjectNode = readRootObjectNode(defaultFile);
             }
         }
+        this.readOnly = readOnly;
     }
 
     <T> /*@Nullable*/ T getConfig(String key, Class<T> clazz) {
@@ -68,15 +70,19 @@ class AdminConfigFile {
     }
 
     void writeConfig(String key, Object config) throws IOException {
+        if (readOnly) {
+            throw new IllegalStateException("Running with config.readOnly=true so config updates"
+                    + " are not allowed");
+        }
         rootObjectNode.replace(key, mapper.valueToTree(config));
-        ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder);
+        ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder, false);
     }
 
-    void writeConfigs(Map<String, Object> configs) throws IOException {
+    void writeConfigsOnStartup(Map<String, Object> configs) throws IOException {
         for (Map.Entry<String, Object> entry : configs.entrySet()) {
             rootObjectNode.replace(entry.getKey(), mapper.valueToTree(entry.getValue()));
         }
-        ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder);
+        ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder, readOnly);
     }
 
     private static ObjectNode readRootObjectNode(File file) {

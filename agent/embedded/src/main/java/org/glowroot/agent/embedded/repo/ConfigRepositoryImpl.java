@@ -69,6 +69,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     private final ConfigService configService;
     private final AdminConfigService adminConfigService;
     private final PluginCache pluginCache;
+    private final boolean configReadOnly;
 
     private final ImmutableList<RollupConfig> rollupConfigs;
 
@@ -76,11 +77,14 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private final Object writeLock = new Object();
 
-    public ConfigRepositoryImpl(List<File> confDirs, @Nullable Integer webPortOverride,
-            ConfigService configService, PluginCache pluginCache) {
+    public ConfigRepositoryImpl(List<File> confDirs, boolean configReadOnly,
+            @Nullable Integer webPortOverride, ConfigService configService,
+            PluginCache pluginCache) {
         this.configService = configService;
-        this.adminConfigService = AdminConfigService.create(confDirs, webPortOverride);
+        this.adminConfigService =
+                AdminConfigService.create(confDirs, configReadOnly, webPortOverride);
         this.pluginCache = pluginCache;
+        this.configReadOnly = configReadOnly;
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
         lazySecretKey = new LazySecretKeyImpl(confDirs);
     }
@@ -331,6 +335,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public HealthchecksIoConfig getHealthchecksIoConfig() {
         return adminConfigService.getHealthchecksIoConfig();
+    }
+
+    @Override
+    public boolean isConfigReadOnly(String agentId) {
+        return configReadOnly;
     }
 
     @Override

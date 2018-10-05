@@ -126,7 +126,7 @@ public class AggregateDaoIT {
 
         agentConfigDao.store("one", AgentConfig.newBuilder()
                 .setAdvancedConfig(DEFAULT_ADVANCED_CONFIG)
-                .build());
+                .build(), true);
 
         aggregateDao.truncateAll();
         List<Aggregate.SharedQueryText> sharedQueryText = ImmutableList
@@ -300,7 +300,7 @@ public class AggregateDaoIT {
 
         agentConfigDao.store("the parent::one", AgentConfig.newBuilder()
                 .setAdvancedConfig(DEFAULT_ADVANCED_CONFIG)
-                .build());
+                .build(), true);
 
         aggregateDao.truncateAll();
         List<Aggregate.SharedQueryText> sharedQueryText = ImmutableList
@@ -478,7 +478,7 @@ public class AggregateDaoIT {
 
         agentConfigDao.store("the gp::the parent::one", AgentConfig.newBuilder()
                 .setAdvancedConfig(DEFAULT_ADVANCED_CONFIG)
-                .build());
+                .build(), true);
 
         aggregateDao.truncateAll();
         List<Aggregate.SharedQueryText> sharedQueryText = ImmutableList

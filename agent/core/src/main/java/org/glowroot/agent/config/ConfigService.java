@@ -67,11 +67,12 @@ public class ConfigService {
     // memory barrier is used to ensure memory visibility of config values
     private volatile boolean memoryBarrier;
 
-    public static ConfigService create(List<File> confDirs,
+    public static ConfigService create(List<File> confDirs, boolean configReadOnly,
             List<PluginDescriptor> pluginDescriptors) {
-        ConfigService configService = new ConfigService(confDirs, pluginDescriptors);
-        // it's nice to update config.json on startup if it is missing some/all config
-        // properties so that the file contents can be reviewed/updated/copied if desired
+        ConfigService configService =
+                new ConfigService(confDirs, configReadOnly, pluginDescriptors);
+        // it's nice to update config.json on startup if it is missing some/all config properties so
+        // that the file contents can be reviewed/updated/copied if desired
         try {
             configService.writeAll();
         } catch (IOException e) {
@@ -80,8 +81,9 @@ public class ConfigService {
         return configService;
     }
 
-    private ConfigService(List<File> confDirs, List<PluginDescriptor> pluginDescriptors) {
-        configFile = new ConfigFile(confDirs);
+    private ConfigService(List<File> confDirs, boolean configReadOnly,
+            List<PluginDescriptor> pluginDescriptors) {
+        configFile = new ConfigFile(confDirs, configReadOnly);
         this.pluginDescriptors = ImmutableList.copyOf(pluginDescriptors);
         TransactionConfig transactionConfig =
                 configFile.getConfig("transactions", ImmutableTransactionConfig.class);
@@ -370,7 +372,7 @@ public class ConfigService {
         configs.put("alerts", alertConfigs);
         configs.put("plugins", pluginConfigs);
         configs.put("instrumentation", instrumentationConfigs);
-        configFile.writeConfigs(configs);
+        configFile.writeOutConfigsOnStartup(configs);
     }
 
     private static ImmutableList<GaugeConfig> getDefaultGaugeConfigs() {

@@ -104,8 +104,8 @@ class LayoutService {
     @Nullable
     AgentRollupLayout buildAgentRollupLayout(Authentication authentication, String agentRollupId)
             throws Exception {
-        Permissions permissions =
-                LayoutService.getPermissions(authentication, agentRollupId);
+        Permissions permissions = LayoutService.getPermissions(authentication, agentRollupId,
+                configRepository.isConfigReadOnly(agentRollupId));
         List<String> agentRollupDisplayParts =
                 configRepository.readAgentRollupDisplayParts(agentRollupId);
         FilteredAgentRollup agentRollup = ImmutableFilteredAgentRollup.builder()
@@ -171,7 +171,7 @@ class LayoutService {
     }
 
     private Layout buildLayoutEmbedded(Authentication authentication) throws Exception {
-        Permissions permissions = getPermissions(authentication, AGENT_ID);
+        Permissions permissions = getPermissions(authentication, AGENT_ID, false);
         boolean hasSomeAccess =
                 permissions.hasSomeAccess() || authentication.isAdminPermitted("admin:view");
         if (!hasSomeAccess) {
@@ -313,8 +313,8 @@ class LayoutService {
         return configRepository.getEmbeddedAdminGeneralConfig().agentDisplayNameOrDefault();
     }
 
-    static Permissions getPermissions(Authentication authentication, String agentRollupId)
-            throws Exception {
+    static Permissions getPermissions(Authentication authentication, String agentRollupId,
+            boolean configReadOnly) throws Exception {
         return ImmutablePermissions.builder()
                 .transaction(ImmutableTransactionPermissions.builder()
                         .overview(authentication.isPermittedForAgentRollup(agentRollupId,
@@ -363,32 +363,35 @@ class LayoutService {
                                 "agent:config:view"))
                         .edit(ImmutableEditConfigPermissions.builder()
                                 .general(authentication.isPermittedForAgentRollup(agentRollupId,
-                                        "agent:config:edit:general"))
+                                        "agent:config:edit:general") && !configReadOnly)
                                 .transaction(authentication.isPermittedForAgentRollup(agentRollupId,
-                                        "agent:config:edit:transaction"))
+                                        "agent:config:edit:transaction") && !configReadOnly)
                                 .gauges(authentication.isPermittedForAgentRollup(agentRollupId,
-                                        "agent:config:edit:gauges"))
+                                        "agent:config:edit:gauges") && !configReadOnly)
                                 .jvm(authentication.isPermittedForAgentRollup(agentRollupId,
-                                        "agent:config:edit:jvm"))
+                                        "agent:config:edit:jvm") && !configReadOnly)
                                 // central supports synthetic monitor configs on rollups
                                 .syntheticMonitors(authentication.isPermittedForAgentRollup(
-                                        agentRollupId, "agent:config:edit:syntheticMonitors"))
+                                        agentRollupId, "agent:config:edit:syntheticMonitors")
+                                        && !configReadOnly)
                                 // central supports alert configs on rollups
                                 .alerts(authentication.isPermittedForAgentRollup(agentRollupId,
-                                        "agent:config:edit:alerts"))
+                                        "agent:config:edit:alerts") && !configReadOnly)
                                 // central supports ui defaults config on rollups
                                 .uiDefaults(authentication.isPermittedForAgentRollup(agentRollupId,
-                                        "agent:config:edit:uiDefaults"))
+                                        "agent:config:edit:uiDefaults") && !configReadOnly)
                                 .plugins(authentication.isPermittedForAgentRollup(agentRollupId,
-                                        "agent:config:edit:plugins"))
+                                        "agent:config:edit:plugins") && !configReadOnly)
                                 .instrumentation(authentication.isPermittedForAgentRollup(
-                                        agentRollupId, "agent:config:edit:instrumentation"))
+                                        agentRollupId, "agent:config:edit:instrumentation")
+                                        && !configReadOnly)
                                 // central supports advanced config on rollups (maxQueryAggregates
                                 // and maxServiceCallAggregates)
                                 .advanced(authentication.isPermittedForAgentRollup(agentRollupId,
-                                        "agent:config:edit:advanced"))
+                                        "agent:config:edit:advanced") && !configReadOnly)
                                 .userRecording(authentication.isPermittedForAgentRollup(
-                                        agentRollupId, "agent:config:edit:userRecording"))
+                                        agentRollupId, "agent:config:edit:userRecording")
+                                        && !configReadOnly)
                                 .build())
                         .build())
                 .build();
