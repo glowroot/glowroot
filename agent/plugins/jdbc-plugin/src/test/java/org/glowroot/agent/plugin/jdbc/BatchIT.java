@@ -22,6 +22,7 @@ import java.sql.Statement;
 import java.util.Iterator;
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.dbcp.DelegatingConnection;
 import org.apache.commons.dbcp.DelegatingStatement;
 import org.junit.After;
@@ -136,7 +137,8 @@ public class BatchIT {
     @Test
     public void testBatchPreparedStatementWithoutCaptureBindParams() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", false);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.<String>of());
 
         // when
         Trace trace = container.execute(ExecuteBatchPreparedStatement.class);
@@ -215,7 +217,8 @@ public class BatchIT {
     @Test
     public void testBatchPreparedStatementWithoutClearWithoutCaptureBindParams() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", false);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.<String>of());
 
         // when
         Trace trace = container.execute(ExecuteBatchPreparedStatementWithoutClear.class);

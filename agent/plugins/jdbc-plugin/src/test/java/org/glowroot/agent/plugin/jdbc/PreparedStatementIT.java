@@ -28,6 +28,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.commons.dbcp.DelegatingConnection;
 import org.apache.commons.dbcp.DelegatingPreparedStatement;
@@ -319,7 +320,8 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementWithoutBindParameters() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", false);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.<String>of());
 
         // when
         Trace trace = container.execute(ExecutePreparedStatementAndIterateOverResults.class);
@@ -354,7 +356,8 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementWithSetNull() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.of(".*"));
 
         // whens
         Trace trace = container.execute(ExecutePreparedStatementWithSetNull.class);
@@ -389,7 +392,8 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementWithBinary() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.of(".*"));
 
         // when
         Trace trace = container.execute(ExecutePreparedStatementWithBinary.class);
@@ -441,7 +445,8 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementWithBinaryUsingSetObject() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.of(".*"));
 
         // when
         Trace trace = container.execute(ExecutePreparedStatementWithBinaryUsingSetObject.class);
@@ -493,7 +498,8 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementWithBinaryStream() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.of(".*"));
 
         // when
         Trace trace = container.execute(ExecutePreparedStatementWithBinaryStream.class);
@@ -529,7 +535,8 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementWithCharacterStream() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.of(".*"));
 
         // when
         Trace trace = container.execute(ExecutePreparedStatementWithCharacterStream.class);
@@ -565,7 +572,8 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementWithClear() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.of(".*"));
 
         // when
         Trace trace = container.execute(ExecutePreparedStatementWithClear.class);

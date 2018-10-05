@@ -26,6 +26,7 @@ import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.checker.NonNull;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.config.BooleanProperty;
+import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
@@ -56,10 +57,20 @@ public class StatementAspect {
 
     private static final ConfigService configService = Agent.getConfigService("jdbc");
 
-    private static final BooleanProperty captureBindParameters =
-            configService.getBooleanProperty("captureBindParameters");
     private static final BooleanProperty captureStatementClose =
             configService.getBooleanProperty("captureStatementClose");
+
+    private static boolean captureBindParameters;
+
+    static {
+        configService.registerConfigListener(new ConfigListener() {
+            @Override
+            public void onChange() {
+                captureBindParameters = !configService
+                        .getListProperty("captureBindParametersIncludes").value().isEmpty();
+            }
+        });
+    }
 
     @Shim("java.sql.PreparedStatement")
     public interface PreparedStatement {}
@@ -111,7 +122,7 @@ public class StatementAspect {
     public static class SetXAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return captureBindParameters.value();
+            return captureBindParameters;
         }
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
@@ -131,7 +142,7 @@ public class StatementAspect {
     public static class SetStreamAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return captureBindParameters.value();
+            return captureBindParameters;
         }
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
@@ -154,7 +165,7 @@ public class StatementAspect {
     public static class SetBytesAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return captureBindParameters.value();
+            return captureBindParameters;
         }
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
@@ -181,7 +192,7 @@ public class StatementAspect {
     public static class SetObjectAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return captureBindParameters.value();
+            return captureBindParameters;
         }
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
@@ -205,7 +216,7 @@ public class StatementAspect {
     public static class SetNullAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return captureBindParameters.value();
+            return captureBindParameters;
         }
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
@@ -223,7 +234,7 @@ public class StatementAspect {
     public static class ClearParametersAdvice {
         @IsEnabled
         public static boolean isEnabled() {
-            return captureBindParameters.value();
+            return captureBindParameters;
         }
         @OnReturn
         public static void onReturn(@BindReceiver HasStatementMirror preparedStatement) {
@@ -413,8 +424,9 @@ public class StatementAspect {
                     (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
             QueryMessageSupplier queryMessageSupplier;
             String queryText = mirror.getSql();
-            if (captureBindParameters.value()) {
-                queryMessageSupplier = new PreparedStatementMessageSupplier(mirror.getParameters());
+            if (captureBindParameters) {
+                queryMessageSupplier =
+                        new PreparedStatementMessageSupplier(mirror.getParameters(), queryText);
             } else {
                 queryMessageSupplier = QueryMessageSupplier.create("jdbc execute: ");
             }
@@ -549,7 +561,7 @@ public class StatementAspect {
                 queryText = "[empty batch] " + queryText;
                 queryMessageSupplier = QueryMessageSupplier.create("jdbc execute: ");
                 batchSize = 1;
-            } else if (captureBindParameters.value()) {
+            } else if (captureBindParameters) {
                 queryMessageSupplier = new BatchPreparedStatementMessageSupplier(
                         mirror.getBatchedParameters(), batchSize);
             } else {

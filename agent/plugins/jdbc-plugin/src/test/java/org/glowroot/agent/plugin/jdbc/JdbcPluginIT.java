@@ -24,6 +24,7 @@ import java.sql.Types;
 import java.util.Iterator;
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -62,7 +63,8 @@ public class JdbcPluginIT {
     @Test
     public void testCallableStatement() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.of(".*"));
 
         // when
         Trace trace = container.execute(ExecuteCallableStatement.class);

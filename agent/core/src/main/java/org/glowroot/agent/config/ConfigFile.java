@@ -92,6 +92,7 @@ class ConfigFile {
         upgradeAlertsIfNeeded(rootObjectNode);
         upgradeUiIfNeeded(rootObjectNode);
         upgradeAdvancedIfNeeded(rootObjectNode);
+        upgradePluginPropertiesIfNeeded(rootObjectNode);
         return rootObjectNode;
     }
 
@@ -105,8 +106,8 @@ class ConfigFile {
         return null;
     }
 
-    private static void upgradeAlertsIfNeeded(ObjectNode configRootObjectNode) {
-        JsonNode alertsNode = configRootObjectNode.get("alerts");
+    private static void upgradeAlertsIfNeeded(ObjectNode rootObjectNode) {
+        JsonNode alertsNode = rootObjectNode.get("alerts");
         if (alertsNode == null || !alertsNode.isArray()) {
             return;
         }
@@ -179,8 +180,8 @@ class ConfigFile {
         }
     }
 
-    private static void upgradeAdvancedIfNeeded(ObjectNode configRootObjectNode) {
-        JsonNode advancedNode = configRootObjectNode.get("advanced");
+    private static void upgradeAdvancedIfNeeded(ObjectNode rootObjectNode) {
+        JsonNode advancedNode = rootObjectNode.get("advanced");
         if (advancedNode == null || !advancedNode.isObject()) {
             return;
         }
@@ -204,6 +205,37 @@ class ConfigFile {
             // upgrade from 0.10.5 to 0.10.6
             advancedObjectNode.set("maxProfileSamplesPerTransaction",
                     advancedObjectNode.remove("maxStackTraceSamplesPerTransaction"));
+        }
+    }
+
+    private static void upgradePluginPropertiesIfNeeded(ObjectNode rootObjectNode) {
+        JsonNode pluginsNode = rootObjectNode.get("plugins");
+        if (pluginsNode == null || !pluginsNode.isArray()) {
+            return;
+        }
+        for (JsonNode pluginNode : pluginsNode) {
+            if (!(pluginNode instanceof ObjectNode)) {
+                continue;
+            }
+            ObjectNode pluginObjectNode = (ObjectNode) pluginNode;
+            if (pluginObjectNode.path("id").asText().equals("jdbc")) {
+                JsonNode propertiesNode = pluginObjectNode.get("properties");
+                if (propertiesNode != null && propertiesNode.isObject()) {
+                    upgradeJdbcPluginPropertiesIfNeeded((ObjectNode) propertiesNode);
+                }
+                // since no other plugin property upgrades at this point, can return now
+                return;
+            }
+        }
+    }
+
+    private static void upgradeJdbcPluginPropertiesIfNeeded(ObjectNode propertiesObjectNode) {
+        if (propertiesObjectNode.path("captureBindParameters").asBoolean()
+                && !propertiesObjectNode.has("captureBindParametersIncludes")) {
+            // upgrade from 0.11.1 to 0.11.2
+            propertiesObjectNode.set("captureBindParametersIncludes",
+                    mapper.createArrayNode().add(".*"));
+            propertiesObjectNode.remove("captureBindParameters");
         }
     }
 }

@@ -16,12 +16,16 @@
 package org.glowroot.ui;
 
 import java.util.List;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import com.google.common.io.CharStreams;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
@@ -194,11 +198,28 @@ class ConfigJsonService {
     @POST(path = "/backend/config/plugins", permission = "agent:config:edit:plugins")
     String updatePluginConfig(@BindAgentId String agentId, @BindRequest PluginUpdateRequest request)
             throws Exception {
+        String pluginId = request.pluginId();
+        if (pluginId.equals("jdbc")) {
+            String firstInvalidRegularExpression =
+                    getFirstInvalidJdbcPluginRegularExpressions(request.properties());
+            if (firstInvalidRegularExpression != null) {
+                StringBuilder sb = new StringBuilder();
+                JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+                try {
+                    jg.writeStartObject();
+                    jg.writeStringField("firstInvalidRegularExpression",
+                            firstInvalidRegularExpression);
+                    jg.writeEndObject();
+                } finally {
+                    jg.close();
+                }
+                return sb.toString();
+            }
+        }
         List<PluginProperty> properties = Lists.newArrayList();
         for (PluginPropertyDto prop : request.properties()) {
             properties.add(prop.convert());
         }
-        String pluginId = request.pluginId();
         try {
             configRepository.updatePluginConfig(agentId, pluginId, properties, request.version());
         } catch (OptimisticLockException e) {
@@ -238,6 +259,23 @@ class ConfigJsonService {
             throw new IllegalArgumentException("Plugin id not found: " + pluginId);
         }
         return mapper.writeValueAsString(PluginConfigDto.create(config));
+    }
+
+    private static @Nullable String getFirstInvalidJdbcPluginRegularExpressions(
+            List<ImmutablePluginPropertyDto> properties) {
+        for (PluginPropertyDto property : properties) {
+            if (property.name().equals("captureBindParametersIncludes")
+                    || property.name().equals("captureBindParametersExcludes")) {
+                for (Object value : (List<?>) checkNotNull(property.value())) {
+                    try {
+                        Pattern.compile((String) checkNotNull(value));
+                    } catch (PatternSyntaxException e) {
+                        return (String) value;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     private static OptionalInt32 of(int value) {

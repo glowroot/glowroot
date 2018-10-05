@@ -88,6 +88,10 @@ glowroot.controller('ConfigPluginCtrl', [
       };
       $http.post('backend/config/plugins?agent-id=' + encodeURIComponent($scope.agentId), postData)
           .then(function (response) {
+            if (response.data.firstInvalidRegularExpression) {
+              deferred.reject('Invalid regular expression: ' + response.data.firstInvalidRegularExpression);
+              return;
+            }
             onNewData(response.data);
             deferred.resolve('Saved');
           }, function (response) {

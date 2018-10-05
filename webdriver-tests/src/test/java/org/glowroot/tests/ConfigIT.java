@@ -208,7 +208,7 @@ public class ConfigIT extends WebDriverIT {
         configSidebar.clickPluginsLink();
 
         clickLinkWithWait("Jdbc Plugin");
-        clickWithWait(xpath("//div[@gt-label='Bind parameters']//label"));
+        clickWithWait(xpath("//div[@gt-label='ResultSet navigation']//label"));
         clickWithWait(xpath("//button[normalize-space()='Save changes']"));
 
         // wait for save to finish
@@ -221,7 +221,7 @@ public class ConfigIT extends WebDriverIT {
 
         clickLinkWithWait("Jdbc Plugin");
         WebElement element =
-                Utils.getWithWait(driver, xpath("//div[@gt-label='Bind parameters']//input"));
+                Utils.getWithWait(driver, xpath("//div[@gt-label='ResultSet navigation']//input"));
         assertThat(element.isSelected()).isFalse();
     }
 }

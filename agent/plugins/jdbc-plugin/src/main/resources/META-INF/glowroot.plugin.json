@@ -3,12 +3,19 @@
   "id": "jdbc",
   "properties": [
     {
-      "name": "captureBindParameters",
-      "type": "boolean",
-      "default": true,
-      "label": "Bind parameters",
-      "checkboxLabel": "Capture jdbc bind parameters",
-      "description": "Capture jdbc bind parameters for PreparedStatement executions."
+      "name": "captureBindParametersIncludes",
+      "type": "list",
+      "default": [
+        ".*"
+      ],
+      "label": "Capture jdbc bind parameters for queries",
+      "description": "List of queries to include when capturing jdbc bind parameters for PreparedStatement executions. Empty means do not capture bind parameters for any queries. A single item '.*' means capture bind parameters for all queries (as long as they do not match any of the exclusion patterns below)."
+    },
+    {
+      "name": "captureBindParametersExcludes",
+      "type": "list",
+      "label": "Do not capture jdbc bind parameters for queries",
+      "description": "List of queries to exclude when capturing jdbc bind parameters for PreparedStatement executions. These exclusions take precedence over the inclusions above."
     },
     {
       "name": "captureResultSetNavigate",
