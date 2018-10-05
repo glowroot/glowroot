@@ -19,10 +19,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Calendar;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -34,7 +36,6 @@ import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
-import javax.xml.bind.DatatypeConverter;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Strings;
@@ -637,9 +638,10 @@ public class AlertingService {
         }
 
         private String formatAsIso8601(long endTime) {
-            Calendar end = Calendar.getInstance();
-            end.setTimeInMillis(endTime);
-            return DatatypeConverter.printDateTime(end);
+            // Trailing 'Z' to indicate UTC (and avoid having to format timezone in ISO 8601 format)
+            DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
+            df.setTimeZone(TimeZone.getTimeZone("UTC"));
+            return df.format(endTime);
         }
 
         private String escapeDedupKeyPart(String agentRollupId) {
