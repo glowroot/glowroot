@@ -8,14 +8,14 @@
       "default": [
         ".*"
       ],
-      "label": "Capture jdbc bind parameters for queries",
-      "description": "List of queries to include when capturing jdbc bind parameters for PreparedStatement executions. Empty means do not capture bind parameters for any queries. A single item '.*' means capture bind parameters for all queries (as long as they do not match any of the exclusion patterns below)."
+      "label": "Capture bind parameters for these queries",
+      "description": "List of regular expressions. If a query matches one or more of these regular expressions and also does not match any of the regular expressions in the \"do not capture\" list below, then its jdbc bind parameters will be captured when it is executed as a PreparedStatement."
     },
     {
       "name": "captureBindParametersExcludes",
       "type": "list",
-      "label": "Do not capture jdbc bind parameters for queries",
-      "description": "List of queries to exclude when capturing jdbc bind parameters for PreparedStatement executions. These exclusions take precedence over the inclusions above."
+      "label": "Do not capture bind parameters for these queries",
+      "description": "List of regular expressions. If a query matches one or more of these regular expressions then its jdbc bind parameters will NOT be captured when it is executed as a PreparedStatement, even if the query matches one or more of the regular expressions in the \"capture\" list above."
     },
     {
       "name": "captureResultSetNavigate",
