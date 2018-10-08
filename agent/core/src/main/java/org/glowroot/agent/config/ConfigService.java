@@ -460,7 +460,8 @@ public class ConfigService {
             return propertyValue;
         } else if (value instanceof String && propertyType == PropertyType.LIST) {
             // handle upgrading from comma-separated string properties to list properties
-            return new PropertyValue(Splitter.on(',').trimResults().splitToList((String) value));
+            return new PropertyValue(
+                    Splitter.on(',').trimResults().omitEmptyStrings().splitToList((String) value));
         } else {
             logger.warn("invalid value for plugin property: {}", propertyName);
             return PropertyValue.getDefaultValue(propertyType);
