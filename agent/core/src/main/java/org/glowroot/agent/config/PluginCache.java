@@ -21,13 +21,11 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
-import java.util.Locale;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -38,6 +36,8 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.config.ImmutableInstrumentationConfig;
+import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.util.ObjectMappers;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -75,10 +75,11 @@ public abstract class PluginCache {
         }
         // also add descriptors on the class path (this is primarily for integration tests)
         descriptorURLs.addAll(getResources("META-INF/glowroot.plugin.json"));
+        List<PluginDescriptor> unsortedPluginDescriptors = Lists.newArrayList();
         if (offlineViewer) {
-            builder.addAllPluginDescriptors(createForOfflineViewer(descriptorURLs));
+            unsortedPluginDescriptors.addAll(createForOfflineViewer(descriptorURLs));
         } else {
-            builder.addAllPluginDescriptors(readPluginDescriptors(descriptorURLs));
+            unsortedPluginDescriptors.addAll(readPluginDescriptors(descriptorURLs));
         }
         // when using uber jar, get the (aggregated) plugin list
         URL plugins = PluginCache.class.getResource("/META-INF/glowroot.plugins.json");
@@ -86,9 +87,12 @@ public abstract class PluginCache {
             List<PluginDescriptor> pluginDescriptors = mapper.readValue(plugins,
                     new TypeReference<List<ImmutablePluginDescriptor>>() {});
             checkNotNull(pluginDescriptors);
-            builder.addAllPluginDescriptors(pluginDescriptors);
+            unsortedPluginDescriptors.addAll(pluginDescriptors);
         }
-        return builder.build();
+        return builder
+                .addAllPluginDescriptors(
+                        new PluginDescriptorOrdering().sortedCopy(unsortedPluginDescriptors))
+                .build();
     }
 
     private static ImmutableList<File> getPluginJars(@Nullable File pluginsDir) {
@@ -142,7 +146,7 @@ public abstract class PluginCache {
             pluginDescriptorsWithoutAdvice.add(ImmutablePluginDescriptor.builder()
                     .copyFrom(pluginDescriptor).aspects(ImmutableList.<String>of()).build());
         }
-        return new PluginDescriptorOrdering().immutableSortedCopy(pluginDescriptorsWithoutAdvice);
+        return pluginDescriptorsWithoutAdvice;
     }
 
     private static List<PluginDescriptor> readPluginDescriptors(List<URL> descriptorURLs)
@@ -158,28 +162,13 @@ public abstract class PluginCache {
                 logger.error("error parsing plugin descriptor: {}", url.toExternalForm(), e);
             }
         }
-        return new PluginDescriptorOrdering().immutableSortedCopy(pluginDescriptors);
+        return pluginDescriptors;
     }
 
-    // sorted for display to console during startup and for plugin config sidebar menu
-    @VisibleForTesting
-    static class PluginDescriptorOrdering extends Ordering<PluginDescriptor> {
+    private static class PluginDescriptorOrdering extends Ordering<PluginDescriptor> {
         @Override
         public int compare(PluginDescriptor left, PluginDescriptor right) {
-            // conventionally plugin names ends with " Plugin", so strip this off when
-            // comparing names so that, e.g., "Abc Plugin" will come before
-            // "Abc Extra Plugin"
-            String leftName = stripEndingIgnoreCase(left.name(), " Plugin");
-            String rightName = stripEndingIgnoreCase(right.name(), " Plugin");
-            return leftName.compareToIgnoreCase(rightName);
-        }
-
-        private static String stripEndingIgnoreCase(String original, String ending) {
-            if (original.toUpperCase(Locale.ENGLISH).endsWith(ending.toUpperCase(Locale.ENGLISH))) {
-                return original.substring(0, original.length() - ending.length());
-            } else {
-                return original;
-            }
+            return left.id().compareToIgnoreCase(right.id());
         }
     }
 }

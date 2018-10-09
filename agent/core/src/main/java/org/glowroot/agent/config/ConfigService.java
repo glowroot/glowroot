@@ -26,16 +26,35 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.config.PropertyValue.PropertyType;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.util.JavaVersion;
+import org.glowroot.common.config.AdvancedConfig;
+import org.glowroot.common.config.AlertConfig;
+import org.glowroot.common.config.GaugeConfig;
+import org.glowroot.common.config.ImmutableAdvancedConfig;
+import org.glowroot.common.config.ImmutableAlertConfig;
+import org.glowroot.common.config.ImmutableGaugeConfig;
+import org.glowroot.common.config.ImmutableInstrumentationConfig;
+import org.glowroot.common.config.ImmutableJvmConfig;
+import org.glowroot.common.config.ImmutableMBeanAttribute;
+import org.glowroot.common.config.ImmutableSyntheticMonitorConfig;
+import org.glowroot.common.config.ImmutableTransactionConfig;
+import org.glowroot.common.config.ImmutableUiDefaultsConfig;
+import org.glowroot.common.config.ImmutableUserRecordingConfig;
+import org.glowroot.common.config.InstrumentationConfig;
+import org.glowroot.common.config.JvmConfig;
+import org.glowroot.common.config.PropertyValue;
+import org.glowroot.common.config.PropertyValue.PropertyType;
+import org.glowroot.common.config.SyntheticMonitorConfig;
+import org.glowroot.common.config.TransactionConfig;
+import org.glowroot.common.config.UiDefaultsConfig;
+import org.glowroot.common.config.UserRecordingConfig;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
@@ -280,10 +299,9 @@ public class ConfigService {
     }
 
     public void updatePluginConfigs(List<PluginConfig> configs) throws IOException {
-        ImmutableList<PluginConfig> sortedConfigs =
-                new PluginConfigOrdering().immutableSortedCopy(configs);
-        configFile.writeConfig("plugins", sortedConfigs);
-        pluginConfigs = sortedConfigs;
+        // configs passed in are already sorted
+        configFile.writeConfig("plugins", stripEmptyPluginConfigs(configs));
+        pluginConfigs = ImmutableList.copyOf(configs);
         notifyAllPluginConfigListeners();
     }
 
@@ -304,6 +322,33 @@ public class ConfigService {
         configFile.writeConfig("advanced", config);
         advancedConfig = config;
         notifyConfigListeners();
+    }
+
+    public void updateAllConfig(AllConfig config) throws IOException {
+        Map<String, Object> configs = Maps.newHashMap();
+        configs.put("transactions", config.transaction());
+        configs.put("jvm", config.jvm());
+        configs.put("uiDefaults", config.uiDefaults());
+        configs.put("userRecording", config.userRecording());
+        configs.put("advanced", config.advanced());
+        configs.put("gauges", config.gauges());
+        configs.put("syntheticMonitors", config.syntheticMonitors());
+        configs.put("alerts", config.alerts());
+        configs.put("plugins", stripEmptyPluginConfigs(config.plugins()));
+        configs.put("instrumentation", config.instrumentation());
+        configFile.writeAllConfigs(configs);
+        this.transactionConfig = config.transaction();
+        this.jvmConfig = config.jvm();
+        this.uiDefaultsConfig = config.uiDefaults();
+        this.userRecordingConfig = config.userRecording();
+        this.advancedConfig = config.advanced();
+        this.gaugeConfigs = ImmutableList.copyOf(config.gauges());
+        this.syntheticMonitorConfigs = ImmutableList.copyOf(config.syntheticMonitors());
+        this.alertConfigs = ImmutableList.copyOf(config.alerts());
+        this.pluginConfigs = ImmutableList.copyOf(config.plugins());
+        this.instrumentationConfigs = ImmutableList.copyOf(config.instrumentation());
+        notifyConfigListeners();
+        notifyAllPluginConfigListeners();
     }
 
     public boolean readMemoryBarrier() {
@@ -360,8 +405,7 @@ public class ConfigService {
     }
 
     private void writeAll() throws IOException {
-        // linked hash map to preserve ordering when writing to config file
-        Map<String, Object> configs = Maps.newLinkedHashMap();
+        Map<String, Object> configs = Maps.newHashMap();
         configs.put("transactions", transactionConfig);
         configs.put("jvm", jvmConfig);
         configs.put("uiDefaults", uiDefaultsConfig);
@@ -370,9 +414,19 @@ public class ConfigService {
         configs.put("gauges", gaugeConfigs);
         configs.put("syntheticMonitors", syntheticMonitorConfigs);
         configs.put("alerts", alertConfigs);
-        configs.put("plugins", pluginConfigs);
+        configs.put("plugins", stripEmptyPluginConfigs(pluginConfigs));
         configs.put("instrumentation", instrumentationConfigs);
-        configFile.writeOutConfigsOnStartup(configs);
+        configFile.writeAllConfigsOnStartup(configs);
+    }
+
+    private static List<PluginConfig> stripEmptyPluginConfigs(List<PluginConfig> configs) {
+        List<PluginConfig> nonEmptyConfigs = Lists.newArrayList();
+        for (PluginConfig config : configs) {
+            if (!config.properties().isEmpty()) {
+                nonEmptyConfigs.add(config);
+            }
+        }
+        return nonEmptyConfigs;
     }
 
     private static ImmutableList<GaugeConfig> getDefaultGaugeConfigs() {
@@ -404,13 +458,9 @@ public class ConfigService {
         return ImmutableList.copyOf(defaultGaugeConfigs);
     }
 
-    private static ImmutableList<PluginConfig> fixPluginConfigs(
+    public static ImmutableList<PluginConfig> fixPluginConfigs(
             @Nullable List<ImmutablePluginConfigTemp> filePluginConfigs,
             List<PluginDescriptor> pluginDescriptors) {
-
-        // sorted by id for writing to config file
-        List<PluginDescriptor> sortedPluginDescriptors =
-                new PluginDescriptorOrdering().immutableSortedCopy(pluginDescriptors);
 
         Map<String, PluginConfigTemp> filePluginConfigMap = Maps.newHashMap();
         if (filePluginConfigs != null) {
@@ -420,7 +470,7 @@ public class ConfigService {
         }
 
         List<PluginConfig> accuratePluginConfigs = Lists.newArrayList();
-        for (PluginDescriptor pluginDescriptor : sortedPluginDescriptors) {
+        for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             PluginConfigTemp filePluginConfig = filePluginConfigMap.get(pluginDescriptor.id());
             ImmutablePluginConfig.Builder builder = ImmutablePluginConfig.builder()
                     .pluginDescriptor(pluginDescriptor);
@@ -454,7 +504,7 @@ public class ConfigService {
         }
         Object value = propertyValue.value();
         if (value == null) {
-            return PropertyValue.getDefaultValue(propertyType);
+            return PropertyDescriptor.getDefaultValue(propertyType);
         }
         if (PropertyDescriptor.isValidType(value, propertyType)) {
             return propertyValue;
@@ -464,21 +514,7 @@ public class ConfigService {
                     Splitter.on(',').trimResults().omitEmptyStrings().splitToList((String) value));
         } else {
             logger.warn("invalid value for plugin property: {}", propertyName);
-            return PropertyValue.getDefaultValue(propertyType);
-        }
-    }
-
-    private static class PluginDescriptorOrdering extends Ordering<PluginDescriptor> {
-        @Override
-        public int compare(PluginDescriptor left, PluginDescriptor right) {
-            return left.id().compareToIgnoreCase(right.id());
-        }
-    }
-
-    private static class PluginConfigOrdering extends Ordering<PluginConfig> {
-        @Override
-        public int compare(PluginConfig left, PluginConfig right) {
-            return left.id().compareToIgnoreCase(right.id());
+            return PropertyDescriptor.getDefaultValue(propertyType);
         }
     }
 

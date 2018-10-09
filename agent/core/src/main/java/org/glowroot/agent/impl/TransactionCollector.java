@@ -33,11 +33,11 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.collector.Collector.TraceReader;
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.config.TransactionConfig;
-import org.glowroot.agent.config.TransactionConfig.SlowThreshold;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.agent.util.ThreadFactories;
+import org.glowroot.common.config.TransactionConfig;
+import org.glowroot.common.config.TransactionConfig.SlowThreshold;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 

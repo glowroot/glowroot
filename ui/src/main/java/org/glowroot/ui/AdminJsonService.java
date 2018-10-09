@@ -27,7 +27,9 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -230,6 +232,34 @@ class AdminJsonService {
         return mapper.writeValueAsString(HealthchecksIoConfigDto.create(config));
     }
 
+    @GET(path = "/backend/admin/json", permission = "admin:view")
+    String getAllAdmin() throws Exception {
+        Object configDto;
+        if (central) {
+            configDto =
+                    AllCentralAdminConfigDto.create(configRepository.getAllCentralAdminConfig());
+        } else {
+            configDto =
+                    AllEmbeddedAdminConfigDto.create(configRepository.getAllEmbeddedAdminConfig());
+        }
+        ObjectNode configRootNode = mapper.valueToTree(configDto);
+        ((ObjectNode) checkNotNull(configRootNode.get("smtp"))).remove("encryptedPassword");
+        ((ObjectNode) checkNotNull(configRootNode.get("httpProxy"))).remove("encryptedPassword");
+        ((ObjectNode) checkNotNull(configRootNode.get("ldap"))).remove("encryptedPassword");
+        ObjectMappers.stripEmptyContainerNodes(configRootNode);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        try {
+            jg.setPrettyPrinter(ObjectMappers.getPrettyPrinter());
+            jg.writeObject(configRootNode);
+        } finally {
+            jg.close();
+        }
+        // newline is not required, just a personal preference
+        sb.append(ObjectMappers.NEWLINE);
+        return sb.toString();
+    }
+
     @POST(path = "/backend/admin/general", permission = "admin:edit:general")
     String updateGeneralConfig(@BindRequest String content) throws Exception {
         if (central) {
@@ -399,6 +429,27 @@ class AdminJsonService {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         return getHealthchecksIoConfig();
+    }
+
+    @POST(path = "/backend/admin/json", permission = "admin:edit")
+    String updateAllAdmin(@BindRequest String content) throws Exception {
+        JsonNode rootNode = mapper.readTree(content);
+        updatePassword((ObjectNode) rootNode.get("smtp"),
+                configRepository.getSmtpConfig().encryptedPassword());
+        updatePassword((ObjectNode) rootNode.get("httpProxy"),
+                configRepository.getHttpProxyConfig().encryptedPassword());
+        updatePassword((ObjectNode) rootNode.get("ldap"),
+                configRepository.getLdapConfig().encryptedPassword());
+        if (central) {
+            AllCentralAdminConfigDto config =
+                    mapper.treeToValue(rootNode, ImmutableAllCentralAdminConfigDto.class);
+            configRepository.updateAllCentralAdminConfig(config.toConfig(), config.version());
+        } else {
+            AllEmbeddedAdminConfigDto config =
+                    mapper.treeToValue(rootNode, ImmutableAllEmbeddedAdminConfigDto.class);
+            configRepository.updateAllEmbeddedAdminConfig(config.toConfig(), config.version());
+        }
+        return getAllAdmin();
     }
 
     @POST(path = "/backend/admin/send-test-email", permission = "admin:edit:smtp")
@@ -699,6 +750,23 @@ class AdminJsonService {
                 .build());
     }
 
+    private void updatePassword(@Nullable ObjectNode objectNode, String existingEncryptedPassword)
+            throws Exception {
+        if (objectNode == null) {
+            return;
+        }
+        JsonNode passwordNode = objectNode.get("password");
+        if (passwordNode == null) {
+            JsonNode encryptedPasswordNode = objectNode.get("encryptedPassword");
+            if (encryptedPasswordNode == null) {
+                objectNode.put("encryptedPassword", existingEncryptedPassword);
+            }
+        } else {
+            objectNode.put("encryptedPassword", Encryption.encrypt(passwordNode.asText(),
+                    configRepository.getLazySecretKey()));
+        }
+    }
+
     private static String createErrorResponse(Exception exception) throws IOException {
         String message = exception.getLocalizedMessage();
         String exceptionName = exception.getClass().getSimpleName();
@@ -966,15 +1034,14 @@ class AdminJsonService {
                     .fromDisplayName(fromDisplayName());
             if (!passwordExists()) {
                 // clear password
-                builder.password("");
+                builder.encryptedPassword("");
             } else if (passwordExists() && !newPassword().isEmpty()) {
                 // change password
-                String newPassword =
-                        Encryption.encrypt(newPassword(), configRepository.getLazySecretKey());
-                builder.password(newPassword);
+                builder.encryptedPassword(
+                        Encryption.encrypt(newPassword(), configRepository.getLazySecretKey()));
             } else {
                 // keep existing password
-                builder.password(configRepository.getSmtpConfig().password());
+                builder.encryptedPassword(configRepository.getSmtpConfig().encryptedPassword());
             }
             return builder.build();
         }
@@ -985,7 +1052,7 @@ class AdminJsonService {
                     .port(config.port())
                     .connectionSecurity(config.connectionSecurity())
                     .username(config.username())
-                    .passwordExists(!config.password().isEmpty())
+                    .passwordExists(!config.encryptedPassword().isEmpty())
                     .putAllAdditionalProperties(config.additionalProperties())
                     .fromEmailAddress(config.fromEmailAddress())
                     .fromDisplayName(config.fromDisplayName())
@@ -1016,15 +1083,15 @@ class AdminJsonService {
                     .username(username());
             if (!passwordExists()) {
                 // clear password
-                builder.password("");
+                builder.encryptedPassword("");
             } else if (passwordExists() && !newPassword().isEmpty()) {
                 // change password
-                String newPassword =
-                        Encryption.encrypt(newPassword(), configRepository.getLazySecretKey());
-                builder.password(newPassword);
+                builder.encryptedPassword(
+                        Encryption.encrypt(newPassword(), configRepository.getLazySecretKey()));
             } else {
                 // keep existing password
-                builder.password(configRepository.getHttpProxyConfig().password());
+                builder.encryptedPassword(
+                        configRepository.getHttpProxyConfig().encryptedPassword());
             }
             return builder.build();
         }
@@ -1034,7 +1101,7 @@ class AdminJsonService {
                     .host(config.host())
                     .port(config.port())
                     .username(config.username())
-                    .passwordExists(!config.password().isEmpty())
+                    .passwordExists(!config.encryptedPassword().isEmpty())
                     .version(config.version())
                     .build();
         }
@@ -1075,15 +1142,14 @@ class AdminJsonService {
                     .roleMappings(roleMappings());
             if (!passwordExists()) {
                 // clear password
-                builder.password("");
+                builder.encryptedPassword("");
             } else if (passwordExists() && !newPassword().isEmpty()) {
                 // change password
-                String newPassword =
-                        Encryption.encrypt(newPassword(), configRepository.getLazySecretKey());
-                builder.password(newPassword);
+                builder.encryptedPassword(
+                        Encryption.encrypt(newPassword(), configRepository.getLazySecretKey()));
             } else {
                 // keep existing password
-                builder.password(configRepository.getLdapConfig().password());
+                builder.encryptedPassword(configRepository.getLdapConfig().encryptedPassword());
             }
             return builder.build();
         }
@@ -1094,7 +1160,7 @@ class AdminJsonService {
                     .port(config.port())
                     .ssl(config.ssl())
                     .username(config.username())
-                    .passwordExists(!config.password().isEmpty())
+                    .passwordExists(!config.encryptedPassword().isEmpty())
                     .userBaseDn(config.userBaseDn())
                     .userSearchFilter(config.userSearchFilter())
                     .groupBaseDn(config.groupBaseDn())

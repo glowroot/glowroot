@@ -149,6 +149,7 @@ class UserDao {
     }
 
     private class AllUsersCacheLoader implements CacheLoader<String, List<UserConfig>> {
+
         @Override
         public List<UserConfig> load(String dummy) throws Exception {
             ResultSet results = session.execute(readPS.bind());
@@ -159,7 +160,7 @@ class UserDao {
             return users;
         }
 
-        private ImmutableUserConfig buildUser(Row row) {
+        private UserConfig buildUser(Row row) {
             int i = 0;
             return ImmutableUserConfig.builder()
                     .username(checkNotNull(row.getString(i++)))

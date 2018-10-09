@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.config;
+package org.glowroot.common.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -63,7 +63,7 @@ public abstract class TransactionConfig {
         return builder.build();
     }
 
-    public static TransactionConfig create(AgentConfig.TransactionConfig config) {
+    public static ImmutableTransactionConfig create(AgentConfig.TransactionConfig config) {
         ImmutableTransactionConfig.Builder builder = ImmutableTransactionConfig.builder();
         if (config.hasSlowThresholdMillis()) {
             builder.slowThresholdMillis(config.getSlowThresholdMillis().getValue());

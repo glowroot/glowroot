@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
+import org.glowroot.common.config.ImmutableInstrumentationConfig;
+import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.util.ObjectMappers;
 
 @Value.Immutable

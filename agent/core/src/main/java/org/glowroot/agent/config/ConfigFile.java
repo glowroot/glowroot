@@ -33,7 +33,7 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 // TODO if config.json file has unrecognized top-level node (something other than "transactions",
-// "ui", "userRecording", "advanced", etc) then log warning and remove that node
+// "uiDefaults", "userRecording", "advanced", etc) then log warning and remove that node
 class ConfigFile {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigFile.class);
@@ -79,7 +79,18 @@ class ConfigFile {
         ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder, false);
     }
 
-    void writeOutConfigsOnStartup(Map<String, Object> configs) throws IOException {
+    void writeAllConfigs(Map<String, Object> configs) throws IOException {
+        if (readOnly) {
+            throw new IllegalStateException("Running with config.readOnly=true so config updates"
+                    + " are not allowed");
+        }
+        for (Map.Entry<String, Object> entry : configs.entrySet()) {
+            rootObjectNode.replace(entry.getKey(), mapper.valueToTree(entry.getValue()));
+        }
+        ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder, false);
+    }
+
+    void writeAllConfigsOnStartup(Map<String, Object> configs) throws IOException {
         for (Map.Entry<String, Object> entry : configs.entrySet()) {
             rootObjectNode.replace(entry.getKey(), mapper.valueToTree(entry.getValue()));
         }
@@ -184,6 +195,8 @@ class ConfigFile {
             uiObjectNode.set("defaultPercentiles",
                     uiObjectNode.remove("defaultDisplayedPercentiles"));
         }
+        // upgrade from 0.10.12 to 0.11.0
+        configRootObjectNode.set("uiDefaults", configRootObjectNode.remove("ui"));
     }
 
     private static void upgradeAdvancedIfNeeded(ObjectNode rootObjectNode) {

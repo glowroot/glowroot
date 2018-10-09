@@ -42,8 +42,8 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.config.InstrumentationConfig;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
+import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Charsets.UTF_8;

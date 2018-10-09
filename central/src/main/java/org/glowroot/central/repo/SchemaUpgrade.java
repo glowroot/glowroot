@@ -103,7 +103,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 82;
+    private static final int CURR_SCHEMA_VERSION = 83;
 
     private final Session session;
     private final Clock clock;
@@ -494,6 +494,11 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 82) {
             updateRolePermissionName2();
             updateSchemaVersion(82);
+        }
+        // 0.11.1 to 0.12.0
+        if (initialSchemaVersion < 83) {
+            updateEncryptedPasswordAttributeName();
+            updateSchemaVersion(83);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -2564,6 +2569,45 @@ public class SchemaUpgrade {
                 session.execute(boundStatement);
             }
         }
+    }
+
+    private void updateEncryptedPasswordAttributeName() throws Exception {
+        PreparedStatement readPS =
+                session.prepare("select value from central_config where key = ?");
+        PreparedStatement insertPS =
+                session.prepare("insert into central_config (key, value) values (?, ?)");
+        updateEncryptedPasswordAttributeName("smtp", readPS, insertPS);
+        updateEncryptedPasswordAttributeName("httpProxy", readPS, insertPS);
+        updateEncryptedPasswordAttributeName("ldap", readPS, insertPS);
+    }
+
+    private void updateEncryptedPasswordAttributeName(String key, PreparedStatement readPS,
+            PreparedStatement insertPS) throws Exception {
+        BoundStatement boundStatement = readPS.bind();
+        boundStatement.setString(0, key);
+        ResultSet results = session.execute(boundStatement);
+        Row row = results.one();
+        if (row == null) {
+            return;
+        }
+        String configText = row.getString(0);
+        if (configText == null) {
+            return;
+        }
+        JsonNode jsonNode = mapper.readTree(configText);
+        if (jsonNode == null || !jsonNode.isObject()) {
+            return;
+        }
+        ObjectNode objectNode = (ObjectNode) jsonNode;
+        JsonNode passwordNode = objectNode.remove("password");
+        if (passwordNode != null) {
+            objectNode.set("encryptedPassword", passwordNode);
+        }
+        String updatedConfigText = mapper.writeValueAsString(objectNode);
+        boundStatement = insertPS.bind();
+        boundStatement.setString(0, key);
+        boundStatement.setString(1, updatedConfigText);
+        session.execute(boundStatement);
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)

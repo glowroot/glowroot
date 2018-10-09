@@ -16,26 +16,11 @@
 package org.glowroot.agent.init;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
-import org.glowroot.agent.config.AdvancedConfig;
-import org.glowroot.agent.config.AlertConfig;
+import org.glowroot.agent.config.AllConfig;
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.config.GaugeConfig;
-import org.glowroot.agent.config.InstrumentationConfig;
-import org.glowroot.agent.config.JvmConfig;
 import org.glowroot.agent.config.PluginCache;
-import org.glowroot.agent.config.PluginConfig;
-import org.glowroot.agent.config.PluginDescriptor;
-import org.glowroot.agent.config.SyntheticMonitorConfig;
-import org.glowroot.agent.config.TransactionConfig;
-import org.glowroot.agent.config.UiDefaultsConfig;
-import org.glowroot.agent.config.UserRecordingConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
 class ConfigUpdateService implements AgentConfigUpdater {
@@ -55,53 +40,8 @@ class ConfigUpdateService implements AgentConfigUpdater {
     @Override
     public void update(AgentConfig agentConfig) throws IOException {
         synchronized (lock) {
-            configService.updateTransactionConfig(
-                    TransactionConfig.create(agentConfig.getTransactionConfig()));
-            configService.updateJvmConfig(JvmConfig.create(agentConfig.getJvmConfig()));
-            configService.updateUiDefaultsConfig(
-                    UiDefaultsConfig.create(agentConfig.getUiDefaultsConfig()));
-            configService.updateUserRecordingConfig(
-                    UserRecordingConfig.create(agentConfig.getUserRecordingConfig()));
-            configService
-                    .updateAdvancedConfig(AdvancedConfig.create(agentConfig.getAdvancedConfig()));
-            List<GaugeConfig> gaugeConfigs = Lists.newArrayList();
-            for (AgentConfig.GaugeConfig gaugeConfig : agentConfig.getGaugeConfigList()) {
-                gaugeConfigs.add(GaugeConfig.create(gaugeConfig));
-            }
-            configService.updateGaugeConfigs(gaugeConfigs);
-            List<SyntheticMonitorConfig> syntheticMonitorConfigs = Lists.newArrayList();
-            for (AgentConfig.SyntheticMonitorConfig syntheticMonitorConfig : agentConfig
-                    .getSyntheticMonitorConfigList()) {
-                syntheticMonitorConfigs.add(SyntheticMonitorConfig.create(syntheticMonitorConfig));
-            }
-            configService.updateSyntheticMonitorConfigs(syntheticMonitorConfigs);
-            List<AlertConfig> alertConfigs = Lists.newArrayList();
-            for (AgentConfig.AlertConfig alertConfig : agentConfig.getAlertConfigList()) {
-                alertConfigs.add(AlertConfig.create(alertConfig));
-            }
-            configService.updateAlertConfigs(alertConfigs);
-            Map<String, AgentConfig.PluginConfig> map = Maps.newHashMap();
-            for (AgentConfig.PluginConfig pluginConfig : agentConfig.getPluginConfigList()) {
-                map.put(pluginConfig.getId(), pluginConfig);
-            }
-            List<PluginConfig> pluginConfigs = Lists.newArrayList();
-            for (PluginDescriptor pluginDescriptor : pluginCache.pluginDescriptors()) {
-                AgentConfig.PluginConfig pluginConfig = map.get(pluginDescriptor.id());
-                if (pluginConfig == null) {
-                    pluginConfig = AgentConfig.PluginConfig.newBuilder()
-                            .setId(pluginDescriptor.id())
-                            .build();
-                }
-                pluginConfigs
-                        .add(PluginConfig.create(pluginDescriptor, pluginConfig.getPropertyList()));
-            }
-            configService.updatePluginConfigs(pluginConfigs);
-            List<InstrumentationConfig> instrumentationConfigs = Lists.newArrayList();
-            for (AgentConfig.InstrumentationConfig instrumentationConfig : agentConfig
-                    .getInstrumentationConfigList()) {
-                instrumentationConfigs.add(InstrumentationConfig.create(instrumentationConfig));
-            }
-            configService.updateInstrumentationConfigs(instrumentationConfigs);
+            configService.updateAllConfig(
+                    AllConfig.create(agentConfig, pluginCache.pluginDescriptors()));
         }
     }
 }

@@ -29,6 +29,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -73,6 +74,7 @@ import org.glowroot.agent.weaving.PointcutClassFileTransformer;
 import org.glowroot.agent.weaving.PreInitializeWeavingClasses;
 import org.glowroot.agent.weaving.Weaver;
 import org.glowroot.agent.weaving.WeavingClassFileTransformer;
+import org.glowroot.common.config.PluginNameComparison;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.ScheduledRunnable;
@@ -231,7 +233,8 @@ public class AgentModule {
 
         initPlugins(pluginCache.pluginDescriptors());
 
-        List<PluginDescriptor> pluginDescriptors = pluginCache.pluginDescriptors();
+        List<PluginDescriptor> pluginDescriptors =
+                new PluginDescriptorNameOrdering().sortedCopy(pluginCache.pluginDescriptors());
         List<String> pluginNames = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             pluginNames.add(pluginDescriptor.name());
@@ -464,6 +467,13 @@ public class AgentModule {
         }
         if (deadlockedActiveWeavingRunnable != null) {
             deadlockedActiveWeavingRunnable.cancel();
+        }
+    }
+
+    private static class PluginDescriptorNameOrdering extends Ordering<PluginDescriptor> {
+        @Override
+        public int compare(PluginDescriptor left, PluginDescriptor right) {
+            return PluginNameComparison.compareNames(left.name(), right.name());
         }
     }
 

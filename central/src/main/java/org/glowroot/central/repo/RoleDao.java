@@ -134,7 +134,7 @@ class RoleDao {
         boundStatement.setSet(i++, userConfig.permissions());
     }
 
-    private static ImmutableRoleConfig buildRole(Row row) {
+    private static RoleConfig buildRole(Row row) {
         int i = 0;
         return ImmutableRoleConfig.builder()
                 .central(true)
@@ -164,11 +164,11 @@ class RoleDao {
         @Override
         public List<RoleConfig> load(String dummy) throws Exception {
             ResultSet results = session.execute(readPS.bind());
-            List<RoleConfig> users = new ArrayList<>();
+            List<RoleConfig> role = new ArrayList<>();
             for (Row row : results) {
-                users.add(buildRole(row));
+                role.add(buildRole(row));
             }
-            return users;
+            return role;
         }
     }
 }

@@ -475,7 +475,7 @@ public class AlertingService {
         if (passwordOverride != null) {
             return passwordOverride;
         }
-        String password = smtpConfig.password();
+        String password = smtpConfig.encryptedPassword();
         if (password.isEmpty()) {
             return "";
         }

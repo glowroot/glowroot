@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -27,9 +28,11 @@ import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
+import org.glowroot.common.config.PropertyValue;
+import org.glowroot.common.config.PropertyValue.PropertyType;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.StringList;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.Value.ValCase;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -44,9 +47,6 @@ public abstract class PluginConfig {
         return pluginDescriptor().id();
     }
 
-    // when written to config.json, this will have all plugin properties
-    // so not using @Json.ForceEmpty since new plugin properties can't be added in config.json
-    // anyways
     public abstract Map<String, PropertyValue> properties();
 
     @Value.Derived
@@ -139,9 +139,8 @@ public abstract class PluginConfig {
             PropertyDescriptor propertyDescriptor = getPropertyDescriptor(entry.getKey());
             PluginProperty.Builder property = PluginProperty.newBuilder()
                     .setName(entry.getKey())
-                    .setValue(getPropertyValue(entry.getValue().value()))
-                    .setDefault(getPropertyValue(
-                            propertyDescriptor.getValidatedNonNullDefaultValue().value()))
+                    .setValue(entry.getValue().toProto())
+                    .setDefault(propertyDescriptor.getValidatedNonNullDefaultValue().toProto())
                     .setLabel(propertyDescriptor.label())
                     .setCheckboxLabel(propertyDescriptor.checkboxLabel())
                     .setDescription(propertyDescriptor.description());
@@ -160,62 +159,50 @@ public abstract class PluginConfig {
     }
 
     public static PluginConfig create(PluginDescriptor pluginDescriptor,
-            List<PluginProperty> props) {
+            List<PluginProperty> newProperties) {
         ImmutablePluginConfig.Builder builder = ImmutablePluginConfig.builder()
                 .pluginDescriptor(pluginDescriptor);
-        Map<String, PropertyValue> properties = Maps.newLinkedHashMap();
-        for (PropertyDescriptor propertyDescriptor : pluginDescriptor.properties()) {
-            properties.put(propertyDescriptor.name(),
-                    propertyDescriptor.getValidatedNonNullDefaultValue());
+        Map<String, PluginProperty> remainingNewProperties = Maps.newHashMap();
+        for (PluginProperty newProperty : newProperties) {
+            remainingNewProperties.put(newProperty.getName(), newProperty);
         }
-        for (PluginProperty prop : props) {
-            PluginProperty.Value propertyValue = prop.getValue();
-            switch (propertyValue.getValCase()) {
-                case BVAL:
-                    properties.put(prop.getName(), new PropertyValue(propertyValue.getBval()));
-                    break;
-                case DVAL_NULL:
-                    properties.put(prop.getName(), new PropertyValue(null));
-                    break;
-                case DVAL:
-                    properties.put(prop.getName(), new PropertyValue(propertyValue.getDval()));
-                    break;
-                case SVAL:
-                    properties.put(prop.getName(), new PropertyValue(propertyValue.getSval()));
-                    break;
-                case LVAL:
-                    properties.put(prop.getName(), new PropertyValue(
-                            ImmutableList.copyOf(propertyValue.getLval().getValList())));
-                    break;
-                default:
-                    throw new IllegalStateException(
-                            "Unexpected plugin property type: " + propertyValue.getValCase());
+        Map<String, PropertyValue> propertyValues = Maps.newLinkedHashMap();
+        for (PropertyDescriptor propertyDescriptor : pluginDescriptor.properties()) {
+            PluginProperty newProperty = remainingNewProperties.remove(propertyDescriptor.name());
+            if (newProperty == null) {
+                propertyValues.put(propertyDescriptor.name(),
+                        propertyDescriptor.getValidatedNonNullDefaultValue());
+            } else if (!isValidType(newProperty.getValue().getValCase(),
+                    propertyDescriptor.type())) {
+                throw new IllegalStateException("Plugin property " + newProperty.getName()
+                        + " has incorrect type: " + newProperty.getValue().getValCase());
+            } else {
+                propertyValues.put(newProperty.getName(),
+                        PropertyValue.create(newProperty.getValue()));
             }
         }
-        return builder.properties(properties)
-                .build();
+        if (remainingNewProperties.isEmpty()) {
+            return builder.properties(propertyValues)
+                    .build();
+        } else {
+            throw new IllegalStateException("Plugin properties not found: "
+                    + Joiner.on(", ").join(remainingNewProperties.keySet()));
+        }
     }
 
-    private static PluginProperty.Value getPropertyValue(@Nullable Object value) {
-        PluginProperty.Value.Builder propertyValue = PluginProperty.Value.newBuilder();
-        if (value == null) {
-            propertyValue.setDvalNull(true);
-        } else if (value instanceof Boolean) {
-            propertyValue.setBval((Boolean) value);
-        } else if (value instanceof String) {
-            propertyValue.setSval((String) value);
-        } else if (value instanceof Double) {
-            propertyValue.setDval((Double) value);
-        } else if (value instanceof List) {
-            StringList.Builder lval = StringList.newBuilder();
-            for (Object v : (List<?>) value) {
-                lval.addVal((String) checkNotNull(v));
-            }
-            propertyValue.setLval(lval);
-        } else {
-            throw new AssertionError(
-                    "Unexpected property value type: " + value.getClass().getName());
+    private static boolean isValidType(PluginProperty.Value.ValCase valueType,
+            PropertyType targetType) {
+        switch (targetType) {
+            case BOOLEAN:
+                return valueType == ValCase.BVAL;
+            case STRING:
+                return valueType == ValCase.SVAL;
+            case DOUBLE:
+                return valueType == ValCase.DVAL || valueType == ValCase.DVAL_NULL;
+            case LIST:
+                return valueType == ValCase.LVAL;
+            default:
+                throw new AssertionError("Unexpected property type: " + targetType);
         }
-        return propertyValue.build();
     }
 }

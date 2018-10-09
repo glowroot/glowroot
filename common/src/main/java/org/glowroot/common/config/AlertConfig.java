@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.config;
+package org.glowroot.common.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -37,7 +37,7 @@ public abstract class AlertConfig {
     public abstract @Nullable ImmutableEmailNotification emailNotification();
     public abstract @Nullable ImmutablePagerDutyNotification pagerDutyNotification();
 
-    public static AlertConfig create(AgentConfig.AlertConfig config) {
+    public static ImmutableAlertConfig create(AgentConfig.AlertConfig config) {
         ImmutableAlertConfig.Builder builder = ImmutableAlertConfig.builder()
                 .condition(create(config.getCondition()))
                 .severity(config.getSeverity());

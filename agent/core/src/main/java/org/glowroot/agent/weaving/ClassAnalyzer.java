@@ -43,12 +43,12 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.config.ImmutableInstrumentationConfig;
-import org.glowroot.agent.config.InstrumentationConfig;
 import org.glowroot.agent.weaving.AnalyzedWorld.ParseContext;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 import org.glowroot.agent.weaving.ThinClassVisitor.ThinClass;
 import org.glowroot.agent.weaving.ThinClassVisitor.ThinMethod;
+import org.glowroot.common.config.ImmutableInstrumentationConfig;
+import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 
 import static com.google.common.base.Preconditions.checkNotNull;

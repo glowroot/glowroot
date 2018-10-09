@@ -543,7 +543,7 @@ public class ConfigRepositoryIT {
                 .port(555)
                 .connectionSecurity(ConnectionSecurity.SSL_TLS)
                 .username("b")
-                .password("c")
+                .encryptedPassword("c")
                 .putAdditionalProperties("f", "g")
                 .putAdditionalProperties("h", "i")
                 .fromEmailAddress("d")
@@ -566,7 +566,7 @@ public class ConfigRepositoryIT {
                 .host("a")
                 .port(555)
                 .username("b")
-                .password("c")
+                .encryptedPassword("c")
                 .build();
 
         // when
@@ -585,7 +585,7 @@ public class ConfigRepositoryIT {
                 .host("a")
                 .port(1234)
                 .username("b")
-                .password("c")
+                .encryptedPassword("c")
                 .userBaseDn("d")
                 .userSearchFilter("e")
                 .groupBaseDn("f")

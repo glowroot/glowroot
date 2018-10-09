@@ -29,8 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.config.UserRecordingConfig;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
+import org.glowroot.common.config.UserRecordingConfig;
 import org.glowroot.common.util.Cancellable;
 
 import static com.google.common.base.Preconditions.checkNotNull;

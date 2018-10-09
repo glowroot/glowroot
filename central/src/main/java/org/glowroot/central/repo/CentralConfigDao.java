@@ -49,6 +49,7 @@ class CentralConfigDao {
 
     private final PreparedStatement insertIfNotExistsPS;
     private final PreparedStatement updatePS;
+    private final PreparedStatement updateWithoutOptimisticLockPS;
     private final PreparedStatement readPS;
 
     private final Cache<String, Optional<Object>> centralConfigCache;
@@ -65,6 +66,8 @@ class CentralConfigDao {
                 .prepare("insert into central_config (key, value) values (?, ?) if not exists");
         updatePS =
                 session.prepare("update central_config set value = ? where key = ? if value = ?");
+        updateWithoutOptimisticLockPS =
+                session.prepare("update central_config set value = ? where key = ?");
         readPS = session.prepare("select value from central_config where key = ?");
 
         centralConfigCache =
@@ -103,6 +106,15 @@ class CentralConfigDao {
         } else {
             throw new OptimisticLockException();
         }
+    }
+
+    void writeWithoutOptimisticLocking(String key, Object config) throws Exception {
+        BoundStatement boundStatement = updateWithoutOptimisticLockPS.bind();
+        int i = 0;
+        boundStatement.setString(i++, mapper.writeValueAsString(config));
+        boundStatement.setString(i++, key);
+        session.execute(boundStatement);
+        centralConfigCache.invalidate(key);
     }
 
     @Nullable

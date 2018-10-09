@@ -43,11 +43,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.config.InstrumentationConfig;
 import org.glowroot.agent.live.ClasspathCache.UiAnalyzedMethod;
 import org.glowroot.agent.util.MaybePatterns;
 import org.glowroot.agent.weaving.AdviceCache;
 import org.glowroot.agent.weaving.AnalyzedWorld;
+import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignature;

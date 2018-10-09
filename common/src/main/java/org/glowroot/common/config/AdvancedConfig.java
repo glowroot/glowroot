@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.config;
+package org.glowroot.common.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -94,7 +94,7 @@ public abstract class AdvancedConfig {
                 .build();
     }
 
-    public static AdvancedConfig create(AgentConfig.AdvancedConfig config) {
+    public static ImmutableAdvancedConfig create(AgentConfig.AdvancedConfig config) {
         ImmutableAdvancedConfig.Builder builder = ImmutableAdvancedConfig.builder();
         if (config.hasImmediatePartialStoreThresholdSeconds()) {
             builder.immediatePartialStoreThresholdSeconds(

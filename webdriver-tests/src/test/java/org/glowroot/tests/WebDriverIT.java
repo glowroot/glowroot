@@ -175,16 +175,16 @@ public abstract class WebDriverIT {
     }
 
     private static void resetAllCentralConfig() throws Exception {
-        resetCentralConfig("transaction", false, "{\"slowThresholdMillis\":2000,"
+        resetCentralConfig("/transaction", false, "{\"slowThresholdMillis\":2000,"
                 + "\"profilingIntervalMillis\":1000,"
                 + "\"captureThreadStats\":true,"
                 + "\"version\":\"$version\"}");
-        resetCentralConfig("ui-defaults", true, "{\"defaultTransactionType\":\"Web\","
+        resetCentralConfig("/ui-defaults", true, "{\"defaultTransactionType\":\"Web\","
                 + "\"defaultPercentiles\":[50.0,95.0,99.0],"
                 + "\"defaultGaugeNames\":[\"java.lang:type=Memory:HeapMemoryUsage.used\"],"
                 + "\"version\":\"$version\"}");
-        resetCentralConfig("user-recording", false, "{\"version\":\"$version\"}");
-        resetCentralConfig("advanced", true, "{\"immediatePartialStoreThresholdSeconds\":60,"
+        resetCentralConfig("/user-recording", false, "{\"version\":\"$version\"}");
+        resetCentralConfig("/advanced", true, "{\"immediatePartialStoreThresholdSeconds\":60,"
                 + "\"maxTransactionAggregates\":500,"
                 + "\"maxQueryAggregates\":500,"
                 + "\"maxServiceCallAggregates\":500,"
@@ -228,7 +228,7 @@ public abstract class WebDriverIT {
 
     private static void resetCentralConfig(String type, boolean useAgentRollupId, String template)
             throws Exception {
-        String url = "http://localhost:" + getUiPort() + "/backend/config/" + type + "?agent";
+        String url = "http://localhost:" + getUiPort() + "/backend/config" + type + "?agent";
         if (useAgentRollupId) {
             url += "-rollup";
         }

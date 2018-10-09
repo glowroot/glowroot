@@ -35,7 +35,6 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.bytecode.api.BytecodeServiceHolder;
 import org.glowroot.agent.bytecode.api.ThreadContextPlus;
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
-import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.impl.NopTransactionService.NopTimer;
 import org.glowroot.agent.model.AsyncQueryData;
 import org.glowroot.agent.model.AsyncTimer;
@@ -61,6 +60,7 @@ import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.agent.util.Tickers;
+import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.util.NotAvailableAware;
 
 import static com.google.common.base.Preconditions.checkNotNull;

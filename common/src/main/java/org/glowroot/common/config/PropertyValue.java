@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.config;
+package org.glowroot.common.config;
 
 import java.io.IOException;
 import java.util.List;
@@ -31,8 +31,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.agent.config.PropertyValue.PropertyValueDeserializer;
-import org.glowroot.agent.config.PropertyValue.PropertyValueSerializer;
+import org.glowroot.common.config.PropertyValue.PropertyValueDeserializer;
+import org.glowroot.common.config.PropertyValue.PropertyValueSerializer;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.StringList;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 @JsonSerialize(using = PropertyValueSerializer.class)
 @JsonDeserialize(using = PropertyValueDeserializer.class)
@@ -40,29 +44,53 @@ public class PropertyValue {
 
     // can be boolean, @Nullable Double or @NonNull String
     private final @Nullable Object value;
-
-    static PropertyValue getDefaultValue(PropertyType type) {
-        switch (type) {
-            case BOOLEAN:
-                return new PropertyValue(false);
-            case DOUBLE:
-                return new PropertyValue(null);
-            case STRING:
-                return new PropertyValue("");
-            case LIST:
-                return new PropertyValue(ImmutableList.of());
-            default:
-                throw new AssertionError("Unexpected property type: " + type);
-        }
-    }
-
     public PropertyValue(@Nullable Object value) {
         this.value = value;
     }
 
-    @Nullable
-    Object value() {
+    public @Nullable Object value() {
         return value;
+    }
+
+    public PluginProperty.Value toProto() {
+        PluginProperty.Value.Builder propertyValue = PluginProperty.Value.newBuilder();
+        if (value == null) {
+            propertyValue.setDvalNull(true);
+        } else if (value instanceof Boolean) {
+            propertyValue.setBval((Boolean) value);
+        } else if (value instanceof String) {
+            propertyValue.setSval((String) value);
+        } else if (value instanceof Double) {
+            propertyValue.setDval((Double) value);
+        } else if (value instanceof List) {
+            StringList.Builder lval = StringList.newBuilder();
+            for (Object v : (List<?>) value) {
+                lval.addVal((String) checkNotNull(v));
+            }
+            propertyValue.setLval(lval);
+        } else {
+            throw new AssertionError(
+                    "Unexpected property value type: " + value.getClass().getName());
+        }
+        return propertyValue.build();
+    }
+
+    public static PropertyValue create(PluginProperty.Value value) {
+        switch (value.getValCase()) {
+            case BVAL:
+                return new PropertyValue(value.getBval());
+            case DVAL_NULL:
+                return new PropertyValue(null);
+            case DVAL:
+                return new PropertyValue(value.getDval());
+            case SVAL:
+                return new PropertyValue(value.getSval());
+            case LVAL:
+                return new PropertyValue(ImmutableList.copyOf(value.getLval().getValList()));
+            default:
+                throw new IllegalStateException(
+                        "Unexpected plugin property type: " + value.getValCase());
+        }
     }
 
     public enum PropertyType {

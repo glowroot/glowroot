@@ -89,6 +89,8 @@ class AdminConfigFile {
         ObjectNode rootObjectNode = ConfigFileUtil.getRootObjectNode(file);
         upgradeRolesIfNeeded(rootObjectNode);
         upgradeSmtpIfNeeded(rootObjectNode);
+        upgradeHttpProxyIfNeeded(rootObjectNode);
+        upgradeLdapIfNeeded(rootObjectNode);
         return rootObjectNode;
     }
 
@@ -156,7 +158,6 @@ class AdminConfigFile {
     }
 
     private static void upgradeSmtpIfNeeded(ObjectNode adminRootObjectNode) {
-        // upgrade from 0.9.19 to 0.9.20
         JsonNode smtpNode = adminRootObjectNode.get("smtp");
         if (smtpNode == null || !smtpNode.isObject()) {
             return;
@@ -164,7 +165,39 @@ class AdminConfigFile {
         ObjectNode smtpObjectNode = (ObjectNode) smtpNode;
         JsonNode sslNode = smtpObjectNode.remove("ssl");
         if (sslNode != null && sslNode.isBoolean() && sslNode.asBoolean()) {
+            // upgrade from 0.9.19 to 0.9.20
             smtpObjectNode.put("connectionSecurity", "ssl-tls");
+        }
+        JsonNode passwordNode = smtpObjectNode.remove("password");
+        if (passwordNode != null) {
+            // upgrade from 0.11.1 to 0.12.0
+            smtpObjectNode.set("encryptedPassword", passwordNode);
+        }
+    }
+
+    private static void upgradeHttpProxyIfNeeded(ObjectNode adminRootObjectNode) {
+        JsonNode httpProxyNode = adminRootObjectNode.get("httpProxy");
+        if (httpProxyNode == null || !httpProxyNode.isObject()) {
+            return;
+        }
+        ObjectNode httpProxyObjectNode = (ObjectNode) httpProxyNode;
+        JsonNode passwordNode = httpProxyObjectNode.remove("password");
+        if (passwordNode != null) {
+            // upgrade from 0.11.1 to 0.12.0
+            httpProxyObjectNode.set("encryptedPassword", passwordNode);
+        }
+    }
+
+    private static void upgradeLdapIfNeeded(ObjectNode adminRootObjectNode) {
+        JsonNode ldapNode = adminRootObjectNode.get("ldap");
+        if (ldapNode == null || !ldapNode.isObject()) {
+            return;
+        }
+        ObjectNode ldapObjectNode = (ObjectNode) ldapNode;
+        JsonNode passwordNode = ldapObjectNode.remove("password");
+        if (passwordNode != null) {
+            // upgrade from 0.11.1 to 0.12.0
+            ldapObjectNode.set("encryptedPassword", passwordNode);
         }
     }
 }

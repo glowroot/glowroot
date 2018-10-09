@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.config;
+package org.glowroot.common.config;
 
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
@@ -35,7 +35,7 @@ public abstract class JvmConfig {
         return builder.build();
     }
 
-    public static JvmConfig create(AgentConfig.JvmConfig config) {
+    public static ImmutableJvmConfig create(AgentConfig.JvmConfig config) {
         ImmutableJvmConfig.Builder builder = ImmutableJvmConfig.builder()
                 .addAllMaskSystemProperties(config.getMaskSystemPropertyList());
         return builder.build();

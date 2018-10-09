@@ -136,6 +136,16 @@
       </div>
     </div>
   </div>
+  <div class="card mt-4"
+       ng-if="!isAgentRollup()">
+    <div class="list-group">
+      <div gt-sidebar-item
+           gt-display="config.json"
+           gt-url="config/json{{agentQueryString()}}"
+           gt-active="currentUrl() === 'config/json'">
+      </div>
+    </div>
+  </div>
 </div>
 <div ui-view class="gt-main-column">
 </div>

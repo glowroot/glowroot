@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.config;
+package org.glowroot.common.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -45,7 +45,7 @@ public abstract class UserRecordingConfig {
         return builder.build();
     }
 
-    public static UserRecordingConfig create(AgentConfig.UserRecordingConfig config) {
+    public static ImmutableUserRecordingConfig create(AgentConfig.UserRecordingConfig config) {
         ImmutableUserRecordingConfig.Builder builder = ImmutableUserRecordingConfig.builder()
                 .addAllUsers(config.getUserList());
         if (config.hasProfilingIntervalMillis()) {

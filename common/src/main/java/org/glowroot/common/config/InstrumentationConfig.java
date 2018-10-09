@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.config;
+package org.glowroot.common.config;
 
 import java.util.List;
 import java.util.Map;
@@ -300,7 +300,7 @@ public abstract class InstrumentationConfig {
                 .build();
     }
 
-    public static InstrumentationConfig create(AgentConfig.InstrumentationConfig config) {
+    public static ImmutableInstrumentationConfig create(AgentConfig.InstrumentationConfig config) {
         @SuppressWarnings("deprecation")
         ImmutableInstrumentationConfig.Builder builder = ImmutableInstrumentationConfig.builder()
                 .className(config.getClassName())

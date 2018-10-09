@@ -21,6 +21,7 @@ import java.util.regex.PatternSyntaxException;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -29,6 +30,7 @@ import com.google.common.io.CharStreams;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
+import org.glowroot.common.config.PluginNameComparison;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Versions;
@@ -39,6 +41,7 @@ import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common2.repo.TransactionTypeRepository;
 import org.glowroot.ui.GaugeValueJsonService.GaugeOrdering;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
@@ -122,7 +125,8 @@ class ConfigJsonService {
             return getPluginConfigInternal(agentId, request.pluginId().get());
         } else {
             List<PluginResponse> pluginResponses = Lists.newArrayList();
-            List<PluginConfig> pluginConfigs = configRepository.getPluginConfigs(agentId);
+            List<PluginConfig> pluginConfigs = new PluginConfigNameOrdering()
+                    .sortedCopy(configRepository.getPluginConfigs(agentId));
             for (PluginConfig pluginConfig : pluginConfigs) {
                 pluginResponses.add(ImmutablePluginResponse.builder()
                         .id(pluginConfig.getId())
@@ -145,6 +149,24 @@ class ConfigJsonService {
     String getAdvancedConfig(@BindAgentRollupId String agentRollupId) throws Exception {
         AdvancedConfig config = configRepository.getAdvancedConfig(agentRollupId);
         return mapper.writeValueAsString(AdvancedConfigDto.create(config));
+    }
+
+    @GET(path = "/backend/config/json", permission = "agent:config:view")
+    String getAllConfig(@BindAgentId String agentId) throws Exception {
+        AgentConfig config = configRepository.getAllConfig(agentId);
+        ObjectNode configRootNode = mapper.valueToTree(AllConfigDto.create(config));
+        ObjectMappers.stripEmptyContainerNodes(configRootNode);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        try {
+            jg.setPrettyPrinter(ObjectMappers.getPrettyPrinter());
+            jg.writeObject(configRootNode);
+        } finally {
+            jg.close();
+        }
+        // newline is not required, just a personal preference
+        sb.append(ObjectMappers.NEWLINE);
+        return sb.toString();
     }
 
     @POST(path = "/backend/config/general", permission = "agent:config:edit:general")
@@ -216,12 +238,13 @@ class ConfigJsonService {
                 return sb.toString();
             }
         }
-        List<PluginProperty> properties = Lists.newArrayList();
+        PluginConfig.Builder builder = PluginConfig.newBuilder()
+                .setId(pluginId);
         for (PluginPropertyDto prop : request.properties()) {
-            properties.add(prop.convert());
+            builder.addProperty(prop.convert());
         }
         try {
-            configRepository.updatePluginConfig(agentId, pluginId, properties, request.version());
+            configRepository.updatePluginConfig(agentId, builder.build(), request.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -251,6 +274,17 @@ class ConfigJsonService {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         return getAdvancedConfig(agentRollupId);
+    }
+
+    @POST(path = "/backend/config/json", permission = "agent:config:edit")
+    String updateAllConfig(@BindAgentId String agentId, @BindRequest AllConfigDto config)
+            throws Exception {
+        try {
+            configRepository.updateAllConfig(agentId, config.toProto(), config.version());
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getAllConfig(agentId);
     }
 
     private String getPluginConfigInternal(String agentId, String pluginId) throws Exception {
@@ -365,9 +399,9 @@ class ConfigJsonService {
     @Styles.AllParameters
     abstract static class SlowThresholdDto {
 
-        public abstract String transactionType();
-        public abstract String transactionName();
-        public abstract int thresholdMillis();
+        abstract String transactionType();
+        abstract String transactionName();
+        abstract int thresholdMillis();
 
         private SlowThreshold convert() {
             return SlowThreshold.newBuilder()
@@ -651,6 +685,13 @@ class ConfigJsonService {
                     .defaultGaugeNames(config.getDefaultGaugeNameList())
                     .version(Versions.getVersion(config))
                     .build();
+        }
+    }
+
+    private static class PluginConfigNameOrdering extends Ordering<PluginConfig> {
+        @Override
+        public int compare(PluginConfig left, PluginConfig right) {
+            return PluginNameComparison.compareNames(left.getName(), right.getName());
         }
     }
 }

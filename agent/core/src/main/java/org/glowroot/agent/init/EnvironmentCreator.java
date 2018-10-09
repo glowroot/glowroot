@@ -32,8 +32,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.config.JvmConfig;
 import org.glowroot.agent.live.LiveJvmServiceImpl;
+import org.glowroot.common.config.JvmConfig;
 import org.glowroot.common.util.SystemProperties;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment.HostInfo;

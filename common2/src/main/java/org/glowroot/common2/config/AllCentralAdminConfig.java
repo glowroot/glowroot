@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,39 +15,25 @@
  */
 package org.glowroot.common2.config;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Versions;
 
 @Value.Immutable
-public abstract class HttpProxyConfig {
+public abstract class AllCentralAdminConfig {
 
-    @Value.Default
-    @JsonInclude(Include.NON_EMPTY)
-    public String host() {
-        return "";
-    }
-
-    // need to write zero since it is treated different from null
-    // (although in this case zero is not a valid value)
-    @JsonInclude(Include.NON_NULL)
-    public abstract @Nullable Integer port();
-
-    @Value.Default
-    @JsonInclude(Include.NON_EMPTY)
-    public String username() {
-        return "";
-    }
-
-    @Value.Default
-    @JsonInclude(Include.NON_EMPTY)
-    public String encryptedPassword() {
-        return "";
-    }
+    public abstract CentralAdminGeneralConfig general();
+    public abstract List<UserConfig> users();
+    public abstract List<RoleConfig> roles();
+    public abstract CentralWebConfig web();
+    public abstract CentralStorageConfig storage();
+    public abstract SmtpConfig smtp();
+    public abstract HttpProxyConfig httpProxy();
+    public abstract LdapConfig ldap();
+    public abstract PagerDutyConfig pagerDuty();
 
     @Value.Derived
     @JsonIgnore

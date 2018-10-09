@@ -25,7 +25,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.impl.Transaction.RootTimerCollector;
 import org.glowroot.agent.model.AggregatedTimer;
 import org.glowroot.agent.model.AsyncQueryData;
@@ -36,6 +35,7 @@ import org.glowroot.agent.model.ServiceCallCollector;
 import org.glowroot.agent.model.TimerNameImpl;
 import org.glowroot.agent.model.TransactionTimer;
 import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.common.config.AdvancedConfig;
 
 class AsyncComponents {
 
