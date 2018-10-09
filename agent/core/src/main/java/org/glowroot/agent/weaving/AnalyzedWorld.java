@@ -105,7 +105,7 @@ public class AnalyzedWorld {
         return classes;
     }
 
-    public void removeClasses(List<Class<?>> classes) {
+    public void removeClasses(Iterable<Class<?>> classes) {
         for (Map<String, AnalyzedClass> map : getWorldValues()) {
             for (Class<?> clazz : classes) {
                 map.remove(clazz.getName());
