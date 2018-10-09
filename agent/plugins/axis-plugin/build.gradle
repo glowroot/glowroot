@@ -1,0 +1,19 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+	// https://mvnrepository.com/artifact/org.glowroot/glowroot-agent
+	compile group: 'org.glowroot', name: 'glowroot-agent', version: '0.11.1'
+}
+
+jar {
+}
