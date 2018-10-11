@@ -37,6 +37,7 @@ import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
+import org.glowroot.common.live.LiveTraceRepository.Queries;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceStub;
@@ -79,6 +80,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignature;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignaturesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignaturesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.PreloadClasspathCacheResponse;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.QueriesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.SystemPropertiesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
@@ -270,6 +272,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                 return;
             case ENTRIES_REQUEST:
                 getEntriesAndRespond(request, responseObserver);
+                return;
+            case QUERIES_REQUEST:
+                getQueriesAndRespond(request, responseObserver);
                 return;
             case MAIN_THREAD_PROFILE_REQUEST:
                 getMainThreadProfileAndRespond(request, responseObserver);
@@ -718,6 +723,28 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setEntriesResponse(response)
+                .build());
+    }
+
+    private void getQueriesAndRespond(CentralRequest request,
+            StreamObserver<AgentResponse> responseObserver) {
+        Queries queries;
+        try {
+            queries = liveTraceRepository.getQueries("", request.getQueriesRequest().getTraceId());
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            sendExceptionResponse(request, responseObserver);
+            return;
+        }
+        QueriesResponse.Builder response = QueriesResponse.newBuilder();
+        if (queries != null) {
+            response.addAllQuery(queries.queries());
+            response.addAllSharedQueryText(sharedQueryTextLimiter
+                    .reduceTracePayloadWherePossible(queries.sharedQueryTexts()));
+        }
+        responseObserver.onNext(AgentResponse.newBuilder()
+                .setRequestId(request.getRequestId())
+                .setQueriesResponse(response)
                 .build());
     }
 
