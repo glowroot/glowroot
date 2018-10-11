@@ -179,10 +179,18 @@
                      ng-if="unit && unit !== ' bytes'">
                   <span class="input-group-text">{{unit}}</span>
                 </div>
+                <!-- need to place validation blocks before dropdown and use order-1 to shift them due to
+                     https://github.com/twbs/bootstrap/issues/25110 -->
+                <div class="gt-invalid-required-feedback order-1">
+                  This is required.
+                </div>
+                <div class="gt-invalid-other-feedback order-1">
+                  This is invalid.
+                </div>
                 <div gt-input-group-dropdown
                      gt-model="page.conditionThresholdByteUnit"
                      gt-items="conditionThresholdByteUnits"
-                     class="input-group-right"
+                     class="input-group-append"
                      ng-if="unit === ' bytes'">
                 </div>
               </div>
