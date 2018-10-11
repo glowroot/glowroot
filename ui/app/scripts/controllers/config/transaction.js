@@ -55,6 +55,12 @@ glowroot.controller('ConfigTransactionCtrl', [
       defaultTransactionType = data.defaultTransactionType;
     }
 
+    $scope.supportsSlowThresholdOverrides = function () {
+      // slow threshold overrides were introduced in agent version 0.10.1
+      return $scope.layout.central && $scope.agentRollup.glowrootVersion.lastIndexOf('0.9.', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.10.0', 0) === -1;
+    };
+
     $scope.addSlowThreshold = function () {
       $scope.config.slowThresholds.push({
         transactionType: defaultTransactionType,
