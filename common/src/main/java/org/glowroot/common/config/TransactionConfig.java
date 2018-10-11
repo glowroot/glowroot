@@ -46,18 +46,18 @@ public abstract class TransactionConfig {
     }
 
     @JsonInclude(Include.NON_EMPTY)
-    public abstract ImmutableList<ImmutableSlowThreshold> slowThresholds();
+    public abstract ImmutableList<ImmutableSlowThresholdOverride> slowThresholdOverrides();
 
     public AgentConfig.TransactionConfig toProto() {
         AgentConfig.TransactionConfig.Builder builder = AgentConfig.TransactionConfig.newBuilder()
                 .setSlowThresholdMillis(of(slowThresholdMillis()))
                 .setProfilingIntervalMillis(of(profilingIntervalMillis()))
                 .setCaptureThreadStats(captureThreadStats());
-        for (SlowThreshold slowThreshold : slowThresholds()) {
-            builder.addSlowThreshold(AgentConfig.SlowThreshold.newBuilder()
-                    .setTransactionType(slowThreshold.transactionType())
-                    .setTransactionName(slowThreshold.transactionName())
-                    .setThresholdMillis(slowThreshold.thresholdMillis())
+        for (SlowThresholdOverride slowThresholdOverride : slowThresholdOverrides()) {
+            builder.addSlowThresholdOverride(AgentConfig.SlowThresholdOverride.newBuilder()
+                    .setTransactionType(slowThresholdOverride.transactionType())
+                    .setTransactionName(slowThresholdOverride.transactionName())
+                    .setThresholdMillis(slowThresholdOverride.thresholdMillis())
                     .build());
         }
         return builder.build();
@@ -72,11 +72,12 @@ public abstract class TransactionConfig {
             builder.profilingIntervalMillis(config.getProfilingIntervalMillis().getValue());
         }
         builder.captureThreadStats(config.getCaptureThreadStats());
-        for (AgentConfig.SlowThreshold slowThreshold : config.getSlowThresholdList()) {
-            builder.addSlowThresholds(ImmutableSlowThreshold.builder()
-                    .transactionType(slowThreshold.getTransactionType())
-                    .transactionName(slowThreshold.getTransactionName())
-                    .thresholdMillis(slowThreshold.getThresholdMillis())
+        for (AgentConfig.SlowThresholdOverride slowThresholdOverride : config
+                .getSlowThresholdOverrideList()) {
+            builder.addSlowThresholdOverrides(ImmutableSlowThresholdOverride.builder()
+                    .transactionType(slowThresholdOverride.getTransactionType())
+                    .transactionName(slowThresholdOverride.getTransactionName())
+                    .thresholdMillis(slowThresholdOverride.getThresholdMillis())
                     .build());
         }
         return builder.build();
@@ -87,7 +88,7 @@ public abstract class TransactionConfig {
     }
 
     @Value.Immutable
-    public abstract static class SlowThreshold {
+    public abstract static class SlowThresholdOverride {
 
         public abstract String transactionType();
 

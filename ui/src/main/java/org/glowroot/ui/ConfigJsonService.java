@@ -48,7 +48,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.StringList;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SlowThreshold;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SlowThresholdOverride;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
@@ -367,7 +367,7 @@ class ConfigJsonService {
         abstract int slowThresholdMillis();
         abstract int profilingIntervalMillis();
         abstract boolean captureThreadStats();
-        abstract List<ImmutableSlowThresholdDto> slowThresholds();
+        abstract List<ImmutableSlowThresholdOverrideDto> slowThresholdOverrides();
         abstract String version();
 
         private TransactionConfig convert() {
@@ -375,9 +375,9 @@ class ConfigJsonService {
                     .setSlowThresholdMillis(of(slowThresholdMillis()))
                     .setProfilingIntervalMillis(of(profilingIntervalMillis()))
                     .setCaptureThreadStats(captureThreadStats());
-            for (SlowThresholdDto slowThreshold : new SlowThresholdDtoOrdering()
-                    .sortedCopy(slowThresholds())) {
-                builder.addSlowThreshold(slowThreshold.convert());
+            for (SlowThresholdOverrideDto slowThresholdOverride : new SlowThresholdOverrideDtoOrdering()
+                    .sortedCopy(slowThresholdOverrides())) {
+                builder.addSlowThresholdOverride(slowThresholdOverride.convert());
             }
             return builder.build();
         }
@@ -388,8 +388,10 @@ class ConfigJsonService {
                     .profilingIntervalMillis(config.getProfilingIntervalMillis().getValue())
                     .captureThreadStats(config.getCaptureThreadStats())
                     .version(Versions.getVersion(config));
-            for (SlowThreshold slowThreshold : config.getSlowThresholdList()) {
-                builder.addSlowThresholds(SlowThresholdDto.create(slowThreshold));
+            for (SlowThresholdOverride slowThresholdOverride : config
+                    .getSlowThresholdOverrideList()) {
+                builder.addSlowThresholdOverrides(
+                        SlowThresholdOverrideDto.create(slowThresholdOverride));
             }
             return builder.build();
         }
@@ -397,22 +399,23 @@ class ConfigJsonService {
 
     @Value.Immutable
     @Styles.AllParameters
-    abstract static class SlowThresholdDto {
+    abstract static class SlowThresholdOverrideDto {
 
         abstract String transactionType();
         abstract String transactionName();
         abstract int thresholdMillis();
 
-        private SlowThreshold convert() {
-            return SlowThreshold.newBuilder()
+        private SlowThresholdOverride convert() {
+            return SlowThresholdOverride.newBuilder()
                     .setTransactionType(transactionType())
                     .setTransactionName(transactionName())
                     .setThresholdMillis(thresholdMillis())
                     .build();
         }
 
-        private static ImmutableSlowThresholdDto create(SlowThreshold slowThreshold) {
-            return ImmutableSlowThresholdDto.builder()
+        private static ImmutableSlowThresholdOverrideDto create(
+                SlowThresholdOverride slowThreshold) {
+            return ImmutableSlowThresholdOverrideDto.builder()
                     .transactionType(slowThreshold.getTransactionType())
                     .transactionName(slowThreshold.getTransactionName())
                     .thresholdMillis(slowThreshold.getThresholdMillis())
@@ -420,9 +423,10 @@ class ConfigJsonService {
         }
     }
 
-    private static class SlowThresholdDtoOrdering extends Ordering<SlowThresholdDto> {
+    private static class SlowThresholdOverrideDtoOrdering
+            extends Ordering<SlowThresholdOverrideDto> {
         @Override
-        public int compare(SlowThresholdDto left, SlowThresholdDto right) {
+        public int compare(SlowThresholdOverrideDto left, SlowThresholdOverrideDto right) {
             int compare = left.transactionType().compareToIgnoreCase(right.transactionType());
             if (compare != 0) {
                 return compare;

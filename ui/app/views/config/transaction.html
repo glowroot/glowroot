@@ -69,7 +69,7 @@
         </div>
         <div ng-if="supportsSlowThresholdOverrides()">
           <fieldset class="gt-fieldset"
-                    ng-repeat="slowThreshold in config.slowThresholds">
+                    ng-repeat="slowThresholdOverride in config.slowThresholdOverrides">
             <legend class="gt-legend">Slow threshold override</legend>
             <div class="gt-fieldset-under-normal-form">
               <div class="form-group row">
@@ -78,7 +78,7 @@
                   Transaction type
                 </label>
                 <div class="col-xl-9">
-                  <select ng-model="slowThreshold.transactionType"
+                  <select ng-model="slowThresholdOverride.transactionType"
                           ng-disabled="!agentRollup.permissions.config.edit.transaction"
                           id="transactionType{{$index}}"
                           class="custom-select"
@@ -97,7 +97,7 @@
               </div>
               <div gt-form-group
                    gt-label="Transaction name"
-                   gt-model="slowThreshold.transactionName"
+                   gt-model="slowThresholdOverride.transactionName"
                    gt-disabled="!agentRollup.permissions.config.edit.transaction"
                    gt-width="40em">
                 <div class="help-block">
@@ -107,7 +107,7 @@
               </div>
               <div gt-form-group
                    gt-label="Slow threshold"
-                   gt-model="slowThreshold.thresholdMillis"
+                   gt-model="slowThresholdOverride.thresholdMillis"
                    gt-number="true"
                    gt-pattern="pattern.integer"
                    gt-required="loaded"
@@ -118,7 +118,7 @@
               <div class="float-right pr-xl-4 pb-2"
                    ng-if="agentRollup.permissions.config.edit.transaction">
                 <button class="btn btn-secondary"
-                        ng-click="removeSlowThreshold(slowThreshold)">
+                        ng-click="removeSlowThresholdOverride(slowThresholdOverride)">
                   Remove this slow threshold override
                 </button>
               </div>
@@ -127,10 +127,10 @@
           <fieldset class="gt-fieldset"
                     ng-if="agentRollup.permissions.config.edit.transaction">
             <legend class="gt-legend">
-              Add {{config.slowThresholds.length ? 'another' : 'a'}} slow threshold override
+              Add {{config.slowThresholdOverrides.length ? 'another' : 'a'}} slow threshold override
             </legend>
             <button class="btn btn-secondary"
-                    ng-click="addSlowThreshold()"
+                    ng-click="addSlowThresholdOverride()"
                     style="margin-bottom: 23px; margin-left: 14px;">
               Add
             </button>

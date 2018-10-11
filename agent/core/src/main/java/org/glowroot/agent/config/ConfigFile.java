@@ -110,6 +110,7 @@ class ConfigFile {
         upgradeUiIfNeeded(rootObjectNode);
         upgradeAdvancedIfNeeded(rootObjectNode);
         upgradePluginPropertiesIfNeeded(rootObjectNode);
+        upgradeSlowThresholdOverrideIfNeeded(rootObjectNode);
         return rootObjectNode;
     }
 
@@ -224,6 +225,19 @@ class ConfigFile {
             // upgrade from 0.10.5 to 0.10.6
             advancedObjectNode.set("maxProfileSamplesPerTransaction",
                     advancedObjectNode.remove("maxStackTraceSamplesPerTransaction"));
+        }
+    }
+
+    private static void upgradeSlowThresholdOverrideIfNeeded(ObjectNode rootObjectNode) {
+        JsonNode transactionsNode = rootObjectNode.get("transactions");
+        if (transactionsNode == null || !transactionsNode.isObject()) {
+            return;
+        }
+        ObjectNode transactionsObjectNode = (ObjectNode) transactionsNode;
+        if (transactionsObjectNode.has("slowThresholds")) {
+            // upgrade from 0.11.1 to 0.12.0
+            transactionsObjectNode.set("slowThresholdOverrides",
+                    transactionsObjectNode.remove("slowThresholds"));
         }
     }
 

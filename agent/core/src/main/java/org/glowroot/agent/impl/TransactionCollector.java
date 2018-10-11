@@ -37,7 +37,7 @@ import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.config.TransactionConfig;
-import org.glowroot.common.config.TransactionConfig.SlowThreshold;
+import org.glowroot.common.config.TransactionConfig.SlowThresholdOverride;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 
@@ -61,7 +61,7 @@ public class TransactionCollector {
             new RateLimitedLogger(TransactionCollector.class);
 
     // visibility is provided by memoryBarrier in org.glowroot.config.ConfigService
-    private Map<String, SlowThresholdsForType> slowThresholds = ImmutableMap.of();
+    private Map<String, SlowThresholdOverridesForType> slowThresholdOverrides = ImmutableMap.of();
     // visibility is provided by memoryBarrier in org.glowroot.config.ConfigService
     private long defaultSlowThresholdNanos;
 
@@ -86,16 +86,17 @@ public class TransactionCollector {
             return durationNanos >= MILLISECONDS.toNanos(slowThresholdMillis);
         }
         // check if there is a matching transaction type / transaction name specific slow threshold
-        if (!slowThresholds.isEmpty()) {
-            SlowThresholdsForType slowThresholdForType =
-                    slowThresholds.get(transaction.getTransactionType());
-            if (slowThresholdForType != null) {
+        if (!slowThresholdOverrides.isEmpty()) {
+            SlowThresholdOverridesForType slowThresholdOverrideForType =
+                    slowThresholdOverrides.get(transaction.getTransactionType());
+            if (slowThresholdOverrideForType != null) {
                 Long slowThresholdNanos =
-                        slowThresholdForType.thresholdNanos().get(transaction.getTransactionName());
+                        slowThresholdOverrideForType.thresholdNanos()
+                                .get(transaction.getTransactionName());
                 if (slowThresholdNanos != null) {
                     return durationNanos >= slowThresholdNanos;
                 }
-                slowThresholdNanos = slowThresholdForType.defaultThresholdNanos();
+                slowThresholdNanos = slowThresholdOverrideForType.defaultThresholdNanos();
                 if (slowThresholdNanos != null) {
                     return durationNanos >= slowThresholdNanos;
                 }
@@ -177,36 +178,39 @@ public class TransactionCollector {
         @Override
         public void onChange() {
             TransactionConfig transactionConfig = configService.getTransactionConfig();
-            Map<String, SlowThresholdsForTypeBuilder> slowThresholds = Maps.newHashMap();
-            for (SlowThreshold slowThreshold : transactionConfig.slowThresholds()) {
-                String transactionType = slowThreshold.transactionType();
-                SlowThresholdsForTypeBuilder slowThresholdForType =
-                        slowThresholds.get(transactionType);
-                if (slowThresholdForType == null) {
-                    slowThresholdForType = new SlowThresholdsForTypeBuilder();
-                    slowThresholds.put(transactionType, slowThresholdForType);
+            Map<String, SlowThresholdOverridesForTypeBuilder> slowThresholdOverrides =
+                    Maps.newHashMap();
+            for (SlowThresholdOverride slowThresholdOverride : transactionConfig
+                    .slowThresholdOverrides()) {
+                String transactionType = slowThresholdOverride.transactionType();
+                SlowThresholdOverridesForTypeBuilder slowThresholdOverrideForType =
+                        slowThresholdOverrides.get(transactionType);
+                if (slowThresholdOverrideForType == null) {
+                    slowThresholdOverrideForType = new SlowThresholdOverridesForTypeBuilder();
+                    slowThresholdOverrides.put(transactionType, slowThresholdOverrideForType);
                 }
-                String transactionName = slowThreshold.transactionName();
-                long thresholdNanos = MILLISECONDS.toNanos(slowThreshold.thresholdMillis());
+                String transactionName = slowThresholdOverride.transactionName();
+                long thresholdNanos = MILLISECONDS.toNanos(slowThresholdOverride.thresholdMillis());
                 if (transactionName.isEmpty()) {
-                    slowThresholdForType.defaultThresholdNanos = thresholdNanos;
+                    slowThresholdOverrideForType.defaultThresholdNanos = thresholdNanos;
                 } else {
-                    slowThresholdForType.thresholdNanos.put(transactionName, thresholdNanos);
+                    slowThresholdOverrideForType.thresholdNanos.put(transactionName,
+                            thresholdNanos);
                 }
             }
-            Map<String, SlowThresholdsForType> builder = Maps.newHashMap();
-            for (Map.Entry<String, SlowThresholdsForTypeBuilder> entry : slowThresholds
+            Map<String, SlowThresholdOverridesForType> builder = Maps.newHashMap();
+            for (Map.Entry<String, SlowThresholdOverridesForTypeBuilder> entry : slowThresholdOverrides
                     .entrySet()) {
                 builder.put(entry.getKey(), entry.getValue().toImmutable());
             }
-            TransactionCollector.this.slowThresholds = ImmutableMap.copyOf(builder);
+            TransactionCollector.this.slowThresholdOverrides = ImmutableMap.copyOf(builder);
             defaultSlowThresholdNanos =
                     MILLISECONDS.toNanos(transactionConfig.slowThresholdMillis());
         }
     }
 
     @Value.Immutable
-    interface SlowThresholdsForType {
+    interface SlowThresholdOverridesForType {
         @Nullable
         Long defaultThresholdNanos();
         Map<String, Long> thresholdNanos(); // key is transaction name
@@ -214,13 +218,13 @@ public class TransactionCollector {
 
     // need separate builder type to avoid exception in case of duplicate
     // transactionType/transactionName pair
-    private static class SlowThresholdsForTypeBuilder {
+    private static class SlowThresholdOverridesForTypeBuilder {
 
         private @Nullable Long defaultThresholdNanos;
         private Map<String, Long> thresholdNanos = Maps.newHashMap();
 
-        private SlowThresholdsForType toImmutable() {
-            return ImmutableSlowThresholdsForType.builder()
+        private SlowThresholdOverridesForType toImmutable() {
+            return ImmutableSlowThresholdOverridesForType.builder()
                     .defaultThresholdNanos(defaultThresholdNanos)
                     .putAllThresholdNanos(thresholdNanos)
                     .build();

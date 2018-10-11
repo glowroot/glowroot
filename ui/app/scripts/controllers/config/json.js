@@ -49,8 +49,8 @@ glowroot.controller('ConfigJsonCtrl', [
 
     function supportsSlowThresholdOverrides() {
       // slow threshold overrides were introduced in agent version 0.10.1
-      return $scope.layout.central && $scope.agentRollup.glowrootVersion.lastIndexOf('0.9.', 0) === -1
-          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.10.0', 0) === -1;
+      return !$scope.layout.central || ($scope.agentRollup.glowrootVersion.lastIndexOf('0.9.', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.10.0', 0) === -1);
     }
 
     $scope.save = function (deferred) {

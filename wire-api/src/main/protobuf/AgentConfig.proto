@@ -34,10 +34,10 @@ message AgentConfig {
     OptionalInt32 slow_threshold_millis = 1; // optional used due to non-zero default value
     OptionalInt32 profiling_interval_millis = 2; // optional used due to non-zero default value
     bool capture_thread_stats = 3;
-    repeated SlowThreshold slow_threshold = 4;
+    repeated SlowThresholdOverride slow_threshold_override = 4;
   }
 
-  message SlowThreshold {
+  message SlowThresholdOverride {
     string transaction_type = 1;
     string transaction_name = 2;
     int32 threshold_millis = 3;
