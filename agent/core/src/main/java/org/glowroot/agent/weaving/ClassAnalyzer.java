@@ -53,7 +53,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.Instrumenta
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 
 class ClassAnalyzer {
@@ -714,7 +714,7 @@ class ClassAnalyzer {
         private final Map<String, String> bridgeTargetMethods = Maps.newHashMap();
 
         private BridgeMethodClassVisitor() {
-            super(ASM6);
+            super(ASM7);
         }
 
         public Map<String, String> getBridgeTargetMethods() {
@@ -739,7 +739,7 @@ class ClassAnalyzer {
             private boolean found;
 
             private BridgeMethodVisitor(String bridgeMethodName, String bridgeMethodDesc) {
-                super(ASM6);
+                super(ASM7);
                 this.bridgeMethodName = bridgeMethodName;
                 this.bridgeMethodDesc = bridgeMethodDesc;
                 bridgeMethodParamCount = Type.getArgumentTypes(bridgeMethodDesc).length;

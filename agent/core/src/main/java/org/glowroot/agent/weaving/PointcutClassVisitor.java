@@ -26,7 +26,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 import static org.objectweb.asm.Opcodes.F_NEW;
 import static org.objectweb.asm.Opcodes.IFEQ;
 import static org.objectweb.asm.Opcodes.ILOAD;
@@ -41,7 +41,7 @@ class PointcutClassVisitor extends ClassVisitor {
     private boolean constructorPointcut;
 
     PointcutClassVisitor(ClassWriter cw) {
-        super(ASM6, cw);
+        super(ASM7, cw);
         this.cw = cw;
     }
 
@@ -118,7 +118,7 @@ class PointcutClassVisitor extends ClassVisitor {
     private class PointcutAnnotationVisitor extends AnnotationVisitor {
 
         private PointcutAnnotationVisitor(AnnotationVisitor av) {
-            super(ASM6, av);
+            super(ASM7, av);
         }
 
         @Override
@@ -140,7 +140,7 @@ class PointcutClassVisitor extends ClassVisitor {
 
         private PointcutMethodVisitor(MethodVisitor mv, int access, String name,
                 String desc, @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            super(ASM6, mv);
+            super(ASM7, mv);
             this.access = access;
             this.name = name;
             this.desc = desc;

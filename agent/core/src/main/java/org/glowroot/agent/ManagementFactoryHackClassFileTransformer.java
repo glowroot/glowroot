@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.Bytecode;
 
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 
 class ManagementFactoryHackClassFileTransformer implements ClassFileTransformer {
 
@@ -60,7 +60,7 @@ class ManagementFactoryHackClassFileTransformer implements ClassFileTransformer 
         private final ClassWriter cw;
 
         private ManagementFactoryHackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
         }
 
@@ -81,7 +81,7 @@ class ManagementFactoryHackClassFileTransformer implements ClassFileTransformer 
 
         private ManagementFactoryHackMethodVisitor(MethodVisitor mv, int access, String name,
                 String desc) {
-            super(ASM6, mv, access, name, desc);
+            super(ASM7, mv, access, name, desc);
         }
 
         @Override

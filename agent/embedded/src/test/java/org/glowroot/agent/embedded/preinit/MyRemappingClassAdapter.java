@@ -21,7 +21,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 
 // from org.objectweb.asm.commons.RemappingClassAdapter
 class MyRemappingClassAdapter extends ClassVisitor {
@@ -30,7 +30,7 @@ class MyRemappingClassAdapter extends ClassVisitor {
     private @Nullable String internalName;
 
     MyRemappingClassAdapter(ClassCollector remapper) {
-        super(ASM6);
+        super(ASM7);
         this.typeCollector = remapper;
     }
 

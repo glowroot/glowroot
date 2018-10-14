@@ -21,7 +21,7 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.commons.LocalVariablesSorter;
 
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 
 // from org.objectweb.asm.commons.RemappingMethodAdapter
 class MyRemappingMethodAdapter extends LocalVariablesSorter {
@@ -29,7 +29,7 @@ class MyRemappingMethodAdapter extends LocalVariablesSorter {
     private final MethodCollector remapper;
 
     MyRemappingMethodAdapter(int access, String desc, MethodCollector remapper) {
-        super(ASM6, access, desc, new MethodVisitor(ASM6) {});
+        super(ASM7, access, desc, new MethodVisitor(ASM7) {});
         this.remapper = remapper;
     }
 

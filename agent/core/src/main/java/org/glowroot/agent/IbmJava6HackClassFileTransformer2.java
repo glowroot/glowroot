@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.BytecodeEarly;
 
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 
 class IbmJava6HackClassFileTransformer2 implements ClassFileTransformer {
 
@@ -69,7 +69,7 @@ class IbmJava6HackClassFileTransformer2 implements ClassFileTransformer {
         private final String methodName;
 
         private IbmJava6HackClassVisitor2(ClassWriter cw, String methodName) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
             this.methodName = methodName;
         }
@@ -89,7 +89,7 @@ class IbmJava6HackClassFileTransformer2 implements ClassFileTransformer {
     private static class IbmJava6HackMethodAdvice extends AdviceAdapter {
 
         private IbmJava6HackMethodAdvice(MethodVisitor mv, int access, String name, String desc) {
-            super(ASM6, mv, access, name, desc);
+            super(ASM7, mv, access, name, desc);
         }
 
         @Override

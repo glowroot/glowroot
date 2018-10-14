@@ -59,7 +59,7 @@ import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEnt
 import org.glowroot.common.util.ScheduledRunnable.TerminateSubsequentExecutionsException;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.V1_6;
 
@@ -415,7 +415,7 @@ public class Weaver {
         private final ClassWriter cw;
 
         private JBossWeldHackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
         }
 
@@ -435,7 +435,7 @@ public class Weaver {
     private static class JBossWeldHackMethodVisitor extends MethodVisitor {
 
         private JBossWeldHackMethodVisitor(MethodVisitor mv) {
-            super(ASM6, mv);
+            super(ASM7, mv);
         }
 
         @Override
@@ -454,7 +454,7 @@ public class Weaver {
         private final ClassWriter cw;
 
         private JBossModulesHackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
         }
 
@@ -473,7 +473,7 @@ public class Weaver {
     private static class JBossModulesHackMethodVisitor extends MethodVisitor {
 
         private JBossModulesHackMethodVisitor(MethodVisitor mv) {
-            super(ASM6, mv);
+            super(ASM7, mv);
         }
 
         @Override
@@ -492,7 +492,7 @@ public class Weaver {
         private final ClassWriter cw;
 
         private JBossUrlHackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
         }
 
@@ -512,7 +512,7 @@ public class Weaver {
 
         private JBossUrlHackMethodVisitor(MethodVisitor mv, int access, String name,
                 String desc) {
-            super(ASM6, mv, access, name, desc);
+            super(ASM7, mv, access, name, desc);
         }
 
         @Override
@@ -565,7 +565,7 @@ public class Weaver {
         private final String methodName;
 
         private OsgiHackClassVisitor(ClassWriter cw, String className, String methodName) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
             this.className = className;
             this.methodName = methodName;
@@ -589,7 +589,7 @@ public class Weaver {
 
         private OsgiHackMethodVisitor(String ownerName, MethodVisitor mv, int access,
                 String name, String desc) {
-            super(ASM6, mv, access, name, desc);
+            super(ASM7, mv, access, name, desc);
             this.ownerName = ownerName;
         }
 
@@ -614,7 +614,7 @@ public class Weaver {
         private final ClassWriter cw;
 
         private OpenEJBHackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
         }
 
@@ -633,7 +633,7 @@ public class Weaver {
     private static class OpenEJBHackMethodVisitor extends AdviceAdapter {
 
         private OpenEJBHackMethodVisitor(MethodVisitor mv, int access, String name, String desc) {
-            super(ASM6, mv, access, name, desc);
+            super(ASM7, mv, access, name, desc);
         }
 
         @Override
@@ -654,7 +654,7 @@ public class Weaver {
         private final ClassWriter cw;
 
         private HikariCpProxyHackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
         }
 
@@ -673,7 +673,7 @@ public class Weaver {
     private static class HikariCpProxyHackMethodVisitor extends MethodVisitor {
 
         private HikariCpProxyHackMethodVisitor(MethodVisitor mv) {
-            super(ASM6, mv);
+            super(ASM7, mv);
         }
 
         @Override

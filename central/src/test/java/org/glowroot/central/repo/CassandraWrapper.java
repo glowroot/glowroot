@@ -28,6 +28,8 @@ import java.util.concurrent.Executors;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import com.google.common.base.StandardSystemProperty;
+import com.google.common.base.Strings;
 import com.google.common.io.Files;
 import org.rauschig.jarchivelib.ArchiveFormat;
 import org.rauschig.jarchivelib.Archiver;
@@ -42,6 +44,8 @@ class CassandraWrapper {
 
     static final String CASSANDRA_VERSION;
 
+    private static final String CASSANDRA_JAVA_HOME;
+
     static {
         if (System.getProperty("os.name").startsWith("Windows")) {
             // Cassandra 2.1 has issues on Windows
@@ -49,6 +53,18 @@ class CassandraWrapper {
             CASSANDRA_VERSION = "2.2.13";
         } else {
             CASSANDRA_VERSION = "2.1.20";
+        }
+        String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
+        if (javaVersion.startsWith("1.7") || javaVersion.startsWith("1.8")) {
+            CASSANDRA_JAVA_HOME = System.getProperty("java.home");
+        } else {
+            CASSANDRA_JAVA_HOME = System.getProperty("cassandra.java.home");
+            if (Strings.isNullOrEmpty(CASSANDRA_JAVA_HOME)) {
+                throw new IllegalStateException("Cassandra 2.x itself requires Java 7 or Java 8,"
+                        + " but this test is running under Java " + javaVersion + ", so you must"
+                        + " provide -Dcassandra.java.home=... (or run this test under Java 7 or"
+                        + " Java 8)");
+            }
         }
     }
 
@@ -123,7 +139,7 @@ class CassandraWrapper {
     private static List<String> buildCommandLine(File cassandraDir) {
         List<String> command = new ArrayList<>();
         String javaExecutable =
-                System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
+                CASSANDRA_JAVA_HOME + File.separator + "bin" + File.separator + "java";
         command.add(javaExecutable);
         command.add("-cp");
         command.add(buildClasspath(cassandraDir));

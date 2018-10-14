@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.objectweb.asm.Opcodes.ACONST_NULL;
 import static org.objectweb.asm.Opcodes.ARETURN;
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 
 class IbmJava6HackClassFileTransformer implements ClassFileTransformer {
 
@@ -58,7 +58,7 @@ class IbmJava6HackClassFileTransformer implements ClassFileTransformer {
         private final ClassWriter cw;
 
         private IbmJava6HackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
         }
 

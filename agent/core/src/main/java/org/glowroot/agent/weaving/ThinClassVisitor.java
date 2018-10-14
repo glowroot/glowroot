@@ -26,7 +26,7 @@ import org.objectweb.asm.Type;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 
 class ThinClassVisitor extends ClassVisitor {
 
@@ -39,7 +39,7 @@ class ThinClassVisitor extends ClassVisitor {
     private boolean constructorPointcut;
 
     ThinClassVisitor() {
-        super(ASM6);
+        super(ASM7);
     }
 
     @Override
@@ -124,7 +124,7 @@ class ThinClassVisitor extends ClassVisitor {
     private class PointcutAnnotationVisitor extends AnnotationVisitor {
 
         private PointcutAnnotationVisitor() {
-            super(ASM6);
+            super(ASM7);
         }
 
         @Override
@@ -140,7 +140,7 @@ class ThinClassVisitor extends ClassVisitor {
         private final ImmutableThinMethod.Builder thinMethodBuilder;
 
         private AnnotationCaptureMethodVisitor(ImmutableThinMethod.Builder thinMethodBuilder) {
-            super(ASM6);
+            super(ASM7);
             this.thinMethodBuilder = thinMethodBuilder;
         }
 
@@ -164,7 +164,7 @@ class ThinClassVisitor extends ClassVisitor {
     private class RemoteAnnotationVisitor extends AnnotationVisitor {
 
         private RemoteAnnotationVisitor() {
-            super(ASM6);
+            super(ASM7);
         }
 
         @Override
@@ -180,7 +180,7 @@ class ThinClassVisitor extends ClassVisitor {
     private class ValueAnnotationVisitor extends AnnotationVisitor {
 
         private ValueAnnotationVisitor() {
-            super(ASM6);
+            super(ASM7);
         }
 
         @Override

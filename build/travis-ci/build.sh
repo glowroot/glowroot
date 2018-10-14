@@ -10,7 +10,7 @@ _JAVA_OPTIONS=
 # NewRatio is to leave as much memory as possible to old gen
 surefire_jvm_args="-Xmx256m -XX:NewRatio=20 -Djava.security.egd=file:/dev/./urandom"
 java_version=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}')
-if [[ "$java_version" < "1.8" ]]
+if [[ $java_version == 1.6* || $java_version == 1.7* ]]
 then
   # MaxPermSize bump is needed for running grails plugin tests
   surefire_jvm_args="$surefire_jvm_args -XX:MaxPermSize=128m"
@@ -18,6 +18,11 @@ fi
 if [[ "$TEST_SHADED" == "true" ]]
 then
   test_shaded_opt=-Dglowroot.test.shaded
+fi
+
+if [[ $java_version == 9* || $java_version == [1-9][0-9]* ]]
+then
+  cassandra_java_home_opt=-Dcassandra.java.home=/usr/lib/jvm/java-8-openjdk-amd64
 fi
 
 test1_excluded_plugin_modules="!:glowroot-agent-cassandra-plugin"
@@ -47,7 +52,7 @@ case "$1" in
 
       "test1") # excluding :glowroot-agent-ui-sandbox and :glowroot-agent since they depend on plugins which are being excluded
                exclude_modules="$test1_excluded_plugin_modules,!:glowroot-agent-ui-sandbox,!:glowroot-agent"
-               if [[ "$java_version" > "1.8" ]]
+               if [[ $java_version == 1.8* || $java_version == 9* || $java_version == [1-9][0-9]* ]]
                then
                  # these modules are only part of build under Java 8+
                  exclude_modules="$exclude_modules,!:glowroot-central,!:glowroot-webdriver-tests"
@@ -68,12 +73,12 @@ case "$1" in
                if [[ "$TEST_SHADED" == "true" ]]
                then
                  # async-http-client, elasticsearch and play tests all require shading
-                 if [[ "$java_version" > "1.8" ]]
+                 if [[ $java_version == 1.6* || $java_version == 1.7* ]]
                  then
+                   activate_profiles_opt="-P async-http-client-1.x,elasticsearch-2.x,play-2.2.x,play-2.x"
+                 else
                    # latest versions of async-http-client, elasticsearch and play all require Java 8+
                    activate_profiles_opt="-P async-http-client-2.x,elasticsearch-5.x,play-2.4.x,play-2.x"
-                 else
-                   activate_profiles_opt="-P async-http-client-1.x,elasticsearch-2.x,play-2.2.x,play-2.x"
                  fi
                fi
                # enforcer.skip is needed for async-http-client, elasticsearch and play
@@ -82,6 +87,7 @@ case "$1" in
                                  -Denforcer.skip \
                                  -DargLine="$surefire_jvm_args" \
                                  $test_shaded_opt \
+                                 $cassandra_java_home_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
@@ -134,7 +140,7 @@ case "$1" in
                fi
                ;;
 
-      "test3") if [[ "$java_version" < "1.8" ]]
+      "test3") if [[ $java_version == 1.6* || $java_version == 1.7* ]]
                then
                  echo test3 target requires Java 8+
                  exit 1
@@ -147,11 +153,12 @@ case "$1" in
                mvn clean verify -pl :glowroot-central,:glowroot-webdriver-tests \
                                 -DargLine="$surefire_jvm_args" \
                                 $test_shaded_opt \
+                                $cassandra_java_home_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -B
                ;;
 
-      "test4") if [[ "$java_version" < "1.8" ]]
+      "test4") if [[ $java_version == 1.6* || $java_version == 1.7* ]]
                then
                  echo test4 target requires Java 8+
                  exit 1
@@ -164,6 +171,7 @@ case "$1" in
                                 -Dglowroot.internal.webdriver.useCentral=true \
                                 -DargLine="$surefire_jvm_args" \
                                 $test_shaded_opt \
+                                $cassandra_java_home_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -B
                ;;
@@ -183,6 +191,7 @@ case "$1" in
                                   -Pjavadoc \
                                   -DargLine="$surefire_jvm_args" \
                                   $test_shaded_opt \
+                                  $cassandra_java_home_opt \
                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
                                   --settings build/travis-ci/settings.xml \
                                   -B
@@ -191,6 +200,7 @@ case "$1" in
                                    -Pjavadoc \
                                    -DargLine="$surefire_jvm_args" \
                                    $test_shaded_opt \
+                                   $cassandra_java_home_opt \
                                    -B
                fi
                ;;

@@ -620,6 +620,26 @@
 
   <profiles>
     <profile>
+      <id>auto-activated-skip-proguard-under-java-11</id>
+      <activation>
+        <!-- proguard doesn't currently work on jdk 11 -->
+        <jdk>[11,)</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>com.github.wvengen</groupId>
+              <artifactId>proguard-maven-plugin</artifactId>
+              <configuration>
+                <skip>true</skip>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+    <profile>
       <id>include-central-https-linux-alpine</id>
       <modules>
         <module>agent/shaded/central-https-linux-alpine</module>
