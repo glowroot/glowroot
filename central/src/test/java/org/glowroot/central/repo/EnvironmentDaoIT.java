@@ -37,7 +37,7 @@ public class EnvironmentDaoIT {
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
-        session = new Session(cluster.newSession(), "glowroot_unit_tests");
+        session = new Session(cluster.newSession(), "glowroot_unit_tests", null);
 
         environmentDao = new EnvironmentDao(session);
     }
@@ -51,7 +51,7 @@ public class EnvironmentDaoIT {
 
     @Before
     public void before() throws Exception {
-        session.execute("truncate environment");
+        session.updateSchemaWithRetry("truncate environment");
     }
 
     @Test

@@ -49,7 +49,7 @@ class CentralConfigDao {
 
     private final PreparedStatement insertIfNotExistsPS;
     private final PreparedStatement updatePS;
-    private final PreparedStatement updateWithoutOptimisticLockPS;
+    private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
 
     private final Cache<String, Optional<Object>> centralConfigCache;
@@ -66,8 +66,7 @@ class CentralConfigDao {
                 .prepare("insert into central_config (key, value) values (?, ?) if not exists");
         updatePS =
                 session.prepare("update central_config set value = ? where key = ? if value = ?");
-        updateWithoutOptimisticLockPS =
-                session.prepare("update central_config set value = ? where key = ?");
+        insertPS = session.prepare("insert into central_config (key, value) values (?, ?)");
         readPS = session.prepare("select value from central_config where key = ?");
 
         centralConfigCache =
@@ -81,7 +80,7 @@ class CentralConfigDao {
     void write(String key, Object config, String priorVersion) throws Exception {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.bind(key);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         Row row = results.one();
         if (row == null) {
             writeIfNotExists(key, config);
@@ -98,7 +97,7 @@ class CentralConfigDao {
         boundStatement.setString(i++, newValue);
         boundStatement.setString(i++, key);
         boundStatement.setString(i++, currValue);
-        results = session.execute(boundStatement);
+        results = session.update(boundStatement);
         row = checkNotNull(results.one());
         boolean applied = row.getBool("[applied]");
         if (applied) {
@@ -109,11 +108,11 @@ class CentralConfigDao {
     }
 
     void writeWithoutOptimisticLocking(String key, Object config) throws Exception {
-        BoundStatement boundStatement = updateWithoutOptimisticLockPS.bind();
+        BoundStatement boundStatement = insertPS.bind();
         int i = 0;
-        boundStatement.setString(i++, mapper.writeValueAsString(config));
         boundStatement.setString(i++, key);
-        session.execute(boundStatement);
+        boundStatement.setString(i++, mapper.writeValueAsString(config));
+        session.write(boundStatement);
         centralConfigCache.invalidate(key);
     }
 
@@ -128,7 +127,7 @@ class CentralConfigDao {
         int i = 0;
         boundStatement.setString(i++, key);
         boundStatement.setString(i++, initialValue);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.update(boundStatement);
         Row row = checkNotNull(results.one());
         boolean applied = row.getBool("[applied]");
         if (applied) {
@@ -149,7 +148,7 @@ class CentralConfigDao {
         public Optional<Object> load(String key) throws Exception {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.bind(key);
-            ResultSet results = session.execute(boundStatement);
+            ResultSet results = session.read(boundStatement);
             Row row = results.one();
             if (row == null) {
                 return Optional.absent();

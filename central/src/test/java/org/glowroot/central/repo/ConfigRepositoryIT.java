@@ -75,7 +75,7 @@ public class ConfigRepositoryIT {
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
-        session = new Session(cluster.newSession(), "glowroot_unit_tests");
+        session = new Session(cluster.newSession(), "glowroot_unit_tests", null);
         session.updateSchemaWithRetry("drop table if exists agent_config");
         session.updateSchemaWithRetry("drop table if exists user");
         session.updateSchemaWithRetry("drop table if exists role");

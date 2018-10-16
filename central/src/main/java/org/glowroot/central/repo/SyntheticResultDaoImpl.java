@@ -168,7 +168,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         }
         boundStatement.setInt(i++, adjustedTTL);
         // wait for success before inserting "needs rollup" records
-        session.execute(boundStatement);
+        session.write(boundStatement);
 
         // insert into synthetic_needs_rollup_1
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
@@ -183,7 +183,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         boundStatement.setUUID(i++, UUIDs.timeBased());
         boundStatement.setSet(i++, ImmutableSet.of(syntheticMonitorId));
         boundStatement.setInt(i++, needsRollupAdjustedTTL);
-        session.execute(boundStatement);
+        session.write(boundStatement);
     }
 
     // from is INCLUSIVE
@@ -196,7 +196,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         boundStatement.setString(i++, syntheticMonitorId);
         boundStatement.setTimestamp(i++, new Date(from));
         boundStatement.setTimestamp(i++, new Date(to));
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         List<SyntheticResult> syntheticResults = new ArrayList<>();
         for (Row row : results) {
             i = 0;
@@ -292,7 +292,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         boundStatement.setString(i++, syntheticMonitorId);
         boundStatement.setTimestamp(i++, new Date(from));
         boundStatement.setTimestamp(i++, new Date(to));
-        ListenableFuture<ResultSet> future = session.executeAsyncWarnIfNoRows(boundStatement,
+        ListenableFuture<ResultSet> future = session.readAsyncWarnIfNoRows(boundStatement,
                 "no synthetic result table records found for agentRollupId={},"
                         + " syntheticMonitorId={}, from={}, to={}, level={}",
                 agentRollupId, syntheticMonitorId, from, to, rollupLevel);
@@ -305,7 +305,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         });
     }
 
-    private ListenableFuture<ResultSet> rollupOneFromRows(int rollupLevel, String agentRollupId,
+    private ListenableFuture<?> rollupOneFromRows(int rollupLevel, String agentRollupId,
             String syntheticMonitorId, long to, int adjustedTTL, Iterable<Row> rows)
             throws Exception {
         double totalDurationNanos = 0;
@@ -339,7 +339,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
             boundStatement.setBytes(i++, Messages.toByteBuffer(toProto(mergedErrorIntervals)));
         }
         boundStatement.setInt(i++, adjustedTTL);
-        return session.executeAsync(boundStatement);
+        return session.writeAsync(boundStatement);
     }
 
     private List<Integer> getTTLs() throws Exception {
@@ -355,10 +355,10 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     @OnlyUsedByTests
     void truncateAll() throws Exception {
         for (int i = 0; i < configRepository.getRollupConfigs().size(); i++) {
-            session.execute("truncate synthetic_result_rollup_" + i);
+            session.updateSchemaWithRetry("truncate synthetic_result_rollup_" + i);
         }
         for (int i = 1; i < configRepository.getRollupConfigs().size(); i++) {
-            session.execute("truncate synthetic_needs_rollup_" + i);
+            session.updateSchemaWithRetry("truncate synthetic_needs_rollup_" + i);
         }
     }
 

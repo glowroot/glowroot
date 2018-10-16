@@ -80,7 +80,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
             if (!rateLimiter.tryAcquire(rateLimiterKey)) {
                 continue;
             }
-            ListenableFuture<ResultSet> future;
+            ListenableFuture<?> future;
             try {
                 BoundStatement boundStatement = insertPS.bind();
                 int i = 0;
@@ -89,7 +89,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
                 // intentionally not accounting for rateLimiter in TTL
                 boundStatement.setInt(i++,
                         configRepository.getCentralStorageConfig().getMaxRollupTTL());
-                future = session.executeAsync(boundStatement);
+                future = session.writeAsync(boundStatement);
             } catch (Exception e) {
                 rateLimiter.invalidate(rateLimiterKey);
                 transactionTypesCache.invalidate(agentRollupId);
@@ -114,7 +114,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
         public List<String> load(String agentRollupId) throws Exception {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.setString(0, agentRollupId);
-            ResultSet results = session.execute(boundStatement);
+            ResultSet results = session.read(boundStatement);
             List<String> transactionTypes = new ArrayList<>();
             for (Row row : results) {
                 transactionTypes.add(checkNotNull(row.getString(0)));

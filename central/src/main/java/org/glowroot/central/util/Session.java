@@ -18,14 +18,16 @@ package org.glowroot.central.util;
 import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 
+import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
+import com.datastax.driver.core.SimpleStatement;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
@@ -62,15 +64,17 @@ public class Session {
 
     private final com.datastax.driver.core.Session wrappedSession;
     private final String keyspaceName;
+    private final @Nullable ConsistencyLevel writeConsistencyLevel;
 
     private final Queue<String> allTableNames = new ConcurrentLinkedQueue<>();
 
     private final CassandraWriteMetrics cassandraWriteMetrics;
 
-    public Session(com.datastax.driver.core.Session wrappedSession, String keyspaceName)
-            throws InterruptedException {
+    public Session(com.datastax.driver.core.Session wrappedSession, String keyspaceName,
+            @Nullable ConsistencyLevel writeConsistencyLevel) throws InterruptedException {
         this.wrappedSession = wrappedSession;
         this.keyspaceName = keyspaceName;
+        this.writeConsistencyLevel = writeConsistencyLevel;
         cassandraWriteMetrics = new CassandraWriteMetrics(wrappedSession, keyspaceName);
 
         updateSchemaWithRetry(wrappedSession, "create keyspace if not exists " + keyspaceName
@@ -86,29 +90,63 @@ public class Session {
         return wrappedSession.prepare(query);
     }
 
-    public ResultSet execute(Statement statement) throws Exception {
-        try {
-            // do not use session.execute() because that calls getUninterruptibly() which can cause
-            // central shutdown to timeout while waiting for executor service to shutdown
-            return executeAsync(statement).get();
-        } catch (ExecutionException e) {
-            throw MoreFutures.unwrapDriverException(e);
+    public ResultSet read(String query) throws Exception {
+        if (!query.startsWith("select ")) {
+            throw new IllegalStateException("Unexpected read query: " + query);
         }
+        // do not use session.execute() because that calls getUninterruptibly() which can cause
+        // central shutdown to timeout while waiting for executor service to shutdown
+        return readAsync(new SimpleStatement(query)).get();
     }
 
-    public ResultSet execute(String query) throws Exception {
-        try {
-            // do not use session.execute() because that calls getUninterruptibly() which can cause
-            // central shutdown to timeout while waiting for executor service to shutdown
-            return executeAsync(query).get();
-        } catch (ExecutionException e) {
-            throw MoreFutures.unwrapDriverException(e);
+    public ResultSet read(Statement statement) throws Exception {
+        if (statement instanceof BoundStatement) {
+            BoundStatement boundStatement = (BoundStatement) statement;
+            PreparedStatement preparedStatement = boundStatement.preparedStatement();
+            String queryString = preparedStatement.getQueryString();
+            if (!queryString.startsWith("select ")) {
+                throw new IllegalStateException("Unexpected read query: " + queryString);
+            }
         }
+        // do not use session.execute() because that calls getUninterruptibly() which can cause
+        // central shutdown to timeout while waiting for executor service to shutdown
+        return readAsync(statement).get();
     }
 
-    public ListenableFuture<ResultSet> executeAsyncWarnIfNoRows(Statement statement,
+    public void write(Statement statement) throws Exception {
+        if (statement instanceof BoundStatement) {
+            BoundStatement boundStatement = (BoundStatement) statement;
+            PreparedStatement preparedStatement = boundStatement.preparedStatement();
+            String queryString = preparedStatement.getQueryString();
+            if (!queryString.startsWith("insert ") && !queryString.startsWith("delete ")) {
+                throw new IllegalStateException("Unexpected write query: " + queryString);
+            }
+        }
+        // do not use session.execute() because that calls getUninterruptibly() which can cause
+        // central shutdown to timeout while waiting for executor service to shutdown
+        writeAsync(statement).get();
+    }
+
+    public ResultSet update(Statement statement) throws Exception {
+        if (statement instanceof BoundStatement) {
+            BoundStatement boundStatement = (BoundStatement) statement;
+            PreparedStatement preparedStatement = boundStatement.preparedStatement();
+            String queryString = preparedStatement.getQueryString();
+            if (!queryString.contains(" if ")) {
+                throw new IllegalStateException("Unexpected update query: " + queryString);
+            }
+            if (!queryString.startsWith("update ") && !queryString.startsWith("insert ")) {
+                throw new IllegalStateException("Unexpected update query: " + queryString);
+            }
+        }
+        // do not use session.execute() because that calls getUninterruptibly() which can cause
+        // central shutdown to timeout while waiting for executor service to shutdown
+        return updateAsync(statement).get();
+    }
+
+    public ListenableFuture<ResultSet> readAsyncWarnIfNoRows(Statement statement,
             String warningMessage, Object... warningArguments) throws Exception {
-        return Futures.transform(executeAsync(statement),
+        return Futures.transform(readAsync(statement),
                 new Function<ResultSet, ResultSet>() {
                     @Override
                     public ResultSet apply(ResultSet results) {
@@ -121,9 +159,9 @@ public class Session {
                 MoreExecutors.directExecutor());
     }
 
-    public ListenableFuture<ResultSet> executeAsyncFailIfNoRows(Statement statement,
+    public ListenableFuture<ResultSet> readAsyncFailIfNoRows(Statement statement,
             String errorMessage) throws Exception {
-        return Futures.transformAsync(executeAsync(statement),
+        return Futures.transformAsync(readAsync(statement),
                 new AsyncFunction<ResultSet, ResultSet>() {
                     @Override
                     public ListenableFuture<ResultSet> apply(ResultSet results) {
@@ -137,7 +175,14 @@ public class Session {
                 MoreExecutors.directExecutor());
     }
 
-    public ListenableFuture<ResultSet> executeAsync(Statement statement) throws Exception {
+    public ListenableFuture<ResultSet> readAsync(Statement statement) throws Exception {
+        return throttle(() -> wrappedSession.executeAsync(statement));
+    }
+
+    public ListenableFuture<?> writeAsync(Statement statement) throws Exception {
+        if (statement.getConsistencyLevel() == null && writeConsistencyLevel != null) {
+            statement.setConsistencyLevel(writeConsistencyLevel);
+        }
         return throttle(() -> {
             // for now, need to record metrics in the same method because CassandraWriteMetrics
             // relies on some thread locals
@@ -146,8 +191,8 @@ public class Session {
         });
     }
 
-    private ListenableFuture<ResultSet> executeAsync(String query) throws Exception {
-        return throttle(() -> wrappedSession.executeAsync(query));
+    private ListenableFuture<ResultSet> updateAsync(Statement statement) throws Exception {
+        return throttle(() -> wrappedSession.executeAsync(statement));
     }
 
     public Cluster getCluster() {

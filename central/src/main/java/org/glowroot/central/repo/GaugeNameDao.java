@@ -72,7 +72,7 @@ class GaugeNameDao {
         boundStatement.setString(0, agentRollupId);
         boundStatement.setTimestamp(1, new Date(rolledUpFrom));
         boundStatement.setTimestamp(2, new Date(rolledUpTo));
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         Set<String> gaugeNames = new HashSet<>();
         for (Row row : results) {
             gaugeNames.add(checkNotNull(row.getString(0)));
@@ -94,7 +94,7 @@ class GaugeNameDao {
         boundStatement.setString(i++, gaugeName);
         int maxRollupTTL = configRepository.getCentralStorageConfig().getMaxRollupTTL();
         boundStatement.setInt(i++, Common.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
-        return ImmutableList.of(session.executeAsync(boundStatement));
+        return ImmutableList.of(session.writeAsync(boundStatement));
     }
 
     @Value.Immutable

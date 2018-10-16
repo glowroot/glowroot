@@ -82,7 +82,7 @@ class Common {
             Clock clock) throws Exception {
         BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind();
         boundStatement.setString(0, agentRollupId);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         Map<Long, NeedsRollup> needsRollupMap = new LinkedHashMap<>();
         for (Row row : results) {
             int i = 0;
@@ -122,7 +122,7 @@ class Common {
             PreparedStatement readNeedsRollupFromChild, Session session) throws Exception {
         BoundStatement boundStatement = readNeedsRollupFromChild.bind();
         boundStatement.setString(0, agentRollupId);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         Map<Long, NeedsRollupFromChildren> needsRollupFromChildrenMap = new LinkedHashMap<>();
         for (Row row : results) {
             int i = 0;
@@ -155,7 +155,7 @@ class Common {
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setSet(i++, needsRollupFromChildren.getKeys().keySet());
         boundStatement.setInt(i++, needsRollupAdjustedTTL);
-        session.execute(boundStatement);
+        session.write(boundStatement);
     }
 
     // it is important that the insert into next needs_rollup happens after present
@@ -180,7 +180,7 @@ class Common {
             boundStatement.setSet(i++, keys);
             boundStatement.setInt(i++, needsRollupAdjustedTTL);
             // intentionally not async, see method-level comment
-            session.execute(boundStatement);
+            session.write(boundStatement);
         }
         List<Future<?>> futures = new ArrayList<>();
         for (UUID uniqueness : uniquenessKeysForDeletion) {
@@ -189,7 +189,7 @@ class Common {
             boundStatement.setString(i++, agentRollupId);
             boundStatement.setTimestamp(i++, new Date(captureTime));
             boundStatement.setUUID(i++, uniqueness);
-            futures.add(session.executeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement));
         }
         MoreFutures.waitForAll(futures);
     }

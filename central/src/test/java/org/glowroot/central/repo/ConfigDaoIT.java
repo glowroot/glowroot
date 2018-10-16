@@ -40,7 +40,7 @@ public class ConfigDaoIT {
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
-        session = new Session(cluster.newSession(), "glowroot_unit_tests");
+        session = new Session(cluster.newSession(), "glowroot_unit_tests", null);
         clusterManager = ClusterManager.create();
 
         agentConfigDao = new AgentConfigDao(session, clusterManager);
@@ -56,7 +56,7 @@ public class ConfigDaoIT {
 
     @Before
     public void before() throws Exception {
-        session.execute("truncate agent_config");
+        session.updateSchemaWithRetry("truncate agent_config");
     }
 
     @Test

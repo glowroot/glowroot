@@ -70,7 +70,7 @@ public class TraceDaoIT {
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
-        session = new Session(cluster.newSession(), "glowroot_unit_tests");
+        session = new Session(cluster.newSession(), "glowroot_unit_tests", null);
 
         clusterManager = ClusterManager.create();
         ConfigRepositoryImpl configRepository = mock(ConfigRepositoryImpl.class);

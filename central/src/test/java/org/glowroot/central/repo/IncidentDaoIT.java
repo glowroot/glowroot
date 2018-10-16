@@ -50,7 +50,7 @@ public class IncidentDaoIT {
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
-        session = new Session(cluster.newSession(), "glowroot_unit_tests");
+        session = new Session(cluster.newSession(), "glowroot_unit_tests", null);
 
         Clock clock = mock(Clock.class);
         when(clock.currentTimeMillis()).thenReturn(345L);
@@ -66,8 +66,8 @@ public class IncidentDaoIT {
 
     @Before
     public void beforeEach() throws Exception {
-        session.execute("truncate open_incident");
-        session.execute("truncate resolved_incident");
+        session.updateSchemaWithRetry("truncate open_incident");
+        session.updateSchemaWithRetry("truncate resolved_incident");
     }
 
     @Test

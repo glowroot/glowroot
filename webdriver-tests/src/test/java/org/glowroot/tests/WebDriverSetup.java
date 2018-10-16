@@ -188,7 +188,7 @@ public class WebDriverSetup {
         if (useCentral) {
             CassandraWrapper.start();
             Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
-            Session session = new Session(cluster.newSession(), "glowroot_unit_tests");
+            Session session = new Session(cluster.newSession(), "glowroot_unit_tests", null);
             session.updateSchemaWithRetry("drop table if exists agent_config");
             session.updateSchemaWithRetry("drop table if exists user");
             session.updateSchemaWithRetry("drop table if exists role");

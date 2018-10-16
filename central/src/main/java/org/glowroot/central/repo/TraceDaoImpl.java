@@ -599,7 +599,7 @@ public class TraceDaoImpl implements TraceDao {
                 }
                 bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                         true);
-                futures.add(session.executeAsync(boundStatement));
+                futures.add(session.writeAsync(boundStatement));
 
                 if (header.getPartial()) {
                     boundStatement = insertTransactionSlowPointPartial.bind();
@@ -608,7 +608,7 @@ public class TraceDaoImpl implements TraceDao {
                 }
                 bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                         false);
-                futures.add(session.executeAsync(boundStatement));
+                futures.add(session.writeAsync(boundStatement));
 
                 if (header.getPartial()) {
                     boundStatement = insertOverallSlowCountPartial.bind();
@@ -617,7 +617,7 @@ public class TraceDaoImpl implements TraceDao {
                 }
                 bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                         true);
-                futures.add(session.executeAsync(boundStatement));
+                futures.add(session.writeAsync(boundStatement));
 
                 if (header.getPartial()) {
                     boundStatement = insertTransactionSlowCountPartial.bind();
@@ -626,24 +626,24 @@ public class TraceDaoImpl implements TraceDao {
                 }
                 bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                         false);
-                futures.add(session.executeAsync(boundStatement));
+                futures.add(session.writeAsync(boundStatement));
 
                 if (priorHeader != null) {
                     boundStatement = deleteOverallSlowPointPartial.bind();
                     bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true);
-                    futures.add(session.executeAsync(boundStatement));
+                    futures.add(session.writeAsync(boundStatement));
 
                     boundStatement = deleteTransactionSlowPointPartial.bind();
                     bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false);
-                    futures.add(session.executeAsync(boundStatement));
+                    futures.add(session.writeAsync(boundStatement));
 
                     boundStatement = deleteOverallSlowCountPartial.bind();
                     bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true);
-                    futures.add(session.executeAsync(boundStatement));
+                    futures.add(session.writeAsync(boundStatement));
 
                     boundStatement = deleteTransactionSlowCountPartial.bind();
                     bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false);
-                    futures.add(session.executeAsync(boundStatement));
+                    futures.add(session.writeAsync(boundStatement));
                 }
             }
             // seems unnecessary to insert error info for partial traces
@@ -652,32 +652,32 @@ public class TraceDaoImpl implements TraceDao {
                 BoundStatement boundStatement = insertOverallErrorMessage.bind();
                 bindErrorMessage(boundStatement, agentRollupId, agentId, traceId, header,
                         adjustedTTL, true);
-                futures.add(session.executeAsync(boundStatement));
+                futures.add(session.writeAsync(boundStatement));
 
                 boundStatement = insertTransactionErrorMessage.bind();
                 bindErrorMessage(boundStatement, agentRollupId, agentId, traceId, header,
                         adjustedTTL, false);
-                futures.add(session.executeAsync(boundStatement));
+                futures.add(session.writeAsync(boundStatement));
 
                 boundStatement = insertOverallErrorPoint.bind();
                 bindErrorPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                         true);
-                futures.add(session.executeAsync(boundStatement));
+                futures.add(session.writeAsync(boundStatement));
 
                 boundStatement = insertTransactionErrorPoint.bind();
                 bindErrorPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                         false);
-                futures.add(session.executeAsync(boundStatement));
+                futures.add(session.writeAsync(boundStatement));
 
                 boundStatement = insertOverallErrorCount.bind();
                 bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                         true);
-                futures.add(session.executeAsync(boundStatement));
+                futures.add(session.writeAsync(boundStatement));
 
                 boundStatement = insertTransactionErrorCount.bind();
                 bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                         false);
-                futures.add(session.executeAsync(boundStatement));
+                futures.add(session.writeAsync(boundStatement));
             }
         }
         for (String agentRollupIdForMeta : agentRollupIdsForMeta) {
@@ -693,7 +693,7 @@ public class TraceDaoImpl implements TraceDao {
         boundStatement.setString(i++, traceId);
         boundStatement.setBytes(i++, ByteBuffer.wrap(header.toByteArray()));
         boundStatement.setInt(i++, adjustedTTL);
-        futures.add(session.executeAsync(boundStatement));
+        futures.add(session.writeAsync(boundStatement));
 
         int index = 0;
         for (Trace.Entry entry : trace.getEntryList()) {
@@ -738,7 +738,7 @@ public class TraceDaoImpl implements TraceDao {
                 boundStatement.setToNull(i++);
             }
             boundStatement.setInt(i++, adjustedTTL);
-            futures.add(session.executeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement));
         }
 
         for (Aggregate.Query query : trace.getQueryList()) {
@@ -757,7 +757,7 @@ public class TraceDaoImpl implements TraceDao {
             }
             boundStatement.setBool(i++, query.getActive());
             boundStatement.setInt(i++, adjustedTTL);
-            futures.add(session.executeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement));
         }
 
         index = 0;
@@ -778,21 +778,21 @@ public class TraceDaoImpl implements TraceDao {
                 boundStatement.setToNull(i++);
             }
             boundStatement.setInt(i++, adjustedTTL);
-            futures.add(session.executeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement));
         }
 
         if (trace.hasMainThreadProfile()) {
             boundStatement = insertMainThreadProfileV2.bind();
             bindThreadProfile(boundStatement, agentId, traceId, trace.getMainThreadProfile(),
                     adjustedTTL);
-            futures.add(session.executeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement));
         }
 
         if (trace.hasAuxThreadProfile()) {
             boundStatement = insertAuxThreadProfileV2.bind();
             bindThreadProfile(boundStatement, agentId, traceId, trace.getAuxThreadProfile(),
                     adjustedTTL);
-            futures.add(session.executeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement));
         }
         futures.addAll(
                 transactionTypeDao.store(agentRollupIdsForMeta, header.getTransactionType()));
@@ -815,8 +815,8 @@ public class TraceDaoImpl implements TraceDao {
             bindTraceQuery(boundStatement, agentRollupId, query, false);
             bindTraceQuery(boundStatementPartial, agentRollupId, query, false);
         }
-        Future<ResultSet> future = session.executeAsync(boundStatement);
-        Future<ResultSet> futurePartial = session.executeAsync(boundStatementPartial);
+        Future<ResultSet> future = session.readAsync(boundStatement);
+        Future<ResultSet> futurePartial = session.readAsync(boundStatementPartial);
         return future.get().one().getLong(0) + futurePartial.get().one().getLong(0);
     }
 
@@ -837,8 +837,8 @@ public class TraceDaoImpl implements TraceDao {
             bindTraceQuery(boundStatement, agentRollupId, query, false);
             bindTraceQuery(boundStatementPartial, agentRollupId, query, false);
         }
-        Future<ResultSet> future = session.executeAsync(boundStatement);
-        Future<ResultSet> futurePartial = session.executeAsync(boundStatementPartial);
+        Future<ResultSet> future = session.readAsync(boundStatement);
+        Future<ResultSet> futurePartial = session.readAsync(boundStatementPartial);
         List<TracePoint> completedPoints = processPoints(future.get(), filter, false, false);
         List<TracePoint> partialPoints = processPoints(futurePartial.get(), filter, true, false);
         return combine(completedPoints, partialPoints, limit);
@@ -855,7 +855,7 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = readTransactionErrorCount.bind();
             bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         return results.one().getLong(0);
     }
 
@@ -871,7 +871,7 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = readTransactionErrorPoint.bind();
             bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         List<TracePoint> errorPoints = processPoints(results, filter, false, true);
         return createResult(errorPoints, limit);
     }
@@ -888,7 +888,7 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = readTransactionErrorMessage.bind();
             bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         // rows are already in order by captureTime, so saving sort step by using linked hash map
         Map<Long, MutableLong> pointCounts = new LinkedHashMap<>();
         Map<String, MutableLong> messageCounts = new HashMap<>();
@@ -1009,7 +1009,7 @@ public class TraceDaoImpl implements TraceDao {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -1031,7 +1031,7 @@ public class TraceDaoImpl implements TraceDao {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -1053,7 +1053,7 @@ public class TraceDaoImpl implements TraceDao {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -1074,7 +1074,7 @@ public class TraceDaoImpl implements TraceDao {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         List<Trace.Entry> entries = new ArrayList<>();
         while (!results.isExhausted()) {
             Row row = results.one();
@@ -1123,7 +1123,7 @@ public class TraceDaoImpl implements TraceDao {
         BoundStatement boundStatement = readQueriesV2.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         List<Aggregate.Query> queries = new ArrayList<>();
         while (!results.isExhausted()) {
             Row row = results.one();
@@ -1158,7 +1158,7 @@ public class TraceDaoImpl implements TraceDao {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
         boundStatement.setString(1, traceId);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         List<Trace.SharedQueryText> sharedQueryTexts = new ArrayList<>();
         while (!results.isExhausted()) {
             Row row = results.one();
@@ -1182,31 +1182,31 @@ public class TraceDaoImpl implements TraceDao {
     @Override
     @OnlyUsedByTests
     public void truncateAll() throws Exception {
-        session.execute("truncate table trace_tt_slow_count");
-        session.execute("truncate table trace_tn_slow_count");
-        session.execute("truncate table trace_tt_slow_count_partial");
-        session.execute("truncate table trace_tn_slow_count_partial");
-        session.execute("truncate table trace_tt_slow_point");
-        session.execute("truncate table trace_tn_slow_point");
-        session.execute("truncate table trace_tt_slow_point_partial");
-        session.execute("truncate table trace_tn_slow_point_partial");
-        session.execute("truncate table trace_tt_error_count");
-        session.execute("truncate table trace_tn_error_count");
-        session.execute("truncate table trace_tt_error_point");
-        session.execute("truncate table trace_tn_error_point");
-        session.execute("truncate table trace_tt_error_message");
-        session.execute("truncate table trace_tn_error_message");
-        session.execute("truncate table trace_header");
-        session.execute("truncate table trace_entry");
-        session.execute("truncate table trace_shared_query_text");
-        session.execute("truncate table trace_main_thread_profile");
-        session.execute("truncate table trace_aux_thread_profile");
-        session.execute("truncate table trace_header_v2");
-        session.execute("truncate table trace_entry_v2");
-        session.execute("truncate table trace_query_v2");
-        session.execute("truncate table trace_shared_query_text_v2");
-        session.execute("truncate table trace_main_thread_profile_v2");
-        session.execute("truncate table trace_aux_thread_profile_v2");
+        session.updateSchemaWithRetry("truncate table trace_tt_slow_count");
+        session.updateSchemaWithRetry("truncate table trace_tn_slow_count");
+        session.updateSchemaWithRetry("truncate table trace_tt_slow_count_partial");
+        session.updateSchemaWithRetry("truncate table trace_tn_slow_count_partial");
+        session.updateSchemaWithRetry("truncate table trace_tt_slow_point");
+        session.updateSchemaWithRetry("truncate table trace_tn_slow_point");
+        session.updateSchemaWithRetry("truncate table trace_tt_slow_point_partial");
+        session.updateSchemaWithRetry("truncate table trace_tn_slow_point_partial");
+        session.updateSchemaWithRetry("truncate table trace_tt_error_count");
+        session.updateSchemaWithRetry("truncate table trace_tn_error_count");
+        session.updateSchemaWithRetry("truncate table trace_tt_error_point");
+        session.updateSchemaWithRetry("truncate table trace_tn_error_point");
+        session.updateSchemaWithRetry("truncate table trace_tt_error_message");
+        session.updateSchemaWithRetry("truncate table trace_tn_error_message");
+        session.updateSchemaWithRetry("truncate table trace_header");
+        session.updateSchemaWithRetry("truncate table trace_entry");
+        session.updateSchemaWithRetry("truncate table trace_shared_query_text");
+        session.updateSchemaWithRetry("truncate table trace_main_thread_profile");
+        session.updateSchemaWithRetry("truncate table trace_aux_thread_profile");
+        session.updateSchemaWithRetry("truncate table trace_header_v2");
+        session.updateSchemaWithRetry("truncate table trace_entry_v2");
+        session.updateSchemaWithRetry("truncate table trace_query_v2");
+        session.updateSchemaWithRetry("truncate table trace_shared_query_text_v2");
+        session.updateSchemaWithRetry("truncate table trace_main_thread_profile_v2");
+        session.updateSchemaWithRetry("truncate table trace_aux_thread_profile_v2");
     }
 
     private static void bindSlowPoint(BoundStatement boundStatement, String agentRollupId,

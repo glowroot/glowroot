@@ -51,14 +51,14 @@ public class EnvironmentDao implements EnvironmentRepository {
         int i = 0;
         boundStatement.setString(i++, agentId);
         boundStatement.setBytes(i++, ByteBuffer.wrap(environment.toByteArray()));
-        session.execute(boundStatement);
+        session.write(boundStatement);
     }
 
     @Override
     public @Nullable Environment read(String agentId) throws Exception {
         BoundStatement boundStatement = readPS.bind();
         boundStatement.setString(0, agentId);
-        Row row = session.execute(boundStatement).one();
+        Row row = session.read(boundStatement).one();
         if (row == null) {
             return null;
         }

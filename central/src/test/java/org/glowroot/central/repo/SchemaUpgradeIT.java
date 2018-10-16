@@ -46,12 +46,12 @@ public class SchemaUpgradeIT {
         cluster = Clusters.newCluster();
         com.datastax.driver.core.Session wrappedSession = cluster.newSession();
         updateSchemaWithRetry(wrappedSession, "drop keyspace if exists glowroot_upgrade_test");
-        session = new Session(wrappedSession, "glowroot_upgrade_test");
+        session = new Session(wrappedSession, "glowroot_upgrade_test", null);
         URL url = Resources.getResource("glowroot-0.9.1-schema.cql");
         StringBuilder cql = new StringBuilder();
         for (String line : Resources.readLines(url, UTF_8)) {
             if (line.isEmpty()) {
-                session.execute(cql.toString());
+                session.updateSchemaWithRetry(cql.toString());
                 cql.setLength(0);
             } else {
                 cql.append('\n');

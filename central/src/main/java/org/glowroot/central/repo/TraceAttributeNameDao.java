@@ -90,7 +90,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         boundStatement.setString(i++, transactionType);
         boundStatement.setString(i++, traceAttributeName);
         boundStatement.setInt(i++, getTraceTTL());
-        ListenableFuture<ResultSet> future = session.executeAsync(boundStatement);
+        ListenableFuture<?> future = session.writeAsync(boundStatement);
         futures.add(MoreFutures.onSuccessAndFailure(future,
                 () -> traceAttributeNamesCache.invalidate(agentRollupId),
                 () -> rateLimiter.invalidate(rateLimiterKey)));
@@ -119,7 +119,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         public Map<String, List<String>> load(String agentRollupId) throws Exception {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.setString(0, agentRollupId);
-            ResultSet results = session.execute(boundStatement);
+            ResultSet results = session.read(boundStatement);
             ListMultimap<String, String> traceAttributeNames = ArrayListMultimap.create();
             for (Row row : results) {
                 int i = 0;
