@@ -172,8 +172,9 @@ glowroot.controller('JvmHeapHistogramCtrl', [
             $scope.agentUnsupportedOperation = data.agentUnsupportedOperation;
             $scope.unavailableDueToRunningInJre = data.unavailableDueToRunningInJre;
             $scope.unavailableDueToRunningInIbmJvm = data.unavailableDueToRunningInIbmJvm;
+            $scope.unavailableDueToDockerAlpinePidOne = data.unavailableDueToDockerAlpinePidOne;
             if ($scope.agentNotConnected || $scope.agentUnsupportedOperation || $scope.unavailableDueToRunningInJre
-                || $scope.unavailableDueToRunningInIbmJvm) {
+                || $scope.unavailableDueToRunningInIbmJvm || $scope.unavailableDueToDockerAlpinePidOne) {
               return;
             }
             $scope.histogram = data;

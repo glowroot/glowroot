@@ -50,6 +50,7 @@ import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
 import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
+import org.glowroot.common.live.LiveJvmService.UnavailableDueToDockerAlpinePidOneException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.util.NotAvailableAware;
@@ -321,6 +322,9 @@ class JvmJsonService {
         } catch (UnavailableDueToRunningInIbmJvmException e) {
             logger.debug(e.getMessage(), e);
             return "{\"unavailableDueToRunningInIbmJvm\":true}";
+        } catch (UnavailableDueToDockerAlpinePidOneException e) {
+            logger.debug(e.getMessage(), e);
+            return "{\"unavailableDueToDockerAlpinePidOne\":true}";
         } catch (AgentUnsupportedOperationException e) {
             // this operation introduced in 0.9.2
             logger.debug(e.getMessage(), e);

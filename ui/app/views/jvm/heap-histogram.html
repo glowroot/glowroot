@@ -28,8 +28,14 @@
 <div ng-if="unavailableDueToRunningInIbmJvm" class="alert alert-danger" role="alert">
   This feature is not available when the agent is running in IBM J9 VM.
 </div>
+<div ng-if="unavailableDueToDockerAlpinePidOne" class="alert alert-danger" role="alert">
+  This feature is not available when the agent is running in a JVM with PID 1 inside of a Docker Alpine container.
+  See
+  <a href="https://github.com/docker-library/openjdk/issues/76">https://github.com/docker-library/openjdk/issues/76</a>
+  for workaround options.
+</div>
 <div
-    ng-if="loaded && !agentNotConnected && !agentUnsupportedOperation && !unavailableDueToRunningInJre && !unavailableDueToRunningInIbmJvm">
+    ng-if="loaded && !agentNotConnected && !agentUnsupportedOperation && !unavailableDueToRunningInJre && !unavailableDueToRunningInIbmJvm && !unavailableDueToDockerAlpinePidOne">
   <div class="d-flex justify-content-between pb-4">
     <div gt-button
          gt-label="Refresh"
