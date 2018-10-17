@@ -206,7 +206,8 @@ public class LiveJvmServiceImpl implements LiveJvmService {
 
     private List<MBeanDump.MBeanInfo> getAllMBeanInfos(List<String> includeAttrsForObjectNames)
             throws Exception {
-        Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null, null);
+        List<MBeanServer> mbeanServers = lazyPlatformMBeanServer.findAllMBeanServers();
+        Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null, null, mbeanServers);
         List<MBeanDump.MBeanInfo> mbeanInfos = Lists.newArrayList();
         for (ObjectName objectName : objectNames) {
             String name = objectName.toString();
@@ -240,7 +241,9 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     public List<String> getMatchingMBeanObjectNames(String agentId, String partialObjectName,
             int limit) throws Exception {
         ObjectNameQueryExp queryExp = new ObjectNameQueryExp(partialObjectName);
-        Set<ObjectName> objectNames = lazyPlatformMBeanServer.queryNames(null, queryExp);
+        List<MBeanServer> mbeanServers = lazyPlatformMBeanServer.findAllMBeanServers();
+        Set<ObjectName> objectNames =
+                lazyPlatformMBeanServer.queryNames(null, queryExp, mbeanServers);
         // unfortunately Wildfly returns lots of mbean object names without checking them against
         // the query (see TODO comment in org.jboss.as.jmx.model.ModelControllerMBeanHelper)
         // so must re-filter
@@ -288,12 +291,14 @@ public class LiveJvmServiceImpl implements LiveJvmService {
 
     private List<MBeanDump.MBeanAttribute> getMBeanAttributes(ObjectName objectName)
             throws Exception {
-        MBeanInfo mBeanInfo = lazyPlatformMBeanServer.getMBeanInfo(objectName);
+        List<MBeanServer> mbeanServers = lazyPlatformMBeanServer.findAllMBeanServers();
+        MBeanInfo mBeanInfo = lazyPlatformMBeanServer.getMBeanInfo(objectName, mbeanServers);
         List<MBeanDump.MBeanAttribute> attributes = Lists.newArrayList();
         for (MBeanAttributeInfo attribute : mBeanInfo.getAttributes()) {
             Object value;
             try {
-                value = lazyPlatformMBeanServer.getAttribute(objectName, attribute.getName());
+                value = lazyPlatformMBeanServer.getAttribute(objectName, attribute.getName(),
+                        mbeanServers);
             } catch (Exception e) {
                 // log exception at debug level
                 logger.debug(e.getMessage(), e);
@@ -475,11 +480,12 @@ public class LiveJvmServiceImpl implements LiveJvmService {
 
     private Set<ObjectName> getObjectNames(String mbeanObjectName) throws Exception {
         ObjectName objectName = ObjectName.getInstance(mbeanObjectName);
+        List<MBeanServer> mbeanServers = lazyPlatformMBeanServer.findAllMBeanServers();
         if (objectName.isPattern()) {
-            return lazyPlatformMBeanServer.queryNames(objectName, null);
+            return lazyPlatformMBeanServer.queryNames(objectName, null, mbeanServers);
         } else {
             try {
-                lazyPlatformMBeanServer.getMBeanInfo(objectName);
+                lazyPlatformMBeanServer.getMBeanInfo(objectName, mbeanServers);
             } catch (InstanceNotFoundException e) {
                 return ImmutableSet.of();
             }
@@ -487,11 +493,13 @@ public class LiveJvmServiceImpl implements LiveJvmService {
         }
     }
 
-    private Set<String> getAttributeNames(Set<ObjectName> objectNames) {
+    private Set<String> getAttributeNames(Set<ObjectName> objectNames) throws Exception {
+        List<MBeanServer> mbeanServers = lazyPlatformMBeanServer.findAllMBeanServers();
         Set<String> attributeNames = Sets.newHashSet();
         for (ObjectName objectName : objectNames) {
             try {
-                MBeanInfo mbeanInfo = lazyPlatformMBeanServer.getMBeanInfo(objectName);
+                MBeanInfo mbeanInfo =
+                        lazyPlatformMBeanServer.getMBeanInfo(objectName, mbeanServers);
                 attributeNames.addAll(getAttributeNames(mbeanInfo, objectName));
             } catch (Exception e) {
                 // log exception at debug level
@@ -501,13 +509,15 @@ public class LiveJvmServiceImpl implements LiveJvmService {
         return attributeNames;
     }
 
-    private Set<String> getAttributeNames(MBeanInfo mbeanInfo, ObjectName objectName) {
+    private Set<String> getAttributeNames(MBeanInfo mbeanInfo, ObjectName objectName)
+            throws Exception {
+        List<MBeanServer> mbeanServers = lazyPlatformMBeanServer.findAllMBeanServers();
         Set<String> attributeNames = Sets.newHashSet();
         for (MBeanAttributeInfo attribute : mbeanInfo.getAttributes()) {
             if (attribute.isReadable()) {
                 try {
-                    Object value =
-                            lazyPlatformMBeanServer.getAttribute(objectName, attribute.getName());
+                    Object value = lazyPlatformMBeanServer.getAttribute(objectName,
+                            attribute.getName(), mbeanServers);
                     addNumericAttributes(attribute, value, attributeNames);
                 } catch (Exception e) {
                     // log exception at debug level

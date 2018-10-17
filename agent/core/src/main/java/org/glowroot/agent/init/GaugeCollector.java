@@ -126,8 +126,9 @@ class GaugeCollector extends ScheduledRunnable {
             // wait to now to initialize priorGaugeValues inside of the dedicated thread
             priorRawCounterValues = Maps.newHashMap();
         }
+        List<MBeanServer> mbeanServers = lazyPlatformMBeanServer.findAllMBeanServers();
         for (GaugeConfig gaugeConfig : configService.getGaugeConfigs()) {
-            gaugeValues.addAll(collectGaugeValues(gaugeConfig));
+            gaugeValues.addAll(collectGaugeValues(gaugeConfig, mbeanServers));
         }
         flushingExecutor.execute(new Runnable() {
             @Override
@@ -159,7 +160,8 @@ class GaugeCollector extends ScheduledRunnable {
 
     @VisibleForTesting
     @RequiresNonNull("priorRawCounterValues")
-    List<GaugeValue> collectGaugeValues(GaugeConfig gaugeConfig) throws Exception {
+    List<GaugeValue> collectGaugeValues(GaugeConfig gaugeConfig, List<MBeanServer> mbeanServers)
+            throws Exception {
         String mbeanObjectName = gaugeConfig.mbeanObjectName();
         ObjectName objectName;
         try {
@@ -170,9 +172,11 @@ class GaugeCollector extends ScheduledRunnable {
             return ImmutableList.of();
         }
         if (!objectName.isPattern()) {
-            return collectGaugeValues(objectName, gaugeConfig.mbeanAttributes(), mbeanObjectName);
+            return collectGaugeValues(objectName, gaugeConfig.mbeanAttributes(), mbeanObjectName,
+                    mbeanServers);
         }
-        Set<ObjectName> matchingObjectNames = lazyPlatformMBeanServer.queryNames(objectName, null);
+        Set<ObjectName> matchingObjectNames =
+                lazyPlatformMBeanServer.queryNames(objectName, null, mbeanServers);
         if (matchingObjectNames.isEmpty()) {
             logFirstTimeMBeanNotMatchedOrFound(mbeanObjectName);
             return ImmutableList.of();
@@ -184,23 +188,26 @@ class GaugeCollector extends ScheduledRunnable {
         for (ObjectName matchingObjectName : matchingObjectNames) {
             gaugeValues.addAll(collectGaugeValues(matchingObjectName, gaugeConfig.mbeanAttributes(),
                     matchingObjectName.getDomain() + ":"
-                            + matchingObjectName.getKeyPropertyListString()));
+                            + matchingObjectName.getKeyPropertyListString(),
+                    mbeanServers));
         }
         return gaugeValues;
     }
 
     @RequiresNonNull("priorRawCounterValues")
     private List<GaugeValue> collectGaugeValues(ObjectName objectName,
-            List<ImmutableMBeanAttribute> mbeanAttributes, String mbeanObjectName) {
-        long captureTime = clock.currentTimeMillis();
+            List<ImmutableMBeanAttribute> mbeanAttributes, String mbeanObjectName,
+            List<MBeanServer> mbeanServers) throws Exception {
         List<GaugeValue> gaugeValues = Lists.newArrayList();
+        long captureTime = clock.currentTimeMillis();
         for (MBeanAttribute mbeanAttribute : mbeanAttributes) {
             String mbeanAttributeName = mbeanAttribute.name();
             Object attributeValue;
             try {
                 if (mbeanAttributeName.contains(".")) {
                     String[] path = mbeanAttributeName.split("\\.");
-                    attributeValue = lazyPlatformMBeanServer.getAttribute(objectName, path[0]);
+                    attributeValue =
+                            lazyPlatformMBeanServer.getAttribute(objectName, path[0], mbeanServers);
                     CompositeData compositeData = (CompositeData) attributeValue;
                     if (compositeData == null) {
                         // this is valid, e.g. attribute LastGcInfo on mbean
@@ -210,8 +217,8 @@ class GaugeCollector extends ScheduledRunnable {
                     }
                     attributeValue = compositeData.get(path[1]);
                 } else {
-                    attributeValue =
-                            lazyPlatformMBeanServer.getAttribute(objectName, mbeanAttributeName);
+                    attributeValue = lazyPlatformMBeanServer.getAttribute(objectName,
+                            mbeanAttributeName, mbeanServers);
                 }
             } catch (InstanceNotFoundException e) {
                 logger.debug(e.getMessage(), e);

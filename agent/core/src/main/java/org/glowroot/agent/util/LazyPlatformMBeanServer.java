@@ -17,6 +17,7 @@ package org.glowroot.agent.util;
 
 import java.lang.management.ManagementFactory;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 
 import javax.annotation.concurrent.GuardedBy;
@@ -31,6 +32,9 @@ import javax.management.ObjectName;
 import javax.management.QueryExp;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
@@ -74,6 +78,23 @@ public class LazyPlatformMBeanServer {
     private final Object platformMBeanServerAvailability = new Object();
     @GuardedBy("platformMBeanServerAvailability")
     private boolean platformMBeanServerAvailable;
+
+    private final LoadingCache<MBeanServer, MBeanServer> webSphereUnwrappedMBeanServers =
+            CacheBuilder.newBuilder()
+                    .weakKeys()
+                    .weakValues()
+                    .build(new CacheLoader<MBeanServer, MBeanServer>() {
+                        @Override
+                        public MBeanServer load(MBeanServer mbeanServer) {
+                            try {
+                                return (MBeanServer) checkNotNull(mbeanServer.getClass()
+                                        .getMethod("getDefaultMBeanServer").invoke(mbeanServer));
+                            } catch (Exception e) {
+                                logger.error(e.getMessage(), e);
+                                return mbeanServer;
+                            }
+                        }
+                    });
 
     public static LazyPlatformMBeanServer create(@Nullable String mainClass) throws Exception {
         LazyPlatformMBeanServer lazyPlatformMBeanServer = new LazyPlatformMBeanServer(mainClass);
@@ -127,24 +148,26 @@ public class LazyPlatformMBeanServer {
         platformMBeanServer.invoke(name, operationName, params, signature);
     }
 
-    public Set<ObjectName> queryNames(@Nullable ObjectName name, @Nullable QueryExp query)
-            throws Exception {
+    public Set<ObjectName> queryNames(@Nullable ObjectName name, @Nullable QueryExp query,
+            List<MBeanServer> mbeanServers) throws Exception {
         ensureInit();
         if (needsManualPatternMatching && name != null && name.isPattern()) {
-            return queryNamesAcrossAll(null, new ObjectNamePatternQueryExp(name));
+            return queryNamesAcrossAll(null, new ObjectNamePatternQueryExp(name), mbeanServers);
         } else {
-            return queryNamesAcrossAll(name, query);
+            return queryNamesAcrossAll(name, query, mbeanServers);
         }
     }
 
-    public MBeanInfo getMBeanInfo(ObjectName name) throws Exception {
+    public MBeanInfo getMBeanInfo(ObjectName name, List<MBeanServer> mbeanServers)
+            throws Exception {
         ensureInit();
-        return getMBeanInfoAcrossAll(name);
+        return getMBeanInfoAcrossAll(name, mbeanServers);
     }
 
-    public Object getAttribute(ObjectName name, String attribute) throws Exception {
+    public Object getAttribute(ObjectName name, String attribute, List<MBeanServer> mbeanServers)
+            throws Exception {
         ensureInit();
-        return getAttributeAcrossAll(name, attribute);
+        return getAttributeAcrossAll(name, attribute, mbeanServers);
     }
 
     public void addInitListener(InitListener initListener) {
@@ -225,18 +248,19 @@ public class LazyPlatformMBeanServer {
         return platformMBeanServer;
     }
 
-    private Set<ObjectName> queryNamesAcrossAll(@Nullable ObjectName name, @Nullable QueryExp query)
-            throws Exception {
+    private Set<ObjectName> queryNamesAcrossAll(@Nullable ObjectName name, @Nullable QueryExp query,
+            List<MBeanServer> mbeanServers) throws Exception {
         Set<ObjectName> objects = Sets.newHashSet();
-        for (MBeanServer mbeanServer : MBeanServerFactory.findMBeanServer(null)) {
+        for (MBeanServer mbeanServer : mbeanServers) {
             objects.addAll(mbeanServer.queryNames(name, query));
         }
         return objects;
     }
 
-    private MBeanInfo getMBeanInfoAcrossAll(ObjectName name) throws Exception {
+    private MBeanInfo getMBeanInfoAcrossAll(ObjectName name, List<MBeanServer> mbeanServers)
+            throws Exception {
         InstanceNotFoundException firstException = null;
-        for (MBeanServer mbeanServer : MBeanServerFactory.findMBeanServer(null)) {
+        for (MBeanServer mbeanServer : mbeanServers) {
             try {
                 return mbeanServer.getMBeanInfo(name);
             } catch (InstanceNotFoundException e) {
@@ -249,9 +273,10 @@ public class LazyPlatformMBeanServer {
         throw checkNotNull(firstException);
     }
 
-    private Object getAttributeAcrossAll(ObjectName name, String attribute) throws Exception {
+    private Object getAttributeAcrossAll(ObjectName name, String attribute,
+            List<MBeanServer> mbeanServers) throws Exception {
         InstanceNotFoundException firstException = null;
-        for (MBeanServer mbeanServer : MBeanServerFactory.findMBeanServer(null)) {
+        for (MBeanServer mbeanServer : mbeanServers) {
             try {
                 return mbeanServer.getAttribute(name, attribute);
             } catch (InstanceNotFoundException e) {
@@ -270,6 +295,18 @@ public class LazyPlatformMBeanServer {
         for (ObjectName name : toBeUnregistered) {
             platformMBeanServer.unregisterMBean(name);
         }
+    }
+
+    public List<MBeanServer> findAllMBeanServers() throws Exception {
+        List<MBeanServer> mbeanServers = MBeanServerFactory.findMBeanServer(null);
+        for (ListIterator<MBeanServer> i = mbeanServers.listIterator(); i.hasNext();) {
+            MBeanServer mbeanServer = i.next();
+            if (mbeanServer.getClass().getName()
+                    .equals("com.ibm.ws.management.PlatformMBeanServer")) {
+                i.set(webSphereUnwrappedMBeanServers.get(mbeanServer));
+            }
+        }
+        return mbeanServers;
     }
 
     private static void safeRegisterMBean(MBeanServer mbeanServer, Object object, ObjectName name) {
