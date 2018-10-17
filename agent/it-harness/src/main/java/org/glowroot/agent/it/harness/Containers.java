@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2017 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package org.glowroot.agent.it.harness;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,22 +52,14 @@ public class Containers {
                 // this is the most realistic way to run tests because it launches an external JVM
                 // process using -javaagent:glowroot.jar
                 logger.debug("create(): using javaagent container");
-                return new JavaagentContainer(null, false, ImmutableList.<String>of());
+                return JavaagentContainer.create();
             case LOCAL:
                 // this is the easiest way to run/debug tests inside of Eclipse
                 logger.debug("create(): using local container");
-                return new LocalContainer(null, false, ImmutableMap.<String, String>of());
+                return LocalContainer.create();
             default:
                 throw new IllegalStateException("Unexpected harness enum value: " + harness);
         }
-    }
-
-    public static Container createJavaagent() throws Exception {
-        return JavaagentContainer.create();
-    }
-
-    public static Container createLocal() throws Exception {
-        return new LocalContainer(null, false, ImmutableMap.<String, String>of());
     }
 
     public static boolean useJavaagent() {

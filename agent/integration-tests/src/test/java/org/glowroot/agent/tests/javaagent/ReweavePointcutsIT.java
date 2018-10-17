@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.glowroot.agent.it.harness.Containers;
+import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.agent.tests.ConfiguredInstrumentationIT;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 
@@ -32,7 +32,7 @@ public class ReweavePointcutsIT extends ConfiguredInstrumentationIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = Containers.createJavaagent();
+        container = JavaagentContainer.create();
         // make sure the classes are loaded once before re-weaving
         container.execute(ShouldExecute1.class);
         container.execute(ShouldExecuteWithReturn.class);
