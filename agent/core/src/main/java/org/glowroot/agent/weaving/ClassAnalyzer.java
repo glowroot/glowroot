@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -76,6 +77,8 @@ class ClassAnalyzer {
     private final boolean shortCircuitBeforeAnalyzeMethods;
 
     private final byte[] classBytes;
+
+    private final boolean hackAdvisors;
 
     private @MonotonicNonNull Map<String, List<Advice>> methodAdvisors;
     private @MonotonicNonNull List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice;
@@ -182,6 +185,7 @@ class ClassAnalyzer {
                             && matchedMixinTypes.reweavable().isEmpty() && adviceMatchers.isEmpty();
         }
         this.classBytes = classBytes;
+        this.hackAdvisors = loader != null;
     }
 
     void analyzeMethods() {
@@ -200,6 +204,16 @@ class ClassAnalyzer {
         }
         for (ThinMethod nonBridgeMethod : thinClass.nonBridgeMethods()) {
             List<Advice> advisors = analyzeMethod(nonBridgeMethod);
+            // convert here
+            if (hackAdvisors) {
+                for (ListIterator<Advice> i = advisors.listIterator(); i.hasNext();) {
+                    Advice advice = i.next();
+                    Advice nonBootstrapLoaderAdvice = advice.nonBootstrapLoaderAdvice();
+                    if (nonBootstrapLoaderAdvice != null) {
+                        i.set(nonBootstrapLoaderAdvice);
+                    }
+                }
+            }
             if (!advisors.isEmpty()) {
                 methodAdvisors.put(nonBridgeMethod.name() + nonBridgeMethod.desc(), advisors);
             }
@@ -599,7 +613,7 @@ class ClassAnalyzer {
         ImmutableMap<Advice, LazyDefinedClass> newAdvisors =
                 AdviceGenerator.createAdvisors(instrumentationConfigs, null, false);
         try {
-            ClassLoaders.defineClassesInClassLoader(newAdvisors.values(), loader);
+            ClassLoaders.defineClasses(newAdvisors.values(), loader);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }

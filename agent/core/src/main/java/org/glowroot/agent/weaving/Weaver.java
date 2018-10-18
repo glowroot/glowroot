@@ -56,6 +56,7 @@ import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
+import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 import org.glowroot.common.util.ScheduledRunnable.TerminateSubsequentExecutionsException;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -308,6 +309,20 @@ public class Weaver {
                         tempFile.getAbsolutePath());
             } catch (IOException e) {
                 logger.warn(e.getMessage(), e);
+            }
+        }
+        if (loader != null) {
+            try {
+                for (Advice usedAdvice : cv.getUsedAdvisors()) {
+                    LazyDefinedClass nonBootstrapLoaderAdviceClass =
+                            usedAdvice.nonBootstrapLoaderAdviceClass();
+                    if (nonBootstrapLoaderAdviceClass != null) {
+                        ClassLoaders.defineClassIfNotExists(nonBootstrapLoaderAdviceClass, loader);
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("unable to weave {}: {}", className, e.getMessage(), e);
+                return null;
             }
         }
         return transformedBytes;

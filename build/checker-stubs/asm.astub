@@ -16,6 +16,8 @@ public class ClassVisitor {
 
 public class MethodVisitor {
     public @Nullable AnnotationVisitor visitAnnotation(String desc, boolean visible);
+    public @Nullable AnnotationVisitor visitParameterAnnotation(int parameter, String descriptor,
+            boolean visible);
     public void visitFrame(int type, int nLocal, Object @Nullable [] local, int nStack,
             Object @Nullable [] stack);
 }

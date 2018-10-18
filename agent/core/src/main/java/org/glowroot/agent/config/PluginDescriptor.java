@@ -15,9 +15,13 @@
  */
 package org.glowroot.agent.config;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +44,9 @@ public abstract class PluginDescriptor {
     @JsonProperty("instrumentation")
     public abstract ImmutableList<InstrumentationConfig> instrumentationConfigs();
     public abstract ImmutableList<String> aspects();
+
+    @JsonIgnore
+    public abstract @Nullable File pluginJar();
 
     // this is only for use by glowroot-agent-dist-maven-plugin, which needs to perform
     // de-serialization of shaded immutables objects using shaded jackson

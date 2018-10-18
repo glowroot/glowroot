@@ -40,10 +40,11 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.live.LiveWeavingServiceImpl;
 import org.glowroot.agent.live.LiveWeavingServiceImpl.PointcutClassName;
-import org.glowroot.agent.plugin.api.weaving.Mixin;
-import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
+import org.glowroot.agent.weaving.PluginDetail.MixinClass;
+import org.glowroot.agent.weaving.PluginDetail.PointcutClass;
+import org.glowroot.agent.weaving.PluginDetail.ShimClass;
 import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Versions;
@@ -76,17 +77,13 @@ public class AdviceCache {
         List<MixinType> mixinTypes = Lists.newArrayList();
         Map<Advice, LazyDefinedClass> lazyAdvisors = Maps.newHashMap();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
-            for (String aspect : pluginDescriptor.aspects()) {
-                try {
-                    Class<?> aspectClass =
-                            Class.forName(aspect, false, AdviceCache.class.getClassLoader());
-                    pluginAdvisors.addAll(getAdvisors(aspectClass));
-                    shimTypes.addAll(getShimTypes(aspectClass));
-                    mixinTypes.addAll(getMixinTypes(aspectClass));
-                } catch (ClassNotFoundException e) {
-                    logger.warn("aspect not found: {}", aspect, e);
-                }
-            }
+            PluginDetailBuilder builder = new PluginDetailBuilder(pluginDescriptor);
+            PluginDetail pluginDetail = builder.build();
+
+            pluginAdvisors.addAll(getAdvisors(pluginDetail.pointcutClasses()));
+            mixinTypes.addAll(getMixinTypes(pluginDetail.mixinClasses()));
+            shimTypes.addAll(getShimTypes(pluginDetail.shimClasses()));
+
             List<InstrumentationConfig> instrumentationConfigs =
                     pluginDescriptor.instrumentationConfigs();
             for (InstrumentationConfig instrumentationConfig : instrumentationConfigs) {
@@ -102,7 +99,7 @@ public class AdviceCache {
             // instrumentation is null when debugging with LocalContainer
             ClassLoader isolatedWeavingClassLoader = Thread.currentThread().getContextClassLoader();
             checkNotNull(isolatedWeavingClassLoader);
-            ClassLoaders.defineClassesInClassLoader(lazyAdvisors.values(),
+            ClassLoaders.defineClasses(lazyAdvisors.values(),
                     isolatedWeavingClassLoader);
         } else {
             ClassLoaders.createDirectoryOrCleanPreviousContentsWithPrefix(tmpDir,
@@ -178,40 +175,38 @@ public class AdviceCache {
         return !versions.equals(this.reweavableConfigVersions);
     }
 
-    private static List<Advice> getAdvisors(Class<?> aspectClass) {
+    private static List<Advice> getAdvisors(List<PointcutClass> adviceClasses) {
         List<Advice> advisors = Lists.newArrayList();
-        for (Class<?> memberClass : aspectClass.getClasses()) {
-            if (memberClass.isAnnotationPresent(Pointcut.class)) {
-                try {
-                    advisors.add(new AdviceBuilder(memberClass).build());
-                } catch (Throwable t) {
-                    logger.error("error creating advice: {}", memberClass.getName(), t);
-                }
+        for (PointcutClass adviceClass : adviceClasses) {
+            try {
+                advisors.add(new AdviceBuilder(adviceClass).build());
+            } catch (Throwable t) {
+                logger.error("error creating advice: {}", adviceClass.type().getClassName(), t);
             }
         }
         return advisors;
     }
 
-    private static List<ShimType> getShimTypes(Class<?> aspectClass) {
+    private static List<MixinType> getMixinTypes(List<MixinClass> mixinClasses) throws IOException {
+        List<MixinType> mixinTypes = Lists.newArrayList();
+        for (MixinClass mixinClass : mixinClasses) {
+            mixinTypes.add(MixinType.create(mixinClass));
+        }
+        return mixinTypes;
+    }
+
+    private static List<ShimType> getShimTypes(List<ShimClass> shimClasses)
+            throws ClassNotFoundException {
         List<ShimType> shimTypes = Lists.newArrayList();
-        for (Class<?> memberClass : aspectClass.getClasses()) {
-            Shim shim = memberClass.getAnnotation(Shim.class);
+        for (ShimClass shimClass : shimClasses) {
+            Class<?> clazz = Class.forName(shimClass.type().getClassName(), false,
+                    AdviceCache.class.getClassLoader());
+            Shim shim = clazz.getAnnotation(Shim.class);
             if (shim != null) {
-                shimTypes.add(ShimType.create(shim, memberClass));
+                shimTypes.add(ShimType.create(shim, clazz));
             }
         }
         return shimTypes;
-    }
-
-    private static List<MixinType> getMixinTypes(Class<?> aspectClass) throws IOException {
-        List<MixinType> mixinTypes = Lists.newArrayList();
-        for (Class<?> memberClass : aspectClass.getClasses()) {
-            Mixin mixin = memberClass.getAnnotation(Mixin.class);
-            if (mixin != null) {
-                mixinTypes.add(MixinType.create(mixin, memberClass));
-            }
-        }
-        return mixinTypes;
     }
 
     private static ImmutableList<Advice> createReweavableAdvisors(
@@ -225,7 +220,7 @@ public class AdviceCache {
             ClassLoader isolatedWeavingClassLoader =
                     Thread.currentThread().getContextClassLoader();
             checkNotNull(isolatedWeavingClassLoader);
-            ClassLoaders.defineClassesInClassLoader(advisors.values(), isolatedWeavingClassLoader);
+            ClassLoaders.defineClasses(advisors.values(), isolatedWeavingClassLoader);
         } else {
             if (cleanTmpDir) {
                 ClassLoaders.createDirectoryOrCleanPreviousContentsWithPrefix(tmpDir,

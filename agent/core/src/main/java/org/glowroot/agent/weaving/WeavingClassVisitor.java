@@ -115,6 +115,8 @@ class WeavingClassVisitor extends ClassVisitor {
     private @MonotonicNonNull String metaHolderInternalName;
     private int methodMetaCounter;
 
+    private final Set<Advice> usedAdvisors = Sets.newHashSet();
+
     public WeavingClassVisitor(ClassWriter cw, @Nullable ClassLoader loader, boolean frames,
             boolean noLongerNeedToWeaveMainMethods, AnalyzedClass analyzedClass,
             List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice, List<ShimType> shimTypes,
@@ -216,6 +218,10 @@ class WeavingClassVisitor extends ClassVisitor {
             return mv;
         }
         return visitMethodWithAdvice(mv, access, name, desc, matchingAdvisors);
+    }
+
+    Set<Advice> getUsedAdvisors() {
+        return usedAdvisors;
     }
 
     private boolean isMixinProxy(String name, String desc) {
@@ -454,7 +460,6 @@ class WeavingClassVisitor extends ClassVisitor {
     private MethodVisitor visitInitWithMixins(int access, String name, String desc,
             @Nullable String signature, String /*@Nullable*/ [] exceptions,
             List<Advice> matchingAdvisors) {
-        Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, name, desc);
         MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
         mv = new InitMixins(mv, access, name, desc, mixinTypes, type);
         for (Advice advice : matchingAdvisors) {
@@ -463,17 +468,35 @@ class WeavingClassVisitor extends ClassVisitor {
                 break;
             }
         }
-        return new WeavingMethodVisitor(mv, frames, access, name, desc, type, matchingAdvisors,
-                metaHolderInternalName, methodMetaUniqueNum, loader == null);
+        return newWeavingMethodVisitor(access, name, desc, matchingAdvisors, mv);
     }
 
     @RequiresNonNull("type")
     private MethodVisitor visitMethodWithAdvice(MethodVisitor mv, int access, String name,
-            String desc, Iterable<Advice> matchingAdvisors) {
+            String desc, List<Advice> matchingAdvisors) {
         // FIXME remove superseded advisors
+        return newWeavingMethodVisitor(access, name, desc, matchingAdvisors, mv);
+    }
+
+    @RequiresNonNull("type")
+    private WeavingMethodVisitor newWeavingMethodVisitor(int access, String name, String desc,
+            List<Advice> matchingAdvisors, MethodVisitor mv) {
         Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, name, desc);
-        return new WeavingMethodVisitor(mv, frames, access, name, desc, type, matchingAdvisors,
-                metaHolderInternalName, methodMetaUniqueNum, loader == null);
+        usedAdvisors.addAll(matchingAdvisors);
+        return new WeavingMethodVisitor(mv, frames, access, name, desc, type,
+                hackAdvisors(matchingAdvisors), metaHolderInternalName, methodMetaUniqueNum,
+                loader == null);
+    }
+
+    private List<Advice> hackAdvisors(List<Advice> advisors) {
+        // if (loader == null) {
+        return advisors;
+        // }
+        // List<Advice> hackedAdvisors = Lists.newArrayList();
+        // for (Advice advice : advisors) {
+        // hackedAdvisors.add(MoreObjects.firstNonNull(advice.nonBootstrapLoaderAdvice(), advice));
+        // }
+        // return hackedAdvisors;
     }
 
     private @Nullable Integer collectMetasAtMethod(Iterable<Advice> matchingAdvisors,
