@@ -194,6 +194,34 @@ public class HttpClient {
         runAsyncHttpClient2x("2.0.35", "4.0.51.Final");
         runAsyncHttpClient2x("2.0.36", "4.0.51.Final");
         runAsyncHttpClient2x("2.0.37", "4.0.52.Final");
+        runAsyncHttpClient2x("2.0.38", "4.0.54.Final");
+        runAsyncHttpClient2x("2.0.39", "4.0.56.Final");
+
+        runAsyncHttpClient2x("2.1.0", "4.1.19.Final");
+        runAsyncHttpClient2x("2.1.1", "4.1.19.Final");
+        runAsyncHttpClient2x("2.1.2", "4.1.19.Final");
+
+        runAsyncHttpClient2x("2.2.0", "4.1.20.Final");
+        runAsyncHttpClient2x("2.2.1", "4.1.20.Final");
+
+        runAsyncHttpClient2x("2.3.0", "4.1.21.Final");
+
+        runAsyncHttpClient2x("2.4.0", "4.1.21.Final");
+        runAsyncHttpClient2x("2.4.1", "4.1.21.Final");
+        runAsyncHttpClient2x("2.4.2", "4.1.22.Final");
+        runAsyncHttpClient2x("2.4.3", "4.1.22.Final");
+        runAsyncHttpClient2x("2.4.4", "4.1.22.Final");
+        runAsyncHttpClient2x("2.4.5", "4.1.23.Final");
+        runAsyncHttpClient2x("2.4.6", "4.1.24.Final");
+        runAsyncHttpClient2x("2.4.7", "4.1.24.Final");
+        runAsyncHttpClient2x("2.4.8", "4.1.25.Final");
+        runAsyncHttpClient2x("2.4.9", "4.1.25.Final");
+
+        runAsyncHttpClient2x("2.5.0", "4.1.25.Final");
+        runAsyncHttpClient2x("2.5.1", "4.1.26.Final");
+        runAsyncHttpClient2x("2.5.2", "4.1.27.Final");
+        runAsyncHttpClient2x("2.5.3", "4.1.29.Final");
+        runAsyncHttpClient2x("2.5.4", "4.1.30.Final");
     }
 
     private static void cxfClient() throws Exception {
@@ -323,7 +351,7 @@ public class HttpClient {
 
     private static void runAsyncHttpClient1x(String asyncHttpClientVersion) throws Exception {
         final String test = "AsyncHttpClientPluginIT";
-        updateLibVersion("asynchttpclient.version", asyncHttpClientVersion);
+        updateLibVersion("asynchttpclient1x.version", asyncHttpClientVersion);
         if (asyncHttpClientVersion.startsWith("1.9")) {
             runJava7(test, "async-http-client-1.x");
         } else {
@@ -334,7 +362,7 @@ public class HttpClient {
     private static void runAsyncHttpClient2x(String asyncHttpClientVersion, String nettyVersion)
             throws Exception {
         final String test = "AsyncHttpClientPluginIT";
-        updateLibVersion("asynchttpclient.version", asyncHttpClientVersion);
+        updateLibVersion("asynchttpclient2x.version", asyncHttpClientVersion);
         updateLibVersion("netty.version", nettyVersion);
         runJava8(test, "async-http-client-2.x");
     }

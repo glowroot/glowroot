@@ -104,16 +104,24 @@ class Util {
         report.println(javaVersion);
         List<String> command = Lists.newArrayList();
         command.add(MVN);
-        if (profiles.length > 0) {
-            command.add("-P");
-            command.add(Joiner.on(',').join(profiles));
+        command.add("-P");
+        // don't recompile plugin classes since in some cases they won't recompile with older
+        // versions of libraries
+        // need to recompile tests in some cases to align bytecode with test version
+        // also need to recompile tests in some cases where default test compilation target is 1.7
+        // but there is alternate 1.6 profile triggered above by -Dglowroot.test.java6
+        StringBuilder sb = new StringBuilder("compile-test-classes-only");
+        for (String profile : profiles) {
+            sb.append(",");
+            sb.append(profile);
         }
+        command.add(sb.toString());
         command.add("-pl");
         command.add(modulePath);
         command.add("-Djvm=" + javaVersion.getJavaHome() + File.separator + "bin" + File.separator
                 + "java");
         if (javaVersion == JavaVersion.JAVA6) {
-            command.add("-Dglowroot.forceJava6");
+            command.add("-Dglowroot.test.java6");
         }
         // cassandra plugin tests need java7.home when running under java 6 in order to run
         // cassandra itself
@@ -124,11 +132,12 @@ class Util {
         command.add("-Dglowroot.it.harness=javaagent");
         command.add("-Dglowroot.test.shaded");
         command.add("-Denforcer.skip");
+        command.add("-Danimal.sniffer.skip");
         String sourceOfRandomness = System.getProperty("java.security.egd");
         if (sourceOfRandomness != null) {
             command.add("-Djava.security.egd=" + sourceOfRandomness);
         }
-        command.add("clean");
+        command.add("clean"); // using profile above "clean-test-classes-only"
         command.add("verify");
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);

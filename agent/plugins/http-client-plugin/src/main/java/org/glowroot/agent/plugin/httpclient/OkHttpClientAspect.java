@@ -17,6 +17,8 @@ package org.glowroot.agent.plugin.httpclient;
 
 import java.net.URL;
 
+import com.squareup.okhttp.Request;
+
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.AsyncTraceEntry;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
@@ -35,17 +37,8 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.api.weaving.Shim;
 
 public class OkHttpClientAspect {
-
-    @Shim("com.squareup.okhttp.Request")
-    public interface Request {
-        @Nullable
-        String method();
-        @Nullable
-        URL url();
-    }
 
     // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin("com.squareup.okhttp.Callback")

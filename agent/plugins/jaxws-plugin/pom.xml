@@ -209,10 +209,10 @@
       </dependencies>
     </profile>
     <profile>
-      <id>not-force-java6</id>
+      <id>not-test-java6</id>
       <activation>
         <property>
-          <name>!glowroot.forceJava6</name>
+          <name>!glowroot.test.java6</name>
         </property>
       </activation>
       <dependencies>
@@ -248,10 +248,10 @@
       </dependencies>
     </profile>
     <profile>
-      <id>force-java6</id>
+      <id>test-java6</id>
       <activation>
         <property>
-          <name>glowroot.forceJava6</name>
+          <name>glowroot.test.java6</name>
         </property>
       </activation>
       <build>

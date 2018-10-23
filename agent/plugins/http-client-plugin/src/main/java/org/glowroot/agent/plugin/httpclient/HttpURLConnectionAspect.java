@@ -17,6 +17,7 @@ package org.glowroot.agent.plugin.httpclient;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -38,19 +39,12 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.api.weaving.Shim;
 
 public class HttpURLConnectionAspect {
 
     private static final Logger logger = Logger.getLogger(HttpURLConnectionAspect.class);
     private static final AtomicBoolean inputStreamIssueAlreadyLogged = new AtomicBoolean();
     private static final AtomicBoolean outputStreamIssueAlreadyLogged = new AtomicBoolean();
-
-    @Shim("java.net.HttpURLConnection")
-    public interface HttpURLConnection {
-        String getRequestMethod();
-        URL getURL();
-    }
 
     // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin({"java.net.HttpURLConnection",
@@ -129,7 +123,7 @@ public class HttpURLConnectionAspect {
         private static final TimerName timerName = Agent.getTimerName(ConnectAdvice.class);
         @OnBefore
         public static @Nullable TraceEntryOrTimer onBefore(ThreadContext threadContext,
-                @BindReceiver Object httpURLConnection) {
+                @BindReceiver HttpURLConnection httpURLConnection) {
             return onBefore(threadContext, httpURLConnection, false);
         }
         @OnReturn
@@ -146,15 +140,14 @@ public class HttpURLConnectionAspect {
             }
         }
         private static @Nullable TraceEntryOrTimer onBefore(ThreadContext threadContext,
-                Object httpURLConnectionObj, boolean overrideGetWithPost) {
-            if (!(httpURLConnectionObj instanceof HasTraceEntry)) {
+                HttpURLConnection httpURLConnection, boolean overrideGetWithPost) {
+            if (!(httpURLConnection instanceof HasTraceEntry)) {
                 return null;
             }
-            TraceEntry traceEntry = ((HasTraceEntry) httpURLConnectionObj).glowroot$getTraceEntry();
+            TraceEntry traceEntry = ((HasTraceEntry) httpURLConnection).glowroot$getTraceEntry();
             if (traceEntry != null) {
                 return new TraceEntryOrTimer(traceEntry.extend());
             }
-            HttpURLConnection httpURLConnection = (HttpURLConnection) httpURLConnectionObj;
             String method = httpURLConnection.getRequestMethod();
             if (method == null) {
                 method = "";
@@ -175,7 +168,7 @@ public class HttpURLConnectionAspect {
             traceEntry = threadContext.startServiceCallEntry("HTTP",
                     method + Uris.stripQueryString(url),
                     MessageSupplier.create("http client request: {}{}", method, url), timerName);
-            ((HasTraceEntry) httpURLConnectionObj).glowroot$setTraceEntry(traceEntry);
+            ((HasTraceEntry) httpURLConnection).glowroot$setTraceEntry(traceEntry);
             return new TraceEntryOrTimer(traceEntry);
         }
     }
@@ -186,7 +179,7 @@ public class HttpURLConnectionAspect {
     public static class GetInputStreamAdvice {
         @OnBefore
         public static @Nullable TraceEntryOrTimer onBefore(ThreadContext threadContext,
-                @BindReceiver Object httpURLConnection) {
+                @BindReceiver HttpURLConnection httpURLConnection) {
             return ConnectAdvice.onBefore(threadContext, httpURLConnection, false);
         }
         @OnReturn
@@ -219,7 +212,7 @@ public class HttpURLConnectionAspect {
     public static class GetOutputStreamAdvice {
         @OnBefore
         public static @Nullable TraceEntryOrTimer onBefore(ThreadContext threadContext,
-                @BindReceiver Object httpURLConnection) {
+                @BindReceiver HttpURLConnection httpURLConnection) {
             return ConnectAdvice.onBefore(threadContext, httpURLConnection, true);
         }
         @OnReturn

@@ -17,10 +17,10 @@ package org.glowroot.agent.plugin.httpclient;
 
 import java.net.URI;
 
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequest;
-import org.apache.http.RequestLine;
-import org.apache.http.client.methods.HttpUriRequest;
+import wiremock.org.apache.http.HttpHost;
+import wiremock.org.apache.http.HttpRequest;
+import wiremock.org.apache.http.RequestLine;
+import wiremock.org.apache.http.client.methods.HttpUriRequest;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.MessageSupplier;
@@ -36,11 +36,10 @@ import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
-// see nearly identical copy of this in WiremockApacheHttpClientAspect
-public class ApacheHttpClientAspect {
+public class WiremockApacheHttpClientAspect {
 
-    @Pointcut(className = "org.apache.http.client.HttpClient", methodName = "execute",
-            methodParameterTypes = {"org.apache.http.client.methods.HttpUriRequest", ".."},
+    @Pointcut(className = "wiremock.org.apache.http.client.HttpClient", methodName = "execute",
+            methodParameterTypes = {"wiremock.org.apache.http.client.methods.HttpUriRequest", ".."},
             nestingGroup = "http-client", timerName = "http client request")
     public static class ExecuteAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteAdvice.class);
@@ -82,9 +81,9 @@ public class ApacheHttpClientAspect {
         }
     }
 
-    @Pointcut(className = "org.apache.http.client.HttpClient", methodName = "execute",
-            methodParameterTypes = {"org.apache.http.HttpHost", "org.apache.http.HttpRequest",
-                    ".."},
+    @Pointcut(className = "wiremock.org.apache.http.client.HttpClient", methodName = "execute",
+            methodParameterTypes = {"wiremock.org.apache.http.HttpHost",
+                    "wiremock.org.apache.http.HttpRequest", ".."},
             nestingGroup = "http-client", timerName = "http client request")
     public static class ExecuteWithHostAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteWithHostAdvice.class);

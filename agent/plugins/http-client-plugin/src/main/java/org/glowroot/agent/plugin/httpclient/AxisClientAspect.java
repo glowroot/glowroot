@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.plugin.httpclient;
 
+import org.apache.axis.client.Call;
+
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
@@ -25,14 +27,8 @@ import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.api.weaving.Shim;
 
 public class AxisClientAspect {
-
-    @Shim("org.apache.axis.client.Call")
-    public interface Call {
-        String getTargetEndpointAddress();
-    }
 
     @Pointcut(className = "org.apache.axis.client.Call", methodName = "invoke",
             methodParameterTypes = {}, nestingGroup = "http-client", timerName = "axis service")

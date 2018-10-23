@@ -15,6 +15,11 @@
  */
 package org.glowroot.agent.plugin.httpclient;
 
+import org.apache.commons.httpclient.HostConfiguration;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.URI;
+import org.apache.commons.httpclient.URIException;
+
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
@@ -28,20 +33,8 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.api.weaving.Shim;
 
 public class ApacheHttpClient3xAspect {
-
-    @Shim("org.apache.commons.httpclient.HttpMethod")
-    public interface HttpMethod {
-
-        @Nullable
-        String getName();
-
-        @Shim("org.apache.commons.httpclient.URI getURI()")
-        @Nullable
-        Object glowroot$getURI();
-    }
 
     @Pointcut(className = "org.apache.commons.httpclient.HttpClient", methodName = "executeMethod",
             methodParameterTypes = {"org.apache.commons.httpclient.HostConfiguration",
@@ -52,7 +45,7 @@ public class ApacheHttpClient3xAspect {
         private static final TimerName timerName = Agent.getTimerName(ExecuteMethodAdvice.class);
         @OnBefore
         public static @Nullable TraceEntry onBefore(ThreadContext context,
-                @SuppressWarnings("unused") @BindParameter @Nullable Object hostConfiguration,
+                @SuppressWarnings("unused") @BindParameter @Nullable HostConfiguration hostConfiguration,
                 @BindParameter @Nullable HttpMethod methodObj) {
             if (methodObj == null) {
                 return null;
@@ -63,15 +56,19 @@ public class ApacheHttpClient3xAspect {
             } else {
                 method += " ";
             }
-            Object uriObj = methodObj.glowroot$getURI();
             String uri;
-            if (uriObj == null) {
-                uri = "";
-            } else {
-                uri = uriObj.toString();
-                if (uri == null) {
+            try {
+                URI uriObj = methodObj.getURI();
+                if (uriObj == null) {
                     uri = "";
+                } else {
+                    uri = uriObj.getURI();
+                    if (uri == null) {
+                        uri = "";
+                    }
                 }
+            } catch (URIException e) {
+                uri = "";
             }
             return context.startServiceCallEntry("HTTP", method + Uris.stripQueryString(uri),
                     MessageSupplier.create("http client request: {}{}", method, uri),

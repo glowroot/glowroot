@@ -22,6 +22,9 @@
     <apache.httpasyncclient.version>4.1.4</apache.httpasyncclient.version>
     <apache.httpclient3x.version>3.1</apache.httpclient3x.version>
     <apache.httpcore.version>4.4.10</apache.httpcore.version>
+    <asynchttpclient1x.version>1.9.40</asynchttpclient1x.version>
+    <asynchttpclient2x.version>2.5.4</asynchttpclient2x.version>
+    <wiremock.version>2.19.0</wiremock.version>
     <okhttpclient.version>2.7.5</okhttpclient.version>
     <!-- CXF 3.2.0+ requires Java 8+ -->
     <cxf.version>3.1.15</cxf.version>
@@ -38,6 +41,90 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>${apache.httpclient.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpasyncclient</artifactId>
+      <version>${apache.httpasyncclient.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+      <version>${apache.httpcore.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-httpclient</groupId>
+      <artifactId>commons-httpclient</artifactId>
+      <version>${apache.httpclient3x.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.ning</groupId>
+      <artifactId>async-http-client</artifactId>
+      <version>${asynchttpclient1x.version}</version> <!-- $NO-MVN-MAN-VER$ -->
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.asynchttpclient</groupId>
+      <artifactId>async-http-client</artifactId>
+      <version>${asynchttpclient2x.version}</version>
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.asynchttpclient</groupId>
+          <artifactId>async-http-client-netty-utils</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-codec-http</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-handler</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-codec-socks</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-handler-proxy</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-transport-native-epoll</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-resolver-dns</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.squareup.okhttp</groupId>
+      <artifactId>okhttp</artifactId>
+      <version>${okhttpclient.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>axis</groupId>
+      <artifactId>axis</artifactId>
+      <version>1.4</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -50,30 +137,6 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-      <version>${apache.httpclient.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpasyncclient</artifactId>
-      <version>${apache.httpasyncclient.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>commons-httpclient</groupId>
-      <artifactId>commons-httpclient</artifactId>
-      <version>${apache.httpclient3x.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.squareup.okhttp</groupId>
-      <artifactId>okhttp</artifactId>
-      <version>${okhttpclient.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -119,12 +182,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>axis</groupId>
-      <artifactId>axis</artifactId>
-      <version>1.4</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <!-- axis dependency -->
       <groupId>javax.xml.rpc</groupId>
       <artifactId>javax.xml.rpc-api</artifactId>
@@ -146,18 +203,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <!-- executor plugin is included to test suppression of "wait for future" timer
-        and also to test that it has no other adverse effects -->
+      <!-- executor plugin is included to test suppression of "wait for future" timer and also to test
+        that it has no other adverse effects -->
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent-executor-plugin</artifactId>
       <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpcore</artifactId>
-      <version>${apache.httpcore.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -249,14 +299,24 @@
       </dependencies>
     </profile>
     <profile>
-      <id>not-force-java6</id>
+      <id>not-test-java6</id>
       <activation>
         <property>
-          <name>!glowroot.forceJava6</name>
+          <name>!glowroot.test.java6</name>
         </property>
       </activation>
       <dependencies>
-        <!-- these dependencies require Java 7+ -->
+        <dependency>
+          <!-- wiremock-standalone is needed in order to compile against
+            wiremock.org.apache.http.HttpRequest, but the artifact also causes problems when running
+            tests against Java 6 because it includes (non-shaded) Servlet 3.1 API (which is compiled
+            against Java 7) -->
+          <groupId>com.github.tomakehurst</groupId>
+          <artifactId>wiremock-standalone</artifactId>
+          <version>${wiremock.version}</version>
+          <scope>provided</scope>
+        </dependency>
+        <!-- dependencies below are required on Java 7+ -->
         <dependency>
           <!-- this is needed for running tests on Java 9 -->
           <groupId>javax.xml.bind</groupId>
@@ -302,10 +362,10 @@
       </dependencies>
     </profile>
     <profile>
-      <id>force-java6</id>
+      <id>test-java6</id>
       <activation>
         <property>
-          <name>glowroot.forceJava6</name>
+          <name>glowroot.test.java6</name>
         </property>
       </activation>
       <build>
@@ -347,16 +407,17 @@
     <profile>
       <id>async-http-client-2.x</id>
       <properties>
-        <asynchttpclient.version>2.0.37</asynchttpclient.version>
+        <asynchttpclient2x.version>2.5.4</asynchttpclient2x.version>
         <!-- this is needed because netty version is dependency managed in the parent pom -->
-        <netty.version>4.0.52.Final</netty.version>
+        <netty.version>4.1.30.Final</netty.version>
       </properties>
       <dependencies>
         <dependency>
+          <!-- need to override already included dependency without the exclusions -->
           <groupId>org.asynchttpclient</groupId>
           <artifactId>async-http-client</artifactId>
-          <version>${asynchttpclient.version}</version>
-          <scope>test</scope>
+          <version>${asynchttpclient2x.version}</version>
+          <scope>provided</scope>
         </dependency>
       </dependencies>
       <build>
@@ -383,15 +444,13 @@
     </profile>
     <profile>
       <id>async-http-client-1.x</id>
-      <properties>
-        <asynchttpclient.version>1.9.40</asynchttpclient.version>
-      </properties>
       <dependencies>
         <dependency>
+          <!-- need to override already included dependency without the exclusions -->
           <groupId>com.ning</groupId>
           <artifactId>async-http-client</artifactId>
-          <version>${asynchttpclient.version}</version>
-          <scope>test</scope>
+          <version>${asynchttpclient1x.version}</version>
+          <scope>provided</scope>
         </dependency>
       </dependencies>
       <build>
