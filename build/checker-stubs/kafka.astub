@@ -1,0 +1,8 @@
+import org.checkerframework.checker.nullness.qual.*;
+
+/* ========================================================================== */
+package org.apache.kafka.clients.producer;
+
+public class Callback {
+    public void onCompletion(@Nullable RecordMetadata metadata, @Nullable Exception exception);
+}

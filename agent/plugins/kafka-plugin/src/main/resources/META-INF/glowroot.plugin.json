@@ -1,0 +1,20 @@
+{
+  "name": "Kafka Plugin",
+  "id": "kafka",
+  "instrumentation": [
+    {
+      "className": "org.apache.kafka.clients.consumer.KafkaConsumer",
+      "methodName": "poll",
+      "methodParameterTypes": [
+        "long"
+      ],
+      "nestingGroup": "kafka-poll",
+      "captureKind": "trace-entry",
+      "timerName": "kafka poll",
+      "traceEntryMessageTemplate": "kafka poll => {{_.count}}"
+    }
+  ],
+  "aspects": [
+    "org.glowroot.agent.plugin.kafka.ProducerAspect"
+  ]
+}

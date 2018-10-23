@@ -67,6 +67,7 @@
     <module>agent/plugins/jms-plugin</module>
     <module>agent/plugins/jsf-plugin</module>
     <module>agent/plugins/jsp-plugin</module>
+    <module>agent/plugins/kafka-plugin</module>
     <module>agent/plugins/logger-plugin</module>
     <module>agent/plugins/netty-plugin</module>
     <module>agent/plugins/play-plugin</module>

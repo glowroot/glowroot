@@ -50,7 +50,7 @@ import static org.objectweb.asm.Opcodes.ASM7;
 
 class PluginDetailBuilder {
 
-    private static final Set<String> collocateInClassLoaderPluginIds = ImmutableSet.of();
+    private static final Set<String> collocateInClassLoaderPluginIds = ImmutableSet.of("kafka");
 
     private PluginDescriptor pluginDescriptor;
     private boolean collocateInClassLoader;

@@ -32,6 +32,7 @@ test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-h
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-jdbc-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-jms-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-jsp-plugin"
+test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-kafka-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-logger-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-play-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-quartz-plugin"
