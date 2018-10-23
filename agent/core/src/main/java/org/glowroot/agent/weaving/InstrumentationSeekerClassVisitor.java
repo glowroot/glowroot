@@ -59,9 +59,9 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
     }
 
     @Override
-    public MethodVisitor visitMethod(int access, String name, String desc,
+    public MethodVisitor visitMethod(int access, String name, String descriptor,
             @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-        return new InstrumentationAnnotationMethodVisitor(name, desc);
+        return new InstrumentationAnnotationMethodVisitor(name, descriptor);
     }
 
     List<InstrumentationConfig> getInstrumentationConfigs() {
@@ -71,30 +71,30 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
     private class InstrumentationAnnotationMethodVisitor extends MethodVisitor {
 
         private final String methodName;
-        private final String desc;
+        private final String descriptor;
 
         private @MonotonicNonNull TransactionAnnotationVisitor transactionAnnotationVisitor;
         private @MonotonicNonNull TraceEntryAnnotationVisitor traceEntryAnnotationVisitor;
         private @MonotonicNonNull TimerAnnotationVisitor timerAnnotationVisitor;
 
-        private InstrumentationAnnotationMethodVisitor(String methodName, String desc) {
+        private InstrumentationAnnotationMethodVisitor(String methodName, String descriptor) {
             super(ASM7);
             this.methodName = methodName;
-            this.desc = desc;
+            this.descriptor = descriptor;
         }
 
         @Override
-        public @Nullable AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-            if (desc.equals("Lorg/glowroot/agent/api/Instrumentation$Transaction;")
-                    || desc.equals("Lorg/glowroot/agent/api/Instrument$Transaction;")) {
+        public @Nullable AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+            if (descriptor.equals("Lorg/glowroot/agent/api/Instrumentation$Transaction;")
+                    || descriptor.equals("Lorg/glowroot/agent/api/Instrument$Transaction;")) {
                 transactionAnnotationVisitor = new TransactionAnnotationVisitor();
                 return transactionAnnotationVisitor;
-            } else if (desc.equals("Lorg/glowroot/agent/api/Instrumentation$TraceEntry;")
-                    || desc.equals("Lorg/glowroot/agent/api/Instrument$TraceEntry;")) {
+            } else if (descriptor.equals("Lorg/glowroot/agent/api/Instrumentation$TraceEntry;")
+                    || descriptor.equals("Lorg/glowroot/agent/api/Instrument$TraceEntry;")) {
                 traceEntryAnnotationVisitor = new TraceEntryAnnotationVisitor();
                 return traceEntryAnnotationVisitor;
-            } else if (desc.equals("Lorg/glowroot/agent/api/Instrumentation$Timer;")
-                    || desc.equals("Lorg/glowroot/agent/api/Instrument$Timer;")) {
+            } else if (descriptor.equals("Lorg/glowroot/agent/api/Instrumentation$Timer;")
+                    || descriptor.equals("Lorg/glowroot/agent/api/Instrument$Timer;")) {
                 timerAnnotationVisitor = new TimerAnnotationVisitor();
                 return timerAnnotationVisitor;
             }
@@ -196,7 +196,7 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
         @RequiresNonNull("owner")
         private ImmutableInstrumentationConfig.Builder startBuilder() {
             Type type = Type.getObjectType(owner);
-            Type[] argumentTypes = Type.getArgumentTypes(desc);
+            Type[] argumentTypes = Type.getArgumentTypes(descriptor);
             ImmutableInstrumentationConfig.Builder builder =
                     ImmutableInstrumentationConfig.builder()
                             .className(type.getClassName())

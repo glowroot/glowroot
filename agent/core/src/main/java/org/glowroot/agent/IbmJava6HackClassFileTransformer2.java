@@ -75,11 +75,11 @@ class IbmJava6HackClassFileTransformer2 implements ClassFileTransformer {
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String desc,
+        public MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
-            if (name.equals(methodName) && desc.endsWith(")Ljava/util/Set;")) {
-                return new IbmJava6HackMethodAdvice(mv, access, name, desc);
+            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
+            if (name.equals(methodName) && descriptor.endsWith(")Ljava/util/Set;")) {
+                return new IbmJava6HackMethodAdvice(mv, access, name, descriptor);
             } else {
                 return mv;
             }
@@ -88,8 +88,9 @@ class IbmJava6HackClassFileTransformer2 implements ClassFileTransformer {
 
     private static class IbmJava6HackMethodAdvice extends AdviceAdapter {
 
-        private IbmJava6HackMethodAdvice(MethodVisitor mv, int access, String name, String desc) {
-            super(ASM7, mv, access, name, desc);
+        private IbmJava6HackMethodAdvice(MethodVisitor mv, int access, String name,
+                String descriptor) {
+            super(ASM7, mv, access, name, descriptor);
         }
 
         @Override

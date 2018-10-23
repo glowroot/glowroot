@@ -30,10 +30,10 @@ class JSRInlinerClassVisitor extends ClassVisitor {
     }
 
     @Override
-    public MethodVisitor visitMethod(int access, String name, String desc,
+    public MethodVisitor visitMethod(int access, String name, String descriptor,
             @Nullable String signature, String /*@Nullable*/ [] exceptions) {
         MethodVisitor mv =
-                checkNotNull(cv).visitMethod(access, name, desc, signature, exceptions);
-        return new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions);
+                checkNotNull(cv).visitMethod(access, name, descriptor, signature, exceptions);
+        return new JSRInlinerAdapter(mv, access, name, descriptor, signature, exceptions);
     }
 }

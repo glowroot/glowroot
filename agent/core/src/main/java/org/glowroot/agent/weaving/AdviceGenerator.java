@@ -257,13 +257,14 @@ class AdviceGenerator {
         if (!checkNotInTransaction && !checkPropertyNotEnabled) {
             return;
         }
-        String desc;
+        String descriptor;
         if (checkNotInTransaction) {
-            desc = "(Lorg/glowroot/agent/plugin/api/OptionalThreadContext;)Z";
+            descriptor = "(Lorg/glowroot/agent/plugin/api/OptionalThreadContext;)Z";
         } else {
-            desc = "()Z";
+            descriptor = "()Z";
         }
-        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "isEnabled", desc, null, null);
+        MethodVisitor mv =
+                cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "isEnabled", descriptor, null, null);
         visitAnnotation(mv, "Lorg/glowroot/agent/plugin/api/weaving/IsEnabled;");
         mv.visitCode();
         if (checkNotInTransaction && !checkPropertyNotEnabled) {
@@ -429,23 +430,23 @@ class AdviceGenerator {
     }
 
     private MethodVisitor visitOnBeforeMethod(ClassWriter cw, String returnInternalName) {
-        StringBuilder desc = new StringBuilder();
-        desc.append("(");
+        StringBuilder descriptor = new StringBuilder();
+        descriptor.append("(");
         if (config.isTransaction()) {
-            desc.append("Lorg/glowroot/agent/plugin/api/OptionalThreadContext;");
+            descriptor.append("Lorg/glowroot/agent/plugin/api/OptionalThreadContext;");
         } else {
-            desc.append("Lorg/glowroot/agent/plugin/api/ThreadContext;");
+            descriptor.append("Lorg/glowroot/agent/plugin/api/ThreadContext;");
         }
         if (methodMetaInternalName != null) {
-            desc.append("Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Object;L");
-            desc.append(methodMetaInternalName);
-            desc.append(";)");
+            descriptor.append("Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Object;L");
+            descriptor.append(methodMetaInternalName);
+            descriptor.append(";)");
         } else {
-            desc.append(")");
+            descriptor.append(")");
         }
-        desc.append(returnInternalName);
-        MethodVisitor mv =
-                cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onBefore", desc.toString(), null, null);
+        descriptor.append(returnInternalName);
+        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onBefore",
+                descriptor.toString(), null, null);
         visitAnnotation(mv, "Lorg/glowroot/agent/plugin/api/weaving/OnBefore;");
         if (methodMetaInternalName != null) {
             checkNotNull(mv.visitParameterAnnotation(1,
@@ -758,8 +759,8 @@ class AdviceGenerator {
         mv.visitEnd();
     }
 
-    private static void visitAnnotation(MethodVisitor mv, String desc) {
-        AnnotationVisitor av = mv.visitAnnotation(desc, true);
+    private static void visitAnnotation(MethodVisitor mv, String descriptor) {
+        AnnotationVisitor av = mv.visitAnnotation(descriptor, true);
         checkNotNull(av);
         av.visitEnd();
     }

@@ -65,11 +65,10 @@ class Java9HackClassFileTransformer implements ClassFileTransformer {
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String desc,
+        public MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            if (name.equals("transform")
-                    && desc.equals("(Ljava/lang/ClassLoader;Ljava/lang/String;Ljava/lang/Class;"
-                            + "Ljava/security/ProtectionDomain;[B)[B")) {
+            if (name.equals("transform") && descriptor.equals("(Ljava/lang/ClassLoader;"
+                    + "Ljava/lang/String;Ljava/lang/Class;Ljava/security/ProtectionDomain;[B)[B")) {
                 MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, "transform",
                         "(Ljava/lang/Module;Ljava/lang/ClassLoader;Ljava/lang/String;"
                                 + "Ljava/lang/Class;Ljava/security/ProtectionDomain;[B)[B",
@@ -91,7 +90,7 @@ class Java9HackClassFileTransformer implements ClassFileTransformer {
                 mv.visitMaxs(7, 7);
                 mv.visitEnd();
             }
-            return cw.visitMethod(access, name, desc, signature, exceptions);
+            return cw.visitMethod(access, name, descriptor, signature, exceptions);
         }
     }
 }

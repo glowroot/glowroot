@@ -126,17 +126,18 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     private int[] savedArgLocals = new int[0];
 
-    WeavingMethodVisitor(MethodVisitor mv, boolean frames, int access, String name, String desc,
-            Type owner, List<Advice> advisors, @Nullable String metaHolderInternalName,
-            @Nullable Integer methodMetaGroupUniqueNum, boolean bootstrapClassLoader) {
-        super(ASM7, new FrameDeduppingMethodVisitor(mv), access, name, desc);
+    WeavingMethodVisitor(MethodVisitor mv, boolean frames, int access, String name,
+            String descriptor, Type owner, List<Advice> advisors,
+            @Nullable String metaHolderInternalName, @Nullable Integer methodMetaGroupUniqueNum,
+            boolean bootstrapClassLoader) {
+        super(ASM7, new FrameDeduppingMethodVisitor(mv), access, name, descriptor);
         this.frames = frames;
         this.access = access;
         this.name = name;
         this.owner = owner;
         this.advisors = ImmutableList.copyOf(advisors);
-        argumentTypes = Type.getArgumentTypes(desc);
-        returnType = Type.getReturnType(desc);
+        argumentTypes = Type.getArgumentTypes(descriptor);
+        returnType = Type.getReturnType(descriptor);
         this.metaHolderInternalName = metaHolderInternalName;
         this.methodMetaGroupUniqueNum = methodMetaGroupUniqueNum;
         this.bootstrapClassLoader = bootstrapClassLoader;
@@ -224,14 +225,14 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     @Override
-    public void visitLocalVariable(String name, String desc, @Nullable String signature,
+    public void visitLocalVariable(String name, String descriptor, @Nullable String signature,
             Label start, Label end, int index) {
         // the JSRInlinerAdapter writes the local variable "this" across different label ranges
         // so visitedLocalVariableThis is checked and updated to ensure this block is only executed
         // once per method
         //
         if (!name.equals("this") || visitedLocalVariableThis) {
-            super.visitLocalVariable(name, desc, signature, start, end, index);
+            super.visitLocalVariable(name, descriptor, signature, start, end, index);
             return;
         }
         visitedLocalVariableThis = true;
@@ -245,7 +246,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
         // so this is a good place to put the outer end label for the local variable 'this'
         Label outerEndLabel = new Label();
         visitLabel(outerEndLabel);
-        super.visitLocalVariable(name, desc, signature, methodStartLabel, outerEndLabel, index);
+        super.visitLocalVariable(name, descriptor, signature, methodStartLabel, outerEndLabel,
+                index);
         // at the same time, may as well define local vars for enabled and traveler as
         // applicable
         for (int i = 0; i < advisors.size(); i++) {
@@ -612,9 +614,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 OnBefore.class, false, parameterHolderLocals, advice.pointcut().nestingGroup(),
                 advice.pointcut().suppressionKey());
         if (enabledLocal != null && name.equals("<init>")) {
-            String desc = "(Z" + onBeforeAdvice.getDescriptor().substring(1);
+            String descriptor = "(Z" + onBeforeAdvice.getDescriptor().substring(1);
             visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
-                    onBeforeAdvice.getName(), desc, false);
+                    onBeforeAdvice.getName(), descriptor, false);
         } else {
             visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
                     onBeforeAdvice.getName(), onBeforeAdvice.getDescriptor(), false);

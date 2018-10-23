@@ -7,15 +7,15 @@ public class ClassVisitor {
     @Nullable protected ClassVisitor cv;
     public void visit(int version, int access, String name, @Nullable String signature,
             @Nullable String superName, String @Nullable [] interfaces);
-    public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
+    public @Nullable MethodVisitor visitMethod(int access, String name, String descriptor,
             @Nullable String signature, String @Nullable [] exceptions);
-    public @Nullable FieldVisitor visitField(int access, String name, @Nullable String desc,
+    public @Nullable FieldVisitor visitField(int access, String name, @Nullable String descriptor,
             @Nullable String signature, @Nullable Object value);
-    public @Nullable AnnotationVisitor visitAnnotation(String desc, boolean visible);
+    public @Nullable AnnotationVisitor visitAnnotation(String descriptor, boolean visible);
 }
 
 public class MethodVisitor {
-    public @Nullable AnnotationVisitor visitAnnotation(String desc, boolean visible);
+    public @Nullable AnnotationVisitor visitAnnotation(String descriptor, boolean visible);
     public @Nullable AnnotationVisitor visitParameterAnnotation(int parameter, String descriptor,
             boolean visible);
     public void visitFrame(int type, int nLocal, Object @Nullable [] local, int nStack,
@@ -25,9 +25,9 @@ public class MethodVisitor {
 public class ClassWriter {
     public void visit(int version, int access, String name, @Nullable String signature,
             @Nullable String superName, String @Nullable [] interfaces);
-    public MethodVisitor visitMethod(int access, String name, String desc,
+    public MethodVisitor visitMethod(int access, String name, String descriptor,
             @Nullable String signature, String @Nullable [] exceptions);
-    public FieldVisitor visitField(int access, String name, @Nullable String desc,
+    public FieldVisitor visitField(int access, String name, @Nullable String descriptor,
             @Nullable String signature, @Nullable Object value);
 }
 
@@ -45,14 +45,14 @@ public class GeneratorAdapter {
 }
 
 public class LocalVariablesSorter {
-    public void visitLocalVariable(String name, String desc, @Nullable String signature,
+    public void visitLocalVariable(String name, String descriptor, @Nullable String signature,
             Label start, Label end, int index);
     public void visitFrame(int type, int nLocal, Object @Nullable [] local, int nStack,
             Object @Nullable [] stack);
 }
 
 public class JSRInlinerAdapter {
-    public JSRInlinerAdapter(@Nullable MethodVisitor mv, int access, String name, String desc,
+    public JSRInlinerAdapter(@Nullable MethodVisitor mv, int access, String name, String descriptor,
             @Nullable String signature, String @Nullable [] exceptions);
 }
 

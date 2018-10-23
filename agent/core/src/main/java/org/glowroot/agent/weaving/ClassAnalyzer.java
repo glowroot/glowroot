@@ -215,7 +215,7 @@ class ClassAnalyzer {
                 }
             }
             if (!advisors.isEmpty()) {
-                methodAdvisors.put(nonBridgeMethod.name() + nonBridgeMethod.desc(), advisors);
+                methodAdvisors.put(nonBridgeMethod.name() + nonBridgeMethod.descriptor(), advisors);
             }
         }
         AnalyzedClass mostlyAnalyzedClass = analyzedClassBuilder.build();
@@ -257,7 +257,7 @@ class ClassAnalyzer {
 
     @RequiresNonNull("bridgeTargetAdvisors")
     private List<Advice> analyzeMethod(ThinMethod thinMethod) {
-        List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(thinMethod.desc()));
+        List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(thinMethod.descriptor()));
         if (Modifier.isFinal(thinMethod.access()) && Modifier.isPublic(thinMethod.access())) {
             ImmutablePublicFinalMethod.Builder builder = ImmutablePublicFinalMethod.builder()
                     .name(thinMethod.name());
@@ -269,7 +269,7 @@ class ClassAnalyzer {
         if (shortCircuitBeforeAnalyzeMethods) {
             return ImmutableList.of();
         }
-        Type returnType = Type.getReturnType(thinMethod.desc());
+        Type returnType = Type.getReturnType(thinMethod.descriptor());
         List<String> methodAnnotations = thinMethod.annotations();
         List<Advice> matchingAdvisors = getMatchingAdvisors(thinMethod, methodAnnotations,
                 parameterTypes, returnType);
@@ -347,13 +347,14 @@ class ClassAnalyzer {
         BridgeMethodClassVisitor bmcv = new BridgeMethodClassVisitor();
         new ClassReader(classBytes).accept(bmcv, ClassReader.SKIP_FRAMES);
         Map<String, String> bridgeMethodMap = bmcv.getBridgeTargetMethods();
-        String targetMethod = bridgeMethodMap.get(bridgeMethod.name() + bridgeMethod.desc());
+        String targetMethod = bridgeMethodMap.get(bridgeMethod.name() + bridgeMethod.descriptor());
         if (targetMethod == null) {
             // probably a visibility bridge for public method in package-private super class
             return null;
         }
         for (ThinMethod possibleTargetMethod : possibleTargetMethods) {
-            if (targetMethod.equals(possibleTargetMethod.name() + possibleTargetMethod.desc())) {
+            if (targetMethod
+                    .equals(possibleTargetMethod.name() + possibleTargetMethod.descriptor())) {
                 return possibleTargetMethod;
             }
         }
@@ -367,9 +368,9 @@ class ClassAnalyzer {
             if (!possibleTargetMethod.name().equals(bridgeMethod.name())) {
                 continue;
             }
-            Type[] bridgeMethodParamTypes = Type.getArgumentTypes(bridgeMethod.desc());
+            Type[] bridgeMethodParamTypes = Type.getArgumentTypes(bridgeMethod.descriptor());
             Type[] possibleTargetMethodParamTypes =
-                    Type.getArgumentTypes(possibleTargetMethod.desc());
+                    Type.getArgumentTypes(possibleTargetMethod.descriptor());
             if (possibleTargetMethodParamTypes.length != bridgeMethodParamTypes.length) {
                 continue;
             }
@@ -552,7 +553,8 @@ class ClassAnalyzer {
 
     private static boolean hasMainMethod(List<ThinMethod> methods) {
         for (ThinMethod method : methods) {
-            if (method.name().equals("main") && method.desc().equals("([Ljava/lang/String;)V")) {
+            if (method.name().equals("main")
+                    && method.descriptor().equals("([Ljava/lang/String;)V")) {
                 return true;
             }
         }
@@ -736,12 +738,12 @@ class ClassAnalyzer {
         }
 
         @Override
-        public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
+        public @Nullable MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
             if ((access & ACC_BRIDGE) == 0) {
                 return null;
             }
-            return new BridgeMethodVisitor(name, desc);
+            return new BridgeMethodVisitor(name, descriptor);
         }
 
         private class BridgeMethodVisitor extends MethodVisitor {
@@ -760,7 +762,7 @@ class ClassAnalyzer {
             }
 
             @Override
-            public void visitMethodInsn(int opcode, String owner, String name, String desc,
+            public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
                     boolean itf) {
                 if (found) {
                     return;
@@ -768,7 +770,7 @@ class ClassAnalyzer {
                 if (!name.equals(bridgeMethodName)) {
                     return;
                 }
-                if (Type.getArgumentTypes(desc).length != bridgeMethodParamCount) {
+                if (Type.getArgumentTypes(descriptor).length != bridgeMethodParamCount) {
                     return;
                 }
                 if (opcode == INVOKESPECIAL) {
@@ -777,7 +779,8 @@ class ClassAnalyzer {
                     // already matches advice
                     return;
                 }
-                bridgeTargetMethods.put(this.bridgeMethodName + this.bridgeMethodDesc, name + desc);
+                bridgeTargetMethods.put(this.bridgeMethodName + this.bridgeMethodDesc,
+                        name + descriptor);
                 found = true;
             }
         }

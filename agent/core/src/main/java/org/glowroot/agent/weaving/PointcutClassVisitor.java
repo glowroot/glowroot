@@ -61,9 +61,9 @@ class PointcutClassVisitor extends ClassVisitor {
     }
 
     @Override
-    public @Nullable AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-        AnnotationVisitor av = cw.visitAnnotation(desc, visible);
-        if (desc.equals("Lorg/glowroot/agent/plugin/api/weaving/Pointcut;")) {
+    public @Nullable AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+        AnnotationVisitor av = cw.visitAnnotation(descriptor, visible);
+        if (descriptor.equals("Lorg/glowroot/agent/plugin/api/weaving/Pointcut;")) {
             return new PointcutAnnotationVisitor(av);
         } else {
             return av;
@@ -71,12 +71,12 @@ class PointcutClassVisitor extends ClassVisitor {
     }
 
     @Override
-    public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
+    public @Nullable MethodVisitor visitMethod(int access, String name, String descriptor,
             @Nullable String signature, String /*@Nullable*/ [] exceptions) {
         if (constructorPointcut) {
             return new PointcutMethodVisitor(
-                    cw.visitMethod(access, name, desc, signature, exceptions), access, name, desc,
-                    signature, exceptions);
+                    cw.visitMethod(access, name, descriptor, signature, exceptions), access, name,
+                    descriptor, signature, exceptions);
         } else {
             // shortcut, no need to further analyze this class
             return null;
@@ -88,19 +88,19 @@ class PointcutClassVisitor extends ClassVisitor {
         if (onBeforeMethodVisitor != null) {
             int access = onBeforeMethodVisitor.access;
             String name = onBeforeMethodVisitor.name;
-            String desc = "(Z" + onBeforeMethodVisitor.desc.substring(1);
+            String descriptor = "(Z" + onBeforeMethodVisitor.descriptor.substring(1);
             String signature = onBeforeMethodVisitor.signature;
             String[] exceptions = onBeforeMethodVisitor.exceptions;
             GeneratorAdapter mv = new GeneratorAdapter(
-                    cw.visitMethod(access, name, desc, signature, exceptions), access, name,
-                    desc);
+                    cw.visitMethod(access, name, descriptor, signature, exceptions), access, name,
+                    descriptor);
             mv.visitCode();
             mv.visitVarInsn(ILOAD, 0);
             Label endWithDefaultLabel = new Label();
             mv.visitJumpInsn(IFEQ, endWithDefaultLabel);
             mv.loadArgs(1, mv.getArgumentTypes().length - 1);
             mv.visitMethodInsn(INVOKESTATIC, checkNotNull(className), name,
-                    onBeforeMethodVisitor.desc, false);
+                    onBeforeMethodVisitor.descriptor, false);
             mv.returnValue();
 
             mv.visitLabel(endWithDefaultLabel);
@@ -134,16 +134,16 @@ class PointcutClassVisitor extends ClassVisitor {
 
         private final int access;
         private final String name;
-        private final String desc;
+        private final String descriptor;
         private final @Nullable String signature;
         private final String /*@Nullable*/ [] exceptions;
 
         private PointcutMethodVisitor(MethodVisitor mv, int access, String name,
-                String desc, @Nullable String signature, String /*@Nullable*/ [] exceptions) {
+                String descriptor, @Nullable String signature, String /*@Nullable*/ [] exceptions) {
             super(ASM7, mv);
             this.access = access;
             this.name = name;
-            this.desc = desc;
+            this.descriptor = descriptor;
             this.signature = signature;
             this.exceptions = exceptions;
         }

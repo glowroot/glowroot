@@ -551,7 +551,7 @@ class ClasspathCache {
         }
 
         @Override
-        public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
+        public @Nullable MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
             if ((access & ACC_SYNTHETIC) != 0 || (access & ACC_NATIVE) != 0) {
                 // don't add synthetic or native methods to the analyzed model
@@ -563,10 +563,10 @@ class ClasspathCache {
             }
             ImmutableUiAnalyzedMethod.Builder builder = ImmutableUiAnalyzedMethod.builder();
             builder.name(name);
-            for (Type parameterType : Type.getArgumentTypes(desc)) {
+            for (Type parameterType : Type.getArgumentTypes(descriptor)) {
                 builder.addParameterTypes(parameterType.getClassName());
             }
-            builder.returnType(Type.getReturnType(desc).getClassName());
+            builder.returnType(Type.getReturnType(descriptor).getClassName());
             builder.modifiers(access);
             if (exceptions != null) {
                 for (String exception : exceptions) {

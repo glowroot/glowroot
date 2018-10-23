@@ -28,8 +28,8 @@ class MyRemappingMethodAdapter extends LocalVariablesSorter {
 
     private final MethodCollector remapper;
 
-    MyRemappingMethodAdapter(int access, String desc, MethodCollector remapper) {
-        super(ASM7, access, desc, new MethodVisitor(ASM7) {});
+    MyRemappingMethodAdapter(int access, String descriptor, MethodCollector remapper) {
+        super(ASM7, access, descriptor, new MethodVisitor(ASM7) {});
         this.remapper = remapper;
     }
 
@@ -49,27 +49,29 @@ class MyRemappingMethodAdapter extends LocalVariablesSorter {
     }
 
     @Override
-    public void visitFieldInsn(int opcode, String owner, String name, String desc) {
+    public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
         remapper.mapType(owner);
-        remapper.mapFieldName(owner, name, desc);
-        remapper.mapDesc(desc);
+        remapper.mapFieldName(owner, name, descriptor);
+        remapper.mapDesc(descriptor);
     }
 
     @Override
-    public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
+    public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
+            boolean itf) {
         remapper.mapType(owner);
-        remapper.mapMethodName(owner, name, desc);
-        remapper.mapMethodDesc(desc);
-        remapper.addReferencedMethod(ReferencedMethod.create(owner, name, desc));
+        remapper.mapMethodName(owner, name, descriptor);
+        remapper.mapMethodDesc(descriptor);
+        remapper.addReferencedMethod(ReferencedMethod.create(owner, name, descriptor));
     }
 
     @Override
-    public void visitInvokeDynamicInsn(String name, String desc, Handle bsm, Object... bsmArgs) {
+    public void visitInvokeDynamicInsn(String name, String descriptor, Handle bsm,
+            Object... bsmArgs) {
         for (int i = 0; i < bsmArgs.length; i++) {
             bsmArgs[i] = remapper.mapValue(bsmArgs[i]);
         }
-        remapper.mapInvokeDynamicMethodName(name, desc);
-        remapper.mapMethodDesc(desc);
+        remapper.mapInvokeDynamicMethodName(name, descriptor);
+        remapper.mapMethodDesc(descriptor);
         remapper.mapValue(bsm);
     }
 
@@ -84,8 +86,8 @@ class MyRemappingMethodAdapter extends LocalVariablesSorter {
     }
 
     @Override
-    public void visitMultiANewArrayInsn(String desc, int dims) {
-        remapper.mapDesc(desc);
+    public void visitMultiANewArrayInsn(String descriptor, int dims) {
+        remapper.mapDesc(descriptor);
     }
 
     @Override
@@ -96,10 +98,9 @@ class MyRemappingMethodAdapter extends LocalVariablesSorter {
     }
 
     @Override
-    public void visitLocalVariable(String name, String desc, @Nullable String signature,
+    public void visitLocalVariable(String name, String descriptor, @Nullable String signature,
             Label start, Label end, int index) {
-
-        remapper.mapDesc(desc);
+        remapper.mapDesc(descriptor);
         remapper.mapSignature(signature, true);
     }
 }

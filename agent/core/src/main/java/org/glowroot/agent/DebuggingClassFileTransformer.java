@@ -79,11 +79,12 @@ public class DebuggingClassFileTransformer implements ClassFileTransformer {
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String desc,
+        public MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
-            if (name.equals("loadClass") && desc.equals("(Ljava/lang/String;Z)Ljava/lang/Class;")) {
-                return new DebuggingMethodAdvice(mv, access, name, desc);
+            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
+            if (name.equals("loadClass")
+                    && descriptor.equals("(Ljava/lang/String;Z)Ljava/lang/Class;")) {
+                return new DebuggingMethodAdvice(mv, access, name, descriptor);
             } else {
                 return mv;
             }
@@ -92,8 +93,9 @@ public class DebuggingClassFileTransformer implements ClassFileTransformer {
 
     private static class DebuggingMethodAdvice extends AdviceAdapter {
 
-        private DebuggingMethodAdvice(MethodVisitor mv, int access, String name, String desc) {
-            super(ASM7, mv, access, name, desc);
+        private DebuggingMethodAdvice(MethodVisitor mv, int access, String name,
+                String descriptor) {
+            super(ASM7, mv, access, name, descriptor);
         }
 
         @Override

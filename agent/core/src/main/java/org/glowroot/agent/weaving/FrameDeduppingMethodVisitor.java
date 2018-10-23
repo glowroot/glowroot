@@ -72,27 +72,29 @@ class FrameDeduppingMethodVisitor extends MethodVisitor {
     }
 
     @Override
-    public void visitFieldInsn(int opcode, String owner, String name, String desc) {
-        super.visitFieldInsn(opcode, owner, name, desc);
+    public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
+        super.visitFieldInsn(opcode, owner, name, descriptor);
         skipNextFrame = false;
     }
 
     @Override
     @Deprecated
-    public void visitMethodInsn(int opcode, String owner, String name, String desc) {
-        super.visitMethodInsn(opcode, owner, name, desc);
+    public void visitMethodInsn(int opcode, String owner, String name, String descriptor) {
+        super.visitMethodInsn(opcode, owner, name, descriptor);
         skipNextFrame = false;
     }
 
     @Override
-    public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
-        super.visitMethodInsn(opcode, owner, name, desc, itf);
+    public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
+            boolean itf) {
+        super.visitMethodInsn(opcode, owner, name, descriptor, itf);
         skipNextFrame = false;
     }
 
     @Override
-    public void visitInvokeDynamicInsn(String name, String desc, Handle bsm, Object... bsmArgs) {
-        super.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
+    public void visitInvokeDynamicInsn(String name, String descriptor, Handle bsm,
+            Object... bsmArgs) {
+        super.visitInvokeDynamicInsn(name, descriptor, bsm, bsmArgs);
         skipNextFrame = false;
     }
 
@@ -127,8 +129,8 @@ class FrameDeduppingMethodVisitor extends MethodVisitor {
     }
 
     @Override
-    public void visitMultiANewArrayInsn(String desc, int dims) {
-        super.visitMultiANewArrayInsn(desc, dims);
+    public void visitMultiANewArrayInsn(String descriptor, int dims) {
+        super.visitMultiANewArrayInsn(descriptor, dims);
         skipNextFrame = false;
     }
 }

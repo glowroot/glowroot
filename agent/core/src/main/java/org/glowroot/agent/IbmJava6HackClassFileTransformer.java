@@ -63,9 +63,9 @@ class IbmJava6HackClassFileTransformer implements ClassFileTransformer {
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String desc,
+        public MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
             if (name.equals("getUnsafe")) {
                 mv.visitCode();
                 mv.visitInsn(ACONST_NULL);
