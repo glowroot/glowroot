@@ -821,7 +821,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
     @Override
     public void setTransactionAsync() {
         if (innerTransactionThreadContext == null) {
-            transaction.setAsync();
             if (logger.isDebugEnabled() && AuxThreadContextImpl.inAuxDebugLogging.get() == null) {
                 AuxThreadContextImpl.inAuxDebugLogging.set(Boolean.TRUE);
                 try {
@@ -832,6 +831,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
                     AuxThreadContextImpl.inAuxDebugLogging.remove();
                 }
             }
+            transaction.setAsync();
         } else {
             innerTransactionThreadContext.setTransactionAsync();
         }
@@ -840,7 +840,6 @@ public class ThreadContextImpl implements ThreadContextPlus {
     @Override
     public void setTransactionAsyncComplete() {
         if (innerTransactionThreadContext == null) {
-            transactionAsyncComplete = true;
             if (logger.isDebugEnabled() && AuxThreadContextImpl.inAuxDebugLogging.get() == null) {
                 AuxThreadContextImpl.inAuxDebugLogging.set(Boolean.TRUE);
                 try {
@@ -851,6 +850,10 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 } finally {
                     AuxThreadContextImpl.inAuxDebugLogging.remove();
                 }
+            }
+            transactionAsyncComplete = true;
+            if (isCompleted()) {
+                transaction.end(ticker.read(), true);
             }
         } else {
             innerTransactionThreadContext.setTransactionAsyncComplete();

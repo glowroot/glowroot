@@ -261,6 +261,132 @@
       </build>
     </profile>
     <profile>
+      <!-- this profile is cumulative on top of spring-4.x -->
+      <id>spring-5.0.x</id>
+      <properties>
+        <spring.version>5.0.10.RELEASE</spring.version>
+        <reactor.version>0.7.9.RELEASE</reactor.version>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-webflux</artifactId>
+          <version>${spring.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.projectreactor.ipc</groupId>
+          <artifactId>reactor-netty</artifactId>
+          <version>${reactor.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <!-- netty plugin is required to capture webflux over netty -->
+          <groupId>org.glowroot</groupId>
+          <artifactId>glowroot-agent-netty-plugin</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>generate-test-sources</phase>
+                <goals>
+                  <goal>add-test-source</goal>
+                </goals>
+                <configuration>
+                  <sources>
+                    <source>src/test/spring-5.0.x/java</source>
+                  </sources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>default-testCompile</id>
+                <configuration>
+                  <!-- spring 5.x requires Java 8+ -->
+                  <source>1.8</source>
+                  <target>1.8</target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!-- this profile is cumulative on top of spring-4.x -->
+      <id>spring-5.1.x</id>
+      <properties>
+        <spring.version>5.1.2.RELEASE</spring.version>
+        <reactor.version>0.8.2.RELEASE</reactor.version>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-webflux</artifactId>
+          <version>${spring.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.projectreactor.netty</groupId>
+          <artifactId>reactor-netty</artifactId>
+          <version>${reactor.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <!-- netty plugin is required to capture webflux over netty -->
+          <groupId>org.glowroot</groupId>
+          <artifactId>glowroot-agent-netty-plugin</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>generate-test-sources</phase>
+                <goals>
+                  <goal>add-test-source</goal>
+                </goals>
+                <configuration>
+                  <sources>
+                    <source>src/test/spring-5.1.x/java</source>
+                  </sources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>default-testCompile</id>
+                <configuration>
+                  <!-- spring 5.x requires Java 8+ -->
+                  <source>1.8</source>
+                  <target>1.8</target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
       <id>spring-4.x</id>
       <dependencies>
         <dependency>

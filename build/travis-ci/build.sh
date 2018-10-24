@@ -58,8 +58,9 @@ case "$1" in
                then
                  # these modules are only part of build under Java 8+
                  exclude_modules="$exclude_modules,!:glowroot-central,!:glowroot-webdriver-tests"
+                 # spring-5.x profile is cumulative on top of spring-4.x (tests new spring 5 features, e.g. webflux)
                  # mongodb tests use testcontainers which requires Java 8+
-                 activate_profiles="$activate_profiles,mongodb-3.7.x"
+                 activate_profiles="$activate_profiles,spring-5.x,mongodb-3.7.x"
                fi
                mvn clean install -pl $exclude_modules \
                                  -P $activate_profiles \
@@ -240,8 +241,9 @@ case "$1" in
                                  -Djacoco.append=true \
                                  -Dglowroot.it.harness=javaagent"
                  # run integration tests
+                 # spring-5.x profile is cumulative on top of spring-4.x (tests new spring 5 features, e.g. webflux)
                  mvn $common_mvn_args -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -P netty-4.x,spring-4.x,mongodb-3.7.x \
+                                      -P netty-4.x,spring-4.x,spring-5.x,mongodb-3.7.x \
                                       -B
                  # install to run additional tests
                  mvn clean install -DskipTests \
