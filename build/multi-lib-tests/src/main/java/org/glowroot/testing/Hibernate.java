@@ -53,7 +53,7 @@ public class Hibernate {
         for (int i = 0; i <= 17; i++) {
             runJava8("5.2." + i + ".Final");
         }
-        for (int i = 0; i <= 6; i++) {
+        for (int i = 0; i <= 7; i++) {
             runJava8("5.3." + i + ".Final");
         }
     }

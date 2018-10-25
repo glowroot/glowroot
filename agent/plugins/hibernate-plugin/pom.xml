@@ -134,14 +134,14 @@
           <!-- this is needed for running tests on Java 9 -->
           <groupId>javax.xml.bind</groupId>
           <artifactId>jaxb-api</artifactId>
-          <version>2.3.0</version>
+          <version>2.3.1</version>
           <scope>test</scope>
         </dependency>
         <dependency>
           <!-- this is needed for running tests on Java 9 -->
           <groupId>org.glassfish.jaxb</groupId>
           <artifactId>jaxb-runtime</artifactId>
-          <version>2.3.0.1</version>
+          <version>2.3.1</version>
           <scope>test</scope>
         </dependency>
         <dependency>

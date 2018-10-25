@@ -19,7 +19,7 @@
   <properties>
     <!-- instrumented libraries -->
     <!-- Spring 5+ requires Java 8+ -->
-    <spring.version>4.3.19.RELEASE</spring.version>
+    <spring.version>4.3.20.RELEASE</spring.version>
   </properties>
 
   <dependencies>

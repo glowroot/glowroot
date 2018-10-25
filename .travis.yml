@@ -119,4 +119,4 @@ matrix:
       env: TARGET=saucelabs3 SAUCELABS_PLATFORM="macOS 10.13" SAUCELABS_BROWSER_NAME=safari SAUCELABS_BROWSER_VERSION=11.1
 addons:
   sauce_connect: true
-  firefox: "62.0"
+  firefox: "62.0.3"

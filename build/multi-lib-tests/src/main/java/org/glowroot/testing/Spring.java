@@ -49,13 +49,15 @@ public class Spring {
         for (int i = 0; i <= 9; i++) {
             run("4.2." + i + ".RELEASE", "spring-4.x");
         }
-        for (int i = 0; i <= 19; i++) {
+        for (int i = 0; i <= 20; i++) {
             run("4.3." + i + ".RELEASE", "spring-4.x");
         }
-        for (int i = 0; i <= 9; i++) {
+        for (int i = 0; i <= 10; i++) {
             runJava8("5.0." + i + ".RELEASE", "spring-4.x");
         }
-        runJava8("5.1.0.RELEASE", "spring-4.x");
+        for (int i = 0; i <= 1; i++) {
+            runJava8("5.1." + i + ".RELEASE", "spring-4.x");
+        }
     }
 
     private static void run(String version, String... profiles) throws Exception {
