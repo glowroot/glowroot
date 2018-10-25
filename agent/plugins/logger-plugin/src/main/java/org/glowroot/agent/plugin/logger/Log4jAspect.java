@@ -15,8 +15,6 @@
  */
 package org.glowroot.agent.plugin.logger;
 
-import java.util.Enumeration;
-
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;
@@ -50,13 +48,6 @@ public class Log4jAspect {
 
         @Nullable
         String getName();
-
-        @Shim("org.apache.log4j.Category getParent()")
-        @Nullable
-        Logger glowroot$getParent();
-
-        @Nullable
-        Enumeration<?> getAllAppenders();
     }
 
     @Shim("org.apache.log4j.Priority")
