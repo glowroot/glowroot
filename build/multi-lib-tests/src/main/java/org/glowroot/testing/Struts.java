@@ -161,10 +161,10 @@ public class Struts {
     }
 
     private static void run(String test) throws Exception {
-        Util.runTest(MODULE_PATH, test, JAVA6, JAVA7, JAVA8);
+        Util.runTest(MODULE_PATH, test, JAVA8, JAVA7, JAVA6);
     }
 
     private static void runJava7(String test) throws Exception {
-        Util.runTest(MODULE_PATH, test, JAVA7, JAVA8);
+        Util.runTest(MODULE_PATH, test, JAVA8, JAVA7);
     }
 }

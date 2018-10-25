@@ -243,7 +243,7 @@ public class HttpClient {
     private static void httpUrlConnection() throws Exception {
         final String test = "HttpURLConnectionIT";
         Util.log("http client plugin (HttpURLConnection)");
-        Util.runTest(MODULE_PATH, test, JAVA6, JAVA7, JAVA8);
+        Util.runTest(MODULE_PATH, test, JAVA8, JAVA7, JAVA6);
     }
 
     private static void okHttpClient() throws Exception {
@@ -344,19 +344,19 @@ public class HttpClient {
     }
 
     private static void run(String test) throws Exception {
-        Util.runTest(MODULE_PATH, test, JAVA6, JAVA7, JAVA8);
+        Util.runTest(MODULE_PATH, test, JAVA8, JAVA7, JAVA6);
     }
 
     private static void run(String test, String profile) throws Exception {
-        Util.runTest(MODULE_PATH, test, profile, JAVA6, JAVA7, JAVA8);
+        Util.runTest(MODULE_PATH, test, profile, JAVA8, JAVA7, JAVA6);
     }
 
     private static void runJava7(String test) throws Exception {
-        Util.runTest(MODULE_PATH, test, JAVA7, JAVA8);
+        Util.runTest(MODULE_PATH, test, JAVA8, JAVA7);
     }
 
     private static void runJava7(String test, String profile) throws Exception {
-        Util.runTest(MODULE_PATH, test, profile, JAVA7, JAVA8);
+        Util.runTest(MODULE_PATH, test, profile, JAVA8, JAVA7);
     }
 
     private static void runJava8(String test) throws Exception {

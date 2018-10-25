@@ -100,14 +100,14 @@ public class Netty {
 
     private static void runNetty(String version, String... profile) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "netty.version", version);
-        Util.runTests(MODULE_PATH, profile, JAVA6, JAVA7, JAVA8);
+        Util.runTests(MODULE_PATH, profile, JAVA8, JAVA7, JAVA6);
     }
 
     private static void runVertx(String vertxVersion, String nettyVersion, String profile)
             throws Exception {
         Util.updateLibVersion(MODULE_PATH, "vertx.version", vertxVersion);
         Util.updateLibVersion(MODULE_PATH, "netty.version", nettyVersion);
-        Util.runTests(MODULE_PATH, profile, JAVA7, JAVA8);
+        Util.runTests(MODULE_PATH, profile, JAVA8, JAVA7);
     }
 
     private static void runVertxJava8(String vertxVersion, String nettyVersion, String profile)

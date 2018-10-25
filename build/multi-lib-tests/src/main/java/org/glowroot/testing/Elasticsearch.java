@@ -96,7 +96,7 @@ public class Elasticsearch {
 
     private static void run2x(String version) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "elasticsearch.version", version);
-        Util.runTests(MODULE_PATH, "elasticsearch-2.x", JAVA7, JAVA8);
+        Util.runTests(MODULE_PATH, "elasticsearch-2.x", JAVA8, JAVA7);
     }
 
     private static void run5x(String version, String nettyVersion, String log4jVersion)

@@ -60,13 +60,13 @@ public class JAXWS {
     private static void run2x(String cxfVersion, String springVersion) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "cxf.version", cxfVersion);
         Util.updateLibVersion(MODULE_PATH, "spring.version", springVersion);
-        Util.runTests(MODULE_PATH, JAVA6, JAVA7, JAVA8);
+        Util.runTests(MODULE_PATH, JAVA8, JAVA7, JAVA6);
     }
 
     private static void runJava7(String cxfVersion, String springVersion) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "cxf.version", cxfVersion);
         Util.updateLibVersion(MODULE_PATH, "spring.version", springVersion);
-        Util.runTests(MODULE_PATH, JAVA7, JAVA8);
+        Util.runTests(MODULE_PATH, JAVA8, JAVA7);
     }
 
     private static void runJava8(String cxfVersion, String springVersion) throws Exception {
