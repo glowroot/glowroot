@@ -358,6 +358,8 @@ case "$1" in
                fi
                set -e
 
+               echo "MAVEN_OPTS=\"-Xmx1g -XX:NewRatio=20\"" > ~/.mavenrc
+
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@UnderInitialization\*/|@org.checkerframework.checker.initialization.qual.UnderInitialization|g'
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@Initialized\*/|@org.checkerframework.checker.initialization.qual.Initialized|g'
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@Untainted\*/|@org.checkerframework.checker.tainting.qual.Untainted|g'
