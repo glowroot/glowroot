@@ -32,6 +32,7 @@ public class All {
         JSP.main(args);
         Kafka.main(args);
         Logger.main(args);
+        MongoDB.main(args);
         Netty.main(args);
         Play.main(args);
         Quartz.main(args);

@@ -53,13 +53,16 @@ case "$1" in
 
       "test1") # excluding :glowroot-agent-ui-sandbox and :glowroot-agent since they depend on plugins which are being excluded
                exclude_modules="$test1_excluded_plugin_modules,!:glowroot-agent-ui-sandbox,!:glowroot-agent"
+               activate_profiles="netty-4.x,spring-4.x"
                if [[ $java_version == 1.8* || $java_version == 9* || $java_version == [1-9][0-9]* ]]
                then
                  # these modules are only part of build under Java 8+
                  exclude_modules="$exclude_modules,!:glowroot-central,!:glowroot-webdriver-tests"
+                 # mongodb tests use testcontainers which requires Java 8+
+                 activate_profiles="$activate_profiles,mongodb-3.7.x"
                fi
                mvn clean install -pl $exclude_modules \
-                                 -P netty-4.x,spring-4.x \
+                                 -P $activate_profiles \
                                  -DargLine="$surefire_jvm_args" \
                                  $test_shaded_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
@@ -238,7 +241,7 @@ case "$1" in
                                  -Dglowroot.it.harness=javaagent"
                  # run integration tests
                  mvn $common_mvn_args -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -P netty-4.x,spring-4.x \
+                                      -P netty-4.x,spring-4.x,mongodb-3.7.x \
                                       -B
                  # install to run additional tests
                  mvn clean install -DskipTests \
@@ -332,6 +335,12 @@ case "$1" in
                  # spring 3.x
                  mvn $common_mvn_args -pl agent/plugins/spring-plugin \
                                       -P spring-3.x \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -Dglowroot.test.shaded \
+                                      -B
+                 # mongodb pre-3.7.x
+                 mvn $common_mvn_args -pl agent/plugins/mongodb-plugin \
+                                      -P mongodb-pre-3.7.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -Dglowroot.test.shaded \
                                       -B

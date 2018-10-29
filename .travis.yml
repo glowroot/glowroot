@@ -1,7 +1,8 @@
-# standard environment (sudo: required) is provisioned with 7.5g memory, but has 50 minute time limit for jobs
-# container-based environment (sudo: false) is provisioned with only 4g memory, but haven't run into time limit for jobs yet
-sudo: false
+# standard environment (sudo: required) is required for docker
+sudo: required
 language: java
+services:
+  - docker
 before_install:
   - "export DISPLAY=:99.0"
   - sh -e /etc/init.d/xvfb start

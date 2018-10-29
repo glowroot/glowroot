@@ -69,6 +69,7 @@
     <module>agent/plugins/jsp-plugin</module>
     <module>agent/plugins/kafka-plugin</module>
     <module>agent/plugins/logger-plugin</module>
+    <module>agent/plugins/mongodb-plugin</module>
     <module>agent/plugins/netty-plugin</module>
     <module>agent/plugins/play-plugin</module>
     <module>agent/plugins/quartz-plugin</module>
