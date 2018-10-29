@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.12.0</version>
+    <version>0.12.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>glowroot-wire-api</artifactId>
