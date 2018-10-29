@@ -90,6 +90,8 @@ public class WebDriverSetup {
         if (sharedSetup == null) {
             sharedSetup = createSetup(true);
             SharedSetupRunListener.setSharedSetup(sharedSetup);
+        } else {
+            sharedSetup.resetDriver();
         }
         return sharedSetup;
     }
@@ -180,6 +182,13 @@ public class WebDriverSetup {
         return new SauceOnDemandTestWatcher(sessionIdProvider, authentication);
     }
 
+    private void resetDriver() throws IOException {
+        if (!SauceLabs.useSauceLabs()) {
+            driver.quit();
+            driver = createWebDriver();
+        }
+    }
+
     private static WebDriverSetup createSetup(boolean shared) throws Exception {
         int uiPort = getAvailablePort();
         File testDir = Files.createTempDir();
@@ -206,22 +215,25 @@ public class WebDriverSetup {
         if (SauceLabs.useSauceLabs()) {
             return new WebDriverSetup(centralModule, container, uiPort, shared, null);
         } else {
-            // single webdriver instance for much better performance
-            WebDriver driver;
-            if (USE_JBROWSER_DRIVER) {
-                driver = new JBrowserDriver();
-            } else {
-                File geckoDriverExecutable = downloadGeckoDriverIfNeeded();
-                System.setProperty("webdriver.gecko.driver",
-                        geckoDriverExecutable.getAbsolutePath());
-                driver = new FirefoxDriver();
-            }
-            // 768 is bootstrap media query breakpoint for screen-sm-min
-            // 992 is bootstrap media query breakpoint for screen-md-min
-            // 1200 is bootstrap media query breakpoint for screen-lg-min
-            driver.manage().window().setSize(new Dimension(1200, 800));
-            return new WebDriverSetup(centralModule, container, uiPort, shared, driver);
+            return new WebDriverSetup(centralModule, container, uiPort, shared, createWebDriver());
         }
+    }
+
+    private static WebDriver createWebDriver() throws IOException {
+        WebDriver driver;
+        if (USE_JBROWSER_DRIVER) {
+            driver = new JBrowserDriver();
+        } else {
+            File geckoDriverExecutable = downloadGeckoDriverIfNeeded();
+            System.setProperty("webdriver.gecko.driver",
+                    geckoDriverExecutable.getAbsolutePath());
+            driver = new FirefoxDriver();
+        }
+        // 768 is bootstrap media query breakpoint for screen-sm-min
+        // 992 is bootstrap media query breakpoint for screen-md-min
+        // 1200 is bootstrap media query breakpoint for screen-lg-min
+        driver.manage().window().setSize(new Dimension(1200, 800));
+        return driver;
     }
 
     private static Container createContainer(int uiPort, File testDir) throws Exception {
