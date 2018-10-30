@@ -60,7 +60,6 @@ public class Play {
     }
 
     private static void play2x() throws Exception {
-
         runPlay2x("2.0.2", "2.9.3", "3.3.0.Final", "2.2.2");
         runPlay2x("2.0.3", "2.9.3", "3.5.0.Final", "2.2.2");
         runPlay2x("2.0.4", "2.9.3", "3.5.0.Final", "2.2.2");
@@ -135,7 +134,7 @@ public class Play {
         JavaVersion[] javaVersions;
         if (playVersion.startsWith("2.0")) {
             profile = "play-2.0.x";
-            javaVersions = new JavaVersion[] {JAVA6, JAVA7}; // scala 2.9 doesn't support 1.8
+            javaVersions = new JavaVersion[] {JAVA7, JAVA6}; // scala 2.9 doesn't support 1.8
         } else if (playVersion.startsWith("2.1")) {
             profile = "play-2.1.x";
             javaVersions = new JavaVersion[] {JAVA8, JAVA7, JAVA6};

@@ -871,6 +871,13 @@
                 <fileset>
                   <directory>${project.build.testOutputDirectory}</directory>
                 </fileset>
+                <fileset>
+                  <!-- this is needed to force scala recompilation (used in glowroot-agent-play-plugin) -->
+                  <directory>${project.build.directory}</directory>
+                  <includes>
+                    <include>test-classes.*.timestamp</include>
+                  </includes>
+                </fileset>
               </filesets>
             </configuration>
           </plugin>

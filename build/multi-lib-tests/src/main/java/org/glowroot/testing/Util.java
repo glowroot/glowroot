@@ -120,6 +120,10 @@ class Util {
         command.add(modulePath);
         command.add("-Djvm=" + javaVersion.getJavaHome() + File.separator + "bin" + File.separator
                 + "java");
+        if (javaVersion == JavaVersion.JAVA6 || javaVersion == JavaVersion.JAVA7) {
+            // maven central no longer supports TLSv1.1 and below
+            command.add("-Dhttps.protocols=TLSv1.2");
+        }
         if (javaVersion == JavaVersion.JAVA6) {
             command.add("-Dglowroot.test.java6");
         }

@@ -67,7 +67,7 @@ public class Spring {
 
     private static void runNotJava8(String version, String... profiles) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "spring.version", version);
-        Util.runTests(MODULE_PATH, profiles, JAVA6, JAVA7);
+        Util.runTests(MODULE_PATH, profiles, JAVA7, JAVA6);
     }
 
     private static void runJava8(String version, String... profiles) throws Exception {
