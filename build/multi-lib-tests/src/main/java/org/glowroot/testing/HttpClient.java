@@ -316,6 +316,8 @@ public class HttpClient {
         runJava7(test);
         updateLibVersion("okhttpclient.version", "3.11.0");
         runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.12.0");
+        runJava7(test);
     }
 
     private static void okHttpClient2x() throws Exception {

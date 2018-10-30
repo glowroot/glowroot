@@ -97,11 +97,9 @@
     <protoc.version>3.5.1</protoc.version>
     <!-- need to stick to netty version that is used by grpc version above -->
     <netty.version>4.1.27.Final</netty.version>
-    <!-- jackson 2.7.0+ requires Java 7+ -->
-    <jackson.version>2.6.7</jackson.version>
     <logback.version>1.2.3</logback.version>
     <slf4j.version>1.7.25</slf4j.version>
-    <immutables.version>2.7.2</immutables.version>
+    <immutables.version>2.7.3</immutables.version>
     <jmh.version>1.21</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -244,22 +242,26 @@
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-core</artifactId>
-        <version>${jackson.version}</version>
+        <!-- jackson 2.7.0+ requires Java 7+ -->
+        <version>2.6.7</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>${jackson.version}</version>
+        <!-- jackson 2.7.0+ requires Java 7+ -->
+        <version>2.6.7.2</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-annotations</artifactId>
-        <version>${jackson.version}</version>
+        <!-- jackson 2.7.0+ requires Java 7+ -->
+        <version>2.6.7</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.datatype</groupId>
         <artifactId>jackson-datatype-guava</artifactId>
-        <version>${jackson.version}</version>
+        <!-- jackson 2.7.0+ requires Java 7+ -->
+        <version>2.6.7</version>
       </dependency>
       <dependency>
         <groupId>org.assertj</groupId>
@@ -270,7 +272,7 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>2.23.0</version>
+        <version>2.23.4</version>
       </dependency>
       <dependency>
         <groupId>com.ning</groupId>

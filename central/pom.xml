@@ -51,7 +51,7 @@
         since WebDriverWait.until() now takes java.util.function.Function, but ExpectedConditions
         methods still return com.google.common.base.Function, which only extends
         java.util.function.Function in guava 21.0+ (since 21.0+ is built for Java 8) -->
-      <version>27.0-jre</version> <!-- $NO-MVN-MAN-VER$ -->
+      <version>27.0.1-jre</version> <!-- $NO-MVN-MAN-VER$ -->
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
@@ -90,12 +90,12 @@
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-api</artifactId>
-      <version>3.141.5</version>
+      <version>3.141.59</version>
     </dependency>
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-support</artifactId>
-      <version>3.141.5</version>
+      <version>3.141.59</version>
     </dependency>
     <dependency>
       <groupId>com.machinepublishers</groupId>
@@ -142,13 +142,13 @@
     <dependency>
       <groupId>org.codehaus.janino</groupId>
       <artifactId>janino</artifactId>
-      <version>3.0.10</version>
+      <version>3.0.11</version>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>net.bytebuddy</groupId>
       <artifactId>byte-buddy</artifactId>
-      <version>1.9.3</version>
+      <version>1.9.5</version>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
@@ -180,7 +180,7 @@
     <dependency>
       <groupId>org.rauschig</groupId>
       <artifactId>jarchivelib</artifactId>
-      <version>0.8.0</version>
+      <version>1.0.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

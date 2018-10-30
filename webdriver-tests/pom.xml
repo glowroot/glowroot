@@ -17,8 +17,8 @@
   <description>Glowroot WebDriver Tests</description>
 
   <properties>
-    <selenium.version>3.141.5</selenium.version>
-    <jetty.version>9.4.12.v20180830</jetty.version>
+    <selenium.version>3.141.59</selenium.version>
+    <jetty.version>9.4.14.v20181114</jetty.version>
   </properties>
 
   <dependencies>
@@ -40,7 +40,7 @@
         since WebDriverWait.until() now takes java.util.function.Function, but ExpectedConditions
         methods still return com.google.common.base.Function, which only extends
         java.util.function.Function in guava 21.0+ (since 21.0+ is built for Java 8) -->
-      <version>27.0-jre</version> <!-- $NO-MVN-MAN-VER$ -->
+      <version>27.0.1-jre</version> <!-- $NO-MVN-MAN-VER$ -->
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -195,7 +195,7 @@
     <dependency>
       <groupId>org.rauschig</groupId>
       <artifactId>jarchivelib</artifactId>
-      <version>0.8.0</version>
+      <version>1.0.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
