@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,22 @@
 package org.glowroot.agent.plugin.netty;
 
 import java.net.ServerSocket;
+import java.util.concurrent.Future;
 
-import org.apache.http.NoHttpResponseException;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
+import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.NoHttpResponseException;
+import org.apache.hc.core5.http2.HttpVersionPolicy;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
@@ -56,6 +64,17 @@ public class NettyIT {
     public void shouldCaptureHttpGet() throws Exception {
         // when
         Trace trace = container.execute(ExecuteHttpGet.class);
+        // then
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/abc");
+        assertThat(trace.getHeader().getHeadline()).isEqualTo("GET /abc?xyz=123");
+        assertThat(trace.getEntryList()).isEmpty();
+    }
+
+    @Ignore
+    @Test
+    public void shouldCaptureHttp2Get() throws Exception {
+        // when
+        Trace trace = container.execute(ExecuteHttp2Get.class);
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/abc");
         assertThat(trace.getHeader().getHeadline()).isEqualTo("GET /abc?xyz=123");
@@ -96,9 +115,32 @@ public class NettyIT {
             HttpServer server = new HttpServer(port);
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpGet httpGet = new HttpGet("http://localhost:" + port + "/abc?xyz=123");
-            int statusCode = httpClient.execute(httpGet).getStatusLine().getStatusCode();
-            if (statusCode != 200) {
-                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            int code = httpClient.execute(httpGet).getCode();
+            if (code != 200) {
+                throw new IllegalStateException("Unexpected response code: " + code);
+            }
+            server.close();
+        }
+    }
+
+    public static class ExecuteHttp2Get implements AppUnderTest {
+
+        @Override
+        public void executeApp() throws Exception {
+            int port = getAvailablePort();
+            Http2Server server = new Http2Server(port);
+            CloseableHttpAsyncClient httpClient = HttpAsyncClientBuilder.create()
+                    .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_2)
+                    .build();
+            httpClient.start();
+            SimpleHttpRequest httpGet =
+                    new SimpleHttpRequest("GET", "http://localhost:" + port + "/hello1");
+            Future<SimpleHttpResponse> future = httpClient.execute(httpGet, null);
+            SimpleHttpResponse response = future.get();
+            httpClient.close();
+            int code = response.getCode();
+            if (code != 200) {
+                throw new IllegalStateException("Unexpected response code: " + code);
             }
             server.close();
         }
@@ -112,9 +154,9 @@ public class NettyIT {
             HttpServer server = new HttpServer(port);
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpGet httpGet = new HttpGet("http://localhost:" + port + "/chunked");
-            int statusCode = httpClient.execute(httpGet).getStatusLine().getStatusCode();
-            if (statusCode != 200) {
-                throw new IllegalStateException("Unexpected status code: " + statusCode);
+            int code = httpClient.execute(httpGet).getCode();
+            if (code != 200) {
+                throw new IllegalStateException("Unexpected response code: " + code);
             }
             server.close();
         }
@@ -126,7 +168,9 @@ public class NettyIT {
         public void executeApp() throws Exception {
             int port = getAvailablePort();
             HttpServer server = new HttpServer(port);
-            CloseableHttpClient httpClient = HttpClients.createDefault();
+            CloseableHttpClient httpClient = HttpClientBuilder.create()
+                    .disableAutomaticRetries()
+                    .build();
             HttpGet httpGet = new HttpGet("http://localhost:" + port + "/exception");
             try {
                 httpClient.execute(httpGet);
