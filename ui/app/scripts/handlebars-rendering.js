@@ -370,11 +370,11 @@ HandlebarsRendering = (function () {
           ret += messageDetailHtml(subdetail);
         });
       } else if (typeof propVal === 'object' && propVal !== null) {
-        ret += '<div class="gt-trace-attr-name">' + propName + ':</div>'
+        ret += '<div class="gt-trace-attr-name">' + escapeHtml(propName) + ':</div>'
             + '<div class="gt-indent2">' + messageDetailHtml(propVal) + '</div>';
       } else {
-        ret += '<div><div class="gt-trace-attr-name">' + propName + ':&nbsp;</div>'
-            + '<div class="gt-trace-attr-value">' + propVal + '</div></div>';
+        ret += '<div><div class="gt-trace-attr-name">' + escapeHtml(propName) + ':&nbsp;</div>'
+            + '<div class="gt-trace-attr-value">' + escapeHtml(propVal) + '</div></div>';
       }
     });
     return ret;
@@ -1039,7 +1039,8 @@ HandlebarsRendering = (function () {
         html = prefix;
         // simulating pre using span, because with pre tag, when selecting text and copy-pasting from firefox
         // there are extra newlines after the pre tag
-        html += '\n\n<span class="gt-indent2 d-inline-block" style="white-space: pre-wrap;">' + formatted + '</span>';
+        html += '\n\n<span class="gt-indent2 d-inline-block" style="white-space: pre-wrap;">' + escapeHtml(formatted)
+            + '</span>';
         if (parameters) {
           html += '\n\n<span class="gt-indent2">parameters:</span>\n\n' + '<span class="gt-indent2">  ' + parameters
               + '</span>';
@@ -1050,7 +1051,8 @@ HandlebarsRendering = (function () {
       } else {
         // simulating pre using span, because with pre tag, when selecting text and copy-pasting from firefox
         // there are extra newlines after the pre tag
-        html = '<span class="gt-indent1 d-inline-block" style="white-space: pre-wrap;">' + formatted + '</span>';
+        html = '<span class="gt-indent1 d-inline-block" style="white-space: pre-wrap;">' + escapeHtml(formatted)
+            + '</span>';
         expanded.addClass('gt-padding-top-override');
       }
       expanded.css('padding-bottom', '10px');
