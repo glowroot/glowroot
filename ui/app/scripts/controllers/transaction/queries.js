@@ -34,6 +34,8 @@ glowroot.controller('TransactionQueriesCtrl', [
       return;
     }
 
+    $scope.page = {};
+
     $scope.showQueries = false;
     $scope.showSpinner = 0;
     $scope.showModalSpinner = 0;
