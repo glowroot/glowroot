@@ -76,6 +76,9 @@ class IndexHtmlHttpService implements HttpService {
                             + "'//www.google-analytics.com/analytics.js','ga');ga('create', '"
                             + GOOGLE_ANALYTICS_TRACKING_ID + "', 'auto')</script>\n</body>");
         }
-        return new CommonResponse(OK, MediaType.HTML_UTF_8, indexHtml);
+        CommonResponse response = new CommonResponse(OK, MediaType.HTML_UTF_8, indexHtml);
+        // this is needed to override IE 11 "Display intranet sites in Compatibility View"
+        response.setHeader("X-UA-Compatible", "IE=edge");
+        return response;
     }
 }
