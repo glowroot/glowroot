@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
+import org.glowroot.common2.config.SlackConfig.SlackWebhook;
 import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.SmtpConfig.ConnectionSecurity;
 import org.glowroot.common2.repo.AggregateRepository;
@@ -66,6 +67,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.PagerDutyNotification;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.SlackNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -337,6 +339,25 @@ public class AlertingService {
                     alertNotification.getPagerDutyNotification(), endTime, subject, messageText,
                     ok);
         }
+        if (alertNotification.hasSlackNotification()) {
+            SlackNotification slackNotification = alertNotification.getSlackNotification();
+            String slackWebhookUrl = null;
+            for (SlackWebhook webhook : configRepository.getSlackConfig().webhooks()) {
+                if (webhook.id().equals(slackNotification.getSlackWebhookId())) {
+                    slackWebhookUrl = webhook.url();
+                    break;
+                }
+            }
+            if (slackWebhookUrl == null) {
+                logger.warn("{} - alert config refers to non-existent webhook id: {}",
+                        agentRollupDisplay, slackNotification.getSlackWebhookId());
+            } else {
+                for (String slackChannel : slackNotification.getSlackChannelList()) {
+                    sendSlackWithRetry(centralDisplay, agentRollupDisplay, slackWebhookUrl,
+                            slackChannel, endTime, subject, messageText, ok);
+                }
+            }
+        }
     }
 
     private void sendPagerDutyWithRetry(String agentRollupId, String agentRollupDisplay,
@@ -345,6 +366,40 @@ public class AlertingService {
         SendPagerDuty sendPagerDuty = new SendPagerDuty(agentRollupId, agentRollupDisplay,
                 alertConfig, pagerDutyNotification, endTime, subject, messageText, ok);
         sendPagerDuty.run();
+    }
+
+    private void sendSlackWithRetry(String centralDisplay, String agentRollupDisplay,
+            String slackWebhookUrl, String slackChannel, long endTime, String subject,
+            String messageText, boolean ok) {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            JsonGenerator jg = ObjectMappers.create().getFactory().createGenerator(baos);
+            try {
+                jg.writeStartObject();
+                jg.writeArrayFieldStart("attachments");
+                jg.writeStartObject();
+                if (!agentRollupDisplay.isEmpty()) {
+                    subject = "[" + agentRollupDisplay + "] " + subject;
+                }
+                if (!centralDisplay.isEmpty()) {
+                    subject = "[" + centralDisplay + "] " + subject;
+                }
+                jg.writeStringField("fallback", subject + " - " + messageText);
+                jg.writeStringField("pretext", subject);
+                jg.writeStringField("color", ok ? "good" : "danger");
+                jg.writeStringField("text", messageText);
+                jg.writeNumberField("ts", endTime / 1000.0);
+                jg.writeEndObject();
+                jg.writeEndArray();
+                jg.writeStringField("channel", slackChannel);
+                jg.writeEndObject();
+            } finally {
+                jg.close();
+            }
+            httpClient.post(slackWebhookUrl, baos.toByteArray(), "application/json");
+        } catch (Throwable t) {
+            logger.error("{} - {}", agentRollupDisplay, t.getMessage(), t);
+        }
     }
 
     // optional passwordOverride can be passed in to test SMTP from
@@ -551,7 +606,7 @@ public class AlertingService {
                             agentRollupDisplay, action, subject, messageText, action);
                 }
             } catch (Throwable t) {
-                logger.error(t.getMessage(), t);
+                logger.error("{} - {}", agentRollupDisplay, t.getMessage(), t);
             }
         }
 

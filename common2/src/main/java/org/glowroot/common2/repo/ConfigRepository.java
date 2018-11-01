@@ -35,6 +35,7 @@ import org.glowroot.common2.config.HttpProxyConfig;
 import org.glowroot.common2.config.LdapConfig;
 import org.glowroot.common2.config.PagerDutyConfig;
 import org.glowroot.common2.config.RoleConfig;
+import org.glowroot.common2.config.SlackConfig;
 import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.StorageConfig;
 import org.glowroot.common2.config.UserConfig;
@@ -67,6 +68,7 @@ public interface ConfigRepository {
     String HTTP_PROXY_KEY = "httpProxy";
     String LDAP_KEY = "ldap";
     String PAGER_DUTY_KEY = "pagerDuty";
+    String SLACK_KEY = "slack";
 
     long ROLLUP_0_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.0.intervalMillis", MINUTES.toMillis(1));
@@ -164,6 +166,8 @@ public interface ConfigRepository {
     LdapConfig getLdapConfig() throws Exception;
 
     PagerDutyConfig getPagerDutyConfig() throws Exception;
+
+    SlackConfig getSlackConfig() throws Exception;
 
     HealthchecksIoConfig getHealthchecksIoConfig();
 
@@ -275,6 +279,8 @@ public interface ConfigRepository {
 
     void updatePagerDutyConfig(PagerDutyConfig config, String priorVersion) throws Exception;
 
+    void updateSlackConfig(SlackConfig config, String priorVersion) throws Exception;
+
     void updateHealthchecksIoConfig(HealthchecksIoConfig healthchecksIoConfig, String priorVersion)
             throws Exception;
 
@@ -365,6 +371,12 @@ public interface ConfigRepository {
 
     @SuppressWarnings("serial")
     class DuplicatePagerDutyIntegrationKeyDisplayException extends Exception {}
+
+    @SuppressWarnings("serial")
+    class DuplicateSlackWebhookUrlException extends Exception {}
+
+    @SuppressWarnings("serial")
+    class DuplicateSlackWebhookDisplayException extends Exception {}
 
     @SuppressWarnings("serial")
     class SyntheticNotFoundException extends Exception {}

@@ -34,6 +34,7 @@ import org.glowroot.common2.config.ImmutableHttpProxyConfig;
 import org.glowroot.common2.config.ImmutableLdapConfig;
 import org.glowroot.common2.config.ImmutablePagerDutyConfig;
 import org.glowroot.common2.config.ImmutableRoleConfig;
+import org.glowroot.common2.config.ImmutableSlackConfig;
 import org.glowroot.common2.config.ImmutableSmtpConfig;
 import org.glowroot.common2.config.RoleConfig;
 import org.glowroot.common2.config.UserConfig;
@@ -84,6 +85,11 @@ public abstract class AllEmbeddedAdminConfigDto {
     }
 
     @Value.Default
+    public ImmutableSlackConfig slack() {
+        return ImmutableSlackConfig.builder().build();
+    }
+
+    @Value.Default
     public ImmutableHealthchecksIoConfig healthchecksIo() {
         return ImmutableHealthchecksIoConfig.builder().build();
     }
@@ -103,6 +109,7 @@ public abstract class AllEmbeddedAdminConfigDto {
                 .httpProxy(httpProxy())
                 .ldap(ldap())
                 .pagerDuty(pagerDuty())
+                .slack(slack())
                 .healthchecksIo(healthchecksIo())
                 .build();
     }
@@ -123,6 +130,7 @@ public abstract class AllEmbeddedAdminConfigDto {
                 .httpProxy(ImmutableHttpProxyConfig.copyOf(config.httpProxy()))
                 .ldap(ImmutableLdapConfig.copyOf(config.ldap()))
                 .pagerDuty(ImmutablePagerDutyConfig.copyOf(config.pagerDuty()))
+                .slack(ImmutableSlackConfig.copyOf(config.slack()))
                 .healthchecksIo(ImmutableHealthchecksIoConfig.copyOf(config.healthchecksIo()))
                 .version(config.version())
                 .build();

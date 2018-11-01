@@ -18,27 +18,28 @@ package org.glowroot.common2.config;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Versions;
 
 @Value.Immutable
-public abstract class AllCentralAdminConfig {
+public abstract class SlackConfig {
 
-    public abstract CentralAdminGeneralConfig general();
-    public abstract List<UserConfig> users();
-    public abstract List<RoleConfig> roles();
-    public abstract CentralWebConfig web();
-    public abstract CentralStorageConfig storage();
-    public abstract SmtpConfig smtp();
-    public abstract HttpProxyConfig httpProxy();
-    public abstract LdapConfig ldap();
-    public abstract PagerDutyConfig pagerDuty();
-    public abstract SlackConfig slack();
+    @JsonInclude(Include.NON_EMPTY)
+    public abstract List<ImmutableSlackWebhook> webhooks();
 
     @Value.Derived
     @JsonIgnore
     public String version() {
         return Versions.getJsonVersion(this);
+    }
+
+    @Value.Immutable
+    public interface SlackWebhook {
+        String id();
+        String url();
+        String display();
     }
 }

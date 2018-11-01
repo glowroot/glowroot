@@ -607,6 +607,11 @@ glowroot.config([
       templateUrl: 'views/admin/integration/pager-duty.html',
       controller: 'AdminPagerDutyCtrl'
     });
+    $stateProvider.state('admin.slack', {
+      url: '/integration/slack',
+      templateUrl: 'views/admin/integration/slack.html',
+      controller: 'AdminSlackCtrl'
+    });
     $stateProvider.state('admin.healthchecksIo', {
       url: '/integration/healthchecks-io',
       templateUrl: 'views/admin/integration/healthchecks-io.html',

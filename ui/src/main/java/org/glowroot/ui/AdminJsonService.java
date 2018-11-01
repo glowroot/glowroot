@@ -67,23 +67,30 @@ import org.glowroot.common2.config.ImmutableHttpProxyConfig;
 import org.glowroot.common2.config.ImmutableLdapConfig;
 import org.glowroot.common2.config.ImmutablePagerDutyConfig;
 import org.glowroot.common2.config.ImmutablePagerDutyIntegrationKey;
+import org.glowroot.common2.config.ImmutableSlackConfig;
+import org.glowroot.common2.config.ImmutableSlackWebhook;
 import org.glowroot.common2.config.ImmutableSmtpConfig;
 import org.glowroot.common2.config.ImmutableUserConfig;
 import org.glowroot.common2.config.LdapConfig;
 import org.glowroot.common2.config.PagerDutyConfig;
 import org.glowroot.common2.config.RoleConfig;
+import org.glowroot.common2.config.SlackConfig;
+import org.glowroot.common2.config.SlackConfig.SlackWebhook;
 import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.SmtpConfig.ConnectionSecurity;
 import org.glowroot.common2.config.UserConfig;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.DuplicatePagerDutyIntegrationKeyDisplayException;
 import org.glowroot.common2.repo.ConfigRepository.DuplicatePagerDutyIntegrationKeyException;
+import org.glowroot.common2.repo.ConfigRepository.DuplicateSlackWebhookDisplayException;
+import org.glowroot.common2.repo.ConfigRepository.DuplicateSlackWebhookUrlException;
 import org.glowroot.common2.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common2.repo.RepoAdmin;
 import org.glowroot.common2.repo.RepoAdmin.H2Table;
 import org.glowroot.common2.repo.util.AlertingService;
 import org.glowroot.common2.repo.util.Encryption;
 import org.glowroot.common2.repo.util.HttpClient;
+import org.glowroot.common2.repo.util.IdGenerator;
 import org.glowroot.common2.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException;
 import org.glowroot.common2.repo.util.MailService;
 import org.glowroot.ui.CommonHandler.CommonResponse;
@@ -224,6 +231,12 @@ class AdminJsonService {
     String getPagerDutyConfig() throws Exception {
         PagerDutyConfig config = configRepository.getPagerDutyConfig();
         return mapper.writeValueAsString(PagerDutyConfigDto.create(config));
+    }
+
+    @GET(path = "/backend/admin/slack", permission = "admin:view:slack")
+    String getSlackConfig() throws Exception {
+        SlackConfig config = configRepository.getSlackConfig();
+        return mapper.writeValueAsString(SlackConfigDto.create(config));
     }
 
     @GET(path = "/backend/admin/healthchecks-io", permission = "admin:view:healthchecksIo")
@@ -418,6 +431,20 @@ class AdminJsonService {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         return getPagerDutyConfig();
+    }
+
+    @POST(path = "/backend/admin/slack", permission = "admin:edit:slack")
+    String updateSlackConfig(@BindRequest SlackConfigDto configDto) throws Exception {
+        try {
+            configRepository.updateSlackConfig(configDto.convert(), configDto.version());
+        } catch (DuplicateSlackWebhookUrlException e) {
+            return "{\"duplicateWebhookUrl\":true}";
+        } catch (DuplicateSlackWebhookDisplayException e) {
+            return "{\"duplicateWebhookDisplay\":true}";
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getSlackConfig();
     }
 
     @POST(path = "/backend/admin/healthchecks-io", permission = "admin:edit:healthchecksIo")
@@ -1187,6 +1214,59 @@ class AdminJsonService {
             return ImmutablePagerDutyConfigDto.builder()
                     .addAllIntegrationKeys(config.integrationKeys())
                     .version(config.version())
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    abstract static class SlackConfigDto {
+
+        public abstract List<ImmutableSlackWebhookDto> webhooks();
+        abstract String version();
+
+        private SlackConfig convert() {
+            ImmutableSlackConfig.Builder builder = ImmutableSlackConfig.builder();
+            for (SlackWebhookDto webhook : webhooks()) {
+                builder.addWebhooks(webhook.convert());
+            }
+            return builder.build();
+        }
+
+        private static SlackConfigDto create(SlackConfig config) {
+            ImmutableSlackConfigDto.Builder builder = ImmutableSlackConfigDto.builder();
+            for (SlackWebhook webhook : config.webhooks()) {
+                builder.addWebhooks(SlackWebhookDto.create(webhook));
+            }
+            return builder.version(config.version())
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    abstract static class SlackWebhookDto {
+
+        @Nullable
+        abstract String id(); // null for new webhooks
+        abstract String url();
+        abstract String display();
+
+        private ImmutableSlackWebhook convert() {
+            String id = id();
+            if (id == null) {
+                id = IdGenerator.generateNewId();
+            }
+            return ImmutableSlackWebhook.builder()
+                    .id(id)
+                    .url(url())
+                    .display(display())
+                    .build();
+        }
+
+        private static ImmutableSlackWebhookDto create(SlackWebhook webhook) {
+            return ImmutableSlackWebhookDto.builder()
+                    .id(webhook.id())
+                    .url(webhook.url())
+                    .display(webhook.display())
                     .build();
         }
     }

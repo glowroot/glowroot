@@ -40,7 +40,7 @@ class AdminConfigFile {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final List<String> keyOrder = ImmutableList.of("general", "users", "roles",
-            "web", "storage", "smtp", "httpProxy", "ldap", "pagerDuty", "healthchecksIo");
+            "web", "storage", "smtp", "httpProxy", "ldap", "pagerDuty", "slack", "healthchecksIo");
 
     private final File file;
     private final ObjectNode rootObjectNode;

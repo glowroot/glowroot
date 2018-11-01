@@ -157,6 +157,12 @@ glowroot.controller('ConfigAlertCtrl', [
           pagerDutyIntegrationKey: ''
         };
       }
+      if (!data.config.slackNotification) {
+        data.config.slackNotification = {
+          slackWebhookId: '',
+          slackChannels: []
+        };
+      }
       $scope.config = data.config;
       $scope.originalConfig = angular.copy(data.config);
 
@@ -168,6 +174,7 @@ glowroot.controller('ConfigAlertCtrl', [
         }
         $scope.heading = data.heading;
         $scope.page.emailAddresses = data.config.emailNotification.emailAddresses.join(', ');
+        $scope.page.slackChannels = data.config.slackNotification.slackChannels.join(', ');
       } else {
         $scope.heading = '<New>';
       }
@@ -223,6 +230,7 @@ glowroot.controller('ConfigAlertCtrl', [
       }
       $scope.syntheticMonitors = data.syntheticMonitors;
       $scope.pagerDutyIntegrationKeys = data.pagerDutyIntegrationKeys;
+      $scope.slackWebhooks = data.slackWebhooks;
     }
 
     if (version) {
@@ -247,7 +255,8 @@ glowroot.controller('ConfigAlertCtrl', [
               },
               gauges: response.data.gauges,
               syntheticMonitors: response.data.syntheticMonitors,
-              pagerDutyIntegrationKeys: response.data.pagerDutyIntegrationKeys
+              pagerDutyIntegrationKeys: response.data.pagerDutyIntegrationKeys,
+              slackWebhooks: response.data.slackWebhooks
             });
             $scope.loaded = true;
           }, function (response) {
@@ -309,6 +318,27 @@ glowroot.controller('ConfigAlertCtrl', [
       }
     });
 
+    $scope.$watch('page.slackChannels', function (newValue) {
+      if (newValue) {
+        var slackChannels = [];
+        angular.forEach(newValue.split(','), function (slackChannel) {
+          slackChannel = slackChannel.trim();
+          if (slackChannel.length) {
+            slackChannels.push(slackChannel);
+          }
+        });
+        $scope.config.slackNotification.slackChannels = slackChannels;
+      } else if ($scope.config) {
+        $scope.config.slackNotification.slackChannels = [];
+      }
+    });
+
+    $scope.$watch('config.slackNotification.slackWebhookId', function (newValue) {
+      if (!newValue) {
+        $scope.page.slackChannels = '';
+      }
+    });
+
     $scope.displayUnavailablePagerDutyIntegrationKey = function () {
       if (!$scope.config.pagerDutyNotification.pagerDutyIntegrationKey) {
         return false;
@@ -316,6 +346,19 @@ glowroot.controller('ConfigAlertCtrl', [
       var i;
       for (i = 0; i < $scope.pagerDutyIntegrationKeys.length; i++) {
         if ($scope.pagerDutyIntegrationKeys[i].key === $scope.config.pagerDutyNotification.pagerDutyIntegrationKey) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    $scope.displayUnavailableSlackWebhook = function () {
+      if (!$scope.config.slackNotification.slackWebhookId) {
+        return false;
+      }
+      var i;
+      for (i = 0; i < $scope.slackWebhooks.length; i++) {
+        if ($scope.slackWebhooks[i].id === $scope.config.slackNotification.slackWebhookId) {
           return false;
         }
       }

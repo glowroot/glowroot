@@ -34,6 +34,7 @@ import org.glowroot.common2.config.ImmutableHttpProxyConfig;
 import org.glowroot.common2.config.ImmutableLdapConfig;
 import org.glowroot.common2.config.ImmutablePagerDutyConfig;
 import org.glowroot.common2.config.ImmutableRoleConfig;
+import org.glowroot.common2.config.ImmutableSlackConfig;
 import org.glowroot.common2.config.ImmutableSmtpConfig;
 import org.glowroot.common2.config.ImmutableUserConfig;
 import org.glowroot.common2.config.RoleConfig;
@@ -83,6 +84,11 @@ abstract class AllCentralAdminConfigDto {
         return ImmutablePagerDutyConfig.builder().build();
     }
 
+    @Value.Default
+    ImmutableSlackConfig slack() {
+        return ImmutableSlackConfig.builder().build();
+    }
+
     abstract @Nullable String version();
 
     AllCentralAdminConfig toConfig() throws GeneralSecurityException {
@@ -98,6 +104,7 @@ abstract class AllCentralAdminConfigDto {
                 .httpProxy(httpProxy())
                 .ldap(ldap())
                 .pagerDuty(pagerDuty())
+                .slack(slack())
                 .build();
     }
 
@@ -117,6 +124,7 @@ abstract class AllCentralAdminConfigDto {
                 .httpProxy(ImmutableHttpProxyConfig.copyOf(config.httpProxy()))
                 .ldap(ImmutableLdapConfig.copyOf(config.ldap()))
                 .pagerDuty(ImmutablePagerDutyConfig.copyOf(config.pagerDuty()))
+                .slack(ImmutableSlackConfig.copyOf(config.slack()))
                 .version(config.version())
                 .build();
     }

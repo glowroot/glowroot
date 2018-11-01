@@ -34,6 +34,7 @@ public abstract class AllEmbeddedAdminConfig {
     public abstract HttpProxyConfig httpProxy();
     public abstract LdapConfig ldap();
     public abstract PagerDutyConfig pagerDuty();
+    public abstract SlackConfig slack();
     public abstract HealthchecksIoConfig healthchecksIo();
 
     @Value.Derived

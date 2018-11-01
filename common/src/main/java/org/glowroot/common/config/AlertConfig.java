@@ -15,6 +15,8 @@
  */
 package org.glowroot.common.config;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -36,6 +38,7 @@ public abstract class AlertConfig {
     public abstract AlertSeverity severity();
     public abstract @Nullable ImmutableEmailNotification emailNotification();
     public abstract @Nullable ImmutablePagerDutyNotification pagerDutyNotification();
+    public abstract @Nullable ImmutableSlackNotification slackNotification();
 
     public static ImmutableAlertConfig create(AgentConfig.AlertConfig config) {
         ImmutableAlertConfig.Builder builder = ImmutableAlertConfig.builder()
@@ -47,6 +50,9 @@ public abstract class AlertConfig {
         }
         if (notification.hasPagerDutyNotification()) {
             builder.pagerDutyNotification(create(notification.getPagerDutyNotification()));
+        }
+        if (notification.hasSlackNotification()) {
+            builder.slackNotification(create(notification.getSlackNotification()));
         }
         return builder.build();
     }
@@ -63,6 +69,11 @@ public abstract class AlertConfig {
         if (pagerDutyNotification != null) {
             builder.getNotificationBuilder()
                     .setPagerDutyNotification(toProto(pagerDutyNotification));
+        }
+        SlackNotification slackNotification = slackNotification();
+        if (slackNotification != null) {
+            builder.getNotificationBuilder()
+                    .setSlackNotification(toProto(slackNotification));
         }
         return builder.build();
     }
@@ -92,6 +103,14 @@ public abstract class AlertConfig {
             AgentConfig.AlertConfig.AlertNotification.PagerDutyNotification pagerDutyNotification) {
         return ImmutablePagerDutyNotification.builder()
                 .pagerDutyIntegrationKey(pagerDutyNotification.getPagerDutyIntegrationKey())
+                .build();
+    }
+
+    private static ImmutableSlackNotification create(
+            AgentConfig.AlertConfig.AlertNotification.SlackNotification slackNotification) {
+        return ImmutableSlackNotification.builder()
+                .slackWebhookId(slackNotification.getSlackWebhookId())
+                .addAllSlackChannels(slackNotification.getSlackChannelList())
                 .build();
     }
 
@@ -126,6 +145,14 @@ public abstract class AlertConfig {
             PagerDutyNotification pagerDutyNotification) {
         return AgentConfig.AlertConfig.AlertNotification.PagerDutyNotification.newBuilder()
                 .setPagerDutyIntegrationKey(pagerDutyNotification.pagerDutyIntegrationKey())
+                .build();
+    }
+
+    private static AgentConfig.AlertConfig.AlertNotification.SlackNotification toProto(
+            SlackNotification slackNotification) {
+        return AgentConfig.AlertConfig.AlertNotification.SlackNotification.newBuilder()
+                .setSlackWebhookId(slackNotification.slackWebhookId())
+                .addAllSlackChannel(slackNotification.slackChannels())
                 .build();
     }
 
@@ -252,5 +279,11 @@ public abstract class AlertConfig {
     @Value.Immutable
     interface PagerDutyNotification {
         String pagerDutyIntegrationKey();
+    }
+
+    @Value.Immutable
+    interface SlackNotification {
+        String slackWebhookId();
+        List<String> slackChannels();
     }
 }

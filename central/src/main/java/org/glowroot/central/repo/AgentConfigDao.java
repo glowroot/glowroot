@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
 
 import com.datastax.driver.core.BoundStatement;
@@ -31,7 +30,6 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
-import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -52,8 +50,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 // TODO agent config records never expire for abandoned agent rollup ids
 public class AgentConfigDao {
-
-    private static final Random random = new Random();
 
     private final Session session;
 
@@ -285,12 +281,6 @@ public class AgentConfigDao {
             return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
         }
         return display;
-    }
-
-    static String generateNewId() {
-        byte[] bytes = new byte[16];
-        random.nextBytes(bytes);
-        return BaseEncoding.base16().lowerCase().encode(bytes);
     }
 
     private class AgentConfigCacheLoader implements CacheLoader<String, Optional<AgentConfig>> {

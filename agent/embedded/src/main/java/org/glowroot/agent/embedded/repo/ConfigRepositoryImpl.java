@@ -61,6 +61,8 @@ import org.glowroot.common2.config.LdapConfig;
 import org.glowroot.common2.config.PagerDutyConfig;
 import org.glowroot.common2.config.PagerDutyConfig.PagerDutyIntegrationKey;
 import org.glowroot.common2.config.RoleConfig;
+import org.glowroot.common2.config.SlackConfig;
+import org.glowroot.common2.config.SlackConfig.SlackWebhook;
 import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.StorageConfig;
 import org.glowroot.common2.config.UserConfig;
@@ -343,6 +345,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public PagerDutyConfig getPagerDutyConfig() {
         return adminConfigService.getPagerDutyConfig();
+    }
+
+    @Override
+    public SlackConfig getSlackConfig() {
+        return adminConfigService.getSlackConfig();
     }
 
     @Override
@@ -911,6 +918,16 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public void updateSlackConfig(SlackConfig config, String priorVersion) throws Exception {
+        synchronized (writeLock) {
+            String currVersion = adminConfigService.getSlackConfig().version();
+            checkVersionsEqual(currVersion, priorVersion);
+            validateSlackConfig(config);
+            adminConfigService.updateSlackConfig(config);
+        }
+    }
+
+    @Override
     public void updateHealthchecksIoConfig(HealthchecksIoConfig config, String priorVersion)
             throws Exception {
         synchronized (writeLock) {
@@ -948,6 +965,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 throw new CannotDeleteLastRoleException();
             }
             validatePagerDutyConfig(config.pagerDuty());
+            validateSlackConfig(config.slack());
             Map<String, String> existingUserPasswordHashes = Maps.newHashMap();
             for (UserConfig userConfig : existingConfig.users()) {
                 String passwordHash = userConfig.passwordHash();
@@ -1028,6 +1046,19 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
             if (!integrationDisplays.add(integrationKey.display())) {
                 throw new DuplicatePagerDutyIntegrationKeyDisplayException();
+            }
+        }
+    }
+
+    private static void validateSlackConfig(SlackConfig config) throws Exception {
+        Set<String> webhookUrls = Sets.newHashSet();
+        Set<String> webhookDisplays = Sets.newHashSet();
+        for (SlackWebhook webhook : config.webhooks()) {
+            if (!webhookUrls.add(webhook.url())) {
+                throw new DuplicateSlackWebhookUrlException();
+            }
+            if (!webhookDisplays.add(webhook.display())) {
+                throw new DuplicateSlackWebhookDisplayException();
             }
         }
     }

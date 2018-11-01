@@ -44,11 +44,13 @@ import org.glowroot.common2.config.ImmutableHttpProxyConfig;
 import org.glowroot.common2.config.ImmutableLdapConfig;
 import org.glowroot.common2.config.ImmutablePagerDutyConfig;
 import org.glowroot.common2.config.ImmutableRoleConfig;
+import org.glowroot.common2.config.ImmutableSlackConfig;
 import org.glowroot.common2.config.ImmutableSmtpConfig;
 import org.glowroot.common2.config.ImmutableUserConfig;
 import org.glowroot.common2.config.LdapConfig;
 import org.glowroot.common2.config.PagerDutyConfig;
 import org.glowroot.common2.config.RoleConfig;
+import org.glowroot.common2.config.SlackConfig;
 import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.UserConfig;
 
@@ -67,6 +69,7 @@ public class AdminConfigService {
     private volatile HttpProxyConfig httpProxyConfig;
     private volatile LdapConfig ldapConfig;
     private volatile PagerDutyConfig pagerDutyConfig;
+    private volatile SlackConfig slackConfig;
     private volatile HealthchecksIoConfig healthchecksIoConfig;
 
     public static AdminConfigService create(List<File> confDirs, boolean configReadOnly,
@@ -170,6 +173,13 @@ public class AdminConfigService {
         } else {
             this.pagerDutyConfig = pagerDutyConfig;
         }
+        ImmutableSlackConfig slackConfig =
+                adminConfigFile.getConfig("slack", ImmutableSlackConfig.class);
+        if (slackConfig == null) {
+            this.slackConfig = ImmutableSlackConfig.builder().build();
+        } else {
+            this.slackConfig = slackConfig;
+        }
         ImmutableHealthchecksIoConfig healthchecksIoConfig =
                 adminConfigFile.getConfig("healthchecksIo", ImmutableHealthchecksIoConfig.class);
         if (healthchecksIoConfig == null) {
@@ -215,6 +225,10 @@ public class AdminConfigService {
         return pagerDutyConfig;
     }
 
+    public SlackConfig getSlackConfig() {
+        return slackConfig;
+    }
+
     public HealthchecksIoConfig getHealthchecksIoConfig() {
         return healthchecksIoConfig;
     }
@@ -230,6 +244,7 @@ public class AdminConfigService {
                 .httpProxy(httpProxyConfig)
                 .ldap(ldapConfig)
                 .pagerDuty(pagerDutyConfig)
+                .slack(slackConfig)
                 .healthchecksIo(healthchecksIoConfig)
                 .build();
     }
@@ -280,6 +295,11 @@ public class AdminConfigService {
         pagerDutyConfig = ImmutablePagerDutyConfig.copyOf(config);
     }
 
+    public void updateSlackConfig(SlackConfig config) throws Exception {
+        adminConfigFile.writeConfig("slack", config);
+        slackConfig = ImmutableSlackConfig.copyOf(config);
+    }
+
     public void updateHealthchecksIoConfig(HealthchecksIoConfig config) throws Exception {
         adminConfigFile.writeConfig("healthchecksIo", config);
         healthchecksIoConfig = ImmutableHealthchecksIoConfig.copyOf(config);
@@ -296,6 +316,7 @@ public class AdminConfigService {
         configs.put("httpProxy", config.httpProxy());
         configs.put("ldap", config.ldap());
         configs.put("pagerDuty", config.pagerDuty());
+        configs.put("slack", config.slack());
         configs.put("healthchecksIo", config.healthchecksIo());
         adminConfigFile.writeConfigsOnStartup(configs);
         this.generalConfig = config.general();
@@ -307,6 +328,7 @@ public class AdminConfigService {
         this.httpProxyConfig = config.httpProxy();
         this.ldapConfig = config.ldap();
         this.pagerDutyConfig = config.pagerDuty();
+        this.slackConfig = config.slack();
         this.healthchecksIoConfig = config.healthchecksIo();
     }
 
@@ -321,6 +343,7 @@ public class AdminConfigService {
         configs.put("httpProxy", httpProxyConfig);
         configs.put("ldap", ldapConfig);
         configs.put("pagerDuty", pagerDutyConfig);
+        configs.put("slack", slackConfig);
         configs.put("healthchecksIo", healthchecksIoConfig);
         adminConfigFile.writeConfigsOnStartup(configs);
     }
@@ -343,6 +366,7 @@ public class AdminConfigService {
         httpProxyConfig = ImmutableHttpProxyConfig.builder().build();
         ldapConfig = ImmutableLdapConfig.builder().build();
         pagerDutyConfig = ImmutablePagerDutyConfig.builder().build();
+        slackConfig = ImmutableSlackConfig.builder().build();
         healthchecksIoConfig = ImmutableHealthchecksIoConfig.builder().build();
         writeAll();
     }

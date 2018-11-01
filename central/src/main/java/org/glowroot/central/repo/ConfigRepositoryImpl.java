@@ -54,6 +54,7 @@ import org.glowroot.common2.config.ImmutableCentralWebConfig;
 import org.glowroot.common2.config.ImmutableHttpProxyConfig;
 import org.glowroot.common2.config.ImmutableLdapConfig;
 import org.glowroot.common2.config.ImmutablePagerDutyConfig;
+import org.glowroot.common2.config.ImmutableSlackConfig;
 import org.glowroot.common2.config.ImmutableSmtpConfig;
 import org.glowroot.common2.config.ImmutableUserConfig;
 import org.glowroot.common2.config.LdapConfig;
@@ -61,12 +62,15 @@ import org.glowroot.common2.config.MoreConfigDefaults;
 import org.glowroot.common2.config.PagerDutyConfig;
 import org.glowroot.common2.config.PagerDutyConfig.PagerDutyIntegrationKey;
 import org.glowroot.common2.config.RoleConfig;
+import org.glowroot.common2.config.SlackConfig;
+import org.glowroot.common2.config.SlackConfig.SlackWebhook;
 import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.StorageConfig;
 import org.glowroot.common2.config.UserConfig;
 import org.glowroot.common2.config.WebConfig;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigValidation;
+import org.glowroot.common2.repo.util.IdGenerator;
 import org.glowroot.common2.repo.util.LazySecretKey;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
@@ -119,6 +123,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         centralConfigDao.addKeyType(HTTP_PROXY_KEY, ImmutableHttpProxyConfig.class);
         centralConfigDao.addKeyType(LDAP_KEY, ImmutableLdapConfig.class);
         centralConfigDao.addKeyType(PAGER_DUTY_KEY, ImmutablePagerDutyConfig.class);
+        centralConfigDao.addKeyType(SLACK_KEY, ImmutableSlackConfig.class);
     }
 
     @Override
@@ -442,6 +447,15 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public SlackConfig getSlackConfig() throws Exception {
+        SlackConfig config = (SlackConfig) centralConfigDao.read(SLACK_KEY);
+        if (config == null) {
+            return ImmutableSlackConfig.builder().build();
+        }
+        return config;
+    }
+
+    @Override
     public HealthchecksIoConfig getHealthchecksIoConfig() {
         throw new UnsupportedOperationException();
     }
@@ -463,6 +477,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 .httpProxy(getHttpProxyConfig())
                 .ldap(getLdapConfig())
                 .pagerDuty(getPagerDutyConfig())
+                .slack(getSlackConfig())
                 .build();
     }
 
@@ -618,7 +633,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             SyntheticMonitorConfig configWithoutId) throws Exception {
         checkState(configWithoutId.getId().isEmpty());
         SyntheticMonitorConfig config = configWithoutId.toBuilder()
-                .setId(AgentConfigDao.generateNewId())
+                .setId(IdGenerator.generateNewId())
                 .build();
         agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
@@ -1142,6 +1157,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public void updateSlackConfig(SlackConfig config, String priorVersion) throws Exception {
+        validateSlackConfig(config);
+        centralConfigDao.write(SLACK_KEY, config, priorVersion);
+    }
+
+    @Override
     public void updateHealthchecksIoConfig(HealthchecksIoConfig healthchecksIoConfig,
             String priorVersion) throws Exception {
         throw new UnsupportedOperationException();
@@ -1157,6 +1178,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     public void updateAllCentralAdminConfig(AllCentralAdminConfig config,
             @Nullable String priorVersion) throws Exception {
         validatePagerDutyConfig(config.pagerDuty());
+        validateSlackConfig(config.slack());
         if (priorVersion == null) {
             centralConfigDao.writeWithoutOptimisticLocking(GENERAL_KEY, config.general());
             centralConfigDao.writeWithoutOptimisticLocking(WEB_KEY, config.web());
@@ -1165,6 +1187,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             centralConfigDao.writeWithoutOptimisticLocking(HTTP_PROXY_KEY, config.httpProxy());
             centralConfigDao.writeWithoutOptimisticLocking(LDAP_KEY, config.ldap());
             centralConfigDao.writeWithoutOptimisticLocking(PAGER_DUTY_KEY, config.pagerDuty());
+            centralConfigDao.writeWithoutOptimisticLocking(SLACK_KEY, config.slack());
             writeUsersWithoutOptimisticLocking(config.users());
             writeRolesWithoutOptimisticLocking(config.roles());
         } else {
@@ -1181,6 +1204,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             centralConfigDao.write(LDAP_KEY, config.ldap(), currConfig.ldap().version());
             centralConfigDao.write(PAGER_DUTY_KEY, config.pagerDuty(),
                     currConfig.pagerDuty().version());
+            centralConfigDao.write(SLACK_KEY, config.slack(), currConfig.slack().version());
             // there is currently no optimistic locking when updating users
             writeUsersWithoutOptimisticLocking(config.users());
             writeRolesWithoutOptimisticLocking(config.roles());
@@ -1385,6 +1409,19 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
             if (!integrationDisplays.add(integrationKey.display())) {
                 throw new DuplicatePagerDutyIntegrationKeyDisplayException();
+            }
+        }
+    }
+
+    private static void validateSlackConfig(SlackConfig config) throws Exception {
+        Set<String> webhookUrls = Sets.newHashSet();
+        Set<String> webhookDisplays = Sets.newHashSet();
+        for (SlackWebhook webhook : config.webhooks()) {
+            if (!webhookUrls.add(webhook.url())) {
+                throw new DuplicateSlackWebhookUrlException();
+            }
+            if (!webhookDisplays.add(webhook.display())) {
+                throw new DuplicateSlackWebhookDisplayException();
             }
         }
     }
