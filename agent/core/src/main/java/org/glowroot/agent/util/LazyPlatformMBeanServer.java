@@ -298,6 +298,7 @@ public class LazyPlatformMBeanServer {
     }
 
     public List<MBeanServer> findAllMBeanServers() throws Exception {
+        ensureInit();
         List<MBeanServer> mbeanServers = MBeanServerFactory.findMBeanServer(null);
         for (ListIterator<MBeanServer> i = mbeanServers.listIterator(); i.hasNext();) {
             MBeanServer mbeanServer = i.next();
