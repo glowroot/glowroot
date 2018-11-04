@@ -141,7 +141,7 @@ public class BytecodeServiceImpl implements BytecodeService {
             String expectedTopLevelClass, String expectedTopLevelMethodName) {
         if (onEnteringMain == null) {
             if (DEBUG_MAIN_CLASS) {
-                logger.info("callback not set yet: {}", mainClass,
+                logger.info("entering {}.main(), but callback not set yet", mainClass,
                         new Exception("location stack trace"));
             }
             return;
@@ -153,8 +153,7 @@ public class BytecodeServiceImpl implements BytecodeService {
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         if (ignoreMainClass(expectedTopLevelClass, expectedTopLevelMethodName, stackTrace)) {
             if (DEBUG_MAIN_CLASS) {
-                logger.info("ignoring main class: {}", mainClass,
-                        new Exception("location stack trace"));
+                logger.info("ignoring {}.main()", mainClass, new Exception("location stack trace"));
             }
             return;
         }
@@ -166,15 +165,15 @@ public class BytecodeServiceImpl implements BytecodeService {
             // unexpected and strange race condition on valid main methods
             return;
         }
-        if (DEBUG_MAIN_CLASS) {
-            logger.info("main class: {}", mainClass);
-        }
         String unwrappedMainClass;
         if (mainClass.startsWith("org.tanukisoftware.wrapper.")
                 && mainArgs != null && mainArgs.length > 0) {
             unwrappedMainClass = mainArgs[0];
         } else {
             unwrappedMainClass = mainClass;
+        }
+        if (DEBUG_MAIN_CLASS) {
+            logger.info("entering {}.main()", mainClass, new Exception("location stack trace"));
         }
         try {
             onEnteringMain.run(unwrappedMainClass);
