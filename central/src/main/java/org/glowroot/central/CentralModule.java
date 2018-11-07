@@ -548,10 +548,6 @@ public class CentralModule {
             builder.cassandraPoolMaxRequestsPerConnection(
                     Integer.parseInt(cassandraPoolMaxRequestsPerConnection));
         }
-        String cassandraPoolMaxQueueSize = properties.get("glowroot.cassandra.pool.maxQueueSize");
-        if (!Strings.isNullOrEmpty(cassandraPoolMaxQueueSize)) {
-            builder.cassandraPoolMaxQueueSize(Integer.parseInt(cassandraPoolMaxQueueSize));
-        }
         String cassandraPoolTimeoutMillis = properties.get("glowroot.cassandra.pool.timeoutMillis");
         if (!Strings.isNullOrEmpty(cassandraPoolTimeoutMillis)) {
             builder.cassandraPoolTimeoutMillis(Integer.parseInt(cassandraPoolTimeoutMillis));
@@ -733,7 +729,11 @@ public class CentralModule {
                     }
                     session = new Session(
                             createCluster(centralConfig, defaultTimestampGenerator).connect(),
-                            keyspace, writeConsistencyLevelOverride);
+                            keyspace, writeConsistencyLevelOverride,
+                            // max concurrent queries before throwing BusyPoolException is "max
+                            // requests per connection" + "max queue size" (which are both set to
+                            // the same value)
+                            centralConfig.cassandraPoolMaxRequestsPerConnection() * 2);
                 }
                 String cassandraVersion = verifyCassandraVersion(session);
                 KeyspaceMetadata keyspaceMetadata =
@@ -793,7 +793,10 @@ public class CentralModule {
                                 centralConfig.cassandraPoolMaxRequestsPerConnection())
                         .setMaxRequestsPerConnection(HostDistance.REMOTE,
                                 centralConfig.cassandraPoolMaxRequestsPerConnection())
-                        .setMaxQueueSize(centralConfig.cassandraPoolMaxQueueSize())
+                        // max queue size is not that important since thread-based throttling is
+                        // implemented in org.glowroot.central.Session (so using one-size-fits-all
+                        // value here)
+                        .setMaxQueueSize(centralConfig.cassandraPoolMaxRequestsPerConnection())
                         .setPoolTimeoutMillis(centralConfig.cassandraPoolTimeoutMillis()))
                 .withTimestampGenerator(defaultTimestampGenerator);
         String cassandraUsername = centralConfig.cassandraUsername();
@@ -915,13 +918,6 @@ public class CentralModule {
         @Value.Default
         int cassandraPoolMaxRequestsPerConnection() {
             return 1024;
-        }
-
-        @Value.Default
-        int cassandraPoolMaxQueueSize() {
-            // central runs lots of parallel async queries and is very spiky since all aggregates
-            // come in right after each minute marker
-            return 10000;
         }
 
         @Value.Default

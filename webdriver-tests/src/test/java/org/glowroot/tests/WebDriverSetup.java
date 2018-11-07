@@ -26,6 +26,7 @@ import java.security.SecureRandom;
 import java.util.Properties;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.PoolingOptions;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -197,7 +198,8 @@ public class WebDriverSetup {
         if (useCentral) {
             CassandraWrapper.start();
             Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
-            Session session = new Session(cluster.newSession(), "glowroot_unit_tests", null);
+            Session session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
+                    PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
             session.updateSchemaWithRetry("drop table if exists agent_config");
             session.updateSchemaWithRetry("drop table if exists user");
             session.updateSchemaWithRetry("drop table if exists role");

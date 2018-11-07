@@ -62,6 +62,9 @@ public class Session {
         }
     };
 
+    // limit concurrent async queries overall to avoid BusyPoolException
+    private final Semaphore overallSemaphore;
+
     private final com.datastax.driver.core.Session wrappedSession;
     private final String keyspaceName;
     private final @Nullable ConsistencyLevel writeConsistencyLevel;
@@ -71,10 +74,14 @@ public class Session {
     private final CassandraWriteMetrics cassandraWriteMetrics;
 
     public Session(com.datastax.driver.core.Session wrappedSession, String keyspaceName,
-            @Nullable ConsistencyLevel writeConsistencyLevel) throws InterruptedException {
+            @Nullable ConsistencyLevel writeConsistencyLevel, int maxConcurrentQueries)
+            throws InterruptedException {
         this.wrappedSession = wrappedSession;
         this.keyspaceName = keyspaceName;
         this.writeConsistencyLevel = writeConsistencyLevel;
+
+        overallSemaphore = new Semaphore(maxConcurrentQueries);
+
         cassandraWriteMetrics = new CassandraWriteMetrics(wrappedSession, keyspaceName);
 
         updateSchemaWithRetry(wrappedSession, "create keyspace if not exists " + keyspaceName
@@ -337,16 +344,17 @@ public class Session {
         perThreadSemaphores.set(semaphore);
     }
 
-    private static ListenableFuture<ResultSet> throttle(DoUnderThrottle doUnderThrottle)
-            throws Exception {
+    private ListenableFuture<ResultSet> throttle(DoUnderThrottle doUnderThrottle) throws Exception {
         Semaphore perThreadSemaphore = perThreadSemaphores.get();
         perThreadSemaphore.acquire();
+        overallSemaphore.acquire();
         SettableFuture<ResultSet> outerFuture = SettableFuture.create();
         ResultSetFuture innerFuture;
         try {
             innerFuture = doUnderThrottle.execute();
         } catch (Throwable t) {
             perThreadSemaphore.release();
+            overallSemaphore.release();
             Throwables.propagateIfPossible(t, Exception.class);
             throw new Exception(t);
         }
@@ -354,11 +362,13 @@ public class Session {
             @Override
             public void onSuccess(ResultSet result) {
                 perThreadSemaphore.release();
+                overallSemaphore.release();
                 outerFuture.set(result);
             }
             @Override
             public void onFailure(Throwable t) {
                 perThreadSemaphore.release();
+                overallSemaphore.release();
                 outerFuture.setException(t);
             }
         }, MoreExecutors.directExecutor());
