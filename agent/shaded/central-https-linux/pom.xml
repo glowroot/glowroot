@@ -21,7 +21,9 @@
       <groupId>io.netty</groupId>
       <artifactId>netty-tcnative-boringssl-static</artifactId>
       <classifier>linux-x86_64</classifier>
-      <version>2.0.19.Final</version>
+      <!-- need to stick to version known to work with gRPC 1.14.0,
+        see https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
+      <version>2.0.12.Final</version>
     </dependency>
   </dependencies>
 

@@ -45,7 +45,9 @@
       <!-- need to include https support for proguard step, but then it is stripped out after -->
       <groupId>io.netty</groupId>
       <artifactId>netty-tcnative-boringssl-static</artifactId>
-      <version>2.0.19.Final</version>
+      <!-- need to stick to version known to work with gRPC 1.14.0,
+        see https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
+      <version>2.0.12.Final</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
