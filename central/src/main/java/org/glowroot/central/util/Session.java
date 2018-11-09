@@ -63,7 +63,10 @@ public class Session {
     };
 
     // limit concurrent async queries overall to avoid BusyPoolException
-    private final Semaphore overallSemaphore;
+    // separate read/write limits in order to give some preference to UI requests which are primarly
+    // reads, compared to the bulk of the concurrent queries which are writes
+    private final Semaphore overallReadSemaphore;
+    private final Semaphore overallWriteSemaphore;
 
     private final com.datastax.driver.core.Session wrappedSession;
     private final String keyspaceName;
@@ -80,7 +83,8 @@ public class Session {
         this.keyspaceName = keyspaceName;
         this.writeConsistencyLevel = writeConsistencyLevel;
 
-        overallSemaphore = new Semaphore(maxConcurrentQueries);
+        overallReadSemaphore = new Semaphore(maxConcurrentQueries / 2);
+        overallWriteSemaphore = new Semaphore(maxConcurrentQueries / 2);
 
         cassandraWriteMetrics = new CassandraWriteMetrics(wrappedSession, keyspaceName);
 
@@ -183,14 +187,14 @@ public class Session {
     }
 
     public ListenableFuture<ResultSet> readAsync(Statement statement) throws Exception {
-        return throttle(() -> wrappedSession.executeAsync(statement));
+        return throttleRead(() -> wrappedSession.executeAsync(statement));
     }
 
     public ListenableFuture<?> writeAsync(Statement statement) throws Exception {
         if (statement.getConsistencyLevel() == null && writeConsistencyLevel != null) {
             statement.setConsistencyLevel(writeConsistencyLevel);
         }
-        return throttle(() -> {
+        return throttleWrite(() -> {
             // for now, need to record metrics in the same method because CassandraWriteMetrics
             // relies on some thread locals
             cassandraWriteMetrics.recordMetrics(statement);
@@ -199,7 +203,7 @@ public class Session {
     }
 
     private ListenableFuture<ResultSet> updateAsync(Statement statement) throws Exception {
-        return throttle(() -> wrappedSession.executeAsync(statement));
+        return throttleWrite(() -> wrappedSession.executeAsync(statement));
     }
 
     public Cluster getCluster() {
@@ -293,14 +297,15 @@ public class Session {
         }
     }
 
-    public void updateTableTwcsProperties(String tableName, int expirationHours) {
-        wrappedSession.execute(
+    public void updateTableTwcsProperties(String tableName, int expirationHours)
+            throws InterruptedException {
+        updateSchemaWithRetry(
                 "alter table " + tableName + " with " + getTwcsCompactionClause(expirationHours));
     }
 
     public void updateTableTwcsProperties(String tableName, String compactionWindowUnit,
-            int compactionWindowSize) {
-        wrappedSession.execute("alter table " + tableName + " with "
+            int compactionWindowSize) throws InterruptedException {
+        updateSchemaWithRetry("alter table " + tableName + " with "
                 + getTwcsCompactionClause(compactionWindowUnit, compactionWindowSize));
     }
 
@@ -321,7 +326,12 @@ public class Session {
     }
 
     public void updateSchemaWithRetry(String query) throws InterruptedException {
-        updateSchemaWithRetry(wrappedSession, query);
+        overallWriteSemaphore.acquire();
+        try {
+            updateSchemaWithRetry(wrappedSession, query);
+        } finally {
+            overallWriteSemaphore.release();
+        }
     }
 
     private void createTableWithTracking(String createTableQuery) throws InterruptedException {
@@ -344,7 +354,18 @@ public class Session {
         perThreadSemaphores.set(semaphore);
     }
 
-    private ListenableFuture<ResultSet> throttle(DoUnderThrottle doUnderThrottle) throws Exception {
+    private ListenableFuture<ResultSet> throttleRead(DoUnderThrottle doUnderThrottle)
+            throws Exception {
+        return throttle(doUnderThrottle, overallReadSemaphore);
+    }
+
+    private ListenableFuture<ResultSet> throttleWrite(DoUnderThrottle doUnderThrottle)
+            throws Exception {
+        return throttle(doUnderThrottle, overallWriteSemaphore);
+    }
+
+    private static ListenableFuture<ResultSet> throttle(DoUnderThrottle doUnderThrottle,
+            Semaphore overallSemaphore) throws Exception {
         Semaphore perThreadSemaphore = perThreadSemaphores.get();
         perThreadSemaphore.acquire();
         overallSemaphore.acquire();
