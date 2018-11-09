@@ -222,6 +222,7 @@ public class HttpClient {
         runAsyncHttpClient2x("2.5.2", "4.1.27.Final");
         runAsyncHttpClient2x("2.5.3", "4.1.29.Final");
         runAsyncHttpClient2x("2.5.4", "4.1.30.Final");
+        runAsyncHttpClient2x("2.6.0", "4.1.30.Final");
     }
 
     private static void cxfClient() throws Exception {

@@ -23,7 +23,7 @@
     <apache.httpclient3x.version>3.1</apache.httpclient3x.version>
     <apache.httpcore.version>4.4.10</apache.httpcore.version>
     <asynchttpclient1x.version>1.9.40</asynchttpclient1x.version>
-    <asynchttpclient2x.version>2.5.4</asynchttpclient2x.version>
+    <asynchttpclient2x.version>2.6.0</asynchttpclient2x.version>
     <wiremock.version>2.19.0</wiremock.version>
     <okhttpclient.version>2.7.5</okhttpclient.version>
     <!-- CXF 3.2.0+ requires Java 8+ -->

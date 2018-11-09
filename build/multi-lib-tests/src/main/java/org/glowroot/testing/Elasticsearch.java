@@ -74,6 +74,7 @@ public class Elasticsearch {
         run5x("5.6.10", "4.1.13.Final", "2.9.1");
         run5x("5.6.11", "4.1.13.Final", "2.11.1");
         run5x("5.6.12", "4.1.13.Final", "2.11.1");
+        run5x("5.6.13", "4.1.13.Final", "2.11.1");
         run5x("6.0.0", "4.1.13.Final", "2.9.1");
         run5x("6.0.1", "4.1.13.Final", "2.9.1");
         run5x("6.1.0", "4.1.13.Final", "2.9.1");
@@ -92,6 +93,7 @@ public class Elasticsearch {
         run5x("6.4.0", "4.1.16.Final", "2.11.1");
         run5x("6.4.1", "4.1.16.Final", "2.11.1");
         run5x("6.4.2", "4.1.16.Final", "2.11.1");
+        run5x("6.4.3", "4.1.16.Final", "2.11.1");
     }
 
     private static void run2x(String version) throws Exception {
