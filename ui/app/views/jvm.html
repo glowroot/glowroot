@@ -20,9 +20,10 @@
       JVM
     </h1>
   </div>
+  <!-- ng-show needed here instead of ng-if because jvm.js binds directly to #agentRollupDropdown -->
   <div class="gt-header-lhs"
-       ng-if="layout.central || layout.embeddedAgentRollup.display">
-    <!-- ng-show needed here instead of ng-if because transaction.js binds directly to #agentRollupDropdown -->
+       ng-show="layout.central || layout.embeddedAgentRollup.display">
+    <!-- ng-show needed here instead of ng-if because jvm.js binds directly to #agentRollupDropdown -->
     <div class="gt-header-menu"
          ng-show="layout.central">
       <select gt-selectpicker

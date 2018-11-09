@@ -111,8 +111,7 @@ glowroot.controller('ConfigCtrl', [
         $scope.refreshAgentRollups(from, to, $scope);
       };
 
-      // the show.bs.dropdown event target is the button which is a sibling of the select
-      $('#agentRollupDropdown').parent().on('show.bs.dropdown', refreshAgentRollups);
+      $('#agentRollupDropdown').on('show.bs.select', refreshAgentRollups);
 
       if ($scope.agentRollups === undefined) {
         refreshAgentRollups();
