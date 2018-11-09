@@ -77,7 +77,7 @@ public class MongoDbPluginIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("count testdb.test");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("mongodb execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("mongodb query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -110,7 +110,7 @@ public class MongoDbPluginIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("distinct testdb.test");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("mongodb execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("mongodb query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -143,7 +143,7 @@ public class MongoDbPluginIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("find testdb.test");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("mongodb execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("mongodb query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -176,7 +176,7 @@ public class MongoDbPluginIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("aggregate testdb.test");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("mongodb execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("mongodb query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -200,7 +200,7 @@ public class MongoDbPluginIT {
             timerNames.add(timer.getName());
         }
         Collections.sort(timerNames);
-        assertThat(timerNames).containsExactly("mongodb execute");
+        assertThat(timerNames).containsExactly("mongodb query");
         for (Trace.Timer timer : rootTimer.getChildTimerList()) {
             assertThat(timer.getChildTimerList()).isEmpty();
         }

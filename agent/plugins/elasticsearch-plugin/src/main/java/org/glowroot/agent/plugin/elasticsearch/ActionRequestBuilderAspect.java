@@ -129,7 +129,7 @@ public class ActionRequestBuilderAspect {
 
     @Pointcut(className = "org.elasticsearch.action.ActionRequestBuilder", methodName = "get",
             methodParameterTypes = {}, nestingGroup = "elasticsearch",
-            timerName = "elasticsearch execute", suppressionKey = "wait-on-future")
+            timerName = "elasticsearch query", suppressionKey = "wait-on-future")
     public static class ExecuteAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteAdvice.class);
         @OnBefore
@@ -155,7 +155,7 @@ public class ActionRequestBuilderAspect {
 
     @Pointcut(className = "org.elasticsearch.action.ActionRequestBuilder", methodName = "execute",
             methodParameterTypes = {}, nestingGroup = "elasticsearch",
-            timerName = "elasticsearch execute")
+            timerName = "elasticsearch query")
     public static class ExecuteAsyncAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteAsyncAdvice.class);
         @OnBefore

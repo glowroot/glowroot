@@ -296,7 +296,7 @@ public class StatementAspect {
 
     @Pointcut(className = "java.sql.Statement", methodName = "execute",
             methodParameterTypes = {"java.lang.String", ".."}, nestingGroup = "jdbc",
-            timerName = "jdbc execute")
+            timerName = "jdbc query")
     public static class StatementExecuteAdvice {
         private static final TimerName timerName = Agent.getTimerName(StatementExecuteAdvice.class);
         @IsEnabled
@@ -316,7 +316,7 @@ public class StatementAspect {
                 return null;
             }
             QueryEntry query = context.startQueryEntry(QUERY_TYPE, sql,
-                    QueryMessageSupplier.create("jdbc execute: "), timerName);
+                    QueryMessageSupplier.create("jdbc query: "), timerName);
             mirror.setLastQueryEntry(query);
             return query;
         }
@@ -407,7 +407,7 @@ public class StatementAspect {
     }
 
     @Pointcut(className = "java.sql.PreparedStatement", methodName = "execute",
-            methodParameterTypes = {}, nestingGroup = "jdbc", timerName = "jdbc execute")
+            methodParameterTypes = {}, nestingGroup = "jdbc", timerName = "jdbc query")
     public static class PreparedStatementExecuteAdvice {
         private static final TimerName timerName =
                 Agent.getTimerName(PreparedStatementExecuteAdvice.class);
@@ -428,7 +428,7 @@ public class StatementAspect {
                 queryMessageSupplier =
                         new PreparedStatementMessageSupplier(mirror.getParameters(), queryText);
             } else {
-                queryMessageSupplier = QueryMessageSupplier.create("jdbc execute: ");
+                queryMessageSupplier = QueryMessageSupplier.create("jdbc query: ");
             }
             QueryEntry queryEntry =
                     context.startQueryEntry(QUERY_TYPE, queryText, queryMessageSupplier, timerName);
@@ -509,7 +509,7 @@ public class StatementAspect {
     }
 
     @Pointcut(className = "java.sql.Statement", methodName = "executeBatch",
-            methodParameterTypes = {}, nestingGroup = "jdbc", timerName = "jdbc execute")
+            methodParameterTypes = {}, nestingGroup = "jdbc", timerName = "jdbc query")
     public static class StatementExecuteBatchAdvice {
         private static final TimerName timerName =
                 Agent.getTimerName(StatementExecuteBatchAdvice.class);
@@ -559,7 +559,7 @@ public class StatementAspect {
             int batchSize = mirror.getBatchSize();
             if (batchSize <= 0) {
                 queryText = "[empty batch] " + queryText;
-                queryMessageSupplier = QueryMessageSupplier.create("jdbc execute: ");
+                queryMessageSupplier = QueryMessageSupplier.create("jdbc query: ");
                 batchSize = 1;
             } else if (captureBindParameters) {
                 queryMessageSupplier = new BatchPreparedStatementMessageSupplier(
@@ -591,7 +591,7 @@ public class StatementAspect {
                 concatenated = sb.toString();
             }
             QueryEntry queryEntry = context.startQueryEntry(QUERY_TYPE, concatenated,
-                    QueryMessageSupplier.create("jdbc execute: "), timerName);
+                    QueryMessageSupplier.create("jdbc query: "), timerName);
             mirror.setLastQueryEntry(queryEntry);
             mirror.clearBatch();
             return queryEntry;

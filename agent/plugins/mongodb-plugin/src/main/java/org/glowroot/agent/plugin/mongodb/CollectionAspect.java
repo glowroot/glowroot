@@ -73,7 +73,7 @@ public class CollectionAspect {
     @Pointcut(className = "com.mongodb.client.MongoCollection",
             methodName = "count*|distinct|find*|aggregate|mapReduce|bulkWrite|insert*|delete*"
                     + "|replace|update*|drop*|create*|list*|rename*",
-            methodParameterTypes = {".."}, nestingGroup = "mongodb", timerName = "mongodb execute")
+            methodParameterTypes = {".."}, nestingGroup = "mongodb", timerName = "mongodb query")
     public static class MongoCollectionAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(MongoCollectionAdvice.class);
@@ -87,7 +87,7 @@ public class CollectionAspect {
             }
             String queryText = methodName + " " + namespace.toString();
             return context.startQueryEntry(QUERY_TYPE, queryText,
-                    QueryMessageSupplier.create("mongodb execute: "), timerName);
+                    QueryMessageSupplier.create("mongodb query: "), timerName);
         }
 
         @OnReturn
@@ -110,7 +110,7 @@ public class CollectionAspect {
     @Pointcut(className = "com.mongodb.DBCollection",
             methodName = "count|getCount|distinct|find*|aggregate|group|mapReduce|insert|remove"
                     + "|save|update*|drop*|create*|ensure*|rename*",
-            methodParameterTypes = {".."}, nestingGroup = "mongodb", timerName = "mongodb execute")
+            methodParameterTypes = {".."}, nestingGroup = "mongodb", timerName = "mongodb query")
     public static class DBCollectionAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(DBCollectionAdvice.class);
@@ -123,7 +123,7 @@ public class CollectionAspect {
             }
             String queryText = methodName + " " + collection.getFullName();
             return context.startQueryEntry(QUERY_TYPE, queryText,
-                    QueryMessageSupplier.create("mongodb execute: "), timerName);
+                    QueryMessageSupplier.create("mongodb query: "), timerName);
         }
 
         @OnReturn

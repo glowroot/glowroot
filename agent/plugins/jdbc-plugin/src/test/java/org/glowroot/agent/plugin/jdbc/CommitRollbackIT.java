@@ -69,7 +69,7 @@ public class CommitRollbackIT {
         Set<String> childTimerNames = Sets.newHashSet();
         childTimerNames.add(rootTimer.getChildTimerList().get(0).getName());
         childTimerNames.add(rootTimer.getChildTimerList().get(1).getName());
-        assertThat(childTimerNames).containsOnly("jdbc execute", "jdbc commit");
+        assertThat(childTimerNames).containsOnly("jdbc query", "jdbc commit");
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
         List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
@@ -79,7 +79,7 @@ public class CommitRollbackIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("insert into employee (name) values ('john doe')");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         entry = i.next();
@@ -102,7 +102,7 @@ public class CommitRollbackIT {
         Set<String> childTimerNames = Sets.newHashSet();
         childTimerNames.add(rootTimer.getChildTimerList().get(0).getName());
         childTimerNames.add(rootTimer.getChildTimerList().get(1).getName());
-        assertThat(childTimerNames).containsOnly("jdbc execute", "jdbc commit");
+        assertThat(childTimerNames).containsOnly("jdbc query", "jdbc commit");
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
         List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
@@ -112,7 +112,7 @@ public class CommitRollbackIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("insert into employee (name) values ('john doe')");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         entry = i.next();
@@ -137,7 +137,7 @@ public class CommitRollbackIT {
         Set<String> childTimerNames = Sets.newHashSet();
         childTimerNames.add(rootTimer.getChildTimerList().get(0).getName());
         childTimerNames.add(rootTimer.getChildTimerList().get(1).getName());
-        assertThat(childTimerNames).containsOnly("jdbc execute", "jdbc rollback");
+        assertThat(childTimerNames).containsOnly("jdbc query", "jdbc rollback");
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
         List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
@@ -147,7 +147,7 @@ public class CommitRollbackIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("insert into employee (name) values ('john doe')");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         entry = i.next();
@@ -169,7 +169,7 @@ public class CommitRollbackIT {
         Set<String> childTimerNames = Sets.newHashSet();
         childTimerNames.add(rootTimer.getChildTimerList().get(0).getName());
         childTimerNames.add(rootTimer.getChildTimerList().get(1).getName());
-        assertThat(childTimerNames).containsOnly("jdbc execute", "jdbc rollback");
+        assertThat(childTimerNames).containsOnly("jdbc query", "jdbc rollback");
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
         List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
@@ -179,7 +179,7 @@ public class CommitRollbackIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("insert into employee (name) values ('john doe')");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         entry = i.next();

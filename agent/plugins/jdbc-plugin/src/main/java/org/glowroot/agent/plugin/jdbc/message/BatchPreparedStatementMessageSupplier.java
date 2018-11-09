@@ -67,9 +67,9 @@ public class BatchPreparedStatementMessageSupplier extends QueryMessageSupplier 
         String prefix;
         if (batchSize > 1) {
             // print out number of batches to make it easy to identify
-            prefix = "jdbc execute: " + batchSize + " x ";
+            prefix = "jdbc query: " + batchSize + " x ";
         } else {
-            prefix = "jdbc execute: ";
+            prefix = "jdbc query: ";
         }
         return QueryMessage.create(prefix, suffix);
     }

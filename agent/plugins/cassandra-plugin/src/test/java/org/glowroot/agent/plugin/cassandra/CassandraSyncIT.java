@@ -71,7 +71,7 @@ public class CassandraSyncIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("SELECT * FROM test.users");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cql execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cassandra query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 10 rows");
 
         assertThat(i.hasNext()).isFalse();
@@ -102,7 +102,7 @@ public class CassandraSyncIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("SELECT * FROM test.users where id = 12345");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cql execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cassandra query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 0 rows");
 
         assertThat(i.hasNext()).isFalse();
@@ -134,7 +134,7 @@ public class CassandraSyncIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("SELECT * FROM test.users where id = 12345");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cql execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cassandra query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 0 rows");
 
         assertThat(i.hasNext()).isFalse();
@@ -166,7 +166,7 @@ public class CassandraSyncIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("SELECT * FROM test.users");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cql execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cassandra query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 10 rows");
 
         assertThat(i.hasNext()).isFalse();
@@ -198,7 +198,7 @@ public class CassandraSyncIT {
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText())
                         .isEqualTo("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cql execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cassandra query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();
@@ -235,7 +235,7 @@ public class CassandraSyncIT {
                         + " 10 x INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?),"
                         + " INSERT INTO test.users (id,  fname, lname)"
                         + " VALUES (300, 'f300', 'l300')");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cql execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cassandra query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
         assertThat(i.hasNext()).isFalse();

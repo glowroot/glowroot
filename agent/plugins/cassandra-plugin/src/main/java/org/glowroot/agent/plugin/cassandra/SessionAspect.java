@@ -96,7 +96,7 @@ public class SessionAspect {
 
     @Pointcut(className = "com.datastax.driver.core.Session", methodName = "execute",
             methodParameterTypes = {"com.datastax.driver.core.Statement"},
-            nestingGroup = "cassandra", timerName = "cql execute",
+            nestingGroup = "cassandra", timerName = "cassandra query",
             suppressionKey = "wait-on-future")
     public static class ExecuteAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteAdvice.class);
@@ -146,7 +146,7 @@ public class SessionAspect {
 
     @Pointcut(className = "com.datastax.driver.core.Session", methodName = "executeAsync",
             methodParameterTypes = {"com.datastax.driver.core.Statement"},
-            nestingGroup = "cassandra", timerName = "cql execute")
+            nestingGroup = "cassandra", timerName = "cassandra query")
     public static class ExecuteAsyncAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteAsyncAdvice.class);
         @OnBefore
@@ -219,7 +219,7 @@ public class SessionAspect {
         } else {
             return null;
         }
-        return new QueryEntryInfo(queryText, QueryMessageSupplier.create("cql execute: "));
+        return new QueryEntryInfo(queryText, QueryMessageSupplier.create("cassandra query: "));
     }
 
     private static String concatenate(Collection<Statement> statements) {
