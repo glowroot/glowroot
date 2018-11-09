@@ -92,7 +92,7 @@ glowroot.controller('ConfigCtrl', [
     if ($scope.layout.central) {
 
       $scope.$watch(function () {
-        return $location.search();
+        return $location.url();
       }, function (newValue, oldValue) {
         if (newValue !== oldValue) {
           // need to refresh selectpicker in order to update hrefs of the items
