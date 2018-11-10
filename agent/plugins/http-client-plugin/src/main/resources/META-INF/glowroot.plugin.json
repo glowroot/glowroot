@@ -9,6 +9,7 @@
     "org.glowroot.agent.plugin.httpclient.AsyncHttpClientAspect2x",
     "org.glowroot.agent.plugin.httpclient.HttpURLConnectionAspect",
     "org.glowroot.agent.plugin.httpclient.OkHttpClientAspect",
+    "org.glowroot.agent.plugin.httpclient.OkHttpClient2xAspect",
     "org.glowroot.agent.plugin.httpclient.AxisClientAspect",
     "org.glowroot.agent.plugin.httpclient.WiremockApacheHttpClientAspect"
   ]

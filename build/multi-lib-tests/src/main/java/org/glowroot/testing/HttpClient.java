@@ -33,6 +33,7 @@ public class HttpClient {
         cxfClient();
         httpUrlConnection();
         okHttpClient();
+        okHttpClient2x();
         springWebClient();
         axisClient();
     }
@@ -277,22 +278,64 @@ public class HttpClient {
 
     private static void okHttpClient() throws Exception {
         final String test = "OkHttpClientPluginIT";
-        updateLibVersion("okhttpclient.version", "2.0.0");
+        updateLibVersion("okhttpclient.version", "3.0.1");
         runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.1.0");
+        updateLibVersion("okhttpclient.version", "3.1.0");
         runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.2.0");
+        updateLibVersion("okhttpclient.version", "3.1.1");
         runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.3.0");
+        updateLibVersion("okhttpclient.version", "3.1.2");
         runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.4.0");
+        updateLibVersion("okhttpclient.version", "3.2.0");
         runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.5.0");
+        updateLibVersion("okhttpclient.version", "3.3.0");
         runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.6.0");
+        updateLibVersion("okhttpclient.version", "3.3.1");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.4.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.4.1");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.4.2");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.5.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.6.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.7.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.8.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.8.1");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.9.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.9.1");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.10.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.11.0");
+        runJava7(test);
+    }
+
+    private static void okHttpClient2x() throws Exception {
+        final String test = "OkHttpClient2xPluginIT";
+        updateLibVersion("okhttpclient2x.version", "2.0.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient2x.version", "2.1.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient2x.version", "2.2.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient2x.version", "2.3.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient2x.version", "2.4.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient2x.version", "2.5.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient2x.version", "2.6.0");
         runJava7(test);
         for (int i = 0; i <= 5; i++) {
-            updateLibVersion("okhttpclient.version", "2.7." + i);
+            updateLibVersion("okhttpclient2x.version", "2.7." + i);
             runJava7(test);
         }
     }

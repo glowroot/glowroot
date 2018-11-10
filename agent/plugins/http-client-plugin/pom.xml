@@ -25,7 +25,8 @@
     <asynchttpclient1x.version>1.9.40</asynchttpclient1x.version>
     <asynchttpclient2x.version>2.6.0</asynchttpclient2x.version>
     <wiremock.version>2.19.0</wiremock.version>
-    <okhttpclient.version>2.7.5</okhttpclient.version>
+    <okhttpclient.version>3.11.0</okhttpclient.version>
+    <okhttpclient2x.version>2.7.5</okhttpclient2x.version>
     <!-- CXF 3.2.0+ requires Java 8+ -->
     <cxf.version>3.1.15</cxf.version>
     <!-- Spring 5+ requires Java 8+ -->
@@ -113,9 +114,15 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>com.squareup.okhttp</groupId>
+      <groupId>com.squareup.okhttp3</groupId>
       <artifactId>okhttp</artifactId>
       <version>${okhttpclient.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.squareup.okhttp</groupId>
+      <artifactId>okhttp</artifactId>
+      <version>${okhttpclient2x.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

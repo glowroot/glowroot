@@ -91,14 +91,12 @@ public class ApacheHttpAsyncClientAspect {
                 ParameterHolder<FutureCallback<HttpResponse>> callback,
                 AsyncTraceEntry asyncTraceEntry) {
             FutureCallback<HttpResponse> delegate = callback.get();
-            FutureCallback<HttpResponse> wrapper;
             if (delegate == null) {
-                wrapper = new FutureCallbackWrapperForNullDelegate<HttpResponse>(asyncTraceEntry);
+                return new FutureCallbackWrapperForNullDelegate<HttpResponse>(asyncTraceEntry);
             } else {
-                wrapper = new FutureCallbackWrapper<HttpResponse>(delegate, asyncTraceEntry,
+                return new FutureCallbackWrapper<HttpResponse>(delegate, asyncTraceEntry,
                         context.createAuxThreadContext());
             }
-            return wrapper;
         }
     }
 

@@ -15,10 +15,11 @@
  */
 package org.glowroot.agent.plugin.httpclient;
 
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.HttpUrl;
-import okhttp3.Request;
+import java.net.URL;
+
+import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.HttpUrl;
+import com.squareup.okhttp.Request;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.AsyncTraceEntry;
@@ -28,6 +29,7 @@ import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.checker.Nullable;
+import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
@@ -37,27 +39,27 @@ import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
-public class OkHttpClientAspect {
+public class OkHttpClient2xAspect {
 
-    @Pointcut(className = "okhttp3.Call", methodName = "execute",
+    @Pointcut(className = "com.squareup.okhttp.Call", methodName = "execute",
             methodParameterTypes = {}, nestingGroup = "http-client",
             timerName = "http client request")
     public static class ExecuteAdvice {
         private static final TimerName timerName = Agent.getTimerName(ExecuteAdvice.class);
         @OnBefore
         public static @Nullable TraceEntry onBefore(ThreadContext context,
-                @BindReceiver Call call) {
-            Request request = call.request();
-            if (request == null) {
+                @BindReceiver Object call, @BindClassMeta OkHttpClientCallInvoker callInvoker) {
+            Request originalRequest = (Request) callInvoker.getOriginalRequest(call);
+            if (originalRequest == null) {
                 return null;
             }
-            String method = request.method();
+            String method = originalRequest.method();
             if (method == null) {
                 method = "";
             } else {
                 method += " ";
             }
-            HttpUrl httpUrl = request.url();
+            HttpUrl httpUrl = originalRequest.httpUrl();
             String url;
             if (httpUrl == null) {
                 url = "";
@@ -82,33 +84,34 @@ public class OkHttpClientAspect {
         }
     }
 
-    @Pointcut(className = "okhttp3.Call", methodName = "enqueue",
-            methodParameterTypes = {"okhttp3.Callback"}, nestingGroup = "http-client",
+    @Pointcut(className = "com.squareup.okhttp.Call", methodName = "enqueue",
+            methodParameterTypes = {"com.squareup.okhttp.Callback"}, nestingGroup = "http-client",
             timerName = "http client request")
     public static class EnqueueAdvice {
         private static final TimerName timerName = Agent.getTimerName(EnqueueAdvice.class);
         @OnBefore
         public static @Nullable AsyncTraceEntry onBefore(ThreadContext context,
-                @BindReceiver Call call, @BindParameter ParameterHolder<Callback> callback) {
-            Request request = call.request();
-            if (request == null) {
+                @BindReceiver Object call, @BindParameter ParameterHolder<Callback> callback,
+                @BindClassMeta OkHttpClientCallInvoker callInvoker) {
+            Request originalRequest = (Request) callInvoker.getOriginalRequest(call);
+            if (originalRequest == null) {
                 return null;
             }
             if (callback == null) {
                 return null;
             }
-            String method = request.method();
+            String method = originalRequest.method();
             if (method == null) {
                 method = "";
             } else {
                 method += " ";
             }
-            HttpUrl httpUrl = request.url();
+            URL urlObj = originalRequest.url();
             String url;
-            if (httpUrl == null) {
+            if (urlObj == null) {
                 url = "";
             } else {
-                url = httpUrl.toString();
+                url = urlObj.toString();
             }
             AsyncTraceEntry asyncTraceEntry = context.startAsyncServiceCallEntry("HTTP",
                     method + Uris.stripQueryString(url),
@@ -134,9 +137,9 @@ public class OkHttpClientAspect {
                 ParameterHolder<Callback> callback, AsyncTraceEntry asyncTraceEntry) {
             Callback delegate = callback.get();
             if (delegate == null) {
-                return new OkHttpCallbackWrapperForNullDelegate(asyncTraceEntry);
+                return new OkHttp2xCallbackWrapperForNullDelegate(asyncTraceEntry);
             } else {
-                return new OkHttpCallbackWrapper(delegate, asyncTraceEntry,
+                return new OkHttp2xCallbackWrapper(delegate, asyncTraceEntry,
                         context.createAuxThreadContext());
             }
         }

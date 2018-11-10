@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,12 @@ import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.MediaType;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.Response;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -40,7 +39,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class OkHttpClientPluginIT {
+public class OkHttpClient2xPluginIT {
 
     private static Container container;
 
@@ -188,14 +187,14 @@ public class OkHttpClientPluginIT {
             final AtomicInteger responseStatusCode = new AtomicInteger();
             client.newCall(request).enqueue(new Callback() {
                 @Override
-                public void onResponse(Call call, Response response) throws IOException {
+                public void onResponse(Response response) throws IOException {
                     new CreateTraceEntry().traceEntryMarker();
                     responseStatusCode.set(response.code());
                     response.body().close();
                     latch.countDown();
                 }
                 @Override
-                public void onFailure(Call call, IOException e) {
+                public void onFailure(Request request, IOException e) {
                     new CreateTraceEntry().traceEntryMarker();
                     latch.countDown();
                 }
@@ -224,14 +223,14 @@ public class OkHttpClientPluginIT {
             final AtomicInteger responseStatusCode = new AtomicInteger();
             client.newCall(request).enqueue(new Callback() {
                 @Override
-                public void onResponse(Call call, Response response) throws IOException {
+                public void onResponse(Response response) throws IOException {
                     new CreateTraceEntry().traceEntryMarker();
                     responseStatusCode.set(response.code());
                     response.body().close();
                     latch.countDown();
                 }
                 @Override
-                public void onFailure(Call call, IOException e) {
+                public void onFailure(Request request, IOException e) {
                     new CreateTraceEntry().traceEntryMarker();
                     latch.countDown();
                 }
