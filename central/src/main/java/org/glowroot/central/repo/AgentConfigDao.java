@@ -89,62 +89,9 @@ public class AgentConfigDao {
 
     public AgentConfig store(String agentId, AgentConfig agentConfig, boolean overwriteExisting)
             throws Exception {
-        AgentConfig existingAgentConfig = overwriteExisting ? null : read(agentId);
-        AgentConfig updatedAgentConfig;
-        if (existingAgentConfig == null) {
-            updatedAgentConfig = agentConfig.toBuilder()
-                    // agent should not send general config, but clearing it just to be safe
-                    .clearGeneralConfig()
-                    .build();
-        } else {
-            // sync list of plugin properties, central property values win
-            Map<String, PluginConfig> existingPluginConfigs = new HashMap<>();
-            for (PluginConfig existingPluginConfig : existingAgentConfig.getPluginConfigList()) {
-                existingPluginConfigs.put(existingPluginConfig.getId(), existingPluginConfig);
-            }
-            List<PluginConfig> pluginConfigs = new ArrayList<>();
-            for (PluginConfig agentPluginConfig : agentConfig.getPluginConfigList()) {
-                PluginConfig existingPluginConfig =
-                        existingPluginConfigs.get(agentPluginConfig.getId());
-                if (existingPluginConfig == null) {
-                    pluginConfigs.add(agentPluginConfig);
-                    continue;
-                }
-                Map<String, PluginProperty> existingProperties = new HashMap<>();
-                for (PluginProperty existingProperty : existingPluginConfig.getPropertyList()) {
-                    existingProperties.put(existingProperty.getName(), existingProperty);
-                }
-                List<PluginProperty> properties = new ArrayList<>();
-                for (PluginProperty agentProperty : agentPluginConfig.getPropertyList()) {
-                    PluginProperty existingProperty =
-                            existingProperties.get(agentProperty.getName());
-                    if (existingProperty == null) {
-                        properties.add(agentProperty);
-                        continue;
-                    }
-                    if (existingProperty.getValue().getValCase() != agentProperty.getValue()
-                            .getValCase()) {
-                        // the agent property type changed (e.g. was upgraded from comma-separated
-                        // string property to list property)
-                        properties.add(agentProperty);
-                        continue;
-                    }
-                    // overlay existing property value
-                    properties.add(agentProperty.toBuilder()
-                            .setValue(existingProperty.getValue())
-                            .build());
-                }
-                pluginConfigs.add(PluginConfig.newBuilder()
-                        .setId(agentPluginConfig.getId())
-                        .setName(agentPluginConfig.getName())
-                        .addAllProperty(properties)
-                        .build());
-            }
-            updatedAgentConfig = existingAgentConfig.toBuilder()
-                    .clearPluginConfig()
-                    .addAllPluginConfig(pluginConfigs)
-                    .build();
-        }
+        AgentConfig existingAgentConfig = read(agentId);
+        AgentConfig updatedAgentConfig =
+                buildUpdatedAgentConfig(agentConfig, existingAgentConfig, overwriteExisting);
         if (existingAgentConfig == null || !updatedAgentConfig.equals(existingAgentConfig)) {
             BoundStatement boundStatement = insertPS.bind();
             int i = 0;
@@ -281,6 +228,69 @@ public class AgentConfigDao {
             return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
         }
         return display;
+    }
+
+    private static AgentConfig buildUpdatedAgentConfig(AgentConfig agentConfig,
+            @Nullable AgentConfig existingAgentConfig, boolean overwriteExisting) {
+        if (existingAgentConfig == null) {
+            return agentConfig.toBuilder()
+                    // agent should not send general config, but clearing it just to be safe
+                    .clearGeneralConfig()
+                    .build();
+        }
+        if (overwriteExisting) {
+            return agentConfig.toBuilder()
+                    // preserve existing general config
+                    .setGeneralConfig(existingAgentConfig.getGeneralConfig())
+                    .build();
+        }
+        // absorb new plugin properties/labels/etc from agent into existing agent config
+        Map<String, PluginConfig> existingPluginConfigs = new HashMap<>();
+        for (PluginConfig existingPluginConfig : existingAgentConfig.getPluginConfigList()) {
+            existingPluginConfigs.put(existingPluginConfig.getId(), existingPluginConfig);
+        }
+        List<PluginConfig> pluginConfigs = new ArrayList<>();
+        for (PluginConfig agentPluginConfig : agentConfig.getPluginConfigList()) {
+            PluginConfig existingPluginConfig =
+                    existingPluginConfigs.get(agentPluginConfig.getId());
+            if (existingPluginConfig == null) {
+                pluginConfigs.add(agentPluginConfig);
+                continue;
+            }
+            Map<String, PluginProperty> existingProperties = new HashMap<>();
+            for (PluginProperty existingProperty : existingPluginConfig.getPropertyList()) {
+                existingProperties.put(existingProperty.getName(), existingProperty);
+            }
+            List<PluginProperty> properties = new ArrayList<>();
+            for (PluginProperty agentProperty : agentPluginConfig.getPropertyList()) {
+                PluginProperty existingProperty =
+                        existingProperties.get(agentProperty.getName());
+                if (existingProperty == null) {
+                    properties.add(agentProperty);
+                    continue;
+                }
+                if (existingProperty.getValue().getValCase() != agentProperty.getValue()
+                        .getValCase()) {
+                    // the agent property type changed (e.g. was upgraded from comma-separated
+                    // string property to list property)
+                    properties.add(agentProperty);
+                    continue;
+                }
+                // overlay existing property value
+                properties.add(agentProperty.toBuilder()
+                        .setValue(existingProperty.getValue())
+                        .build());
+            }
+            pluginConfigs.add(PluginConfig.newBuilder()
+                    .setId(agentPluginConfig.getId())
+                    .setName(agentPluginConfig.getName())
+                    .addAllProperty(properties)
+                    .build());
+        }
+        return existingAgentConfig.toBuilder()
+                .clearPluginConfig()
+                .addAllPluginConfig(pluginConfigs)
+                .build();
     }
 
     private class AgentConfigCacheLoader implements CacheLoader<String, Optional<AgentConfig>> {
