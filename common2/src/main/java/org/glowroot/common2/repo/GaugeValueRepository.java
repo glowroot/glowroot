@@ -32,6 +32,9 @@ public interface GaugeValueRepository {
     List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from, long to,
             int rollupLevel) throws Exception;
 
+    long getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel)
+            throws Exception;
+
     @Value.Immutable
     @Styles.AllParameters
     public interface Gauge {

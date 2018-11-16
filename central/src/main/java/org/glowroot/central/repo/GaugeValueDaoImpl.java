@@ -67,6 +67,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     // index is rollupLevel
     private final ImmutableList<PreparedStatement> insertValuePS;
     private final ImmutableList<PreparedStatement> readValuePS;
+    private final ImmutableList<PreparedStatement> readOldestCaptureTimePS;
     private final ImmutableList<PreparedStatement> readValueForRollupPS;
     private final PreparedStatement readValueForRollupFromChildPS;
 
@@ -94,6 +95,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
 
         List<PreparedStatement> insertValuePS = new ArrayList<>();
         List<PreparedStatement> readValuePS = new ArrayList<>();
+        List<PreparedStatement> readOldestCaptureTimePS = new ArrayList<>();
         List<PreparedStatement> readValueForRollupPS = new ArrayList<>();
         for (int i = 0; i <= count; i++) {
             // name already has "[counter]" suffix when it is a counter
@@ -107,12 +109,16 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             readValuePS.add(session.prepare("select capture_time, value, weight from"
                     + " gauge_value_rollup_" + i + " where agent_rollup = ? and gauge_name = ? and"
                     + " capture_time >= ? and capture_time <= ?"));
+            readOldestCaptureTimePS.add(session.prepare("select capture_time from"
+                    + " gauge_value_rollup_" + i + " where agent_rollup = ? and gauge_name = ?"
+                    + " limit 1"));
             readValueForRollupPS.add(session.prepare("select value, weight from gauge_value_rollup_"
                     + i + " where agent_rollup = ? and gauge_name = ? and capture_time > ? and"
                     + " capture_time <= ?"));
         }
         this.insertValuePS = ImmutableList.copyOf(insertValuePS);
         this.readValuePS = ImmutableList.copyOf(readValuePS);
+        this.readOldestCaptureTimePS = ImmutableList.copyOf(readOldestCaptureTimePS);
         this.readValueForRollupPS = ImmutableList.copyOf(readValueForRollupPS);
         this.readValueForRollupFromChildPS = session.prepare("select value, weight from"
                 + " gauge_value_rollup_1 where agent_rollup = ? and gauge_name = ? and"
@@ -254,6 +260,18 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                     .build());
         }
         return gaugeValues;
+    }
+
+    @Override
+    public long getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel)
+            throws Exception {
+        BoundStatement boundStatement = readOldestCaptureTimePS.get(rollupLevel).bind();
+        int i = 0;
+        boundStatement.setString(i++, agentRollupId);
+        boundStatement.setString(i++, gaugeName);
+        ResultSet results = session.read(boundStatement);
+        Row row = results.one();
+        return row == null ? Long.MAX_VALUE : checkNotNull(row.getTimestamp(0)).getTime();
     }
 
     @Override
