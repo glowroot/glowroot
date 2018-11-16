@@ -47,6 +47,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
@@ -72,6 +73,7 @@ import org.glowroot.common.util.Styles;
 import org.glowroot.common2.config.CentralStorageConfig;
 import org.glowroot.common2.config.ImmutableCentralStorageConfig;
 import org.glowroot.common2.config.ImmutableCentralWebConfig;
+import org.glowroot.common2.config.MoreConfigDefaults;
 import org.glowroot.common2.config.PermissionParser;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common2.repo.util.RollupLevelService;
@@ -83,6 +85,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.OldAlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
@@ -103,7 +106,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 83;
+    private static final int CURR_SCHEMA_VERSION = 84;
 
     private final Session session;
     private final Clock clock;
@@ -499,6 +502,11 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 83) {
             updateEncryptedPasswordAttributeName();
             updateSchemaVersion(83);
+        }
+        // 0.12.2 to 0.12.3
+        if (initialSchemaVersion < 84) {
+            populateSyntheticMonitorIdTable();
+            updateSchemaVersion(84);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -2611,6 +2619,105 @@ public class SchemaUpgrade {
         session.write(boundStatement);
     }
 
+    private void populateSyntheticMonitorIdTable() throws Exception {
+        if (!tableExists("synthetic_result_rollup_0")) {
+            // must be upgrading from a very old version
+            return;
+        }
+        CentralStorageConfig storageConfig = getCentralStorageConfig(session);
+        int maxRollupHours = storageConfig.getMaxRollupHours();
+        dropTableIfExists("synthetic_monitor_id");
+        session.createTableWithTWCS("create table if not exists synthetic_monitor_id"
+                + " (agent_rollup_id varchar, capture_time timestamp, synthetic_monitor_id varchar,"
+                + " synthetic_monitor_display varchar, primary key (agent_rollup_id, capture_time,"
+                + " synthetic_monitor_id))", maxRollupHours);
+        PreparedStatement insertPS = session.prepare("insert into synthetic_monitor_id"
+                + " (agent_rollup_id, capture_time, synthetic_monitor_id,"
+                + " synthetic_monitor_display) values (?, ?, ?, ?) using ttl ?");
+        Multimap<Long, AgentRollupIdSyntheticMonitorIdPair> rowsPerCaptureTime =
+                HashMultimap.create();
+        ResultSet results = session.read("select agent_rollup_id, synthetic_config_id, capture_time"
+                + " from synthetic_result_rollup_3");
+        for (Row row : results) {
+            int i = 0;
+            String agentRollupId = checkNotNull(row.getString(i++));
+            String syntheticMonitorId = checkNotNull(row.getString(i++));
+            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long millisPerDay = DAYS.toMillis(1);
+            long rollupCaptureTime = CaptureTimes.getRollup(captureTime, millisPerDay);
+            rowsPerCaptureTime.put(rollupCaptureTime, ImmutableAgentRollupIdSyntheticMonitorIdPair
+                    .of(agentRollupId, syntheticMonitorId));
+        }
+        // read from 1-min synthetic results to get not-yet-rolled-up data
+        results = session.read("select agent_rollup_id, synthetic_config_id, capture_time from"
+                + " synthetic_result_rollup_0");
+        for (Row row : results) {
+            int i = 0;
+            String agentRollupId = checkNotNull(row.getString(i++));
+            String syntheticMonitorId = checkNotNull(row.getString(i++));
+            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long millisPerDay = DAYS.toMillis(1);
+            long rollupCaptureTime = CaptureTimes.getRollup(captureTime, millisPerDay);
+            rowsPerCaptureTime.put(rollupCaptureTime, ImmutableAgentRollupIdSyntheticMonitorIdPair
+                    .of(agentRollupId, syntheticMonitorId));
+        }
+        int maxRollupTTL = storageConfig.getMaxRollupTTL();
+        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        List<Long> sortedCaptureTimes =
+                Ordering.natural().sortedCopy(rowsPerCaptureTime.keySet());
+        Map<String, Map<String, String>> syntheticMonitorDisplays = new HashMap<>();
+        PreparedStatement readAgentConfig =
+                session.prepare("select config from agent_config where agent_rollup_id = ?");
+        for (long captureTime : sortedCaptureTimes) {
+            int adjustedTTL = Common.getAdjustedTTL(maxRollupTTL, captureTime, clock);
+            for (AgentRollupIdSyntheticMonitorIdPair row : rowsPerCaptureTime.get(captureTime)) {
+                BoundStatement boundStatement = insertPS.bind();
+                int i = 0;
+                boundStatement.setString(i++, row.agentRollupId());
+                boundStatement.setTimestamp(i++, new Date(captureTime));
+                boundStatement.setString(i++, row.syntheticMonitorId());
+                Map<String, String> innerMap = syntheticMonitorDisplays.get(row.agentRollupId());
+                if (innerMap == null) {
+                    innerMap = getSyntheticMonitorDisplays(readAgentConfig, row.agentRollupId());
+                    syntheticMonitorDisplays.put(row.agentRollupId(), innerMap);
+                }
+                String display = innerMap.get(row.syntheticMonitorId());
+                if (display == null) {
+                    display = row.syntheticMonitorId() + " (deleted prior to 0.12.3)";
+                }
+                boundStatement.setString(i++, display);
+                boundStatement.setInt(i++, adjustedTTL);
+                futures.add(session.writeAsync(boundStatement));
+                waitForSome(futures);
+            }
+        }
+        MoreFutures.waitForAll(futures);
+    }
+
+    private Map<String, String> getSyntheticMonitorDisplays(PreparedStatement readAgentConfig,
+            String agentRollupId) throws Exception {
+        BoundStatement boundStatement = readAgentConfig.bind();
+        boundStatement.setString(0, agentRollupId);
+        ResultSet results = session.read(boundStatement);
+        if (results.isExhausted()) {
+            return ImmutableMap.of();
+        }
+        AgentConfig agentConfig;
+        try {
+            Row row = checkNotNull(results.one());
+            agentConfig = AgentConfig.parseFrom(checkNotNull(row.getBytes(0)));
+        } catch (InvalidProtocolBufferException e) {
+            logger.error(e.getMessage(), e);
+            return ImmutableMap.of();
+        }
+        Map<String, String> syntheticMonitorDisplays = new HashMap<>();
+        for (SyntheticMonitorConfig config : agentConfig.getSyntheticMonitorConfigList()) {
+            syntheticMonitorDisplays.put(config.getId(),
+                    MoreConfigDefaults.getDisplayOrDefault(config));
+        }
+        return syntheticMonitorDisplays;
+    }
+
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)
             throws Exception {
         if (tableExists(tableName) && !columnExists(tableName, columnName)) {
@@ -2942,6 +3049,13 @@ public class SchemaUpgrade {
     interface AgentRollupIdGaugeNamePair {
         String agentRollupId();
         String gaugeName();
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface AgentRollupIdSyntheticMonitorIdPair {
+        String agentRollupId();
+        String syntheticMonitorId();
     }
 
     @Value.Immutable

@@ -70,7 +70,6 @@ import org.glowroot.common2.config.UserConfig;
 import org.glowroot.common2.config.WebConfig;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigValidation;
-import org.glowroot.common2.repo.util.IdGenerator;
 import org.glowroot.common2.repo.util.LazySecretKey;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
@@ -87,8 +86,6 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMo
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
-
-import static com.google.common.base.Preconditions.checkState;
 
 public class ConfigRepositoryImpl implements ConfigRepository {
 
@@ -629,12 +626,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     // central supports synthetic monitor configs on rollups
     @Override
-    public String insertSyntheticMonitorConfig(String agentRollupId,
-            SyntheticMonitorConfig configWithoutId) throws Exception {
-        checkState(configWithoutId.getId().isEmpty());
-        SyntheticMonitorConfig config = configWithoutId.toBuilder()
-                .setId(IdGenerator.generateNewId())
-                .build();
+    public void insertSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config)
+            throws Exception {
         agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
@@ -653,7 +646,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
         });
         notifyAgentConfigListeners(agentRollupId);
-        return config.getId();
     }
 
     // central supports synthetic monitor configs on rollups

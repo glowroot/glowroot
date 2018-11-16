@@ -425,7 +425,8 @@ class SyntheticMonitorService implements Runnable {
             }
             try {
                 syntheticResponseDao.store(agentRollup.id(), syntheticMonitorConfig.getId(),
-                        captureTime, durationNanos, errorMessage);
+                        MoreConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig), captureTime,
+                        durationNanos, errorMessage);
             } catch (InterruptedException e) {
                 // probably shutdown requested (see close method above)
                 logger.debug(e.getMessage(), e);

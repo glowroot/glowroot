@@ -148,7 +148,7 @@ public class UiModule {
         if (central) {
             checkNotNull(syntheticResultRepository);
             jsonServices.add(new SyntheticResultJsonService(syntheticResultRepository,
-                    rollupLevelService, configRepository));
+                    rollupLevelService, configRepository, clock));
             jsonServices.add(new SyntheticMonitorConfigJsonService(configRepository));
         }
 

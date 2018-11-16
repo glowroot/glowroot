@@ -467,8 +467,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String insertSyntheticMonitorConfig(String agentRollupId,
-            AgentConfig.SyntheticMonitorConfig configWithoutId) throws Exception {
+    public void insertSyntheticMonitorConfig(String agentRollupId,
+            AgentConfig.SyntheticMonitorConfig config) throws Exception {
         throw new UnsupportedOperationException();
     }
 
@@ -485,19 +485,19 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void insertAlertConfig(String agentRollupId, AgentConfig.AlertConfig configWithoutId)
+    public void insertAlertConfig(String agentRollupId, AgentConfig.AlertConfig config)
             throws Exception {
         synchronized (writeLock) {
             List<AlertConfig> configs =
                     Lists.newArrayList(configService.getAlertConfigs());
             // check for exact duplicate
-            String version = Versions.getVersion(configWithoutId);
+            String version = Versions.getVersion(config);
             for (AlertConfig loopConfig : configs) {
                 if (Versions.getVersion(loopConfig.toProto()).equals(version)) {
                     throw new IllegalStateException("This exact alert already exists");
                 }
             }
-            configs.add(AlertConfig.create(configWithoutId));
+            configs.add(AlertConfig.create(config));
             configService.updateAlertConfigs(configs);
         }
     }

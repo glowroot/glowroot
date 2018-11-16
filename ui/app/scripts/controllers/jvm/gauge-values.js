@@ -45,7 +45,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
     var emptyGaugeNames = {};
 
     var allGaugeNames = [];
-    var gaugeShortDisplayMap = {};
+    var shortDisplayMap = {};
     var gaugeUnits = {};
     var gaugeGrouping = {};
 
@@ -97,7 +97,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       if (newValues !== oldValues) {
         var i;
         for (i = 0; i < newValues.length; i++) {
-          var shortDisplay = gaugeShortDisplayMap[newValues[i].text];
+          var shortDisplay = shortDisplayMap[newValues[i].text];
           if (shortDisplay) {
             newValues[i].text = shortDisplay;
           }
@@ -150,12 +150,12 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       $scope.allGauges = allGauges;
       createShortDataSeriesNames(allGauges);
       allGaugeNames = [];
-      gaugeShortDisplayMap = {};
+      shortDisplayMap = {};
       gaugeUnits = {};
       gaugeGrouping = {};
       angular.forEach(allGauges, function (gauge) {
         allGaugeNames.push(gauge.name);
-        gaugeShortDisplayMap[gauge.name] = gauge.shortDisplay;
+        shortDisplayMap[gauge.name] = gauge.shortDisplay;
         if (gauge.unit) {
           gaugeUnits[gauge.name] = ' ' + gauge.unit;
         } else {
@@ -174,7 +174,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
       var chartYaxisLabel = '';
       var i;
       for (i = 0; i < data.dataSeries.length; i++) {
-        data.dataSeries[i].shortLabel = gaugeShortDisplayMap[data.dataSeries[i].name];
+        data.dataSeries[i].shortLabel = shortDisplayMap[data.dataSeries[i].name];
         var gaugeUnit = gaugeUnits[data.dataSeries[i].name];
         if (i === 0) {
           chartYaxisLabel = gaugeUnit || '';
@@ -303,7 +303,6 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           scalePoints(dataSeries.data, scale);
         }
       }
-      updateThePlotData(data);
       if (cpuLoad) {
         chartState.plot.getAxes().yaxis.options.max = 100;
       } else {
@@ -363,17 +362,6 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           point[1] *= scale;
         }
       }
-    }
-
-    function updateThePlotData(data) {
-      var nodata = true;
-      for (var i = 0; i < data.length; i++) {
-        var points = data[i].data;
-        if (nodata) {
-          nodata = points.length === 0;
-        }
-      }
-      $scope.chartNoData = nodata;
     }
 
     function createShortDataSeriesNames(gauges) {
@@ -517,7 +505,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
           if (chartState.dataPointIntervalMillis === 5000) {
             var nonScaledValue = yvalMaps[label][xval];
             var tooltip = '<table class="gt-chart-tooltip">';
-            tooltip += '<tr><td colspan="2" style="font-weight: 600;">' + gaugeShortDisplayMap[label];
+            tooltip += '<tr><td colspan="2" style="font-weight: 600;">' + shortDisplayMap[label];
             tooltip += '</td></tr><tr><td style="padding-right: 10px;">Time:</td><td style="font-weight: 400;">';
             tooltip += moment(xval).format('h:mm:ss.SSS a (Z)') + '</td></tr>';
             tooltip += '<tr><td style="padding-right: 10px;">Value:</td><td style="font-weight: 600;">';

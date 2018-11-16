@@ -304,7 +304,7 @@ glowroot.factory('charts', [
               return;
             }
             var data = response.data;
-            $scope.chartNoData = !data.dataSeries.length;
+            $scope.chartNoData = isNoData(data.dataSeries, chartFrom, chartTo);
             // allow callback to modify data if desired
             onRefreshData(data);
             // reset axis in case user changed the date and then zoomed in/out to trigger this refresh
@@ -366,6 +366,20 @@ glowroot.factory('charts', [
             }
             httpErrors.handle(response, $scope);
           });
+    }
+
+    function isNoData(dataSeries, from, to) {
+      var i, j;
+      for (i = 0; i < dataSeries.length; i++) {
+        var points = dataSeries[i].data;
+        for (j = 0; j < points.length; j++) {
+          var point = points[j];
+          if (point[0] >= from && point[0] <= to) {
+            return false;
+          }
+        }
+      }
+      return true;
     }
 
     function updateLegend(chartState, $scope) {

@@ -193,9 +193,8 @@ public interface ConfigRepository {
     void updateJvmConfig(String agentId, JvmConfig config, String priorVersion) throws Exception;
 
     // central supports synthetic monitor configs on rollups
-    // returns id
-    String insertSyntheticMonitorConfig(String agentRollupId,
-            SyntheticMonitorConfig configWithoutId) throws Exception;
+    void insertSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config)
+            throws Exception;
 
     // central supports synthetic monitor configs on rollups
     void updateSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config,

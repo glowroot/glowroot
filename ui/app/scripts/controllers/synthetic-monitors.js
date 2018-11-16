@@ -25,8 +25,7 @@ glowroot.controller('SyntheticMonitorsCtrl', [
   'locationChanges',
   'charts',
   'queryStrings',
-  'httpErrors',
-  function ($scope, $location, $filter, $http, $timeout, locationChanges, charts, queryStrings, httpErrors) {
+  function ($scope, $location, $filter, $http, $timeout, locationChanges, charts, queryStrings) {
 
     // \u00b7 is &middot;
     document.title = 'Synthetic \u00b7 Glowroot';
@@ -37,6 +36,10 @@ glowroot.controller('SyntheticMonitorsCtrl', [
     var yvalMaps = {};
 
     var executionCounts = {};
+
+    var showingAll;
+
+    var displayMap = {};
 
     $scope.chartNoData = true;
 
@@ -53,6 +56,18 @@ glowroot.controller('SyntheticMonitorsCtrl', [
       return $location.path().substring(1) + queryStrings.encodeObject(query);
     };
 
+    $scope.$watch('seriesLabels', function (newValues, oldValues) {
+      if (newValues !== oldValues) {
+        var i;
+        for (i = 0; i < newValues.length; i++) {
+          var shortDisplay = displayMap[newValues[i].text];
+          if (shortDisplay) {
+            newValues[i].text = shortDisplay;
+          }
+        }
+      }
+    });
+
     $scope.buildQueryObjectForChartRange = function (last) {
       return buildQueryObject(last);
     };
@@ -65,12 +80,11 @@ glowroot.controller('SyntheticMonitorsCtrl', [
       } else {
         query['agent-rollup-id'] = $location.search()['agent-rollup-id'];
       }
-      var allSyntheticMonitorIds = [];
-      angular.forEach($scope.allSyntheticMonitors, function (syntheticMonitor) {
-        allSyntheticMonitorIds.push(syntheticMonitor.id);
-      });
-      if (angular.equals($scope.syntheticMonitorIds, allSyntheticMonitorIds)) {
+      if (showingAll) {
         delete query['synthetic-monitor-id'];
+      } else if ($scope.syntheticMonitorIds && $scope.syntheticMonitorIds.length === 0) {
+        // special case to differentiate between no synthetic monitors selected and default "all"
+        query['synthetic-monitor-id'] = '';
       } else {
         query['synthetic-monitor-id'] = $scope.syntheticMonitorIds;
       }
@@ -105,6 +119,21 @@ glowroot.controller('SyntheticMonitorsCtrl', [
     }
 
     function onRefreshData(data) {
+      $scope.loaded = true;
+      $scope.displayNoSyntheticMonitorsConfigured = data.displayNoSyntheticMonitorsConfigured;
+      $scope.allSyntheticMonitors = data.allSyntheticMonitors;
+
+      displayMap = {};
+      angular.forEach($scope.allSyntheticMonitors, function (syntheticMonitor) {
+        displayMap[syntheticMonitor.id] = syntheticMonitor.display;
+      });
+
+      if (showingAll) {
+        $scope.syntheticMonitorIds = [];
+        angular.forEach($scope.allSyntheticMonitors, function (syntheticMonitor) {
+          $scope.syntheticMonitorIds.push(syntheticMonitor.id);
+        });
+      }
       executionCounts = data.executionCounts;
       yvalMaps = {};
       var i;
@@ -112,6 +141,7 @@ glowroot.controller('SyntheticMonitorsCtrl', [
       for (i = 0; i < data.dataSeries.length; i++) {
         dataSeries = data.dataSeries[i];
         updateYvalMap(dataSeries.name, dataSeries.data);
+        dataSeries.shortLabel = displayMap[dataSeries.name];
       }
     }
 
@@ -128,28 +158,32 @@ glowroot.controller('SyntheticMonitorsCtrl', [
       yvalMaps[label] = map;
     }
 
-    if (!$scope.hideMainContent()) {
-      // using $watch instead of $watchGroup because $watchGroup has confusing behavior regarding oldValues
-      // (see https://github.com/angular/angular.js/pull/12643)
-      $scope.$watch('[range.chartFrom, range.chartTo, range.chartRefresh, range.chartAutoRefresh]',
-          function (newValues, oldValues) {
-            if (newValues !== oldValues) {
-              watchListener(newValues[3] !== oldValues[3]);
-            }
-          });
+    function watchExpression(scope) {
+      return {
+        chartFrom: scope.range.chartFrom,
+        chartTo: scope.range.chartTo,
+        chartRefresh: scope.range.chartRefresh,
+        chartAutoRefresh: scope.range.chartAutoRefresh,
+        all: showingAll,
+        syntheticMonitorIds: showingAll ? [] : scope.syntheticMonitorIds
+      };
+    }
 
-      $scope.$watchCollection('syntheticMonitorIds', function (newValue, oldValue) {
-        if (newValue !== oldValue || newValue.length) {
-          watchListener(false);
-        }
-      });
+    if (!$scope.hideMainContent()) {
+      $scope.$watch(watchExpression, function (newValue, oldValue) {
+        watchListener(newValue.chartAutoRefresh !== oldValue.chartAutoRefresh);
+      }, true);
     }
 
     var location;
 
     function addToQuery(query) {
-      // singular name is used since it is query string
-      query.syntheticMonitorId = $scope.syntheticMonitorIds;
+      if (showingAll) {
+        query.all = true;
+      } else {
+        // singular name is used since it is query string
+        query.syntheticMonitorId = $scope.syntheticMonitorIds;
+      }
     }
 
     locationChanges.on($scope, function () {
@@ -165,14 +199,19 @@ glowroot.controller('SyntheticMonitorsCtrl', [
         location.last = 4 * 60 * 60 * 1000;
       }
       location.syntheticMonitorIds = $location.search()['synthetic-monitor-id'];
-      if (!location.syntheticMonitorIds) {
+      showingAll = location.syntheticMonitorIds === undefined;
+      if (showingAll) {
         location.syntheticMonitorIds = [];
         angular.forEach($scope.allSyntheticMonitors, function (syntheticMonitor) {
           location.syntheticMonitorIds.push(syntheticMonitor.id);
         });
-      }
-      if (!angular.isArray(location.syntheticMonitorIds)) {
-        location.syntheticMonitorIds = [location.syntheticMonitorIds];
+      } else if (!angular.isArray(location.syntheticMonitorIds)) {
+        if (location.syntheticMonitorIds === '') {
+          // special case to differentiate between no synthetic monitors selected and default "all"
+          location.syntheticMonitorIds = [];
+        } else {
+          location.syntheticMonitorIds = [location.syntheticMonitorIds];
+        }
       }
       if (!angular.equals(location, priorLocation)) {
         // only update scope if relevant change
@@ -183,21 +222,6 @@ glowroot.controller('SyntheticMonitorsCtrl', [
         charts.applyLast($scope);
       }
     });
-
-    if (!$scope.hideMainContent()) {
-      $http.get('backend/synthetic-monitor/all-monitors?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
-          .then(function (response) {
-            $scope.loaded = true;
-            $scope.allSyntheticMonitors = response.data;
-            if (!$scope.syntheticMonitorIds.length) {
-              angular.forEach($scope.allSyntheticMonitors, function (syntheticMonitor) {
-                $scope.syntheticMonitorIds.push(syntheticMonitor.id);
-              });
-            }
-          }, function (response) {
-            httpErrors.handle(response, $scope);
-          });
-    }
 
     $scope.clickSyntheticMonitor = function (syntheticMonitorId) {
       var index = $scope.syntheticMonitorIds.indexOf(syntheticMonitorId);
@@ -212,8 +236,10 @@ glowroot.controller('SyntheticMonitorsCtrl', [
         $scope.syntheticMonitorIds.sort(function (a, b) {
           return ordering[a] - ordering[b];
         });
+        showingAll = $scope.allSyntheticMonitors.length === $scope.syntheticMonitorIds.length;
       } else {
         $scope.syntheticMonitorIds.splice(index, 1);
+        showingAll = false;
       }
     };
 
@@ -233,7 +259,7 @@ glowroot.controller('SyntheticMonitorsCtrl', [
           var rollupConfig0 = $scope.layout.rollupConfigs[0];
           if (chartState.dataPointIntervalMillis === rollupConfig0.intervalMillis) {
             var tooltip = '<table class="gt-chart-tooltip">';
-            tooltip += '<tr><td colspan="2" style="font-weight: 600;">' + label;
+            tooltip += '<tr><td colspan="2" style="font-weight: 600;">' + displayMap[label];
             tooltip += '</td></tr><tr><td style="padding-right: 10px;">Time:</td><td style="font-weight: 400;">';
             tooltip += moment(xval).format('h:mm:ss.SSS a (Z)') + '</td></tr>';
             tooltip += '<tr><td style="padding-right: 10px;">Value:</td><td style="font-weight: 600;">';
@@ -267,26 +293,13 @@ glowroot.controller('SyntheticMonitorsCtrl', [
             }
           }
 
-          function getDisplay(syntheticMonitorId) {
-            var display;
-            angular.forEach($scope.allSyntheticMonitors, function (syntheticMonitor) {
-              if (syntheticMonitor.id === syntheticMonitorId) {
-                display = syntheticMonitor.display;
-              }
-            });
-            if (display === undefined) {
-              display = syntheticMonitorId;
-            }
-            return display;
-          }
-
           var data = marking.data;
           var html = '<table class="gt-chart-tooltip"><thead><tr><td colspan="2" style="font-weight: 600;">'
               + smartFormat(data.from) + ' to ' + smartFormat(data.to) + '</td></tr></thead><tbody>';
 
           angular.forEach(data.intervals, function (intervals, syntheticMonitorId) {
             if ($scope.syntheticMonitorIds.length > 1) {
-              html += '<tr><td colspan="2">' + getDisplay(syntheticMonitorId) + '</td></tr>';
+              html += '<tr><td colspan="2">' + displayMap[syntheticMonitorId] + '</td></tr>';
             }
             if ($scope.syntheticMonitorIds.length === 1 && intervals.length === 1) {
               html += '<tr><td colspan="2">' + intervals[0].message + ' (' + intervals[0].count + ' results)</td></tr>';

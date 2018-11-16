@@ -40,6 +40,7 @@ import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.util.Compilations;
 import org.glowroot.common2.repo.util.Compilations.CompilationException;
 import org.glowroot.common2.repo.util.Encryption;
+import org.glowroot.common2.repo.util.IdGenerator;
 import org.glowroot.common2.repo.util.LazySecretKey;
 import org.glowroot.common2.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
@@ -111,10 +112,14 @@ class SyntheticMonitorConfigJsonService {
         if (errorResponse != null) {
             return errorResponse;
         }
-        String id = configRepository.insertSyntheticMonitorConfig(agentRollupId, config);
-        config = config.toBuilder()
-                .setId(id)
-                .build();
+        String id = config.getId();
+        if (id.isEmpty()) {
+            id = IdGenerator.generateNewId();
+            config = config.toBuilder()
+                    .setId(id)
+                    .build();
+        }
+        configRepository.insertSyntheticMonitorConfig(agentRollupId, config);
         return mapper.writeValueAsString(SyntheticMonitorConfigDto.create(config));
     }
 

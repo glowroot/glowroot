@@ -73,9 +73,9 @@ public class SyntheticResultDaoIT {
     @Test
     public void shouldRollup() throws Exception {
         syntheticResultDao.truncateAll();
-        syntheticResultDao.store("one", "11223344", 60001, SECONDS.toNanos(1), null);
-        syntheticResultDao.store("one", "11223344", 120002, SECONDS.toNanos(3), null);
-        syntheticResultDao.store("one", "11223344", 360000, SECONDS.toNanos(7), null);
+        syntheticResultDao.store("one", "11223344", "login page", 60001, SECONDS.toNanos(1), null);
+        syntheticResultDao.store("one", "11223344", "login page", 120002, SECONDS.toNanos(3), null);
+        syntheticResultDao.store("one", "11223344", "login page", 360000, SECONDS.toNanos(7), null);
 
         // check non-rolled up data
         List<SyntheticResult> syntheticResults =

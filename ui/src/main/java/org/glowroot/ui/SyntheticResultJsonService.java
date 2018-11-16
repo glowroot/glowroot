@@ -21,15 +21,18 @@ import java.util.Map;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multiset;
 import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.CaptureTimes;
+import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common2.config.MoreConfigDefaults;
@@ -58,12 +61,14 @@ class SyntheticResultJsonService {
     private final SyntheticResultRepository syntheticResultRepository;
     private final RollupLevelService rollupLevelService;
     private final ConfigRepository configRepository;
+    private final Clock clock;
 
     SyntheticResultJsonService(SyntheticResultRepository syntheticResultRepository,
-            RollupLevelService rollupLevelService, ConfigRepository configRepository) {
+            RollupLevelService rollupLevelService, ConfigRepository configRepository, Clock clock) {
         this.syntheticResultRepository = syntheticResultRepository;
         this.rollupLevelService = rollupLevelService;
         this.configRepository = configRepository;
+        this.clock = clock;
     }
 
     @GET(path = "/backend/synthetic-monitor/results", permission = "agent:syntheticMonitor")
@@ -77,8 +82,19 @@ class SyntheticResultJsonService {
         long revisedFrom = request.from() - dataPointIntervalMillis;
         long revisedTo = request.to() + dataPointIntervalMillis;
 
+        List<SyntheticMonitor> allSyntheticMonitors =
+                getAllSyntheticMonitors(agentRollupId, request.from(), request.to());
+        List<String> syntheticMonitorIds;
+        if (request.all()) {
+            syntheticMonitorIds = Lists.newArrayList();
+            for (SyntheticMonitor syntheticMonitor : allSyntheticMonitors) {
+                syntheticMonitorIds.add(syntheticMonitor.id());
+            }
+        } else {
+            syntheticMonitorIds = request.syntheticMonitorId();
+        }
         Map<String, List<SyntheticResult>> map = Maps.newLinkedHashMap();
-        for (String syntheticMonitorId : request.syntheticMonitorId()) {
+        for (String syntheticMonitorId : syntheticMonitorIds) {
             map.put(syntheticMonitorId, getSyntheticResults(agentRollupId, revisedFrom, revisedTo,
                     syntheticMonitorId, rollupLevel));
         }
@@ -90,15 +106,9 @@ class SyntheticResultJsonService {
         List<List<MultiErrorInterval>> multiErrorIntervalsList = Lists.newArrayList();
         for (Map.Entry<String, List<SyntheticResult>> entry : map.entrySet()) {
             String syntheticMonitorId = entry.getKey();
-            SyntheticMonitorConfig config =
-                    configRepository.getSyntheticMonitorConfig(agentRollupId, syntheticMonitorId);
-            if (config == null) {
-                throw new IllegalStateException(
-                        "Synthetic monitor not found: " + syntheticMonitorId);
-            }
             List<SyntheticResult> syntheticResults = entry.getValue();
-            dataSeriesList.add(convertToDataSeriesWithGaps(
-                    MoreConfigDefaults.getDisplayOrDefault(config), syntheticResults, gapMillis));
+            dataSeriesList.add(
+                    convertToDataSeriesWithGaps(syntheticMonitorId, syntheticResults, gapMillis));
             Map<Long, Long> executionCounts = Maps.newHashMap();
             executionCountsList.add(executionCounts);
             for (SyntheticResult syntheticResult : syntheticResults) {
@@ -120,8 +130,14 @@ class SyntheticResultJsonService {
                     .addErrorIntervals(errorIntervalCollector.getMergedErrorIntervals());
             multiErrorIntervalsList.add(multiErrorIntervalCollector.getMergedMultiErrorIntervals());
         }
-        List<ChartMarking> markings =
-                toChartMarkings(multiErrorIntervalsList, request.syntheticMonitorId());
+        List<ChartMarking> markings = toChartMarkings(multiErrorIntervalsList, syntheticMonitorIds);
+        boolean displayNoSyntheticMonitorsConfigured;
+        if (allSyntheticMonitors.isEmpty()) {
+            displayNoSyntheticMonitorsConfigured =
+                    configRepository.getSyntheticMonitorConfigs(agentRollupId).isEmpty();
+        } else {
+            displayNoSyntheticMonitorsConfigured = false;
+        }
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
@@ -130,6 +146,9 @@ class SyntheticResultJsonService {
             jg.writeNumberField("dataPointIntervalMillis", dataPointIntervalMillis);
             jg.writeObjectField("executionCounts", executionCountsList);
             jg.writeObjectField("markings", markings);
+            jg.writeObjectField("allSyntheticMonitors", allSyntheticMonitors);
+            jg.writeBooleanField("displayNoSyntheticMonitorsConfigured",
+                    displayNoSyntheticMonitorsConfigured);
             jg.writeEndObject();
         } finally {
             jg.close();
@@ -137,18 +156,35 @@ class SyntheticResultJsonService {
         return sb.toString();
     }
 
-    @GET(path = "/backend/synthetic-monitor/all-monitors", permission = "agent:syntheticMonitor")
-    String getAllConfigs(@BindAgentRollupId String agentRollupId) throws Exception {
+    private ImmutableList<SyntheticMonitor> getAllSyntheticMonitors(String agentRollupId,
+            long from, long to) throws Exception {
+        Map<String, String> syntheticMonitorIds =
+                syntheticResultRepository.getSyntheticMonitorIds(agentRollupId, from, to);
+        Multiset<String> multiset = HashMultiset.create();
+        multiset.addAll(syntheticMonitorIds.values());
         List<SyntheticMonitor> syntheticMonitors = Lists.newArrayList();
-        List<SyntheticMonitorConfig> configs =
-                configRepository.getSyntheticMonitorConfigs(agentRollupId);
-        for (SyntheticMonitorConfig config : configs) {
-            syntheticMonitors.add(ImmutableSyntheticMonitor.of(config.getId(),
-                    MoreConfigDefaults.getDisplayOrDefault(config)));
+        for (Map.Entry<String, String> entry : syntheticMonitorIds.entrySet()) {
+            String id = entry.getKey();
+            String display = entry.getValue();
+            if (multiset.count(entry.getValue()) > 1) {
+                display += " (" + id + ")";
+            }
+            syntheticMonitors.add(ImmutableSyntheticMonitor.of(id, display));
+        }
+        if (to > clock.currentTimeMillis()) {
+            // so that new synthetic monitors will show up right away
+            List<SyntheticMonitorConfig> configs =
+                    configRepository.getSyntheticMonitorConfigs(agentRollupId);
+            for (SyntheticMonitorConfig config : configs) {
+                if (!syntheticMonitorIds.containsKey(config.getId())) {
+                    syntheticMonitors.add(ImmutableSyntheticMonitor.of(config.getId(),
+                            MoreConfigDefaults.getDisplayOrDefault(config)));
+                }
+            }
         }
         ImmutableList<SyntheticMonitor> sortedSyntheticMonitors =
                 new SyntheticMonitorOrdering().immutableSortedCopy(syntheticMonitors);
-        return mapper.writeValueAsString(sortedSyntheticMonitors);
+        return sortedSyntheticMonitors;
     }
 
     private List<SyntheticResult> getSyntheticResults(String agentRollupId, long from, long to,
@@ -331,11 +367,15 @@ class SyntheticResultJsonService {
     }
 
     @Value.Immutable
-    interface SyntheticResultRequest {
-        long from();
-        long to();
+    abstract static class SyntheticResultRequest {
+        abstract long from();
+        abstract long to();
+        @Value.Default
+        boolean all() {
+            return false;
+        }
         // singular because this is used in query string
-        ImmutableList<String> syntheticMonitorId();
+        abstract ImmutableList<String> syntheticMonitorId();
     }
 
     private static class SyntheticMonitorOrdering extends Ordering<SyntheticMonitor> {

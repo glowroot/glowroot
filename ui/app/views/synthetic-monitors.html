@@ -72,12 +72,12 @@
       <div ng-include src="'template/gt-http-error-overlay.html'"></div>
       <!-- ng-show needed here instead of ng-if because synthetic-monitor.js binds directly to #chart -->
       <div ng-show="loaded">
-        <div ng-hide="allSyntheticMonitors.length" style="font-size: 1rem; margin-top: 20px;">
+        <div ng-show="displayNoSyntheticMonitorsConfigured" style="font-size: 1rem; margin-top: 20px;">
           No synthetic monitors configured.
           See <a href="config/synthetic-monitor-list{{agentQueryString()}}">Synthetic monitor configuration</a>.
         </div>
         <!-- ng-show needed here instead of ng-if because synthetic-monitor.js binds directly to #chart -->
-        <div ng-show="allSyntheticMonitors.length">
+        <div ng-hide="displayNoSyntheticMonitorsConfigured">
           <div class="gt-chart-controls float-right">
             <button class="gt-chart-button"
                     ng-click="zoomOut()">
@@ -112,9 +112,14 @@
                  class="gt-chart-panel"
                  style="display: table;">
               <div style="display: table-cell; text-align: center; vertical-align: middle;">
-                <div ng-if="syntheticMonitorIds.length" class="gt-chart-no-data">No data</div>
-                <div ng-if="!syntheticMonitorIds.length" class="gt-chart-no-data">
+                <div ng-if="allSyntheticMonitors.length && syntheticMonitorIds.length" class="gt-chart-no-data">
+                  No data
+                </div>
+                <div ng-if="allSyntheticMonitors.length && !syntheticMonitorIds.length" class="gt-chart-no-data">
                   Select one or more synthetic monitors below
+                </div>
+                <div ng-if="!allSyntheticMonitors.length" class="gt-chart-no-data">
+                  No synthetic monitors captured in this time period
                 </div>
               </div>
             </div>

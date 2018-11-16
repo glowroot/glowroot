@@ -19,8 +19,10 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
@@ -59,6 +61,8 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     private final ExecutorService asyncExecutor;
     private final Clock clock;
 
+    private final SyntheticMonitorIdDao syntheticMonitorIdDao;
+
     // index is rollupLevel
     private final ImmutableList<PreparedStatement> insertResultPS;
     private final ImmutableList<PreparedStatement> readResultPS;
@@ -74,6 +78,8 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         this.configRepository = configRepository;
         this.asyncExecutor = asyncExecutor;
         this.clock = clock;
+
+        syntheticMonitorIdDao = new SyntheticMonitorIdDao(session, configRepository, clock);
 
         int count = configRepository.getRollupConfigs().size();
         List<Integer> rollupExpirationHours =
@@ -140,8 +146,9 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     // synthetic result records are not rolled up to their parent, but are stored directly for
     // rollups that have their own synthetic monitors defined
     @Override
-    public void store(String agentRollupId, String syntheticMonitorId, long captureTime,
-            long durationNanos, @Nullable String errorMessage) throws Exception {
+    public void store(String agentRollupId, String syntheticMonitorId,
+            String syntheticMonitorDisplay, long captureTime, long durationNanos,
+            @Nullable String errorMessage) throws Exception {
         int ttl = getTTLs().get(0);
         long maxCaptureTime = 0;
         BoundStatement boundStatement = insertResultPS.get(0).bind();
@@ -167,8 +174,13 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
             boundStatement.setBytes(i++, Messages.toByteBuffer(ImmutableList.of(errorInterval)));
         }
         boundStatement.setInt(i++, adjustedTTL);
+        List<Future<?>> futures = new ArrayList<>();
+        futures.add(session.writeAsync(boundStatement));
+        futures.addAll(syntheticMonitorIdDao.insert(agentRollupId, captureTime, syntheticMonitorId,
+                syntheticMonitorDisplay));
+
         // wait for success before inserting "needs rollup" records
-        session.write(boundStatement);
+        MoreFutures.waitForAll(futures);
 
         // insert into synthetic_needs_rollup_1
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
@@ -184,6 +196,12 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         boundStatement.setSet(i++, ImmutableSet.of(syntheticMonitorId));
         boundStatement.setInt(i++, needsRollupAdjustedTTL);
         session.write(boundStatement);
+    }
+
+    @Override
+    public Map<String, String> getSyntheticMonitorIds(String agentRollupId, long from, long to)
+            throws Exception {
+        return syntheticMonitorIdDao.getSyntheticMonitorIds(agentRollupId, from, to);
     }
 
     // from is INCLUSIVE

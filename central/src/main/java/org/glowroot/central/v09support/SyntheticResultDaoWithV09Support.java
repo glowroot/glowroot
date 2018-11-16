@@ -17,6 +17,7 @@ package org.glowroot.central.v09support;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -49,16 +50,23 @@ public class SyntheticResultDaoWithV09Support implements SyntheticResultDao {
     // synthetic result records are not rolled up to their parent, but are stored directly for
     // rollups that have their own synthetic monitors defined
     @Override
-    public void store(String agentRollupId, String syntheticMonitorId, long captureTime,
-            long durationNanos, @Nullable String errorMessage) throws Exception {
+    public void store(String agentRollupId, String syntheticMonitorId,
+            String syntheticMonitorDisplay, long captureTime, long durationNanos,
+            @Nullable String errorMessage) throws Exception {
         if (captureTime <= v09LastCaptureTime
                 && agentRollupIdsWithV09Data.contains(agentRollupId)) {
-            delegate.store(V09Support.convertToV09(agentRollupId), syntheticMonitorId, captureTime,
-                    durationNanos, errorMessage);
+            delegate.store(V09Support.convertToV09(agentRollupId), syntheticMonitorId,
+                    syntheticMonitorDisplay, captureTime, durationNanos, errorMessage);
         } else {
-            delegate.store(agentRollupId, syntheticMonitorId, captureTime, durationNanos,
-                    errorMessage);
+            delegate.store(agentRollupId, syntheticMonitorId, syntheticMonitorDisplay, captureTime,
+                    durationNanos, errorMessage);
         }
+    }
+
+    @Override
+    public Map<String, String> getSyntheticMonitorIds(String agentRollupId, long from, long to)
+            throws Exception {
+        return delegate.getSyntheticMonitorIds(agentRollupId, from, to);
     }
 
     @Override
