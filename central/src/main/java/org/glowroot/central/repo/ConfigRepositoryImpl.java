@@ -485,7 +485,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     public boolean isConfigReadOnly(String agentId) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentId);
         if (agentConfig == null) {
-            throw new IllegalStateException("No config found: " + agentId);
+            throw new AgentConfigNotFoundException(agentId);
         }
         return agentConfig.getConfigReadOnly();
     }

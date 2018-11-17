@@ -104,8 +104,14 @@ class LayoutService {
     @Nullable
     AgentRollupLayout buildAgentRollupLayout(Authentication authentication, String agentRollupId)
             throws Exception {
-        Permissions permissions = LayoutService.getPermissions(authentication, agentRollupId,
-                configRepository.isConfigReadOnly(agentRollupId));
+        boolean configReadOnly;
+        try {
+            configReadOnly = configRepository.isConfigReadOnly(agentRollupId);
+        } catch (AgentConfigNotFoundException e) {
+            configReadOnly = false;
+        }
+        Permissions permissions =
+                LayoutService.getPermissions(authentication, agentRollupId, configReadOnly);
         List<String> agentRollupDisplayParts =
                 configRepository.readAgentRollupDisplayParts(agentRollupId);
         FilteredAgentRollup agentRollup = ImmutableFilteredAgentRollup.builder()
