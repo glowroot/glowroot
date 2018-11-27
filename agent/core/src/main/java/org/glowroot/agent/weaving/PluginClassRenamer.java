@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.checkerframework.checker.nullness.qual.PolyNull;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -70,6 +71,7 @@ class PluginClassRenamer {
             return ImmutableAdvice.builder()
                     .copyFrom(advice)
                     .adviceType(hack(advice.adviceType()))
+                    .travelerType(hack(advice.travelerType()))
                     .isEnabledAdvice(hack(advice.isEnabledAdvice()))
                     .onBeforeAdvice(hack(advice.onBeforeAdvice()))
                     .onReturnAdvice(hack(advice.onReturnAdvice()))
@@ -140,7 +142,10 @@ class PluginClassRenamer {
         return hackedParameters;
     }
 
-    private Type hack(Type type) {
+    private @PolyNull Type hack(@PolyNull Type type) {
+        if (type == null) {
+            return null;
+        }
         String internalName = type.getInternalName();
         if (internalName.startsWith(rootPackageName) && !internalName.endsWith(MIXIN_SUFFIX)) {
             return Type.getObjectType(internalName + "_");
