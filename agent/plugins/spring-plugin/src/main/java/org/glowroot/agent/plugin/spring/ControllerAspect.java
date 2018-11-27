@@ -103,7 +103,7 @@ public class ControllerAspect {
     // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin({"org.springframework.messaging.support.ExecutorSubscribableChannel$SendTask",
             "org.springframework.messaging.support.ExecutorSubscribableChannel$1"})
-    public static class WithWebSocketUriImpl implements WithWebSocketUri {
+    public static class WithWebSocketUriImpl implements WithWebSocketUriMixin {
 
         private transient @Nullable URI glowroot$webSocketUri;
 
@@ -119,7 +119,7 @@ public class ControllerAspect {
     }
 
     // the field and method names are verbose since they will be mixed in to existing classes
-    public interface WithWebSocketUri {
+    public interface WithWebSocketUriMixin {
 
         @Nullable
         URI glowroot$getWebSocketUri();
@@ -245,7 +245,7 @@ public class ControllerAspect {
             methodParameterTypes = {".."})
     public static class SendTaskInitAdvice {
         @OnReturn
-        public static void onReturn(@BindReceiver WithWebSocketUri withWebSocketUri) {
+        public static void onReturn(@BindReceiver WithWebSocketUriMixin withWebSocketUri) {
             withWebSocketUri.glowroot$setWebSocketUri(webSocketUri.get());
         }
     }
@@ -256,7 +256,7 @@ public class ControllerAspect {
     public static class SendTaskRunAdvice {
         @OnBefore
         public static Holder</*@Nullable*/ URI> onBefore(
-                @BindReceiver WithWebSocketUri withWebSocketUri) {
+                @BindReceiver WithWebSocketUriMixin withWebSocketUri) {
             Holder</*@Nullable*/ URI> holder = webSocketUri.getHolder();
             holder.set(withWebSocketUri.glowroot$getWebSocketUri());
             return holder;

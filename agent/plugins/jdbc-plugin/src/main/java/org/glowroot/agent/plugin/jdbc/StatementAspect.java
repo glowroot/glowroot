@@ -79,7 +79,7 @@ public class StatementAspect {
 
     // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin({"java.sql.Statement", "java.sql.ResultSet"})
-    public static class HasStatementMirrorImpl implements HasStatementMirror {
+    public static class HasStatementMirrorImpl implements HasStatementMirrorMixin {
 
         // does not need to be volatile, app/framework must provide visibility of Statements and
         // ResultSets if used across threads and this can piggyback
@@ -102,7 +102,7 @@ public class StatementAspect {
     }
 
     // the method names are verbose since they will be mixed in to existing classes
-    public interface HasStatementMirror {
+    public interface HasStatementMirrorMixin {
 
         @Nullable
         StatementMirror glowroot$getStatementMirror();
@@ -125,7 +125,7 @@ public class StatementAspect {
             return captureBindParameters;
         }
         @OnReturn
-        public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
+        public static void onReturn(@BindReceiver HasStatementMirrorMixin preparedStatement,
                 @BindParameter int parameterIndex, @BindParameter @Nullable Object x) {
             PreparedStatementMirror mirror =
                     (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
@@ -145,7 +145,7 @@ public class StatementAspect {
             return captureBindParameters;
         }
         @OnReturn
-        public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
+        public static void onReturn(@BindReceiver HasStatementMirrorMixin preparedStatement,
                 @BindParameter int parameterIndex, @BindParameter @Nullable Object x) {
             PreparedStatementMirror mirror =
                     (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
@@ -168,7 +168,7 @@ public class StatementAspect {
             return captureBindParameters;
         }
         @OnReturn
-        public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
+        public static void onReturn(@BindReceiver HasStatementMirrorMixin preparedStatement,
                 @BindParameter int parameterIndex, @BindParameter byte /*@Nullable*/ [] x) {
             PreparedStatementMirror mirror =
                     (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
@@ -195,7 +195,7 @@ public class StatementAspect {
             return captureBindParameters;
         }
         @OnReturn
-        public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
+        public static void onReturn(@BindReceiver HasStatementMirrorMixin preparedStatement,
                 @BindParameter int parameterIndex, @BindParameter @Nullable Object x) {
             PreparedStatementMirror mirror =
                     (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
@@ -219,7 +219,7 @@ public class StatementAspect {
             return captureBindParameters;
         }
         @OnReturn
-        public static void onReturn(@BindReceiver HasStatementMirror preparedStatement,
+        public static void onReturn(@BindReceiver HasStatementMirrorMixin preparedStatement,
                 @BindParameter int parameterIndex) {
             PreparedStatementMirror mirror =
                     (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
@@ -237,7 +237,7 @@ public class StatementAspect {
             return captureBindParameters;
         }
         @OnReturn
-        public static void onReturn(@BindReceiver HasStatementMirror preparedStatement) {
+        public static void onReturn(@BindReceiver HasStatementMirrorMixin preparedStatement) {
             PreparedStatementMirror mirror =
                     (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
             if (mirror != null) {
@@ -252,7 +252,7 @@ public class StatementAspect {
             methodParameterTypes = {"java.lang.String"})
     public static class StatementAddBatchAdvice {
         @OnReturn
-        public static void onReturn(@BindReceiver HasStatementMirror statement,
+        public static void onReturn(@BindReceiver HasStatementMirrorMixin statement,
                 @BindParameter @Nullable String sql) {
             if (sql == null) {
                 // seems nothing sensible to do here other than ignore
@@ -269,7 +269,7 @@ public class StatementAspect {
             methodParameterTypes = {})
     public static class PreparedStatementAddBatchAdvice {
         @OnReturn
-        public static void onReturn(@BindReceiver HasStatementMirror preparedStatement) {
+        public static void onReturn(@BindReceiver HasStatementMirrorMixin preparedStatement) {
             PreparedStatementMirror mirror =
                     (PreparedStatementMirror) preparedStatement.glowroot$getStatementMirror();
             if (mirror != null) {
@@ -284,7 +284,7 @@ public class StatementAspect {
             methodParameterTypes = {})
     public static class ClearBatchAdvice {
         @OnReturn
-        public static void onReturn(@BindReceiver HasStatementMirror statement) {
+        public static void onReturn(@BindReceiver HasStatementMirrorMixin statement) {
             StatementMirror mirror = statement.glowroot$getStatementMirror();
             if (mirror != null) {
                 mirror.clearBatch();
@@ -300,12 +300,12 @@ public class StatementAspect {
     public static class StatementExecuteAdvice {
         private static final TimerName timerName = Agent.getTimerName(StatementExecuteAdvice.class);
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
+        public static boolean isEnabled(@BindReceiver HasStatementMirrorMixin statement) {
             return statement.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static @Nullable QueryEntry onBefore(ThreadContext context,
-                @BindReceiver HasStatementMirror statement, @BindParameter @Nullable String sql) {
+                @BindReceiver HasStatementMirrorMixin statement, @BindParameter @Nullable String sql) {
             if (sql == null) {
                 // seems nothing sensible to do here other than ignore
                 return null;
@@ -341,17 +341,17 @@ public class StatementAspect {
             nestingGroup = "jdbc")
     public static class StatementExecuteQueryAdvice {
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
+        public static boolean isEnabled(@BindReceiver HasStatementMirrorMixin statement) {
             return statement.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static @Nullable QueryEntry onBefore(ThreadContext context,
-                @BindReceiver HasStatementMirror statement, @BindParameter @Nullable String sql) {
+                @BindReceiver HasStatementMirrorMixin statement, @BindParameter @Nullable String sql) {
             return StatementExecuteAdvice.onBefore(context, statement, sql);
         }
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable HasStatementMirror resultSet,
-                @BindReceiver HasStatementMirror statement,
+        public static void onReturn(@BindReturn @Nullable HasStatementMirrorMixin resultSet,
+                @BindReceiver HasStatementMirrorMixin statement,
                 @BindTraveler @Nullable QueryEntry queryEntry) {
             // Statement can always be retrieved from ResultSet.getStatement(), and
             // StatementMirror from that, but ResultSet.getStatement() is sometimes not super
@@ -380,12 +380,12 @@ public class StatementAspect {
             nestingGroup = "jdbc")
     public static class StatementExecuteUpdateAdvice {
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
+        public static boolean isEnabled(@BindReceiver HasStatementMirrorMixin statement) {
             return statement.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static @Nullable QueryEntry onBefore(ThreadContext context,
-                @BindReceiver HasStatementMirror statement, @BindParameter @Nullable String sql) {
+                @BindReceiver HasStatementMirrorMixin statement, @BindParameter @Nullable String sql) {
             return StatementExecuteAdvice.onBefore(context, statement, sql);
         }
         @OnReturn
@@ -412,12 +412,12 @@ public class StatementAspect {
         private static final TimerName timerName =
                 Agent.getTimerName(PreparedStatementExecuteAdvice.class);
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasStatementMirror preparedStatement) {
+        public static boolean isEnabled(@BindReceiver HasStatementMirrorMixin preparedStatement) {
             return preparedStatement.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static QueryEntry onBefore(ThreadContext context,
-                @BindReceiver HasStatementMirror preparedStatement) {
+                @BindReceiver HasStatementMirrorMixin preparedStatement) {
             @SuppressWarnings("nullness") // just checked above in isEnabled()
             @NonNull
             PreparedStatementMirror mirror =
@@ -452,17 +452,17 @@ public class StatementAspect {
             nestingGroup = "jdbc")
     public static class PreparedStatementExecuteQueryAdvice {
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasStatementMirror preparedStatement) {
+        public static boolean isEnabled(@BindReceiver HasStatementMirrorMixin preparedStatement) {
             return preparedStatement.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static QueryEntry onBefore(ThreadContext context,
-                @BindReceiver HasStatementMirror preparedStatement) {
+                @BindReceiver HasStatementMirrorMixin preparedStatement) {
             return PreparedStatementExecuteAdvice.onBefore(context, preparedStatement);
         }
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable HasStatementMirror resultSet,
-                @BindReceiver HasStatementMirror preparedStatement,
+        public static void onReturn(@BindReturn @Nullable HasStatementMirrorMixin resultSet,
+                @BindReceiver HasStatementMirrorMixin preparedStatement,
                 @BindTraveler QueryEntry queryEntry) {
             // PreparedStatement can always be retrieved from ResultSet.getStatement(), and
             // StatementMirror from that, but ResultSet.getStatement() is sometimes not super
@@ -486,12 +486,12 @@ public class StatementAspect {
             methodParameterTypes = {}, methodReturnType = "int", nestingGroup = "jdbc")
     public static class PreparedStatementExecuteUpdateAdvice {
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasStatementMirror preparedStatement) {
+        public static boolean isEnabled(@BindReceiver HasStatementMirrorMixin preparedStatement) {
             return preparedStatement.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static QueryEntry onBefore(ThreadContext context,
-                @BindReceiver HasStatementMirror preparedStatement) {
+                @BindReceiver HasStatementMirrorMixin preparedStatement) {
             return PreparedStatementExecuteAdvice.onBefore(context, preparedStatement);
         }
         @OnReturn
@@ -514,12 +514,12 @@ public class StatementAspect {
         private static final TimerName timerName =
                 Agent.getTimerName(StatementExecuteBatchAdvice.class);
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
+        public static boolean isEnabled(@BindReceiver HasStatementMirrorMixin statement) {
             return statement.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static QueryEntry onBefore(ThreadContext context,
-                @BindReceiver HasStatementMirror statement) {
+                @BindReceiver HasStatementMirrorMixin statement) {
             @SuppressWarnings("nullness") // just checked above in isEnabled()
             @NonNull
             StatementMirror mirror = statement.glowroot$getStatementMirror();
@@ -604,12 +604,12 @@ public class StatementAspect {
             methodParameterTypes = {".."}, methodReturnType = "java.sql.ResultSet")
     public static class StatementGetResultSetAdvice {
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
+        public static boolean isEnabled(@BindReceiver HasStatementMirrorMixin statement) {
             return statement.glowroot$hasStatementMirror();
         }
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable HasStatementMirror resultSet,
-                @BindReceiver HasStatementMirror statement) {
+        public static void onReturn(@BindReturn @Nullable HasStatementMirrorMixin resultSet,
+                @BindReceiver HasStatementMirrorMixin statement) {
             if (resultSet == null) {
                 return;
             }
@@ -625,12 +625,12 @@ public class StatementAspect {
     public static class CloseAdvice {
         private static final TimerName timerName = Agent.getTimerName(CloseAdvice.class);
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasStatementMirror statement) {
+        public static boolean isEnabled(@BindReceiver HasStatementMirrorMixin statement) {
             return statement.glowroot$hasStatementMirror();
         }
         @OnBefore
         public static @Nullable Timer onBefore(ThreadContext context,
-                @BindReceiver HasStatementMirror statement) {
+                @BindReceiver HasStatementMirrorMixin statement) {
             StatementMirror mirror = statement.glowroot$getStatementMirror();
             if (mirror != null) {
                 // this should always be true since just checked hasGlowrootStatementMirror() above

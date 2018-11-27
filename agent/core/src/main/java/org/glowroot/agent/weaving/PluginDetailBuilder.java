@@ -35,6 +35,8 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.plugin.api.weaving.MethodModifier;
@@ -49,6 +51,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ASM7;
 
 class PluginDetailBuilder {
+
+    private static final Logger logger = LoggerFactory.getLogger(PluginDetailBuilder.class);
 
     private static final Set<String> collocateInClassLoaderPluginIds =
             ImmutableSet.of("http-client", "kafka");
@@ -237,6 +241,11 @@ class PluginDetailBuilder {
                     .type(Type.getObjectType(checkNotNull(name)));
             if (interfaces != null) {
                 for (String iface : interfaces) {
+                    if (!iface.endsWith(PluginClassRenamer.MIXIN_SUFFIX)) {
+                        // see PluginClassRenamer.hack() for reason why consistent Mixin suffix is
+                        // important
+                        logger.warn("mixin interface name should end with \"Mixin\": {}", iface);
+                    }
                     builder.addInterfaces(Type.getObjectType(iface));
                 }
             }

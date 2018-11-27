@@ -38,7 +38,7 @@ import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
-import org.glowroot.agent.plugin.cassandra.ResultSetAspect.ResultSet;
+import org.glowroot.agent.plugin.cassandra.ResultSetAspect.ResultSetMixin;
 import org.glowroot.agent.plugin.cassandra.ResultSetFutureAspect.ResultSetFutureMixin;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -111,7 +111,7 @@ public class SessionAspect {
                     queryEntryInfo.queryMessageSupplier, timerName);
         }
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable ResultSet resultSet,
+        public static void onReturn(@BindReturn @Nullable ResultSetMixin resultSet,
                 @BindTraveler @Nullable QueryEntry queryEntry) {
             if (queryEntry != null) {
                 if (resultSet != null) {

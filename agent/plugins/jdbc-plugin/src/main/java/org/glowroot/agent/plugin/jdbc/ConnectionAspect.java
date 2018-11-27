@@ -34,7 +34,7 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.jdbc.StatementAspect.HasStatementMirror;
+import org.glowroot.agent.plugin.jdbc.StatementAspect.HasStatementMirrorMixin;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -68,7 +68,7 @@ public class ConnectionAspect {
             }
         }
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable HasStatementMirror preparedStatement,
+        public static void onReturn(@BindReturn @Nullable HasStatementMirrorMixin preparedStatement,
                 @BindParameter @Nullable String sql) {
             if (preparedStatement == null || sql == null) {
                 // seems nothing sensible to do here other than ignore
@@ -88,7 +88,7 @@ public class ConnectionAspect {
             methodParameterTypes = {".."})
     public static class CreateStatementAdvice {
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable HasStatementMirror statement) {
+        public static void onReturn(@BindReturn @Nullable HasStatementMirrorMixin statement) {
             if (statement == null) {
                 // seems nothing sensible to do here other than ignore
                 return;

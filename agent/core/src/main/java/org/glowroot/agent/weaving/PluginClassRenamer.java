@@ -39,6 +39,8 @@ import org.glowroot.agent.weaving.PluginDetail.PointcutClass;
 
 class PluginClassRenamer {
 
+    static final String MIXIN_SUFFIX = "Mixin";
+
     private static final Logger logger = LoggerFactory.getLogger(PluginClassRenamer.class);
 
     private final PointcutClass adviceClass;
@@ -60,7 +62,7 @@ class PluginClassRenamer {
     @Nullable
     Advice buildNonBootstrapLoaderAdvice(Advice advice) {
         if (rootPackageName.equals("/")) {
-            logger.warn("advice needs to be in a named package in order to co-locate the advice in"
+            logger.warn("advice needs to be in a named package in order to collocate the advice in"
                     + " the class loader that it is used from (as opposed to located in the"
                     + " bootstrap class loader)");
             return null;
@@ -140,7 +142,7 @@ class PluginClassRenamer {
 
     private Type hack(Type type) {
         String internalName = type.getInternalName();
-        if (internalName.startsWith(rootPackageName) && !internalName.endsWith("Mixin")) {
+        if (internalName.startsWith(rootPackageName) && !internalName.endsWith(MIXIN_SUFFIX)) {
             return Type.getObjectType(internalName + "_");
         } else {
             return type;
@@ -153,7 +155,7 @@ class PluginClassRenamer {
 
         @Override
         public String map(String internalName) {
-            if (internalName.startsWith(rootPackageName) && !internalName.endsWith("Mixin")) {
+            if (internalName.startsWith(rootPackageName) && !internalName.endsWith(MIXIN_SUFFIX)) {
                 if (!processed.contains(internalName)) {
                     unprocessed.add(internalName);
                 }
