@@ -53,7 +53,7 @@ public class HttpURLConnectionAspect {
             "sun.net.www.http.PosterOutputStream",
             "weblogic.net.http.KeepAliveStream",
             "weblogic.utils.io.UnsyncByteArrayOutputStream"})
-    public static class HasTraceEntryImpl implements HasTraceEntry {
+    public static class HasTraceEntryImpl implements HasTraceEntryMixin {
 
         private transient @Nullable TraceEntry glowroot$traceEntry;
 
@@ -74,7 +74,7 @@ public class HttpURLConnectionAspect {
     }
 
     // the method names are verbose since they will be mixed in to existing classes
-    public interface HasTraceEntry {
+    public interface HasTraceEntryMixin {
 
         @Nullable
         TraceEntry glowroot$getTraceEntry();
@@ -141,10 +141,11 @@ public class HttpURLConnectionAspect {
         }
         private static @Nullable TraceEntryOrTimer onBefore(ThreadContext threadContext,
                 HttpURLConnection httpURLConnection, boolean overrideGetWithPost) {
-            if (!(httpURLConnection instanceof HasTraceEntry)) {
+            if (!(httpURLConnection instanceof HasTraceEntryMixin)) {
                 return null;
             }
-            TraceEntry traceEntry = ((HasTraceEntry) httpURLConnection).glowroot$getTraceEntry();
+            TraceEntry traceEntry =
+                    ((HasTraceEntryMixin) httpURLConnection).glowroot$getTraceEntry();
             if (traceEntry != null) {
                 return new TraceEntryOrTimer(traceEntry.extend());
             }
@@ -168,7 +169,7 @@ public class HttpURLConnectionAspect {
             traceEntry = threadContext.startServiceCallEntry("HTTP",
                     method + Uris.stripQueryString(url),
                     MessageSupplier.create("http client request: {}{}", method, url), timerName);
-            ((HasTraceEntry) httpURLConnection).glowroot$setTraceEntry(traceEntry);
+            ((HasTraceEntryMixin) httpURLConnection).glowroot$setTraceEntry(traceEntry);
             return new TraceEntryOrTimer(traceEntry);
         }
     }
@@ -186,11 +187,11 @@ public class HttpURLConnectionAspect {
         public static void onReturn(@BindReturn @Nullable Object returnValue,
                 @BindReceiver Object httpURLConnection,
                 @BindTraveler @Nullable TraceEntryOrTimer entryOrTimer) {
-            if (httpURLConnection instanceof HasTraceEntry) {
-                if (returnValue instanceof HasTraceEntry) {
+            if (httpURLConnection instanceof HasTraceEntryMixin) {
+                if (returnValue instanceof HasTraceEntryMixin) {
                     TraceEntry traceEntry =
-                            ((HasTraceEntry) httpURLConnection).glowroot$getTraceEntry();
-                    ((HasTraceEntry) returnValue).glowroot$setTraceEntry(traceEntry);
+                            ((HasTraceEntryMixin) httpURLConnection).glowroot$getTraceEntry();
+                    ((HasTraceEntryMixin) returnValue).glowroot$setTraceEntry(traceEntry);
                 } else if (returnValue != null && !inputStreamIssueAlreadyLogged.getAndSet(true)) {
                     logger.info("found non-instrumented http url connection input stream, please"
                             + " report to the Glowroot project: {}",
@@ -219,11 +220,11 @@ public class HttpURLConnectionAspect {
         public static void onReturn(@BindReturn @Nullable Object returnValue,
                 @BindReceiver Object httpURLConnection,
                 @BindTraveler @Nullable TraceEntryOrTimer entryOrTimer) {
-            if (httpURLConnection instanceof HasTraceEntry) {
-                if (returnValue instanceof HasTraceEntry) {
+            if (httpURLConnection instanceof HasTraceEntryMixin) {
+                if (returnValue instanceof HasTraceEntryMixin) {
                     TraceEntry traceEntry =
-                            ((HasTraceEntry) httpURLConnection).glowroot$getTraceEntry();
-                    ((HasTraceEntry) returnValue).glowroot$setTraceEntry(traceEntry);
+                            ((HasTraceEntryMixin) httpURLConnection).glowroot$getTraceEntry();
+                    ((HasTraceEntryMixin) returnValue).glowroot$setTraceEntry(traceEntry);
                 } else if (returnValue != null && !outputStreamIssueAlreadyLogged.getAndSet(true)) {
                     logger.info("found non-instrumented http url connection output stream, please"
                             + " report to the Glowroot project: {}",
@@ -246,10 +247,10 @@ public class HttpURLConnectionAspect {
     public static class HttpInputStreamAdvice {
         @OnBefore
         public static @Nullable Timer onBefore(@BindReceiver InputStream inputStream) {
-            if (!(inputStream instanceof HasTraceEntry)) {
+            if (!(inputStream instanceof HasTraceEntryMixin)) {
                 return null;
             }
-            TraceEntry traceEntry = ((HasTraceEntry) inputStream).glowroot$getTraceEntry();
+            TraceEntry traceEntry = ((HasTraceEntryMixin) inputStream).glowroot$getTraceEntry();
             if (traceEntry == null) {
                 return null;
             }
@@ -271,11 +272,11 @@ public class HttpURLConnectionAspect {
     public static class StreamingOutputStreamAdvice {
         @OnBefore
         public static @Nullable Timer onBefore(@BindReceiver OutputStream outputStream) {
-            if (!(outputStream instanceof HasTraceEntry)) {
+            if (!(outputStream instanceof HasTraceEntryMixin)) {
                 return null;
             }
             TraceEntry traceEntry =
-                    ((HasTraceEntry) outputStream).glowroot$getTraceEntry();
+                    ((HasTraceEntryMixin) outputStream).glowroot$getTraceEntry();
             if (traceEntry == null) {
                 return null;
             }
