@@ -58,9 +58,14 @@ case "$1" in
                then
                  # these modules are only part of build under Java 8+
                  exclude_modules="$exclude_modules,!:glowroot-central,!:glowroot-webdriver-tests"
-                 # spring-5.x profile is cumulative on top of spring-4.x (tests new spring 5 features, e.g. webflux)
                  # mongodb tests use testcontainers which requires Java 8+
-                 activate_profiles="$activate_profiles,spring-5.x,mongodb-3.7.x"
+                 activate_profiles="$activate_profiles,mongodb-3.7.x"
+                 if [[ "$TEST_SHADED" == "true" ]]
+                 then
+                   # spring-5.1.x profile is cumulative on top of spring-4.x (tests new spring 5 features, e.g. webflux)
+                   # latest version of spring requires Java 8+ and the tests require shading since they use netty
+                   activate_profiles="$activate_profiles,spring-5.1.x"
+                 fi
                fi
                mvn clean install -pl $exclude_modules \
                                  -P $activate_profiles \
@@ -77,7 +82,7 @@ case "$1" in
                                  -B
                if [[ "$TEST_SHADED" == "true" ]]
                then
-                 # async-http-client, elasticsearch and play tests all require shading
+                 # async-http-client, elasticsearch and play tests all require shading since they use netty
                  if [[ $java_version == 1.6* || $java_version == 1.7* ]]
                  then
                    activate_profiles_opt="-P async-http-client-1.x,elasticsearch-2.x,play-2.2.x,play-2.x"
@@ -241,9 +246,9 @@ case "$1" in
                                  -Djacoco.append=true \
                                  -Dglowroot.it.harness=javaagent"
                  # run integration tests
-                 # spring-5.x profile is cumulative on top of spring-4.x (tests new spring 5 features, e.g. webflux)
+                 # spring-5.1.x profile is cumulative on top of spring-4.x (tests new spring 5 features, e.g. webflux)
                  mvn $common_mvn_args -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -P netty-4.x,spring-4.x,spring-5.x,mongodb-3.7.x \
+                                      -P netty-4.x,spring-4.x,spring-5.1.x,mongodb-3.7.x \
                                       -B
                  # install to run additional tests
                  mvn clean install -DskipTests \

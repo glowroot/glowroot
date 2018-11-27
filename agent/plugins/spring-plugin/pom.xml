@@ -266,6 +266,8 @@
       <properties>
         <spring.version>5.0.10.RELEASE</spring.version>
         <reactor.version>0.7.9.RELEASE</reactor.version>
+        <!-- netty version used by above reactor version -->
+        <netty.version>4.1.29.Final</netty.version>
       </properties>
       <dependencies>
         <dependency>
@@ -329,6 +331,8 @@
       <properties>
         <spring.version>5.1.2.RELEASE</spring.version>
         <reactor.version>0.8.2.RELEASE</reactor.version>
+        <!-- netty version used by above reactor version -->
+        <netty.version>4.1.29.Final</netty.version>
       </properties>
       <dependencies>
         <dependency>
