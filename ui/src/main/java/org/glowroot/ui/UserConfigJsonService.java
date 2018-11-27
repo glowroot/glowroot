@@ -80,7 +80,7 @@ class UserConfigJsonService {
     String getAllRoleNames() throws Exception {
         return mapper.writeValueAsString(ImmutableAllRolesResponse.builder()
                 .allRoles(getAllRoleNamesInternal())
-                .ldapAvailable(!configRepository.getLdapConfig().url().isEmpty())
+                .ldapAvailable(!configRepository.getLdapConfig().host().isEmpty())
                 .build());
     }
 
@@ -134,7 +134,7 @@ class UserConfigJsonService {
         return mapper.writeValueAsString(ImmutableUserConfigResponse.builder()
                 .config(UserConfigDto.create(userConfig))
                 .allRoles(getAllRoleNamesInternal())
-                .ldapAvailable(!configRepository.getLdapConfig().url().isEmpty())
+                .ldapAvailable(!configRepository.getLdapConfig().host().isEmpty())
                 .build());
     }
 
