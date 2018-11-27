@@ -6,7 +6,7 @@
       "name": "captureRequestHeaders",
       "type": "list",
       "label": "Capture request headers",
-      "description": "List of request headers to capture in the root trace entry. The wildcard '*' is supported anywhere in the parameter."
+      "description": "List of request headers to capture in the root trace entry. The wildcard '*' is supported anywhere in the header name."
     },
     {
       "name": "maskRequestHeaders",
@@ -15,7 +15,7 @@
         "Authorization"
       ],
       "label": "Mask request headers",
-      "description": "List of sensitive request headers to mask, e.g. credentials. The wildcard '*' is supported anywhere in the parameter."
+      "description": "List of sensitive request headers to mask, e.g. credentials. The wildcard '*' is supported anywhere in the header name."
     },
     {
       "name": "captureRequestRemoteAddr",
@@ -33,7 +33,7 @@
       "name": "captureResponseHeaders",
       "type": "list",
       "label": "Capture response headers",
-      "description": "List of response headers to capture in the root trace entry. The wildcard '*' is supported anywhere in the parameter."
+      "description": "List of response headers to capture in the root trace entry. The wildcard '*' is supported anywhere in the header name."
     },
     {
       "name": "traceErrorOn4xxResponseCode",
