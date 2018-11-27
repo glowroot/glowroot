@@ -55,7 +55,7 @@ import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmEx
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.common.util.SystemProperties;
+import org.glowroot.common.util.Masking;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.EnvironmentRepository;
@@ -140,7 +140,7 @@ class JvmJsonService {
             // mask JVM args here in case maskSystemProperties was modified after the environment
             // data was captured JVM startup
             // (this also provides support in central for agent prior to 0.10.0)
-            for (String arg : SystemProperties.maskJvmArgs(javaInfo.getArgList(),
+            for (String arg : Masking.maskJvmArgs(javaInfo.getArgList(),
                     getJvmMaskSystemProperties(agentId))) {
                 jg.writeString(arg);
             }
@@ -446,7 +446,7 @@ class JvmJsonService {
         }
         // mask here to provide support in central for agents prior to 0.10.0
         List<String> maskSystemProperties = getJvmMaskSystemProperties(agentId);
-        properties = SystemProperties.maskSystemProperties(properties, maskSystemProperties);
+        properties = Masking.maskSystemProperties(properties, maskSystemProperties);
 
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));

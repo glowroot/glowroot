@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,16 +30,26 @@ glowroot.controller('ConfigJvmCtrl', [
       return;
     }
 
+    function splitItems(val) {
+      var items = [];
+      angular.forEach(val.split(','), function (part) {
+        part = part.trim();
+        if (part.length) {
+          items.push(part);
+        }
+      });
+      return items;
+    }
+
     $scope.$watch('page.maskSystemProperties', function (newVal) {
       if ($scope.config) {
-        var maskSystemProperties = [];
-        angular.forEach(newVal.split(','), function (maskSystemProperty) {
-          maskSystemProperty = maskSystemProperty.trim();
-          if (maskSystemProperty.length) {
-            maskSystemProperties.push(maskSystemProperty);
-          }
-        });
-        $scope.config.maskSystemProperties = maskSystemProperties;
+        $scope.config.maskSystemProperties = splitItems(newVal);
+      }
+    });
+
+    $scope.$watch('page.maskMBeanAttributes', function (newVal) {
+      if ($scope.config) {
+        $scope.config.maskMBeanAttributes = splitItems(newVal);
       }
     });
 
@@ -48,6 +58,7 @@ glowroot.controller('ConfigJvmCtrl', [
       $scope.config = data;
       $scope.originalConfig = angular.copy(data);
       $scope.page.maskSystemProperties = $scope.config.maskSystemProperties.join(', ');
+      $scope.page.maskMBeanAttributes = $scope.config.maskMBeanAttributes.join(', ');
     }
 
     $scope.hasChanges = function () {

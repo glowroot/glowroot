@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-public class SystemProperties {
+public class Masking {
 
-    private SystemProperties() {}
+    public static final String MASKED_VALUE = "****";
+
+    private Masking() {}
 
     public static List<String> maskJvmArgs(List<String> jvmArgs,
             List<String> maskSystemProperties) {
@@ -51,7 +53,7 @@ public class SystemProperties {
         for (Map.Entry<String, String> entry : systemProperties.entrySet()) {
             String name = entry.getKey();
             if (matchesAny(name, maskPatterns)) {
-                maskedSystemProperties.put(name, "****");
+                maskedSystemProperties.put(name, MASKED_VALUE);
             } else {
                 maskedSystemProperties.put(name, entry.getValue());
             }
@@ -76,7 +78,16 @@ public class SystemProperties {
         return "-D" + name + "=****";
     }
 
-    private static boolean matchesAny(String text, List<Pattern> patterns) {
+    public static ImmutableList<Pattern> buildPatternList(List<String> properties) {
+        List<Pattern> propertyPatterns = Lists.newArrayList();
+        for (String property : properties) {
+            // converted to lower case for case-insensitive matching
+            propertyPatterns.add(buildRegexPattern(property.toLowerCase(Locale.ENGLISH)));
+        }
+        return ImmutableList.copyOf(propertyPatterns);
+    }
+
+    public static boolean matchesAny(String text, List<Pattern> patterns) {
         // converted to lower case for case-insensitive matching (patterns are lower case)
         String textLowerCase = text.toLowerCase(Locale.ENGLISH);
         for (Pattern pattern : patterns) {
@@ -85,15 +96,6 @@ public class SystemProperties {
             }
         }
         return false;
-    }
-
-    private static ImmutableList<Pattern> buildPatternList(List<String> properties) {
-        List<Pattern> propertyPatterns = Lists.newArrayList();
-        for (String property : properties) {
-            // converted to lower case for case-insensitive matching
-            propertyPatterns.add(buildRegexPattern(property.toLowerCase(Locale.ENGLISH)));
-        }
-        return ImmutableList.copyOf(propertyPatterns);
     }
 
     private static Pattern buildRegexPattern(String wildcardPattern) {

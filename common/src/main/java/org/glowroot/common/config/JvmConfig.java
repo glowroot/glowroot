@@ -29,15 +29,22 @@ public abstract class JvmConfig {
         return ConfigDefaults.JVM_MASK_SYSTEM_PROPERTIES;
     }
 
+    @Value.Default
+    public ImmutableList<String> maskMBeanAttributes() {
+        return ConfigDefaults.JVM_MASK_MBEAN_ATTRIBUTES;
+    }
+
     public AgentConfig.JvmConfig toProto() {
-        AgentConfig.JvmConfig.Builder builder =
-                AgentConfig.JvmConfig.newBuilder().addAllMaskSystemProperty(maskSystemProperties());
-        return builder.build();
+        return AgentConfig.JvmConfig.newBuilder()
+                .addAllMaskSystemProperty(maskSystemProperties())
+                .addAllMaskMbeanAttribute(maskMBeanAttributes())
+                .build();
     }
 
     public static ImmutableJvmConfig create(AgentConfig.JvmConfig config) {
-        ImmutableJvmConfig.Builder builder = ImmutableJvmConfig.builder()
-                .addAllMaskSystemProperties(config.getMaskSystemPropertyList());
-        return builder.build();
+        return ImmutableJvmConfig.builder()
+                .addAllMaskSystemProperties(config.getMaskSystemPropertyList())
+                .addAllMaskMBeanAttributes(config.getMaskMbeanAttributeList())
+                .build();
     }
 }

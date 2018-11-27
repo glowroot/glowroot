@@ -45,6 +45,7 @@ message AgentConfig {
 
   message JvmConfig {
     repeated string mask_system_property = 1;
+    repeated string mask_mbean_attribute = 2;
   }
 
   message UiDefaultsConfig {

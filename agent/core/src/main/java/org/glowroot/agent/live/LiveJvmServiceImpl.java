@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanAttributeInfo;
@@ -56,7 +57,7 @@ import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.live.LiveJvmService;
-import org.glowroot.common.util.SystemProperties;
+import org.glowroot.common.util.Masking;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Availability;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
@@ -277,7 +278,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
         Map<String, String> systemProperties =
                 ManagementFactory.getRuntimeMXBean().getSystemProperties();
         List<String> maskSystemProperties = configService.getJvmConfig().maskSystemProperties();
-        return SystemProperties.maskSystemProperties(systemProperties, maskSystemProperties);
+        return Masking.maskSystemProperties(systemProperties, maskSystemProperties);
     }
 
     @Override
@@ -293,20 +294,29 @@ public class LiveJvmServiceImpl implements LiveJvmService {
             throws Exception {
         List<MBeanServer> mbeanServers = lazyPlatformMBeanServer.findAllMBeanServers();
         MBeanInfo mBeanInfo = lazyPlatformMBeanServer.getMBeanInfo(objectName, mbeanServers);
+        List<Pattern> maskPatterns =
+                Masking.buildPatternList(configService.getJvmConfig().maskMBeanAttributes());
         List<MBeanDump.MBeanAttribute> attributes = Lists.newArrayList();
         for (MBeanAttributeInfo attribute : mBeanInfo.getAttributes()) {
             Object value;
-            try {
-                value = lazyPlatformMBeanServer.getAttribute(objectName, attribute.getName(),
-                        mbeanServers);
-            } catch (Exception e) {
-                // log exception at debug level
-                logger.debug(e.getMessage(), e);
-                Throwable rootCause = getRootCause(e);
-                value = "<" + rootCause.getClass().getName() + ": " + rootCause.getMessage() + ">";
+            String attributeName = attribute.getName();
+            String fullAttributeName = objectName.toString() + ":" + attribute.getName();
+            if (Masking.matchesAny(fullAttributeName, maskPatterns)) {
+                value = Masking.MASKED_VALUE;
+            } else {
+                try {
+                    value = lazyPlatformMBeanServer.getAttribute(objectName, attributeName,
+                            mbeanServers);
+                } catch (Exception e) {
+                    // log exception at debug level
+                    logger.debug(e.getMessage(), e);
+                    Throwable rootCause = getRootCause(e);
+                    value = "<" + rootCause.getClass().getName() + ": " + rootCause.getMessage()
+                            + ">";
+                }
             }
             attributes.add(MBeanDump.MBeanAttribute.newBuilder()
-                    .setName(attribute.getName())
+                    .setName(attributeName)
                     .setValue(getMBeanAttributeValue(value))
                     .build());
         }

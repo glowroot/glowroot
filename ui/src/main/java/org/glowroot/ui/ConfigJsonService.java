@@ -443,19 +443,22 @@ class ConfigJsonService {
     abstract static class JvmConfigDto {
 
         abstract ImmutableList<String> maskSystemProperties();
+        abstract ImmutableList<String> maskMBeanAttributes();
         abstract String version();
 
         private JvmConfig convert() {
-            JvmConfig.Builder builder =
-                    JvmConfig.newBuilder().addAllMaskSystemProperty(maskSystemProperties());
-            return builder.build();
+            return JvmConfig.newBuilder()
+                    .addAllMaskSystemProperty(maskSystemProperties())
+                    .addAllMaskMbeanAttribute(maskMBeanAttributes())
+                    .build();
         }
 
         private static JvmConfigDto create(JvmConfig config) {
-            ImmutableJvmConfigDto.Builder builder = ImmutableJvmConfigDto.builder()
+            return ImmutableJvmConfigDto.builder()
                     .maskSystemProperties(config.getMaskSystemPropertyList())
-                    .version(Versions.getVersion(config));
-            return builder.build();
+                    .maskMBeanAttributes(config.getMaskMbeanAttributeList())
+                    .version(Versions.getVersion(config))
+                    .build();
         }
     }
 

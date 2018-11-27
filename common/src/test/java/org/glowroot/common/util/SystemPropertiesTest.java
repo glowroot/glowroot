@@ -25,43 +25,43 @@ public class SystemPropertiesTest {
 
     @Test
     public void shouldMaskJvmArgs() {
-        assertThat(SystemProperties.maskJvmArgs(ImmutableList.of("-Xmx1g", "-Dtest=one"),
+        assertThat(Masking.maskJvmArgs(ImmutableList.of("-Xmx1g", "-Dtest=one"),
                 ImmutableList.<String>of())).containsExactly("-Xmx1g", "-Dtest=one");
-        assertThat(SystemProperties.maskJvmArgs(ImmutableList.of("-Xmx1g", "-Dtest=one"),
+        assertThat(Masking.maskJvmArgs(ImmutableList.of("-Xmx1g", "-Dtest=one"),
                 ImmutableList.<String>of("test"))).containsExactly("-Xmx1g", "-Dtest=****");
-        assertThat(SystemProperties.maskJvmArgs(ImmutableList.of("-Xmx1g", "-Dtest=one"),
+        assertThat(Masking.maskJvmArgs(ImmutableList.of("-Xmx1g", "-Dtest=one"),
                 ImmutableList.<String>of("t"))).containsExactly("-Xmx1g", "-Dtest=one");
-        assertThat(SystemProperties.maskJvmArgs(ImmutableList.of("-Xmx1g", "-Dtest=one"),
+        assertThat(Masking.maskJvmArgs(ImmutableList.of("-Xmx1g", "-Dtest=one"),
                 ImmutableList.<String>of("t*"))).containsExactly("-Xmx1g", "-Dtest=****");
-        assertThat(SystemProperties.maskJvmArgs(ImmutableList.of("-Xmx1g", "-Dtest=one"),
+        assertThat(Masking.maskJvmArgs(ImmutableList.of("-Xmx1g", "-Dtest=one"),
                 ImmutableList.<String>of("e*"))).containsExactly("-Xmx1g", "-Dtest=one");
-        assertThat(SystemProperties.maskJvmArgs(ImmutableList.of("-Xmx1g", "-Dtest=one"),
+        assertThat(Masking.maskJvmArgs(ImmutableList.of("-Xmx1g", "-Dtest=one"),
                 ImmutableList.<String>of("*t*"))).containsExactly("-Xmx1g", "-Dtest=****");
-        assertThat(SystemProperties.maskJvmArgs(ImmutableList.of("-Xmx1g", "-Dtest=one"),
+        assertThat(Masking.maskJvmArgs(ImmutableList.of("-Xmx1g", "-Dtest=one"),
                 ImmutableList.<String>of("*x*"))).containsExactly("-Xmx1g", "-Dtest=one");
-        assertThat(SystemProperties.maskJvmArgs(ImmutableList.of("-Xmx1g", "-DtEst=one"),
+        assertThat(Masking.maskJvmArgs(ImmutableList.of("-Xmx1g", "-DtEst=one"),
                 ImmutableList.<String>of("teSt"))).containsExactly("-Xmx1g", "-DtEst=****");
     }
 
     @Test
     public void shouldMaskSystemProperties() {
-        assertThat(SystemProperties
+        assertThat(Masking
                 .maskSystemProperties(ImmutableMap.of("test", "one"), ImmutableList.<String>of())
                 .get("test")).isEqualTo("one");
-        assertThat(SystemProperties.maskSystemProperties(ImmutableMap.of("test", "one"),
+        assertThat(Masking.maskSystemProperties(ImmutableMap.of("test", "one"),
                 ImmutableList.<String>of("test")).get("test")).isEqualTo("****");
-        assertThat(SystemProperties
+        assertThat(Masking
                 .maskSystemProperties(ImmutableMap.of("test", "one"), ImmutableList.<String>of("t"))
                 .get("test")).isEqualTo("one");
-        assertThat(SystemProperties.maskSystemProperties(ImmutableMap.of("test", "one"),
+        assertThat(Masking.maskSystemProperties(ImmutableMap.of("test", "one"),
                 ImmutableList.<String>of("t*")).get("test")).isEqualTo("****");
-        assertThat(SystemProperties.maskSystemProperties(ImmutableMap.of("test", "one"),
+        assertThat(Masking.maskSystemProperties(ImmutableMap.of("test", "one"),
                 ImmutableList.<String>of("e*")).get("test")).isEqualTo("one");
-        assertThat(SystemProperties.maskSystemProperties(ImmutableMap.of("test", "one"),
+        assertThat(Masking.maskSystemProperties(ImmutableMap.of("test", "one"),
                 ImmutableList.<String>of("*t*")).get("test")).isEqualTo("****");
-        assertThat(SystemProperties.maskSystemProperties(ImmutableMap.of("test", "one"),
+        assertThat(Masking.maskSystemProperties(ImmutableMap.of("test", "one"),
                 ImmutableList.<String>of("*x*")).get("test")).isEqualTo("one");
-        assertThat(SystemProperties.maskSystemProperties(ImmutableMap.of("tEst", "one"),
+        assertThat(Masking.maskSystemProperties(ImmutableMap.of("tEst", "one"),
                 ImmutableList.<String>of("teSt")).get("tEst")).isEqualTo("****");
     }
 }
