@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -257,7 +258,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             List<Aggregate.SharedQueryText> sharedQueryTexts,
             List<OldAggregatesByType> aggregatesByTypeList,
             StreamObserver<AggregateResponseMessage> responseObserver) {
-        throttle(agentId, postV09, responseObserver, new Runnable() {
+        throttle(agentId, postV09, "aggregate", responseObserver, new Runnable() {
             @Override
             public void run() {
                 collectAggregatesUnderThrottle(agentId, postV09, captureTime, sharedQueryTexts,
@@ -268,17 +269,18 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
 
     private void throttledCollectGaugeValues(GaugeValueMessage request,
             StreamObserver<GaugeValueResponseMessage> responseObserver) {
-        throttle(request.getAgentId(), request.getPostV09(), responseObserver, new Runnable() {
-            @Override
-            public void run() {
-                collectGaugeValuesUnderThrottle(request, responseObserver);
-            }
-        });
+        throttle(request.getAgentId(), request.getPostV09(), "gauge value", responseObserver,
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        collectGaugeValuesUnderThrottle(request, responseObserver);
+                    }
+                });
     }
 
     private void throttledCollectTrace(String agentId, boolean postV09, Trace trace,
             StreamObserver<EmptyMessage> responseObserver) {
-        throttle(agentId, postV09, responseObserver, new Runnable() {
+        throttle(agentId, postV09, "trace", responseObserver, new Runnable() {
             @Override
             public void run() {
                 collectTraceUnderThrottle(agentId, postV09, trace, responseObserver);
@@ -286,8 +288,8 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         });
     }
 
-    private <T> void throttle(String agentId, boolean postV09, StreamObserver<T> responseObserver,
-            Runnable runnable) {
+    private <T> void throttle(String agentId, boolean postV09, String collectionType,
+            StreamObserver<T> responseObserver, Runnable runnable) {
         Semaphore semaphore = throttlePerAgentId.getUnchecked(agentId);
         boolean acquired;
         try {
@@ -298,9 +300,11 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             return;
         }
         if (!acquired) {
-            logger.warn("{} - collection rejected due to backlog",
-                    getDisplayForLogging(agentId, postV09));
-            responseObserver.onError(new Exception());
+            logger.warn("{} - {} collection rejected due to backlog",
+                    getDisplayForLogging(agentId, postV09), collectionType);
+            responseObserver.onError(Status.RESOURCE_EXHAUSTED
+                    .withDescription("collection rejected due to backlog")
+                    .asRuntimeException());
             return;
         }
         try {

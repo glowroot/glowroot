@@ -30,6 +30,8 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import io.grpc.ManagedChannel;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
@@ -432,7 +434,7 @@ class CentralConnection {
                     logger.debug(t.getMessage(), t);
                 }
             });
-            if (!init && stopwatch.elapsed(SECONDS) > maxTotalInSeconds) {
+            if (!retryOnError(t)) {
                 if (initCallSucceeded) {
                     suppressLogCollector(new Runnable() {
                         @Override
@@ -479,6 +481,16 @@ class CentralConnection {
                     pendingRequestCount--;
                 }
             }
+        }
+
+        private boolean retryOnError(Throwable t) {
+            return init || !isResourceExhaustedException(t)
+                    && stopwatch.elapsed(SECONDS) < maxTotalInSeconds;
+        }
+
+        private boolean isResourceExhaustedException(Throwable t) {
+            return t instanceof StatusRuntimeException
+                    && ((StatusRuntimeException) t).getStatus() == Status.RESOURCE_EXHAUSTED;
         }
     }
 }
