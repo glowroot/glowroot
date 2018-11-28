@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.11.2-SNAPSHOT</version>
+    <version>0.12.3-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -40,10 +40,10 @@
     </dependency>
     <dependency>
       <!-- using apache httpclient instead of asynchttpclient to avoid netty conflicts with
-        different play versions -->
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-      <version>4.5.6</version>
+        different netty versions -->
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+      <version>5.0-beta2</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -62,6 +62,23 @@
         </executions>
       </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <!-- httpclient5 requires Java 7+ -->
+          <artifactId>maven-compiler-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>default-testCompile</id>
+              <configuration>
+                <source>1.7</source>
+                <target>1.7</target>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
   <profiles>
@@ -182,7 +199,7 @@
     <profile>
       <id>vertx-3.x</id>
       <properties>
-        <vertx.version>3.5.2</vertx.version>
+        <vertx.version>3.5.4</vertx.version>
         <netty.version>4.1.19.Final</netty.version>
       </properties>
       <dependencies>
@@ -265,22 +282,6 @@
             </executions>
           </plugin>
         </plugins>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <artifactId>maven-compiler-plugin</artifactId>
-              <executions>
-                <execution>
-                  <id>default-testCompile</id>
-                  <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-          </plugins>
-        </pluginManagement>
       </build>
     </profile>
     <profile>
@@ -317,22 +318,6 @@
             </executions>
           </plugin>
         </plugins>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <artifactId>maven-compiler-plugin</artifactId>
-              <executions>
-                <execution>
-                  <id>default-testCompile</id>
-                  <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-          </plugins>
-        </pluginManagement>
       </build>
     </profile>
   </profiles>

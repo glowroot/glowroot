@@ -5,7 +5,7 @@
 
   <groupId>org.glowroot</groupId>
   <artifactId>glowroot-parent</artifactId>
-  <version>0.11.2-SNAPSHOT</version>
+  <version>0.12.3-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Glowroot Parent Project</name>
@@ -67,7 +67,9 @@
     <module>agent/plugins/jms-plugin</module>
     <module>agent/plugins/jsf-plugin</module>
     <module>agent/plugins/jsp-plugin</module>
+    <module>agent/plugins/kafka-plugin</module>
     <module>agent/plugins/logger-plugin</module>
+    <module>agent/plugins/mongodb-plugin</module>
     <module>agent/plugins/netty-plugin</module>
     <module>agent/plugins/play-plugin</module>
     <module>agent/plugins/quartz-plugin</module>
@@ -95,11 +97,9 @@
     <protoc.version>3.5.1</protoc.version>
     <!-- need to stick to netty version that is used by grpc version above -->
     <netty.version>4.1.27.Final</netty.version>
-    <!-- jackson 2.7.0+ requires Java 7+ -->
-    <jackson.version>2.6.7</jackson.version>
     <logback.version>1.2.3</logback.version>
     <slf4j.version>1.7.25</slf4j.version>
-    <immutables.version>2.7.1</immutables.version>
+    <immutables.version>2.7.3</immutables.version>
     <jmh.version>1.21</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -175,6 +175,16 @@
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
+        <artifactId>netty-common</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-codec</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
         <artifactId>netty-codec-http</artifactId>
         <version>${netty.version}</version>
       </dependency>
@@ -232,22 +242,26 @@
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-core</artifactId>
-        <version>${jackson.version}</version>
+        <!-- jackson 2.7.0+ requires Java 7+ -->
+        <version>2.6.7</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>${jackson.version}</version>
+        <!-- jackson 2.7.0+ requires Java 7+ -->
+        <version>2.6.7.2</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-annotations</artifactId>
-        <version>${jackson.version}</version>
+        <!-- jackson 2.7.0+ requires Java 7+ -->
+        <version>2.6.7</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.datatype</groupId>
         <artifactId>jackson-datatype-guava</artifactId>
-        <version>${jackson.version}</version>
+        <!-- jackson 2.7.0+ requires Java 7+ -->
+        <version>2.6.7</version>
       </dependency>
       <dependency>
         <groupId>org.assertj</groupId>
@@ -258,7 +272,7 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>2.22.0</version>
+        <version>2.23.4</version>
       </dependency>
       <dependency>
         <groupId>com.ning</groupId>
@@ -286,25 +300,25 @@
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-core</artifactId>
         <!-- tomcat 8.0.0+ requires Java 7+ -->
-        <version>7.0.88</version>
+        <version>7.0.91</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-jasper</artifactId>
         <!-- tomcat 8.0.0+ requires Java 7+ -->
-        <version>7.0.88</version>
+        <version>7.0.91</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-logging-juli</artifactId>
         <!-- tomcat 8.0.0+ requires Java 7+ -->
-        <version>7.0.88</version>
+        <version>7.0.91</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-websocket</artifactId>
         <!-- tomcat 8.0.0+ requires Java 7+ -->
-        <version>7.0.88</version>
+        <version>7.0.91</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -620,6 +634,26 @@
 
   <profiles>
     <profile>
+      <id>auto-activated-skip-proguard-under-java-11</id>
+      <activation>
+        <!-- proguard doesn't currently work on jdk 11 -->
+        <jdk>[11,)</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>com.github.wvengen</groupId>
+              <artifactId>proguard-maven-plugin</artifactId>
+              <configuration>
+                <skip>true</skip>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+    <profile>
       <id>include-central-https-linux-alpine</id>
       <modules>
         <module>agent/shaded/central-https-linux-alpine</module>
@@ -812,16 +846,49 @@
               <dependency>
                 <groupId>org.codehaus.plexus</groupId>
                 <artifactId>plexus-compiler-javac-errorprone</artifactId>
-                <version>2.8.4</version>
+                <version>2.8.5</version>
               </dependency>
               <!-- override plexus-compiler-javac-errorprone's dependency on
                    Error Prone with the latest version -->
               <dependency>
                 <groupId>com.google.errorprone</groupId>
                 <artifactId>error_prone_core</artifactId>
-                <version>2.3.1</version>
+                <version>2.3.2</version>
               </dependency>
             </dependencies>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!-- this is used by multi-lib-tests to recompile tests classes without recompiling main classes -->
+      <id>compile-test-classes-only</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-clean-plugin</artifactId>
+            <configuration>
+              <excludeDefaultDirectories>true</excludeDefaultDirectories>
+              <filesets>
+                <fileset>
+                  <directory>${project.build.testOutputDirectory}</directory>
+                </fileset>
+                <fileset>
+                  <!-- this is needed to force scala recompilation (used in glowroot-agent-play-plugin) -->
+                  <directory>${project.build.directory}</directory>
+                  <includes>
+                    <include>test-classes.*.timestamp</include>
+                  </includes>
+                </fileset>
+              </filesets>
+            </configuration>
+          </plugin>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <skipMain>true</skipMain>
+              <proc>none</proc>
+            </configuration>
           </plugin>
         </plugins>
       </build>
@@ -835,7 +902,7 @@
         </property>
       </activation>
       <properties>
-        <checker.version>2.5.5</checker.version>
+        <checker.version>2.5.6</checker.version>
       </properties>
       <dependencies>
         <dependency>

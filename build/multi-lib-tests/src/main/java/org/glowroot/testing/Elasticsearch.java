@@ -35,7 +35,7 @@ public class Elasticsearch {
         for (int i = 0; i <= 5; i++) {
             run2x("2.3." + i);
         }
-        for (int i = 0; i <= 5; i++) {
+        for (int i = 0; i <= 6; i++) {
             run2x("2.4." + i);
         }
 
@@ -73,6 +73,8 @@ public class Elasticsearch {
         run5x("5.6.9", "4.1.13.Final", "2.9.1");
         run5x("5.6.10", "4.1.13.Final", "2.9.1");
         run5x("5.6.11", "4.1.13.Final", "2.11.1");
+        run5x("5.6.12", "4.1.13.Final", "2.11.1");
+        run5x("5.6.13", "4.1.13.Final", "2.11.1");
         run5x("6.0.0", "4.1.13.Final", "2.9.1");
         run5x("6.0.1", "4.1.13.Final", "2.9.1");
         run5x("6.1.0", "4.1.13.Final", "2.9.1");
@@ -89,11 +91,14 @@ public class Elasticsearch {
         run5x("6.3.1", "4.1.16.Final", "2.9.1");
         run5x("6.3.2", "4.1.16.Final", "2.9.1");
         run5x("6.4.0", "4.1.16.Final", "2.11.1");
+        run5x("6.4.1", "4.1.16.Final", "2.11.1");
+        run5x("6.4.2", "4.1.16.Final", "2.11.1");
+        run5x("6.4.3", "4.1.16.Final", "2.11.1");
     }
 
     private static void run2x(String version) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "elasticsearch.version", version);
-        Util.runTests(MODULE_PATH, "elasticsearch-2.x", JAVA7, JAVA8);
+        Util.runTests(MODULE_PATH, "elasticsearch-2.x", JAVA8, JAVA7);
     }
 
     private static void run5x(String version, String nettyVersion, String log4jVersion)

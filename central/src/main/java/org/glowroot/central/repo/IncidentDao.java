@@ -99,7 +99,7 @@ public class IncidentDao implements IncidentRepository {
         boundStatement.setString(i++, severity.name().toLowerCase(Locale.ENGLISH));
         boundStatement.setBytes(i++, ByteBuffer.wrap(notification.toByteArray()));
         boundStatement.setTimestamp(i++, new Date(openTime));
-        session.execute(boundStatement);
+        session.write(boundStatement);
     }
 
     @Override
@@ -110,7 +110,7 @@ public class IncidentDao implements IncidentRepository {
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setBytes(i++, ByteBuffer.wrap(condition.toByteArray()));
         boundStatement.setString(i++, severity.name().toLowerCase(Locale.ENGLISH));
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -130,7 +130,7 @@ public class IncidentDao implements IncidentRepository {
     public List<OpenIncident> readOpenIncidents(String agentRollupId) throws Exception {
         BoundStatement boundStatement = readOpenIncidentsPS.bind();
         boundStatement.setString(0, agentRollupId);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         List<OpenIncident> openIncidents = new ArrayList<>();
         for (Row row : results) {
             int i = 0;
@@ -154,7 +154,7 @@ public class IncidentDao implements IncidentRepository {
     @Override
     public List<OpenIncident> readAllOpenIncidents() throws Exception {
         BoundStatement boundStatement = readAllOpenIncidentsPS.bind();
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         List<OpenIncident> openIncidents = new ArrayList<>();
         for (Row row : results) {
             int i = 0;
@@ -195,7 +195,7 @@ public class IncidentDao implements IncidentRepository {
         boundStatement.setBytes(i++, notificationBytes);
         boundStatement.setTimestamp(i++, new Date(openIncident.openTime()));
         boundStatement.setInt(i++, adjustedTTL);
-        session.execute(boundStatement);
+        session.write(boundStatement);
 
         boundStatement = deleteOpenIncidentPS.bind();
         i = 0;
@@ -203,14 +203,14 @@ public class IncidentDao implements IncidentRepository {
         boundStatement.setBytes(i++, conditionBytes);
         boundStatement.setString(i++,
                 openIncident.severity().name().toLowerCase(Locale.ENGLISH));
-        session.execute(boundStatement);
+        session.write(boundStatement);
     }
 
     @Override
     public List<ResolvedIncident> readResolvedIncidents(long from) throws Exception {
         BoundStatement boundStatement = readRecentResolvedIncidentsPS.bind();
         boundStatement.setTimestamp(0, new Date(from));
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         List<ResolvedIncident> resolvedIncidents = new ArrayList<>();
         for (Row row : results) {
             int i = 0;

@@ -37,6 +37,7 @@ import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
+import org.glowroot.common.live.LiveTraceRepository.Queries;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceStub;
@@ -79,6 +80,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignature;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignaturesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignaturesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.PreloadClasspathCacheResponse;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.QueriesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ReweaveResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.SystemPropertiesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
@@ -98,6 +100,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
     private final CentralConnection centralConnection;
     private final DownstreamServiceStub downstreamServiceStub;
     private final AgentConfigUpdater agentConfigUpdater;
+    private final boolean configReadOnly;
     private final LiveJvmServiceImpl liveJvmService;
     private final LiveWeavingServiceImpl liveWeavingService;
     private final LiveTraceRepositoryImpl liveTraceRepository;
@@ -119,14 +122,15 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             new RateLimitedLogger(DownstreamServiceObserver.class, true);
 
     DownstreamServiceObserver(CentralConnection centralConnection,
-            AgentConfigUpdater agentConfigUpdater, LiveJvmServiceImpl liveJvmService,
-            LiveWeavingServiceImpl liveWeavingService, LiveTraceRepositoryImpl liveTraceRepository,
-            String agentId, AtomicBoolean inConnectionFailure,
-            SharedQueryTextLimiter sharedQueryTextLimiter) {
+            AgentConfigUpdater agentConfigUpdater, boolean configReadOnly,
+            LiveJvmServiceImpl liveJvmService, LiveWeavingServiceImpl liveWeavingService,
+            LiveTraceRepositoryImpl liveTraceRepository, String agentId,
+            AtomicBoolean inConnectionFailure, SharedQueryTextLimiter sharedQueryTextLimiter) {
         this.centralConnection = centralConnection;
         downstreamServiceStub = DownstreamServiceGrpc.newStub(centralConnection.getChannel())
                 .withCompression("gzip");
         this.agentConfigUpdater = agentConfigUpdater;
+        this.configReadOnly = configReadOnly;
         this.liveJvmService = liveJvmService;
         this.liveWeavingService = liveWeavingService;
         this.liveTraceRepository = liveTraceRepository;
@@ -269,6 +273,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             case ENTRIES_REQUEST:
                 getEntriesAndRespond(request, responseObserver);
                 return;
+            case QUERIES_REQUEST:
+                getQueriesAndRespond(request, responseObserver);
+                return;
             case MAIN_THREAD_PROFILE_REQUEST:
                 getMainThreadProfileAndRespond(request, responseObserver);
                 return;
@@ -289,6 +296,14 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private void updateConfigAndRespond(CentralRequest request,
             StreamObserver<AgentResponse> responseObserver) {
+        if (configReadOnly) {
+            // the central collector should observe the InitMessage AgentConfig's config_read_only
+            // and not even send this request
+            logger.error("central collector attempted to update agent configuration, but the agent"
+                    + " is running with config.readOnly=true");
+            sendExceptionResponse(request, responseObserver);
+            return;
+        }
         try {
             agentConfigUpdater.update(request.getAgentConfigUpdateRequest().getAgentConfig());
         } catch (Exception e) {
@@ -708,6 +723,28 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
         responseObserver.onNext(AgentResponse.newBuilder()
                 .setRequestId(request.getRequestId())
                 .setEntriesResponse(response)
+                .build());
+    }
+
+    private void getQueriesAndRespond(CentralRequest request,
+            StreamObserver<AgentResponse> responseObserver) {
+        Queries queries;
+        try {
+            queries = liveTraceRepository.getQueries("", request.getQueriesRequest().getTraceId());
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            sendExceptionResponse(request, responseObserver);
+            return;
+        }
+        QueriesResponse.Builder response = QueriesResponse.newBuilder();
+        if (queries != null) {
+            response.addAllQuery(queries.queries());
+            response.addAllSharedQueryText(sharedQueryTextLimiter
+                    .reduceTracePayloadWherePossible(queries.sharedQueryTexts()));
+        }
+        responseObserver.onNext(AgentResponse.newBuilder()
+                .setRequestId(request.getRequestId())
+                .setQueriesResponse(response)
                 .build());
     }
 

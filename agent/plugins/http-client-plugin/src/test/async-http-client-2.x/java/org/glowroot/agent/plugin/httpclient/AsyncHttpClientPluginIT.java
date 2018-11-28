@@ -1,5 +1,5 @@
 /**
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,9 @@ import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.asynchttpclient.AsyncHandler;
+import org.asynchttpclient.AsyncCompletionHandler;
 import org.asynchttpclient.AsyncHttpClient;
 import org.asynchttpclient.DefaultAsyncHttpClient;
-import org.asynchttpclient.HttpResponseBodyPart;
-import org.asynchttpclient.HttpResponseHeaders;
 import org.asynchttpclient.HttpResponseStatus;
 import org.asynchttpclient.Response;
 import org.junit.After;
@@ -170,18 +168,10 @@ public class AsyncHttpClientPluginIT {
             final CountDownLatch latch = new CountDownLatch(1);
             final AtomicInteger statusCode = new AtomicInteger();
             asyncHttpClient.prepareGet("http://localhost:" + getPort() + "/hello3/")
-                    .execute(new AsyncHandler<Response>() {
+                    .execute(new AsyncCompletionHandler<Response>() {
                         @Override
-                        public State onBodyPartReceived(HttpResponseBodyPart part) {
-                            return null;
-                        }
-                        @Override
-                        public Response onCompleted() throws Exception {
+                        public Response onCompleted(Response response) throws Exception {
                             latch.countDown();
-                            return null;
-                        }
-                        @Override
-                        public State onHeadersReceived(HttpResponseHeaders headers) {
                             return null;
                         }
                         @Override
@@ -190,7 +180,9 @@ public class AsyncHttpClientPluginIT {
                             return null;
                         }
                         @Override
-                        public void onThrowable(Throwable t) {}
+                        public void onThrowable(Throwable t) {
+                            t.printStackTrace();
+                        }
                     });
             latch.await();
             asyncHttpClient.close();

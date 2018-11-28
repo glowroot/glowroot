@@ -166,7 +166,7 @@ public class MoreFutures {
                         }
                     }
                 },
-                // calls to Session.executeAsync() inside of the function could block due to the
+                // calls to Session.readAsync() inside of the function could block due to the
                 // per-thread concurrent limit, so this needs to be executed in its own thread, not
                 // in the cassandra driver thread that completes the last future which will block
                 // the cassandra driver thread pool

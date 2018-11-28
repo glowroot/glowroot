@@ -49,26 +49,40 @@ public class Spring {
         for (int i = 0; i <= 9; i++) {
             run("4.2." + i + ".RELEASE", "spring-4.x");
         }
-        for (int i = 0; i <= 19; i++) {
+        for (int i = 0; i <= 20; i++) {
             run("4.3." + i + ".RELEASE", "spring-4.x");
         }
-        for (int i = 0; i <= 9; i++) {
-            runJava8("5.0." + i + ".RELEASE", "spring-4.x");
-        }
+        runJava8("5.0.0.RELEASE", "0.7.0.RELEASE", "spring-4.x", "spring-5.0.x");
+        runJava8("5.0.1.RELEASE", "0.7.1.RELEASE", "spring-4.x", "spring-5.0.x");
+        runJava8("5.0.2.RELEASE", "0.7.1.RELEASE", "spring-4.x", "spring-5.0.x");
+        runJava8("5.0.3.RELEASE", "0.7.3.RELEASE", "spring-4.x", "spring-5.0.x");
+        runJava8("5.0.4.RELEASE", "0.7.4.RELEASE", "spring-4.x", "spring-5.0.x");
+        runJava8("5.0.5.RELEASE", "0.7.6.RELEASE", "spring-4.x", "spring-5.0.x");
+        runJava8("5.0.6.RELEASE", "0.7.7.RELEASE", "spring-4.x", "spring-5.0.x");
+        runJava8("5.0.7.RELEASE", "0.7.8.RELEASE", "spring-4.x", "spring-5.0.x");
+        runJava8("5.0.8.RELEASE", "0.7.8.RELEASE", "spring-4.x", "spring-5.0.x");
+        runJava8("5.0.9.RELEASE", "0.7.9.RELEASE", "spring-4.x", "spring-5.0.x");
+        runJava8("5.0.10.RELEASE", "0.7.9.RELEASE", "spring-4.x", "spring-5.0.x");
+
+        runJava8("5.1.0.RELEASE", "0.8.0.RELEASE", "spring-4.x", "spring-5.1.x");
+        runJava8("5.1.1.RELEASE", "0.8.1.RELEASE", "spring-4.x", "spring-5.1.x");
+        runJava8("5.1.2.RELEASE", "0.8.2.RELEASE", "spring-4.x", "spring-5.1.x");
     }
 
     private static void run(String version, String... profiles) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "spring.version", version);
-        Util.runTests(MODULE_PATH, profiles, JAVA6, JAVA7, JAVA8);
+        Util.runTests(MODULE_PATH, profiles, JAVA8, JAVA7, JAVA6);
     }
 
     private static void runNotJava8(String version, String... profiles) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "spring.version", version);
-        Util.runTests(MODULE_PATH, profiles, JAVA6, JAVA7);
+        Util.runTests(MODULE_PATH, profiles, JAVA7, JAVA6);
     }
 
-    private static void runJava8(String version, String... profiles) throws Exception {
+    private static void runJava8(String version, String reactorVersion, String... profiles)
+            throws Exception {
         Util.updateLibVersion(MODULE_PATH, "spring.version", version);
+        Util.updateLibVersion(MODULE_PATH, "reactor.version", reactorVersion);
         Util.runTests(MODULE_PATH, profiles, JAVA8);
     }
 }

@@ -31,7 +31,7 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
-import org.glowroot.agent.plugin.jdbc.StatementAspect.HasStatementMirror;
+import org.glowroot.agent.plugin.jdbc.StatementAspect.HasStatementMirrorMixin;
 
 public class ResultSetAspect {
 
@@ -49,16 +49,16 @@ public class ResultSetAspect {
         private static final BooleanProperty timerEnabled =
                 configService.getBooleanProperty("captureResultSetNavigate");
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
+        public static boolean isEnabled(@BindReceiver HasStatementMirrorMixin resultSet) {
             return timerEnabled.value() && isEnabledCommon(resultSet);
         }
         @OnBefore
-        public static Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
+        public static Timer onBefore(@BindReceiver HasStatementMirrorMixin resultSet) {
             return onBeforeCommon(resultSet);
         }
         @OnReturn
         public static void onReturn(@BindReturn boolean currentRowValid,
-                @BindReceiver HasStatementMirror resultSet) {
+                @BindReceiver HasStatementMirrorMixin resultSet) {
             StatementMirror mirror = resultSet.glowroot$getStatementMirror();
             if (mirror == null) {
                 // this shouldn't happen since just checked above in isEnabled(), unless some
@@ -91,15 +91,15 @@ public class ResultSetAspect {
         private static final BooleanProperty timerEnabled =
                 configService.getBooleanProperty("captureResultSetNavigate");
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
+        public static boolean isEnabled(@BindReceiver HasStatementMirrorMixin resultSet) {
             return timerEnabled.value() && isEnabledCommon(resultSet);
         }
         @OnBefore
-        public static Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
+        public static Timer onBefore(@BindReceiver HasStatementMirrorMixin resultSet) {
             return onBeforeCommon(resultSet);
         }
         @OnReturn
-        public static void onReturn(@BindReceiver HasStatementMirror resultSet) {
+        public static void onReturn(@BindReceiver HasStatementMirrorMixin resultSet) {
             try {
                 StatementMirror mirror = resultSet.glowroot$getStatementMirror();
                 if (mirror == null) {
@@ -129,11 +129,11 @@ public class ResultSetAspect {
         private static final BooleanProperty timerEnabled =
                 configService.getBooleanProperty("captureResultSetGet");
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
+        public static boolean isEnabled(@BindReceiver HasStatementMirrorMixin resultSet) {
             return timerEnabled.value() && isEnabledCommon(resultSet);
         }
         @OnBefore
-        public static Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
+        public static Timer onBefore(@BindReceiver HasStatementMirrorMixin resultSet) {
             return onBeforeCommon(resultSet);
         }
         @OnAfter
@@ -148,11 +148,11 @@ public class ResultSetAspect {
         private static final BooleanProperty timerEnabled =
                 configService.getBooleanProperty("captureResultSetGet");
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver HasStatementMirror resultSet) {
+        public static boolean isEnabled(@BindReceiver HasStatementMirrorMixin resultSet) {
             return timerEnabled.value() && isEnabledCommon(resultSet);
         }
         @OnBefore
-        public static Timer onBefore(@BindReceiver HasStatementMirror resultSet) {
+        public static Timer onBefore(@BindReceiver HasStatementMirrorMixin resultSet) {
             return onBeforeCommon(resultSet);
         }
         @OnAfter
@@ -161,12 +161,12 @@ public class ResultSetAspect {
         }
     }
 
-    private static boolean isEnabledCommon(HasStatementMirror resultSet) {
+    private static boolean isEnabledCommon(HasStatementMirrorMixin resultSet) {
         StatementMirror mirror = resultSet.glowroot$getStatementMirror();
         return mirror != null && mirror.getLastQueryEntry() != null;
     }
 
-    private static Timer onBeforeCommon(HasStatementMirror resultSet) {
+    private static Timer onBeforeCommon(HasStatementMirrorMixin resultSet) {
         @SuppressWarnings("nullness") // just checked above in isEnabledCommon()
         @NonNull
         StatementMirror mirror = resultSet.glowroot$getStatementMirror();

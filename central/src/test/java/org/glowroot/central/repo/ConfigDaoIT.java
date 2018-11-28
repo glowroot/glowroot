@@ -16,6 +16,7 @@
 package org.glowroot.central.repo;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.PoolingOptions;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -40,7 +41,8 @@ public class ConfigDaoIT {
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
-        session = new Session(cluster.newSession(), "glowroot_unit_tests");
+        session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
         clusterManager = ClusterManager.create();
 
         agentConfigDao = new AgentConfigDao(session, clusterManager);
@@ -56,14 +58,14 @@ public class ConfigDaoIT {
 
     @Before
     public void before() throws Exception {
-        session.execute("truncate agent_config");
+        session.updateSchemaWithRetry("truncate agent_config");
     }
 
     @Test
     public void shouldStoreAgentConfig() throws Exception {
         // given
         AgentConfig agentConfig = AgentConfig.getDefaultInstance();
-        agentConfigDao.store("a", agentConfig);
+        agentConfigDao.store("a", agentConfig, false);
         // when
         AgentConfig readAgentConfig = agentConfigDao.read("a");
         // then
@@ -74,12 +76,12 @@ public class ConfigDaoIT {
     public void shouldNotOverwriteExistingAgentConfig() throws Exception {
         // given
         AgentConfig agentConfig = AgentConfig.getDefaultInstance();
-        agentConfigDao.store("a", agentConfig);
+        agentConfigDao.store("a", agentConfig, false);
         agentConfigDao.store("a", AgentConfig.newBuilder()
                 .setTransactionConfig(TransactionConfig.newBuilder()
                         .setSlowThresholdMillis(OptionalInt32.newBuilder()
                                 .setValue(1234)))
-                .build());
+                .build(), false);
         // when
         AgentConfig readAgentConfig = agentConfigDao.read("a");
         // then

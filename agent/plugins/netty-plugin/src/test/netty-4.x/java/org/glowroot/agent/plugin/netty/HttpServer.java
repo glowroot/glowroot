@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,25 +30,22 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 
 class HttpServer {
 
-    private final EventLoopGroup bossGroup;
-    private final EventLoopGroup workerGroup;
+    private final EventLoopGroup group;
     private final Channel channel;
 
     HttpServer(int port) throws InterruptedException {
-        bossGroup = new NioEventLoopGroup(1);
-        workerGroup = new NioEventLoopGroup();
+        group = new NioEventLoopGroup();
         ServerBootstrap b = new ServerBootstrap();
-        b.group(bossGroup, workerGroup)
+        b.group(group)
                 .channel(NioServerSocketChannel.class)
                 .handler(new LoggingHandler(LogLevel.INFO))
                 .childHandler(new HttpServerInitializer());
         channel = b.bind(port).sync().channel();
     }
 
-    void close() {
+    void close() throws InterruptedException {
         channel.close();
-        bossGroup.shutdownGracefully();
-        workerGroup.shutdownGracefully();
+        group.shutdownGracefully();
     }
 
     private static class HttpServerInitializer extends ChannelInitializer<SocketChannel> {

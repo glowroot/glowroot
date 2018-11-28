@@ -64,7 +64,7 @@ public class V09AgentRollupDao {
         int i = 0;
         boundStatement.setString(i++, v09AgentId);
         boundStatement.setString(i++, v09AgentRollupId);
-        session.execute(boundStatement);
+        session.write(boundStatement);
         agentRollupIdsCache.invalidate(SINGLE_CACHE_KEY);
     }
 
@@ -76,7 +76,7 @@ public class V09AgentRollupDao {
         @Override
         public Map<String, String> load(String key) throws Exception {
             BoundStatement boundStatement = readPS.bind();
-            ResultSet results = session.execute(boundStatement);
+            ResultSet results = session.read(boundStatement);
             Map<String, String> agentRollupIds = new HashMap<>();
             for (Row row : results) {
                 int i = 0;

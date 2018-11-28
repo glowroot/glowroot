@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.11.2-SNAPSHOT</version>
+    <version>0.12.3-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
@@ -17,8 +17,8 @@
   <description>Glowroot WebDriver Tests</description>
 
   <properties>
-    <selenium.version>3.14.0</selenium.version>
-    <jetty.version>9.4.12.v20180830</jetty.version>
+    <selenium.version>3.141.59</selenium.version>
+    <jetty.version>9.4.14.v20181114</jetty.version>
   </properties>
 
   <dependencies>
@@ -40,7 +40,7 @@
         since WebDriverWait.until() now takes java.util.function.Function, but ExpectedConditions
         methods still return com.google.common.base.Function, which only extends
         java.util.function.Function in guava 21.0+ (since 21.0+ is built for Java 8) -->
-      <version>26.0-jre</version> <!-- $NO-MVN-MAN-VER$ -->
+      <version>27.0.1-jre</version> <!-- $NO-MVN-MAN-VER$ -->
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -99,7 +99,7 @@
     <dependency>
       <groupId>com.machinepublishers</groupId>
       <artifactId>jbrowserdriver</artifactId>
-      <version>1.0.0</version>
+      <version>1.0.1</version>
       <exclusions>
         <exclusion>
           <!-- a later version of jna with a different groupId is already included by selenium -->
@@ -111,13 +111,13 @@
     <dependency>
       <groupId>kr.motd.maven</groupId>
       <artifactId>os-maven-plugin</artifactId>
-      <version>1.6.0</version>
+      <version>1.6.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.saucelabs</groupId>
       <artifactId>sauce_junit</artifactId>
-      <version>2.1.24</version>
+      <version>2.1.25</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -150,7 +150,7 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
       <!-- Spring 5+ requires Java 8+ -->
-      <version>4.3.19.RELEASE</version>
+      <version>4.3.20.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -159,7 +159,7 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
       <!-- Spring 5+ requires Java 8+ -->
-      <version>4.3.19.RELEASE</version>
+      <version>4.3.20.RELEASE</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -195,7 +195,7 @@
     <dependency>
       <groupId>org.rauschig</groupId>
       <artifactId>jarchivelib</artifactId>
-      <version>0.8.0</version>
+      <version>1.0.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -208,35 +208,35 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>6.2.1</version>
+      <version>7.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
-      <version>6.2.1</version>
+      <version>7.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-tree</artifactId>
-      <version>6.2.1</version>
+      <version>7.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-util</artifactId>
-      <version>6.2.1</version>
+      <version>7.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-analysis</artifactId>
-      <version>6.2.1</version>
+      <version>7.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -265,6 +265,13 @@
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <version>2.6</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -341,7 +348,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-text</artifactId>
-      <version>1.4</version>
+      <version>1.6</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

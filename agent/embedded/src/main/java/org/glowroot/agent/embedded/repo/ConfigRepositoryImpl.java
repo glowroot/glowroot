@@ -19,28 +19,33 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.agent.config.AdvancedConfig;
-import org.glowroot.agent.config.AlertConfig;
+import org.glowroot.agent.config.AllConfig;
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.config.GaugeConfig;
-import org.glowroot.agent.config.InstrumentationConfig;
-import org.glowroot.agent.config.JvmConfig;
 import org.glowroot.agent.config.PluginCache;
 import org.glowroot.agent.config.PluginConfig;
 import org.glowroot.agent.config.PluginDescriptor;
-import org.glowroot.agent.config.TransactionConfig;
-import org.glowroot.agent.config.UiDefaultsConfig;
-import org.glowroot.agent.config.UserRecordingConfig;
 import org.glowroot.agent.embedded.config.AdminConfigService;
+import org.glowroot.common.config.AdvancedConfig;
+import org.glowroot.common.config.AlertConfig;
+import org.glowroot.common.config.GaugeConfig;
+import org.glowroot.common.config.InstrumentationConfig;
+import org.glowroot.common.config.JvmConfig;
+import org.glowroot.common.config.TransactionConfig;
+import org.glowroot.common.config.UiDefaultsConfig;
+import org.glowroot.common.config.UserRecordingConfig;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Versions;
+import org.glowroot.common2.config.AllCentralAdminConfig;
+import org.glowroot.common2.config.AllEmbeddedAdminConfig;
 import org.glowroot.common2.config.CentralAdminGeneralConfig;
 import org.glowroot.common2.config.CentralStorageConfig;
 import org.glowroot.common2.config.CentralWebConfig;
@@ -49,18 +54,23 @@ import org.glowroot.common2.config.EmbeddedStorageConfig;
 import org.glowroot.common2.config.EmbeddedWebConfig;
 import org.glowroot.common2.config.HealthchecksIoConfig;
 import org.glowroot.common2.config.HttpProxyConfig;
+import org.glowroot.common2.config.ImmutableAllEmbeddedAdminConfig;
+import org.glowroot.common2.config.ImmutableRoleConfig;
+import org.glowroot.common2.config.ImmutableUserConfig;
 import org.glowroot.common2.config.LdapConfig;
 import org.glowroot.common2.config.PagerDutyConfig;
 import org.glowroot.common2.config.PagerDutyConfig.PagerDutyIntegrationKey;
 import org.glowroot.common2.config.RoleConfig;
+import org.glowroot.common2.config.SlackConfig;
+import org.glowroot.common2.config.SlackConfig.SlackWebhook;
 import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.StorageConfig;
 import org.glowroot.common2.config.UserConfig;
 import org.glowroot.common2.config.WebConfig;
 import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.ConfigValidation;
 import org.glowroot.common2.repo.util.LazySecretKey;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -69,6 +79,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     private final ConfigService configService;
     private final AdminConfigService adminConfigService;
     private final PluginCache pluginCache;
+    private final boolean configReadOnly;
 
     private final ImmutableList<RollupConfig> rollupConfigs;
 
@@ -76,11 +87,14 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private final Object writeLock = new Object();
 
-    public ConfigRepositoryImpl(List<File> confDirs, @Nullable Integer webPortOverride,
-            ConfigService configService, PluginCache pluginCache) {
+    public ConfigRepositoryImpl(List<File> confDirs, boolean configReadOnly,
+            @Nullable Integer webPortOverride, ConfigService configService,
+            PluginCache pluginCache) {
         this.configService = configService;
-        this.adminConfigService = AdminConfigService.create(confDirs, webPortOverride);
+        this.adminConfigService =
+                AdminConfigService.create(confDirs, configReadOnly, webPortOverride);
         this.pluginCache = pluginCache;
+        this.configReadOnly = configReadOnly;
         rollupConfigs = ImmutableList.copyOf(RollupConfig.buildRollupConfigs());
         lazySecretKey = new LazySecretKeyImpl(confDirs);
     }
@@ -219,6 +233,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public AgentConfig getAllConfig(String agentId) {
+        return configService.getAgentConfig();
+    }
+
+    @Override
     public EmbeddedAdminGeneralConfig getEmbeddedAdminGeneralConfig() {
         return adminConfigService.getEmbeddedAdminGeneralConfig();
     }
@@ -329,8 +348,28 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public SlackConfig getSlackConfig() {
+        return adminConfigService.getSlackConfig();
+    }
+
+    @Override
     public HealthchecksIoConfig getHealthchecksIoConfig() {
         return adminConfigService.getHealthchecksIoConfig();
+    }
+
+    @Override
+    public AllEmbeddedAdminConfig getAllEmbeddedAdminConfig() {
+        return adminConfigService.getAllAdminConfig();
+    }
+
+    @Override
+    public AllCentralAdminConfig getAllCentralAdminConfig() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isConfigReadOnly(String agentId) {
+        return configReadOnly;
     }
 
     @Override
@@ -428,8 +467,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String insertSyntheticMonitorConfig(String agentRollupId,
-            AgentConfig.SyntheticMonitorConfig configWithoutId) throws Exception {
+    public void insertSyntheticMonitorConfig(String agentRollupId,
+            AgentConfig.SyntheticMonitorConfig config) throws Exception {
         throw new UnsupportedOperationException();
     }
 
@@ -446,19 +485,19 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void insertAlertConfig(String agentRollupId, AgentConfig.AlertConfig configWithoutId)
+    public void insertAlertConfig(String agentRollupId, AgentConfig.AlertConfig config)
             throws Exception {
         synchronized (writeLock) {
             List<AlertConfig> configs =
                     Lists.newArrayList(configService.getAlertConfigs());
             // check for exact duplicate
-            String version = Versions.getVersion(configWithoutId);
+            String version = Versions.getVersion(config);
             for (AlertConfig loopConfig : configs) {
                 if (Versions.getVersion(loopConfig.toProto()).equals(version)) {
                     throw new IllegalStateException("This exact alert already exists");
                 }
             }
-            configs.add(AlertConfig.create(configWithoutId));
+            configs.add(AlertConfig.create(config));
             configService.updateAlertConfigs(configs);
         }
     }
@@ -516,16 +555,16 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updatePluginConfig(String agentId, String pluginId,
-            List<PluginProperty> properties, String priorVersion) throws Exception {
-        PluginDescriptor pluginDescriptor = getPluginDescriptor(pluginId);
-        PluginConfig config = PluginConfig.create(pluginDescriptor, properties);
+    public void updatePluginConfig(String agentId, AgentConfig.PluginConfig protoConfig,
+            String priorVersion) throws Exception {
+        PluginDescriptor pluginDescriptor = getPluginDescriptor(protoConfig.getId());
+        PluginConfig config = PluginConfig.create(pluginDescriptor, protoConfig.getPropertyList());
         synchronized (writeLock) {
             List<PluginConfig> configs = Lists.newArrayList(configService.getPluginConfigs());
             boolean found = false;
             for (ListIterator<PluginConfig> i = configs.listIterator(); i.hasNext();) {
                 PluginConfig loopPluginConfig = i.next();
-                if (pluginId.equals(loopPluginConfig.id())) {
+                if (protoConfig.getId().equals(loopPluginConfig.id())) {
                     String loopVersion = Versions.getVersion(loopPluginConfig.toProto());
                     checkVersionsEqual(loopVersion, priorVersion);
                     i.set(config);
@@ -533,7 +572,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     break;
                 }
             }
-            checkState(found, "Plugin config not found: %s", pluginId);
+            checkState(found, "Plugin config not found: %s", protoConfig.getId());
             configService.updatePluginConfigs(configs);
         }
     }
@@ -623,8 +662,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void updateUserRecordingConfig(String agentId,
-            AgentConfig.UserRecordingConfig protoConfig, String priorVersion)
-            throws Exception {
+            AgentConfig.UserRecordingConfig protoConfig, String priorVersion) throws Exception {
         UserRecordingConfig config = UserRecordingConfig.create(protoConfig);
         synchronized (writeLock) {
             String currVersion =
@@ -642,6 +680,26 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             String currVersion = Versions.getVersion(configService.getAdvancedConfig().toProto());
             checkVersionsEqual(currVersion, priorVersion);
             configService.updateAdvancedConfig(config);
+        }
+    }
+
+    @Override
+    public void updateAllConfig(String agentId, AgentConfig config, @Nullable String priorVersion)
+            throws Exception {
+        ConfigValidation.validatePartOne(config);
+        Set<String> validPluginIds = Sets.newHashSet();
+        for (PluginDescriptor pluginDescriptor : pluginCache.pluginDescriptors()) {
+            validPluginIds.add(pluginDescriptor.id());
+        }
+        ConfigValidation.validatePartTwo(config, validPluginIds);
+        synchronized (writeLock) {
+            AgentConfig existingAgentConfig = configService.getAgentConfig();
+            if (priorVersion != null
+                    && !priorVersion.equals(Versions.getVersion(existingAgentConfig))) {
+                throw new OptimisticLockException();
+            }
+            configService
+                    .updateAllConfig(AllConfig.create(config, pluginCache.pluginDescriptors()));
         }
     }
 
@@ -672,7 +730,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     throw new DuplicateUsernameException();
                 }
             }
-            configs.add(config);
+            configs.add(ImmutableUserConfig.copyOf(config));
             adminConfigService.updateUserConfigs(configs);
         }
     }
@@ -687,7 +745,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 UserConfig loopConfig = i.next();
                 if (loopConfig.username().equals(username)) {
                     if (loopConfig.version().equals(priorVersion)) {
-                        i.set(config);
+                        i.set(ImmutableUserConfig.copyOf(config));
                         found = true;
                         break;
                     } else {
@@ -718,7 +776,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (!found) {
                 throw new UserNotFoundException();
             }
-            if (getSmtpConfig().host().isEmpty() && configs.isEmpty()) {
+            if (getLdapConfig().host().isEmpty() && configs.isEmpty()) {
                 throw new CannotDeleteLastUserException();
             }
             adminConfigService.updateUserConfigs(configs);
@@ -736,7 +794,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                     throw new DuplicateRoleNameException();
                 }
             }
-            configs.add(config);
+            configs.add(ImmutableRoleConfig.copyOf(config));
             adminConfigService.updateRoleConfigs(configs);
         }
     }
@@ -751,7 +809,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 RoleConfig loopConfig = i.next();
                 if (loopConfig.name().equals(name)) {
                     if (loopConfig.version().equals(priorVersion)) {
-                        i.set(config);
+                        i.set(ImmutableRoleConfig.copyOf(config));
                         found = true;
                         break;
                     } else {
@@ -854,18 +912,18 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         synchronized (writeLock) {
             String currVersion = adminConfigService.getPagerDutyConfig().version();
             checkVersionsEqual(currVersion, priorVersion);
-            // check for duplicate integration key / display
-            Set<String> integrationKeys = Sets.newHashSet();
-            Set<String> integrationDisplays = Sets.newHashSet();
-            for (PagerDutyIntegrationKey integrationKey : config.integrationKeys()) {
-                if (!integrationKeys.add(integrationKey.key())) {
-                    throw new DuplicatePagerDutyIntegrationKeyException();
-                }
-                if (!integrationDisplays.add(integrationKey.display())) {
-                    throw new DuplicatePagerDutyIntegrationKeyDisplayException();
-                }
-            }
+            validatePagerDutyConfig(config);
             adminConfigService.updatePagerDutyConfig(config);
+        }
+    }
+
+    @Override
+    public void updateSlackConfig(SlackConfig config, String priorVersion) throws Exception {
+        synchronized (writeLock) {
+            String currVersion = adminConfigService.getSlackConfig().version();
+            checkVersionsEqual(currVersion, priorVersion);
+            validateSlackConfig(config);
+            adminConfigService.updateSlackConfig(config);
         }
     }
 
@@ -877,6 +935,70 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             checkVersionsEqual(currVersion, priorVersion);
             adminConfigService.updateHealthchecksIoConfig(config);
         }
+    }
+
+    @Override
+    public void updateAllEmbeddedAdminConfig(AllEmbeddedAdminConfig config,
+            @Nullable String priorVersion) throws Exception {
+        synchronized (writeLock) {
+            AllEmbeddedAdminConfig existingConfig = adminConfigService.getAllAdminConfig();
+            String currVersion = existingConfig.version();
+            if (priorVersion != null) {
+                checkVersionsEqual(currVersion, priorVersion);
+            }
+            Set<String> usernames = Sets.newHashSet();
+            for (UserConfig userConfig : config.users()) {
+                if (!usernames.add(userConfig.username())) {
+                    throw new DuplicateUsernameException();
+                }
+            }
+            Set<String> roleNames = Sets.newHashSet();
+            for (RoleConfig roleConfig : config.roles()) {
+                if (!roleNames.add(roleConfig.name())) {
+                    throw new DuplicateRoleNameException();
+                }
+            }
+            if (config.ldap().host().isEmpty() && config.users().isEmpty()) {
+                throw new CannotDeleteLastUserException();
+            }
+            if (config.roles().isEmpty()) {
+                throw new CannotDeleteLastRoleException();
+            }
+            validatePagerDutyConfig(config.pagerDuty());
+            validateSlackConfig(config.slack());
+            Map<String, String> existingUserPasswordHashes = Maps.newHashMap();
+            for (UserConfig userConfig : existingConfig.users()) {
+                String passwordHash = userConfig.passwordHash();
+                if (!passwordHash.isEmpty()) {
+                    existingUserPasswordHashes.put(userConfig.username(), passwordHash);
+                }
+            }
+            List<UserConfig> userConfigs = Lists.newArrayList();
+            for (UserConfig userConfig : config.users()) {
+                String passwordHash = userConfig.passwordHash();
+                if (passwordHash.isEmpty() && !userConfig.ldap()
+                        && !userConfig.username().equalsIgnoreCase("anonymous")) {
+                    String existingUserPasswordHash =
+                            existingUserPasswordHashes.get(userConfig.username());
+                    if (existingUserPasswordHash == null) {
+                        throw new IllegalStateException(
+                                "No existing password for user: " + userConfig.username());
+                    }
+                    userConfig = ImmutableUserConfig.copyOf(userConfig)
+                            .withPasswordHash(existingUserPasswordHash);
+                }
+                userConfigs.add(userConfig);
+            }
+            config = ImmutableAllEmbeddedAdminConfig.copyOf(config)
+                    .withUsers(userConfigs);
+            adminConfigService.updateAllAdminConfig(config);
+        }
+    }
+
+    @Override
+    public void updateAllCentralAdminConfig(AllCentralAdminConfig config,
+            @Nullable String priorVersion) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -912,6 +1034,32 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             throws OptimisticLockException {
         if (!version.equals(priorVersion)) {
             throw new OptimisticLockException();
+        }
+    }
+
+    private static void validatePagerDutyConfig(PagerDutyConfig config) throws Exception {
+        Set<String> integrationKeys = Sets.newHashSet();
+        Set<String> integrationDisplays = Sets.newHashSet();
+        for (PagerDutyIntegrationKey integrationKey : config.integrationKeys()) {
+            if (!integrationKeys.add(integrationKey.key())) {
+                throw new DuplicatePagerDutyIntegrationKeyException();
+            }
+            if (!integrationDisplays.add(integrationKey.display())) {
+                throw new DuplicatePagerDutyIntegrationKeyDisplayException();
+            }
+        }
+    }
+
+    private static void validateSlackConfig(SlackConfig config) throws Exception {
+        Set<String> webhookUrls = Sets.newHashSet();
+        Set<String> webhookDisplays = Sets.newHashSet();
+        for (SlackWebhook webhook : config.webhooks()) {
+            if (!webhookUrls.add(webhook.url())) {
+                throw new DuplicateSlackWebhookUrlException();
+            }
+            if (!webhookDisplays.add(webhook.display())) {
+                throw new DuplicateSlackWebhookDisplayException();
+            }
         }
     }
 }

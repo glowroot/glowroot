@@ -144,7 +144,7 @@ public class Tools {
     }
 
     private Set<TtPartitionKey> getPartitionKeys(Date expirationThreshold) throws Exception {
-        ResultSet results = session.execute("select agent_rollup, transaction_type, capture_time"
+        ResultSet results = session.read("select agent_rollup, transaction_type, capture_time"
                 + " from aggregate_tt_summary_rollup_3");
         Multimap<String, String> transactionTypes = HashMultimap.create();
         for (Row row : results) {
@@ -178,7 +178,7 @@ public class Tools {
             boundStatement.setString(i++, ttPartitionKey.agentRollupId());
             boundStatement.setString(i++, ttPartitionKey.transactionType());
             boundStatement.setTimestamp(i++, expirationThreshold);
-            ResultSet results = session.execute(boundStatement);
+            ResultSet results = session.read(boundStatement);
             Set<String> transactionNames = new HashSet<>();
             for (Row row : results) {
                 transactionNames.add(checkNotNull(row.getString(0)));
@@ -207,7 +207,7 @@ public class Tools {
             boundStatement.setString(i++, partitionKey.agentRollupId());
             boundStatement.setString(i++, partitionKey.transactionType());
             boundStatement.setTimestamp(i++, expirationThreshold);
-            futures.add(session.executeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement));
             count++;
         }
         MoreFutures.waitForAll(futures);
@@ -229,7 +229,7 @@ public class Tools {
             boundStatement.setString(i++, partitionKey.transactionType());
             boundStatement.setString(i++, partitionKey.transactionName());
             boundStatement.setTimestamp(i++, expirationThreshold);
-            futures.add(session.executeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement));
             count++;
         }
         MoreFutures.waitForAll(futures);

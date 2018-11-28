@@ -179,10 +179,18 @@
                      ng-if="unit && unit !== ' bytes'">
                   <span class="input-group-text">{{unit}}</span>
                 </div>
+                <!-- need to place validation blocks before dropdown and use order-1 to shift them due to
+                     https://github.com/twbs/bootstrap/issues/25110 -->
+                <div class="gt-invalid-required-feedback order-1">
+                  This is required.
+                </div>
+                <div class="gt-invalid-other-feedback order-1">
+                  This is invalid.
+                </div>
                 <div gt-input-group-dropdown
                      gt-model="page.conditionThresholdByteUnit"
                      gt-items="conditionThresholdByteUnits"
-                     class="input-group-right"
+                     class="input-group-append"
                      ng-if="unit === ' bytes'">
                 </div>
               </div>
@@ -364,28 +372,70 @@
           </div>
         </div>
       </fieldset>
-      <div class="form-group row gt-form-buttons-below-fieldset"
-           ng-if="agentRollup.permissions.config.edit.alerts">
-        <div class="offset-xl-3 col-xl-9">
-          <div gt-button-group>
-            <div gt-button
-                 gt-label="{{config.version ? 'Save changes' : 'Add'}}"
-                 gt-click="save(deferred)"
-                 gt-validate-form="formCtrl"
-                 class="d-inline-block">
-            </div>
-            <div gt-button
-                 ng-if="config.version"
-                 gt-label="Delete"
-                 gt-click="delete(deferred)"
-                 gt-btn-class="btn-danger"
-                 class="d-inline-block">
-            </div>
+      <fieldset class="gt-fieldset"
+                ng-if="slackWebhooks.length">
+        <legend class="gt-legend">
+          Slack notification
+        </legend>
+        <div class="form-group row">
+          <label class="col-xl-3 gt-form-label-xl"
+                 for="slackWebhook">
+            Slack webhook
+          </label>
+          <div class="col-xl-9">
+            <select ng-model="config.slackNotification.slackWebhookId"
+                    ng-disabled="!agentRollup.permissions.config.edit.alerts"
+                    class="custom-select"
+                    name="slackWebhook"
+                    id="slackWebhook"
+                    style="width: auto;">
+              <option value=""></option>
+              <option ng-repeat="slackWebhook in slackWebhooks track by slackWebhook.id"
+                      ng-value="slackWebhook.id">
+                {{slackWebhook.display}}
+              </option>
+              <option ng-value="config.slackNotification.slackWebhook"
+                      disabled
+                      ng-if="displayUnavailableSlackWebhook()">
+                {{config.slackNotification.slackWebhook}} (not available)
+              </option>
+            </select>
           </div>
         </div>
-      </div>
-    </form>
+        <div gt-form-group
+             gt-label="Slack channels"
+             gt-model="page.slackChannels"
+             gt-required="config.slackNotification.slackWebhookId"
+             gt-disabled="!agentRollup.permissions.config.edit.alerts"
+             gt-width="30em"
+             ng-if="config.slackNotification.slackWebhookId">
+        <div class="help-block">
+          Comma separated list of channels, e.g. <em>#alerts</em>
+        </div>
   </div>
+  </fieldset>
+  <div class="form-group row gt-form-buttons-below-fieldset"
+       ng-if="agentRollup.permissions.config.edit.alerts">
+    <div class="offset-xl-3 col-xl-9">
+      <div gt-button-group>
+        <div gt-button
+             gt-label="{{config.version ? 'Save changes' : 'Add'}}"
+             gt-click="save(deferred)"
+             gt-validate-form="formCtrl"
+             class="d-inline-block">
+        </div>
+        <div gt-button
+             ng-if="config.version"
+             gt-label="Delete"
+             gt-click="delete(deferred)"
+             gt-btn-class="btn-danger"
+             class="d-inline-block">
+        </div>
+      </div>
+    </div>
+  </div>
+  </form>
+</div>
 </div>
 <!-- each page with confirmation dialog needs its own confirmation dom so that it is deleted on $destroy -->
 <div ng-include="'template/gt-confirmation.html'"></div>

@@ -133,16 +133,20 @@ glowroot.controller('ConfigGaugeCtrl', [
       if (suggestion.indexOf('*') !== -1) {
         return [suggestion];
       }
+      var limit = 100;
       var queryData = {
         agentId: $scope.agentId,
         partialObjectName: suggestion,
-        limit: 10
+        limit: limit + 1
       };
       $scope.showMBeanObjectNameSpinner++;
       // using 'then' method to return promise
       return $http.get('backend/config/matching-mbean-objects' + queryStrings.encodeObject(queryData))
           .then(function (response) {
             $scope.showMBeanObjectNameSpinner--;
+            if (response.data.length === limit + 1) {
+              response.data[limit] = '&nbsp;&nbsp;&nbsp;&nbsp;--Only showing first ' + limit + ' matches--';
+            }
             return response.data;
           }, function (response) {
             $scope.showMBeanObjectNameSpinner--;

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.sun.net.httpserver.HttpExchange;
@@ -29,7 +30,7 @@ import org.junit.Test;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
+import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,7 +46,7 @@ public class ResponseHeaderIT {
     public static void setUp() throws Exception {
         // tests only work with javaagent container because they need to weave bootstrap classes
         // that implement com.sun.net.httpserver.HttpExchange
-        container = Containers.createJavaagent();
+        container = JavaagentContainer.create();
     }
 
     @AfterClass
@@ -62,7 +63,7 @@ public class ResponseHeaderIT {
     public void testStandardResponseHeadersUsingSetHeader() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
-                "Content-Type, Content-Length, Content-Language");
+                ImmutableList.of("Content-Type", " Content-Length", " Content-Language"));
 
         // when
         Trace trace = container.execute(SetStandardResponseHeadersUsingSetHeader.class, "Web");
@@ -79,7 +80,7 @@ public class ResponseHeaderIT {
     public void testStandardResponseHeadersUsingAddHeader() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
-                "Content-Type, Content-Length, Content-Language");
+                ImmutableList.of("Content-Type", " Content-Length", " Content-Language"));
 
         // when
         Trace trace = container.execute(SetStandardResponseHeadersUsingAddHeader.class, "Web");
@@ -96,7 +97,7 @@ public class ResponseHeaderIT {
     public void testStandardResponseHeadersLowercase() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
-                "Content-Type, Content-Length");
+                ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
         Trace trace = container.execute(SetStandardResponseHeadersLowercase.class, "Web");
@@ -111,7 +112,8 @@ public class ResponseHeaderIT {
     @Test
     public void testWithoutAnyHeaderCaptureUsingSetHeader() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders", "");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
+                ImmutableList.<String>of());
         // when
         Trace trace = container.execute(SetStandardResponseHeadersUsingSetHeader.class, "Web");
         // then
@@ -121,7 +123,8 @@ public class ResponseHeaderIT {
     @Test
     public void testWithoutAnyHeaderCaptureUsingAddHeader() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders", "");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
+                ImmutableList.<String>of());
         // when
         Trace trace = container.execute(SetStandardResponseHeadersUsingAddHeader.class, "Web");
         // then
@@ -132,7 +135,8 @@ public class ResponseHeaderIT {
     public void testLotsOfResponseHeaders() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
-                "One,Two,Date-One,Date-Two,Int-One,Int-Two,X-One");
+                ImmutableList.of("One", "Two", "Date-One", "Date-Two", "Int-One", "Int-Two",
+                        "X-One"));
 
         // when
         Trace trace = container.execute(SetLotsOfResponseHeaders.class, "Web");
@@ -156,7 +160,7 @@ public class ResponseHeaderIT {
     public void testOutsideHttpServer() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
-                "Content-Type, Content-Length, Content-Language");
+                ImmutableList.of("Content-Type", " Content-Length", " Content-Language"));
         // when
         container.executeNoExpectedTrace(SetStandardResponseHeadersOutsideHttpServer.class);
         // then
@@ -167,9 +171,9 @@ public class ResponseHeaderIT {
     public void testDontMaskResponseHeaders() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureResponseHeaders",
-                "content*");
+                ImmutableList.of("content*"));
         container.getConfigService().setPluginProperty(PLUGIN_ID, "maskRequestHeaders",
-                "content-Len*");
+                ImmutableList.of("content-Len*"));
 
         // when
         Trace trace = container.execute(SetStandardResponseHeadersLowercase.class, "Web");

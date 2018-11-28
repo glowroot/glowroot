@@ -47,8 +47,7 @@ public class JmsPluginIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        // activemq throws NPE when it is loaded inside bootstrap class loader
-        container = Containers.createLocal();
+        container = Containers.create();
     }
 
     @AfterClass

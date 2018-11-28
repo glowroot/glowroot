@@ -45,7 +45,7 @@ public abstract class HttpProxyConfig {
 
     @Value.Default
     @JsonInclude(Include.NON_EMPTY)
-    public String password() {
+    public String encryptedPassword() {
         return "";
     }
 

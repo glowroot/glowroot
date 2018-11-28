@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.11.2-SNAPSHOT</version>
+    <version>0.12.3-SNAPSHOT</version>
   </parent>
 
   <artifactId>glowroot-central</artifactId>
@@ -51,7 +51,7 @@
         since WebDriverWait.until() now takes java.util.function.Function, but ExpectedConditions
         methods still return com.google.common.base.Function, which only extends
         java.util.function.Function in guava 21.0+ (since 21.0+ is built for Java 8) -->
-      <version>26.0-jre</version> <!-- $NO-MVN-MAN-VER$ -->
+      <version>27.0.1-jre</version> <!-- $NO-MVN-MAN-VER$ -->
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
@@ -60,7 +60,9 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-tcnative-boringssl-static</artifactId>
-      <version>2.0.15.Final</version>
+      <!-- need to stick to version known to work with gRPC 1.14.0,
+        see https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
+      <version>2.0.12.Final</version>
     </dependency>
     <dependency>
       <groupId>com.datastax.cassandra</groupId>
@@ -70,7 +72,7 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
-      <version>9.3.1.Final</version>
+      <version>9.4.1.Final</version>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -88,17 +90,17 @@
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-api</artifactId>
-      <version>3.14.0</version>
+      <version>3.141.59</version>
     </dependency>
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-support</artifactId>
-      <version>3.14.0</version>
+      <version>3.141.59</version>
     </dependency>
     <dependency>
       <groupId>com.machinepublishers</groupId>
       <artifactId>jbrowserdriver</artifactId>
-      <version>1.0.0</version>
+      <version>1.0.1</version>
       <exclusions>
         <exclusion>
           <!-- a later version of jna with a different groupId is already included by selenium -->
@@ -140,13 +142,13 @@
     <dependency>
       <groupId>org.codehaus.janino</groupId>
       <artifactId>janino</artifactId>
-      <version>3.0.9</version>
+      <version>3.0.11</version>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>net.bytebuddy</groupId>
       <artifactId>byte-buddy</artifactId>
-      <version>1.8.22</version>
+      <version>1.9.5</version>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
@@ -178,7 +180,7 @@
     <dependency>
       <groupId>org.rauschig</groupId>
       <artifactId>jarchivelib</artifactId>
-      <version>0.8.0</version>
+      <version>1.0.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

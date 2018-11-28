@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2017 the original author or authors.
+ * Copyright 2012-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,13 @@
  */
 package org.glowroot.agent.config;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,6 +31,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
+import org.glowroot.common.config.ImmutableInstrumentationConfig;
+import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.util.ObjectMappers;
 
 @Value.Immutable
@@ -38,6 +44,9 @@ public abstract class PluginDescriptor {
     @JsonProperty("instrumentation")
     public abstract ImmutableList<InstrumentationConfig> instrumentationConfigs();
     public abstract ImmutableList<String> aspects();
+
+    @JsonIgnore
+    public abstract @Nullable File pluginJar();
 
     // this is only for use by glowroot-agent-dist-maven-plugin, which needs to perform
     // de-serialization of shaded immutables objects using shaded jackson

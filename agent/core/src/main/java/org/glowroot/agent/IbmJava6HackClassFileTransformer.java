@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.objectweb.asm.Opcodes.ACONST_NULL;
 import static org.objectweb.asm.Opcodes.ARETURN;
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 
 class IbmJava6HackClassFileTransformer implements ClassFileTransformer {
 
@@ -58,14 +58,14 @@ class IbmJava6HackClassFileTransformer implements ClassFileTransformer {
         private final ClassWriter cw;
 
         private IbmJava6HackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String desc,
+        public MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
             if (name.equals("getUnsafe")) {
                 mv.visitCode();
                 mv.visitInsn(ACONST_NULL);

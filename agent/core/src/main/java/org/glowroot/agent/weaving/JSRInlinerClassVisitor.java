@@ -21,19 +21,19 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.commons.JSRInlinerAdapter;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 
 class JSRInlinerClassVisitor extends ClassVisitor {
 
     JSRInlinerClassVisitor(ClassVisitor cv) {
-        super(ASM6, cv);
+        super(ASM7, cv);
     }
 
     @Override
-    public MethodVisitor visitMethod(int access, String name, String desc,
+    public MethodVisitor visitMethod(int access, String name, String descriptor,
             @Nullable String signature, String /*@Nullable*/ [] exceptions) {
         MethodVisitor mv =
-                checkNotNull(cv).visitMethod(access, name, desc, signature, exceptions);
-        return new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions);
+                checkNotNull(cv).visitMethod(access, name, descriptor, signature, exceptions);
+        return new JSRInlinerAdapter(mv, access, name, descriptor, signature, exceptions);
     }
 }

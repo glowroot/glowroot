@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.11.2-SNAPSHOT</version>
+    <version>0.12.3-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
@@ -37,7 +37,7 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
       <!-- Spring 5+ requires Java 8+ -->
-      <version>4.3.19.RELEASE</version>
+      <version>4.3.20.RELEASE</version>
     </dependency>
     <dependency>
       <groupId>org.openjdk.jmh</groupId>

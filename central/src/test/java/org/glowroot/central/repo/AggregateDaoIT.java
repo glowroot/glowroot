@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.PoolingOptions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.junit.AfterClass;
@@ -86,7 +87,8 @@ public class AggregateDaoIT {
         SharedSetupRunListener.startCassandra();
         clusterManager = ClusterManager.create();
         cluster = Clusters.newCluster();
-        session = new Session(cluster.newSession(), "glowroot_unit_tests");
+        session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         agentConfigDao = new AgentConfigDao(session, clusterManager);
         UserDao userDao = new UserDao(session, clusterManager);
@@ -118,7 +120,7 @@ public class AggregateDaoIT {
 
     @Before
     public void before() throws Exception {
-        session.execute("truncate agent_config");
+        session.updateSchemaWithRetry("truncate agent_config");
     }
 
     @Test
@@ -126,7 +128,7 @@ public class AggregateDaoIT {
 
         agentConfigDao.store("one", AgentConfig.newBuilder()
                 .setAdvancedConfig(DEFAULT_ADVANCED_CONFIG)
-                .build());
+                .build(), true);
 
         aggregateDao.truncateAll();
         List<Aggregate.SharedQueryText> sharedQueryText = ImmutableList
@@ -300,7 +302,7 @@ public class AggregateDaoIT {
 
         agentConfigDao.store("the parent::one", AgentConfig.newBuilder()
                 .setAdvancedConfig(DEFAULT_ADVANCED_CONFIG)
-                .build());
+                .build(), true);
 
         aggregateDao.truncateAll();
         List<Aggregate.SharedQueryText> sharedQueryText = ImmutableList
@@ -478,7 +480,7 @@ public class AggregateDaoIT {
 
         agentConfigDao.store("the gp::the parent::one", AgentConfig.newBuilder()
                 .setAdvancedConfig(DEFAULT_ADVANCED_CONFIG)
-                .build());
+                .build(), true);
 
         aggregateDao.truncateAll();
         List<Aggregate.SharedQueryText> sharedQueryText = ImmutableList

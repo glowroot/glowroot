@@ -59,15 +59,9 @@ public class AsyncHttpClientRequestInvoker {
 
     private static @Nullable Class<?> getRequestClass(Class<?> clazz) {
         try {
-            return Class.forName("org.asynchttpclient.Request", false, clazz.getClassLoader());
+            return Class.forName("com.ning.http.client.Request", false, clazz.getClassLoader());
         } catch (ClassNotFoundException e) {
-            try {
-                return Class.forName("com.ning.http.client.Request", false, clazz.getClassLoader());
-            } catch (ClassNotFoundException f) {
-                // log outer exception at warn level, inner exception at debug level
-                logger.warn(e.getMessage(), e);
-                logger.debug(f.getMessage(), f);
-            }
+            logger.warn(e.getMessage(), e);
         }
         return null;
     }

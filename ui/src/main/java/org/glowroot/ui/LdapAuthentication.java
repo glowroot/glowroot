@@ -98,7 +98,7 @@ class LdapAuthentication {
         if (passwordOverride != null) {
             return passwordOverride;
         }
-        String password = ldapConfig.password();
+        String password = ldapConfig.encryptedPassword();
         if (password.isEmpty()) {
             return "";
         }

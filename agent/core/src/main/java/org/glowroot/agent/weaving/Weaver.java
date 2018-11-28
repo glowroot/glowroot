@@ -56,10 +56,11 @@ import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
+import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 import org.glowroot.common.util.ScheduledRunnable.TerminateSubsequentExecutionsException;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.V1_6;
 
@@ -310,6 +311,20 @@ public class Weaver {
                 logger.warn(e.getMessage(), e);
             }
         }
+        if (loader != null) {
+            try {
+                for (Advice usedAdvice : cv.getUsedAdvisors()) {
+                    LazyDefinedClass nonBootstrapLoaderAdviceClass =
+                            usedAdvice.nonBootstrapLoaderAdviceClass();
+                    if (nonBootstrapLoaderAdviceClass != null) {
+                        ClassLoaders.defineClassIfNotExists(nonBootstrapLoaderAdviceClass, loader);
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("unable to weave {}: {}", className, e.getMessage(), e);
+                return null;
+            }
+        }
         return transformedBytes;
     }
 
@@ -415,16 +430,16 @@ public class Weaver {
         private final ClassWriter cw;
 
         private JBossWeldHackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
         }
 
         @Override
-        public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
+        public @Nullable MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
             if (name.equals("checkDelegateType")
-                    && desc.equals("(Ljavax/enterprise/inject/spi/Decorator;)V")) {
+                    && descriptor.equals("(Ljavax/enterprise/inject/spi/Decorator;)V")) {
                 return new JBossWeldHackMethodVisitor(mv);
             } else {
                 return mv;
@@ -435,14 +450,14 @@ public class Weaver {
     private static class JBossWeldHackMethodVisitor extends MethodVisitor {
 
         private JBossWeldHackMethodVisitor(MethodVisitor mv) {
-            super(ASM6, mv);
+            super(ASM7, mv);
         }
 
         @Override
-        public void visitMethodInsn(int opcode, String owner, String name, String desc,
+        public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
                 boolean itf) {
-            super.visitMethodInsn(opcode, owner, name, desc, itf);
-            if (name.equals("getDecoratedTypes") && desc.equals("()Ljava/util/Set;")) {
+            super.visitMethodInsn(opcode, owner, name, descriptor, itf);
+            if (name.equals("getDecoratedTypes") && descriptor.equals("()Ljava/util/Set;")) {
                 super.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Util",
                         "stripGlowrootTypes", "(Ljava/util/Set;)Ljava/util/Set;", false);
             }
@@ -454,14 +469,14 @@ public class Weaver {
         private final ClassWriter cw;
 
         private JBossModulesHackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String desc,
+        public MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
             if (name.equals("<clinit>")) {
                 return new JBossModulesHackMethodVisitor(mv);
             } else {
@@ -473,17 +488,17 @@ public class Weaver {
     private static class JBossModulesHackMethodVisitor extends MethodVisitor {
 
         private JBossModulesHackMethodVisitor(MethodVisitor mv) {
-            super(ASM6, mv);
+            super(ASM7, mv);
         }
 
         @Override
-        public void visitFieldInsn(int opcode, String owner, String name, String desc) {
-            if (name.equals("systemPackages") && desc.equals("[Ljava/lang/String;")) {
+        public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
+            if (name.equals("systemPackages") && descriptor.equals("[Ljava/lang/String;")) {
                 visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Util",
                         "appendToJBossModulesSystemPkgs",
                         "([Ljava/lang/String;)[Ljava/lang/String;", false);
             }
-            super.visitFieldInsn(opcode, owner, name, desc);
+            super.visitFieldInsn(opcode, owner, name, descriptor);
         }
     }
 
@@ -492,16 +507,16 @@ public class Weaver {
         private final ClassWriter cw;
 
         private JBossUrlHackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String desc,
+        public MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
-            if (name.equals("<clinit>") && desc.equals("()V")) {
-                return new JBossUrlHackMethodVisitor(mv, access, name, desc);
+            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
+            if (name.equals("<clinit>") && descriptor.equals("()V")) {
+                return new JBossUrlHackMethodVisitor(mv, access, name, descriptor);
             } else {
                 return mv;
             }
@@ -511,8 +526,8 @@ public class Weaver {
     private static class JBossUrlHackMethodVisitor extends AdviceAdapter {
 
         private JBossUrlHackMethodVisitor(MethodVisitor mv, int access, String name,
-                String desc) {
-            super(ASM6, mv, access, name, desc);
+                String descriptor) {
+            super(ASM7, mv, access, name, descriptor);
         }
 
         @Override
@@ -565,18 +580,18 @@ public class Weaver {
         private final String methodName;
 
         private OsgiHackClassVisitor(ClassWriter cw, String className, String methodName) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
             this.className = className;
             this.methodName = methodName;
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String desc,
+        public MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
-            if (name.equals(methodName) && desc.equals("(Ljava/lang/String;)Z")) {
-                return new OsgiHackMethodVisitor(className, mv, access, name, desc);
+            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
+            if (name.equals(methodName) && descriptor.equals("(Ljava/lang/String;)Z")) {
+                return new OsgiHackMethodVisitor(className, mv, access, name, descriptor);
             } else {
                 return mv;
             }
@@ -588,8 +603,8 @@ public class Weaver {
         private final String ownerName;
 
         private OsgiHackMethodVisitor(String ownerName, MethodVisitor mv, int access,
-                String name, String desc) {
-            super(ASM6, mv, access, name, desc);
+                String name, String descriptor) {
+            super(ASM7, mv, access, name, descriptor);
             this.ownerName = ownerName;
         }
 
@@ -614,16 +629,16 @@ public class Weaver {
         private final ClassWriter cw;
 
         private OpenEJBHackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String desc,
+        public MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
-            if (name.equals("reloadConfig") && desc.equals("()V")) {
-                return new OpenEJBHackMethodVisitor(mv, access, name, desc);
+            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
+            if (name.equals("reloadConfig") && descriptor.equals("()V")) {
+                return new OpenEJBHackMethodVisitor(mv, access, name, descriptor);
             } else {
                 return mv;
             }
@@ -632,8 +647,9 @@ public class Weaver {
 
     private static class OpenEJBHackMethodVisitor extends AdviceAdapter {
 
-        private OpenEJBHackMethodVisitor(MethodVisitor mv, int access, String name, String desc) {
-            super(ASM6, mv, access, name, desc);
+        private OpenEJBHackMethodVisitor(MethodVisitor mv, int access, String name,
+                String descriptor) {
+            super(ASM7, mv, access, name, descriptor);
         }
 
         @Override
@@ -654,14 +670,14 @@ public class Weaver {
         private final ClassWriter cw;
 
         private HikariCpProxyHackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String desc,
+        public MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
             if (name.equals("generateProxyClass")) {
                 return new HikariCpProxyHackMethodVisitor(mv);
             } else {
@@ -673,16 +689,16 @@ public class Weaver {
     private static class HikariCpProxyHackMethodVisitor extends MethodVisitor {
 
         private HikariCpProxyHackMethodVisitor(MethodVisitor mv) {
-            super(ASM6, mv);
+            super(ASM7, mv);
         }
 
         @Override
-        public void visitMethodInsn(int opcode, String owner, String name, String desc,
+        public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
                 boolean itf) {
-            super.visitMethodInsn(opcode, owner, name, desc, itf);
+            super.visitMethodInsn(opcode, owner, name, descriptor, itf);
             if (owner.equals("com/zaxxer/hikari/util/ClassLoaderUtils")
                     && name.equals("getAllInterfaces")
-                    && desc.equals("(Ljava/lang/Class;)Ljava/util/Set;")) {
+                    && descriptor.equals("(Ljava/lang/Class;)Ljava/util/Set;")) {
                 super.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Util",
                         "stripGlowrootClasses", "(Ljava/util/Set;)Ljava/util/Set;", false);
             }

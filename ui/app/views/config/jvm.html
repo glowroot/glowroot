@@ -32,7 +32,19 @@
              gt-width="20em">
           <div class="help-block">
             Comma-separated list of sensitive system properties to mask, e.g. passwords. The wildcard '*' is supported
-            anywhere in the property.
+            anywhere in the property name.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="Mask mbean attributes"
+             gt-model="page.maskMBeanAttributes"
+             gt-disabled="!agentRollup.permissions.config.edit.jvm"
+             gt-width="20em">
+          <div class="help-block">
+            Comma-separated list of sensitive mbean attributes to mask, e.g. passwords. The wildcard '*' is supported
+            anywhere in the attribute name. Matching is performed against <em>ObjectName:AttributeName</em>, so
+            masking just "password" will not match any MBean attributes, while masking "*:password" will match MBean
+            attributes of exactly password for all MBean object names.
           </div>
         </div>
         <div class="form-group row"

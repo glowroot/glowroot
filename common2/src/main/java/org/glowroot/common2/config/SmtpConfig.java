@@ -50,7 +50,7 @@ public abstract class SmtpConfig {
 
     @Value.Default
     @JsonInclude(Include.NON_EMPTY)
-    public String password() {
+    public String encryptedPassword() {
         return "";
     }
 

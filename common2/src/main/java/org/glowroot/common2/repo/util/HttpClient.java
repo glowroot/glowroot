@@ -189,7 +189,7 @@ public class HttpClient {
         if (passwordOverride != null) {
             return passwordOverride;
         }
-        String password = httpProxyConfig.password();
+        String password = httpProxyConfig.encryptedPassword();
         if (password.isEmpty()) {
             return "";
         }

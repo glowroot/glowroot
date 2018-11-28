@@ -74,12 +74,12 @@ public class JAXRS {
 
     private static void run(String version) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "jersey.version", version);
-        Util.runTests(MODULE_PATH, JAVA6, JAVA7, JAVA8);
+        Util.runTests(MODULE_PATH, JAVA8, JAVA7, JAVA6);
     }
 
     private static void runJava7(String version) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "jersey.version", version);
-        Util.runTests(MODULE_PATH, JAVA7, JAVA8);
+        Util.runTests(MODULE_PATH, JAVA8, JAVA7);
     }
 
     private static void runJava8(String version, String profile) throws Exception {

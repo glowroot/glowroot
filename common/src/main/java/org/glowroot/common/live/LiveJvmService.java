@@ -69,5 +69,8 @@ public interface LiveJvmService {
     public class UnavailableDueToRunningInIbmJvmException extends Exception {}
 
     @SuppressWarnings("serial")
+    public class UnavailableDueToDockerAlpinePidOneException extends Exception {}
+
+    @SuppressWarnings("serial")
     public class DirectoryDoesNotExistException extends Exception {}
 }

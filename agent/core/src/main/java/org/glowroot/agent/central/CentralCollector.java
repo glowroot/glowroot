@@ -17,15 +17,18 @@ package org.glowroot.agent.central;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import com.google.common.io.Closer;
 import io.grpc.stub.StreamObserver;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -39,6 +42,7 @@ import org.glowroot.agent.live.LiveJvmServiceImpl;
 import org.glowroot.agent.live.LiveTraceRepositoryImpl;
 import org.glowroot.agent.live.LiveWeavingServiceImpl;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.common.util.PropertiesFiles;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
@@ -65,6 +69,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.TraceStreamMessage
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CentralCollector implements Collector {
@@ -77,6 +82,10 @@ public class CentralCollector implements Collector {
     private final String agentId;
     private final String collectorAddress;
     private final ConfigService configService;
+
+    private final boolean configReadOnly;
+    private final File configSyncedFile;
+
     private final CentralConnection centralConnection;
     private final CollectorServiceStub collectorServiceStub;
     private final DownstreamServiceObserver downstreamServiceObserver;
@@ -87,7 +96,7 @@ public class CentralCollector implements Collector {
     private volatile int nextAggregateDelayMillis;
 
     public CentralCollector(Map<String, String> properties, String collectorAddress,
-            @Nullable String collectorAuthority, List<File> confDirs,
+            @Nullable String collectorAuthority, List<File> confDirs, boolean configReadOnly,
             LiveJvmServiceImpl liveJvmService, LiveWeavingServiceImpl liveWeavingService,
             LiveTraceRepositoryImpl liveTraceRepository, AgentConfigUpdater agentConfigUpdater,
             ConfigService configService) throws Exception {
@@ -107,6 +116,8 @@ public class CentralCollector implements Collector {
         this.agentId = agentId;
         this.collectorAddress = collectorAddress;
         this.configService = configService;
+        this.configReadOnly = configReadOnly;
+        configSyncedFile = new File(confDirs.get(0), "config.synced");
 
         startupLogger.info("agent id: {}", agentId);
 
@@ -116,17 +127,26 @@ public class CentralCollector implements Collector {
         collectorServiceStub = CollectorServiceGrpc.newStub(centralConnection.getChannel())
                 .withCompression("gzip");
         downstreamServiceObserver = new DownstreamServiceObserver(centralConnection,
-                agentConfigUpdater, liveJvmService, liveWeavingService, liveTraceRepository,
-                agentId, inConnectionFailure, sharedQueryTextLimiter);
+                agentConfigUpdater, configReadOnly, liveJvmService, liveWeavingService,
+                liveTraceRepository, agentId, inConnectionFailure, sharedQueryTextLimiter);
     }
 
     @Override
     public void init(List<File> confDirs, final Environment environment, AgentConfig agentConfig,
-            final AgentConfigUpdater agentConfigUpdater) {
+            final AgentConfigUpdater agentConfigUpdater) throws IOException {
+        final String configSyncedAgentId;
+        if (configReadOnly) {
+            configSyncedAgentId = "";
+        } else {
+            configSyncedAgentId = readConfigSyncedAgentId(configSyncedFile);
+        }
         final InitMessage initMessage = InitMessage.newBuilder()
                 .setAgentId(agentId)
                 .setEnvironment(environment)
-                .setAgentConfig(agentConfig)
+                .setAgentConfig(agentConfig.toBuilder()
+                        .setConfigReadOnly(configReadOnly))
+                .setOverwriteExistingAgentConfig(
+                        !agentId.equals(configSyncedAgentId) || configReadOnly)
                 .build();
         centralConnection.callInit(new GrpcCall<InitResponse>() {
             @Override
@@ -134,7 +154,7 @@ public class CentralCollector implements Collector {
                 collectorServiceStub.collectInit(initMessage, responseObserver);
             }
             @Override
-            void doWithResponse(final InitResponse response) {
+            void doWithResponse(InitResponse response) {
                 CentralCollector.this.environment = environment;
                 // don't need to suppress sending this log message to the central collector because
                 // startup logger info messages are never sent to the central collector
@@ -146,11 +166,19 @@ public class CentralCollector implements Collector {
                     startupLogger.warn("the central collector version is older than the agent"
                             + " version which could cause unpredictable issues");
                 }
-                if (response.hasAgentConfig()) {
+                if (response.hasAgentConfig() && !configReadOnly) {
                     try {
                         agentConfigUpdater.update(response.getAgentConfig());
                     } catch (IOException e) {
                         logger.error(e.getMessage(), e);
+                    }
+                }
+                if (!agentId.equals(configSyncedAgentId) && !configReadOnly) {
+                    try {
+                        writeConfigSyncedFile(configSyncedFile, agentId);
+                    } catch (IOException e) {
+                        startupLogger.error("could not write to file '{}': {}",
+                                configSyncedFile.getAbsolutePath(), e.getMessage(), e);
                     }
                 }
                 downstreamServiceObserver.connectAsync();
@@ -299,6 +327,44 @@ public class CentralCollector implements Collector {
             return false;
         }
         return agentPatch > centralPatch;
+    }
+
+    private static String readConfigSyncedAgentId(File file) throws IOException {
+        if (file.exists()) {
+            Properties properties = PropertiesFiles.load(file);
+            return properties.getProperty("agent.id", "").trim();
+        } else {
+            return "";
+        }
+    }
+
+    private static void writeConfigSyncedFile(File file, String agentId) throws IOException {
+        Closer closer = Closer.create();
+        try {
+            PrintWriter out = closer.register(new PrintWriter(file, UTF_8.name()));
+            out.println("# this file is created after the agent has pushed its local configuration"
+                    + " to the central collector");
+            out.println("#");
+            out.println("# when this file is present (and the agent.id below matches the running"
+                    + " agent's agent.id), the agent");
+            out.println("# will overwrite its local configuration with the agent configuration it"
+                    + " retrieves from the central");
+            out.println("# collector on JVM startup");
+            out.println("#");
+            out.println("# when this file is not present (or the agent.id below does not match the"
+                    + " running agent's agent.id),");
+            out.println("# the agent will push its local configuration to the central collector on"
+                    + " JVM startup (overwriting");
+            out.println("# any existing remote configuration), after which the agent will"
+                    + " (re-)create this file using the");
+            out.println("# running agent's agent.id");
+            out.println("");
+            out.println("agent.id=" + agentId);
+        } catch (Throwable t) {
+            throw closer.rethrow(t);
+        } finally {
+            closer.close();
+        }
     }
 
     private class CollectAggregatesGrpcCall extends GrpcCall<AggregateResponseMessage> {

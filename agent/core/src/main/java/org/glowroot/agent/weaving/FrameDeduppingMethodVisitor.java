@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 
 // this is needed for weaving the code in DuplicateStackFramesMisc.execute1()
 // and it seems that jacoco project had need for similar method visitor, see
@@ -29,7 +29,7 @@ class FrameDeduppingMethodVisitor extends MethodVisitor {
     private boolean skipNextFrame;
 
     FrameDeduppingMethodVisitor(MethodVisitor mv) {
-        super(ASM6, mv);
+        super(ASM7, mv);
     }
 
     @Override
@@ -72,27 +72,29 @@ class FrameDeduppingMethodVisitor extends MethodVisitor {
     }
 
     @Override
-    public void visitFieldInsn(int opcode, String owner, String name, String desc) {
-        super.visitFieldInsn(opcode, owner, name, desc);
+    public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
+        super.visitFieldInsn(opcode, owner, name, descriptor);
         skipNextFrame = false;
     }
 
     @Override
     @Deprecated
-    public void visitMethodInsn(int opcode, String owner, String name, String desc) {
-        super.visitMethodInsn(opcode, owner, name, desc);
+    public void visitMethodInsn(int opcode, String owner, String name, String descriptor) {
+        super.visitMethodInsn(opcode, owner, name, descriptor);
         skipNextFrame = false;
     }
 
     @Override
-    public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
-        super.visitMethodInsn(opcode, owner, name, desc, itf);
+    public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
+            boolean itf) {
+        super.visitMethodInsn(opcode, owner, name, descriptor, itf);
         skipNextFrame = false;
     }
 
     @Override
-    public void visitInvokeDynamicInsn(String name, String desc, Handle bsm, Object... bsmArgs) {
-        super.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
+    public void visitInvokeDynamicInsn(String name, String descriptor, Handle bsm,
+            Object... bsmArgs) {
+        super.visitInvokeDynamicInsn(name, descriptor, bsm, bsmArgs);
         skipNextFrame = false;
     }
 
@@ -127,8 +129,8 @@ class FrameDeduppingMethodVisitor extends MethodVisitor {
     }
 
     @Override
-    public void visitMultiANewArrayInsn(String desc, int dims) {
-        super.visitMultiANewArrayInsn(desc, dims);
+    public void visitMultiANewArrayInsn(String descriptor, int dims) {
+        super.visitMultiANewArrayInsn(descriptor, dims);
         skipNextFrame = false;
     }
 }

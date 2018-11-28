@@ -22,6 +22,7 @@ import org.glowroot.tests.admin.HealthchecksIoConfigPage;
 import org.glowroot.tests.admin.HttpProxyConfigPage;
 import org.glowroot.tests.admin.LdapConfigPage;
 import org.glowroot.tests.admin.PagerDutyConfigPage;
+import org.glowroot.tests.admin.SlackConfigPage;
 import org.glowroot.tests.admin.SmtpConfigPage;
 import org.glowroot.tests.admin.StorageConfigPage;
 import org.glowroot.tests.config.ConfigSidebar;
@@ -281,6 +282,25 @@ public class AdminIT extends WebDriverIT {
         globalNavbar.clickAdminConfigLink();
         configSidebar.clickIntegrationsLink();
         clickLinkWithWait("PagerDuty");
+
+        // when
+        page.clickSaveButton();
+        // wait for save to finish
+        SECONDS.sleep(1);
+    }
+
+    @Test
+    public void shouldUpdateSlackConfig() throws Exception {
+        // given
+        App app = app();
+        GlobalNavbar globalNavbar = globalNavbar();
+        ConfigSidebar configSidebar = new ConfigSidebar(driver);
+        SlackConfigPage page = new SlackConfigPage(driver);
+
+        app.open();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickIntegrationsLink();
+        clickLinkWithWait("Slack");
 
         // when
         page.clickSaveButton();

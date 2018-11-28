@@ -33,17 +33,52 @@ glowroot.controller('ConfigPluginCtrl', [
     }
 
     $scope.hasChanges = function () {
-      return !angular.equals($scope.config, $scope.originalConfig);
+      var config = angular.copy($scope.config);
+      angular.forEach(config.properties, function (property) {
+        if (property.type === 'list') {
+          var value = [];
+          angular.forEach(property.value, function (v) {
+            if (v.trim() !== '') {
+              value.push(v);
+            }
+          });
+          property.value = value;
+        }
+      });
+      return !angular.equals(config, $scope.originalConfig);
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
+
+    $scope.$watch('config.properties', function (newValue, oldValue) {
+      if (newValue === undefined) {
+        return;
+      }
+      angular.forEach(newValue, function (property) {
+        if (property.type === 'list'
+            && (!property.value.length || property.value[property.value.length - 1].trim() !== '')) {
+          property.value.push('');
+        }
+      });
+    }, true);
 
     $scope.save = function (deferred) {
       var properties = [];
       angular.forEach($scope.config.properties, function (property) {
+        var value;
+        if (property.type === 'list') {
+          value = [];
+          angular.forEach(property.value, function (v) {
+            if (v.trim() !== '') {
+              value.push(v);
+            }
+          });
+        } else {
+          value = property.value;
+        }
         properties.push({
           name: property.name,
           type: property.type,
-          value: property.value
+          value: value
         });
       });
       var postData = {
@@ -53,6 +88,10 @@ glowroot.controller('ConfigPluginCtrl', [
       };
       $http.post('backend/config/plugins?agent-id=' + encodeURIComponent($scope.agentId), postData)
           .then(function (response) {
+            if (response.data.firstInvalidRegularExpression) {
+              deferred.reject('Invalid regular expression: ' + response.data.firstInvalidRegularExpression);
+              return;
+            }
             onNewData(response.data);
             deferred.resolve('Saved');
           }, function (response) {

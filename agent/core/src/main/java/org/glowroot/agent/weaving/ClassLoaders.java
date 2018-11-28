@@ -33,8 +33,6 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 class ClassLoaders {
 
     private static final Logger logger = LoggerFactory.getLogger(ClassLoaders.class);
@@ -69,30 +67,23 @@ class ClassLoaders {
         appendToBootstrapResourcePath(generatedJarFile);
     }
 
-    static void defineClassesInClassLoader(Collection<LazyDefinedClass> lazyDefinedClasses,
-            ClassLoader loader) throws Exception {
-        for (LazyDefinedClass lazyDefinedClass : lazyDefinedClasses) {
-            defineClass(lazyDefinedClass, loader);
-        }
-    }
-
-    static Class<?> defineClass(LazyDefinedClass lazyDefinedClass, ClassLoader loader)
+    static void defineClasses(Collection<LazyDefinedClass> lazyDefinedClasses, ClassLoader loader)
             throws Exception {
-        for (LazyDefinedClass dependency : lazyDefinedClass.dependencies()) {
-            defineClass(dependency, loader);
+        for (LazyDefinedClass lazyDefinedClass : lazyDefinedClasses) {
+            defineClass(lazyDefinedClass, loader, false);
         }
-        return defineClass(lazyDefinedClass.type().getClassName(), lazyDefinedClass.bytes(),
-                loader);
     }
 
-    static Class<?> defineClass(String name, byte[] bytes, ClassLoader loader) throws Exception {
-        Method defineClassMethod = ClassLoader.class.getDeclaredMethod("defineClass", String.class,
-                byte[].class, int.class, int.class);
+    static void defineClassIfNotExists(LazyDefinedClass lazyDefinedClass, ClassLoader loader)
+            throws Exception {
+        defineClass(lazyDefinedClass, loader, true);
+    }
+
+    static void defineClass(String name, byte[] bytes, ClassLoader loader) throws Exception {
+        Method defineClassMethod = ClassLoader.class.getDeclaredMethod("defineClass",
+                String.class, byte[].class, int.class, int.class);
         defineClassMethod.setAccessible(true);
-        Class<?> definedClass =
-                (Class<?>) defineClassMethod.invoke(loader, name, bytes, 0, bytes.length);
-        checkNotNull(definedClass);
-        return definedClass;
+        defineClassMethod.invoke(loader, name, bytes, 0, bytes.length);
     }
 
     static void createDirectoryOrCleanPreviousContentsWithPrefix(File dir, String prefix)
@@ -103,6 +94,23 @@ class ClassLoaders {
         } else {
             createDirectory(dir);
         }
+    }
+
+    private static void defineClass(LazyDefinedClass lazyDefinedClass, ClassLoader loader,
+            boolean ifNotExists) throws Exception {
+        for (LazyDefinedClass dependency : lazyDefinedClass.dependencies()) {
+            defineClass(dependency, loader, ifNotExists);
+        }
+        if (!ifNotExists || !classExists(lazyDefinedClass.type().getClassName(), loader)) {
+            defineClass(lazyDefinedClass.type().getClassName(), lazyDefinedClass.bytes(), loader);
+        }
+    }
+
+    private static boolean classExists(String name, ClassLoader loader) throws Exception {
+        Method findLoadedClassMethod =
+                ClassLoader.class.getDeclaredMethod("findLoadedClass", String.class);
+        findLoadedClassMethod.setAccessible(true);
+        return findLoadedClassMethod.invoke(loader, name) != null;
     }
 
     private static void generate(Collection<LazyDefinedClass> lazyDefinedClasses,

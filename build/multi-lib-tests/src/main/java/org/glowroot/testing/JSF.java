@@ -44,16 +44,16 @@ public class JSF {
         for (int i = 2; i <= 16; i++) {
             run("2.1.20-" + String.format("%02d", i));
         }
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= 11; i++) {
             run("2.1.29-" + String.format("%02d", i));
         }
-        for (int i = 0; i <= 17; i++) {
+        for (int i = 0; i <= 18; i++) {
             run("2.2." + i);
         }
-        for (int i = 1; i <= 27; i++) {
+        for (int i = 1; i <= 30; i++) {
             run("2.2.8-" + String.format("%02d", i));
         }
-        for (int i = 0; i <= 5; i++) {
+        for (int i = 0; i <= 7; i++) {
             runJava8("2.3." + i);
         }
         runJava8("2.3.3.99");
@@ -65,7 +65,7 @@ public class JSF {
 
     private static void run(String version) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "faces.version", version);
-        Util.runTests(MODULE_PATH, JAVA6, JAVA7, JAVA8);
+        Util.runTests(MODULE_PATH, JAVA8, JAVA7, JAVA6);
     }
 
     private static void runJava8(String version) throws Exception {

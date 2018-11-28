@@ -44,10 +44,10 @@ glowroot.controller('ConfigTransactionCtrl', [
           name: transactionType
         });
       });
-      angular.forEach($scope.config.slowThresholds, function (slowThreshold) {
-        if (data.allTransactionTypes.indexOf(slowThreshold.transactionType) === -1) {
+      angular.forEach($scope.config.slowThresholdOverrides, function (slowThresholdOverride) {
+        if (data.allTransactionTypes.indexOf(slowThresholdOverride.transactionType) === -1) {
           $scope.allTransactionTypes.push({
-            name: slowThreshold.transactionType,
+            name: slowThresholdOverride.transactionType,
             disabled: true
           });
         }
@@ -55,17 +55,23 @@ glowroot.controller('ConfigTransactionCtrl', [
       defaultTransactionType = data.defaultTransactionType;
     }
 
-    $scope.addSlowThreshold = function () {
-      $scope.config.slowThresholds.push({
+    $scope.supportsSlowThresholdOverrides = function () {
+      // slow threshold overrides were introduced in agent version 0.10.1
+      return !$scope.layout.central || ($scope.agentRollup.glowrootVersion.lastIndexOf('0.9.', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.10.0', 0) === -1);
+    };
+
+    $scope.addSlowThresholdOverride = function () {
+      $scope.config.slowThresholdOverrides.push({
         transactionType: defaultTransactionType,
         transactionName: '',
         thresholdMillis: null
       });
     };
 
-    $scope.removeSlowThreshold = function (slowThreshold) {
-      var index = $scope.config.slowThresholds.indexOf(slowThreshold);
-      $scope.config.slowThresholds.splice(index, 1);
+    $scope.removeSlowThresholdOverride = function (slowThresholdOverride) {
+      var index = $scope.config.slowThresholdOverrides.indexOf(slowThresholdOverride);
+      $scope.config.slowThresholdOverrides.splice(index, 1);
     };
 
     $scope.save = function (deferred) {

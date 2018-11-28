@@ -73,7 +73,7 @@ class UserDao {
             boundStatement.setBool(i++, false);
             boundStatement.setString(i++, "");
             boundStatement.setSet(i++, ImmutableSet.of("Administrator"));
-            session.execute(boundStatement);
+            session.write(boundStatement);
         }
 
         allUserConfigsCache =
@@ -116,14 +116,14 @@ class UserDao {
     void insert(UserConfig userConfig) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         bindInsert(boundStatement, userConfig);
-        session.execute(boundStatement);
+        session.write(boundStatement);
         allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
     }
 
     void insertIfNotExists(UserConfig userConfig) throws Exception {
         BoundStatement boundStatement = insertIfNotExistsPS.bind();
         bindInsert(boundStatement, userConfig);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.update(boundStatement);
         Row row = checkNotNull(results.one());
         boolean applied = row.getBool("[applied]");
         if (applied) {
@@ -136,7 +136,7 @@ class UserDao {
     void delete(String username) throws Exception {
         BoundStatement boundStatement = deletePS.bind();
         boundStatement.setString(0, username);
-        session.execute(boundStatement);
+        session.write(boundStatement);
         allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
     }
 
@@ -149,9 +149,10 @@ class UserDao {
     }
 
     private class AllUsersCacheLoader implements CacheLoader<String, List<UserConfig>> {
+
         @Override
         public List<UserConfig> load(String dummy) throws Exception {
-            ResultSet results = session.execute(readPS.bind());
+            ResultSet results = session.read(readPS.bind());
             List<UserConfig> users = new ArrayList<>();
             for (Row row : results) {
                 users.add(buildUser(row));
@@ -159,7 +160,7 @@ class UserDao {
             return users;
         }
 
-        private ImmutableUserConfig buildUser(Row row) {
+        private UserConfig buildUser(Row row) {
             int i = 0;
             return ImmutableUserConfig.builder()
                     .username(checkNotNull(row.getString(i++)))

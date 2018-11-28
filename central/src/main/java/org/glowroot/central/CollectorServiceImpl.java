@@ -146,7 +146,8 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         AgentConfig updatedAgentConfig;
         try {
             updatedAgentConfig = SchemaUpgrade.upgradeOldAgentConfig(request.getAgentConfig());
-            updatedAgentConfig = agentConfigDao.store(agentId, updatedAgentConfig);
+            updatedAgentConfig = agentConfigDao.store(agentId, updatedAgentConfig,
+                    request.getOverwriteExistingAgentConfig());
             environmentDao.store(agentId, request.getEnvironment());
             MoreFutures.waitForAll(activeAgentDao.insert(agentId, clock.currentTimeMillis()));
         } catch (Throwable t) {

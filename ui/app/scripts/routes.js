@@ -535,6 +535,11 @@ glowroot.config([
       templateUrl: 'views/config/advanced.html',
       controller: 'ConfigAdvancedCtrl'
     });
+    $stateProvider.state('config.json', {
+      url: '/json',
+      templateUrl: 'views/config/json.html',
+      controller: 'ConfigJsonCtrl'
+    });
     $stateProvider.state('admin', {
       url: '/admin',
       templateUrl: 'views/admin.html',
@@ -602,10 +607,20 @@ glowroot.config([
       templateUrl: 'views/admin/integration/pager-duty.html',
       controller: 'AdminPagerDutyCtrl'
     });
+    $stateProvider.state('admin.slack', {
+      url: '/integration/slack',
+      templateUrl: 'views/admin/integration/slack.html',
+      controller: 'AdminSlackCtrl'
+    });
     $stateProvider.state('admin.healthchecksIo', {
       url: '/integration/healthchecks-io',
       templateUrl: 'views/admin/integration/healthchecks-io.html',
       controller: 'AdminHealthchecksIoCtrl'
+    });
+    $stateProvider.state('admin.json', {
+      url: '/json',
+      templateUrl: 'views/admin/json.html',
+      controller: 'AdminJsonCtrl'
     });
     $stateProvider.state('profile', {
       url: '/profile',

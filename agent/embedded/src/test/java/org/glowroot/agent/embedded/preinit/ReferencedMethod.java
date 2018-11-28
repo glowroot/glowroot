@@ -22,13 +22,13 @@ public class ReferencedMethod implements Comparable<ReferencedMethod> {
 
     private final String owner;
     private final String name;
-    private final String desc;
+    private final String descriptor;
 
     // optimization, since this is used so heavily in HashSet
     private final int hashCode;
 
-    public static ReferencedMethod create(String owner, String name, String desc) {
-        return new ReferencedMethod(owner, name, desc);
+    public static ReferencedMethod create(String owner, String name, String descriptor) {
+        return new ReferencedMethod(owner, name, descriptor);
     }
 
     public static ReferencedMethod create(String owner, String method) {
@@ -36,11 +36,11 @@ public class ReferencedMethod implements Comparable<ReferencedMethod> {
         return new ReferencedMethod(owner, parts[0], parts[1]);
     }
 
-    private ReferencedMethod(String owner, String name, String desc) {
+    private ReferencedMethod(String owner, String name, String descriptor) {
         this.owner = owner;
         this.name = name;
-        this.desc = desc;
-        hashCode = Objects.hashCode(owner, name, desc);
+        this.descriptor = descriptor;
+        hashCode = Objects.hashCode(owner, name, descriptor);
     }
 
     String getOwner() {
@@ -52,7 +52,7 @@ public class ReferencedMethod implements Comparable<ReferencedMethod> {
     }
 
     String getDesc() {
-        return desc;
+        return descriptor;
     }
 
     @Override
@@ -68,7 +68,7 @@ public class ReferencedMethod implements Comparable<ReferencedMethod> {
         if (obj instanceof ReferencedMethod) {
             ReferencedMethod that = (ReferencedMethod) obj;
             return Objects.equal(owner, that.owner) && Objects.equal(name, that.name)
-                    && Objects.equal(desc, that.desc);
+                    && Objects.equal(descriptor, that.descriptor);
         }
         return false;
     }
@@ -81,6 +81,6 @@ public class ReferencedMethod implements Comparable<ReferencedMethod> {
 
     @Override
     public String toString() {
-        return owner + ":" + name + ":" + desc;
+        return owner + ":" + name + ":" + descriptor;
     }
 }

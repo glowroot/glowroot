@@ -15,9 +15,6 @@
  */
 package org.glowroot.agent.plugin.javahttpserver;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.glowroot.agent.plugin.api.checker.Nullable;
 
 public class Strings {
@@ -26,23 +23,5 @@ public class Strings {
 
     public static String nullToEmpty(@Nullable String string) {
         return string == null ? "" : string;
-    }
-
-    public static List<String> split(String string) {
-        List<String> list = new ArrayList<String>();
-        int lastFoundIndex = -1;
-        int nextFoundIndex;
-        while ((nextFoundIndex = string.indexOf(',', lastFoundIndex + 1)) != -1) {
-            String value = string.substring(lastFoundIndex + 1, nextFoundIndex).trim();
-            if (!value.isEmpty()) {
-                list.add(value);
-            }
-            lastFoundIndex = nextFoundIndex;
-        }
-        String value = string.substring(lastFoundIndex + 1).trim();
-        if (!value.isEmpty()) {
-            list.add(value);
-        }
-        return list;
     }
 }

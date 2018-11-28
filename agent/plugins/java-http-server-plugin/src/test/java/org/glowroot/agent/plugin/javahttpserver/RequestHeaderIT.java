@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.glowroot.agent.plugin.javahttpserver;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableList;
 import com.sun.net.httpserver.HttpExchange;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -25,7 +26,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
+import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,7 +44,7 @@ public class RequestHeaderIT {
     public static void setUp() throws Exception {
         // tests only work with javaagent container because they need to weave bootstrap classes
         // that implement com.sun.net.httpserver.HttpExchange
-        container = Containers.createJavaagent();
+        container = JavaagentContainer.create();
     }
 
     @AfterClass
@@ -60,7 +61,7 @@ public class RequestHeaderIT {
     public void testStandardRequestHeaders() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
-                "Content-Type, Content-Length");
+                ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
         Trace trace = container.execute(SetStandardRequestHeaders.class, "Web");
@@ -77,7 +78,7 @@ public class RequestHeaderIT {
     public void testStandardRequestHeadersLowercase() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
-                "Content-Type, Content-Length");
+                ImmutableList.of("Content-Type", " Content-Length"));
 
         // when
         Trace trace = container.execute(SetStandardRequestHeadersLowercase.class, "Web");
@@ -94,7 +95,7 @@ public class RequestHeaderIT {
     public void testLotsOfRequestHeaders() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
-                "One,two");
+                ImmutableList.of("One", "two"));
 
         // when
         Trace trace = container.execute(SetOtherRequestHeaders.class, "Web");
@@ -113,9 +114,9 @@ public class RequestHeaderIT {
     public void testMaskRequestHeaders() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestHeaders",
-                "*");
+                ImmutableList.of("*"));
         container.getConfigService().setPluginProperty(PLUGIN_ID, "maskRequestHeaders",
-                "content-Len*");
+                ImmutableList.of("content-Len*"));
 
         // when
         Trace trace = container.execute(SetStandardRequestHeaders.class, "Web");

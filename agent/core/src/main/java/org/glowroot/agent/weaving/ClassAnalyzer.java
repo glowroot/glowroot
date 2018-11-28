@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -43,17 +44,17 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.config.ImmutableInstrumentationConfig;
-import org.glowroot.agent.config.InstrumentationConfig;
 import org.glowroot.agent.weaving.AnalyzedWorld.ParseContext;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 import org.glowroot.agent.weaving.ThinClassVisitor.ThinClass;
 import org.glowroot.agent.weaving.ThinClassVisitor.ThinMethod;
+import org.glowroot.common.config.ImmutableInstrumentationConfig;
+import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 
 class ClassAnalyzer {
@@ -76,6 +77,8 @@ class ClassAnalyzer {
     private final boolean shortCircuitBeforeAnalyzeMethods;
 
     private final byte[] classBytes;
+
+    private final boolean hackAdvisors;
 
     private @MonotonicNonNull Map<String, List<Advice>> methodAdvisors;
     private @MonotonicNonNull List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice;
@@ -182,6 +185,7 @@ class ClassAnalyzer {
                             && matchedMixinTypes.reweavable().isEmpty() && adviceMatchers.isEmpty();
         }
         this.classBytes = classBytes;
+        this.hackAdvisors = loader != null;
     }
 
     void analyzeMethods() {
@@ -200,8 +204,18 @@ class ClassAnalyzer {
         }
         for (ThinMethod nonBridgeMethod : thinClass.nonBridgeMethods()) {
             List<Advice> advisors = analyzeMethod(nonBridgeMethod);
+            // convert here
+            if (hackAdvisors) {
+                for (ListIterator<Advice> i = advisors.listIterator(); i.hasNext();) {
+                    Advice advice = i.next();
+                    Advice nonBootstrapLoaderAdvice = advice.nonBootstrapLoaderAdvice();
+                    if (nonBootstrapLoaderAdvice != null) {
+                        i.set(nonBootstrapLoaderAdvice);
+                    }
+                }
+            }
             if (!advisors.isEmpty()) {
-                methodAdvisors.put(nonBridgeMethod.name() + nonBridgeMethod.desc(), advisors);
+                methodAdvisors.put(nonBridgeMethod.name() + nonBridgeMethod.descriptor(), advisors);
             }
         }
         AnalyzedClass mostlyAnalyzedClass = analyzedClassBuilder.build();
@@ -243,7 +257,7 @@ class ClassAnalyzer {
 
     @RequiresNonNull("bridgeTargetAdvisors")
     private List<Advice> analyzeMethod(ThinMethod thinMethod) {
-        List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(thinMethod.desc()));
+        List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(thinMethod.descriptor()));
         if (Modifier.isFinal(thinMethod.access()) && Modifier.isPublic(thinMethod.access())) {
             ImmutablePublicFinalMethod.Builder builder = ImmutablePublicFinalMethod.builder()
                     .name(thinMethod.name());
@@ -255,7 +269,7 @@ class ClassAnalyzer {
         if (shortCircuitBeforeAnalyzeMethods) {
             return ImmutableList.of();
         }
-        Type returnType = Type.getReturnType(thinMethod.desc());
+        Type returnType = Type.getReturnType(thinMethod.descriptor());
         List<String> methodAnnotations = thinMethod.annotations();
         List<Advice> matchingAdvisors = getMatchingAdvisors(thinMethod, methodAnnotations,
                 parameterTypes, returnType);
@@ -333,13 +347,14 @@ class ClassAnalyzer {
         BridgeMethodClassVisitor bmcv = new BridgeMethodClassVisitor();
         new ClassReader(classBytes).accept(bmcv, ClassReader.SKIP_FRAMES);
         Map<String, String> bridgeMethodMap = bmcv.getBridgeTargetMethods();
-        String targetMethod = bridgeMethodMap.get(bridgeMethod.name() + bridgeMethod.desc());
+        String targetMethod = bridgeMethodMap.get(bridgeMethod.name() + bridgeMethod.descriptor());
         if (targetMethod == null) {
             // probably a visibility bridge for public method in package-private super class
             return null;
         }
         for (ThinMethod possibleTargetMethod : possibleTargetMethods) {
-            if (targetMethod.equals(possibleTargetMethod.name() + possibleTargetMethod.desc())) {
+            if (targetMethod
+                    .equals(possibleTargetMethod.name() + possibleTargetMethod.descriptor())) {
                 return possibleTargetMethod;
             }
         }
@@ -353,9 +368,9 @@ class ClassAnalyzer {
             if (!possibleTargetMethod.name().equals(bridgeMethod.name())) {
                 continue;
             }
-            Type[] bridgeMethodParamTypes = Type.getArgumentTypes(bridgeMethod.desc());
+            Type[] bridgeMethodParamTypes = Type.getArgumentTypes(bridgeMethod.descriptor());
             Type[] possibleTargetMethodParamTypes =
-                    Type.getArgumentTypes(possibleTargetMethod.desc());
+                    Type.getArgumentTypes(possibleTargetMethod.descriptor());
             if (possibleTargetMethodParamTypes.length != bridgeMethodParamTypes.length) {
                 continue;
             }
@@ -538,7 +553,8 @@ class ClassAnalyzer {
 
     private static boolean hasMainMethod(List<ThinMethod> methods) {
         for (ThinMethod method : methods) {
-            if (method.name().equals("main") && method.desc().equals("([Ljava/lang/String;)V")) {
+            if (method.name().equals("main")
+                    && method.descriptor().equals("([Ljava/lang/String;)V")) {
                 return true;
             }
         }
@@ -599,7 +615,7 @@ class ClassAnalyzer {
         ImmutableMap<Advice, LazyDefinedClass> newAdvisors =
                 AdviceGenerator.createAdvisors(instrumentationConfigs, null, false);
         try {
-            ClassLoaders.defineClassesInClassLoader(newAdvisors.values(), loader);
+            ClassLoaders.defineClasses(newAdvisors.values(), loader);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
@@ -714,7 +730,7 @@ class ClassAnalyzer {
         private final Map<String, String> bridgeTargetMethods = Maps.newHashMap();
 
         private BridgeMethodClassVisitor() {
-            super(ASM6);
+            super(ASM7);
         }
 
         public Map<String, String> getBridgeTargetMethods() {
@@ -722,12 +738,12 @@ class ClassAnalyzer {
         }
 
         @Override
-        public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
+        public @Nullable MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
             if ((access & ACC_BRIDGE) == 0) {
                 return null;
             }
-            return new BridgeMethodVisitor(name, desc);
+            return new BridgeMethodVisitor(name, descriptor);
         }
 
         private class BridgeMethodVisitor extends MethodVisitor {
@@ -739,14 +755,14 @@ class ClassAnalyzer {
             private boolean found;
 
             private BridgeMethodVisitor(String bridgeMethodName, String bridgeMethodDesc) {
-                super(ASM6);
+                super(ASM7);
                 this.bridgeMethodName = bridgeMethodName;
                 this.bridgeMethodDesc = bridgeMethodDesc;
                 bridgeMethodParamCount = Type.getArgumentTypes(bridgeMethodDesc).length;
             }
 
             @Override
-            public void visitMethodInsn(int opcode, String owner, String name, String desc,
+            public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
                     boolean itf) {
                 if (found) {
                     return;
@@ -754,7 +770,7 @@ class ClassAnalyzer {
                 if (!name.equals(bridgeMethodName)) {
                     return;
                 }
-                if (Type.getArgumentTypes(desc).length != bridgeMethodParamCount) {
+                if (Type.getArgumentTypes(descriptor).length != bridgeMethodParamCount) {
                     return;
                 }
                 if (opcode == INVOKESPECIAL) {
@@ -763,7 +779,8 @@ class ClassAnalyzer {
                     // already matches advice
                     return;
                 }
-                bridgeTargetMethods.put(this.bridgeMethodName + this.bridgeMethodDesc, name + desc);
+                bridgeTargetMethods.put(this.bridgeMethodName + this.bridgeMethodDesc,
+                        name + descriptor);
                 found = true;
             }
         }

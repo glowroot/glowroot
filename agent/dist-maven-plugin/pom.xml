@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.11.2-SNAPSHOT</version>
+    <version>0.12.3-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
@@ -31,19 +31,19 @@
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-plugin-api</artifactId>
-      <!-- version should match maven version prerequisite in parent pom -->
-      <version>3.2.2</version>
+      <!-- version should match requireMavenVersion in parent pom -->
+      <version>3.3.1</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-core</artifactId>
-      <!-- version should match maven version prerequisite in parent pom -->
-      <version>3.2.2</version>
+      <!-- version should match requireMavenVersion in parent pom -->
+      <version>3.3.1</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.plugin-tools</groupId>
       <artifactId>maven-plugin-annotations</artifactId>
-      <version>3.5.2</version>
+      <version>3.6.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -65,13 +65,13 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>6.2.1</version>
+      <version>7.0</version>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
-      <version>6.2.1</version>
+      <version>7.0</version>
     </dependency>
   </dependencies>
 

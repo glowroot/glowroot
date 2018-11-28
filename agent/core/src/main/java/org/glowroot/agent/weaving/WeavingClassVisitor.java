@@ -62,7 +62,7 @@ import static org.objectweb.asm.Opcodes.ACC_SUPER;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.ANEWARRAY;
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 import static org.objectweb.asm.Opcodes.ASTORE;
 import static org.objectweb.asm.Opcodes.ATHROW;
 import static org.objectweb.asm.Opcodes.DUP;
@@ -115,12 +115,14 @@ class WeavingClassVisitor extends ClassVisitor {
     private @MonotonicNonNull String metaHolderInternalName;
     private int methodMetaCounter;
 
+    private final Set<Advice> usedAdvisors = Sets.newHashSet();
+
     public WeavingClassVisitor(ClassWriter cw, @Nullable ClassLoader loader, boolean frames,
             boolean noLongerNeedToWeaveMainMethods, AnalyzedClass analyzedClass,
             List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice, List<ShimType> shimTypes,
             List<MixinType> mixinTypes, Map<String, List<Advice>> methodAdvisors,
             AnalyzedWorld analyzedWorld) {
-        super(ASM6, cw);
+        super(ASM7, cw);
         this.cw = cw;
         this.loader = loader;
         this.frames = frames;
@@ -167,7 +169,7 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     @Override
-    public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
+    public @Nullable MethodVisitor visitMethod(int access, String name, String descriptor,
             @Nullable String signature, String /*@Nullable*/ [] exceptions) {
         checkNotNull(type);
         if (isAbstractOrNativeOrSynthetic(access)) {
@@ -175,28 +177,29 @@ class WeavingClassVisitor extends ClassVisitor {
             // no need to weave bridge methods (which are also marked synthetic) since they forward
             // to non-bridged method which receives same advice (see ClassAnalyzer
             // bridgeTargetAdvisors)
-            return cw.visitMethod(access, name, desc, signature, exceptions);
+            return cw.visitMethod(access, name, descriptor, signature, exceptions);
         }
-        if (isMixinProxy(name, desc)) {
+        if (isMixinProxy(name, descriptor)) {
             return null;
         }
-        if (shimMethods.contains(name + desc)) {
+        if (shimMethods.contains(name + descriptor)) {
             // ignore proxy implementations of shim methods (they will be implemented in visitEnd())
             return null;
         }
-        List<Advice> matchingAdvisors = methodAdvisors.get(name + desc);
+        List<Advice> matchingAdvisors = methodAdvisors.get(name + descriptor);
         if (matchingAdvisors == null) {
             matchingAdvisors = ImmutableList.of();
         } else {
             matchingAdvisors = removeSuperseded(matchingAdvisors);
         }
         if (isInitWithMixins(name)) {
-            return visitInitWithMixins(access, name, desc, signature, exceptions, matchingAdvisors);
+            return visitInitWithMixins(access, name, descriptor, signature, exceptions,
+                    matchingAdvisors);
         }
-        MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+        MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
         if (!noLongerNeedToWeaveMainMethods) {
             if (Modifier.isPublic(access) && Modifier.isStatic(access) && name.equals("main")
-                    && desc.equals("([Ljava/lang/String;)V")) {
+                    && descriptor.equals("([Ljava/lang/String;)V")) {
                 mv.visitLdcInsn(type.getClassName());
                 mv.visitVarInsn(ALOAD, 0);
                 mv.visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(),
@@ -204,7 +207,7 @@ class WeavingClassVisitor extends ClassVisitor {
             } else if (type.getInternalName()
                     .equals("org/apache/commons/daemon/support/DaemonLoader")
                     && Modifier.isPublic(access) && Modifier.isStatic(access) && name.equals("load")
-                    && desc.equals("(Ljava/lang/String;[Ljava/lang/String;)Z")) {
+                    && descriptor.equals("(Ljava/lang/String;[Ljava/lang/String;)Z")) {
                 mv.visitVarInsn(ALOAD, 0);
                 mv.visitVarInsn(ALOAD, 1);
                 mv.visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(),
@@ -215,14 +218,19 @@ class WeavingClassVisitor extends ClassVisitor {
         if (matchingAdvisors.isEmpty()) {
             return mv;
         }
-        return visitMethodWithAdvice(mv, access, name, desc, matchingAdvisors);
+        return visitMethodWithAdvice(mv, access, name, descriptor, matchingAdvisors);
     }
 
-    private boolean isMixinProxy(String name, String desc) {
+    Set<Advice> getUsedAdvisors() {
+        return usedAdvisors;
+    }
+
+    private boolean isMixinProxy(String name, String descriptor) {
         for (ClassNode cn : mixinClassNodes) {
             List<MethodNode> methodNodes = cn.methods;
             for (MethodNode mn : methodNodes) {
-                if (!mn.name.equals("<init>") && mn.name.equals(name) && mn.desc.equals(desc)) {
+                if (!mn.name.equals("<init>") && mn.name.equals(name)
+                        && mn.desc.equals(descriptor)) {
                     return true;
                 }
             }
@@ -451,29 +459,46 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     @RequiresNonNull("type")
-    private MethodVisitor visitInitWithMixins(int access, String name, String desc,
+    private MethodVisitor visitInitWithMixins(int access, String name, String descriptor,
             @Nullable String signature, String /*@Nullable*/ [] exceptions,
             List<Advice> matchingAdvisors) {
-        Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, name, desc);
-        MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
-        mv = new InitMixins(mv, access, name, desc, mixinTypes, type);
+        MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
+        mv = new InitMixins(mv, access, name, descriptor, mixinTypes, type);
         for (Advice advice : matchingAdvisors) {
             if (!advice.pointcut().timerName().isEmpty()) {
                 logger.warn("cannot add timer to <clinit> or <init> methods at this time");
                 break;
             }
         }
-        return new WeavingMethodVisitor(mv, frames, access, name, desc, type, matchingAdvisors,
-                metaHolderInternalName, methodMetaUniqueNum, loader == null);
+        return newWeavingMethodVisitor(access, name, descriptor, matchingAdvisors, mv);
     }
 
     @RequiresNonNull("type")
     private MethodVisitor visitMethodWithAdvice(MethodVisitor mv, int access, String name,
-            String desc, Iterable<Advice> matchingAdvisors) {
+            String descriptor, List<Advice> matchingAdvisors) {
         // FIXME remove superseded advisors
-        Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, name, desc);
-        return new WeavingMethodVisitor(mv, frames, access, name, desc, type, matchingAdvisors,
-                metaHolderInternalName, methodMetaUniqueNum, loader == null);
+        return newWeavingMethodVisitor(access, name, descriptor, matchingAdvisors, mv);
+    }
+
+    @RequiresNonNull("type")
+    private WeavingMethodVisitor newWeavingMethodVisitor(int access, String name, String descriptor,
+            List<Advice> matchingAdvisors, MethodVisitor mv) {
+        Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, name, descriptor);
+        usedAdvisors.addAll(matchingAdvisors);
+        return new WeavingMethodVisitor(mv, frames, access, name, descriptor, type,
+                hackAdvisors(matchingAdvisors), metaHolderInternalName, methodMetaUniqueNum,
+                loader == null);
+    }
+
+    private List<Advice> hackAdvisors(List<Advice> advisors) {
+        // if (loader == null) {
+        return advisors;
+        // }
+        // List<Advice> hackedAdvisors = Lists.newArrayList();
+        // for (Advice advice : advisors) {
+        // hackedAdvisors.add(MoreObjects.firstNonNull(advice.nonBootstrapLoaderAdvice(), advice));
+        // }
+        // return hackedAdvisors;
     }
 
     private @Nullable Integer collectMetasAtMethod(Iterable<Advice> matchingAdvisors,
@@ -621,20 +646,20 @@ class WeavingClassVisitor extends ClassVisitor {
         private final Type type;
         private boolean cascadingConstructor;
 
-        InitMixins(MethodVisitor mv, int access, String name, String desc,
+        InitMixins(MethodVisitor mv, int access, String name, String descriptor,
                 List<MixinType> matchedMixinTypes, Type type) {
-            super(ASM6, mv, access, name, desc);
+            super(ASM7, mv, access, name, descriptor);
             this.matchedMixinTypes = ImmutableList.copyOf(matchedMixinTypes);
             this.type = type;
         }
 
         @Override
-        public void visitMethodInsn(int opcode, String owner, String name, String desc,
+        public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
                 boolean itf) {
             if (name.equals("<init>") && owner.equals(type.getInternalName())) {
                 cascadingConstructor = true;
             }
-            super.visitMethodInsn(opcode, owner, name, desc, itf);
+            super.visitMethodInsn(opcode, owner, name, descriptor, itf);
         }
 
         @Override

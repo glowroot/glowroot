@@ -51,7 +51,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
-import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.model.AggregatedTimer;
 import org.glowroot.agent.model.AsyncQueryData;
@@ -71,6 +70,7 @@ import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.internal.ReadableMessage;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
+import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.util.Cancellable;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.Traverser;

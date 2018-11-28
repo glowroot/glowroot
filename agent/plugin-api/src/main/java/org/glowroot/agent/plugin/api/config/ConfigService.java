@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,4 +60,15 @@ public interface ConfigService {
      * hidden) on the configuration page under the plugin's configuration section.
      */
     DoubleProperty getDoubleProperty(String name);
+
+    /**
+     * Returns the {@code List} plugin property value with the specified {@code name}. {@code null}
+     * is never returned. If there is no {@code String} plugin property with the specified
+     * {@code name} then the empty list is returned.
+     * 
+     * Plugin properties are scoped per plugin. The are defined in the plugin's
+     * META-INF/glowroot.plugin.json file, and can be modified (assuming they are not marked as
+     * hidden) on the configuration page under the plugin's configuration section.
+     */
+    ListProperty getListProperty(String name);
 }

@@ -45,7 +45,7 @@
                  gt-label="{{property.label}}"
                  gt-model="property.value"
                  gt-disabled="!agentRollup.permissions.config.edit.plugins"
-                 gt-width="25em">
+                 gt-width="30em">
               <div class="help-block"
                    ng-if="property.description">
                 {{property.description}}
@@ -76,6 +76,27 @@
               <div class="help-block"
                    ng-if="property.description">
                 {{property.description}}
+              </div>
+            </div>
+          </div>
+          <div ng-switch-when="list">
+            <div class="form-group row">
+              <label class="col-xl-3 gt-form-label-xl"
+                     for="{{property.name}}">
+                {{property.label}}
+              </label>
+              <div class="col-xl-9">
+                <input class="form-control"
+                       ng-class="{'mt-1': !$first}"
+                       ng-repeat="unused in property.value track by $index"
+                       ng-model="property.value[$index]"
+                       ng-disabled="!agentRollup.permissions.config.edit.plugins"
+                       ng-attr-id="{{$first ? property.name : undefined}}"
+                       style="max-width: 30em;">
+                <div class="help-block"
+                     ng-if="property.description">
+                  {{property.description}}
+                </div>
               </div>
             </div>
           </div>

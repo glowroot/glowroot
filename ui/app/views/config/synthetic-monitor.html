@@ -13,6 +13,13 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
+<!-- clearfix is needed for smaller screens where gt-config-return-link is floated  -->
+<div class="clearfix">
+  <a class="gt-config-return-link"
+     href="config/synthetic-monitor-list{{agentQueryString()}}">
+    Return to list
+  </a>
+</div>
 <div class="card">
   <div class="card-header">
     <h2 ng-class="{'gt-lighten-font': !loaded && !httpError}">
@@ -31,7 +38,7 @@
          name="formCtrl"
          style="padding-top: 15px;">
       <div class="form-group row">
-        <label class="col-xl-3 col-form-label">
+        <label class="col-xl-3 gt-check-legend-xl">
           Synthetic monitor type
         </label>
         <div class="col-xl-9">
@@ -77,6 +84,15 @@
              gt-placeholder="Ping {{config.pingUrl ? config.pingUrl : '<url>'}}">
           <div class="help-block">
             Display name for this synthetic monitor.
+          </div>
+        </div>
+        <div gt-form-group
+             gt-label="ID"
+             gt-model="config.id"
+             gt-disabled="!agentRollup.permissions.config.edit.syntheticMonitors || !isNew()"
+             gt-width="40em">
+          <div class="help-block">
+            ID for this synthetic monitor. This will be auto-generated on creation if left blank.
           </div>
         </div>
       </div>

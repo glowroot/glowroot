@@ -30,7 +30,7 @@ import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.cassandra.ResultSetAspect.ResultSet;
+import org.glowroot.agent.plugin.cassandra.ResultSetAspect.ResultSetMixin;
 
 public class ResultSetFutureAspect {
 
@@ -108,7 +108,7 @@ public class ResultSetFutureAspect {
             return asyncQueryEntry.extendSyncTimer(threadContext);
         }
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable ResultSet resultSet,
+        public static void onReturn(@BindReturn @Nullable ResultSetMixin resultSet,
                 @BindReceiver ResultSetFutureMixin resultSetFuture) {
             if (resultSet == null) {
                 return;
@@ -137,7 +137,7 @@ public class ResultSetFutureAspect {
             return FutureGetAdvice.onBefore(threadContext, resultSetFuture);
         }
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable ResultSet resultSet,
+        public static void onReturn(@BindReturn @Nullable ResultSetMixin resultSet,
                 @BindReceiver ResultSetFutureMixin resultSetFuture) {
             FutureGetAdvice.onReturn(resultSet, resultSetFuture);
         }

@@ -1,0 +1,99 @@
+<!--
+  Copyright 2018 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<!-- clearfix is needed for smaller screens where gt-config-return-link is floated  -->
+<div class="clearfix">
+  <a class="gt-config-return-link"
+     href="admin/integration-list">
+    Return to list
+  </a>
+</div>
+<div class="card">
+  <div class="card-header">
+    <h2>
+      Integrations
+      <span class="d-inline-block gt-separator">
+        |
+      </span>
+      <span style="font-size: 24px;">Slack</span>
+    </h2>
+  </div>
+  <div class="card-body">
+    <div ng-include src="'template/gt-loading-overlay.html'"></div>
+    <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+    <div ng-form
+         gt-form-autofocus-on-first-input
+         name="formCtrl"
+         style="padding-top: 15px;">
+      <fieldset class="gt-fieldset"
+                ng-repeat="webhook in config.webhooks">
+        <legend class="gt-legend"
+                style="margin-bottom: 20px;">
+          Webhook
+        </legend>
+        <div gt-form-group
+             gt-label="Webhook url"
+             gt-model="webhook.url"
+             gt-required="true"
+             gt-disabled="!layout.adminEdit"
+             gt-width="40em">
+        </div>
+        <div gt-form-group
+             gt-label="Display"
+             gt-model="webhook.display"
+             gt-required="true"
+             gt-disabled="!layout.adminEdit"
+             gt-width="40em">
+          <div class="help-block">
+            Can be any text. Only used when displaying the webhook on the alert configuration page.
+          </div>
+        </div>
+        <div class="form-group row"
+             ng-if="layout.adminEdit">
+          <div class="offset-xl-3 col-xl-9">
+            <button class="btn btn-danger float-right"
+                    ng-click="removeWebhook(webhook)"
+                    ng-if="layout.adminEdit">
+              Remove this webhook
+            </button>
+          </div>
+        </div>
+      </fieldset>
+      <fieldset class="gt-fieldset"
+                ng-if="layout.adminEdit">
+        <legend class="gt-legend">
+          Add {{config.webhooks.length ? 'another' : 'a'}} webhook
+        </legend>
+        <button class="btn btn-secondary"
+                ng-click="addWebhook()"
+                style="margin-bottom: 23px; margin-left: 14px;">
+          Add
+        </button>
+      </fieldset>
+      <div class="form-group row gt-form-buttons-below-fieldset"
+           ng-if="layout.adminEdit">
+        <div class="offset-xl-3 col-xl-9">
+          <div gt-button
+               gt-label="Save changes"
+               gt-click="save(deferred)"
+               gt-validate-form="formCtrl">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- each page with confirmation dialog needs its own confirmation dom so that it is deleted on $destroy -->
+<div ng-include="'template/gt-confirmation.html'"></div>

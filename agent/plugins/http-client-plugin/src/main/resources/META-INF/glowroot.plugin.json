@@ -5,8 +5,12 @@
     "org.glowroot.agent.plugin.httpclient.ApacheHttpClientAspect",
     "org.glowroot.agent.plugin.httpclient.ApacheHttpAsyncClientAspect",
     "org.glowroot.agent.plugin.httpclient.ApacheHttpClient3xAspect",
-    "org.glowroot.agent.plugin.httpclient.AsyncHttpClientAspect",
+    "org.glowroot.agent.plugin.httpclient.AsyncHttpClientAspect1x",
+    "org.glowroot.agent.plugin.httpclient.AsyncHttpClientAspect2x",
     "org.glowroot.agent.plugin.httpclient.HttpURLConnectionAspect",
-    "org.glowroot.agent.plugin.httpclient.OkHttpClientAspect"
+    "org.glowroot.agent.plugin.httpclient.OkHttpClientAspect",
+    "org.glowroot.agent.plugin.httpclient.OkHttpClient2xAspect",
+    "org.glowroot.agent.plugin.httpclient.AxisClientAspect",
+    "org.glowroot.agent.plugin.httpclient.WiremockApacheHttpClientAspect"
   ]
 }

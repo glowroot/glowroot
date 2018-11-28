@@ -37,8 +37,8 @@ import org.glowroot.agent.config.ImmutablePluginDescriptor;
 import org.glowroot.agent.config.ImmutablePropertyDescriptor;
 import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.config.PropertyDescriptor;
-import org.glowroot.agent.config.PropertyValue;
 import org.glowroot.agent.dist.PluginConfig.PropertyConfig;
+import org.glowroot.common.config.PropertyValue;
 
 import static com.google.common.base.Charsets.UTF_8;
 

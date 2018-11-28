@@ -53,7 +53,7 @@ public class Hibernate {
         for (int i = 0; i <= 17; i++) {
             runJava8("5.2." + i + ".Final");
         }
-        for (int i = 0; i <= 6; i++) {
+        for (int i = 0; i <= 7; i++) {
             runJava8("5.3." + i + ".Final");
         }
     }
@@ -64,17 +64,17 @@ public class Hibernate {
         if (!annotationsVersion.isEmpty()) {
             Util.updateLibVersion(MODULE_PATH, "hibernate.annotations.version", annotationsVersion);
         }
-        Util.runTests(MODULE_PATH, profiles, JAVA6, JAVA7, JAVA8);
+        Util.runTests(MODULE_PATH, profiles, JAVA8, JAVA7, JAVA6);
     }
 
     private static void run(String version) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "hibernate.version", version);
-        Util.runTests(MODULE_PATH, JAVA6, JAVA7, JAVA8);
+        Util.runTests(MODULE_PATH, JAVA8, JAVA7, JAVA6);
     }
 
     private static void runJava7(String version) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "hibernate.version", version);
-        Util.runTests(MODULE_PATH, JAVA7, JAVA8);
+        Util.runTests(MODULE_PATH, JAVA8, JAVA7);
     }
 
     private static void runJava8(String version) throws Exception {

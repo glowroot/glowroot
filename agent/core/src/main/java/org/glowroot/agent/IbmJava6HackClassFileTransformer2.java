@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.BytecodeEarly;
 
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 
 class IbmJava6HackClassFileTransformer2 implements ClassFileTransformer {
 
@@ -69,17 +69,17 @@ class IbmJava6HackClassFileTransformer2 implements ClassFileTransformer {
         private final String methodName;
 
         private IbmJava6HackClassVisitor2(ClassWriter cw, String methodName) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
             this.methodName = methodName;
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String desc,
+        public MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
-            if (name.equals(methodName) && desc.endsWith(")Ljava/util/Set;")) {
-                return new IbmJava6HackMethodAdvice(mv, access, name, desc);
+            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
+            if (name.equals(methodName) && descriptor.endsWith(")Ljava/util/Set;")) {
+                return new IbmJava6HackMethodAdvice(mv, access, name, descriptor);
             } else {
                 return mv;
             }
@@ -88,8 +88,9 @@ class IbmJava6HackClassFileTransformer2 implements ClassFileTransformer {
 
     private static class IbmJava6HackMethodAdvice extends AdviceAdapter {
 
-        private IbmJava6HackMethodAdvice(MethodVisitor mv, int access, String name, String desc) {
-            super(ASM6, mv, access, name, desc);
+        private IbmJava6HackMethodAdvice(MethodVisitor mv, int access, String name,
+                String descriptor) {
+            super(ASM7, mv, access, name, descriptor);
         }
 
         @Override

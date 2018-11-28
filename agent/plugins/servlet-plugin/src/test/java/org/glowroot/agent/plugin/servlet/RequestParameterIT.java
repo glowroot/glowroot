@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.junit.After;
@@ -103,7 +104,8 @@ public class RequestParameterIT {
     @Test
     public void testWithoutCaptureRequestParameters() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestParameters", "");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureRequestParameters",
+                ImmutableList.<String>of());
         // when
         Trace trace = container.execute(GetParameter.class, "Web");
         // then

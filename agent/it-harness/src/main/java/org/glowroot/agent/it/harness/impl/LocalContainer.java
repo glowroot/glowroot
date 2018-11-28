@@ -51,6 +51,10 @@ public class LocalContainer implements Container {
 
     private volatile @Nullable Thread executingAppThread;
 
+    public static LocalContainer create() throws Exception {
+        return new LocalContainer(null, false, ImmutableMap.<String, String>of());
+    }
+
     public static LocalContainer create(File testDir) throws Exception {
         return new LocalContainer(testDir, false, ImmutableMap.<String, String>of());
     }

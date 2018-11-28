@@ -167,9 +167,6 @@ public class CassandraWriteMetrics {
         }
         BoundStatement boundStatement = (BoundStatement) statement;
         PreparedStatement preparedStatement = boundStatement.preparedStatement();
-        if (!preparedStatement.getQueryString().startsWith("insert ")) {
-            return;
-        }
         List<ColumnDefinitions.Definition> columnDefinitions =
                 preparedStatement.getVariables().asList();
         String tableName = columnDefinitions.get(0).getTable();

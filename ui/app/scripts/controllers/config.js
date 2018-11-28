@@ -92,7 +92,7 @@ glowroot.controller('ConfigCtrl', [
     if ($scope.layout.central) {
 
       $scope.$watch(function () {
-        return $location.search();
+        return $location.url();
       }, function (newValue, oldValue) {
         if (newValue !== oldValue) {
           // need to refresh selectpicker in order to update hrefs of the items
@@ -111,8 +111,7 @@ glowroot.controller('ConfigCtrl', [
         $scope.refreshAgentRollups(from, to, $scope);
       };
 
-      // the show.bs.dropdown event target is the button which is a sibling of the select
-      $('#agentRollupDropdown').parent().on('show.bs.dropdown', refreshAgentRollups);
+      $('#agentRollupDropdown').on('show.bs.select', refreshAgentRollups);
 
       if ($scope.agentRollups === undefined) {
         refreshAgentRollups();

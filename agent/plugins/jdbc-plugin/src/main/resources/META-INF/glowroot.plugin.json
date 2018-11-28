@@ -3,12 +3,19 @@
   "id": "jdbc",
   "properties": [
     {
-      "name": "captureBindParameters",
-      "type": "boolean",
-      "default": true,
-      "label": "Bind parameters",
-      "checkboxLabel": "Capture jdbc bind parameters",
-      "description": "Capture jdbc bind parameters for PreparedStatement executions."
+      "name": "captureBindParametersIncludes",
+      "type": "list",
+      "default": [
+        ".*"
+      ],
+      "label": "Capture bind parameters for these queries",
+      "description": "List of regular expressions. If a query matches one or more of these regular expressions and also does not match any of the regular expressions in the \"do not capture\" list below, then its jdbc bind parameters will be captured when it is executed as a PreparedStatement."
+    },
+    {
+      "name": "captureBindParametersExcludes",
+      "type": "list",
+      "label": "Do not capture bind parameters for these queries",
+      "description": "List of regular expressions. If a query matches one or more of these regular expressions then its jdbc bind parameters will NOT be captured when it is executed as a PreparedStatement, even if the query matches one or more of the regular expressions in the \"capture\" list above."
     },
     {
       "name": "captureResultSetNavigate",

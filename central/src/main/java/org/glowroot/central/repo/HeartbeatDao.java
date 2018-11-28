@@ -63,7 +63,7 @@ public class HeartbeatDao {
             boundStatement.setString(i++, agentRollupId);
             boundStatement.setTimestamp(i++, new Date(clock.currentTimeMillis()));
             boundStatement.setInt(i++, TTL);
-            futures.add(session.executeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement));
         }
         MoreFutures.waitForAll(futures);
     }
@@ -75,6 +75,6 @@ public class HeartbeatDao {
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setTimestamp(i++, new Date(centralCaptureFrom));
         boundStatement.setTimestamp(i++, new Date(centralCaptureTo));
-        return !session.execute(boundStatement).isExhausted();
+        return !session.read(boundStatement).isExhausted();
     }
 }

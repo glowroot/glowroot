@@ -42,6 +42,8 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.bytecode.api.Bytecode;
 import org.glowroot.agent.bytecode.api.ThreadContextPlus;
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
+import org.glowroot.agent.plugin.api.ParameterHolder;
+import org.glowroot.agent.plugin.api.internal.ParameterHolderImpl;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.IsEnabled;
@@ -67,6 +69,15 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private static final Type threadContextPlusType = Type.getType(ThreadContextPlus.class);
 
     private static final Type bytecodeType = Type.getType(Bytecode.class);
+
+    private static final Type parameterHolderType = Type.getType(ParameterHolder.class);
+    private static final Type parameterHolderImplType = Type.getType(ParameterHolderImpl.class);
+
+    private static final Method parameterHolderImplCreateMethod = new Method("create",
+            "(Ljava/lang/Object;)Lorg/glowroot/agent/plugin/api/internal/ParameterHolderImpl;");
+
+    private static final Method parameterHolderImplGetMethod =
+            new Method("get", "()Ljava/lang/Object;");
 
     // starts at 1 since 0 is used for "no nesting group"
     private static final AtomicInteger nestingGroupIdCounter = new AtomicInteger(1);
@@ -97,6 +108,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
     private final Map<Advice, Integer> prevNestingGroupIdLocals = Maps.newHashMap();
     private final Map<Advice, Integer> prevSuppressionKeyIdLocals = Maps.newHashMap();
 
+    private final Map<Advice, Map<Integer, Integer>> parameterHolderLocals = Maps.newHashMap();
+
     // don't need map of thread context locals since all advice can share the same
     // threadContextLocal
     private @MonotonicNonNull Integer threadContextLocal;
@@ -113,17 +126,18 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     private int[] savedArgLocals = new int[0];
 
-    WeavingMethodVisitor(MethodVisitor mv, boolean frames, int access, String name, String desc,
-            Type owner, Iterable<Advice> advisors, @Nullable String metaHolderInternalName,
-            @Nullable Integer methodMetaGroupUniqueNum, boolean bootstrapClassLoader) {
-        super(ASM6, new FrameDeduppingMethodVisitor(mv), access, name, desc);
+    WeavingMethodVisitor(MethodVisitor mv, boolean frames, int access, String name,
+            String descriptor, Type owner, List<Advice> advisors,
+            @Nullable String metaHolderInternalName, @Nullable Integer methodMetaGroupUniqueNum,
+            boolean bootstrapClassLoader) {
+        super(ASM7, new FrameDeduppingMethodVisitor(mv), access, name, descriptor);
         this.frames = frames;
         this.access = access;
         this.name = name;
         this.owner = owner;
         this.advisors = ImmutableList.copyOf(advisors);
-        argumentTypes = Type.getArgumentTypes(desc);
-        returnType = Type.getReturnType(desc);
+        argumentTypes = Type.getArgumentTypes(descriptor);
+        returnType = Type.getReturnType(descriptor);
         this.metaHolderInternalName = metaHolderInternalName;
         this.methodMetaGroupUniqueNum = methodMetaGroupUniqueNum;
         this.bootstrapClassLoader = bootstrapClassLoader;
@@ -211,14 +225,14 @@ class WeavingMethodVisitor extends AdviceAdapter {
     }
 
     @Override
-    public void visitLocalVariable(String name, String desc, @Nullable String signature,
+    public void visitLocalVariable(String name, String descriptor, @Nullable String signature,
             Label start, Label end, int index) {
         // the JSRInlinerAdapter writes the local variable "this" across different label ranges
         // so visitedLocalVariableThis is checked and updated to ensure this block is only executed
         // once per method
         //
         if (!name.equals("this") || visitedLocalVariableThis) {
-            super.visitLocalVariable(name, desc, signature, start, end, index);
+            super.visitLocalVariable(name, descriptor, signature, start, end, index);
             return;
         }
         visitedLocalVariableThis = true;
@@ -232,7 +246,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
         // so this is a good place to put the outer end label for the local variable 'this'
         Label outerEndLabel = new Label();
         visitLabel(outerEndLabel);
-        super.visitLocalVariable(name, desc, signature, methodStartLabel, outerEndLabel, index);
+        super.visitLocalVariable(name, descriptor, signature, methodStartLabel, outerEndLabel,
+                index);
         // at the same time, may as well define local vars for enabled and traveler as
         // applicable
         for (int i = 0; i < advisors.size(); i++) {
@@ -298,6 +313,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         for (Advice advice : advisors) {
             defineLocalVars(advice);
             defineTravelerLocalVar(advice);
+            defineParameterHolderVars(advice);
         }
         if (name.equals("<init>")) {
             // this is to solve a super special case with advice on constructors that have local
@@ -423,7 +439,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
         }
         if (isEnabledAdvice != null) {
             loadMethodParameters(advice.isEnabledParameters(), 0, null, advice.adviceType(),
-                    IsEnabled.class, false, nestingGroup, suppressionKey);
+                    IsEnabled.class, false, null, nestingGroup, suppressionKey);
             visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
                     isEnabledAdvice.getName(), isEnabledAdvice.getDescriptor(), false);
             if (otherEnabledFactorsDisabledEnd == null) {
@@ -558,6 +574,24 @@ class WeavingMethodVisitor extends AdviceAdapter {
         travelerLocals.put(advice, travelerLocal);
     }
 
+    private void defineParameterHolderVars(Advice advice) {
+        Map<Integer, Integer> locals = Maps.newHashMap();
+        int argIndex = 0;
+        for (AdviceParameter adviceParameter : advice.onBeforeParameters()) {
+            if (adviceParameter.kind() == ParameterKind.METHOD_ARG) {
+                if (adviceParameter.type().equals(parameterHolderType)) {
+                    int local = newLocal(parameterHolderImplType);
+                    // temporary initial value needed for Java 7 stack map frames
+                    visitInsn(ACONST_NULL);
+                    storeLocal(local);
+                    locals.put(argIndex, local);
+                }
+                argIndex++;
+            }
+        }
+        parameterHolderLocals.put(advice, locals);
+    }
+
     private void invokeOnBefore(Advice advice, @Nullable Integer travelerLocal) {
         Method onBeforeAdvice = advice.onBeforeAdvice();
         if (onBeforeAdvice == null) {
@@ -574,19 +608,35 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 visitJumpInsn(IFEQ, onBeforeBlockEnd);
             }
         }
+        Map<Integer, Integer> parameterHolderLocals =
+                checkNotNull(this.parameterHolderLocals.get(advice));
         loadMethodParameters(advice.onBeforeParameters(), 0, null, advice.adviceType(),
-                OnBefore.class, false, advice.pointcut().nestingGroup(),
+                OnBefore.class, false, parameterHolderLocals, advice.pointcut().nestingGroup(),
                 advice.pointcut().suppressionKey());
         if (enabledLocal != null && name.equals("<init>")) {
-            String desc = "(Z" + onBeforeAdvice.getDescriptor().substring(1);
+            String descriptor = "(Z" + onBeforeAdvice.getDescriptor().substring(1);
             visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
-                    onBeforeAdvice.getName(), desc, false);
+                    onBeforeAdvice.getName(), descriptor, false);
         } else {
             visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
                     onBeforeAdvice.getName(), onBeforeAdvice.getDescriptor(), false);
         }
         if (travelerLocal != null) {
             storeLocal(travelerLocal);
+        }
+        for (Map.Entry<Integer, Integer> entry : parameterHolderLocals.entrySet()) {
+            int argIndex = entry.getKey();
+            int parameterHolderLocal = entry.getValue();
+            loadLocal(parameterHolderLocal);
+            invokeVirtual(parameterHolderImplType, parameterHolderImplGetMethod);
+            Type argType = getArgumentTypes()[argIndex];
+            boolean primitive = argType.getSort() < Type.ARRAY;
+            if (primitive) {
+                unbox(argType);
+            } else {
+                checkCast(argType);
+            }
+            storeArg(argIndex);
         }
         if (onBeforeBlockEnd != null) {
             visitLabel(onBeforeBlockEnd);
@@ -694,7 +744,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     break;
             }
             loadMethodParameters(advice.onReturnParameters(), startIndex,
-                    travelerLocals.get(advice), advice.adviceType(), OnReturn.class, true,
+                    travelerLocals.get(advice), advice.adviceType(), OnReturn.class, true, null,
                     advice.pointcut().nestingGroup(), advice.pointcut().suppressionKey(), stack);
         } else if (onReturnAdvice.getReturnType().getSort() != Type.VOID && opcode != RETURN) {
             pop();
@@ -768,8 +818,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
                 stack = new Object[] {"java/lang/Throwable"};
             }
             loadMethodParameters(advice.onThrowParameters(), startIndex, travelerLocals.get(advice),
-                    advice.adviceType(), OnThrow.class, true, advice.pointcut().nestingGroup(),
-                    advice.pointcut().suppressionKey(), stack);
+                    advice.adviceType(), OnThrow.class, true, null,
+                    advice.pointcut().nestingGroup(), advice.pointcut().suppressionKey(), stack);
         }
         visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
                 onThrowAdvice.getName(), onThrowAdvice.getDescriptor(), false);
@@ -792,7 +842,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             visitJumpInsn(IFEQ, onAfterBlockEnd);
         }
         loadMethodParameters(advice.onAfterParameters(), 0, travelerLocals.get(advice),
-                advice.adviceType(), OnAfter.class, true, advice.pointcut().nestingGroup(),
+                advice.adviceType(), OnAfter.class, true, null, advice.pointcut().nestingGroup(),
                 advice.pointcut().suppressionKey());
         visitMethodInsn(INVOKESTATIC, advice.adviceType().getInternalName(),
                 onAfterAdvice.getName(), onAfterAdvice.getDescriptor(), false);
@@ -861,9 +911,9 @@ class WeavingMethodVisitor extends AdviceAdapter {
 
     private void loadMethodParameters(List<AdviceParameter> parameters, int startIndex,
             @Nullable Integer travelerLocal, Type adviceType,
-            Class<? extends Annotation> annotationType, boolean useSavedArgs, String nestingGroup,
+            Class<? extends Annotation> annotationType, boolean useSavedArgs,
+            @Nullable Map<Integer, Integer> parameterHolderLocals, String nestingGroup,
             String suppressionKey, Object... stack) {
-
         int argIndex = 0;
         for (int i = startIndex; i < parameters.size(); i++) {
             AdviceParameter parameter = parameters.get(i);
@@ -872,8 +922,15 @@ class WeavingMethodVisitor extends AdviceAdapter {
                     loadTarget();
                     break;
                 case METHOD_ARG:
-                    loadMethodParameter(adviceType, annotationType, argIndex++, parameter,
+                    loadMethodParameter(adviceType, annotationType, argIndex, parameter,
                             useSavedArgs);
+                    if (parameterHolderLocals != null && parameter.type().getClassName()
+                            .equals(ParameterHolder.class.getName())) {
+                        invokeStatic(parameterHolderImplType, parameterHolderImplCreateMethod);
+                        dup();
+                        storeLocal(checkNotNull(parameterHolderLocals.get(argIndex)));
+                    }
+                    argIndex++;
                     break;
                 case METHOD_ARG_ARRAY:
                     loadArgArray(useSavedArgs);

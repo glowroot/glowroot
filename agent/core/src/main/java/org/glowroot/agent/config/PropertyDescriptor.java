@@ -15,14 +15,18 @@
  */
 package org.glowroot.agent.config;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.config.PropertyValue.PropertyType;
+import org.glowroot.common.config.PropertyValue;
+import org.glowroot.common.config.PropertyValue.PropertyType;
 
 @Value.Immutable
 public abstract class PropertyDescriptor {
@@ -52,19 +56,34 @@ public abstract class PropertyDescriptor {
     PropertyValue getValidatedNonNullDefaultValue() {
         PropertyValue defaultValue = defaultValue();
         if (defaultValue == null) {
-            return PropertyValue.getDefaultValue(type());
+            return getDefaultValue(type());
         }
         Object value = defaultValue.value();
         if (value == null) {
             // this actually shouldn't occur since jackson unmarshals null defaultValue as null
             // as opposed to new PropertyValue(null)
-            return PropertyValue.getDefaultValue(type());
+            return getDefaultValue(type());
         }
         if (isValidType(value, type())) {
             return new PropertyValue(value);
         } else {
             logger.warn("invalid default value for plugin property: {}", name());
-            return PropertyValue.getDefaultValue(type());
+            return getDefaultValue(type());
+        }
+    }
+
+    static PropertyValue getDefaultValue(PropertyType type) {
+        switch (type) {
+            case BOOLEAN:
+                return new PropertyValue(false);
+            case DOUBLE:
+                return new PropertyValue(null);
+            case STRING:
+                return new PropertyValue("");
+            case LIST:
+                return new PropertyValue(ImmutableList.of());
+            default:
+                throw new AssertionError("Unexpected property type: " + type);
         }
     }
 
@@ -76,6 +95,8 @@ public abstract class PropertyDescriptor {
                 return value instanceof String;
             case DOUBLE:
                 return value instanceof Double;
+            case LIST:
+                return value instanceof List;
             default:
                 throw new AssertionError("Unexpected property type: " + type);
         }

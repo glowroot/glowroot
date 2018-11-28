@@ -33,7 +33,7 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 // TODO if config.json file has unrecognized top-level node (something other than "transactions",
-// "ui", "userRecording", "advanced", etc) then log warning and remove that node
+// "uiDefaults", "userRecording", "advanced", etc) then log warning and remove that node
 class ConfigFile {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigFile.class);
@@ -45,8 +45,9 @@ class ConfigFile {
 
     private final File file;
     private final ObjectNode rootObjectNode;
+    private final boolean readOnly;
 
-    ConfigFile(List<File> confDirs) {
+    ConfigFile(List<File> confDirs, boolean readOnly) {
         file = new File(confDirs.get(0), "config.json");
         if (file.exists()) {
             rootObjectNode = readRootObjectNode(file);
@@ -58,6 +59,7 @@ class ConfigFile {
                 rootObjectNode = readRootObjectNode(defaultFile);
             }
         }
+        this.readOnly = readOnly;
     }
 
     <T> /*@Nullable*/ T getConfig(String key, Class<T> clazz) {
@@ -69,15 +71,30 @@ class ConfigFile {
     }
 
     void writeConfig(String key, Object config) throws IOException {
+        if (readOnly) {
+            throw new IllegalStateException("Running with config.readOnly=true so config updates"
+                    + " are not allowed");
+        }
         rootObjectNode.replace(key, mapper.valueToTree(config));
-        ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder);
+        ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder, false);
     }
 
-    void writeConfigs(Map<String, Object> configs) throws IOException {
+    void writeAllConfigs(Map<String, Object> configs) throws IOException {
+        if (readOnly) {
+            throw new IllegalStateException("Running with config.readOnly=true so config updates"
+                    + " are not allowed");
+        }
         for (Map.Entry<String, Object> entry : configs.entrySet()) {
             rootObjectNode.replace(entry.getKey(), mapper.valueToTree(entry.getValue()));
         }
-        ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder);
+        ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder, false);
+    }
+
+    void writeAllConfigsOnStartup(Map<String, Object> configs) throws IOException {
+        for (Map.Entry<String, Object> entry : configs.entrySet()) {
+            rootObjectNode.replace(entry.getKey(), mapper.valueToTree(entry.getValue()));
+        }
+        ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder, readOnly);
     }
 
     @OnlyUsedByTests
@@ -92,6 +109,8 @@ class ConfigFile {
         upgradeAlertsIfNeeded(rootObjectNode);
         upgradeUiIfNeeded(rootObjectNode);
         upgradeAdvancedIfNeeded(rootObjectNode);
+        upgradePluginPropertiesIfNeeded(rootObjectNode);
+        upgradeSlowThresholdOverrideIfNeeded(rootObjectNode);
         return rootObjectNode;
     }
 
@@ -105,8 +124,8 @@ class ConfigFile {
         return null;
     }
 
-    private static void upgradeAlertsIfNeeded(ObjectNode configRootObjectNode) {
-        JsonNode alertsNode = configRootObjectNode.get("alerts");
+    private static void upgradeAlertsIfNeeded(ObjectNode rootObjectNode) {
+        JsonNode alertsNode = rootObjectNode.get("alerts");
         if (alertsNode == null || !alertsNode.isArray()) {
             return;
         }
@@ -177,10 +196,12 @@ class ConfigFile {
             uiObjectNode.set("defaultPercentiles",
                     uiObjectNode.remove("defaultDisplayedPercentiles"));
         }
+        // upgrade from 0.10.12 to 0.11.0
+        configRootObjectNode.set("uiDefaults", configRootObjectNode.remove("ui"));
     }
 
-    private static void upgradeAdvancedIfNeeded(ObjectNode configRootObjectNode) {
-        JsonNode advancedNode = configRootObjectNode.get("advanced");
+    private static void upgradeAdvancedIfNeeded(ObjectNode rootObjectNode) {
+        JsonNode advancedNode = rootObjectNode.get("advanced");
         if (advancedNode == null || !advancedNode.isObject()) {
             return;
         }
@@ -204,6 +225,50 @@ class ConfigFile {
             // upgrade from 0.10.5 to 0.10.6
             advancedObjectNode.set("maxProfileSamplesPerTransaction",
                     advancedObjectNode.remove("maxStackTraceSamplesPerTransaction"));
+        }
+    }
+
+    private static void upgradeSlowThresholdOverrideIfNeeded(ObjectNode rootObjectNode) {
+        JsonNode transactionsNode = rootObjectNode.get("transactions");
+        if (transactionsNode == null || !transactionsNode.isObject()) {
+            return;
+        }
+        ObjectNode transactionsObjectNode = (ObjectNode) transactionsNode;
+        if (transactionsObjectNode.has("slowThresholds")) {
+            // upgrade from 0.11.1 to 0.12.0
+            transactionsObjectNode.set("slowThresholdOverrides",
+                    transactionsObjectNode.remove("slowThresholds"));
+        }
+    }
+
+    private static void upgradePluginPropertiesIfNeeded(ObjectNode rootObjectNode) {
+        JsonNode pluginsNode = rootObjectNode.get("plugins");
+        if (pluginsNode == null || !pluginsNode.isArray()) {
+            return;
+        }
+        for (JsonNode pluginNode : pluginsNode) {
+            if (!(pluginNode instanceof ObjectNode)) {
+                continue;
+            }
+            ObjectNode pluginObjectNode = (ObjectNode) pluginNode;
+            if (pluginObjectNode.path("id").asText().equals("jdbc")) {
+                JsonNode propertiesNode = pluginObjectNode.get("properties");
+                if (propertiesNode != null && propertiesNode.isObject()) {
+                    upgradeJdbcPluginPropertiesIfNeeded((ObjectNode) propertiesNode);
+                }
+                // since no other plugin property upgrades at this point, can return now
+                return;
+            }
+        }
+    }
+
+    private static void upgradeJdbcPluginPropertiesIfNeeded(ObjectNode propertiesObjectNode) {
+        if (propertiesObjectNode.path("captureBindParameters").asBoolean()
+                && !propertiesObjectNode.has("captureBindParametersIncludes")) {
+            // upgrade from 0.11.1 to 0.11.2
+            propertiesObjectNode.set("captureBindParametersIncludes",
+                    mapper.createArrayNode().add(".*"));
+            propertiesObjectNode.remove("captureBindParameters");
         }
     }
 }

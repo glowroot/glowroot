@@ -28,23 +28,26 @@ import com.google.common.base.Splitter;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.config.InstrumentationConfig;
 import org.glowroot.agent.live.ClasspathCache.UiAnalyzedMethod;
 import org.glowroot.agent.util.MaybePatterns;
 import org.glowroot.agent.weaving.AdviceCache;
 import org.glowroot.agent.weaving.AnalyzedWorld;
+import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.GlobalMeta;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MethodSignature;
@@ -216,7 +219,7 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
             }
         }
         Set<Class<?>> classes = Sets.newHashSet();
-        List<Class<?>> possibleNewReweavableClasses = getExistingModifiableSubClasses(
+        Set<Class<?>> possibleNewReweavableClasses = getExistingModifiableSubClasses(
                 pointcutClassNames, instrumentation.getAllLoadedClasses(), instrumentation);
         // need to remove these classes from AnalyzedWorld, otherwise if a subclass and its parent
         // class are both in the list and the subclass is re-transformed first, it will use the
@@ -249,7 +252,7 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
         if (!instrumentation.isRetransformClassesSupported()) {
             return;
         }
-        List<Class<?>> classes = getExistingModifiableSubClasses(pointcutClassNames,
+        Set<Class<?>> classes = getExistingModifiableSubClasses(pointcutClassNames,
                 initialLoadedClasses, instrumentation);
         for (Class<?> clazz : classes) {
             if (clazz.isInterface()) {
@@ -265,22 +268,42 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
         }
     }
 
-    private static List<Class<?>> getExistingModifiableSubClasses(
+    private static Set<Class<?>> getExistingModifiableSubClasses(
             Set<PointcutClassName> pointcutClassNames, Class<?>[] classes,
             Instrumentation instrumentation) {
-        List<Class<?>> existingModifiableSubClasses = Lists.newArrayList();
+        List<Class<?>> matchingClasses = Lists.newArrayList();
+        Multimap<Class<?>, Class<?>> subClasses = ArrayListMultimap.create();
         for (Class<?> clazz : classes) {
             if (!instrumentation.isModifiableClass(clazz)) {
                 continue;
             }
+            Class<?> superclass = clazz.getSuperclass();
+            if (superclass != null) {
+                subClasses.put(superclass, clazz);
+            }
+            for (Class<?> iface : clazz.getInterfaces()) {
+                subClasses.put(iface, clazz);
+            }
             for (PointcutClassName pointcutClassName : pointcutClassNames) {
-                if (pointcutClassName.appliesTo(clazz)) {
-                    existingModifiableSubClasses.add(clazz);
+                if (pointcutClassName.appliesTo(clazz.getName())) {
+                    matchingClasses.add(clazz);
                     break;
                 }
             }
         }
-        return existingModifiableSubClasses;
+        Set<Class<?>> matchingSubClasses = Sets.newHashSet();
+        for (Class<?> matchingClass : matchingClasses) {
+            addToMatchingSubClasses(matchingClass, matchingSubClasses, subClasses);
+        }
+        return matchingSubClasses;
+    }
+
+    private static void addToMatchingSubClasses(Class<?> clazz, Set<Class<?>> matchingSubClasses,
+            Multimap<Class<?>, Class<?>> subClasses) {
+        matchingSubClasses.add(clazz);
+        for (Class<?> subClass : subClasses.get(clazz)) {
+            addToMatchingSubClasses(subClass, matchingSubClasses, subClasses);
+        }
     }
 
     @VisibleForTesting
@@ -310,76 +333,56 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
         }
     }
 
-    public static class PointcutClassName {
+    @Value.Immutable
+    public abstract static class PointcutClassName {
 
-        private final @Nullable Pattern pattern;
-        private final @Nullable String nonPattern;
-
-        private final @Nullable PointcutClassName subTypeRestriction;
-
-        private final boolean doNotMatchSubClasses;
-
-        public static PointcutClassName fromPattern(Pattern pattern,
-                @Nullable PointcutClassName subTypeRestrictionPointcutClassName,
-                boolean doNotMatchSubClasses) {
-            return new PointcutClassName(pattern, null, subTypeRestrictionPointcutClassName,
-                    doNotMatchSubClasses);
-        }
-
-        public static PointcutClassName fromNonPattern(String nonPattern,
-                @Nullable PointcutClassName subTypeRestrictionPointcutClassName,
-                boolean doNotMatchSubClasses) {
-            return new PointcutClassName(null, nonPattern, subTypeRestrictionPointcutClassName,
-                    doNotMatchSubClasses);
-        }
+        abstract @Nullable Pattern pattern();
+        abstract @Nullable String nonPattern();
+        abstract @Nullable PointcutClassName subTypeRestriction();
+        abstract boolean doNotMatchSubClasses();
 
         public static PointcutClassName fromMaybePattern(String maybePattern,
                 @Nullable PointcutClassName subTypeRestriction, boolean doNotMatchSubClasses) {
             Pattern pattern = MaybePatterns.buildPattern(maybePattern);
             if (pattern == null) {
-                return new PointcutClassName(null, maybePattern, subTypeRestriction,
-                        doNotMatchSubClasses);
+                return fromNonPattern(maybePattern, subTypeRestriction, doNotMatchSubClasses);
             } else {
-                return new PointcutClassName(pattern, null, subTypeRestriction,
-                        doNotMatchSubClasses);
+                return fromPattern(pattern, subTypeRestriction, doNotMatchSubClasses);
             }
         }
 
-        private PointcutClassName(@Nullable Pattern pattern, @Nullable String nonPattern,
-                @Nullable PointcutClassName subTypeRestriction, boolean doNotMatchSubClasses) {
-            this.pattern = pattern;
-            this.nonPattern = nonPattern;
-            this.subTypeRestriction = subTypeRestriction;
-            this.doNotMatchSubClasses = doNotMatchSubClasses;
+        public static PointcutClassName fromPattern(Pattern pattern,
+                @Nullable PointcutClassName subTypeRestrictionPointcutClassName,
+                boolean doNotMatchSubClasses) {
+            return ImmutablePointcutClassName.builder()
+                    .pattern(pattern)
+                    .nonPattern(null)
+                    .subTypeRestriction(subTypeRestrictionPointcutClassName)
+                    .doNotMatchSubClasses(doNotMatchSubClasses)
+                    .build();
         }
 
-        private boolean appliesTo(Class<?> clazz) {
-            if (appliesTo(clazz.getName())) {
-                return true;
-            }
-            if (doNotMatchSubClasses) {
-                return false;
-            }
-            Class<?> superclass = clazz.getSuperclass();
-            if (superclass != null && appliesTo(superclass)) {
-                return true;
-            }
-            for (Class<?> iface : clazz.getInterfaces()) {
-                if (appliesTo(iface)) {
-                    return true;
-                }
-            }
-            return false;
+        public static PointcutClassName fromNonPattern(String nonPattern,
+                @Nullable PointcutClassName subTypeRestrictionPointcutClassName,
+                boolean doNotMatchSubClasses) {
+            return ImmutablePointcutClassName.builder()
+                    .pattern(null)
+                    .nonPattern(nonPattern)
+                    .subTypeRestriction(subTypeRestrictionPointcutClassName)
+                    .doNotMatchSubClasses(doNotMatchSubClasses)
+                    .build();
         }
 
         private boolean appliesTo(String className) {
+            PointcutClassName subTypeRestriction = subTypeRestriction();
             if (subTypeRestriction != null && !subTypeRestriction.appliesTo(className)) {
                 return false;
             }
+            Pattern pattern = pattern();
             if (pattern != null) {
                 return pattern.matcher(className).matches();
             } else {
-                return checkNotNull(nonPattern).equals(className);
+                return checkNotNull(nonPattern()).equals(className);
             }
         }
     }

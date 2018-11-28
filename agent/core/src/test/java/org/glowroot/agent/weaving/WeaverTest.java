@@ -53,6 +53,8 @@ import org.glowroot.agent.weaving.SomeAspect.BindMethodMetaAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BindMethodMetaArrayAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BindMethodMetaReturnArrayAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BindMethodNameAdvice;
+import org.glowroot.agent.weaving.SomeAspect.BindMutableParameterAdvice;
+import org.glowroot.agent.weaving.SomeAspect.BindMutableParameterWithMoreFramesAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BindOptionalPrimitiveReturnAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BindOptionalReturnAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BindOptionalVoidReturnAdvice;
@@ -144,6 +146,7 @@ import org.glowroot.agent.weaving.targets.SubException;
 import org.glowroot.agent.weaving.targets.SubMisc;
 import org.glowroot.agent.weaving.targets.SuperBasic;
 import org.glowroot.agent.weaving.targets.SuperBasicMisc;
+import org.glowroot.agent.weaving.targets.ThrowMutatedParamMisc;
 import org.glowroot.agent.weaving.targets.ThrowingMisc;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -1008,10 +1011,10 @@ public class WeaverTest {
         IsolatedWeavingClassLoader isolatedWeavingClassLoader = new IsolatedWeavingClassLoader(
                 Misc.class, SomeAspectThreadLocals.class, IntegerThreadLocal.class);
         List<Advice> advisors = Lists.newArrayList();
-        advisors.add(new AdviceBuilder(BasicAdvice.class).build());
-        advisors.add(new AdviceBuilder(BindThrowableAdvice.class).build());
-        advisors.add(new AdviceBuilder(ThrowInOnBeforeAdvice.class).build());
-        advisors.add(new AdviceBuilder(BasicHighOrderAdvice.class).build());
+        advisors.add(newAdvice(BasicAdvice.class));
+        advisors.add(newAdvice(BindThrowableAdvice.class));
+        advisors.add(newAdvice(ThrowInOnBeforeAdvice.class));
+        advisors.add(newAdvice(BasicHighOrderAdvice.class));
         Supplier<List<Advice>> advisorsSupplier =
                 Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
         AnalyzedWorld analyzedWorld = new AnalyzedWorld(advisorsSupplier,
@@ -1787,6 +1790,34 @@ public class WeaverTest {
                 .startsWith("Bytecode service retrieved ");
     }
 
+    // ===================== test mutable parameter =====================
+
+    @Test
+    public void shouldMutateParameter() throws Exception {
+        // given
+        Misc test = newWovenObject(ThrowMutatedParamMisc.class, Misc.class,
+                BindMutableParameterAdvice.class);
+        // when
+        String param = null;
+        try {
+            test.executeWithArgs("one", 2);
+        } catch (RuntimeException e) {
+            param = e.getMessage();
+        }
+        // then
+        assertThat(param).isEqualTo("one and more / 3");
+    }
+
+    @Test
+    public void shouldMutateParameterWithMoreFrames() throws Exception {
+        // when
+        newWovenObject(ThrowMutatedParamMisc.class, Misc.class,
+                BindMutableParameterWithMoreFramesAdvice.class);
+
+        // then
+        // do not crash with java.lang.VerifyError
+    }
+
     public static <S, T extends S> S newWovenObject(Class<T> implClass, Class<S> bridgeClass,
             Class<?> adviceOrShimOrMixinClass, Class<?>... extraBridgeClasses) throws Exception {
         // SomeAspectThreadLocals is passed as bridgeable so that the static thread locals will be
@@ -1800,12 +1831,12 @@ public class WeaverTest {
                 new IsolatedWeavingClassLoader(bridgeClasses.toArray(new Class<?>[0]));
         List<Advice> advisors = Lists.newArrayList();
         if (adviceOrShimOrMixinClass.isAnnotationPresent(Pointcut.class)) {
-            advisors.add(new AdviceBuilder(adviceOrShimOrMixinClass).build());
+            advisors.add(newAdvice(adviceOrShimOrMixinClass));
         }
         List<MixinType> mixinTypes = Lists.newArrayList();
         Mixin mixin = adviceOrShimOrMixinClass.getAnnotation(Mixin.class);
         if (mixin != null) {
-            mixinTypes.add(MixinType.create(mixin, adviceOrShimOrMixinClass));
+            mixinTypes.add(newMixin(adviceOrShimOrMixinClass));
         }
         List<ShimType> shimTypes = Lists.newArrayList();
         Shim shim = adviceOrShimOrMixinClass.getAnnotation(Shim.class);
@@ -1839,12 +1870,12 @@ public class WeaverTest {
                 new IsolatedWeavingClassLoader(bridgeClasses.toArray(new Class<?>[0]));
         List<Advice> advisors = Lists.newArrayList();
         if (adviceOrShimOrMixinClass.isAnnotationPresent(Pointcut.class)) {
-            advisors.add(new AdviceBuilder(adviceOrShimOrMixinClass).build());
+            advisors.add(newAdvice(adviceOrShimOrMixinClass));
         }
         List<MixinType> mixinTypes = Lists.newArrayList();
         Mixin mixin = adviceOrShimOrMixinClass.getAnnotation(Mixin.class);
         if (mixin != null) {
-            mixinTypes.add(MixinType.create(mixin, adviceOrShimOrMixinClass));
+            mixinTypes.add(newMixin(adviceOrShimOrMixinClass));
         }
         List<ShimType> shimTypes = Lists.newArrayList();
         Shim shim = adviceOrShimOrMixinClass.getAnnotation(Shim.class);
@@ -1868,6 +1899,14 @@ public class WeaverTest {
         @SuppressWarnings("unchecked")
         Class<T> implClass = (Class<T>) Class.forName(className, false, isolatedWeavingClassLoader);
         return isolatedWeavingClassLoader.newInstance(implClass, bridgeClass);
+    }
+
+    private static Advice newAdvice(Class<?> clazz) throws Exception {
+        return new AdviceBuilder(PluginDetailBuilder.buildAdviceClass(clazz)).build();
+    }
+
+    private static MixinType newMixin(Class<?> clazz) throws Exception {
+        return MixinType.create(PluginDetailBuilder.buildMixinClass(clazz));
     }
 
     private static Class<?> enhanceConstructorAdviceClass(Class<?> adviceClass)

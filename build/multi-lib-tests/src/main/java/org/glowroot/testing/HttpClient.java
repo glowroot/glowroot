@@ -33,7 +33,9 @@ public class HttpClient {
         cxfClient();
         httpUrlConnection();
         okHttpClient();
+        okHttpClient2x();
         springWebClient();
+        axisClient();
     }
 
     private static void apacheHttpClient() throws Exception {
@@ -193,6 +195,35 @@ public class HttpClient {
         runAsyncHttpClient2x("2.0.35", "4.0.51.Final");
         runAsyncHttpClient2x("2.0.36", "4.0.51.Final");
         runAsyncHttpClient2x("2.0.37", "4.0.52.Final");
+        runAsyncHttpClient2x("2.0.38", "4.0.54.Final");
+        runAsyncHttpClient2x("2.0.39", "4.0.56.Final");
+
+        runAsyncHttpClient2x("2.1.0", "4.1.19.Final");
+        runAsyncHttpClient2x("2.1.1", "4.1.19.Final");
+        runAsyncHttpClient2x("2.1.2", "4.1.19.Final");
+
+        runAsyncHttpClient2x("2.2.0", "4.1.20.Final");
+        runAsyncHttpClient2x("2.2.1", "4.1.20.Final");
+
+        runAsyncHttpClient2x("2.3.0", "4.1.21.Final");
+
+        runAsyncHttpClient2x("2.4.0", "4.1.21.Final");
+        runAsyncHttpClient2x("2.4.1", "4.1.21.Final");
+        runAsyncHttpClient2x("2.4.2", "4.1.22.Final");
+        runAsyncHttpClient2x("2.4.3", "4.1.22.Final");
+        runAsyncHttpClient2x("2.4.4", "4.1.22.Final");
+        runAsyncHttpClient2x("2.4.5", "4.1.23.Final");
+        runAsyncHttpClient2x("2.4.6", "4.1.24.Final");
+        runAsyncHttpClient2x("2.4.7", "4.1.24.Final");
+        runAsyncHttpClient2x("2.4.8", "4.1.25.Final");
+        runAsyncHttpClient2x("2.4.9", "4.1.25.Final");
+
+        runAsyncHttpClient2x("2.5.0", "4.1.25.Final");
+        runAsyncHttpClient2x("2.5.1", "4.1.26.Final");
+        runAsyncHttpClient2x("2.5.2", "4.1.27.Final");
+        runAsyncHttpClient2x("2.5.3", "4.1.29.Final");
+        runAsyncHttpClient2x("2.5.4", "4.1.30.Final");
+        runAsyncHttpClient2x("2.6.0", "4.1.30.Final");
     }
 
     private static void cxfClient() throws Exception {
@@ -242,27 +273,71 @@ public class HttpClient {
     private static void httpUrlConnection() throws Exception {
         final String test = "HttpURLConnectionIT";
         Util.log("http client plugin (HttpURLConnection)");
-        Util.runTest(MODULE_PATH, test, JAVA6, JAVA7, JAVA8);
+        Util.runTest(MODULE_PATH, test, JAVA8, JAVA7, JAVA6);
     }
 
     private static void okHttpClient() throws Exception {
         final String test = "OkHttpClientPluginIT";
-        updateLibVersion("okhttpclient.version", "2.0.0");
+        updateLibVersion("okhttpclient.version", "3.0.1");
         runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.1.0");
+        updateLibVersion("okhttpclient.version", "3.1.0");
         runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.2.0");
+        updateLibVersion("okhttpclient.version", "3.1.1");
         runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.3.0");
+        updateLibVersion("okhttpclient.version", "3.1.2");
         runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.4.0");
+        updateLibVersion("okhttpclient.version", "3.2.0");
         runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.5.0");
+        updateLibVersion("okhttpclient.version", "3.3.0");
         runJava7(test);
-        updateLibVersion("okhttpclient.version", "2.6.0");
+        updateLibVersion("okhttpclient.version", "3.3.1");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.4.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.4.1");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.4.2");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.5.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.6.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.7.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.8.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.8.1");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.9.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.9.1");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.10.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.11.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient.version", "3.12.0");
+        runJava7(test);
+    }
+
+    private static void okHttpClient2x() throws Exception {
+        final String test = "OkHttpClient2xPluginIT";
+        updateLibVersion("okhttpclient2x.version", "2.0.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient2x.version", "2.1.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient2x.version", "2.2.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient2x.version", "2.3.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient2x.version", "2.4.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient2x.version", "2.5.0");
+        runJava7(test);
+        updateLibVersion("okhttpclient2x.version", "2.6.0");
         runJava7(test);
         for (int i = 0; i <= 5; i++) {
-            updateLibVersion("okhttpclient.version", "2.7." + i);
+            updateLibVersion("okhttpclient2x.version", "2.7." + i);
             runJava7(test);
         }
     }
@@ -303,9 +378,26 @@ public class HttpClient {
         }
     }
 
+    private static void axisClient() throws Exception {
+        final String test = "AxisClientPluginIT";
+        updateLibVersion("cxf.version", "3.0.15"); // need a Java 6 compatible CXF version
+        updateLibVersion("axis.version", "1.0");
+        run(test);
+        updateLibVersion("axis.version", "1.1");
+        run(test);
+        updateLibVersion("axis.version", "1.2");
+        run(test);
+        updateLibVersion("axis.version", "1.2.1");
+        run(test);
+        updateLibVersion("axis.version", "1.3");
+        run(test);
+        updateLibVersion("axis.version", "1.4");
+        run(test);
+    }
+
     private static void runAsyncHttpClient1x(String asyncHttpClientVersion) throws Exception {
         final String test = "AsyncHttpClientPluginIT";
-        updateLibVersion("asynchttpclient.version", asyncHttpClientVersion);
+        updateLibVersion("asynchttpclient1x.version", asyncHttpClientVersion);
         if (asyncHttpClientVersion.startsWith("1.9")) {
             runJava7(test, "async-http-client-1.x");
         } else {
@@ -316,7 +408,7 @@ public class HttpClient {
     private static void runAsyncHttpClient2x(String asyncHttpClientVersion, String nettyVersion)
             throws Exception {
         final String test = "AsyncHttpClientPluginIT";
-        updateLibVersion("asynchttpclient.version", asyncHttpClientVersion);
+        updateLibVersion("asynchttpclient2x.version", asyncHttpClientVersion);
         updateLibVersion("netty.version", nettyVersion);
         runJava8(test, "async-http-client-2.x");
     }
@@ -326,19 +418,19 @@ public class HttpClient {
     }
 
     private static void run(String test) throws Exception {
-        Util.runTest(MODULE_PATH, test, JAVA6, JAVA7, JAVA8);
+        Util.runTest(MODULE_PATH, test, JAVA8, JAVA7, JAVA6);
     }
 
     private static void run(String test, String profile) throws Exception {
-        Util.runTest(MODULE_PATH, test, profile, JAVA6, JAVA7, JAVA8);
+        Util.runTest(MODULE_PATH, test, profile, JAVA8, JAVA7, JAVA6);
     }
 
     private static void runJava7(String test) throws Exception {
-        Util.runTest(MODULE_PATH, test, JAVA7, JAVA8);
+        Util.runTest(MODULE_PATH, test, JAVA8, JAVA7);
     }
 
     private static void runJava7(String test, String profile) throws Exception {
-        Util.runTest(MODULE_PATH, test, profile, JAVA7, JAVA8);
+        Util.runTest(MODULE_PATH, test, profile, JAVA8, JAVA7);
     }
 
     private static void runJava8(String test) throws Exception {

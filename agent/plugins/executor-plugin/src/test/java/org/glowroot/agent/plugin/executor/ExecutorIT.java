@@ -34,9 +34,9 @@ import org.junit.Test;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
 import org.glowroot.agent.it.harness.TransactionMarker;
+import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -53,7 +53,7 @@ public class ExecutorIT {
     public static void setUp() throws Exception {
         // tests only work with javaagent container because they need to weave bootstrap classes
         // that implement Executor and ExecutorService
-        container = Containers.createJavaagent();
+        container = JavaagentContainer.create();
     }
 
     @AfterClass

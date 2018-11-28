@@ -30,6 +30,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
+import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 
 @Value.Immutable
 abstract class Advice {
@@ -59,6 +60,9 @@ abstract class Advice {
     abstract boolean hasBindThreadContext();
     abstract boolean hasBindOptionalThreadContext();
     abstract boolean reweavable();
+
+    abstract @Nullable Advice nonBootstrapLoaderAdvice();
+    abstract @Nullable LazyDefinedClass nonBootstrapLoaderAdviceClass();
 
     @Value.Derived
     ImmutableSet<Type> classMetaTypes() {

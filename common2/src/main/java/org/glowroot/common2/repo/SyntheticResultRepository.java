@@ -16,8 +16,12 @@
 package org.glowroot.common2.repo;
 
 import java.util.List;
+import java.util.Map;
 
 public interface SyntheticResultRepository {
+
+    Map<String, String> getSyntheticMonitorIds(String agentRollupId, long from, long to)
+            throws Exception;
 
     // from is INCLUSIVE
     public List<SyntheticResult> readSyntheticResults(String agentRollupId,

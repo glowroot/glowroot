@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.Bytecode;
 
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 
 class ManagementFactoryHackClassFileTransformer implements ClassFileTransformer {
 
@@ -60,17 +60,17 @@ class ManagementFactoryHackClassFileTransformer implements ClassFileTransformer 
         private final ClassWriter cw;
 
         private ManagementFactoryHackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
         }
 
         @Override
-        public @Nullable MethodVisitor visitMethod(int access, String name, String desc,
+        public @Nullable MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, desc, signature, exceptions);
+            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
             if (name.equals("getPlatformMBeanServer")
-                    && desc.equals("()Ljavax/management/MBeanServer;")) {
-                return new ManagementFactoryHackMethodVisitor(mv, access, name, desc);
+                    && descriptor.equals("()Ljavax/management/MBeanServer;")) {
+                return new ManagementFactoryHackMethodVisitor(mv, access, name, descriptor);
             } else {
                 return mv;
             }
@@ -80,8 +80,8 @@ class ManagementFactoryHackClassFileTransformer implements ClassFileTransformer 
     private static class ManagementFactoryHackMethodVisitor extends AdviceAdapter {
 
         private ManagementFactoryHackMethodVisitor(MethodVisitor mv, int access, String name,
-                String desc) {
-            super(ASM6, mv, access, name, desc);
+                String descriptor) {
+            super(ASM7, mv, access, name, descriptor);
         }
 
         @Override

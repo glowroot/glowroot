@@ -37,6 +37,7 @@ import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Versions;
 import org.glowroot.common2.config.MoreConfigDefaults;
 import org.glowroot.common2.config.PagerDutyConfig.PagerDutyIntegrationKey;
+import org.glowroot.common2.config.SlackConfig.SlackWebhook;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
@@ -109,12 +110,7 @@ class AlertConfigJsonService {
     // central supports alert configs on rollups
     @GET(path = "/backend/config/alert-dropdowns", permission = "agent:config:view:alert")
     String getAlertDropdowns(@BindAgentRollupId String agentRollupId) throws Exception {
-        return mapper.writeValueAsString(ImmutableAlertConfigResponse.builder()
-                .addAllGauges(getGaugeDropdownItems(agentRollupId))
-                .addAllSyntheticMonitors(getSyntheticMonitorDropdownItems(agentRollupId))
-                .addAllPagerDutyIntegrationKeys(
-                        configRepository.getPagerDutyConfig().integrationKeys())
-                .build());
+        return getAlertResponse(agentRollupId, null);
     }
 
     // central supports alert configs on rollups
@@ -142,17 +138,25 @@ class AlertConfigJsonService {
         configRepository.deleteAlertConfig(agentRollupId, request.version().get());
     }
 
-    private String getAlertResponse(String agentRollupId, AlertConfig alertConfig)
+    private String getAlertResponse(String agentRollupId, @Nullable AlertConfig alertConfig)
             throws Exception {
-        return mapper.writeValueAsString(ImmutableAlertConfigResponse.builder()
-                .config(AlertConfigDto.toDto(alertConfig))
-                .heading(getConditionDisplay(agentRollupId, alertConfig.getCondition(),
-                        configRepository))
-                .addAllGauges(getGaugeDropdownItems(agentRollupId))
+        ImmutableAlertConfigResponse.Builder builder = ImmutableAlertConfigResponse.builder();
+        if (alertConfig != null) {
+            builder.config(AlertConfigDto.toDto(alertConfig))
+                    .heading(getConditionDisplay(agentRollupId, alertConfig.getCondition(),
+                            configRepository));
+        }
+        builder.addAllGauges(getGaugeDropdownItems(agentRollupId))
                 .addAllSyntheticMonitors(getSyntheticMonitorDropdownItems(agentRollupId))
                 .addAllPagerDutyIntegrationKeys(
-                        configRepository.getPagerDutyConfig().integrationKeys())
-                .build());
+                        configRepository.getPagerDutyConfig().integrationKeys());
+        for (SlackWebhook webhook : configRepository.getSlackConfig().webhooks()) {
+            builder.addSlackWebhooks(ImmutableSlackWebhookItem.builder()
+                    .id(webhook.id())
+                    .display(webhook.display())
+                    .build());
+        }
+        return mapper.writeValueAsString(builder.build());
     }
 
     private List<Gauge> getGaugeDropdownItems(String agentRollupId)
@@ -306,11 +310,19 @@ class AlertConfigJsonService {
         List<Gauge> gauges();
         List<SyntheticMonitorItem> syntheticMonitors();
         List<PagerDutyIntegrationKey> pagerDutyIntegrationKeys();
+        List<SlackWebhookItem> slackWebhooks(); // not exposing webhook url itself
     }
 
     @Value.Immutable
     @Styles.AllParameters
     interface SyntheticMonitorItem {
+        String id();
+        String display();
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface SlackWebhookItem {
         String id();
         String display();
     }
@@ -322,6 +334,7 @@ class AlertConfigJsonService {
         public abstract AlertSeverity severity();
         public abstract @Nullable ImmutableEmailNotificationDto emailNotification();
         public abstract @Nullable ImmutablePagerDutyNotificationDto pagerDutyNotification();
+        public abstract @Nullable ImmutableSlackNotificationDto slackNotification();
 
         abstract Optional<String> version(); // absent for insert operations
 
@@ -335,6 +348,9 @@ class AlertConfigJsonService {
             }
             if (notification.hasPagerDutyNotification()) {
                 builder.pagerDutyNotification(toDto(notification.getPagerDutyNotification()));
+            }
+            if (notification.hasSlackNotification()) {
+                builder.slackNotification(toDto(notification.getSlackNotification()));
             }
             return builder.version(Optional.of(Versions.getVersion(config)))
                     .build();
@@ -352,6 +368,11 @@ class AlertConfigJsonService {
             if (pagerDutyNotification != null) {
                 builder.getNotificationBuilder()
                         .setPagerDutyNotification(toProto(pagerDutyNotification));
+            }
+            SlackNotificationDto slackNotification = slackNotification();
+            if (slackNotification != null) {
+                builder.getNotificationBuilder()
+                        .setSlackNotification(toProto(slackNotification));
             }
             return builder.build();
         }
@@ -381,6 +402,14 @@ class AlertConfigJsonService {
                 AlertConfig.AlertNotification.PagerDutyNotification pagerDutyNotification) {
             return ImmutablePagerDutyNotificationDto.builder()
                     .pagerDutyIntegrationKey(pagerDutyNotification.getPagerDutyIntegrationKey())
+                    .build();
+        }
+
+        private static ImmutableSlackNotificationDto toDto(
+                AlertConfig.AlertNotification.SlackNotification slackNotification) {
+            return ImmutableSlackNotificationDto.builder()
+                    .slackWebhookId(slackNotification.getSlackWebhookId())
+                    .addAllSlackChannels(slackNotification.getSlackChannelList())
                     .build();
         }
 
@@ -416,6 +445,14 @@ class AlertConfigJsonService {
                 PagerDutyNotificationDto pagerDutyNotification) {
             return AlertConfig.AlertNotification.PagerDutyNotification.newBuilder()
                     .setPagerDutyIntegrationKey(pagerDutyNotification.pagerDutyIntegrationKey())
+                    .build();
+        }
+
+        private static AlertConfig.AlertNotification.SlackNotification toProto(
+                SlackNotificationDto slackNotification) {
+            return AlertConfig.AlertNotification.SlackNotification.newBuilder()
+                    .setSlackWebhookId(slackNotification.slackWebhookId())
+                    .addAllSlackChannel(slackNotification.slackChannels())
                     .build();
         }
 
@@ -534,6 +571,12 @@ class AlertConfigJsonService {
         @Value.Immutable
         public interface PagerDutyNotificationDto {
             String pagerDutyIntegrationKey();
+        }
+
+        @Value.Immutable
+        public interface SlackNotificationDto {
+            String slackWebhookId();
+            List<String> slackChannels();
         }
     }
 }

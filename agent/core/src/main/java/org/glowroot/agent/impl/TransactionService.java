@@ -20,7 +20,6 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
-import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.Transaction.CompletionCallback;
 import org.glowroot.agent.plugin.api.MessageSupplier;
@@ -29,6 +28,7 @@ import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEntry;
 import org.glowroot.agent.util.ThreadAllocatedBytes;
+import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.util.Clock;
 
 public class TransactionService implements ConfigListener {

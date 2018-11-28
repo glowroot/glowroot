@@ -85,15 +85,14 @@ public class CentralRepoModule {
             v09AggregateLastExpirationTime = 0;
         } else {
             agentRollupIdsWithV09Data = new HashSet<>();
-            ResultSet results =
-                    session.execute("select agent_id from v09_agent_check where one = 1");
+            ResultSet results = session.read("select agent_id from v09_agent_check where one = 1");
             for (Row row : results) {
                 String agentId = checkNotNull(row.getString(0));
                 for (String agentRollupId : AgentRollupIds.getAgentRollupIds(agentId)) {
                     agentRollupIdsWithV09Data.add(agentRollupId);
                 }
             }
-            results = session.execute("select v09_last_capture_time, v09_fqt_last_expiration_time,"
+            results = session.read("select v09_last_capture_time, v09_fqt_last_expiration_time,"
                     + " v09_trace_last_expiration_time, v09_aggregate_last_expiration_time from"
                     + " v09_last_capture_time where one = 1");
             Row row = checkNotNull(results.one());

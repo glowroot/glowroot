@@ -22,6 +22,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Styles;
+import org.glowroot.common2.config.AllCentralAdminConfig;
+import org.glowroot.common2.config.AllEmbeddedAdminConfig;
 import org.glowroot.common2.config.CentralAdminGeneralConfig;
 import org.glowroot.common2.config.CentralStorageConfig;
 import org.glowroot.common2.config.CentralWebConfig;
@@ -33,11 +35,13 @@ import org.glowroot.common2.config.HttpProxyConfig;
 import org.glowroot.common2.config.LdapConfig;
 import org.glowroot.common2.config.PagerDutyConfig;
 import org.glowroot.common2.config.RoleConfig;
+import org.glowroot.common2.config.SlackConfig;
 import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.StorageConfig;
 import org.glowroot.common2.config.UserConfig;
 import org.glowroot.common2.config.WebConfig;
 import org.glowroot.common2.repo.util.LazySecretKey;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
@@ -45,7 +49,6 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConf
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
@@ -65,6 +68,7 @@ public interface ConfigRepository {
     String HTTP_PROXY_KEY = "httpProxy";
     String LDAP_KEY = "ldap";
     String PAGER_DUTY_KEY = "pagerDuty";
+    String SLACK_KEY = "slack";
 
     long ROLLUP_0_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.rollup.0.intervalMillis", MINUTES.toMillis(1));
@@ -122,6 +126,8 @@ public interface ConfigRepository {
     @Nullable
     InstrumentationConfig getInstrumentationConfig(String agentId, String version) throws Exception;
 
+    AgentConfig getAllConfig(String agentId) throws Exception;
+
     EmbeddedAdminGeneralConfig getEmbeddedAdminGeneralConfig();
 
     CentralAdminGeneralConfig getCentralAdminGeneralConfig() throws Exception;
@@ -143,13 +149,13 @@ public interface ConfigRepository {
 
     WebConfig getWebConfig() throws Exception;
 
-    EmbeddedWebConfig getEmbeddedWebConfig() throws Exception;
+    EmbeddedWebConfig getEmbeddedWebConfig();
 
     CentralWebConfig getCentralWebConfig() throws Exception;
 
     StorageConfig getStorageConfig() throws Exception;
 
-    EmbeddedStorageConfig getEmbeddedStorageConfig() throws Exception;
+    EmbeddedStorageConfig getEmbeddedStorageConfig();
 
     CentralStorageConfig getCentralStorageConfig() throws Exception;
 
@@ -161,7 +167,15 @@ public interface ConfigRepository {
 
     PagerDutyConfig getPagerDutyConfig() throws Exception;
 
+    SlackConfig getSlackConfig() throws Exception;
+
     HealthchecksIoConfig getHealthchecksIoConfig();
+
+    AllEmbeddedAdminConfig getAllEmbeddedAdminConfig();
+
+    AllCentralAdminConfig getAllCentralAdminConfig() throws Exception;
+
+    boolean isConfigReadOnly(String agentId) throws Exception;
 
     void updateGeneralConfig(String agentId, GeneralConfig config, String priorVersion)
             throws Exception;
@@ -179,9 +193,8 @@ public interface ConfigRepository {
     void updateJvmConfig(String agentId, JvmConfig config, String priorVersion) throws Exception;
 
     // central supports synthetic monitor configs on rollups
-    // returns id
-    String insertSyntheticMonitorConfig(String agentRollupId,
-            SyntheticMonitorConfig configWithoutId) throws Exception;
+    void insertSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config)
+            throws Exception;
 
     // central supports synthetic monitor configs on rollups
     void updateSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config,
@@ -205,9 +218,9 @@ public interface ConfigRepository {
     void updateUiDefaultsConfig(String agentRollupId, UiDefaultsConfig uiConfig,
             String priorVersion) throws Exception;
 
-    // only name, type and value of properties is used
-    void updatePluginConfig(String agentId, String pluginId, List<PluginProperty> properties,
-            String priorVersion) throws Exception;
+    // only plugin id and property names and values are used
+    void updatePluginConfig(String agentId, PluginConfig config, String priorVersion)
+            throws Exception;
 
     void insertInstrumentationConfig(String agentId, InstrumentationConfig config) throws Exception;
 
@@ -224,6 +237,9 @@ public interface ConfigRepository {
 
     // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
     void updateAdvancedConfig(String agentRollupId, AdvancedConfig config, String priorVersion)
+            throws Exception;
+
+    void updateAllConfig(String agentId, AgentConfig config, @Nullable String priorVersion)
             throws Exception;
 
     void updateEmbeddedAdminGeneralConfig(EmbeddedAdminGeneralConfig config, String priorVersion)
@@ -262,7 +278,15 @@ public interface ConfigRepository {
 
     void updatePagerDutyConfig(PagerDutyConfig config, String priorVersion) throws Exception;
 
-    void updateHealthchecksIoConfig(HealthchecksIoConfig healthchecksIoConfig, String version)
+    void updateSlackConfig(SlackConfig config, String priorVersion) throws Exception;
+
+    void updateHealthchecksIoConfig(HealthchecksIoConfig healthchecksIoConfig, String priorVersion)
+            throws Exception;
+
+    void updateAllEmbeddedAdminConfig(AllEmbeddedAdminConfig config, @Nullable String priorVersion)
+            throws Exception;
+
+    void updateAllCentralAdminConfig(AllCentralAdminConfig config, @Nullable String priorVersion)
             throws Exception;
 
     long getGaugeCollectionIntervalMillis();
@@ -346,6 +370,12 @@ public interface ConfigRepository {
 
     @SuppressWarnings("serial")
     class DuplicatePagerDutyIntegrationKeyDisplayException extends Exception {}
+
+    @SuppressWarnings("serial")
+    class DuplicateSlackWebhookUrlException extends Exception {}
+
+    @SuppressWarnings("serial")
+    class DuplicateSlackWebhookDisplayException extends Exception {}
 
     @SuppressWarnings("serial")
     class SyntheticNotFoundException extends Exception {}

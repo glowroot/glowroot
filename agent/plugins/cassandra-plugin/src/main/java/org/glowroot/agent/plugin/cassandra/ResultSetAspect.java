@@ -31,7 +31,7 @@ public class ResultSetAspect {
 
     // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin("com.datastax.driver.core.ResultSet")
-    public static class ResultSetImpl implements ResultSet {
+    public static class ResultSetImpl implements ResultSetMixin {
 
         // this may be async or non-async query entry
         //
@@ -52,7 +52,7 @@ public class ResultSetAspect {
     }
 
     // the method names are verbose since they will be mixed in to existing classes
-    public interface ResultSet {
+    public interface ResultSetMixin {
 
         @Nullable
         QueryEntry glowroot$getQueryEntry();
@@ -65,14 +65,14 @@ public class ResultSetAspect {
     public static class OneAdvice {
 
         @OnBefore
-        public static @Nullable Timer onBefore(@BindReceiver ResultSet resultSet) {
+        public static @Nullable Timer onBefore(@BindReceiver ResultSetMixin resultSet) {
             QueryEntry queryEntry = resultSet.glowroot$getQueryEntry();
             return queryEntry == null ? null : queryEntry.extend();
         }
 
         @OnReturn
         public static void onReturn(@BindReturn @Nullable Object row,
-                @BindReceiver ResultSet resultSet) {
+                @BindReceiver ResultSetMixin resultSet) {
             QueryEntry queryEntry = resultSet.glowroot$getQueryEntry();
             if (queryEntry == null) {
                 return;
@@ -98,7 +98,7 @@ public class ResultSetAspect {
     public static class IteratorAdvice {
 
         @OnReturn
-        public static void onReturn(@BindReceiver ResultSet resultSet) {
+        public static void onReturn(@BindReceiver ResultSetMixin resultSet) {
             QueryEntry queryEntry = resultSet.glowroot$getQueryEntry();
             if (queryEntry == null) {
                 // tracing must be disabled (e.g. exceeded trace entry limit)
@@ -115,13 +115,13 @@ public class ResultSetAspect {
     public static class IsExhaustedAdvice {
 
         @OnBefore
-        public static @Nullable Timer onBefore(@BindReceiver ResultSet resultSet) {
+        public static @Nullable Timer onBefore(@BindReceiver ResultSetMixin resultSet) {
             QueryEntry queryEntry = resultSet.glowroot$getQueryEntry();
             return queryEntry == null ? null : queryEntry.extend();
         }
 
         @OnReturn
-        public static void onReturn(@BindReceiver ResultSet resultSet) {
+        public static void onReturn(@BindReceiver ResultSetMixin resultSet) {
             QueryEntry queryEntry = resultSet.glowroot$getQueryEntry();
             if (queryEntry == null) {
                 // tracing must be disabled (e.g. exceeded trace entry limit)

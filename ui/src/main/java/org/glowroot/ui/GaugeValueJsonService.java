@@ -32,7 +32,6 @@ import com.google.common.io.CharStreams;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.CaptureTimes;
-import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
@@ -52,14 +51,12 @@ class GaugeValueJsonService {
     private final GaugeValueRepository gaugeValueRepository;
     private final RollupLevelService rollupLevelService;
     private final ConfigRepository configRepository;
-    private final Clock clock;
 
     GaugeValueJsonService(GaugeValueRepository gaugeValueRepository,
-            RollupLevelService rollupLevelService, ConfigRepository configRepository, Clock clock) {
+            RollupLevelService rollupLevelService, ConfigRepository configRepository) {
         this.gaugeValueRepository = gaugeValueRepository;
         this.rollupLevelService = rollupLevelService;
         this.configRepository = configRepository;
-        this.clock = clock;
     }
 
     @GET(path = "/backend/jvm/gauges", permission = "agent:jvm:gauges")
@@ -77,7 +74,8 @@ class GaugeValueJsonService {
         Map<String, List<GaugeValue>> origGaugeValues =
                 getGaugeValues(agentRollupId, request, rollupLevel, dataPointIntervalMillis);
         Map<String, List<GaugeValue>> gaugeValues = origGaugeValues;
-        if (isEmpty(gaugeValues) && fallBackToLargestAggregate(rollupLevel, request)) {
+        if (isEmpty(gaugeValues)
+                && noHarmFallingBackToLargestAggregate(agentRollupId, rollupLevel, request)) {
             // fall back to largest aggregates in case expiration settings have recently changed
             rollupLevel = getLargestRollupLevel();
             dataPointIntervalMillis =
@@ -206,9 +204,19 @@ class GaugeValueJsonService {
         }
     }
 
-    private boolean fallBackToLargestAggregate(int rollupLevel, GaugeValueRequest request) {
-        return rollupLevel < getLargestRollupLevel() && request.from() < clock.currentTimeMillis()
-                - getLargestRollupIntervalMillis() * 2;
+    private boolean noHarmFallingBackToLargestAggregate(String agentRollupId, int rollupLevel,
+            GaugeValueRequest request) throws Exception {
+        if (rollupLevel == getLargestRollupLevel()) {
+            return false;
+        }
+        for (String gaugeName : request.gaugeName()) {
+            long oldestCaptureTime = gaugeValueRepository.getOldestCaptureTime(agentRollupId,
+                    gaugeName, rollupLevel);
+            if (oldestCaptureTime < request.to()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private boolean ignoreFallBackData(GaugeValueRequest request, long lastCaptureTime) {

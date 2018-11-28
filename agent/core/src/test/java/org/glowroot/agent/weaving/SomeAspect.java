@@ -19,6 +19,7 @@ import java.lang.reflect.Method;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import org.glowroot.agent.plugin.api.ParameterHolder;
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindMethodMeta;
 import org.glowroot.agent.plugin.api.weaving.BindMethodName;
@@ -1472,6 +1473,28 @@ public class SomeAspect {
         @OnAfter
         public static void onAfter() {
             SomeAspectThreadLocals.onAfterCount.increment();
+        }
+    }
+
+    @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc", methodName = "executeWithArgs",
+            methodParameterTypes = {"java.lang.String", "int"})
+    public static class BindMutableParameterAdvice {
+        @OnBefore
+        public static void onBefore(@BindParameter ParameterHolder<String> holder,
+                @BindParameter ParameterHolder<Integer> holder2) {
+            holder.set(holder.get() + " and more");
+            holder2.set(holder2.get() + 1);
+        }
+    }
+
+    @Pointcut(className = "org.glowroot.agent.weaving.targets.Misc", methodName = "executeWithArgs",
+            methodParameterTypes = {"java.lang.String", "int"}, nestingGroup = "xyz")
+    public static class BindMutableParameterWithMoreFramesAdvice {
+        @OnBefore
+        public static void onBefore(@BindParameter ParameterHolder<String> holder,
+                @BindParameter ParameterHolder<Integer> holder2) {
+            holder.set(holder.get() + " and more");
+            holder2.set(holder2.get() + 1);
         }
     }
 

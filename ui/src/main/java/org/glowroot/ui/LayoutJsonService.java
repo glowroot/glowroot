@@ -83,8 +83,9 @@ class LayoutJsonService {
             Authentication authentication, Predicate<Permissions> filterFn) throws Exception {
         List<FilteredAgentRollup> filtered = Lists.newArrayList();
         for (AgentRollup agentRollup : agentRollups) {
+            // passing configReadOnly=false since it's irrelevant here (and saves config lookup)
             Permissions permissions =
-                    LayoutService.getPermissions(authentication, agentRollup.id());
+                    LayoutService.getPermissions(authentication, agentRollup.id(), false);
             List<FilteredAgentRollup> children =
                     filter(agentRollup.children(), authentication, filterFn);
             boolean visible = filterFn.apply(permissions);

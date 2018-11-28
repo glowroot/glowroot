@@ -253,10 +253,6 @@ public class PreInitializeWeavingClasses {
     private static List<String> getGlowrootUsedTypes() {
         List<String> types = Lists.newArrayList();
         types.add("org.glowroot.agent.api.Instrumentation$AlreadyInTransactionBehavior");
-        types.add("org.glowroot.agent.config.ImmutableInstrumentationConfig");
-        types.add("org.glowroot.agent.config.ImmutableInstrumentationConfig$Builder");
-        types.add("org.glowroot.agent.config.ImmutableInstrumentationConfig$InitShim");
-        types.add("org.glowroot.agent.config.InstrumentationConfig");
         types.add("org.glowroot.agent.impl.NestedTimerMap");
         types.add("org.glowroot.agent.impl.ThreadContextImpl");
         types.add("org.glowroot.agent.impl.TimerImpl");
@@ -266,9 +262,11 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.plugin.api.MessageSupplier");
         types.add("org.glowroot.agent.plugin.api.MessageSupplier$1");
         types.add("org.glowroot.agent.plugin.api.OptionalThreadContext");
+        types.add("org.glowroot.agent.plugin.api.ParameterHolder");
         types.add("org.glowroot.agent.plugin.api.ThreadContext");
         types.add("org.glowroot.agent.plugin.api.Timer");
         types.add("org.glowroot.agent.plugin.api.TimerName");
+        types.add("org.glowroot.agent.plugin.api.internal.ParameterHolderImpl");
         types.add("org.glowroot.agent.plugin.api.weaving.BindClassMeta");
         types.add("org.glowroot.agent.plugin.api.weaving.BindMethodMeta");
         types.add("org.glowroot.agent.plugin.api.weaving.BindMethodName");
@@ -309,7 +307,6 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.Advice$ParameterKind");
         types.add("org.glowroot.agent.weaving.AdviceAdapter");
         types.add("org.glowroot.agent.weaving.AdviceBuilder");
-        types.add("org.glowroot.agent.weaving.AdviceBuilder$1");
         types.add("org.glowroot.agent.weaving.AdviceBuilder$AdviceConstructionException");
         types.add("org.glowroot.agent.weaving.AdviceMatcher");
         types.add("org.glowroot.agent.weaving.AnalyzedClass");
@@ -345,6 +342,10 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ImmutableAdvice");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice$InitShim");
+        types.add("org.glowroot.agent.weaving.ImmutablePointcutClass");
+        types.add("org.glowroot.agent.weaving.ImmutablePointcutClass$Builder");
+        types.add("org.glowroot.agent.weaving.ImmutablePointcutMethod");
+        types.add("org.glowroot.agent.weaving.ImmutablePointcutMethod$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableAdviceMatcher");
         types.add("org.glowroot.agent.weaving.ImmutableAdviceParameter");
         types.add("org.glowroot.agent.weaving.ImmutableAdviceParameter$Builder");
@@ -379,6 +380,20 @@ public class PreInitializeWeavingClasses {
                 + "$TransactionAnnotationVisitor");
         types.add("org.glowroot.agent.weaving.JSRInlinerClassVisitor");
         types.add("org.glowroot.agent.weaving.MixinType");
+        types.add("org.glowroot.agent.weaving.PluginClassRenamer");
+        types.add("org.glowroot.agent.weaving.PluginClassRenamer$PluginClassRemapper");
+        types.add("org.glowroot.agent.weaving.PluginDetail$PointcutClass");
+        types.add("org.glowroot.agent.weaving.PluginDetail$PointcutMethod");
+        types.add("org.glowroot.agent.weaving.PluginDetailBuilder");
+        types.add("org.glowroot.agent.weaving.PluginDetailBuilder$MemberClassVisitor");
+        types.add("org.glowroot.agent.weaving.PluginDetailBuilder$MixinMethodVisitor");
+        types.add("org.glowroot.agent.weaving.PluginDetailBuilder$PointcutMethodVisitor");
+        types.add("org.glowroot.agent.weaving.PluginDetailBuilder"
+                + "$MethodModifierArrayAnnotationVisitor");
+        types.add("org.glowroot.agent.weaving.PluginDetailBuilder$MixinAnnotationVisitor");
+        types.add("org.glowroot.agent.weaving.PluginDetailBuilder$PointcutAnnotationVisitor");
+        types.add("org.glowroot.agent.weaving.PluginDetailBuilder$PointcutAnnotationVisitor$1");
+        types.add("org.glowroot.agent.weaving.PluginDetailBuilder$StringArrayAnnotationVisitor");
         types.add("org.glowroot.agent.weaving.PointcutClassVisitor");
         types.add("org.glowroot.agent.weaving.PointcutClassVisitor$PointcutAnnotationVisitor");
         types.add("org.glowroot.agent.weaving.PointcutClassVisitor$PointcutMethodVisitor");
@@ -398,6 +413,10 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.WeavingClassVisitor$MethodMetaGroup");
         types.add("org.glowroot.agent.weaving.WeavingMethodVisitor");
         types.add("org.glowroot.agent.weaving.WeavingMethodVisitor$CatchHandler");
+        types.add("org.glowroot.common.config.ImmutableInstrumentationConfig");
+        types.add("org.glowroot.common.config.ImmutableInstrumentationConfig$Builder");
+        types.add("org.glowroot.common.config.ImmutableInstrumentationConfig$InitShim");
+        types.add("org.glowroot.common.config.InstrumentationConfig");
         types.add("org.glowroot.wire.api.model.AgentConfigOuterClass$AgentConfig"
                 + "$InstrumentationConfig$CaptureKind");
         types.add("org.glowroot.wire.api.model.AgentConfigOuterClass$AgentConfig"
@@ -444,12 +463,16 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.TypeReference");
         types.add("org.objectweb.asm.commons.AdviceAdapter");
         types.add("org.objectweb.asm.commons.AnnotationRemapper");
+        types.add("org.objectweb.asm.commons.ClassRemapper");
+        types.add("org.objectweb.asm.commons.FieldRemapper");
         types.add("org.objectweb.asm.commons.GeneratorAdapter");
         types.add("org.objectweb.asm.commons.JSRInlinerAdapter");
         types.add("org.objectweb.asm.commons.JSRInlinerAdapter$Instantiation");
         types.add("org.objectweb.asm.commons.LocalVariablesSorter");
         types.add("org.objectweb.asm.commons.Method");
         types.add("org.objectweb.asm.commons.MethodRemapper");
+        types.add("org.objectweb.asm.commons.ModuleRemapper");
+        types.add("org.objectweb.asm.commons.ModuleHashesAttribute");
         types.add("org.objectweb.asm.commons.Remapper");
         types.add("org.objectweb.asm.commons.SignatureRemapper");
         types.add("org.objectweb.asm.commons.SimpleRemapper");
@@ -500,17 +523,19 @@ public class PreInitializeWeavingClasses {
         // these are special classes generated by javac (but not by the eclipse compiler) to handle
         // accessing the private constructor in an enclosed type
         // (see http://stackoverflow.com/questions/2883181)
-        types.add("org.glowroot.agent.config.ImmutableInstrumentationConfig$1");
         types.add("org.glowroot.agent.model.NestedTimerMap$1");
         types.add("org.glowroot.agent.util.IterableWithSelfRemovableEntries$1");
         types.add("org.glowroot.agent.util.Tickers$1");
         types.add("org.glowroot.agent.weaving.Advice$1");
+        types.add("org.glowroot.agent.weaving.AdviceBuilder$1");
         types.add("org.glowroot.agent.weaving.AnalyzedClass$1");
         types.add("org.glowroot.agent.weaving.AnalyzedMethod$1");
         types.add("org.glowroot.agent.weaving.AnalyzedMethodKey$1");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$1");
         types.add("org.glowroot.agent.weaving.ClassAnalyzer$1");
         types.add("org.glowroot.agent.weaving.ClassAnalyzer$BridgeMethodClassVisitor$1");
+        types.add("org.glowroot.agent.weaving.ImmutablePointcutClass$1");
+        types.add("org.glowroot.agent.weaving.ImmutablePointcutMethod$1");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedClass$1");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedMethod$1");
         types.add("org.glowroot.agent.weaving.ImmutableAnalyzedMethodKey$1");
@@ -525,6 +550,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor$1");
         types.add("org.glowroot.agent.weaving.MethodMetaGroup$1");
         types.add("org.glowroot.agent.weaving.ThinClassVisitor$1");
+        types.add("org.glowroot.agent.weaving.PluginClassRenamer$1");
+        types.add("org.glowroot.agent.weaving.PluginDetailBuilder$1");
         types.add("org.glowroot.agent.weaving.PointcutClassVisitor$1");
         types.add("org.glowroot.agent.weaving.Weaver$1");
         types.add("org.glowroot.agent.weaving.Weaver$2");
@@ -541,6 +568,7 @@ public class PreInitializeWeavingClasses {
         // used when agent is shaded
         types.add("org.glowroot.agent.jul.Logger");
         types.add("org.glowroot.agent.jul.Level");
+        types.add("org.glowroot.common.config.ImmutableInstrumentationConfig$1");
         return types;
     }
 

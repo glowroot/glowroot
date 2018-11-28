@@ -21,7 +21,6 @@ import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.agent.config.AdvancedConfig;
 import org.glowroot.agent.impl.Transaction.RootTimerCollector;
 import org.glowroot.agent.impl.Transaction.ThreadStatsCollector;
 import org.glowroot.agent.model.MutableAggregateTimer;
@@ -31,6 +30,7 @@ import org.glowroot.agent.model.SharedQueryTextCollection;
 import org.glowroot.agent.model.ThreadProfile;
 import org.glowroot.agent.model.ThreadStats;
 import org.glowroot.agent.model.TransactionTimer;
+import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
 import org.glowroot.common.live.ImmutableThroughputAggregate;

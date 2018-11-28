@@ -21,13 +21,11 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
-import java.util.Locale;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -38,6 +36,8 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.common.config.ImmutableInstrumentationConfig;
+import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.util.ObjectMappers;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -63,22 +63,13 @@ public abstract class PluginCache {
     public static PluginCache create(@Nullable File pluginsDir, boolean offlineViewer)
             throws Exception {
         ImmutablePluginCache.Builder builder = ImmutablePluginCache.builder();
-        List<URL> descriptorURLs = Lists.newArrayList();
         List<File> pluginJars = getPluginJars(pluginsDir);
         builder.addAllPluginJars(pluginJars);
-        for (File pluginJar : pluginJars) {
-            descriptorURLs
-                    .add(new URL("jar:" + pluginJar.toURI() + "!/META-INF/glowroot.plugin.json"));
-        }
-        for (File file : getStandaloneDescriptors(pluginsDir)) {
-            descriptorURLs.add(file.toURI().toURL());
-        }
-        // also add descriptors on the class path (this is primarily for integration tests)
-        descriptorURLs.addAll(getResources("META-INF/glowroot.plugin.json"));
+        List<PluginDescriptor> unsortedPluginDescriptors = Lists.newArrayList();
         if (offlineViewer) {
-            builder.addAllPluginDescriptors(createForOfflineViewer(descriptorURLs));
+            unsortedPluginDescriptors.addAll(createForOfflineViewer(pluginJars, pluginsDir));
         } else {
-            builder.addAllPluginDescriptors(readPluginDescriptors(descriptorURLs));
+            unsortedPluginDescriptors.addAll(readPluginDescriptors(pluginJars, pluginsDir));
         }
         // when using uber jar, get the (aggregated) plugin list
         URL plugins = PluginCache.class.getResource("/META-INF/glowroot.plugins.json");
@@ -86,9 +77,12 @@ public abstract class PluginCache {
             List<PluginDescriptor> pluginDescriptors = mapper.readValue(plugins,
                     new TypeReference<List<ImmutablePluginDescriptor>>() {});
             checkNotNull(pluginDescriptors);
-            builder.addAllPluginDescriptors(pluginDescriptors);
+            unsortedPluginDescriptors.addAll(pluginDescriptors);
         }
-        return builder.build();
+        return builder
+                .addAllPluginDescriptors(
+                        new PluginDescriptorOrdering().sortedCopy(unsortedPluginDescriptors))
+                .build();
     }
 
     private static ImmutableList<File> getPluginJars(@Nullable File pluginsDir) {
@@ -130,56 +124,59 @@ public abstract class PluginCache {
         if (loader == null) {
             return ImmutableList
                     .copyOf(Iterators.forEnumeration(ClassLoader.getSystemResources(resourceName)));
+        } else {
+            return ImmutableList
+                    .copyOf(Iterators.forEnumeration(loader.getResources(resourceName)));
         }
-        return ImmutableList.copyOf(Iterators.forEnumeration(loader.getResources(resourceName)));
     }
 
-    private static List<PluginDescriptor> createForOfflineViewer(List<URL> descriptorURLs)
-            throws IOException, URISyntaxException {
-        List<PluginDescriptor> pluginDescriptors = readPluginDescriptors(descriptorURLs);
+    private static List<PluginDescriptor> createForOfflineViewer(List<File> pluginJars,
+            @Nullable File pluginsDir) throws IOException, URISyntaxException {
+        List<PluginDescriptor> pluginDescriptors = readPluginDescriptors(pluginJars, pluginsDir);
         List<PluginDescriptor> pluginDescriptorsWithoutAdvice = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
             pluginDescriptorsWithoutAdvice.add(ImmutablePluginDescriptor.builder()
-                    .copyFrom(pluginDescriptor).aspects(ImmutableList.<String>of()).build());
+                    .copyFrom(pluginDescriptor)
+                    .aspects(ImmutableList.<String>of())
+                    .build());
         }
-        return new PluginDescriptorOrdering().immutableSortedCopy(pluginDescriptorsWithoutAdvice);
+        return pluginDescriptorsWithoutAdvice;
     }
 
-    private static List<PluginDescriptor> readPluginDescriptors(List<URL> descriptorURLs)
-            throws IOException, URISyntaxException {
+    private static List<PluginDescriptor> readPluginDescriptors(List<File> pluginJars,
+            @Nullable File pluginsDir) throws IOException, URISyntaxException {
         List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
-        for (URL url : descriptorURLs) {
-            try {
-                String content = Resources.toString(url, UTF_8);
-                PluginDescriptor pluginDescriptor =
-                        mapper.readValue(content, ImmutablePluginDescriptor.class);
-                pluginDescriptors.add(pluginDescriptor);
-            } catch (JsonProcessingException e) {
-                logger.error("error parsing plugin descriptor: {}", url.toExternalForm(), e);
-            }
+        for (File pluginJar : pluginJars) {
+            URL url = new URL("jar:" + pluginJar.toURI() + "!/META-INF/glowroot.plugin.json");
+            buildPluginDescriptor(url, pluginJar, pluginDescriptors);
         }
-        return new PluginDescriptorOrdering().immutableSortedCopy(pluginDescriptors);
+        for (File file : getStandaloneDescriptors(pluginsDir)) {
+            buildPluginDescriptor(file.toURI().toURL(), null, pluginDescriptors);
+        }
+        // also add descriptors on the class path (this is primarily for integration tests)
+        for (URL url : getResources("META-INF/glowroot.plugin.json")) {
+            buildPluginDescriptor(url, null, pluginDescriptors);
+        }
+        return pluginDescriptors;
     }
 
-    // sorted for display to console during startup and for plugin config sidebar menu
-    @VisibleForTesting
-    static class PluginDescriptorOrdering extends Ordering<PluginDescriptor> {
+    private static void buildPluginDescriptor(URL url, @Nullable File pluginJar,
+            List<PluginDescriptor> pluginDescriptors) throws IOException {
+        String content = Resources.toString(url, UTF_8);
+        ImmutablePluginDescriptor pluginDescriptor;
+        try {
+            pluginDescriptor = mapper.readValue(content, ImmutablePluginDescriptor.class);
+        } catch (JsonProcessingException e) {
+            logger.error("error parsing plugin descriptor: {}", url.toExternalForm(), e);
+            return;
+        }
+        pluginDescriptors.add(pluginDescriptor.withPluginJar(pluginJar));
+    }
+
+    private static class PluginDescriptorOrdering extends Ordering<PluginDescriptor> {
         @Override
         public int compare(PluginDescriptor left, PluginDescriptor right) {
-            // conventionally plugin names ends with " Plugin", so strip this off when
-            // comparing names so that, e.g., "Abc Plugin" will come before
-            // "Abc Extra Plugin"
-            String leftName = stripEndingIgnoreCase(left.name(), " Plugin");
-            String rightName = stripEndingIgnoreCase(right.name(), " Plugin");
-            return leftName.compareToIgnoreCase(rightName);
-        }
-
-        private static String stripEndingIgnoreCase(String original, String ending) {
-            if (original.toUpperCase(Locale.ENGLISH).endsWith(ending.toUpperCase(Locale.ENGLISH))) {
-                return original.substring(0, original.length() - ending.length());
-            } else {
-                return original;
-            }
+            return left.id().compareToIgnoreCase(right.id());
         }
     }
 }

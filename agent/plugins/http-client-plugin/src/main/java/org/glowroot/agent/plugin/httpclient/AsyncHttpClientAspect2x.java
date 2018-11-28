@@ -1,0 +1,204 @@
+/*
+ * Copyright 2015-2018 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.glowroot.agent.plugin.httpclient;
+
+import java.util.concurrent.Executor;
+
+import org.asynchttpclient.ListenableFuture;
+import org.asynchttpclient.Request;
+
+import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.AsyncTraceEntry;
+import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.ThreadContext;
+import org.glowroot.agent.plugin.api.Timer;
+import org.glowroot.agent.plugin.api.TimerName;
+import org.glowroot.agent.plugin.api.checker.Nullable;
+import org.glowroot.agent.plugin.api.weaving.BindParameter;
+import org.glowroot.agent.plugin.api.weaving.BindReceiver;
+import org.glowroot.agent.plugin.api.weaving.BindReturn;
+import org.glowroot.agent.plugin.api.weaving.BindThrowable;
+import org.glowroot.agent.plugin.api.weaving.BindTraveler;
+import org.glowroot.agent.plugin.api.weaving.IsEnabled;
+import org.glowroot.agent.plugin.api.weaving.Mixin;
+import org.glowroot.agent.plugin.api.weaving.OnAfter;
+import org.glowroot.agent.plugin.api.weaving.OnBefore;
+import org.glowroot.agent.plugin.api.weaving.OnReturn;
+import org.glowroot.agent.plugin.api.weaving.OnThrow;
+import org.glowroot.agent.plugin.api.weaving.Pointcut;
+
+public class AsyncHttpClientAspect2x {
+
+    // the field and method names are verbose since they will be mixed in to existing classes
+    @Mixin("org.asynchttpclient.ListenableFuture")
+    public abstract static class ListenableFutureImpl<V> implements ListenableFutureMixin<V> {
+
+        // volatile not needed, only accessed by the main thread
+        private transient @Nullable AsyncTraceEntry glowroot$asyncTraceEntry;
+
+        // volatile not needed, only accessed by the main thread
+        private transient boolean glowroot$ignoreGet;
+
+        @Override
+        public @Nullable AsyncTraceEntry glowroot$getAsyncTraceEntry() {
+            return glowroot$asyncTraceEntry;
+        }
+
+        @Override
+        public void glowroot$setAsyncTraceEntry(@Nullable AsyncTraceEntry asyncTraceEntry) {
+            glowroot$asyncTraceEntry = asyncTraceEntry;
+        }
+
+        @Override
+        public boolean glowroot$getIgnoreGet() {
+            return glowroot$ignoreGet;
+        }
+
+        @Override
+        public void glowroot$setIgnoreGet(boolean ignoreGet) {
+            glowroot$ignoreGet = ignoreGet;
+        }
+    }
+
+    // the method names are verbose since they will be mixed in to existing classes
+    // NOTE this interface cannot extend ListenableFuture since ListenableFuture extends this
+    // interface after the mixin takes place
+    public interface ListenableFutureMixin<V> {
+
+        @Nullable
+        AsyncTraceEntry glowroot$getAsyncTraceEntry();
+
+        void glowroot$setAsyncTraceEntry(@Nullable AsyncTraceEntry asyncTraceEntry);
+
+        boolean glowroot$getIgnoreGet();
+
+        void glowroot$setIgnoreGet(boolean value);
+    }
+
+    @Pointcut(className = "org.asynchttpclient.AsyncHttpClient", methodName = "executeRequest",
+            methodParameterTypes = {"org.asynchttpclient.Request", ".."},
+            methodReturnType = "org.asynchttpclient.ListenableFuture",
+            nestingGroup = "http-client", timerName = "http client request")
+    public static class ExecuteRequestAdvice {
+        private static final TimerName timerName = Agent.getTimerName(ExecuteRequestAdvice.class);
+        @OnBefore
+        public static @Nullable AsyncTraceEntry onBefore(ThreadContext context,
+                @BindParameter @Nullable Request request) {
+            // need to start trace entry @OnBefore in case it is executed in a "same thread
+            // executor" in which case will be over in @OnReturn
+            if (request == null) {
+                return null;
+            }
+            String method = request.getMethod();
+            if (method == null) {
+                method = "";
+            } else {
+                method += " ";
+            }
+            String url = request.getUrl();
+            if (url == null) {
+                url = "";
+            }
+            return context.startAsyncServiceCallEntry("HTTP", method + Uris.stripQueryString(url),
+                    MessageSupplier.create("http client request: {}{}", method, url), timerName);
+        }
+        @OnReturn
+        public static <T extends ListenableFutureMixin<?> & ListenableFuture<?>> void onReturn(
+                final @BindReturn @Nullable T future,
+                final @BindTraveler @Nullable AsyncTraceEntry asyncTraceEntry) {
+            if (asyncTraceEntry == null) {
+                return;
+            }
+            asyncTraceEntry.stopSyncTimer();
+            if (future == null) {
+                asyncTraceEntry.end();
+                return;
+            }
+            future.glowroot$setAsyncTraceEntry(asyncTraceEntry);
+            ((ListenableFuture<?>) future).addListener(new Runnable() {
+                // suppress warnings is needed because checker framework doesn't see that
+                // asyncTraceEntry must be non-null here
+                @Override
+                @SuppressWarnings("dereference.of.nullable")
+                public void run() {
+                    Throwable t = getException(future);
+                    if (t == null) {
+                        asyncTraceEntry.end();
+                    } else {
+                        asyncTraceEntry.endWithError(t);
+                    }
+                }
+            }, DirectExecutor.INSTANCE);
+        }
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler @Nullable AsyncTraceEntry asyncTraceEntry) {
+            if (asyncTraceEntry != null) {
+                asyncTraceEntry.stopSyncTimer();
+                asyncTraceEntry.endWithError(t);
+            }
+        }
+        // this is hacky way to find out if future ended with exception or not
+        @Nullable
+        private static <T extends ListenableFutureMixin<?> & ListenableFuture<?>> Throwable getException(
+                T future) {
+            future.glowroot$setIgnoreGet(true);
+            try {
+                future.get();
+            } catch (Throwable t) {
+                return t;
+            } finally {
+                future.glowroot$setIgnoreGet(false);
+            }
+            return null;
+        }
+    }
+
+    @Pointcut(className = "java.util.concurrent.Future",
+            subTypeRestriction = "org.asynchttpclient.ListenableFuture", methodName = "get",
+            methodParameterTypes = {".."}, suppressionKey = "wait-on-future")
+    public static class FutureGetAdvice {
+        @IsEnabled
+        public static boolean isEnabled(@BindReceiver ListenableFutureMixin<?> future) {
+            return !future.glowroot$getIgnoreGet();
+        }
+        @OnBefore
+        public static @Nullable Timer onBefore(ThreadContext threadContext,
+                @BindReceiver ListenableFutureMixin<?> future) {
+            AsyncTraceEntry asyncTraceEntry = future.glowroot$getAsyncTraceEntry();
+            if (asyncTraceEntry == null) {
+                return null;
+            }
+            return asyncTraceEntry.extendSyncTimer(threadContext);
+        }
+        @OnAfter
+        public static void onAfter(@BindTraveler @Nullable Timer syncTimer) {
+            if (syncTimer != null) {
+                syncTimer.stop();
+            }
+        }
+    }
+
+    private static class DirectExecutor implements Executor {
+
+        private static final DirectExecutor INSTANCE = new DirectExecutor();
+
+        @Override
+        public void execute(Runnable command) {
+            command.run();
+        }
+    }
+}

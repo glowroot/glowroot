@@ -52,7 +52,7 @@
       <tr>
         <th style="vertical-align: middle;">
           <select class="custom-select"
-                  ng-model="queryType"
+                  ng-model="page.queryType"
                   style="width: inherit;"
                   ng-if="queryTypes.length > 1">
             <option selected value="">(All)</option>
@@ -110,7 +110,7 @@
       </tr>
       </thead>
       <tbody ng-if="!smallScreen()">
-      <tr ng-repeat="query in queries | filter:{queryType: queryType} | orderBy:sortAttr:sortAsc">
+      <tr ng-repeat="query in queries | filter:{queryType: page.queryType} | orderBy:sortAttr:sortAsc">
         <th scope="row" class="gt-query-text-column"
             ng-click="showQueryModal(query)"
             style="font-weight: normal;">
@@ -132,7 +132,7 @@
       </tbody>
       <!-- TODO apply scope="row" appropriately for small screens -->
       <tbody ng-if="smallScreen()">
-      <tr ng-repeat-start="query in queries | filter:{queryType: queryType} | orderBy:sortAttr:sortAsc">
+      <tr ng-repeat-start="query in queries | filter:{queryType: page.queryType} | orderBy:sortAttr:sortAsc">
         <td class="gt-query-text-column"
             ng-click="showQueryModal(query)"
             colspan="5"

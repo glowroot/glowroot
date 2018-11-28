@@ -31,8 +31,7 @@ public class OkHttpClientCallInvoker {
         originalRequestField = getRequestField(clazz);
     }
 
-    @Nullable
-    Object getOriginalRequest(Object call) {
+    public @Nullable Object getOriginalRequest(Object call) {
         if (originalRequestField == null) {
             return null;
         }

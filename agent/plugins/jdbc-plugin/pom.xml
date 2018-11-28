@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.11.2-SNAPSHOT</version>
+    <version>0.12.3-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -20,6 +20,8 @@
     <!-- instrumented libraries -->
     <h2.version>1.3.176</h2.version>
     <postgresql.version>42.2.5.jre6</postgresql.version>
+    <!-- mssql-jdbc 6.5.0+ requires Java 8+ (there is no version published on maven central that
+      supports Java 6) -->
     <mssql.version>6.4.0.jre7</mssql.version>
     <commons.dbcp.version>1.4</commons.dbcp.version>
     <!-- need to test a version prior to Hikari 2.3.10 (specifically prior to
@@ -27,7 +29,7 @@
       in order to exercise HikariProxyHackClassVisitor)
     -->
     <hikari.cp.version>2.3.9</hikari.cp.version>
-    <tomcat.version>7.0.88</tomcat.version>
+    <tomcat.version>7.0.91</tomcat.version>
     <glassfish.jdbc.version>4.1.2</glassfish.jdbc.version>
   </properties>
 

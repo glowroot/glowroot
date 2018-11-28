@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.util.JavaVersion;
+import org.glowroot.common.live.LiveJvmService.UnavailableDueToDockerAlpinePidOneException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -47,6 +48,7 @@ class JvmTool {
     private static final Logger logger = LoggerFactory.getLogger(JvmTool.class);
 
     private static final int UNAVAILABLE_DUE_TO_RUNNING_IN_JRE_STATUS = 12345;
+    private static final int UNAVAILABLE_PROBABLY_DUE_TO_DOCKER_PID_ONE_STATUS = 23456;
 
     private JvmTool() {}
 
@@ -57,6 +59,8 @@ class JvmTool {
             run(pid, methodName, new SystemOutProcessor());
         } catch (UnavailableDueToRunningInJreException e) {
             System.exit(UNAVAILABLE_DUE_TO_RUNNING_IN_JRE_STATUS);
+        } catch (UnavailableDueToDockerAlpinePidOneException e) {
+            System.exit(UNAVAILABLE_PROBABLY_DUE_TO_DOCKER_PID_ONE_STATUS);
         }
     }
 
@@ -90,7 +94,21 @@ class JvmTool {
                 systemToolClassLoader);
         Method method = hotSpotVmClass.getMethod(methodName, Object[].class);
 
-        Object vm = attachMethod.invoke(null, Long.toString(pid));
+        Object vm;
+        try {
+            vm = attachMethod.invoke(null, Long.toString(pid));
+        } catch (Exception e) {
+            Throwable cause = e.getCause();
+            if (cause != null
+                    && cause.getClass().getName()
+                            .equals("com.sun.tools.attach.AttachNotSupportedException")
+                    && "Unable to get pid of LinuxThreads manager thread".equals(cause.getMessage())
+                    && new File("/etc/alpine-release").exists()
+                    && pid == 1) {
+                throw new UnavailableDueToDockerAlpinePidOneException();
+            }
+            throw e;
+        }
         try {
             InputStream in = (InputStream) method.invoke(vm, (Object) new Object[0]);
             checkNotNull(in);
@@ -133,6 +151,8 @@ class JvmTool {
         int status = process.waitFor();
         if (status == UNAVAILABLE_DUE_TO_RUNNING_IN_JRE_STATUS) {
             throw new UnavailableDueToRunningInJreException();
+        } else if (status == UNAVAILABLE_PROBABLY_DUE_TO_DOCKER_PID_ONE_STATUS) {
+            throw new UnavailableDueToDockerAlpinePidOneException();
         } else if (status != 0) {
             logger.error("error occurred while trying to run jvm tool:\n{}\n{}",
                     Joiner.on(' ').join(command), errorStreamReader.getOutput().trim());

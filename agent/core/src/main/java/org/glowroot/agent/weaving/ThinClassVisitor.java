@@ -26,7 +26,7 @@ import org.objectweb.asm.Type;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 
 class ThinClassVisitor extends ClassVisitor {
 
@@ -39,7 +39,7 @@ class ThinClassVisitor extends ClassVisitor {
     private boolean constructorPointcut;
 
     ThinClassVisitor() {
-        super(ASM6);
+        super(ASM7);
     }
 
     @Override
@@ -55,11 +55,11 @@ class ThinClassVisitor extends ClassVisitor {
     }
 
     @Override
-    public @Nullable AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-        thinClassBuilder.addAnnotations(desc);
-        if (desc.equals("Lorg/glowroot/agent/plugin/api/weaving/Pointcut;")) {
+    public @Nullable AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+        thinClassBuilder.addAnnotations(descriptor);
+        if (descriptor.equals("Lorg/glowroot/agent/plugin/api/weaving/Pointcut;")) {
             return new PointcutAnnotationVisitor();
-        } else if (desc.equals("Ljavax/ejb/Remote;")) {
+        } else if (descriptor.equals("Ljavax/ejb/Remote;")) {
             return new RemoteAnnotationVisitor();
         } else {
             return null;
@@ -67,12 +67,12 @@ class ThinClassVisitor extends ClassVisitor {
     }
 
     @Override
-    public MethodVisitor visitMethod(int access, String name, String desc,
+    public MethodVisitor visitMethod(int access, String name, String descriptor,
             @Nullable String signature, String /*@Nullable*/ [] exceptions) {
         ImmutableThinMethod.Builder thinMethodBuilder = ImmutableThinMethod.builder();
         thinMethodBuilder.access(access);
         thinMethodBuilder.name(name);
-        thinMethodBuilder.desc(desc);
+        thinMethodBuilder.descriptor(descriptor);
         thinMethodBuilder.signature(signature);
         if (exceptions != null) {
             thinMethodBuilder.addExceptions(exceptions);
@@ -114,7 +114,7 @@ class ThinClassVisitor extends ClassVisitor {
     interface ThinMethod {
         int access();
         String name();
-        String desc();
+        String descriptor();
         @Nullable
         String signature();
         List<String> exceptions();
@@ -124,7 +124,7 @@ class ThinClassVisitor extends ClassVisitor {
     private class PointcutAnnotationVisitor extends AnnotationVisitor {
 
         private PointcutAnnotationVisitor() {
-            super(ASM6);
+            super(ASM7);
         }
 
         @Override
@@ -140,13 +140,13 @@ class ThinClassVisitor extends ClassVisitor {
         private final ImmutableThinMethod.Builder thinMethodBuilder;
 
         private AnnotationCaptureMethodVisitor(ImmutableThinMethod.Builder thinMethodBuilder) {
-            super(ASM6);
+            super(ASM7);
             this.thinMethodBuilder = thinMethodBuilder;
         }
 
         @Override
-        public @Nullable AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-            thinMethodBuilder.addAnnotations(desc);
+        public @Nullable AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+            thinMethodBuilder.addAnnotations(descriptor);
             return null;
         }
 
@@ -164,7 +164,7 @@ class ThinClassVisitor extends ClassVisitor {
     private class RemoteAnnotationVisitor extends AnnotationVisitor {
 
         private RemoteAnnotationVisitor() {
-            super(ASM6);
+            super(ASM7);
         }
 
         @Override
@@ -180,7 +180,7 @@ class ThinClassVisitor extends ClassVisitor {
     private class ValueAnnotationVisitor extends AnnotationVisitor {
 
         private ValueAnnotationVisitor() {
-            super(ASM6);
+            super(ASM7);
         }
 
         @Override

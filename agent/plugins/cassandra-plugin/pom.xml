@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.11.2-SNAPSHOT</version>
+    <version>0.12.3-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -52,7 +52,7 @@
     <dependency>
       <groupId>org.rauschig</groupId>
       <artifactId>jarchivelib</artifactId>
-      <version>0.8.0</version>
+      <version>1.0.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -66,35 +66,35 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>6.2.1</version>
+      <version>7.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
-      <version>6.2.1</version>
+      <version>7.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-tree</artifactId>
-      <version>6.2.1</version>
+      <version>7.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-util</artifactId>
-      <version>6.2.1</version>
+      <version>7.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-analysis</artifactId>
-      <version>6.2.1</version>
+      <version>7.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

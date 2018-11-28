@@ -106,6 +106,18 @@ public class GaugeValueDaoWithV09Support implements GaugeValueDao {
     }
 
     @Override
+    public long getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel)
+            throws Exception {
+        long oldestCaptureTime =
+                delegate.getOldestCaptureTime(agentRollupId, gaugeName, rollupLevel);
+        if (agentRollupIdsWithV09Data.contains(agentRollupId)) {
+            oldestCaptureTime = Math.min(oldestCaptureTime, delegate.getOldestCaptureTime(
+                    V09Support.convertToV09(agentRollupId), gaugeName, rollupLevel));
+        }
+        return oldestCaptureTime;
+    }
+
+    @Override
     public void rollup(String agentRollupId) throws Exception {
         delegate.rollup(agentRollupId);
         if (agentRollupIdsWithV09Data.contains(agentRollupId)

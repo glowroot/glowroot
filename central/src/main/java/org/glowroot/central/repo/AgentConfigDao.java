@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
 
 import com.datastax.driver.core.BoundStatement;
@@ -31,7 +30,6 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
-import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -53,8 +51,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 // TODO agent config records never expire for abandoned agent rollup ids
 public class AgentConfigDao {
 
-    private static final Random random = new Random();
-
     private final Session session;
 
     private final PreparedStatement insertPS;
@@ -72,7 +68,7 @@ public class AgentConfigDao {
                 + " varchar, config blob, config_update boolean, config_update_token uuid, primary"
                 + " key (agent_rollup_id))");
         // secondary index is needed for Cassandra 2.x (to avoid error on readUpdatePS)
-        session.execute(
+        session.updateSchemaWithRetry(
                 "create index if not exists config_update_idx on agent_config (config_update)");
 
         insertPS = session.prepare("insert into agent_config (agent_rollup_id, config,"
@@ -91,57 +87,12 @@ public class AgentConfigDao {
                 clusterManager.createCache("agentConfigCache", new AgentConfigCacheLoader());
     }
 
-    public AgentConfig store(String agentId, AgentConfig agentConfig) throws Exception {
+    public AgentConfig store(String agentId, AgentConfig agentConfig, boolean overwriteExisting)
+            throws Exception {
         AgentConfig existingAgentConfig = read(agentId);
-        AgentConfig updatedAgentConfig;
-        if (existingAgentConfig == null) {
-            updatedAgentConfig = agentConfig.toBuilder()
-                    // agent should not send general config, but clearing it just to be safe
-                    .clearGeneralConfig()
-                    .build();
-        } else {
-            // sync list of plugin properties, central property values win
-            Map<String, PluginConfig> existingPluginConfigs = new HashMap<>();
-            for (PluginConfig existingPluginConfig : existingAgentConfig.getPluginConfigList()) {
-                existingPluginConfigs.put(existingPluginConfig.getId(), existingPluginConfig);
-            }
-            List<PluginConfig> pluginConfigs = new ArrayList<>();
-            for (PluginConfig agentPluginConfig : agentConfig.getPluginConfigList()) {
-                PluginConfig existingPluginConfig =
-                        existingPluginConfigs.get(agentPluginConfig.getId());
-                if (existingPluginConfig == null) {
-                    pluginConfigs.add(agentPluginConfig);
-                    continue;
-                }
-                Map<String, PluginProperty> existingProperties = new HashMap<>();
-                for (PluginProperty existingProperty : existingPluginConfig.getPropertyList()) {
-                    existingProperties.put(existingProperty.getName(), existingProperty);
-                }
-                List<PluginProperty> properties = new ArrayList<>();
-                for (PluginProperty agentProperty : agentPluginConfig.getPropertyList()) {
-                    PluginProperty existingProperty =
-                            existingProperties.get(agentProperty.getName());
-                    if (existingProperty == null) {
-                        properties.add(agentProperty);
-                        continue;
-                    }
-                    // overlay existing property value
-                    properties.add(agentProperty.toBuilder()
-                            .setValue(existingProperty.getValue())
-                            .build());
-                }
-                pluginConfigs.add(PluginConfig.newBuilder()
-                        .setId(agentPluginConfig.getId())
-                        .setName(agentPluginConfig.getName())
-                        .addAllProperty(properties)
-                        .build());
-            }
-            updatedAgentConfig = existingAgentConfig.toBuilder()
-                    .clearPluginConfig()
-                    .addAllPluginConfig(pluginConfigs)
-                    .build();
-        }
-        if (existingAgentConfig == null || !updatedAgentConfig.equals(agentConfig)) {
+        AgentConfig updatedAgentConfig =
+                buildUpdatedAgentConfig(agentConfig, existingAgentConfig, overwriteExisting);
+        if (existingAgentConfig == null || !updatedAgentConfig.equals(existingAgentConfig)) {
             BoundStatement boundStatement = insertPS.bind();
             int i = 0;
             boundStatement.setString(i++, agentId);
@@ -151,7 +102,7 @@ public class AgentConfigDao {
             // agent config
             boundStatement.setBool(i++, false);
             boundStatement.setToNull(i++);
-            session.execute(boundStatement);
+            session.write(boundStatement);
             agentConfigCache.invalidate(agentId);
         }
         String agentRollupId = AgentRollupIds.getParent(agentId);
@@ -178,7 +129,7 @@ public class AgentConfigDao {
                         .toByteArray()));
                 boundStatement.setBool(i++, false);
                 boundStatement.setToNull(i++);
-                session.execute(boundStatement);
+                session.write(boundStatement);
                 agentConfigCache.invalidate(loopAgentRollupId);
             }
         }
@@ -189,11 +140,17 @@ public class AgentConfigDao {
         for (int j = 0; j < 10; j++) {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.setString(0, agentRollupId);
-            ResultSet results = session.execute(boundStatement);
-            Row row = checkNotNull(results.one());
+            ResultSet results = session.read(boundStatement);
+            Row row = results.one();
+            if (row == null) {
+                throw new IllegalStateException("No config found: " + agentRollupId);
+            }
             ByteString currValue = ByteString.copyFrom(checkNotNull(row.getBytes(0)));
             AgentConfig currAgentConfig = AgentConfig.parseFrom(currValue);
-
+            if (currAgentConfig.getConfigReadOnly()) {
+                throw new IllegalStateException("This agent is running with config.readOnly=true so"
+                        + " it does not allow config updates via the central collector");
+            }
             AgentConfig updatedAgentConfig = agentConfigUpdater.updateAgentConfig(currAgentConfig);
 
             boundStatement = updatePS.bind();
@@ -203,7 +160,7 @@ public class AgentConfigDao {
             boundStatement.setUUID(i++, UUIDs.random());
             boundStatement.setString(i++, agentRollupId);
             boundStatement.setBytes(i++, ByteBuffer.wrap(currValue.toByteArray()));
-            results = session.execute(boundStatement);
+            results = session.update(boundStatement);
             row = checkNotNull(results.one());
             boolean applied = row.getBool("[applied]");
             if (applied) {
@@ -238,7 +195,7 @@ public class AgentConfigDao {
     public @Nullable AgentConfigUpdate readForUpdate(String agentId) throws Exception {
         BoundStatement boundStatement = readForUpdatePS.bind();
         boundStatement.setString(0, agentId);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         Row row = results.one();
         if (row == null) {
             // no pending config update for this agent (or agent has been manually deleted)
@@ -258,7 +215,7 @@ public class AgentConfigDao {
         int i = 0;
         boundStatement.setString(i++, agentId);
         boundStatement.setUUID(i++, configUpdateToken);
-        session.execute(boundStatement);
+        session.update(boundStatement);
     }
 
     private String readAgentRollupLastDisplayPart(String agentRollupId) throws Exception {
@@ -273,10 +230,67 @@ public class AgentConfigDao {
         return display;
     }
 
-    static String generateNewId() {
-        byte[] bytes = new byte[16];
-        random.nextBytes(bytes);
-        return BaseEncoding.base16().lowerCase().encode(bytes);
+    private static AgentConfig buildUpdatedAgentConfig(AgentConfig agentConfig,
+            @Nullable AgentConfig existingAgentConfig, boolean overwriteExisting) {
+        if (existingAgentConfig == null) {
+            return agentConfig.toBuilder()
+                    // agent should not send general config, but clearing it just to be safe
+                    .clearGeneralConfig()
+                    .build();
+        }
+        if (overwriteExisting) {
+            return agentConfig.toBuilder()
+                    // preserve existing general config
+                    .setGeneralConfig(existingAgentConfig.getGeneralConfig())
+                    .build();
+        }
+        // absorb new plugin properties/labels/etc from agent into existing agent config
+        Map<String, PluginConfig> existingPluginConfigs = new HashMap<>();
+        for (PluginConfig existingPluginConfig : existingAgentConfig.getPluginConfigList()) {
+            existingPluginConfigs.put(existingPluginConfig.getId(), existingPluginConfig);
+        }
+        List<PluginConfig> pluginConfigs = new ArrayList<>();
+        for (PluginConfig agentPluginConfig : agentConfig.getPluginConfigList()) {
+            PluginConfig existingPluginConfig =
+                    existingPluginConfigs.get(agentPluginConfig.getId());
+            if (existingPluginConfig == null) {
+                pluginConfigs.add(agentPluginConfig);
+                continue;
+            }
+            Map<String, PluginProperty> existingProperties = new HashMap<>();
+            for (PluginProperty existingProperty : existingPluginConfig.getPropertyList()) {
+                existingProperties.put(existingProperty.getName(), existingProperty);
+            }
+            List<PluginProperty> properties = new ArrayList<>();
+            for (PluginProperty agentProperty : agentPluginConfig.getPropertyList()) {
+                PluginProperty existingProperty =
+                        existingProperties.get(agentProperty.getName());
+                if (existingProperty == null) {
+                    properties.add(agentProperty);
+                    continue;
+                }
+                if (existingProperty.getValue().getValCase() != agentProperty.getValue()
+                        .getValCase()) {
+                    // the agent property type changed (e.g. was upgraded from comma-separated
+                    // string property to list property)
+                    properties.add(agentProperty);
+                    continue;
+                }
+                // overlay existing property value
+                properties.add(agentProperty.toBuilder()
+                        .setValue(existingProperty.getValue())
+                        .build());
+            }
+            pluginConfigs.add(PluginConfig.newBuilder()
+                    .setId(agentPluginConfig.getId())
+                    .setName(agentPluginConfig.getName())
+                    .addAllProperty(properties)
+                    .build());
+        }
+        return existingAgentConfig.toBuilder()
+                .clearPluginConfig()
+                .addAllPluginConfig(pluginConfigs)
+                .build();
     }
 
     private class AgentConfigCacheLoader implements CacheLoader<String, Optional<AgentConfig>> {
@@ -284,7 +298,7 @@ public class AgentConfigDao {
         public Optional<AgentConfig> load(String agentRollupId) throws Exception {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.setString(0, agentRollupId);
-            ResultSet results = session.execute(boundStatement);
+            ResultSet results = session.read(boundStatement);
             Row row = results.one();
             if (row == null) {
                 // agent must have been manually deleted

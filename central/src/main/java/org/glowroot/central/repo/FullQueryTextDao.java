@@ -134,7 +134,7 @@ class FullQueryTextDao {
         try {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.setString(0, fullTextSha1);
-            readFuture = session.executeAsyncFailIfNoRows(boundStatement,
+            readFuture = session.readAsyncFailIfNoRows(boundStatement,
                     "full query text record not found for sha1: " + fullTextSha1);
         } catch (Exception e) {
             invalidateBoth(rateLimiterKey);
@@ -167,13 +167,13 @@ class FullQueryTextDao {
         BoundStatement boundStatement = readCheckPS.bind();
         boundStatement.setString(0, agentRollupId);
         boundStatement.setString(1, fullTextSha1);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         if (results.isExhausted()) {
             return null;
         }
         boundStatement = readPS.bind();
         boundStatement.setString(0, fullTextSha1);
-        results = session.execute(boundStatement);
+        results = session.read(boundStatement);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -185,7 +185,7 @@ class FullQueryTextDao {
             throws Exception {
         BoundStatement boundStatement = readTtlPS.bind();
         boundStatement.setString(0, fullTextSha1);
-        ListenableFuture<ResultSet> future = session.executeAsync(boundStatement);
+        ListenableFuture<ResultSet> future = session.readAsync(boundStatement);
         return MoreFutures.transformAsync(future, asyncExecutor, new DoWithResults() {
             @Override
             public ListenableFuture<?> execute(ResultSet results) throws Exception {
@@ -202,13 +202,13 @@ class FullQueryTextDao {
                     }
                 }
             }
-            private ListenableFuture<ResultSet> insertAndCompleteFuture(int ttl) throws Exception {
+            private ListenableFuture<?> insertAndCompleteFuture(int ttl) throws Exception {
                 BoundStatement boundStatement = insertPS.bind();
                 int i = 0;
                 boundStatement.setString(i++, fullTextSha1);
                 boundStatement.setString(i++, fullText);
                 boundStatement.setInt(i++, ttl);
-                return session.executeAsync(boundStatement);
+                return session.writeAsync(boundStatement);
             }
         });
     }
@@ -221,7 +221,7 @@ class FullQueryTextDao {
             boundStatement.setString(i++, rateLimiterKey.agentRollupId());
             boundStatement.setString(i++, rateLimiterKey.fullTextSha1());
             boundStatement.setInt(i++, getTTL());
-            ListenableFuture<?> future = session.executeAsync(boundStatement);
+            ListenableFuture<?> future = session.writeAsync(boundStatement);
             return MoreFutures.onFailure(future, () -> rateLimiter.invalidate(rateLimiterKey));
         } catch (Exception e) {
             rateLimiter.invalidate(rateLimiterKey);

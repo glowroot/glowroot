@@ -24,6 +24,7 @@ import java.sql.Types;
 import java.util.Iterator;
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -62,7 +63,8 @@ public class JdbcPluginIT {
     @Test
     public void testCallableStatement() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.of(".*"));
 
         // when
         Trace trace = container.execute(ExecuteCallableStatement.class);
@@ -76,7 +78,7 @@ public class JdbcPluginIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("insert into employee (name, misc) values (?, ?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['jane', NULL]");
 
         assertThat(i.hasNext()).isFalse();
@@ -88,7 +90,7 @@ public class JdbcPluginIT {
         Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
         boolean found =
-                findExtendedTimerName(trace.getHeader().getMainThreadRootTimer(), "jdbc execute");
+                findExtendedTimerName(trace.getHeader().getMainThreadRootTimer(), "jdbc query");
         assertThat(found).isFalse();
     }
 
@@ -99,7 +101,7 @@ public class JdbcPluginIT {
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
-        boolean found = findExtendedTimerName(trace, "jdbc execute");
+        boolean found = findExtendedTimerName(trace, "jdbc query");
         assertThat(found).isFalse();
     }
 
@@ -108,7 +110,7 @@ public class JdbcPluginIT {
         // when
         Trace trace = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
         // then
-        boolean found = findExtendedTimerName(trace, "jdbc execute");
+        boolean found = findExtendedTimerName(trace, "jdbc query");
         assertThat(found).isFalse();
     }
 
@@ -119,7 +121,7 @@ public class JdbcPluginIT {
         // when
         Trace trace = container.execute(GetResultSetValueUnderSeparateTraceEntry.class);
         // then
-        boolean found = findExtendedTimerName(trace, "jdbc execute");
+        boolean found = findExtendedTimerName(trace, "jdbc query");
         assertThat(found).isTrue();
     }
 
@@ -130,7 +132,7 @@ public class JdbcPluginIT {
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResultsUsingColumnName.class);
         // then
-        boolean found = findExtendedTimerName(trace, "jdbc execute");
+        boolean found = findExtendedTimerName(trace, "jdbc query");
         assertThat(found).isFalse();
     }
 
@@ -142,7 +144,7 @@ public class JdbcPluginIT {
         Trace trace = container.execute(
                 ExecuteStatementAndIterateOverResultsUsingColumnNameUnderSeparateTraceEntry.class);
         // then
-        boolean found = findExtendedTimerName(trace, "jdbc execute");
+        boolean found = findExtendedTimerName(trace, "jdbc query");
         assertThat(found).isTrue();
     }
 
@@ -151,7 +153,7 @@ public class JdbcPluginIT {
         // when
         Trace trace = container.execute(ExecuteStatementAndIterateOverResults.class);
         // then
-        boolean found = findExtendedTimerName(trace, "jdbc execute");
+        boolean found = findExtendedTimerName(trace, "jdbc query");
         assertThat(found).isFalse();
     }
 
@@ -160,7 +162,7 @@ public class JdbcPluginIT {
         // when
         Trace trace = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
         // then
-        boolean found = findExtendedTimerName(trace, "jdbc execute");
+        boolean found = findExtendedTimerName(trace, "jdbc query");
         assertThat(found).isTrue();
     }
 
@@ -172,7 +174,7 @@ public class JdbcPluginIT {
         // when
         Trace trace = container.execute(IterateOverResultsUnderSeparateTraceEntry.class);
         // then
-        boolean found = findExtendedTimerName(trace, "jdbc execute");
+        boolean found = findExtendedTimerName(trace, "jdbc query");
         assertThat(found).isFalse();
     }
 
@@ -190,7 +192,7 @@ public class JdbcPluginIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
         assertThat(entry.getLocationStackTraceElementList()).isEmpty();
 
@@ -214,7 +216,7 @@ public class JdbcPluginIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
         assertThat(entry.getLocationStackTraceElementList()).isNotEmpty();
 
@@ -239,7 +241,7 @@ public class JdbcPluginIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 3 rows");
         assertThat(entry.getLocationStackTraceElementList()).isEmpty();
 

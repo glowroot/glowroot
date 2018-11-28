@@ -16,6 +16,7 @@
 package org.glowroot.central.repo;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
@@ -36,6 +37,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.central.repo.AgentConfigDao.AgentConfigUpdater;
 import org.glowroot.common.util.Versions;
+import org.glowroot.common2.config.AllCentralAdminConfig;
+import org.glowroot.common2.config.AllEmbeddedAdminConfig;
 import org.glowroot.common2.config.CentralAdminGeneralConfig;
 import org.glowroot.common2.config.CentralStorageConfig;
 import org.glowroot.common2.config.CentralWebConfig;
@@ -44,23 +47,29 @@ import org.glowroot.common2.config.EmbeddedStorageConfig;
 import org.glowroot.common2.config.EmbeddedWebConfig;
 import org.glowroot.common2.config.HealthchecksIoConfig;
 import org.glowroot.common2.config.HttpProxyConfig;
+import org.glowroot.common2.config.ImmutableAllCentralAdminConfig;
 import org.glowroot.common2.config.ImmutableCentralAdminGeneralConfig;
 import org.glowroot.common2.config.ImmutableCentralStorageConfig;
 import org.glowroot.common2.config.ImmutableCentralWebConfig;
 import org.glowroot.common2.config.ImmutableHttpProxyConfig;
 import org.glowroot.common2.config.ImmutableLdapConfig;
 import org.glowroot.common2.config.ImmutablePagerDutyConfig;
+import org.glowroot.common2.config.ImmutableSlackConfig;
 import org.glowroot.common2.config.ImmutableSmtpConfig;
+import org.glowroot.common2.config.ImmutableUserConfig;
 import org.glowroot.common2.config.LdapConfig;
 import org.glowroot.common2.config.MoreConfigDefaults;
 import org.glowroot.common2.config.PagerDutyConfig;
 import org.glowroot.common2.config.PagerDutyConfig.PagerDutyIntegrationKey;
 import org.glowroot.common2.config.RoleConfig;
+import org.glowroot.common2.config.SlackConfig;
+import org.glowroot.common2.config.SlackConfig.SlackWebhook;
 import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.StorageConfig;
 import org.glowroot.common2.config.UserConfig;
 import org.glowroot.common2.config.WebConfig;
 import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.ConfigValidation;
 import org.glowroot.common2.repo.util.LazySecretKey;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
@@ -77,8 +86,6 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMo
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
-
-import static com.google.common.base.Preconditions.checkState;
 
 public class ConfigRepositoryImpl implements ConfigRepository {
 
@@ -113,6 +120,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         centralConfigDao.addKeyType(HTTP_PROXY_KEY, ImmutableHttpProxyConfig.class);
         centralConfigDao.addKeyType(LDAP_KEY, ImmutableLdapConfig.class);
         centralConfigDao.addKeyType(PAGER_DUTY_KEY, ImmutablePagerDutyConfig.class);
+        centralConfigDao.addKeyType(SLACK_KEY, ImmutableSlackConfig.class);
     }
 
     @Override
@@ -300,6 +308,16 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public AgentConfig getAllConfig(String agentId) throws Exception {
+        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        if (agentConfig == null) {
+            throw new AgentConfigNotFoundException(agentId);
+        } else {
+            return agentConfig;
+        }
+    }
+
+    @Override
     public EmbeddedAdminGeneralConfig getEmbeddedAdminGeneralConfig() {
         throw new UnsupportedOperationException();
     }
@@ -354,7 +372,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public EmbeddedWebConfig getEmbeddedWebConfig() throws Exception {
+    public EmbeddedWebConfig getEmbeddedWebConfig() {
         throw new UnsupportedOperationException();
     }
 
@@ -426,8 +444,47 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public SlackConfig getSlackConfig() throws Exception {
+        SlackConfig config = (SlackConfig) centralConfigDao.read(SLACK_KEY);
+        if (config == null) {
+            return ImmutableSlackConfig.builder().build();
+        }
+        return config;
+    }
+
+    @Override
     public HealthchecksIoConfig getHealthchecksIoConfig() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AllEmbeddedAdminConfig getAllEmbeddedAdminConfig() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AllCentralAdminConfig getAllCentralAdminConfig() throws Exception {
+        return ImmutableAllCentralAdminConfig.builder()
+                .general(getCentralAdminGeneralConfig())
+                .users(getUserConfigs())
+                .roles(getRoleConfigs())
+                .web(getCentralWebConfig())
+                .storage(getCentralStorageConfig())
+                .smtp(getSmtpConfig())
+                .httpProxy(getHttpProxyConfig())
+                .ldap(getLdapConfig())
+                .pagerDuty(getPagerDutyConfig())
+                .slack(getSlackConfig())
+                .build();
+    }
+
+    @Override
+    public boolean isConfigReadOnly(String agentId) throws Exception {
+        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        if (agentConfig == null) {
+            throw new AgentConfigNotFoundException(agentId);
+        }
+        return agentConfig.getConfigReadOnly();
     }
 
     @Override
@@ -569,12 +626,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     // central supports synthetic monitor configs on rollups
     @Override
-    public String insertSyntheticMonitorConfig(String agentRollupId,
-            SyntheticMonitorConfig configWithoutId) throws Exception {
-        checkState(configWithoutId.getId().isEmpty());
-        SyntheticMonitorConfig config = configWithoutId.toBuilder()
-                .setId(AgentConfigDao.generateNewId())
-                .build();
+    public void insertSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config)
+            throws Exception {
         agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
@@ -593,7 +646,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
         });
         notifyAgentConfigListeners(agentRollupId);
-        return config.getId();
     }
 
     // central supports synthetic monitor configs on rollups
@@ -769,30 +821,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updatePluginConfig(String agentId, String pluginId,
-            List<PluginProperty> properties, String priorVersion) throws Exception {
+    public void updatePluginConfig(String agentId, PluginConfig config, String priorVersion)
+            throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 List<PluginConfig> pluginConfigs =
-                        Lists.newArrayList(agentConfig.getPluginConfigList());
-                ListIterator<PluginConfig> i = pluginConfigs.listIterator();
-                boolean found = false;
-                while (i.hasNext()) {
-                    PluginConfig pluginConfig = i.next();
-                    if (pluginConfig.getId().equals(pluginId)) {
-                        String existingVersion = Versions.getVersion(pluginConfig);
-                        if (!priorVersion.equals(existingVersion)) {
-                            throw new OptimisticLockException();
-                        }
-                        i.set(buildPluginConfig(pluginConfig, properties));
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    throw new IllegalStateException("Plugin config not found: " + pluginId);
-                }
+                        buildPluginConfigs(config, priorVersion, agentConfig);
                 return agentConfig.toBuilder()
                         .clearPluginConfig()
                         .addAllPluginConfig(pluginConfigs)
@@ -942,6 +977,34 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
+    public void updateAllConfig(String agentId, AgentConfig config, @Nullable String priorVersion)
+            throws Exception {
+        ConfigValidation.validatePartOne(config);
+        agentConfigDao.update(agentId, new AgentConfigUpdater() {
+            @Override
+            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
+                if (priorVersion != null) {
+                    String existingVersion = Versions.getVersion(agentConfig);
+                    if (!priorVersion.equals(existingVersion)) {
+                        throw new OptimisticLockException();
+                    }
+                }
+                Set<String> validPluginIds = Sets.newHashSet();
+                for (PluginConfig pluginConfig : agentConfig.getPluginConfigList()) {
+                    validPluginIds.add(pluginConfig.getId());
+                }
+                ConfigValidation.validatePartTwo(config, validPluginIds);
+                return config.toBuilder()
+                        .clearPluginConfig()
+                        .addAllPluginConfig(
+                                buildPluginConfigs(config.getPluginConfigList(), agentConfig))
+                        .build();
+            }
+        });
+        notifyAgentConfigListeners(agentId);
+    }
+
+    @Override
     public void updateEmbeddedAdminGeneralConfig(EmbeddedAdminGeneralConfig config,
             String priorVersion) {
         throw new UnsupportedOperationException();
@@ -1081,24 +1144,63 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updatePagerDutyConfig(PagerDutyConfig config, String priorVersion)
             throws Exception {
-        // check for duplicate integration key / display
-        Set<String> integrationKeys = new HashSet<>();
-        Set<String> integrationDisplays = new HashSet<>();
-        for (PagerDutyIntegrationKey integrationKey : config.integrationKeys()) {
-            if (!integrationKeys.add(integrationKey.key())) {
-                throw new DuplicatePagerDutyIntegrationKeyException();
-            }
-            if (!integrationDisplays.add(integrationKey.display())) {
-                throw new DuplicatePagerDutyIntegrationKeyDisplayException();
-            }
-        }
+        validatePagerDutyConfig(config);
         centralConfigDao.write(PAGER_DUTY_KEY, config, priorVersion);
+    }
+
+    @Override
+    public void updateSlackConfig(SlackConfig config, String priorVersion) throws Exception {
+        validateSlackConfig(config);
+        centralConfigDao.write(SLACK_KEY, config, priorVersion);
     }
 
     @Override
     public void updateHealthchecksIoConfig(HealthchecksIoConfig healthchecksIoConfig,
             String priorVersion) throws Exception {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void updateAllEmbeddedAdminConfig(AllEmbeddedAdminConfig config,
+            @Nullable String priorVersion) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void updateAllCentralAdminConfig(AllCentralAdminConfig config,
+            @Nullable String priorVersion) throws Exception {
+        validatePagerDutyConfig(config.pagerDuty());
+        validateSlackConfig(config.slack());
+        if (priorVersion == null) {
+            centralConfigDao.writeWithoutOptimisticLocking(GENERAL_KEY, config.general());
+            centralConfigDao.writeWithoutOptimisticLocking(WEB_KEY, config.web());
+            centralConfigDao.writeWithoutOptimisticLocking(STORAGE_KEY, config.storage());
+            centralConfigDao.writeWithoutOptimisticLocking(SMTP_KEY, config.smtp());
+            centralConfigDao.writeWithoutOptimisticLocking(HTTP_PROXY_KEY, config.httpProxy());
+            centralConfigDao.writeWithoutOptimisticLocking(LDAP_KEY, config.ldap());
+            centralConfigDao.writeWithoutOptimisticLocking(PAGER_DUTY_KEY, config.pagerDuty());
+            centralConfigDao.writeWithoutOptimisticLocking(SLACK_KEY, config.slack());
+            writeUsersWithoutOptimisticLocking(config.users());
+            writeRolesWithoutOptimisticLocking(config.roles());
+        } else {
+            AllCentralAdminConfig currConfig = getAllCentralAdminConfig();
+            if (!priorVersion.equals(currConfig.version())) {
+                throw new OptimisticLockException();
+            }
+            centralConfigDao.write(GENERAL_KEY, config.general(), currConfig.general().version());
+            centralConfigDao.write(WEB_KEY, config.web(), currConfig.web().version());
+            centralConfigDao.write(STORAGE_KEY, config.storage(), currConfig.storage().version());
+            centralConfigDao.write(SMTP_KEY, config.smtp(), currConfig.smtp().version());
+            centralConfigDao.write(HTTP_PROXY_KEY, config.httpProxy(),
+                    currConfig.httpProxy().version());
+            centralConfigDao.write(LDAP_KEY, config.ldap(), currConfig.ldap().version());
+            centralConfigDao.write(PAGER_DUTY_KEY, config.pagerDuty(),
+                    currConfig.pagerDuty().version());
+            centralConfigDao.write(SLACK_KEY, config.slack(), currConfig.slack().version());
+            // there is currently no optimistic locking when updating users
+            writeUsersWithoutOptimisticLocking(config.users());
+            writeRolesWithoutOptimisticLocking(config.roles());
+        }
     }
 
     @Override
@@ -1120,6 +1222,43 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         agentConfigListeners.add(listener);
     }
 
+    private void writeUsersWithoutOptimisticLocking(List<UserConfig> userConfigs) throws Exception {
+        Map<String, UserConfig> remainingUserConfigs = new HashMap<>();
+        for (UserConfig userConfig : getUserConfigs()) {
+            remainingUserConfigs.put(userConfig.username(), userConfig);
+        }
+        for (UserConfig userConfig : userConfigs) {
+            UserConfig existingUserConfig =
+                    remainingUserConfigs.remove(userConfig.username());
+            if (userConfig.passwordHash().isEmpty() && !userConfig.ldap()) {
+                if (existingUserConfig == null) {
+                    throw new IllegalStateException(
+                            "New user " + userConfig.username() + " is missing password");
+                }
+                userConfig = ImmutableUserConfig.copyOf(userConfig)
+                        .withPasswordHash(existingUserConfig.passwordHash());
+            }
+            userDao.insert(userConfig);
+        }
+        for (String remainingUsername : remainingUserConfigs.keySet()) {
+            userDao.delete(remainingUsername);
+        }
+    }
+
+    private void writeRolesWithoutOptimisticLocking(List<RoleConfig> roleConfigs) throws Exception {
+        Map<String, RoleConfig> remainingRoleConfigs = new HashMap<>();
+        for (RoleConfig roleConfig : getRoleConfigs()) {
+            remainingRoleConfigs.put(roleConfig.name(), roleConfig);
+        }
+        for (RoleConfig roleConfig : roleConfigs) {
+            remainingRoleConfigs.remove(roleConfig.name());
+            roleDao.insert(roleConfig);
+        }
+        for (String remainingRolename : remainingRoleConfigs.keySet()) {
+            roleDao.delete(remainingRolename);
+        }
+    }
+
     // the updated config is not passed to the listeners to avoid the race condition of multiple
     // config updates being sent out of order, instead listeners must call get*Config() which will
     // never return the updates out of order (at worst it may return the most recent update twice
@@ -1130,17 +1269,73 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         }
     }
 
-    private static PluginConfig buildPluginConfig(PluginConfig existingPluginConfig,
-            List<PluginProperty> properties) {
-        Map<String, PluginProperty> props = buildMutablePropertiesMap(properties);
+    private static List<PluginConfig> buildPluginConfigs(PluginConfig updatedConfig,
+            String priorVersion, AgentConfig agentConfig) throws OptimisticLockException {
+        List<PluginConfig> pluginConfigs =
+                Lists.newArrayList(agentConfig.getPluginConfigList());
+        ListIterator<PluginConfig> i = pluginConfigs.listIterator();
+        boolean found = false;
+        while (i.hasNext()) {
+            PluginConfig pluginConfig = i.next();
+            if (pluginConfig.getId().equals(updatedConfig.getId())) {
+                String existingVersion = Versions.getVersion(pluginConfig);
+                if (!priorVersion.equals(existingVersion)) {
+                    throw new OptimisticLockException();
+                }
+                i.set(buildPluginConfig(pluginConfig, updatedConfig.getPropertyList(), true));
+                found = true;
+                break;
+            }
+        }
+        if (found) {
+            return pluginConfigs;
+        } else {
+            throw new IllegalStateException("Plugin config not found: " + updatedConfig.getId());
+        }
+    }
+
+    private static List<PluginConfig> buildPluginConfigs(List<PluginConfig> newConfigs,
+            AgentConfig agentConfig) throws OptimisticLockException {
+        List<PluginConfig> pluginConfigs = new ArrayList<>();
+        Map<String, PluginConfig> remainingNewConfigs = new HashMap<>();
+        for (PluginConfig newConfig : newConfigs) {
+            remainingNewConfigs.put(newConfig.getId(), newConfig);
+        }
+        for (PluginConfig pluginConfig : agentConfig.getPluginConfigList()) {
+            PluginConfig newConfig = remainingNewConfigs.remove(pluginConfig.getId());
+            List<PluginProperty> newProperties;
+            if (newConfig == null) {
+                newProperties = new ArrayList<>();
+            } else {
+                newProperties = newConfig.getPropertyList();
+            }
+            pluginConfigs.add(buildPluginConfig(pluginConfig, newProperties, false));
+        }
+        if (remainingNewConfigs.isEmpty()) {
+            return pluginConfigs;
+        } else {
+            throw new IllegalStateException("Plugin config(s) not found: "
+                    + Joiner.on(", ").join(remainingNewConfigs.keySet()));
+        }
+    }
+
+    private static PluginConfig buildPluginConfig(PluginConfig existingConfig,
+            List<PluginProperty> newProperties, boolean errorOnMissingProperty) {
+        Map<String, PluginProperty> newProps = buildMutablePropertiesMap(newProperties);
         PluginConfig.Builder builder = PluginConfig.newBuilder()
-                .setId(existingPluginConfig.getId())
-                .setName(existingPluginConfig.getName());
-        for (PluginProperty existingProperty : existingPluginConfig.getPropertyList()) {
-            PluginProperty prop = props.remove(existingProperty.getName());
+                .setId(existingConfig.getId())
+                .setName(existingConfig.getName());
+        for (PluginProperty existingProperty : existingConfig.getPropertyList()) {
+            PluginProperty prop = newProps.remove(existingProperty.getName());
             if (prop == null) {
-                throw new IllegalStateException(
-                        "Missing plugin property name: " + existingProperty.getName());
+                if (errorOnMissingProperty) {
+                    throw new IllegalStateException(
+                            "Missing plugin property name: " + existingProperty.getName());
+                } else {
+                    builder.addProperty(existingProperty.toBuilder()
+                            .setValue(existingProperty.getDefault()));
+                    continue;
+                }
             }
             if (!isSameType(prop.getValue(), existingProperty.getValue())) {
                 throw new IllegalStateException("Plugin property " + prop.getName()
@@ -1149,9 +1344,9 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             builder.addProperty(existingProperty.toBuilder()
                     .setValue(prop.getValue()));
         }
-        if (!props.isEmpty()) {
+        if (!newProps.isEmpty()) {
             throw new IllegalStateException(
-                    "Unexpected property name(s): " + Joiner.on(", ").join(props.keySet()));
+                    "Unexpected property name(s): " + Joiner.on(", ").join(newProps.keySet()));
         }
         return builder.build();
     }
@@ -1195,6 +1390,32 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             correctedList.add(defaultList.get(i));
         }
         return ImmutableList.copyOf(correctedList);
+    }
+
+    private static void validatePagerDutyConfig(PagerDutyConfig config) throws Exception {
+        Set<String> integrationKeys = new HashSet<>();
+        Set<String> integrationDisplays = new HashSet<>();
+        for (PagerDutyIntegrationKey integrationKey : config.integrationKeys()) {
+            if (!integrationKeys.add(integrationKey.key())) {
+                throw new DuplicatePagerDutyIntegrationKeyException();
+            }
+            if (!integrationDisplays.add(integrationKey.display())) {
+                throw new DuplicatePagerDutyIntegrationKeyDisplayException();
+            }
+        }
+    }
+
+    private static void validateSlackConfig(SlackConfig config) throws Exception {
+        Set<String> webhookUrls = Sets.newHashSet();
+        Set<String> webhookDisplays = Sets.newHashSet();
+        for (SlackWebhook webhook : config.webhooks()) {
+            if (!webhookUrls.add(webhook.url())) {
+                throw new DuplicateSlackWebhookUrlException();
+            }
+            if (!webhookDisplays.add(webhook.display())) {
+                throw new DuplicateSlackWebhookDisplayException();
+            }
+        }
     }
 
     public interface AgentConfigListener {

@@ -10,7 +10,7 @@ _JAVA_OPTIONS=
 # NewRatio is to leave as much memory as possible to old gen
 surefire_jvm_args="-Xmx256m -XX:NewRatio=20 -Djava.security.egd=file:/dev/./urandom"
 java_version=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}')
-if [[ "$java_version" < "1.8" ]]
+if [[ $java_version == 1.6* || $java_version == 1.7* ]]
 then
   # MaxPermSize bump is needed for running grails plugin tests
   surefire_jvm_args="$surefire_jvm_args -XX:MaxPermSize=128m"
@@ -20,6 +20,11 @@ then
   test_shaded_opt=-Dglowroot.test.shaded
 fi
 
+if [[ $java_version == 9* || $java_version == [1-9][0-9]* ]]
+then
+  cassandra_java_home_opt=-Dcassandra.java.home=/usr/lib/jvm/java-8-openjdk-amd64
+fi
+
 test1_excluded_plugin_modules="!:glowroot-agent-cassandra-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-elasticsearch-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-hibernate-plugin"
@@ -27,6 +32,7 @@ test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-h
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-jdbc-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-jms-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-jsp-plugin"
+test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-kafka-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-logger-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-play-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-quartz-plugin"
@@ -47,13 +53,17 @@ case "$1" in
 
       "test1") # excluding :glowroot-agent-ui-sandbox and :glowroot-agent since they depend on plugins which are being excluded
                exclude_modules="$test1_excluded_plugin_modules,!:glowroot-agent-ui-sandbox,!:glowroot-agent"
-               if [[ "$java_version" > "1.8" ]]
+               activate_profiles="netty-4.x,spring-4.x"
+               if [[ $java_version == 1.8* || $java_version == 9* || $java_version == [1-9][0-9]* ]]
                then
                  # these modules are only part of build under Java 8+
                  exclude_modules="$exclude_modules,!:glowroot-central,!:glowroot-webdriver-tests"
+                 # spring-5.x profile is cumulative on top of spring-4.x (tests new spring 5 features, e.g. webflux)
+                 # mongodb tests use testcontainers which requires Java 8+
+                 activate_profiles="$activate_profiles,spring-5.x,mongodb-3.7.x"
                fi
                mvn clean install -pl $exclude_modules \
-                                 -P netty-4.x,spring-4.x \
+                                 -P $activate_profiles \
                                  -DargLine="$surefire_jvm_args" \
                                  $test_shaded_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
@@ -68,12 +78,12 @@ case "$1" in
                if [[ "$TEST_SHADED" == "true" ]]
                then
                  # async-http-client, elasticsearch and play tests all require shading
-                 if [[ "$java_version" > "1.8" ]]
+                 if [[ $java_version == 1.6* || $java_version == 1.7* ]]
                  then
+                   activate_profiles_opt="-P async-http-client-1.x,elasticsearch-2.x,play-2.2.x,play-2.x"
+                 else
                    # latest versions of async-http-client, elasticsearch and play all require Java 8+
                    activate_profiles_opt="-P async-http-client-2.x,elasticsearch-5.x,play-2.4.x,play-2.x"
-                 else
-                   activate_profiles_opt="-P async-http-client-1.x,elasticsearch-2.x,play-2.2.x,play-2.x"
                  fi
                fi
                # enforcer.skip is needed for async-http-client, elasticsearch and play
@@ -82,6 +92,7 @@ case "$1" in
                                  -Denforcer.skip \
                                  -DargLine="$surefire_jvm_args" \
                                  $test_shaded_opt \
+                                 $cassandra_java_home_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
@@ -134,7 +145,7 @@ case "$1" in
                fi
                ;;
 
-      "test3") if [[ "$java_version" < "1.8" ]]
+      "test3") if [[ $java_version == 1.6* || $java_version == 1.7* ]]
                then
                  echo test3 target requires Java 8+
                  exit 1
@@ -147,11 +158,12 @@ case "$1" in
                mvn clean verify -pl :glowroot-central,:glowroot-webdriver-tests \
                                 -DargLine="$surefire_jvm_args" \
                                 $test_shaded_opt \
+                                $cassandra_java_home_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -B
                ;;
 
-      "test4") if [[ "$java_version" < "1.8" ]]
+      "test4") if [[ $java_version == 1.6* || $java_version == 1.7* ]]
                then
                  echo test4 target requires Java 8+
                  exit 1
@@ -164,6 +176,7 @@ case "$1" in
                                 -Dglowroot.internal.webdriver.useCentral=true \
                                 -DargLine="$surefire_jvm_args" \
                                 $test_shaded_opt \
+                                $cassandra_java_home_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -B
                ;;
@@ -183,6 +196,7 @@ case "$1" in
                                   -Pjavadoc \
                                   -DargLine="$surefire_jvm_args" \
                                   $test_shaded_opt \
+                                  $cassandra_java_home_opt \
                                   -Dglowroot.build.commit=$TRAVIS_COMMIT \
                                   --settings build/travis-ci/settings.xml \
                                   -B
@@ -191,6 +205,7 @@ case "$1" in
                                    -Pjavadoc \
                                    -DargLine="$surefire_jvm_args" \
                                    $test_shaded_opt \
+                                   $cassandra_java_home_opt \
                                    -B
                fi
                ;;
@@ -226,8 +241,9 @@ case "$1" in
                                  -Djacoco.append=true \
                                  -Dglowroot.it.harness=javaagent"
                  # run integration tests
+                 # spring-5.x profile is cumulative on top of spring-4.x (tests new spring 5 features, e.g. webflux)
                  mvn $common_mvn_args -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -P netty-4.x,spring-4.x \
+                                      -P netty-4.x,spring-4.x,spring-5.x,mongodb-3.7.x \
                                       -B
                  # install to run additional tests
                  mvn clean install -DskipTests \
@@ -324,6 +340,12 @@ case "$1" in
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -Dglowroot.test.shaded \
                                       -B
+                 # mongodb pre-3.7.x
+                 mvn $common_mvn_args -pl agent/plugins/mongodb-plugin \
+                                      -P mongodb-pre-3.7.x \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      -Dglowroot.test.shaded \
+                                      -B
                  # the sonar.login system property is set in the pom.xml using the
                  # environment variable SONAR_LOGIN (instead of setting the system
                  # property on the command line which which would make it visible to ps)
@@ -346,6 +368,8 @@ case "$1" in
                  exit 1
                fi
                set -e
+
+               echo "MAVEN_OPTS=\"-Xmx1g -XX:NewRatio=20\"" > ~/.mavenrc
 
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@UnderInitialization\*/|@org.checkerframework.checker.initialization.qual.UnderInitialization|g'
                find -name *.java -print0 | xargs -0 sed -i 's|/\*@Initialized\*/|@org.checkerframework.checker.initialization.qual.Initialized|g'

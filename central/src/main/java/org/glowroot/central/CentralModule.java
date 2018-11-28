@@ -520,8 +520,18 @@ public class CentralModule {
         }
         String cassandraConsistencyLevel = properties.get("glowroot.cassandra.consistencyLevel");
         if (!Strings.isNullOrEmpty(cassandraConsistencyLevel)) {
-            ConsistencyLevel consistencyLevel = ConsistencyLevel.valueOf(cassandraConsistencyLevel);
-            builder.cassandraConsistencyLevel(consistencyLevel);
+            int index = cassandraConsistencyLevel.indexOf('/');
+            if (index == -1) {
+                ConsistencyLevel consistencyLevel =
+                        ConsistencyLevel.valueOf(cassandraConsistencyLevel);
+                builder.cassandraReadConsistencyLevel(consistencyLevel);
+                builder.cassandraWriteConsistencyLevel(consistencyLevel);
+            } else {
+                builder.cassandraReadConsistencyLevel(
+                        ConsistencyLevel.valueOf(cassandraConsistencyLevel.substring(0, index)));
+                builder.cassandraWriteConsistencyLevel(
+                        ConsistencyLevel.valueOf(cassandraConsistencyLevel.substring(index + 1)));
+            }
         }
         String cassandraSymmetricEncryptionKey =
                 properties.get("glowroot.cassandra.symmetricEncryptionKey");
@@ -537,10 +547,6 @@ public class CentralModule {
         if (!Strings.isNullOrEmpty(cassandraPoolMaxRequestsPerConnection)) {
             builder.cassandraPoolMaxRequestsPerConnection(
                     Integer.parseInt(cassandraPoolMaxRequestsPerConnection));
-        }
-        String cassandraPoolMaxQueueSize = properties.get("glowroot.cassandra.pool.maxQueueSize");
-        if (!Strings.isNullOrEmpty(cassandraPoolMaxQueueSize)) {
-            builder.cassandraPoolMaxQueueSize(Integer.parseInt(cassandraPoolMaxQueueSize));
         }
         String cassandraPoolTimeoutMillis = properties.get("glowroot.cassandra.pool.timeoutMillis");
         if (!Strings.isNullOrEmpty(cassandraPoolTimeoutMillis)) {
@@ -713,9 +719,21 @@ public class CentralModule {
             try {
                 String keyspace = centralConfig.cassandraKeyspace();
                 if (session == null) {
+                    ConsistencyLevel writeConsistencyLevelOverride;
+                    if (centralConfig.cassandraWriteConsistencyLevel() == centralConfig
+                            .cassandraWriteConsistencyLevel()) {
+                        writeConsistencyLevelOverride = null;
+                    } else {
+                        writeConsistencyLevelOverride =
+                                centralConfig.cassandraWriteConsistencyLevel();
+                    }
                     session = new Session(
                             createCluster(centralConfig, defaultTimestampGenerator).connect(),
-                            keyspace);
+                            keyspace, writeConsistencyLevelOverride,
+                            // max concurrent queries before throwing BusyPoolException is "max
+                            // requests per connection" + "max queue size" (which are both set to
+                            // the same value)
+                            centralConfig.cassandraPoolMaxRequestsPerConnection() * 3);
                 }
                 String cassandraVersion = verifyCassandraVersion(session);
                 KeyspaceMetadata keyspaceMetadata =
@@ -727,7 +745,8 @@ public class CentralModule {
                 }
                 startupLogger.info("connected to Cassandra (version {}), using keyspace '{}'"
                         + " (replication factor {}) and consistency level {}", cassandraVersion,
-                        keyspace, replicationFactor, centralConfig.cassandraConsistencyLevel());
+                        keyspace, replicationFactor,
+                        centralConfig.cassandraConsistencyLevelDisplay());
                 return session;
             } catch (NoHostAvailableException e) {
                 startupLogger.debug(e.getMessage(), e);
@@ -738,7 +757,7 @@ public class CentralModule {
                 } else {
                     waitingForCassandraReplicasLogger.info("waiting for enough Cassandra replicas"
                             + " to run queries at consistency level {} ({})...",
-                            centralConfig.cassandraConsistencyLevel(),
+                            centralConfig.cassandraConsistencyLevelDisplay(),
                             Joiner.on(",").join(centralConfig.cassandraContactPoint()));
                 }
                 SECONDS.sleep(1);
@@ -768,13 +787,17 @@ public class CentralModule {
                 // let driver know that only idempotent queries are used so it will retry on timeout
                 .withQueryOptions(new QueryOptions()
                         .setDefaultIdempotence(true)
-                        .setConsistencyLevel(centralConfig.cassandraConsistencyLevel()))
+                        .setConsistencyLevel(centralConfig.cassandraReadConsistencyLevel()))
                 .withPoolingOptions(new PoolingOptions()
                         .setMaxRequestsPerConnection(HostDistance.LOCAL,
                                 centralConfig.cassandraPoolMaxRequestsPerConnection())
                         .setMaxRequestsPerConnection(HostDistance.REMOTE,
                                 centralConfig.cassandraPoolMaxRequestsPerConnection())
-                        .setMaxQueueSize(centralConfig.cassandraPoolMaxQueueSize())
+                        // using 2x "max requests per connection", so that thread-based
+                        // throttling can allow up to 3x "max requests per connection", which is
+                        // split between read and write, where each can allow up to 1.5x "max
+                        // requests per connection" which will keep the pool saturated
+                        .setMaxQueueSize(centralConfig.cassandraPoolMaxRequestsPerConnection() * 2)
                         .setPoolTimeoutMillis(centralConfig.cassandraPoolTimeoutMillis()))
                 .withTimestampGenerator(defaultTimestampGenerator);
         String cassandraUsername = centralConfig.cassandraUsername();
@@ -787,7 +810,7 @@ public class CentralModule {
 
     private static String verifyCassandraVersion(Session session) throws Exception {
         ResultSet results =
-                session.execute("select release_version from system.local where key = 'local'");
+                session.read("select release_version from system.local where key = 'local'");
         Row row = checkNotNull(results.one());
         String cassandraVersion = checkNotNull(row.getString(0));
         if (cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")
@@ -868,8 +891,24 @@ public class CentralModule {
         }
 
         @Value.Default
-        ConsistencyLevel cassandraConsistencyLevel() {
+        ConsistencyLevel cassandraReadConsistencyLevel() {
             return ConsistencyLevel.QUORUM;
+        }
+
+        @Value.Default
+        ConsistencyLevel cassandraWriteConsistencyLevel() {
+            return ConsistencyLevel.QUORUM;
+        }
+
+        @Value.Derived
+        String cassandraConsistencyLevelDisplay() {
+            ConsistencyLevel readConsistencyLevel = cassandraReadConsistencyLevel();
+            ConsistencyLevel writeConsistencyLevel = cassandraWriteConsistencyLevel();
+            if (readConsistencyLevel == writeConsistencyLevel) {
+                return readConsistencyLevel.name();
+            } else {
+                return readConsistencyLevel.name() + "/" + writeConsistencyLevel.name();
+            }
         }
 
         @Value.Default
@@ -880,13 +919,6 @@ public class CentralModule {
         @Value.Default
         int cassandraPoolMaxRequestsPerConnection() {
             return 1024;
-        }
-
-        @Value.Default
-        int cassandraPoolMaxQueueSize() {
-            // central runs lots of parallel async queries and is very spiky since all aggregates
-            // come in right after each minute marker
-            return 10000;
         }
 
         @Value.Default

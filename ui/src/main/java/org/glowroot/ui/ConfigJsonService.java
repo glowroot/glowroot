@@ -16,15 +16,21 @@
 package org.glowroot.ui;
 
 import java.util.List;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import com.google.common.io.CharStreams;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
+import org.glowroot.common.config.PluginNameComparison;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Versions;
@@ -35,12 +41,14 @@ import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common2.repo.TransactionTypeRepository;
 import org.glowroot.ui.GaugeValueJsonService.GaugeOrdering;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SlowThreshold;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.StringList;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SlowThresholdOverride;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
@@ -117,7 +125,8 @@ class ConfigJsonService {
             return getPluginConfigInternal(agentId, request.pluginId().get());
         } else {
             List<PluginResponse> pluginResponses = Lists.newArrayList();
-            List<PluginConfig> pluginConfigs = configRepository.getPluginConfigs(agentId);
+            List<PluginConfig> pluginConfigs = new PluginConfigNameOrdering()
+                    .sortedCopy(configRepository.getPluginConfigs(agentId));
             for (PluginConfig pluginConfig : pluginConfigs) {
                 pluginResponses.add(ImmutablePluginResponse.builder()
                         .id(pluginConfig.getId())
@@ -140,6 +149,24 @@ class ConfigJsonService {
     String getAdvancedConfig(@BindAgentRollupId String agentRollupId) throws Exception {
         AdvancedConfig config = configRepository.getAdvancedConfig(agentRollupId);
         return mapper.writeValueAsString(AdvancedConfigDto.create(config));
+    }
+
+    @GET(path = "/backend/config/json", permission = "agent:config:view")
+    String getAllConfig(@BindAgentId String agentId) throws Exception {
+        AgentConfig config = configRepository.getAllConfig(agentId);
+        ObjectNode configRootNode = mapper.valueToTree(AllConfigDto.create(config));
+        ObjectMappers.stripEmptyContainerNodes(configRootNode);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        try {
+            jg.setPrettyPrinter(ObjectMappers.getPrettyPrinter());
+            jg.writeObject(configRootNode);
+        } finally {
+            jg.close();
+        }
+        // newline is not required, just a personal preference
+        sb.append(ObjectMappers.NEWLINE);
+        return sb.toString();
     }
 
     @POST(path = "/backend/config/general", permission = "agent:config:edit:general")
@@ -193,13 +220,31 @@ class ConfigJsonService {
     @POST(path = "/backend/config/plugins", permission = "agent:config:edit:plugins")
     String updatePluginConfig(@BindAgentId String agentId, @BindRequest PluginUpdateRequest request)
             throws Exception {
-        List<PluginProperty> properties = Lists.newArrayList();
-        for (PluginPropertyDto prop : request.properties()) {
-            properties.add(prop.convert());
-        }
         String pluginId = request.pluginId();
+        if (pluginId.equals("jdbc")) {
+            String firstInvalidRegularExpression =
+                    getFirstInvalidJdbcPluginRegularExpressions(request.properties());
+            if (firstInvalidRegularExpression != null) {
+                StringBuilder sb = new StringBuilder();
+                JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+                try {
+                    jg.writeStartObject();
+                    jg.writeStringField("firstInvalidRegularExpression",
+                            firstInvalidRegularExpression);
+                    jg.writeEndObject();
+                } finally {
+                    jg.close();
+                }
+                return sb.toString();
+            }
+        }
+        PluginConfig.Builder builder = PluginConfig.newBuilder()
+                .setId(pluginId);
+        for (PluginPropertyDto prop : request.properties()) {
+            builder.addProperty(prop.convert());
+        }
         try {
-            configRepository.updatePluginConfig(agentId, pluginId, properties, request.version());
+            configRepository.updatePluginConfig(agentId, builder.build(), request.version());
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -231,12 +276,40 @@ class ConfigJsonService {
         return getAdvancedConfig(agentRollupId);
     }
 
+    @POST(path = "/backend/config/json", permission = "agent:config:edit")
+    String updateAllConfig(@BindAgentId String agentId, @BindRequest AllConfigDto config)
+            throws Exception {
+        try {
+            configRepository.updateAllConfig(agentId, config.toProto(), config.version());
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getAllConfig(agentId);
+    }
+
     private String getPluginConfigInternal(String agentId, String pluginId) throws Exception {
         PluginConfig config = configRepository.getPluginConfig(agentId, pluginId);
         if (config == null) {
             throw new IllegalArgumentException("Plugin id not found: " + pluginId);
         }
         return mapper.writeValueAsString(PluginConfigDto.create(config));
+    }
+
+    private static @Nullable String getFirstInvalidJdbcPluginRegularExpressions(
+            List<ImmutablePluginPropertyDto> properties) {
+        for (PluginPropertyDto property : properties) {
+            if (property.name().equals("captureBindParametersIncludes")
+                    || property.name().equals("captureBindParametersExcludes")) {
+                for (Object value : (List<?>) checkNotNull(property.value())) {
+                    try {
+                        Pattern.compile((String) checkNotNull(value));
+                    } catch (PatternSyntaxException e) {
+                        return (String) value;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     private static OptionalInt32 of(int value) {
@@ -294,7 +367,7 @@ class ConfigJsonService {
         abstract int slowThresholdMillis();
         abstract int profilingIntervalMillis();
         abstract boolean captureThreadStats();
-        abstract List<ImmutableSlowThresholdDto> slowThresholds();
+        abstract List<ImmutableSlowThresholdOverrideDto> slowThresholdOverrides();
         abstract String version();
 
         private TransactionConfig convert() {
@@ -302,9 +375,9 @@ class ConfigJsonService {
                     .setSlowThresholdMillis(of(slowThresholdMillis()))
                     .setProfilingIntervalMillis(of(profilingIntervalMillis()))
                     .setCaptureThreadStats(captureThreadStats());
-            for (SlowThresholdDto slowThreshold : new SlowThresholdDtoOrdering()
-                    .sortedCopy(slowThresholds())) {
-                builder.addSlowThreshold(slowThreshold.convert());
+            for (SlowThresholdOverrideDto slowThresholdOverride : new SlowThresholdOverrideDtoOrdering()
+                    .sortedCopy(slowThresholdOverrides())) {
+                builder.addSlowThresholdOverride(slowThresholdOverride.convert());
             }
             return builder.build();
         }
@@ -315,8 +388,10 @@ class ConfigJsonService {
                     .profilingIntervalMillis(config.getProfilingIntervalMillis().getValue())
                     .captureThreadStats(config.getCaptureThreadStats())
                     .version(Versions.getVersion(config));
-            for (SlowThreshold slowThreshold : config.getSlowThresholdList()) {
-                builder.addSlowThresholds(SlowThresholdDto.create(slowThreshold));
+            for (SlowThresholdOverride slowThresholdOverride : config
+                    .getSlowThresholdOverrideList()) {
+                builder.addSlowThresholdOverrides(
+                        SlowThresholdOverrideDto.create(slowThresholdOverride));
             }
             return builder.build();
         }
@@ -324,22 +399,23 @@ class ConfigJsonService {
 
     @Value.Immutable
     @Styles.AllParameters
-    abstract static class SlowThresholdDto {
+    abstract static class SlowThresholdOverrideDto {
 
-        public abstract String transactionType();
-        public abstract String transactionName();
-        public abstract int thresholdMillis();
+        abstract String transactionType();
+        abstract String transactionName();
+        abstract int thresholdMillis();
 
-        private SlowThreshold convert() {
-            return SlowThreshold.newBuilder()
+        private SlowThresholdOverride convert() {
+            return SlowThresholdOverride.newBuilder()
                     .setTransactionType(transactionType())
                     .setTransactionName(transactionName())
                     .setThresholdMillis(thresholdMillis())
                     .build();
         }
 
-        private static ImmutableSlowThresholdDto create(SlowThreshold slowThreshold) {
-            return ImmutableSlowThresholdDto.builder()
+        private static ImmutableSlowThresholdOverrideDto create(
+                SlowThresholdOverride slowThreshold) {
+            return ImmutableSlowThresholdOverrideDto.builder()
                     .transactionType(slowThreshold.getTransactionType())
                     .transactionName(slowThreshold.getTransactionName())
                     .thresholdMillis(slowThreshold.getThresholdMillis())
@@ -347,9 +423,10 @@ class ConfigJsonService {
         }
     }
 
-    private static class SlowThresholdDtoOrdering extends Ordering<SlowThresholdDto> {
+    private static class SlowThresholdOverrideDtoOrdering
+            extends Ordering<SlowThresholdOverrideDto> {
         @Override
-        public int compare(SlowThresholdDto left, SlowThresholdDto right) {
+        public int compare(SlowThresholdOverrideDto left, SlowThresholdOverrideDto right) {
             int compare = left.transactionType().compareToIgnoreCase(right.transactionType());
             if (compare != 0) {
                 return compare;
@@ -366,19 +443,22 @@ class ConfigJsonService {
     abstract static class JvmConfigDto {
 
         abstract ImmutableList<String> maskSystemProperties();
+        abstract ImmutableList<String> maskMBeanAttributes();
         abstract String version();
 
         private JvmConfig convert() {
-            JvmConfig.Builder builder =
-                    JvmConfig.newBuilder().addAllMaskSystemProperty(maskSystemProperties());
-            return builder.build();
+            return JvmConfig.newBuilder()
+                    .addAllMaskSystemProperty(maskSystemProperties())
+                    .addAllMaskMbeanAttribute(maskMBeanAttributes())
+                    .build();
         }
 
         private static JvmConfigDto create(JvmConfig config) {
-            ImmutableJvmConfigDto.Builder builder = ImmutableJvmConfigDto.builder()
+            return ImmutableJvmConfigDto.builder()
                     .maskSystemProperties(config.getMaskSystemPropertyList())
-                    .version(Versions.getVersion(config));
-            return builder.build();
+                    .maskMBeanAttributes(config.getMaskMbeanAttributeList())
+                    .version(Versions.getVersion(config))
+                    .build();
         }
     }
 
@@ -445,7 +525,6 @@ class ConfigJsonService {
         abstract String name();
         abstract PropertyType type();
         abstract @Nullable Object value();
-        abstract @Nullable Object defaultValue();
         abstract @Nullable String label();
         abstract @Nullable String checkboxLabel();
         abstract @Nullable String description();
@@ -473,6 +552,13 @@ class ConfigJsonService {
                 case STRING:
                     checkNotNull(value);
                     return PluginProperty.Value.newBuilder().setSval((String) value).build();
+                case LIST:
+                    checkNotNull(value);
+                    StringList.Builder lval = StringList.newBuilder();
+                    for (Object v : (List<?>) value) {
+                        lval.addVal((String) checkNotNull(v));
+                    }
+                    return PluginProperty.Value.newBuilder().setLval(lval).build();
                 default:
                     throw new IllegalStateException("Unexpected property type: " + type());
             }
@@ -483,7 +569,6 @@ class ConfigJsonService {
                     .name(property.getName())
                     .type(getPropertyType(property.getValue().getValCase()))
                     .value(getPropertyValue(property.getValue()))
-                    .defaultValue(getPropertyValue(property.getValue()))
                     .label(property.getLabel())
                     .checkboxLabel(property.getCheckboxLabel())
                     .description(property.getDescription())
@@ -499,6 +584,8 @@ class ConfigJsonService {
                     return PropertyType.DOUBLE;
                 case SVAL:
                     return PropertyType.STRING;
+                case LVAL:
+                    return PropertyType.LIST;
                 default:
                     throw new IllegalStateException("Unexpected property type: " + valCase);
             }
@@ -515,6 +602,8 @@ class ConfigJsonService {
                     return value.getDval();
                 case SVAL:
                     return value.getSval();
+                case LVAL:
+                    return value.getLval().getValList();
                 default:
                     throw new IllegalStateException("Unexpected property type: " + valCase);
             }
@@ -522,7 +611,7 @@ class ConfigJsonService {
     }
 
     enum PropertyType {
-        BOOLEAN, DOUBLE, STRING;
+        BOOLEAN, DOUBLE, STRING, LIST;
     }
 
     @Value.Immutable
@@ -603,6 +692,13 @@ class ConfigJsonService {
                     .defaultGaugeNames(config.getDefaultGaugeNameList())
                     .version(Versions.getVersion(config))
                     .build();
+        }
+    }
+
+    private static class PluginConfigNameOrdering extends Ordering<PluginConfig> {
+        @Override
+        public int compare(PluginConfig left, PluginConfig right) {
+            return PluginNameComparison.compareNames(left.getName(), right.getName());
         }
     }
 }

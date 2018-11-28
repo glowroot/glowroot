@@ -8,7 +8,8 @@ option java_package = "org.glowroot.wire.api.model";
 
 message AgentConfig {
 
-  string agent_version = 1;
+  // only used when sending to central and storing in central
+  bool config_read_only = 18;
 
   GeneralConfig general_config = 16;
   TransactionConfig transaction_config = 2;
@@ -33,10 +34,10 @@ message AgentConfig {
     OptionalInt32 slow_threshold_millis = 1; // optional used due to non-zero default value
     OptionalInt32 profiling_interval_millis = 2; // optional used due to non-zero default value
     bool capture_thread_stats = 3;
-    repeated SlowThreshold slow_threshold = 4;
+    repeated SlowThresholdOverride slow_threshold_override = 4;
   }
 
-  message SlowThreshold {
+  message SlowThresholdOverride {
     string transaction_type = 1;
     string transaction_name = 2;
     int32 threshold_millis = 3;
@@ -44,6 +45,7 @@ message AgentConfig {
 
   message JvmConfig {
     repeated string mask_system_property = 1;
+    repeated string mask_mbean_attribute = 2;
   }
 
   message UiDefaultsConfig {
@@ -154,6 +156,7 @@ message AgentConfig {
     message AlertNotification {
       EmailNotification email_notification = 1;
       PagerDutyNotification pager_duty_notification = 2;
+      SlackNotification slack_notification = 3;
 
       message EmailNotification {
         repeated string email_address = 1;
@@ -161,6 +164,11 @@ message AgentConfig {
 
       message PagerDutyNotification {
         string pager_duty_integration_key = 1;
+      }
+
+      message SlackNotification {
+        string slack_webhook_id = 1;
+        repeated string slack_channel = 2;
       }
     }
 
@@ -247,7 +255,12 @@ message AgentConfig {
         bool dval_null = 2; // simple one field OptionalDouble won't work inside "oneof"
         double dval = 3;
         string sval = 4;
+        StringList lval = 5;
       }
+    }
+
+    message StringList {
+      repeated string val = 1;
     }
   }
 }

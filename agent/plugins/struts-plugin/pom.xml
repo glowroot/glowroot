@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.11.2-SNAPSHOT</version>
+    <version>0.12.3-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -19,7 +19,7 @@
   <properties>
     <!-- instrumented libraries -->
     <struts1.version>1.3.10</struts1.version>
-    <struts2.version>2.5.17</struts2.version>
+    <struts2.version>2.5.18</struts2.version>
   </properties>
 
   <dependencies>
@@ -215,10 +215,10 @@
       </dependencies>
     </profile>
     <profile>
-      <id>force-java6</id>
+      <id>test-java6</id>
       <activation>
         <property>
-          <name>glowroot.forceJava6</name>
+          <name>glowroot.test.java6</name>
         </property>
       </activation>
       <build>

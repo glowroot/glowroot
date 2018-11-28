@@ -27,7 +27,6 @@ import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
-import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.Mixin;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
@@ -42,17 +41,18 @@ public class NettyAspect {
     @Mixin({"io.netty.channel.Channel"})
     public abstract static class ChannelImpl implements ChannelMixin {
 
-        private transient volatile boolean glowroot$completeAsyncTransaction;
+        private transient volatile @Nullable ThreadContext glowroot$threadContextToComplete;
         private transient volatile @Nullable AuxThreadContext glowroot$auxContext;
 
         @Override
-        public boolean glowroot$getCompleteAsyncTransaction() {
-            return glowroot$completeAsyncTransaction;
+        public @Nullable ThreadContext glowroot$getThreadContextToComplete() {
+            return glowroot$threadContextToComplete;
         }
 
         @Override
-        public void glowroot$setCompleteAsyncTransaction(boolean completeAsyncTransaction) {
-            glowroot$completeAsyncTransaction = completeAsyncTransaction;
+        public void glowroot$setThreadContextToComplete(
+                @Nullable ThreadContext threadContextToComplete) {
+            glowroot$threadContextToComplete = threadContextToComplete;
         }
 
         @Override
@@ -69,9 +69,10 @@ public class NettyAspect {
     // the method names are verbose since they will be mixed in to existing classes
     public interface ChannelMixin {
 
-        boolean glowroot$getCompleteAsyncTransaction();
+        @Nullable
+        ThreadContext glowroot$getThreadContextToComplete();
 
-        void glowroot$setCompleteAsyncTransaction(boolean completeAsyncTransaction);
+        void glowroot$setThreadContextToComplete(@Nullable ThreadContext completeAsyncTransaction);
 
         @Nullable
         AuxThreadContext glowroot$getAuxContext();
@@ -133,7 +134,7 @@ public class NettyAspect {
             String methodName = method == null ? null : method.name();
             TraceEntry traceEntry =
                     startAsyncTransaction(context, methodName, request.getUri(), timerName);
-            channel.glowroot$setCompleteAsyncTransaction(true);
+            channel.glowroot$setThreadContextToComplete(context);
             if (!(msg instanceof LastHttpContent)) {
                 channel.glowroot$setAuxContext(context.createAuxThreadContext());
             }
@@ -196,34 +197,24 @@ public class NettyAspect {
                     "java.lang.Object", "io.netty.channel.ChannelPromise"})
     public static class OutboundAdvice {
 
-        @IsEnabled
-        public static boolean isEnabled(
-                @BindParameter @Nullable ChannelHandlerContext channelHandlerContext) {
-            if (channelHandlerContext == null) {
-                return false;
-            }
-            ChannelMixin channel = channelHandlerContext.glowroot$channel();
-            return channel != null && channel.glowroot$getCompleteAsyncTransaction();
-        }
-
         @OnAfter
-        public static void onAfter(ThreadContext context,
+        public static void onAfter(
                 @BindParameter @Nullable ChannelHandlerContext channelHandlerContext,
                 @BindParameter @Nullable Object msg) {
+            if (!(msg instanceof LastHttpContent)) {
+                return;
+            }
             if (channelHandlerContext == null) {
                 return;
             }
-            if (msg instanceof LastHttpContent) {
-                completeAsyncTransaction(context, channelHandlerContext);
-            }
-        }
-
-        private static void completeAsyncTransaction(ThreadContext context,
-                ChannelHandlerContext channelHandlerContext) {
-            context.setTransactionAsyncComplete();
             ChannelMixin channel = channelHandlerContext.glowroot$channel();
-            if (channel != null) {
-                channel.glowroot$setCompleteAsyncTransaction(false);
+            if (channel == null) {
+                return;
+            }
+            ThreadContext context = channel.glowroot$getThreadContextToComplete();
+            if (context != null) {
+                context.setTransactionAsyncComplete();
+                channel.glowroot$setThreadContextToComplete(null);
                 channel.glowroot$setAuxContext(null);
             }
         }

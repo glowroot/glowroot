@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.PoolingOptions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.junit.AfterClass;
@@ -50,7 +51,8 @@ public class GaugeValueDaoIT {
         SharedSetupRunListener.startCassandra();
         clusterManager = ClusterManager.create();
         cluster = Clusters.newCluster();
-        session = new Session(cluster.newSession(), "glowroot_unit_tests");
+        session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         agentConfigDao = new AgentConfigDao(session, clusterManager);
         UserDao userDao = new UserDao(session, clusterManager);

@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.ARETURN;
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
 
 class Java9HackClassFileTransformer implements ClassFileTransformer {
@@ -60,16 +60,15 @@ class Java9HackClassFileTransformer implements ClassFileTransformer {
         private final ClassWriter cw;
 
         private Java9HackClassVisitor(ClassWriter cw) {
-            super(ASM6, cw);
+            super(ASM7, cw);
             this.cw = cw;
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String desc,
+        public MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            if (name.equals("transform")
-                    && desc.equals("(Ljava/lang/ClassLoader;Ljava/lang/String;Ljava/lang/Class;"
-                            + "Ljava/security/ProtectionDomain;[B)[B")) {
+            if (name.equals("transform") && descriptor.equals("(Ljava/lang/ClassLoader;"
+                    + "Ljava/lang/String;Ljava/lang/Class;Ljava/security/ProtectionDomain;[B)[B")) {
                 MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, "transform",
                         "(Ljava/lang/Module;Ljava/lang/ClassLoader;Ljava/lang/String;"
                                 + "Ljava/lang/Class;Ljava/security/ProtectionDomain;[B)[B",
@@ -91,7 +90,7 @@ class Java9HackClassFileTransformer implements ClassFileTransformer {
                 mv.visitMaxs(7, 7);
                 mv.visitEnd();
             }
-            return cw.visitMethod(access, name, desc, signature, exceptions);
+            return cw.visitMethod(access, name, descriptor, signature, exceptions);
         }
     }
 }

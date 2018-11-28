@@ -40,12 +40,13 @@ class AdminConfigFile {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final List<String> keyOrder = ImmutableList.of("general", "users", "roles",
-            "web", "storage", "smtp", "httpProxy", "ldap", "pagerDuty", "healthchecksIo");
+            "web", "storage", "smtp", "httpProxy", "ldap", "pagerDuty", "slack", "healthchecksIo");
 
     private final File file;
     private final ObjectNode rootObjectNode;
+    private final boolean readOnly;
 
-    AdminConfigFile(List<File> confDirs) {
+    AdminConfigFile(List<File> confDirs, boolean readOnly) {
         file = new File(confDirs.get(0), "admin.json");
         if (file.exists()) {
             rootObjectNode = readRootObjectNode(file);
@@ -57,6 +58,7 @@ class AdminConfigFile {
                 rootObjectNode = readRootObjectNode(defaultFile);
             }
         }
+        this.readOnly = readOnly;
     }
 
     <T> /*@Nullable*/ T getConfig(String key, Class<T> clazz) {
@@ -68,21 +70,27 @@ class AdminConfigFile {
     }
 
     void writeConfig(String key, Object config) throws IOException {
+        if (readOnly) {
+            throw new IllegalStateException("Running with config.readOnly=true so config updates"
+                    + " are not allowed");
+        }
         rootObjectNode.replace(key, mapper.valueToTree(config));
-        ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder);
+        ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder, false);
     }
 
-    void writeConfigs(Map<String, Object> configs) throws IOException {
+    void writeConfigsOnStartup(Map<String, Object> configs) throws IOException {
         for (Map.Entry<String, Object> entry : configs.entrySet()) {
             rootObjectNode.replace(entry.getKey(), mapper.valueToTree(entry.getValue()));
         }
-        ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder);
+        ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder, readOnly);
     }
 
     private static ObjectNode readRootObjectNode(File file) {
         ObjectNode rootObjectNode = ConfigFileUtil.getRootObjectNode(file);
         upgradeRolesIfNeeded(rootObjectNode);
         upgradeSmtpIfNeeded(rootObjectNode);
+        upgradeHttpProxyIfNeeded(rootObjectNode);
+        upgradeLdapIfNeeded(rootObjectNode);
         return rootObjectNode;
     }
 
@@ -150,7 +158,6 @@ class AdminConfigFile {
     }
 
     private static void upgradeSmtpIfNeeded(ObjectNode adminRootObjectNode) {
-        // upgrade from 0.9.19 to 0.9.20
         JsonNode smtpNode = adminRootObjectNode.get("smtp");
         if (smtpNode == null || !smtpNode.isObject()) {
             return;
@@ -158,7 +165,39 @@ class AdminConfigFile {
         ObjectNode smtpObjectNode = (ObjectNode) smtpNode;
         JsonNode sslNode = smtpObjectNode.remove("ssl");
         if (sslNode != null && sslNode.isBoolean() && sslNode.asBoolean()) {
+            // upgrade from 0.9.19 to 0.9.20
             smtpObjectNode.put("connectionSecurity", "ssl-tls");
+        }
+        JsonNode passwordNode = smtpObjectNode.remove("password");
+        if (passwordNode != null) {
+            // upgrade from 0.11.1 to 0.12.0
+            smtpObjectNode.set("encryptedPassword", passwordNode);
+        }
+    }
+
+    private static void upgradeHttpProxyIfNeeded(ObjectNode adminRootObjectNode) {
+        JsonNode httpProxyNode = adminRootObjectNode.get("httpProxy");
+        if (httpProxyNode == null || !httpProxyNode.isObject()) {
+            return;
+        }
+        ObjectNode httpProxyObjectNode = (ObjectNode) httpProxyNode;
+        JsonNode passwordNode = httpProxyObjectNode.remove("password");
+        if (passwordNode != null) {
+            // upgrade from 0.11.1 to 0.12.0
+            httpProxyObjectNode.set("encryptedPassword", passwordNode);
+        }
+    }
+
+    private static void upgradeLdapIfNeeded(ObjectNode adminRootObjectNode) {
+        JsonNode ldapNode = adminRootObjectNode.get("ldap");
+        if (ldapNode == null || !ldapNode.isObject()) {
+            return;
+        }
+        ObjectNode ldapObjectNode = (ObjectNode) ldapNode;
+        JsonNode passwordNode = ldapObjectNode.remove("password");
+        if (passwordNode != null) {
+            // upgrade from 0.11.1 to 0.12.0
+            ldapObjectNode.set("encryptedPassword", passwordNode);
         }
     }
 }

@@ -28,6 +28,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.commons.dbcp.DelegatingConnection;
 import org.apache.commons.dbcp.DelegatingPreparedStatement;
@@ -81,7 +82,7 @@ public class PreparedStatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee where name like ?");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['john%'] => 1 row");
 
         assertThat(i.hasNext()).isFalse();
@@ -113,7 +114,7 @@ public class PreparedStatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee where name like ?");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['john%'] => 1 row");
 
         assertThat(i.hasNext()).isFalse();
@@ -145,7 +146,7 @@ public class PreparedStatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("update employee set name = ?");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['nobody'] => 3 rows");
 
         assertThat(i.hasNext()).isFalse();
@@ -177,7 +178,7 @@ public class PreparedStatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("insert into employee (name) values (?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['nobody'] => 1 row");
 
         assertThat(i.hasNext()).isFalse();
@@ -210,7 +211,7 @@ public class PreparedStatementIT {
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText())
                         .startsWith("select * from employee where name like ? and name like ? ");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).startsWith(" ['john%', 'john%', ");
         assertThat(entry.getQueryEntryMessage().getSuffix())
                 .endsWith(", 'john%', 'john%'] => 1 row");
@@ -255,7 +256,7 @@ public class PreparedStatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee where name like ?");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['john%']");
         assertThat(entry.getError().getMessage()).isEqualTo("An execute failure");
 
@@ -299,7 +300,7 @@ public class PreparedStatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo(sql.toString());
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(suffix.toString());
 
         assertThat(i.hasNext()).isFalse();
@@ -319,7 +320,8 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementWithoutBindParameters() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", false);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.<String>of());
 
         // when
         Trace trace = container.execute(ExecutePreparedStatementAndIterateOverResults.class);
@@ -334,7 +336,7 @@ public class PreparedStatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee where name like ?");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 1 row");
 
         assertThat(i.hasNext()).isFalse();
@@ -354,7 +356,8 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementWithSetNull() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.of(".*"));
 
         // whens
         Trace trace = container.execute(ExecutePreparedStatementWithSetNull.class);
@@ -369,7 +372,7 @@ public class PreparedStatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("insert into employee (name, misc) values (?, ?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" [NULL, NULL]");
 
         assertThat(i.hasNext()).isFalse();
@@ -389,7 +392,8 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementWithBinary() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.of(".*"));
 
         // when
         Trace trace = container.execute(ExecutePreparedStatementWithBinary.class);
@@ -404,7 +408,7 @@ public class PreparedStatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("insert into employee (name, misc) values (?, ?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix())
                 .isEqualTo(" ['jane', 0x00010203040506070809]");
 
@@ -414,7 +418,7 @@ public class PreparedStatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("insert /**/ into employee (name, misc) values (?, ?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['jane', {10 bytes}]");
 
         assertThat(i.hasNext()).isFalse();
@@ -441,7 +445,8 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementWithBinaryUsingSetObject() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.of(".*"));
 
         // when
         Trace trace = container.execute(ExecutePreparedStatementWithBinaryUsingSetObject.class);
@@ -456,7 +461,7 @@ public class PreparedStatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("insert into employee (name, misc) values (?, ?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix())
                 .isEqualTo(" ['jane', 0x00010203040506070809]");
 
@@ -466,7 +471,7 @@ public class PreparedStatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("insert /**/ into employee (name, misc) values (?, ?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['jane', {10 bytes}]");
 
         assertThat(i.hasNext()).isFalse();
@@ -493,7 +498,8 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementWithBinaryStream() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.of(".*"));
 
         // when
         Trace trace = container.execute(ExecutePreparedStatementWithBinaryStream.class);
@@ -508,7 +514,7 @@ public class PreparedStatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("insert into employee (name, misc) values (?, ?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix())
                 .isEqualTo(" ['jane', {stream:ByteArrayInputStream}]");
 
@@ -529,7 +535,8 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementWithCharacterStream() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.of(".*"));
 
         // when
         Trace trace = container.execute(ExecutePreparedStatementWithCharacterStream.class);
@@ -544,7 +551,7 @@ public class PreparedStatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("insert into employee (name, misc2) values (?, ?)");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix())
                 .isEqualTo(" ['jane', {stream:StringReader}]");
 
@@ -565,7 +572,8 @@ public class PreparedStatementIT {
     @Test
     public void testPreparedStatementWithClear() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParameters", true);
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.of(".*"));
 
         // when
         Trace trace = container.execute(ExecutePreparedStatementWithClear.class);
@@ -580,7 +588,7 @@ public class PreparedStatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee where name like ?");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['john%'] => 1 row");
 
         assertThat(i.hasNext()).isFalse();
@@ -612,7 +620,7 @@ public class PreparedStatementIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("select * from employee where name like ?");
-        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc execute: ");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" ['{}'] => 0 rows");
 
         assertThat(i.hasNext()).isFalse();

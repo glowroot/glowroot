@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.PoolingOptions;
 import com.google.common.collect.Lists;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -47,7 +48,8 @@ public class SyntheticResultDaoIT {
         SharedSetupRunListener.startCassandra();
         clusterManager = ClusterManager.create();
         cluster = Clusters.newCluster();
-        session = new Session(cluster.newSession(), "glowroot_unit_tests");
+        session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         AgentConfigDao agentConfigDao = new AgentConfigDao(session, clusterManager);
         UserDao userDao = new UserDao(session, clusterManager);
@@ -71,9 +73,9 @@ public class SyntheticResultDaoIT {
     @Test
     public void shouldRollup() throws Exception {
         syntheticResultDao.truncateAll();
-        syntheticResultDao.store("one", "11223344", 60001, SECONDS.toNanos(1), null);
-        syntheticResultDao.store("one", "11223344", 120002, SECONDS.toNanos(3), null);
-        syntheticResultDao.store("one", "11223344", 360000, SECONDS.toNanos(7), null);
+        syntheticResultDao.store("one", "11223344", "login page", 60001, SECONDS.toNanos(1), null);
+        syntheticResultDao.store("one", "11223344", "login page", 120002, SECONDS.toNanos(3), null);
+        syntheticResultDao.store("one", "11223344", "login page", 360000, SECONDS.toNanos(7), null);
 
         // check non-rolled up data
         List<SyntheticResult> syntheticResults =

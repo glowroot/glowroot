@@ -26,11 +26,7 @@ import org.glowroot.common.util.Versions;
 @Value.Immutable
 public abstract class UserConfig {
 
-    @Value.Default
-    @JsonInclude(Include.NON_EMPTY)
-    public String username() {
-        return "";
-    }
+    public abstract String username();
 
     @Value.Default
     @JsonInclude(Include.NON_EMPTY)

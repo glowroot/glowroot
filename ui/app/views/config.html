@@ -20,11 +20,12 @@
       Configuration
     </h1>
   </div>
-  <!-- ng-show needed here instead of ng-if because transaction.js binds directly to #agentRollupDropdown -->
+  <!-- ng-show needed here instead of ng-if because config.js binds directly to #agentRollupDropdown -->
   <div class="gt-header-lhs"
        ng-show="layout.central || layout.embeddedAgentRollup.display">
+    <!-- ng-show needed here instead of ng-if because config.js binds directly to #agentRollupDropdown -->
     <div class="gt-header-menu"
-         ng-if="layout.central">
+         ng-show="layout.central">
       <select gt-selectpicker
               gt-title="agentRollup.display || '&amp;lt;select&amp;gt;'"
               data-width="fit"
@@ -133,6 +134,16 @@
            gt-display="Advanced"
            gt-url="config/advanced{{agentQueryString()}}"
            gt-active="currentUrl() === 'config/advanced'">
+      </div>
+    </div>
+  </div>
+  <div class="card mt-4"
+       ng-if="!isAgentRollup()">
+    <div class="list-group">
+      <div gt-sidebar-item
+           gt-display="config.json"
+           gt-url="config/json{{agentQueryString()}}"
+           gt-active="currentUrl() === 'config/json'">
       </div>
     </div>
   </div>

@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.11.2-SNAPSHOT</version>
+    <version>0.12.3-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -45,7 +45,9 @@
       <!-- need to include https support for proguard step, but then it is stripped out after -->
       <groupId>io.netty</groupId>
       <artifactId>netty-tcnative-boringssl-static</artifactId>
-      <version>2.0.15.Final</version>
+      <!-- need to stick to version known to work with gRPC 1.14.0,
+        see https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
+      <version>2.0.12.Final</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -148,6 +150,12 @@
               <artifact>ch.qos.logback:logback-classic</artifact>
               <excludes>
                 <exclude>META-INF/services/javax.servlet.ServletContainerInitializer</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>javax.annotation:javax.annotation-api</artifact>
+              <excludes>
+                <exclude>META-INF/LICENSE.txt</exclude>
               </excludes>
             </filter>
           </filters>

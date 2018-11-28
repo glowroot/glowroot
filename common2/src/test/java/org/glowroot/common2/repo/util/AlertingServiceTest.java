@@ -116,7 +116,7 @@ public class AlertingServiceTest {
                     .host("localhost")
                     .connectionSecurity(ConnectionSecurity.SSL_TLS)
                     .username("u")
-                    .password(Encryption.encrypt("test", LAZY_SECRET_KEY))
+                    .encryptedPassword(Encryption.encrypt("test", LAZY_SECRET_KEY))
                     .putAdditionalProperties("a", "x")
                     .putAdditionalProperties("b", "y")
                     .build();

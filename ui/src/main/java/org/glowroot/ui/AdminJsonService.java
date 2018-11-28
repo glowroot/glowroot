@@ -27,7 +27,9 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -65,23 +67,30 @@ import org.glowroot.common2.config.ImmutableHttpProxyConfig;
 import org.glowroot.common2.config.ImmutableLdapConfig;
 import org.glowroot.common2.config.ImmutablePagerDutyConfig;
 import org.glowroot.common2.config.ImmutablePagerDutyIntegrationKey;
+import org.glowroot.common2.config.ImmutableSlackConfig;
+import org.glowroot.common2.config.ImmutableSlackWebhook;
 import org.glowroot.common2.config.ImmutableSmtpConfig;
 import org.glowroot.common2.config.ImmutableUserConfig;
 import org.glowroot.common2.config.LdapConfig;
 import org.glowroot.common2.config.PagerDutyConfig;
 import org.glowroot.common2.config.RoleConfig;
+import org.glowroot.common2.config.SlackConfig;
+import org.glowroot.common2.config.SlackConfig.SlackWebhook;
 import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.SmtpConfig.ConnectionSecurity;
 import org.glowroot.common2.config.UserConfig;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.DuplicatePagerDutyIntegrationKeyDisplayException;
 import org.glowroot.common2.repo.ConfigRepository.DuplicatePagerDutyIntegrationKeyException;
+import org.glowroot.common2.repo.ConfigRepository.DuplicateSlackWebhookDisplayException;
+import org.glowroot.common2.repo.ConfigRepository.DuplicateSlackWebhookUrlException;
 import org.glowroot.common2.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common2.repo.RepoAdmin;
 import org.glowroot.common2.repo.RepoAdmin.H2Table;
 import org.glowroot.common2.repo.util.AlertingService;
 import org.glowroot.common2.repo.util.Encryption;
 import org.glowroot.common2.repo.util.HttpClient;
+import org.glowroot.common2.repo.util.IdGenerator;
 import org.glowroot.common2.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException;
 import org.glowroot.common2.repo.util.MailService;
 import org.glowroot.ui.CommonHandler.CommonResponse;
@@ -224,10 +233,44 @@ class AdminJsonService {
         return mapper.writeValueAsString(PagerDutyConfigDto.create(config));
     }
 
+    @GET(path = "/backend/admin/slack", permission = "admin:view:slack")
+    String getSlackConfig() throws Exception {
+        SlackConfig config = configRepository.getSlackConfig();
+        return mapper.writeValueAsString(SlackConfigDto.create(config));
+    }
+
     @GET(path = "/backend/admin/healthchecks-io", permission = "admin:view:healthchecksIo")
     String getHealthchecksIoConfig() throws Exception {
         HealthchecksIoConfig config = configRepository.getHealthchecksIoConfig();
         return mapper.writeValueAsString(HealthchecksIoConfigDto.create(config));
+    }
+
+    @GET(path = "/backend/admin/json", permission = "admin:view")
+    String getAllAdmin() throws Exception {
+        Object configDto;
+        if (central) {
+            configDto =
+                    AllCentralAdminConfigDto.create(configRepository.getAllCentralAdminConfig());
+        } else {
+            configDto =
+                    AllEmbeddedAdminConfigDto.create(configRepository.getAllEmbeddedAdminConfig());
+        }
+        ObjectNode configRootNode = mapper.valueToTree(configDto);
+        ((ObjectNode) checkNotNull(configRootNode.get("smtp"))).remove("encryptedPassword");
+        ((ObjectNode) checkNotNull(configRootNode.get("httpProxy"))).remove("encryptedPassword");
+        ((ObjectNode) checkNotNull(configRootNode.get("ldap"))).remove("encryptedPassword");
+        ObjectMappers.stripEmptyContainerNodes(configRootNode);
+        StringBuilder sb = new StringBuilder();
+        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
+        try {
+            jg.setPrettyPrinter(ObjectMappers.getPrettyPrinter());
+            jg.writeObject(configRootNode);
+        } finally {
+            jg.close();
+        }
+        // newline is not required, just a personal preference
+        sb.append(ObjectMappers.NEWLINE);
+        return sb.toString();
     }
 
     @POST(path = "/backend/admin/general", permission = "admin:edit:general")
@@ -390,6 +433,20 @@ class AdminJsonService {
         return getPagerDutyConfig();
     }
 
+    @POST(path = "/backend/admin/slack", permission = "admin:edit:slack")
+    String updateSlackConfig(@BindRequest SlackConfigDto configDto) throws Exception {
+        try {
+            configRepository.updateSlackConfig(configDto.convert(), configDto.version());
+        } catch (DuplicateSlackWebhookUrlException e) {
+            return "{\"duplicateWebhookUrl\":true}";
+        } catch (DuplicateSlackWebhookDisplayException e) {
+            return "{\"duplicateWebhookDisplay\":true}";
+        } catch (OptimisticLockException e) {
+            throw new JsonServiceException(PRECONDITION_FAILED, e);
+        }
+        return getSlackConfig();
+    }
+
     @POST(path = "/backend/admin/healthchecks-io", permission = "admin:edit:healthchecksIo")
     String updateHealthchecksIoConfig(@BindRequest HealthchecksIoConfigDto configDto)
             throws Exception {
@@ -399,6 +456,27 @@ class AdminJsonService {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         return getHealthchecksIoConfig();
+    }
+
+    @POST(path = "/backend/admin/json", permission = "admin:edit")
+    String updateAllAdmin(@BindRequest String content) throws Exception {
+        JsonNode rootNode = mapper.readTree(content);
+        updatePassword((ObjectNode) rootNode.get("smtp"),
+                configRepository.getSmtpConfig().encryptedPassword());
+        updatePassword((ObjectNode) rootNode.get("httpProxy"),
+                configRepository.getHttpProxyConfig().encryptedPassword());
+        updatePassword((ObjectNode) rootNode.get("ldap"),
+                configRepository.getLdapConfig().encryptedPassword());
+        if (central) {
+            AllCentralAdminConfigDto config =
+                    mapper.treeToValue(rootNode, ImmutableAllCentralAdminConfigDto.class);
+            configRepository.updateAllCentralAdminConfig(config.toConfig(), config.version());
+        } else {
+            AllEmbeddedAdminConfigDto config =
+                    mapper.treeToValue(rootNode, ImmutableAllEmbeddedAdminConfigDto.class);
+            configRepository.updateAllEmbeddedAdminConfig(config.toConfig(), config.version());
+        }
+        return getAllAdmin();
     }
 
     @POST(path = "/backend/admin/send-test-email", permission = "admin:edit:smtp")
@@ -699,6 +777,23 @@ class AdminJsonService {
                 .build());
     }
 
+    private void updatePassword(@Nullable ObjectNode objectNode, String existingEncryptedPassword)
+            throws Exception {
+        if (objectNode == null) {
+            return;
+        }
+        JsonNode passwordNode = objectNode.get("password");
+        if (passwordNode == null) {
+            JsonNode encryptedPasswordNode = objectNode.get("encryptedPassword");
+            if (encryptedPasswordNode == null) {
+                objectNode.put("encryptedPassword", existingEncryptedPassword);
+            }
+        } else {
+            objectNode.put("encryptedPassword", Encryption.encrypt(passwordNode.asText(),
+                    configRepository.getLazySecretKey()));
+        }
+    }
+
     private static String createErrorResponse(Exception exception) throws IOException {
         String message = exception.getLocalizedMessage();
         String exceptionName = exception.getClass().getSimpleName();
@@ -966,15 +1061,14 @@ class AdminJsonService {
                     .fromDisplayName(fromDisplayName());
             if (!passwordExists()) {
                 // clear password
-                builder.password("");
+                builder.encryptedPassword("");
             } else if (passwordExists() && !newPassword().isEmpty()) {
                 // change password
-                String newPassword =
-                        Encryption.encrypt(newPassword(), configRepository.getLazySecretKey());
-                builder.password(newPassword);
+                builder.encryptedPassword(
+                        Encryption.encrypt(newPassword(), configRepository.getLazySecretKey()));
             } else {
                 // keep existing password
-                builder.password(configRepository.getSmtpConfig().password());
+                builder.encryptedPassword(configRepository.getSmtpConfig().encryptedPassword());
             }
             return builder.build();
         }
@@ -985,7 +1079,7 @@ class AdminJsonService {
                     .port(config.port())
                     .connectionSecurity(config.connectionSecurity())
                     .username(config.username())
-                    .passwordExists(!config.password().isEmpty())
+                    .passwordExists(!config.encryptedPassword().isEmpty())
                     .putAllAdditionalProperties(config.additionalProperties())
                     .fromEmailAddress(config.fromEmailAddress())
                     .fromDisplayName(config.fromDisplayName())
@@ -1016,15 +1110,15 @@ class AdminJsonService {
                     .username(username());
             if (!passwordExists()) {
                 // clear password
-                builder.password("");
+                builder.encryptedPassword("");
             } else if (passwordExists() && !newPassword().isEmpty()) {
                 // change password
-                String newPassword =
-                        Encryption.encrypt(newPassword(), configRepository.getLazySecretKey());
-                builder.password(newPassword);
+                builder.encryptedPassword(
+                        Encryption.encrypt(newPassword(), configRepository.getLazySecretKey()));
             } else {
                 // keep existing password
-                builder.password(configRepository.getHttpProxyConfig().password());
+                builder.encryptedPassword(
+                        configRepository.getHttpProxyConfig().encryptedPassword());
             }
             return builder.build();
         }
@@ -1034,7 +1128,7 @@ class AdminJsonService {
                     .host(config.host())
                     .port(config.port())
                     .username(config.username())
-                    .passwordExists(!config.password().isEmpty())
+                    .passwordExists(!config.encryptedPassword().isEmpty())
                     .version(config.version())
                     .build();
         }
@@ -1075,15 +1169,14 @@ class AdminJsonService {
                     .roleMappings(roleMappings());
             if (!passwordExists()) {
                 // clear password
-                builder.password("");
+                builder.encryptedPassword("");
             } else if (passwordExists() && !newPassword().isEmpty()) {
                 // change password
-                String newPassword =
-                        Encryption.encrypt(newPassword(), configRepository.getLazySecretKey());
-                builder.password(newPassword);
+                builder.encryptedPassword(
+                        Encryption.encrypt(newPassword(), configRepository.getLazySecretKey()));
             } else {
                 // keep existing password
-                builder.password(configRepository.getLdapConfig().password());
+                builder.encryptedPassword(configRepository.getLdapConfig().encryptedPassword());
             }
             return builder.build();
         }
@@ -1094,7 +1187,7 @@ class AdminJsonService {
                     .port(config.port())
                     .ssl(config.ssl())
                     .username(config.username())
-                    .passwordExists(!config.password().isEmpty())
+                    .passwordExists(!config.encryptedPassword().isEmpty())
                     .userBaseDn(config.userBaseDn())
                     .userSearchFilter(config.userSearchFilter())
                     .groupBaseDn(config.groupBaseDn())
@@ -1121,6 +1214,59 @@ class AdminJsonService {
             return ImmutablePagerDutyConfigDto.builder()
                     .addAllIntegrationKeys(config.integrationKeys())
                     .version(config.version())
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    abstract static class SlackConfigDto {
+
+        public abstract List<ImmutableSlackWebhookDto> webhooks();
+        abstract String version();
+
+        private SlackConfig convert() {
+            ImmutableSlackConfig.Builder builder = ImmutableSlackConfig.builder();
+            for (SlackWebhookDto webhook : webhooks()) {
+                builder.addWebhooks(webhook.convert());
+            }
+            return builder.build();
+        }
+
+        private static SlackConfigDto create(SlackConfig config) {
+            ImmutableSlackConfigDto.Builder builder = ImmutableSlackConfigDto.builder();
+            for (SlackWebhook webhook : config.webhooks()) {
+                builder.addWebhooks(SlackWebhookDto.create(webhook));
+            }
+            return builder.version(config.version())
+                    .build();
+        }
+    }
+
+    @Value.Immutable
+    abstract static class SlackWebhookDto {
+
+        @Nullable
+        abstract String id(); // null for new webhooks
+        abstract String url();
+        abstract String display();
+
+        private ImmutableSlackWebhook convert() {
+            String id = id();
+            if (id == null) {
+                id = IdGenerator.generateNewId();
+            }
+            return ImmutableSlackWebhook.builder()
+                    .id(id)
+                    .url(url())
+                    .display(display())
+                    .build();
+        }
+
+        private static ImmutableSlackWebhookDto create(SlackWebhook webhook) {
+            return ImmutableSlackWebhookDto.builder()
+                    .id(webhook.id())
+                    .url(webhook.url())
+                    .display(webhook.display())
                     .build();
         }
     }

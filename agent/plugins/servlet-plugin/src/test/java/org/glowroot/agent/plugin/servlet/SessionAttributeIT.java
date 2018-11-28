@@ -25,6 +25,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -66,7 +67,7 @@ public class SessionAttributeIT {
     public void testHasSessionAttribute() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "testattr");
+                ImmutableList.of("testattr"));
         // when
         Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
@@ -79,7 +80,7 @@ public class SessionAttributeIT {
     public void testHasSessionAttributeWithoutTrimmedAttributeName() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                " testattr , other");
+                ImmutableList.of(" testattr ", " other"));
         // when
         Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
@@ -91,7 +92,8 @@ public class SessionAttributeIT {
     @Test
     public void testHasSessionAttributeUsingWildcard() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
         // when
         Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
@@ -104,7 +106,7 @@ public class SessionAttributeIT {
     public void testHasSessionAttributeUsingWildcardPlusOther() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "*,other,::id");
+                ImmutableList.of("*", "other", "::id"));
         // when
         Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
@@ -117,7 +119,8 @@ public class SessionAttributeIT {
     @Test
     public void testHasSessionAttributeNotReadable() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                ImmutableList.<String>of());
         // when
         Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
@@ -129,7 +132,7 @@ public class SessionAttributeIT {
     public void testSetSessionAttribute() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "testattr,testother");
+                ImmutableList.of("testattr", "testother"));
         // when
         Trace trace = container.execute(SetSessionAttribute.class, "Web");
         // then
@@ -142,7 +145,8 @@ public class SessionAttributeIT {
     @Test
     public void testSetSessionAttributeUsingWildcard() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
         // when
         Trace trace = container.execute(SetSessionAttribute.class, "Web");
         // then
@@ -155,7 +159,7 @@ public class SessionAttributeIT {
     public void testSetSessionAttributeUsingWildcardAndOther() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "*,other");
+                ImmutableList.of("*", "other"));
         // when
         Trace trace = container.execute(SetSessionAttribute.class, "Web");
         // then
@@ -167,7 +171,8 @@ public class SessionAttributeIT {
     @Test
     public void testSetSessionAttributeNotReadable() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                ImmutableList.<String>of());
         // when
         Trace trace = container.execute(SetSessionAttribute.class, "Web");
         // then
@@ -178,7 +183,8 @@ public class SessionAttributeIT {
     @Test
     public void testSetSessionAttributeNull() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
         // when
         Trace trace = container.execute(SetSessionAttributeNull.class, "Web");
         // then
@@ -191,7 +197,7 @@ public class SessionAttributeIT {
     public void testHasNestedSessionAttributePath() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "one.two.three,one.amap.x");
+                ImmutableList.of("one.two.three", "one.amap.x"));
         // when
         Trace trace = container.execute(HasNestedSessionAttribute.class, "Web");
         // then
@@ -205,7 +211,7 @@ public class SessionAttributeIT {
     public void testSetNestedSessionAttributePath() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "one.two.three,one.amap.x");
+                ImmutableList.of("one.two.three", "one.amap.x"));
         // when
         Trace trace = container.execute(SetNestedSessionAttribute.class, "Web");
         // then
@@ -219,7 +225,7 @@ public class SessionAttributeIT {
     public void testHasMissingSessionAttribute() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "missingtestattr");
+                ImmutableList.of("missingtestattr"));
         // when
         Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
@@ -231,7 +237,7 @@ public class SessionAttributeIT {
     public void testHasMissingNestedSessionAttributePath() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "one.missingtwo");
+                ImmutableList.of("one.missingtwo"));
         // when
         Trace trace = container.execute(HasNestedSessionAttribute.class, "Web");
         // then
@@ -243,7 +249,7 @@ public class SessionAttributeIT {
     public void testHasNestedSessionAttributePath2() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "one.*,one.two.*,one.amap.*");
+                ImmutableList.of("one.*", "one.two.*", "one.amap.*"));
         // when
         Trace trace = container.execute(HasNestedSessionAttribute.class, "Web");
         // then
@@ -259,7 +265,7 @@ public class SessionAttributeIT {
     public void testSetNestedSessionAttributePath2() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "one.*,one.two.*,one.amap.*");
+                ImmutableList.of("one.*", "one.two.*", "one.amap.*"));
         // when
         Trace trace = container.execute(SetNestedSessionAttribute.class, "Web");
         // then
@@ -275,7 +281,7 @@ public class SessionAttributeIT {
     public void testSetNestedSessionAttributeToNull() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "one.*");
+                ImmutableList.of("one.*"));
         // when
         Trace trace = container.execute(SetNestedSessionAttributeToNull.class, "Web");
         // then
@@ -290,7 +296,7 @@ public class SessionAttributeIT {
     public void testSetSessionAttributeToNull() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "one.two");
+                ImmutableList.of("one.two"));
         // when
         Trace trace = container.execute(SetNestedSessionAttributeToNull.class, "Web");
         // then
@@ -304,7 +310,8 @@ public class SessionAttributeIT {
     @Test
     public void testHasBadSessionAttribute() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
         // when
         Trace trace = container.execute(HasBadSessionAttribute.class, "Web");
         // then
@@ -317,7 +324,8 @@ public class SessionAttributeIT {
     @Test
     public void testSetBadSessionAttribute() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
         // when
         Trace trace = container.execute(SetBadSessionAttribute.class, "Web");
         // then
@@ -332,7 +340,7 @@ public class SessionAttributeIT {
     public void testHasMissingSessionAttribute2() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "missingtestattr.*");
+                ImmutableList.of("missingtestattr.*"));
         // when
         Trace trace = container.execute(HasSessionAttribute.class, "Web");
         // then
@@ -344,7 +352,7 @@ public class SessionAttributeIT {
     public void testHasMissingNestedSessionAttributePath2() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "one.missingtwo.*");
+                ImmutableList.of("one.missingtwo.*"));
         // when
         Trace trace = container.execute(HasNestedSessionAttribute.class, "Web");
         // then
@@ -355,7 +363,8 @@ public class SessionAttributeIT {
     @Test
     public void testGetBadAttributeNames() throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
         // when
         Trace trace = container.execute(GetBadAttributeNames.class, "Web");
         // then
@@ -367,7 +376,7 @@ public class SessionAttributeIT {
     public void testHasHttpSession() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "::id");
+                ImmutableList.of("::id"));
         // when
         Trace trace = container.execute(HasHttpSession.class, "Web");
         // then
@@ -381,7 +390,7 @@ public class SessionAttributeIT {
     public void testHasNoHttpSession() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "::id");
+                ImmutableList.of("::id"));
         // when
         Trace trace = container.execute(HasNoHttpSession.class, "Web");
         // then
@@ -394,7 +403,7 @@ public class SessionAttributeIT {
     public void testCreateHttpSession() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "::id");
+                ImmutableList.of("::id"));
         // when
         Trace trace = container.execute(CreateHttpSession.class, "Web");
         // then
@@ -407,7 +416,7 @@ public class SessionAttributeIT {
     public void testCreateHttpSessionTrue() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "::id");
+                ImmutableList.of("::id"));
         // when
         Trace trace = container.execute(CreateHttpSessionTrue.class, "Web");
         // then
@@ -420,7 +429,7 @@ public class SessionAttributeIT {
     public void testCreateHttpSessionFalse() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "::id");
+                ImmutableList.of("::id"));
         // when
         Trace trace = container.execute(CreateHttpSessionFalse.class, "Web");
         // then
@@ -433,7 +442,7 @@ public class SessionAttributeIT {
     public void testChangeHttpSession() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "::id");
+                ImmutableList.of("::id"));
         // when
         Trace trace = container.execute(ChangeHttpSession.class, "Web");
         // then
@@ -446,7 +455,7 @@ public class SessionAttributeIT {
     public void testCreateAndChangeHttpSession() throws Exception {
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
-                "::id");
+                ImmutableList.of("::id"));
         // when
         Trace trace = container.execute(CreateAndChangeHttpSession.class, "Web");
         // then

@@ -374,6 +374,8 @@ public class JavaagentContainer implements Container {
                     || name.matches("grpc-.*\\.jar")
                     || name.matches("opencensus-.*\\.jar")
                     || name.matches("guava-.*\\.jar")
+                    // dependency of guava 27.0+ (which is used by glowroot-webdriver-tests)
+                    || name.matches("failureaccess-.*\\.jar")
                     || name.matches("HdrHistogram-.*\\.jar")
                     || name.matches("instrumentation-api-.*\\.jar")
                     || name.matches("jackson-.*\\.jar")

@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.collect.ImmutableList;
 import com.ning.http.client.AsyncHttpClient;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -34,8 +35,8 @@ import org.junit.Test;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TraceEntryMarker;
+import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -50,7 +51,7 @@ public class AsyncServletIT {
     @BeforeClass
     public static void setUp() throws Exception {
         // async servlet test relies on executor plugin, which only works under javaagent
-        container = Containers.createJavaagent();
+        container = JavaagentContainer.create();
     }
 
     @AfterClass
@@ -96,7 +97,8 @@ public class AsyncServletIT {
     private void testAsyncServlet(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
 
         // when
         Trace trace = container.execute(appUnderTestClass, "Web");
@@ -135,7 +137,8 @@ public class AsyncServletIT {
     private void testAsyncServlet2(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
 
         // when
         Trace trace = container.execute(appUnderTestClass, "Web");
@@ -174,7 +177,8 @@ public class AsyncServletIT {
     private void testAsyncServletWithDispatch(String contextPath,
             Class<? extends AppUnderTest> appUnderTestClass) throws Exception {
         // given
-        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes", "*");
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureSessionAttributes",
+                ImmutableList.of("*"));
 
         // when
         Trace trace = container.execute(appUnderTestClass, "Web");

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.PoolingOptions;
 import com.google.common.collect.ImmutableList;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -75,7 +76,8 @@ public class ConfigRepositoryIT {
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
-        session = new Session(cluster.newSession(), "glowroot_unit_tests");
+        session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
         session.updateSchemaWithRetry("drop table if exists agent_config");
         session.updateSchemaWithRetry("drop table if exists user");
         session.updateSchemaWithRetry("drop table if exists role");
@@ -108,7 +110,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateTransactionConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
         TransactionConfig config = configRepository.getTransactionConfig(agentId);
         TransactionConfig updatedConfig = TransactionConfig.newBuilder()
                 .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(1234))
@@ -129,7 +131,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateJvmConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
         JvmConfig config = configRepository.getJvmConfig(agentId);
         JvmConfig updatedConfig = JvmConfig.newBuilder()
                 .addMaskSystemProperty("x")
@@ -150,7 +152,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateUiConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
         UiDefaultsConfig config = configRepository.getUiDefaultsConfig(agentId);
         UiDefaultsConfig updatedConfig = UiDefaultsConfig.newBuilder()
                 .setDefaultTransactionType("xyz")
@@ -172,7 +174,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateUserRecordingConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
         UserRecordingConfig config = configRepository.getUserRecordingConfig(agentId);
         UserRecordingConfig updatedConfig = UserRecordingConfig.newBuilder()
                 .addUser("x")
@@ -194,7 +196,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateAdvancedConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
         AdvancedConfig config = configRepository.getAdvancedConfig(agentId);
         AdvancedConfig updatedConfig = AdvancedConfig.newBuilder()
                 .setWeavingTimer(true)
@@ -219,7 +221,7 @@ public class ConfigRepositoryIT {
     public void shouldCrudGaugeConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
         GaugeConfig gaugeConfig = GaugeConfig.newBuilder()
                 .setMbeanObjectName("x")
                 .addMbeanAttribute(MBeanAttribute.newBuilder()
@@ -267,7 +269,7 @@ public class ConfigRepositoryIT {
     public void shouldCrudAlertConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
         AlertConfig alertConfig = AlertConfig.newBuilder()
                 .setCondition(AlertCondition.newBuilder()
                         .setMetricCondition(MetricCondition.newBuilder()
@@ -326,7 +328,7 @@ public class ConfigRepositoryIT {
     public void shouldCrudInstrumentationConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance());
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
         InstrumentationConfig instrumentationConfig = InstrumentationConfig.newBuilder()
                 .setClassName("a")
                 .setMethodName("b")
@@ -543,7 +545,7 @@ public class ConfigRepositoryIT {
                 .port(555)
                 .connectionSecurity(ConnectionSecurity.SSL_TLS)
                 .username("b")
-                .password("c")
+                .encryptedPassword("c")
                 .putAdditionalProperties("f", "g")
                 .putAdditionalProperties("h", "i")
                 .fromEmailAddress("d")
@@ -566,7 +568,7 @@ public class ConfigRepositoryIT {
                 .host("a")
                 .port(555)
                 .username("b")
-                .password("c")
+                .encryptedPassword("c")
                 .build();
 
         // when
@@ -585,7 +587,7 @@ public class ConfigRepositoryIT {
                 .host("a")
                 .port(1234)
                 .username("b")
-                .password("c")
+                .encryptedPassword("c")
                 .userBaseDn("d")
                 .userSearchFilter("e")
                 .groupBaseDn("f")

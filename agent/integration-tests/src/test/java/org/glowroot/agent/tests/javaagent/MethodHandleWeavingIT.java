@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 the original author or authors.
+ * Copyright 2011-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.junit.Test;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
+import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 
 // from http://docs.oracle.com/javase/7/docs/api/java/lang/invoke/MethodHandle.html:
 //
@@ -43,7 +43,7 @@ public class MethodHandleWeavingIT {
     @BeforeClass
     public static void setUp() throws Exception {
         assumeJdk7();
-        container = Containers.createJavaagent();
+        container = JavaagentContainer.create();
     }
 
     @AfterClass

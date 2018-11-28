@@ -68,7 +68,7 @@ public class ExecutorAspect {
 
     @Mixin({"org.apache.tomcat.util.net.JIoEndpoint$SocketProcessor",
             "org.apache.http.impl.nio.client.CloseableHttpAsyncClientBase$1"})
-    public static class SuppressedRunnableImpl implements SuppressedRunnableEtcMixin {}
+    public static class SuppressedRunnableEtcImpl implements SuppressedRunnableEtcMixin {}
 
     // the method names are verbose since they will be mixed in to existing classes
     public interface RunnableEtcMixin {

@@ -179,7 +179,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
         }
     }
 
-    private byte[] weaveClass(String name, byte[] bytes) throws ClassFormatError {
+    private byte[] weaveClass(String name, byte[] bytes) {
         if (weaver == null || inWeaving.get()) {
             return bytes;
         } else {

@@ -175,6 +175,15 @@ public class GaugeValueDao implements GaugeValueRepository {
         return dataSource.query(new GaugeValueQuery(gaugeId, from, to, rollupLevel));
     }
 
+    @Override
+    public long getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel)
+            throws Exception {
+        Long oldestCaptureTime = dataSource.queryForOptionalLong("select top 1 capture_time from"
+                + " gauge_value_rollup_" + castUntainted(rollupLevel) + " where gauge_id = ? order"
+                + " by capture_time", gaugeName);
+        return oldestCaptureTime == null ? Long.MAX_VALUE : oldestCaptureTime;
+    }
+
     void deleteBefore(long captureTime, int rollupLevel) throws Exception {
         dataSource.deleteBefore("gauge_value_rollup_" + castUntainted(rollupLevel), captureTime);
     }

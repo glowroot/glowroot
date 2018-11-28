@@ -66,7 +66,7 @@ public class SharedSetupRunListener extends RunListener {
             return JavaagentContainer.createWithExtraJvmArgs(
                     ImmutableList.of("-Des.set.netty.runtime.available.processors=false"));
         } else {
-            return Containers.createLocal();
+            return Containers.create();
         }
     }
 }

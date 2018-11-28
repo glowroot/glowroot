@@ -272,15 +272,23 @@ public class Directories {
     }
 
     private static @Nullable String getProperty(String name, Properties rootProperties) {
-        String value = System.getProperty("glowroot." + name);
-        if (value != null && !value.isEmpty()) {
+        String value = normalizePropertyValue(System.getProperty("glowroot." + name));
+        if (value != null) {
             return value;
         }
-        value = rootProperties.getProperty(name);
-        if (value != null && !value.isEmpty()) {
+        value = normalizePropertyValue(rootProperties.getProperty(name));
+        if (value != null) {
             return value;
         }
         return null;
+    }
+
+    private static @Nullable String normalizePropertyValue(@Nullable String propertyValue) {
+        if (propertyValue == null) {
+            return null;
+        }
+        String trimmed = propertyValue.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     @VisibleForTesting

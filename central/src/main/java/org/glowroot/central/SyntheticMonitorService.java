@@ -348,7 +348,8 @@ class SyntheticMonitorService implements Runnable {
                 if (!httpProxyConfig.host().isEmpty()) {
                     int proxyPort = MoreObjects.firstNonNull(httpProxyConfig.port(), 80);
                     settings.proxy(new ProxyConfig(ProxyConfig.Type.HTTP, httpProxyConfig.host(),
-                            proxyPort, httpProxyConfig.username(), httpProxyConfig.password()));
+                            proxyPort, httpProxyConfig.username(),
+                            httpProxyConfig.encryptedPassword()));
                 }
                 JBrowserDriver driver = new JBrowserDriver(settings.build());
                 try {
@@ -424,7 +425,8 @@ class SyntheticMonitorService implements Runnable {
             }
             try {
                 syntheticResponseDao.store(agentRollup.id(), syntheticMonitorConfig.getId(),
-                        captureTime, durationNanos, errorMessage);
+                        MoreConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig), captureTime,
+                        durationNanos, errorMessage);
             } catch (InterruptedException e) {
                 // probably shutdown requested (see close method above)
                 logger.debug(e.getMessage(), e);
@@ -543,7 +545,7 @@ class SyntheticMonitorService implements Runnable {
         BasicAuthCache authCache = new BasicAuthCache();
         authCache.put(proxyHost, basicScheme);
 
-        String password = httpProxyConfig.password();
+        String password = httpProxyConfig.encryptedPassword();
         if (!password.isEmpty()) {
             password = Encryption.decrypt(password, configRepository.getLazySecretKey());
         }

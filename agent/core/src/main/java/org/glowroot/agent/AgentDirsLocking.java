@@ -33,7 +33,7 @@ class AgentDirsLocking {
     static @Nullable Closeable tryLockAgentDirs(File tmpDir, boolean wait) throws Exception {
         NotGuava.mkdirs(tmpDir);
         File lockFile = new File(tmpDir, ".lock");
-        touch(lockFile);
+        touchLockFile(lockFile);
         final RandomAccessFile openLockFile = new RandomAccessFile(lockFile, "rw");
         FileLock fileLock = openLockFile.getChannel().tryLock();
         if (fileLock == null) {
@@ -65,10 +65,15 @@ class AgentDirsLocking {
         };
     }
 
-    // copied from guava Files.touch()
-    private static void touch(File file) throws IOException {
-        if (!file.createNewFile() && !file.setLastModified(System.currentTimeMillis())) {
-            throw new IOException("Unable to update modification time of " + file);
+    private static void touchLockFile(File lockFile) throws IOException {
+        boolean created;
+        try {
+            created = lockFile.createNewFile();
+        } catch (IOException e) {
+            throw new IOException("Unable to create lock file: " + lockFile, e);
+        }
+        if (!created && !lockFile.setLastModified(System.currentTimeMillis())) {
+            throw new IOException("Unable to update modification time on lock file: " + lockFile);
         }
     }
 }

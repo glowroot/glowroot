@@ -31,9 +31,9 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.config.InstrumentationConfig;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
+import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.AlreadyInTransactionBehavior;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 
@@ -257,13 +257,14 @@ class AdviceGenerator {
         if (!checkNotInTransaction && !checkPropertyNotEnabled) {
             return;
         }
-        String desc;
+        String descriptor;
         if (checkNotInTransaction) {
-            desc = "(Lorg/glowroot/agent/plugin/api/OptionalThreadContext;)Z";
+            descriptor = "(Lorg/glowroot/agent/plugin/api/OptionalThreadContext;)Z";
         } else {
-            desc = "()Z";
+            descriptor = "()Z";
         }
-        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "isEnabled", desc, null, null);
+        MethodVisitor mv =
+                cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "isEnabled", descriptor, null, null);
         visitAnnotation(mv, "Lorg/glowroot/agent/plugin/api/weaving/IsEnabled;");
         mv.visitCode();
         if (checkNotInTransaction && !checkPropertyNotEnabled) {
@@ -429,33 +430,33 @@ class AdviceGenerator {
     }
 
     private MethodVisitor visitOnBeforeMethod(ClassWriter cw, String returnInternalName) {
-        StringBuilder desc = new StringBuilder();
-        desc.append("(");
+        StringBuilder descriptor = new StringBuilder();
+        descriptor.append("(");
         if (config.isTransaction()) {
-            desc.append("Lorg/glowroot/agent/plugin/api/OptionalThreadContext;");
+            descriptor.append("Lorg/glowroot/agent/plugin/api/OptionalThreadContext;");
         } else {
-            desc.append("Lorg/glowroot/agent/plugin/api/ThreadContext;");
+            descriptor.append("Lorg/glowroot/agent/plugin/api/ThreadContext;");
         }
         if (methodMetaInternalName != null) {
-            desc.append("Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Object;L");
-            desc.append(methodMetaInternalName);
-            desc.append(";)");
+            descriptor.append("Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/Object;L");
+            descriptor.append(methodMetaInternalName);
+            descriptor.append(";)");
         } else {
-            desc.append(")");
+            descriptor.append(")");
         }
-        desc.append(returnInternalName);
-        MethodVisitor mv =
-                cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onBefore", desc.toString(), null, null);
+        descriptor.append(returnInternalName);
+        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onBefore",
+                descriptor.toString(), null, null);
         visitAnnotation(mv, "Lorg/glowroot/agent/plugin/api/weaving/OnBefore;");
         if (methodMetaInternalName != null) {
-            mv.visitParameterAnnotation(1, "Lorg/glowroot/agent/plugin/api/weaving/BindReceiver;",
-                    true).visitEnd();
-            mv.visitParameterAnnotation(2, "Lorg/glowroot/agent/plugin/api/weaving/BindMethodName;",
-                    true).visitEnd();
-            mv.visitParameterAnnotation(3,
-                    "Lorg/glowroot/agent/plugin/api/weaving/BindParameterArray;", true).visitEnd();
-            mv.visitParameterAnnotation(4, "Lorg/glowroot/agent/plugin/api/weaving/BindMethodMeta;",
-                    true).visitEnd();
+            checkNotNull(mv.visitParameterAnnotation(1,
+                    "Lorg/glowroot/agent/plugin/api/weaving/BindReceiver;", true)).visitEnd();
+            checkNotNull(mv.visitParameterAnnotation(2,
+                    "Lorg/glowroot/agent/plugin/api/weaving/BindMethodName;", true)).visitEnd();
+            checkNotNull(mv.visitParameterAnnotation(3,
+                    "Lorg/glowroot/agent/plugin/api/weaving/BindParameterArray;", true)).visitEnd();
+            checkNotNull(mv.visitParameterAnnotation(4,
+                    "Lorg/glowroot/agent/plugin/api/weaving/BindMethodMeta;", true)).visitEnd();
         }
         return mv;
     }
@@ -521,10 +522,10 @@ class AdviceGenerator {
         MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onReturn",
                 "(Lorg/glowroot/agent/plugin/api/weaving/OptionalReturn;" + travelerType + ")V",
                 null, null);
-        mv.visitParameterAnnotation(0, "Lorg/glowroot/agent/plugin/api/weaving/BindOptionalReturn;",
-                true).visitEnd();
-        mv.visitParameterAnnotation(1, "Lorg/glowroot/agent/plugin/api/weaving/BindTraveler;", true)
-                .visitEnd();
+        checkNotNull(mv.visitParameterAnnotation(0,
+                "Lorg/glowroot/agent/plugin/api/weaving/BindOptionalReturn;", true)).visitEnd();
+        checkNotNull(mv.visitParameterAnnotation(1,
+                "Lorg/glowroot/agent/plugin/api/weaving/BindTraveler;", true)).visitEnd();
         int travelerParamIndex = 1;
         visitAnnotation(mv, "Lorg/glowroot/agent/plugin/api/weaving/OnReturn;");
         mv.visitCode();
@@ -580,10 +581,10 @@ class AdviceGenerator {
         MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onThrow",
                 "(Ljava/lang/Throwable;Lorg/glowroot/agent/plugin/api/TraceEntry;)V", null, null);
         visitAnnotation(mv, "Lorg/glowroot/agent/plugin/api/weaving/OnThrow;");
-        mv.visitParameterAnnotation(0, "Lorg/glowroot/agent/plugin/api/weaving/BindThrowable;",
-                true).visitEnd();
-        mv.visitParameterAnnotation(1, "Lorg/glowroot/agent/plugin/api/weaving/BindTraveler;", true)
-                .visitEnd();
+        checkNotNull(mv.visitParameterAnnotation(0,
+                "Lorg/glowroot/agent/plugin/api/weaving/BindThrowable;", true)).visitEnd();
+        checkNotNull(mv.visitParameterAnnotation(1,
+                "Lorg/glowroot/agent/plugin/api/weaving/BindTraveler;", true)).visitEnd();
         mv.visitCode();
         if (!config.traceEntryEnabledProperty().isEmpty()) {
             mv.visitVarInsn(ALOAD, 1);
@@ -747,8 +748,8 @@ class AdviceGenerator {
         MethodVisitor mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "onAfter",
                 "(Lorg/glowroot/agent/plugin/api/Timer;)V", null, null);
         visitAnnotation(mv, "Lorg/glowroot/agent/plugin/api/weaving/OnAfter;");
-        mv.visitParameterAnnotation(0, "Lorg/glowroot/agent/plugin/api/weaving/BindTraveler;", true)
-                .visitEnd();
+        checkNotNull(mv.visitParameterAnnotation(0,
+                "Lorg/glowroot/agent/plugin/api/weaving/BindTraveler;", true)).visitEnd();
         mv.visitCode();
         mv.visitVarInsn(ALOAD, 0);
         mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/Timer", "stop", "()V",
@@ -758,8 +759,8 @@ class AdviceGenerator {
         mv.visitEnd();
     }
 
-    private static void visitAnnotation(MethodVisitor mv, String desc) {
-        AnnotationVisitor av = mv.visitAnnotation(desc, true);
+    private static void visitAnnotation(MethodVisitor mv, String descriptor) {
+        AnnotationVisitor av = mv.visitAnnotation(descriptor, true);
         checkNotNull(av);
         av.visitEnd();
     }

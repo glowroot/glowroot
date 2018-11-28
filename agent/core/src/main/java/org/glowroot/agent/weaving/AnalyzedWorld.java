@@ -42,8 +42,8 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.config.InstrumentationConfig;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
+import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -105,7 +105,7 @@ public class AnalyzedWorld {
         return classes;
     }
 
-    public void removeClasses(List<Class<?>> classes) {
+    public void removeClasses(Iterable<Class<?>> classes) {
         for (Map<String, AnalyzedClass> map : getWorldValues()) {
             for (Class<?> clazz : classes) {
                 map.remove(clazz.getName());
@@ -162,7 +162,7 @@ public class AnalyzedWorld {
         ImmutableMap<Advice, LazyDefinedClass> newAdvisors =
                 AdviceGenerator.createAdvisors(instrumentationConfigs, null, false);
         try {
-            ClassLoaders.defineClassesInClassLoader(newAdvisors.values(), loader);
+            ClassLoaders.defineClasses(newAdvisors.values(), loader);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }

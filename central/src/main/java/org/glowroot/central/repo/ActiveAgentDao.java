@@ -109,7 +109,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
         BoundStatement boundStatement = readPS.get(rollupLevel).bind();
         boundStatement.setTimestamp(0, new Date(rolledUpFrom));
         boundStatement.setTimestamp(1, new Date(rolledUpTo));
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.read(boundStatement);
         Set<String> topLevelAgentRollupIds = new HashSet<>();
         Multimap<String, String> childMultimap = HashMultimap.create();
         for (Row row : results) {
@@ -133,7 +133,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
         return agentRollups;
     }
 
-    public List<Future<ResultSet>> insert(String agentId, long captureTime) throws Exception {
+    public List<Future<?>> insert(String agentId, long captureTime) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentId);
         if (agentConfig == null) {
             // have yet to receive collectInit()
@@ -145,7 +145,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
         List<Integer> rollupExpirationHours =
                 configRepository.getCentralStorageConfig().rollupExpirationHours();
 
-        List<Future<ResultSet>> futures = new ArrayList<>();
+        List<Future<?>> futures = new ArrayList<>();
         for (int rollupLevel = 0; rollupLevel < rollupConfigs.size(); rollupLevel++) {
             long rollupIntervalMillis = getRollupIntervalMillis(rollupConfigs, rollupLevel);
             long rollupCaptureTime = CaptureTimes.getRollup(captureTime, rollupIntervalMillis);
@@ -156,7 +156,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
             boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
             boundStatement.setString(i++, agentId);
             boundStatement.setInt(i++, adjustedTTL);
-            futures.add(session.executeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement));
         }
         return futures;
     }

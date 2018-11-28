@@ -370,11 +370,11 @@ HandlebarsRendering = (function () {
           ret += messageDetailHtml(subdetail);
         });
       } else if (typeof propVal === 'object' && propVal !== null) {
-        ret += '<div class="gt-trace-attr-name">' + propName + ':</div>'
+        ret += '<div class="gt-trace-attr-name">' + escapeHtml(propName) + ':</div>'
             + '<div class="gt-indent2">' + messageDetailHtml(propVal) + '</div>';
       } else {
-        ret += '<div><div class="gt-trace-attr-name">' + propName + ':&nbsp;</div>'
-            + '<div class="gt-trace-attr-value">' + propVal + '</div></div>';
+        ret += '<div><div class="gt-trace-attr-name">' + escapeHtml(propName) + ':&nbsp;</div>'
+            + '<div class="gt-trace-attr-value">' + escapeHtml(propVal) + '</div></div>';
       }
     });
     return ret;
@@ -416,7 +416,10 @@ HandlebarsRendering = (function () {
   });
 
   Handlebars.registerHelper('ifSqlMessage', function (message, options) {
-    if (message.lastIndexOf('jdbc execute: ', 0) === 0) {
+    if (message.lastIndexOf('jdbc query: ', 0) === 0) {
+      return options.fn(this);
+    } else if (message.lastIndexOf('jdbc execute: ', 0) === 0) {
+      // this is for traces captured prior to 0.12.3
       return options.fn(this);
     } else if (message.lastIndexOf('jdbc execution: ', 0) === 0) {
       // this is for traces captured prior to 0.10.1
@@ -1039,7 +1042,8 @@ HandlebarsRendering = (function () {
         html = prefix;
         // simulating pre using span, because with pre tag, when selecting text and copy-pasting from firefox
         // there are extra newlines after the pre tag
-        html += '\n\n<span class="gt-indent2 d-inline-block" style="white-space: pre-wrap;">' + formatted + '</span>';
+        html += '\n\n<span class="gt-indent2 d-inline-block" style="white-space: pre-wrap;">' + escapeHtml(formatted)
+            + '</span>';
         if (parameters) {
           html += '\n\n<span class="gt-indent2">parameters:</span>\n\n' + '<span class="gt-indent2">  ' + parameters
               + '</span>';
@@ -1050,7 +1054,8 @@ HandlebarsRendering = (function () {
       } else {
         // simulating pre using span, because with pre tag, when selecting text and copy-pasting from firefox
         // there are extra newlines after the pre tag
-        html = '<span class="gt-indent1 d-inline-block" style="white-space: pre-wrap;">' + formatted + '</span>';
+        html = '<span class="gt-indent1 d-inline-block" style="white-space: pre-wrap;">' + escapeHtml(formatted)
+            + '</span>';
         expanded.addClass('gt-padding-top-override');
       }
       expanded.css('padding-bottom', '10px');
@@ -1107,7 +1112,10 @@ HandlebarsRendering = (function () {
         gtClipboard($clipboardIcon, clipboardContainer, function () {
           var text = clipTextNode.text();
           // TODO deal with this hacky special case for SQL formatting
-          if (text.lastIndexOf('jdbc execute:\n\n', 0) === 0) {
+          if (text.lastIndexOf('jdbc query:\n\n', 0) === 0) {
+            text = text.substring('jdbc query:\n\n'.length);
+          } else if (text.lastIndexOf('jdbc execute:\n\n', 0) === 0) {
+            // this is for traces captured prior to 0.12.3
             text = text.substring('jdbc execute:\n\n'.length);
           } else if (text.lastIndexOf('jdbc execution:\n\n', 0) === 0) {
             // this is for traces captured prior to 0.10.1
@@ -1131,7 +1139,10 @@ HandlebarsRendering = (function () {
                   expandedTraceEntryNode.text('[the full query text has expired]');
                 } else {
                   expandedTraceEntryNode.text(queryMessage.prefix + data.fullText + queryMessage.suffix);
-                  if (queryMessage.prefix === 'jdbc execute: ') {
+                  if (queryMessage.prefix === 'jdbc query: ') {
+                    formatSql(unexpanded, expanded, data.fullText, 'jdbc query:', queryMessage.suffix.trim());
+                  } else if (queryMessage.prefix === 'jdbc execute: ') {
+                    // this is for traces captured prior to 0.12.3
                     formatSql(unexpanded, expanded, data.fullText, 'jdbc execute:', queryMessage.suffix.trim());
                   } else if (queryMessage.prefix === 'jdbc execution: ') {
                     // this is for traces captured prior to 0.10.1
@@ -1161,10 +1172,15 @@ HandlebarsRendering = (function () {
           // full text is already available for short query texts, or was already fetched above
           expandedTraceEntryNode.text(queryMessage.prefix + queryMessage.sharedQueryText.fullText
               + queryMessage.suffix);
-          if (queryMessage.prefix === 'jdbc execute: ') {
+          if (queryMessage.prefix === 'jdbc query: ') {
+            formatSql(unexpanded, expanded, queryMessage.sharedQueryText.fullText, 'jdbc query:',
+                queryMessage.suffix.trim());
+          } else if (queryMessage.prefix === 'jdbc execute: ') {
+            // this is for traces captured prior to 0.12.3
             formatSql(unexpanded, expanded, queryMessage.sharedQueryText.fullText, 'jdbc execute:',
                 queryMessage.suffix.trim());
           } else if (queryMessage.prefix === 'jdbc execution: ') {
+            // this is for traces captured prior to 0.10.1
             formatSql(unexpanded, expanded, queryMessage.sharedQueryText.fullText, 'jdbc execution:',
                 queryMessage.suffix.trim());
           }

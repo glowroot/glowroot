@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -59,6 +60,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
     /** Any value other than "uninitialized this". */
     private static final Object OTHER = new Object();
 
+    /** Prefix of the error message when invalid opcodes are found. */
     private static final String INVALID_OPCODE = "Invalid opcode ";
 
     /** The access flags of the visited method. */
@@ -68,10 +70,15 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
     protected String methodDesc;
 
     /** Whether the visited method is a constructor. */
-    private boolean isConstructor;
+    private final boolean isConstructor;
 
     /**
-     * Whether the super class constructor has been called (if the visited method is a constructor).
+     * Whether the super class constructor has been called (if the visited method is a constructor),
+     * at the current instruction. There can be multiple call sites to the super constructor (e.g.
+     * for Java code such as {@code super(expr ? value1 : value2);}), in different branches. When
+     * scanning the bytecode linearly, we can move from one branch where the super constructor has
+     * been called to another where it has not been called yet. Therefore, this value can change
+     * from false to true, and vice-versa.
      */
     private boolean superClassConstructorCalled;
 
@@ -84,10 +91,11 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
     protected List<Object> stackFrame = new ArrayList<Object>();
 
     /**
-     * The stack map frames corresponding to the labels of the forward jumps made before the super
+     * The stack map frames corresponding to the labels of the forward jumps made *before* the super
      * class constructor has been called (note that the Java Virtual Machine forbids backward jumps
-     * before the super class constructor is called). This field is only maintained for
-     * constructors.
+     * before the super class constructor is called). Note that by definition (cf. the 'before'),
+     * when we reach a label from this map, {@link #superClassConstructorCalled} must be reset to
+     * false. This field is only maintained for constructors.
      */
     private Map<Label, List<Object>> forwardJumpStackFrames = new HashMap<Label, List<Object>>();
 
@@ -99,7 +107,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
      * @param api
      *            the ASM API version implemented by this visitor. Must be one of
      *            {@link Opcodes#ASM4}, {@link Opcodes#ASM5}, {@link Opcodes#ASM6} or
-     *            {@link Opcodes#ASM7_EXPERIMENTAL}.
+     *            {@link Opcodes#ASM7}.
      * @param methodVisitor
      *            the method visitor to which this adapter delegates calls.
      * @param access
@@ -413,7 +421,9 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
         super.visitLdcInsn(value);
         if (stackFrameTracking) {
             pushValue(OTHER);
-            if (value instanceof Double || value instanceof Long) {
+            if (value instanceof Double || value instanceof Long
+                    || (value instanceof ConstantDynamic
+                            && ((ConstantDynamic) value).getSize() == 2)) {
                 pushValue(SECOND_WORD);
             }
         }
@@ -439,7 +449,11 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
         }
     }
 
-    /** @deprecated */
+    /**
+     * Deprecated.
+     *
+     * @deprecated use {@link #visitMethodInsn(int, String, String, String, boolean)} instead.
+     */
     @Deprecated
     @Override
     public void visitMethodInsn(final int opcode, final String owner, final String name,
@@ -480,8 +494,8 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
                     Object value = popValue();
                     if (isConstructor && value == UNINITIALIZED_THIS
                             && !superClassConstructorCalled) {
-                        onMethodEnter();
                         superClassConstructorCalled = true;
+                        onMethodEnter();
                     }
                     break;
                 default:
@@ -565,8 +579,21 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
     }
 
     @Override
-    public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
+    public void visitTryCatchBlock(final Label start, final Label end, final Label handler,
+            final String type) {
         super.visitTryCatchBlock(start, end, handler, type);
+        // By definition of 'forwardJumpStackFrames', 'handler' should be pushed only if there is an
+        // instruction between 'start' and 'end' at which the super class constructor is not yet
+        // called. Unfortunately, try catch blocks must be visited before their labels, so we have
+        // no
+        // way to know this at this point. Instead, we suppose that the super class constructor has
+        // not
+        // been called at the start of *any* exception handler. If this is wrong, normally there
+        // should
+        // not be a second super class constructor call in the exception handler (an object can't be
+        // initialized twice), so this is not issue (in the sense that there is no risk to emit a
+        // wrong
+        // 'onMethodEnter').
         if (stackFrameTracking && !forwardJumpStackFrames.containsKey(handler)) {
             List<Object> handlerStackFrame = new ArrayList<Object>();
             handlerStackFrame.add(OTHER);
@@ -656,5 +683,5 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
      *            {@link Opcodes#ARETURN}, {@link Opcodes#LRETURN}, {@link Opcodes#DRETURN} or
      *            {@link Opcodes#ATHROW}.
      */
-    protected void onMethodExit(int opcode) {}
+    protected void onMethodExit(final int opcode) {}
 }

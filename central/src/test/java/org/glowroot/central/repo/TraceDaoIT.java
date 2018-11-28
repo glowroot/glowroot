@@ -18,6 +18,7 @@ package org.glowroot.central.repo;
 import java.util.Collection;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.PoolingOptions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.junit.AfterClass;
@@ -70,7 +71,8 @@ public class TraceDaoIT {
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
-        session = new Session(cluster.newSession(), "glowroot_unit_tests");
+        session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
 
         clusterManager = ClusterManager.create();
         ConfigRepositoryImpl configRepository = mock(ConfigRepositoryImpl.class);

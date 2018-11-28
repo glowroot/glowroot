@@ -29,11 +29,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.common2.config.AllEmbeddedAdminConfig;
 import org.glowroot.common2.config.EmbeddedAdminGeneralConfig;
 import org.glowroot.common2.config.EmbeddedStorageConfig;
 import org.glowroot.common2.config.EmbeddedWebConfig;
 import org.glowroot.common2.config.HealthchecksIoConfig;
 import org.glowroot.common2.config.HttpProxyConfig;
+import org.glowroot.common2.config.ImmutableAllEmbeddedAdminConfig;
 import org.glowroot.common2.config.ImmutableEmbeddedAdminGeneralConfig;
 import org.glowroot.common2.config.ImmutableEmbeddedStorageConfig;
 import org.glowroot.common2.config.ImmutableEmbeddedWebConfig;
@@ -42,11 +44,13 @@ import org.glowroot.common2.config.ImmutableHttpProxyConfig;
 import org.glowroot.common2.config.ImmutableLdapConfig;
 import org.glowroot.common2.config.ImmutablePagerDutyConfig;
 import org.glowroot.common2.config.ImmutableRoleConfig;
+import org.glowroot.common2.config.ImmutableSlackConfig;
 import org.glowroot.common2.config.ImmutableSmtpConfig;
 import org.glowroot.common2.config.ImmutableUserConfig;
 import org.glowroot.common2.config.LdapConfig;
 import org.glowroot.common2.config.PagerDutyConfig;
 import org.glowroot.common2.config.RoleConfig;
+import org.glowroot.common2.config.SlackConfig;
 import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.UserConfig;
 
@@ -57,19 +61,21 @@ public class AdminConfigService {
     private final AdminConfigFile adminConfigFile;
 
     private volatile EmbeddedAdminGeneralConfig generalConfig;
-    private volatile ImmutableList<UserConfig> userConfigs;
-    private volatile ImmutableList<RoleConfig> roleConfigs;
+    private volatile List<UserConfig> userConfigs;
+    private volatile List<RoleConfig> roleConfigs;
     private volatile EmbeddedWebConfig webConfig;
     private volatile EmbeddedStorageConfig storageConfig;
     private volatile SmtpConfig smtpConfig;
     private volatile HttpProxyConfig httpProxyConfig;
     private volatile LdapConfig ldapConfig;
     private volatile PagerDutyConfig pagerDutyConfig;
+    private volatile SlackConfig slackConfig;
     private volatile HealthchecksIoConfig healthchecksIoConfig;
 
-    public static AdminConfigService create(List<File> confDirs,
+    public static AdminConfigService create(List<File> confDirs, boolean configReadOnly,
             @Nullable Integer webPortOverride) {
-        AdminConfigService configService = new AdminConfigService(confDirs, webPortOverride);
+        AdminConfigService configService =
+                new AdminConfigService(confDirs, configReadOnly, webPortOverride);
         // it's nice to update config.json on startup if it is missing some/all config
         // properties so that the file contents can be reviewed/updated/copied if desired
         try {
@@ -80,9 +86,10 @@ public class AdminConfigService {
         return configService;
     }
 
-    private AdminConfigService(List<File> confDirs, @Nullable Integer webPortOverride) {
-        adminConfigFile = new AdminConfigFile(confDirs);
-        EmbeddedAdminGeneralConfig generalConfig =
+    private AdminConfigService(List<File> confDirs, boolean configReadOnly,
+            @Nullable Integer webPortOverride) {
+        adminConfigFile = new AdminConfigFile(confDirs, configReadOnly);
+        ImmutableEmbeddedAdminGeneralConfig generalConfig =
                 adminConfigFile.getConfig("general", ImmutableEmbeddedAdminGeneralConfig.class);
         if (generalConfig == null) {
             this.generalConfig = ImmutableEmbeddedAdminGeneralConfig.builder().build();
@@ -116,7 +123,7 @@ public class AdminConfigService {
                             "agent:incident", "agent:config", "admin")
                     .build());
         }
-        EmbeddedWebConfig webConfig =
+        ImmutableEmbeddedWebConfig webConfig =
                 adminConfigFile.getConfig("web", ImmutableEmbeddedWebConfig.class);
         if (webConfig == null) {
             this.webConfig = ImmutableEmbeddedWebConfig.builder().build();
@@ -129,7 +136,7 @@ public class AdminConfigService {
                     .port(webPortOverride)
                     .build();
         }
-        EmbeddedStorageConfig storageConfig =
+        ImmutableEmbeddedStorageConfig storageConfig =
                 adminConfigFile.getConfig("storage", ImmutableEmbeddedStorageConfig.class);
         if (storageConfig == null) {
             this.storageConfig = ImmutableEmbeddedStorageConfig.builder().build();
@@ -138,33 +145,42 @@ public class AdminConfigService {
         } else {
             this.storageConfig = storageConfig;
         }
-        SmtpConfig smtpConfig = adminConfigFile.getConfig("smtp", ImmutableSmtpConfig.class);
+        ImmutableSmtpConfig smtpConfig =
+                adminConfigFile.getConfig("smtp", ImmutableSmtpConfig.class);
         if (smtpConfig == null) {
             this.smtpConfig = ImmutableSmtpConfig.builder().build();
         } else {
             this.smtpConfig = smtpConfig;
         }
-        HttpProxyConfig httpProxyConfig =
+        ImmutableHttpProxyConfig httpProxyConfig =
                 adminConfigFile.getConfig("httpProxy", ImmutableHttpProxyConfig.class);
         if (httpProxyConfig == null) {
             this.httpProxyConfig = ImmutableHttpProxyConfig.builder().build();
         } else {
             this.httpProxyConfig = httpProxyConfig;
         }
-        LdapConfig ldapConfig = adminConfigFile.getConfig("ldap", ImmutableLdapConfig.class);
+        ImmutableLdapConfig ldapConfig =
+                adminConfigFile.getConfig("ldap", ImmutableLdapConfig.class);
         if (ldapConfig == null) {
             this.ldapConfig = ImmutableLdapConfig.builder().build();
         } else {
             this.ldapConfig = ldapConfig;
         }
-        PagerDutyConfig pagerDutyConfig =
+        ImmutablePagerDutyConfig pagerDutyConfig =
                 adminConfigFile.getConfig("pagerDuty", ImmutablePagerDutyConfig.class);
         if (pagerDutyConfig == null) {
             this.pagerDutyConfig = ImmutablePagerDutyConfig.builder().build();
         } else {
             this.pagerDutyConfig = pagerDutyConfig;
         }
-        HealthchecksIoConfig healthchecksIoConfig =
+        ImmutableSlackConfig slackConfig =
+                adminConfigFile.getConfig("slack", ImmutableSlackConfig.class);
+        if (slackConfig == null) {
+            this.slackConfig = ImmutableSlackConfig.builder().build();
+        } else {
+            this.slackConfig = slackConfig;
+        }
+        ImmutableHealthchecksIoConfig healthchecksIoConfig =
                 adminConfigFile.getConfig("healthchecksIo", ImmutableHealthchecksIoConfig.class);
         if (healthchecksIoConfig == null) {
             this.healthchecksIoConfig = ImmutableHealthchecksIoConfig.builder().build();
@@ -209,14 +225,34 @@ public class AdminConfigService {
         return pagerDutyConfig;
     }
 
+    public SlackConfig getSlackConfig() {
+        return slackConfig;
+    }
+
     public HealthchecksIoConfig getHealthchecksIoConfig() {
         return healthchecksIoConfig;
+    }
+
+    public AllEmbeddedAdminConfig getAllAdminConfig() {
+        return ImmutableAllEmbeddedAdminConfig.builder()
+                .general(generalConfig)
+                .users(userConfigs)
+                .roles(roleConfigs)
+                .web(webConfig)
+                .storage(storageConfig)
+                .smtp(smtpConfig)
+                .httpProxy(httpProxyConfig)
+                .ldap(ldapConfig)
+                .pagerDuty(pagerDutyConfig)
+                .slack(slackConfig)
+                .healthchecksIo(healthchecksIoConfig)
+                .build();
     }
 
     public void updateEmbeddedAdminGeneralConfig(EmbeddedAdminGeneralConfig config)
             throws Exception {
         adminConfigFile.writeConfig("general", config);
-        generalConfig = config;
+        generalConfig = ImmutableEmbeddedAdminGeneralConfig.copyOf(config);
     }
 
     public void updateUserConfigs(List<UserConfig> configs) throws Exception {
@@ -231,42 +267,73 @@ public class AdminConfigService {
 
     public void updateEmbeddedWebConfig(EmbeddedWebConfig config) throws Exception {
         adminConfigFile.writeConfig("web", config);
-        webConfig = config;
+        webConfig = ImmutableEmbeddedWebConfig.copyOf(config);
     }
 
     public void updateEmbeddedStorageConfig(EmbeddedStorageConfig config) throws Exception {
         adminConfigFile.writeConfig("storage", config);
-        storageConfig = config;
+        storageConfig = ImmutableEmbeddedStorageConfig.copyOf(config);
     }
 
     public void updateSmtpConfig(SmtpConfig config) throws Exception {
         adminConfigFile.writeConfig("smtp", config);
-        smtpConfig = config;
+        smtpConfig = ImmutableSmtpConfig.copyOf(config);
     }
 
     public void updateHttpProxyConfig(HttpProxyConfig config) throws Exception {
         adminConfigFile.writeConfig("httpProxy", config);
-        httpProxyConfig = config;
+        httpProxyConfig = ImmutableHttpProxyConfig.copyOf(config);
     }
 
     public void updateLdapConfig(LdapConfig config) throws Exception {
         adminConfigFile.writeConfig("ldap", config);
-        ldapConfig = config;
+        ldapConfig = ImmutableLdapConfig.copyOf(config);
     }
 
     public void updatePagerDutyConfig(PagerDutyConfig config) throws Exception {
         adminConfigFile.writeConfig("pagerDuty", config);
-        pagerDutyConfig = config;
+        pagerDutyConfig = ImmutablePagerDutyConfig.copyOf(config);
+    }
+
+    public void updateSlackConfig(SlackConfig config) throws Exception {
+        adminConfigFile.writeConfig("slack", config);
+        slackConfig = ImmutableSlackConfig.copyOf(config);
     }
 
     public void updateHealthchecksIoConfig(HealthchecksIoConfig config) throws Exception {
         adminConfigFile.writeConfig("healthchecksIo", config);
-        healthchecksIoConfig = config;
+        healthchecksIoConfig = ImmutableHealthchecksIoConfig.copyOf(config);
+    }
+
+    public void updateAllAdminConfig(AllEmbeddedAdminConfig config) throws IOException {
+        Map<String, Object> configs = Maps.newHashMap();
+        configs.put("general", config.general());
+        configs.put("users", config.users());
+        configs.put("roles", config.roles());
+        configs.put("web", config.web());
+        configs.put("storage", config.storage());
+        configs.put("smtp", config.smtp());
+        configs.put("httpProxy", config.httpProxy());
+        configs.put("ldap", config.ldap());
+        configs.put("pagerDuty", config.pagerDuty());
+        configs.put("slack", config.slack());
+        configs.put("healthchecksIo", config.healthchecksIo());
+        adminConfigFile.writeConfigsOnStartup(configs);
+        this.generalConfig = config.general();
+        this.userConfigs = ImmutableList.copyOf(config.users());
+        this.roleConfigs = ImmutableList.copyOf(config.roles());
+        this.webConfig = config.web();
+        this.storageConfig = config.storage();
+        this.smtpConfig = config.smtp();
+        this.httpProxyConfig = config.httpProxy();
+        this.ldapConfig = config.ldap();
+        this.pagerDutyConfig = config.pagerDuty();
+        this.slackConfig = config.slack();
+        this.healthchecksIoConfig = config.healthchecksIo();
     }
 
     private void writeAll() throws IOException {
-        // linked hash map to preserve ordering when writing to config file
-        Map<String, Object> configs = Maps.newLinkedHashMap();
+        Map<String, Object> configs = Maps.newHashMap();
         configs.put("general", generalConfig);
         configs.put("users", userConfigs);
         configs.put("roles", roleConfigs);
@@ -276,8 +343,9 @@ public class AdminConfigService {
         configs.put("httpProxy", httpProxyConfig);
         configs.put("ldap", ldapConfig);
         configs.put("pagerDuty", pagerDutyConfig);
+        configs.put("slack", slackConfig);
         configs.put("healthchecksIo", healthchecksIoConfig);
-        adminConfigFile.writeConfigs(configs);
+        adminConfigFile.writeConfigsOnStartup(configs);
     }
 
     @OnlyUsedByTests
@@ -298,11 +366,12 @@ public class AdminConfigService {
         httpProxyConfig = ImmutableHttpProxyConfig.builder().build();
         ldapConfig = ImmutableLdapConfig.builder().build();
         pagerDutyConfig = ImmutablePagerDutyConfig.builder().build();
+        slackConfig = ImmutableSlackConfig.builder().build();
         healthchecksIoConfig = ImmutableHealthchecksIoConfig.builder().build();
         writeAll();
     }
 
-    private static EmbeddedStorageConfig withCorrectedLists(EmbeddedStorageConfig config) {
+    private static ImmutableEmbeddedStorageConfig withCorrectedLists(EmbeddedStorageConfig config) {
         EmbeddedStorageConfig defaultConfig = ImmutableEmbeddedStorageConfig.builder().build();
         ImmutableList<Integer> rollupExpirationHours =
                 fix(config.rollupExpirationHours(), defaultConfig.rollupExpirationHours());

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,6 @@ public class Play {
     }
 
     private static void play2x() throws Exception {
-
         runPlay2x("2.0.2", "2.9.3", "3.3.0.Final", "2.2.2");
         runPlay2x("2.0.3", "2.9.3", "3.5.0.Final", "2.2.2");
         runPlay2x("2.0.4", "2.9.3", "3.5.0.Final", "2.2.2");
@@ -135,13 +134,13 @@ public class Play {
         JavaVersion[] javaVersions;
         if (playVersion.startsWith("2.0")) {
             profile = "play-2.0.x";
-            javaVersions = new JavaVersion[] {JAVA6, JAVA7}; // scala 2.9 doesn't support 1.8
+            javaVersions = new JavaVersion[] {JAVA7, JAVA6}; // scala 2.9 doesn't support 1.8
         } else if (playVersion.startsWith("2.1")) {
             profile = "play-2.1.x";
-            javaVersions = new JavaVersion[] {JAVA6, JAVA7, JAVA8};
+            javaVersions = new JavaVersion[] {JAVA8, JAVA7, JAVA6};
         } else if (playVersion.startsWith("2.2") || playVersion.startsWith("2.3")) {
             profile = "play-2.2.x";
-            javaVersions = new JavaVersion[] {JAVA6, JAVA7, JAVA8};
+            javaVersions = new JavaVersion[] {JAVA8, JAVA7, JAVA6};
         } else {
             // play version is 2.4+
             profile = "play-2.4.x";
@@ -161,6 +160,6 @@ public class Play {
 
     private static void runPlay1x(String version, String profile) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "play.version", version);
-        Util.runTests(MODULE_PATH, profile, JAVA6, JAVA7, JAVA8);
+        Util.runTests(MODULE_PATH, profile, JAVA8, JAVA7, JAVA6);
     }
 }

@@ -57,7 +57,7 @@ public class Netty {
         for (int i = 1; i <= 7; i++) {
             runNetty("4.1.0.CR" + i, "netty-4.x");
         }
-        for (int i = 0; i <= 27; i++) {
+        for (int i = 0; i <= 31; i++) {
             runNetty("4.1." + i + ".Final", "netty-4.x");
         }
     }
@@ -94,18 +94,20 @@ public class Netty {
         runVertxJava8("3.5.0", "4.1.15.Final", "vertx-3.x");
         runVertxJava8("3.5.1", "4.1.19.Final", "vertx-3.x");
         runVertxJava8("3.5.2", "4.1.19.Final", "vertx-3.x");
+        runVertxJava8("3.5.3", "4.1.19.Final", "vertx-3.x");
+        runVertxJava8("3.5.4", "4.1.19.Final", "vertx-3.x");
     }
 
     private static void runNetty(String version, String... profile) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "netty.version", version);
-        Util.runTests(MODULE_PATH, profile, JAVA6, JAVA7, JAVA8);
+        Util.runTests(MODULE_PATH, profile, JAVA8, JAVA7, JAVA6);
     }
 
     private static void runVertx(String vertxVersion, String nettyVersion, String profile)
             throws Exception {
         Util.updateLibVersion(MODULE_PATH, "vertx.version", vertxVersion);
         Util.updateLibVersion(MODULE_PATH, "netty.version", nettyVersion);
-        Util.runTests(MODULE_PATH, profile, JAVA7, JAVA8);
+        Util.runTests(MODULE_PATH, profile, JAVA8, JAVA7);
     }
 
     private static void runVertxJava8(String vertxVersion, String nettyVersion, String profile)

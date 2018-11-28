@@ -79,7 +79,7 @@ class RoleDao {
                     ImmutableSet.of("agent:*:transaction", "agent:*:error", "agent:*:jvm",
                             "agent:*:syntheticMonitor", "agent:*:incident", "agent:*:config",
                             "admin"));
-            session.execute(boundStatement);
+            session.write(boundStatement);
         }
 
         roleConfigCache =
@@ -100,7 +100,7 @@ class RoleDao {
     void delete(String name) throws Exception {
         BoundStatement boundStatement = deletePS.bind();
         boundStatement.setString(0, name);
-        session.execute(boundStatement);
+        session.write(boundStatement);
         roleConfigCache.invalidate(name);
         allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
     }
@@ -108,7 +108,7 @@ class RoleDao {
     void insert(RoleConfig roleConfig) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         bindInsert(boundStatement, roleConfig);
-        session.execute(boundStatement);
+        session.write(boundStatement);
         roleConfigCache.invalidate(roleConfig.name());
         allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
 
@@ -117,7 +117,7 @@ class RoleDao {
     void insertIfNotExists(RoleConfig roleConfig) throws Exception {
         BoundStatement boundStatement = insertIfNotExistsPS.bind();
         bindInsert(boundStatement, roleConfig);
-        ResultSet results = session.execute(boundStatement);
+        ResultSet results = session.update(boundStatement);
         Row row = checkNotNull(results.one());
         boolean applied = row.getBool("[applied]");
         if (applied) {
@@ -134,7 +134,7 @@ class RoleDao {
         boundStatement.setSet(i++, userConfig.permissions());
     }
 
-    private static ImmutableRoleConfig buildRole(Row row) {
+    private static RoleConfig buildRole(Row row) {
         int i = 0;
         return ImmutableRoleConfig.builder()
                 .central(true)
@@ -148,7 +148,7 @@ class RoleDao {
         public Optional<RoleConfig> load(String name) throws Exception {
             BoundStatement boundStatement = readOnePS.bind();
             boundStatement.setString(0, name);
-            ResultSet results = session.execute(boundStatement);
+            ResultSet results = session.read(boundStatement);
             if (results.isExhausted()) {
                 return Optional.absent();
             }
@@ -163,12 +163,12 @@ class RoleDao {
     private class AllRolesCacheLoader implements CacheLoader<String, List<RoleConfig>> {
         @Override
         public List<RoleConfig> load(String dummy) throws Exception {
-            ResultSet results = session.execute(readPS.bind());
-            List<RoleConfig> users = new ArrayList<>();
+            ResultSet results = session.read(readPS.bind());
+            List<RoleConfig> role = new ArrayList<>();
             for (Row row : results) {
-                users.add(buildRole(row));
+                role.add(buildRole(row));
             }
-            return users;
+            return role;
         }
     }
 }

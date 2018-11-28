@@ -16,65 +16,24 @@
 package org.glowroot.agent.weaving;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
-import java.net.URL;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.Resources;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 import org.objectweb.asm.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.plugin.api.weaving.Mixin;
-import org.glowroot.agent.plugin.api.weaving.MixinInit;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import org.glowroot.agent.weaving.PluginDetail.MixinClass;
 
 @Value.Immutable
 abstract class MixinType {
 
-    private static final Logger logger = LoggerFactory.getLogger(MixinType.class);
-
-    static MixinType create(Mixin mixin, Class<?> implementation) throws IOException {
-        ImmutableMixinType.Builder builder = ImmutableMixinType.builder();
-        builder.addTargets(mixin.value());
-        for (Class<?> iface : implementation.getInterfaces()) {
-            builder.addInterfaces(Type.getType(iface));
-        }
-        String initMethodName = null;
-        for (Method method : implementation.getDeclaredMethods()) {
-            if (method.getAnnotation(MixinInit.class) != null) {
-                if (initMethodName != null) {
-                    logger.error("mixin has more than one @MixinInit: {}",
-                            implementation.getName());
-                    continue;
-                }
-                if (method.getParameterTypes().length > 0) {
-                    logger.error("@MixinInit method cannot have any parameters: {}",
-                            implementation.getName());
-                    continue;
-                }
-                if (method.getReturnType() != void.class) {
-                    logger.warn("@MixinInit method must return void: {}", implementation.getName());
-                    continue;
-                }
-                initMethodName = method.getName();
-            }
-        }
-        builder.initMethodName(initMethodName);
-        ClassLoader loader = implementation.getClassLoader();
-        String resourceName = implementation.getName().replace('.', '/') + ".class";
-        URL url;
-        if (loader == null) {
-            url = ClassLoader.getSystemResource(resourceName);
-        } else {
-            url = loader.getResource(resourceName);
-        }
-        checkNotNull(url, "Could not find resource: %s", resourceName);
-        builder.implementationBytes(Resources.toByteArray(url));
-        return builder.build();
+    static MixinType create(MixinClass mixinClass) throws IOException {
+        return ImmutableMixinType.builder()
+                .addTargets(mixinClass.mixin().value())
+                .addAllInterfaces(mixinClass.interfaces())
+                .initMethodName(mixinClass.initMethodName())
+                .implementationBytes(mixinClass.bytes())
+                .build();
     }
 
     abstract ImmutableList<String> targets();

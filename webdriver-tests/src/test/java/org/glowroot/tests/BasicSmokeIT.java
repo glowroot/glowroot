@@ -459,7 +459,7 @@ public class BasicSmokeIT extends WebDriverIT {
 
     private void clickAroundInTraceModal(String traceId, boolean active) throws Exception {
         clickWithWait(className("gt-entries-toggle"));
-        waitFor(xpath("//div[starts-with(normalize-space(),'jdbc execute:')]"));
+        waitFor(xpath("//div[starts-with(normalize-space(),'jdbc query:')]"));
         clickWithWait(className("gt-main-thread-profile-toggle"));
         // wait for profile to open
         SECONDS.sleep(1);
