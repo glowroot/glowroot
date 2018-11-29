@@ -141,6 +141,7 @@ public class ConfigServiceImpl
         }
         configService.addPluginConfigListener(listener);
         listener.onChange();
+        configService.writeMemoryBarrier();
     }
 
     @Override
