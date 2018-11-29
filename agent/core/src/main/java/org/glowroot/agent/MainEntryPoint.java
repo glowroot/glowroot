@@ -37,6 +37,7 @@ import java.util.jar.JarFile;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.StandardSystemProperty;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -181,7 +182,7 @@ public class MainEntryPoint {
         try {
             String version = Version.getVersion(MainEntryPoint.class);
             startupLogger.info("Glowroot version: {}", version);
-            startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
+            startupLogger.info("Java version: {}", getJavaVersion());
             ImmutableMap<String, String> properties =
                     getGlowrootProperties(directories.getConfDirs());
             glowrootAgentInitFactory.newGlowrootAgentInit(directories.getDataDir(), true, null)
@@ -251,7 +252,8 @@ public class MainEntryPoint {
             @Nullable PreCheckClassFileTransformer preCheckClassFileTransformer) throws Exception {
         String version = Version.getVersion(MainEntryPoint.class);
         startupLogger.info("Glowroot version: {}", version);
-        startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
+        startupLogger.info("Java version: {}", getJavaVersion());
+        startupLogger.info("Java args: {}", getJvmArgs());
         glowrootAgentInit = createGlowrootAgentInit(directories, properties, instrumentation);
         glowrootAgentInit.init(directories.getPluginsDir(), directories.getConfDirs(),
                 directories.getLogDir(), directories.getTmpDir(), directories.getGlowrootJarFile(),
@@ -465,6 +467,42 @@ public class MainEntryPoint {
         } else {
             return null;
         }
+    }
+
+    private static StringBuilder getJavaVersion() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(StandardSystemProperty.JAVA_VERSION.value());
+        String vendor = System.getProperty("java.vm.vendor");
+        String os = System.getProperty("os.name");
+        boolean appendVendor = !Strings.isNullOrEmpty(vendor);
+        boolean appendOS = !Strings.isNullOrEmpty(os);
+        if (appendVendor && appendOS) {
+            sb.append(" (");
+            if (appendVendor) {
+                sb.append(vendor);
+                if (appendOS) {
+                    sb.append(" / ");
+                }
+            }
+            if (appendOS) {
+                sb.append(os);
+            }
+            sb.append(")");
+        }
+        return sb;
+    }
+
+    private static StringBuilder getJvmArgs() {
+        StringBuilder sb = new StringBuilder();
+        for (String jvmArg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
+            if (!jvmArg.startsWith("-D")) {
+                if (sb.length() > 0) {
+                    sb.append(" ");
+                }
+                sb.append(jvmArg);
+            }
+        }
+        return sb;
     }
 
     @OnlyUsedByTests
