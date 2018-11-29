@@ -103,12 +103,6 @@ public class AdminConfigService {
         } else {
             this.userConfigs = ImmutableList.<UserConfig>copyOf(userConfigs);
         }
-        if (this.userConfigs.isEmpty()) {
-            this.userConfigs = ImmutableList.<UserConfig>of(ImmutableUserConfig.builder()
-                    .username("anonymous")
-                    .addRoles("Administrator")
-                    .build());
-        }
         List<ImmutableRoleConfig> roleConfigs = adminConfigFile.getConfig("roles",
                 new TypeReference<List<ImmutableRoleConfig>>() {});
         if (roleConfigs == null) {
@@ -186,6 +180,13 @@ public class AdminConfigService {
             this.healthchecksIoConfig = ImmutableHealthchecksIoConfig.builder().build();
         } else {
             this.healthchecksIoConfig = healthchecksIoConfig;
+        }
+
+        if (this.userConfigs.isEmpty() && this.ldapConfig.host().isEmpty()) {
+            this.userConfigs = ImmutableList.<UserConfig>of(ImmutableUserConfig.builder()
+                    .username("anonymous")
+                    .addRoles("Administrator")
+                    .build());
         }
     }
 
