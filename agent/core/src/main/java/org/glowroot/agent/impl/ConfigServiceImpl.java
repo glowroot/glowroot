@@ -53,7 +53,7 @@ public class ConfigServiceImpl
     // visibility is provided by memoryBarrier in org.glowroot.config.ConfigService
     private @MonotonicNonNull PluginConfig pluginConfig;
 
-    private final Map<ConfigListener, Boolean> weakConfigListeners =
+    private final Map<ConfigListener, Boolean> configListeners =
             new MapMaker().weakKeys().makeMap();
 
     public static ConfigServiceImpl create(ConfigService configService,
@@ -93,7 +93,7 @@ public class ConfigServiceImpl
             return new StringPropertyImpl("");
         }
         StringPropertyImpl stringProperty = new StringPropertyImpl(name);
-        weakConfigListeners.put(stringProperty, true);
+        configListeners.put(stringProperty, true);
         return stringProperty;
     }
 
@@ -104,7 +104,7 @@ public class ConfigServiceImpl
             return new BooleanPropertyImpl("");
         }
         BooleanPropertyImpl booleanProperty = new BooleanPropertyImpl(name);
-        weakConfigListeners.put(booleanProperty, true);
+        configListeners.put(booleanProperty, true);
         return booleanProperty;
     }
 
@@ -115,7 +115,7 @@ public class ConfigServiceImpl
             return new DoublePropertyImpl("");
         }
         DoublePropertyImpl doubleProperty = new DoublePropertyImpl(name);
-        weakConfigListeners.put(doubleProperty, true);
+        configListeners.put(doubleProperty, true);
         return doubleProperty;
     }
 
@@ -126,7 +126,7 @@ public class ConfigServiceImpl
             return new ListPropertyImpl("");
         }
         ListPropertyImpl listProperty = new ListPropertyImpl(name);
-        weakConfigListeners.put(listProperty, true);
+        configListeners.put(listProperty, true);
         return listProperty;
     }
 
@@ -152,8 +152,8 @@ public class ConfigServiceImpl
             checkNotNull(pluginConfig);
             this.pluginConfig = pluginConfig;
         }
-        for (ConfigListener weakConfigListener : weakConfigListeners.keySet()) {
-            weakConfigListener.onChange();
+        for (ConfigListener configListener : configListeners.keySet()) {
+            configListener.onChange();
         }
         configService.writeMemoryBarrier();
     }
