@@ -49,8 +49,8 @@ public class Connections {
     }
 
     enum ConnectionType {
-        HSQLDB, H2, COMMONS_DBCP_WRAPPED, TOMCAT_JDBC_POOL_WRAPPED, GLASSFISH_JDBC_POOL_WRAPPED,
-        HIKARI_CP_WRAPPED, POSTGRES, ORACLE, MSSQL
+        HSQLDB, H2, COMMONS_DBCP_WRAPPED, COMMONS_DBCP2_WRAPPED, TOMCAT_JDBC_POOL_WRAPPED,
+        GLASSFISH_JDBC_POOL_WRAPPED, HIKARI_CP_WRAPPED, POSTGRES, ORACLE, MSSQL
     }
 
     static Connection createConnection() throws Exception {
@@ -61,6 +61,8 @@ public class Connections {
                 return createH2Connection();
             case COMMONS_DBCP_WRAPPED:
                 return createCommonsDbcpWrappedConnection();
+            case COMMONS_DBCP2_WRAPPED:
+                return createCommonsDbcp2WrappedConnection();
             case TOMCAT_JDBC_POOL_WRAPPED:
                 return createTomcatJdbcPoolWrappedConnection();
             case GLASSFISH_JDBC_POOL_WRAPPED:
@@ -113,6 +115,18 @@ public class Connections {
     private static Connection createCommonsDbcpWrappedConnection() throws SQLException {
         // set up database
         BasicDataSource ds = new BasicDataSource();
+        ds.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
+        ds.setUrl("jdbc:hsqldb:mem:test");
+        Connection connection = ds.getConnection();
+        insertRecords(connection);
+        return connection;
+    }
+
+    private static Connection createCommonsDbcp2WrappedConnection() throws SQLException {
+        // set up database
+        @SuppressWarnings("resource")
+        org.apache.commons.dbcp2.BasicDataSource ds =
+                new org.apache.commons.dbcp2.BasicDataSource();
         ds.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
         ds.setUrl("jdbc:hsqldb:mem:test");
         Connection connection = ds.getConnection();

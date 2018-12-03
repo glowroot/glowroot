@@ -24,6 +24,7 @@
       supports Java 6) -->
     <mssql.version>6.4.0.jre7</mssql.version>
     <commons.dbcp.version>1.4</commons.dbcp.version>
+    <commons.dbcp2.version>2.5.0</commons.dbcp2.version>
     <!-- need to test a version prior to Hikari 2.3.10 (specifically prior to
       https://github.com/brettwooldridge/HikariCP/commit/33a4bbe54a99de14a704c1a26e3f953cfa7888ad
       in order to exercise HikariProxyHackClassVisitor)
@@ -82,6 +83,12 @@
       <groupId>commons-dbcp</groupId>
       <artifactId>commons-dbcp</artifactId>
       <version>${commons.dbcp.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-dbcp2</artifactId>
+      <version>${commons.dbcp2.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
