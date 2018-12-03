@@ -118,7 +118,7 @@ public class PreparedStatementMessageSupplier extends QueryMessageSupplier {
         List<Pattern> patterns = new ArrayList<Pattern>();
         for (String value : values) {
             try {
-                patterns.add(Pattern.compile(value.trim()));
+                patterns.add(Pattern.compile(value.trim(), Pattern.DOTALL));
             } catch (PatternSyntaxException e) {
                 logger.warn("the jdbc plugin configuration property {} contains an invalid regular"
                         + " expression: {}\n{}", propertyName, value.trim(), e.getMessage());
