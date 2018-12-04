@@ -142,10 +142,10 @@ glowroot.controller('ChartRangeCtrl', [
         return dateTime.valueOf() - startOfDay;
       }
 
-      var fromDate = $('#customDateRangeFromDate').datetimepicker('date');
-      var fromTime = $('#customDateRangeFromTime').datetimepicker('date');
-      var toDate = $('#customDateRangeToDate').datetimepicker('date');
-      var toTime = $('#customDateRangeToTime').datetimepicker('date');
+      var fromDate = $('#customDateRangeFromDate').datetimepicker('viewDate');
+      var fromTime = $('#customDateRangeFromTime').datetimepicker('viewDate');
+      var toDate = $('#customDateRangeToDate').datetimepicker('viewDate');
+      var toTime = $('#customDateRangeToTime').datetimepicker('viewDate');
       $scope.range.chartFrom = fromDate.valueOf() + timeComponent(fromTime);
       $scope.range.chartTo = toDate.valueOf() + timeComponent(toTime);
       $scope.range.last = 0;
