@@ -113,9 +113,9 @@ public class CentralCollector implements Collector {
 
         String agentId = properties.get("glowroot.agent.id");
         if (agentId == null) {
-            agentId = escapeHostName(InetAddress.getLocalHost().getHostName());
+            agentId = escapeHostname(InetAddress.getLocalHost().getHostName());
         } else if (agentId.endsWith("::")) {
-            agentId += escapeHostName(InetAddress.getLocalHost().getHostName());
+            agentId += escapeHostname(InetAddress.getLocalHost().getHostName());
         } else if (!agentId.contains("::")) {
             // check for 0.9.x agent rollup id
             String v09AgentRollupId = properties.get("glowroot.agent.rollup.id");
@@ -283,15 +283,15 @@ public class CentralCollector implements Collector {
     }
 
     @VisibleForTesting
-    static String escapeHostName(String hostName) {
-        hostName = hostName.replace("\\", "\\\\");
-        if (hostName.startsWith(":")) {
-            hostName = "\\" + hostName;
+    static String escapeHostname(String hostname) {
+        hostname = hostname.replace("\\", "\\\\");
+        if (hostname.startsWith(":")) {
+            hostname = "\\" + hostname;
         }
-        while (hostName.contains("::")) {
-            hostName = hostName.replace("::", ":\\:");
+        while (hostname.contains("::")) {
+            hostname = hostname.replace("::", ":\\:");
         }
-        return hostName;
+        return hostname;
     }
 
     private static String convertFromV09AgentRollupId(String agentRollupId) {

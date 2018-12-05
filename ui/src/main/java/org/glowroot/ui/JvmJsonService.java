@@ -119,7 +119,7 @@ class JvmJsonService {
                 jg.writeBooleanField("agentNotConnected", !liveJvmService.isAvailable(agentId));
             }
             jg.writeObjectFieldStart("host");
-            jg.writeStringField("hostName", hostInfo.getHostName());
+            jg.writeStringField("hostname", hostInfo.getHostname());
             jg.writeNumberField("availableProcessors", hostInfo.getAvailableProcessors());
             if (hostInfo.hasTotalPhysicalMemoryBytes()) {
                 jg.writeNumberField("totalPhysicalMemoryBytes",

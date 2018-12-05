@@ -35,7 +35,7 @@ message InitMessage {
     JavaInfo java_info = 3;
 
     message HostInfo {
-      string host_name = 1;
+      string hostname = 1;
       int32 available_processors = 2;
       OptionalInt64 total_physical_memory_bytes = 3;
       string os_name = 4;

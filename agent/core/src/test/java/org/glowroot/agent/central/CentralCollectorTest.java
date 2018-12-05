@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,17 +23,17 @@ public class CentralCollectorTest {
 
     @Test
     public void shouldEscape() {
-        assertThat(CentralCollector.escapeHostName("")).isEqualTo("");
-        assertThat(CentralCollector.escapeHostName("abc")).isEqualTo("abc");
-        assertThat(CentralCollector.escapeHostName("a:b:c")).isEqualTo("a:b:c");
-        assertThat(CentralCollector.escapeHostName(":a:b:c:")).isEqualTo("\\:a:b:c:");
-        assertThat(CentralCollector.escapeHostName("::a::b::c::"))
+        assertThat(CentralCollector.escapeHostname("")).isEqualTo("");
+        assertThat(CentralCollector.escapeHostname("abc")).isEqualTo("abc");
+        assertThat(CentralCollector.escapeHostname("a:b:c")).isEqualTo("a:b:c");
+        assertThat(CentralCollector.escapeHostname(":a:b:c:")).isEqualTo("\\:a:b:c:");
+        assertThat(CentralCollector.escapeHostname("::a::b::c::"))
                 .isEqualTo("\\:\\:a:\\:b:\\:c:\\:");
-        assertThat(CentralCollector.escapeHostName(":::a:::b:::c:::"))
+        assertThat(CentralCollector.escapeHostname(":::a:::b:::c:::"))
                 .isEqualTo("\\:\\:\\:a:\\:\\:b:\\:\\:c:\\:\\:");
-        assertThat(CentralCollector.escapeHostName("::::")).isEqualTo("\\:\\:\\:\\:");
+        assertThat(CentralCollector.escapeHostname("::::")).isEqualTo("\\:\\:\\:\\:");
 
-        assertThat(CentralCollector.escapeHostName("a\\b\\c")).isEqualTo("a\\\\b\\\\c");
+        assertThat(CentralCollector.escapeHostname("a\\b\\c")).isEqualTo("a\\\\b\\\\c");
     }
 
     @Test
