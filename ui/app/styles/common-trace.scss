@@ -144,17 +144,17 @@ $vertical-padding: $gt-flat-button-vertical-padding;
 }
 
 .gt-trace-query-total-column {
-  width: 60px;
-  text-align: right;
-}
-
-.gt-trace-query-count-column {
-  width: 80px;
+  width: 70px;
   text-align: right;
 }
 
 .gt-trace-query-other-column {
-  width: 100px;
+  width: 70px;
+  text-align: right;
+}
+
+.gt-trace-query-rows-column {
+  width: 110px;
   text-align: right;
 }
 
@@ -168,11 +168,13 @@ $vertical-padding: $gt-flat-button-vertical-padding;
 }
 
 .gt-trace-query-sort-button {
+  @include gt-link-with-focus-ring;
+  border-radius: .25rem;
   border: none;
-  padding: 0;
   background-color: transparent;
   color: darken($gt-blue, 5%); // see .gt-link-color
   text-align: right;
+  font-weight: 700;
 }
 
 .gt-trace-query-sort-button:hover {
