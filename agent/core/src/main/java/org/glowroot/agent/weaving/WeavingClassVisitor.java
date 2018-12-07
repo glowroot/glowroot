@@ -486,19 +486,7 @@ class WeavingClassVisitor extends ClassVisitor {
         Integer methodMetaUniqueNum = collectMetasAtMethod(matchingAdvisors, name, descriptor);
         usedAdvisors.addAll(matchingAdvisors);
         return new WeavingMethodVisitor(mv, frames, access, name, descriptor, type,
-                hackAdvisors(matchingAdvisors), metaHolderInternalName, methodMetaUniqueNum,
-                loader == null);
-    }
-
-    private List<Advice> hackAdvisors(List<Advice> advisors) {
-        // if (loader == null) {
-        return advisors;
-        // }
-        // List<Advice> hackedAdvisors = Lists.newArrayList();
-        // for (Advice advice : advisors) {
-        // hackedAdvisors.add(MoreObjects.firstNonNull(advice.nonBootstrapLoaderAdvice(), advice));
-        // }
-        // return hackedAdvisors;
+                matchingAdvisors, metaHolderInternalName, methodMetaUniqueNum, loader == null);
     }
 
     private @Nullable Integer collectMetasAtMethod(Iterable<Advice> matchingAdvisors,
