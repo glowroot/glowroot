@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,6 +79,7 @@ public class SauceLabs {
         String sauceAccessKey = System.getenv("SAUCE_ACCESS_KEY");
         capabilities.setCapability("tunnel-identifier", tunnelIdentifier);
         capabilities.setCapability("name", testName);
+        capabilities.setCapability("extendedDebugging", true);
         return new RemoteWebDriver(new URL(
                 "http://" + sauceUsername + ":" + sauceAccessKey + "@localhost:4445/wd/hub"),
                 capabilities);
