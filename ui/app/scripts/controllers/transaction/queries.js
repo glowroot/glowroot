@@ -162,48 +162,11 @@ glowroot.controller('TransactionQueriesCtrl', [
         $clipboardIcon.removeAttr('style');
       }
 
-      function applyCss(loading) {
+      function applyCss() {
         var width = Math.max($formattedQuery.width() + 80, 500);
         // +141 is needed for IE9 (other browsers seemed ok at +140)
-        var height = $formattedQuery.height() + 141;
-        if (loading) {
-          height = 200;
-        }
-        var horizontalScrolling = width > $(window).width() - 50;
-        if (horizontalScrolling) {
-          height += 17;
-        }
-        var verticalScrolling = height > $(window).height() - 50;
         if (width < $modalDialog.width()) {
           $modalDialog.css('width', width + 'px');
-          $modalDialog.css('left', '50%');
-          $modalDialog.css('margin-left', -width / 2 + 'px');
-          $closeButton.css('right', 'auto');
-          $closeButton.css('left', '50%');
-          var closeButtonLeftMargin = width / 2 - 46;
-          if (!verticalScrolling) {
-            closeButtonLeftMargin += 17;
-          }
-          $closeButton.css('margin-left', closeButtonLeftMargin + 'px');
-          $clipboardIcon.css('right', 'auto');
-          $clipboardIcon.css('left', '50%');
-          $clipboardIcon.css('margin-left', (closeButtonLeftMargin - 3) + 'px');
-        }
-        if (!verticalScrolling) {
-          $modalDialog.css('overflow-y', 'auto');
-          $modalDialog.css('height', height + 'px');
-          $modalDialog.css('top', '50%');
-          $modalDialog.css('margin-top', -height / 2 + 'px');
-          $modalDialog.css('border-top-right-radius', '6px');
-          $modalDialog.css('border-bottom-right-radius', '6px');
-          $closeButton.css('top', '50%');
-          $closeButton.css('margin-top', -height / 2 + 10 + 'px');
-          $clipboardIcon.css('top', '50%');
-          $clipboardIcon.css('margin-top', -height / 2 + 34 + 'px');
-        }
-        if (horizontalScrolling) {
-          $modalDialog.css('border-bottom-left-radius', 0);
-          $modalDialog.css('border-bottom-right-radius', 0);
         }
       }
 
@@ -211,7 +174,7 @@ glowroot.controller('TransactionQueriesCtrl', [
       var timer = $timeout(function () {
         clearCss();
         modals.display('#queryModal');
-        applyCss(true);
+        applyCss();
       }, 200);
 
       function display(fullText) {
@@ -233,6 +196,7 @@ glowroot.controller('TransactionQueriesCtrl', [
         });
 
         if (modalQueryType !== 'SQL') {
+          applyCss();
           return;
         }
 
@@ -246,6 +210,7 @@ glowroot.controller('TransactionQueriesCtrl', [
         if (typeof formatted === 'object') {
           console.log(formatted.message);
           console.log(fullText);
+          applyCss();
           return;
         }
         if (comment.length) {
