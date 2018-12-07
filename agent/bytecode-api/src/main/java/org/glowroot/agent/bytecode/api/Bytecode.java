@@ -79,4 +79,8 @@ public class Bytecode {
     public static void updateWithReturnValue(TraceEntry traceEntry, @Nullable Object returnValue) {
         service.updateWithReturnValue(traceEntry, returnValue);
     }
+
+    public static void logThrowable(Throwable throwable) {
+        service.logThrowable(throwable);
+    }
 }

@@ -137,6 +137,11 @@ public class BytecodeServiceImpl implements BytecodeService {
         GenericMessageSupplier.updateWithReturnValue(traceEntry, returnValue);
     }
 
+    @Override
+    public void logThrowable(Throwable throwable) {
+        logger.error(throwable.getMessage(), throwable);
+    }
+
     public void enteringMainCommon(String mainClass, @Nullable String /*@Nullable*/ [] mainArgs,
             String expectedTopLevelClass, String expectedTopLevelMethodName) {
         if (onEnteringMain == null) {

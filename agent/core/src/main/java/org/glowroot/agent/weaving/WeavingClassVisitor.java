@@ -66,8 +66,6 @@ import static org.objectweb.asm.Opcodes.ASM7;
 import static org.objectweb.asm.Opcodes.ASTORE;
 import static org.objectweb.asm.Opcodes.ATHROW;
 import static org.objectweb.asm.Opcodes.DUP;
-import static org.objectweb.asm.Opcodes.F_SAME;
-import static org.objectweb.asm.Opcodes.F_SAME1;
 import static org.objectweb.asm.Opcodes.GETSTATIC;
 import static org.objectweb.asm.Opcodes.GOTO;
 import static org.objectweb.asm.Opcodes.ICONST_0;
@@ -307,7 +305,7 @@ class WeavingClassVisitor extends ClassVisitor {
         Label l0 = new Label();
         Label l1 = new Label();
         Label l2 = new Label();
-        mv.visitTryCatchBlock(l0, l1, l2, "java/lang/ClassNotFoundException");
+        mv.visitTryCatchBlock(l0, l1, l2, "java/lang/Throwable");
         mv.visitLabel(l0);
         for (Type classMetaType : classMetaTypes) {
             String classMetaInternalName = classMetaType.getInternalName();
@@ -352,22 +350,18 @@ class WeavingClassVisitor extends ClassVisitor {
                         "L" + methodMetaInternalName + ";");
             }
         }
-        // this is just try/catch ClassNotFoundException/re-throw AssertionError
+        // catch/log/re-throw
         mv.visitLabel(l1);
         Label l3 = new Label();
         mv.visitJumpInsn(GOTO, l3);
         mv.visitLabel(l2);
-        mv.visitFrame(F_SAME1, 0, null, 1, new Object[] {"java/lang/ClassNotFoundException"});
         mv.visitVarInsn(ASTORE, 0);
-        mv.visitTypeInsn(NEW, "java/lang/AssertionError");
-        mv.visitInsn(DUP);
         mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKESPECIAL, "java/lang/AssertionError", "<init>",
-                "(Ljava/lang/Object;)V", false);
+        mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Bytecode", "logThrowable",
+                "(Ljava/lang/Throwable;)V", false);
+        mv.visitVarInsn(ALOAD, 0);
         mv.visitInsn(ATHROW);
         mv.visitLabel(l3);
-        mv.visitFrame(F_SAME, 0, null, 0, null);
-
         mv.visitInsn(RETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();

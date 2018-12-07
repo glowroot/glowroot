@@ -50,4 +50,6 @@ public interface BytecodeService {
             @Nullable Object... args);
 
     void updateWithReturnValue(TraceEntry traceEntry, @Nullable Object returnValue);
+
+    void logThrowable(Throwable throwable);
 }
