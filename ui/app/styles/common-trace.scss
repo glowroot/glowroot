@@ -148,12 +148,12 @@ $vertical-padding: $gt-flat-button-vertical-padding;
   text-align: right;
 }
 
-.gt-trace-query-other-column {
+.gt-trace-query-count-column {
   width: 80px;
   text-align: right;
 }
 
-.gt-trace-query-rows-column {
+.gt-trace-query-other-column {
   width: 100px;
   text-align: right;
 }
@@ -295,9 +295,7 @@ $vertical-padding: $gt-flat-button-vertical-padding;
 .gt-query-text-column {
   font-family: Cousine, monospace;
   cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  @extend .gt-break-word;
 }
 
 .gt-query-text-column:hover {
@@ -305,24 +303,21 @@ $vertical-padding: $gt-flat-button-vertical-padding;
 }
 
 .gt-query-total-column {
-  width: 5rem;
+  min-width: 4rem;
   text-align: right;
   padding-left: 0 !important; // create more space
-  word-wrap: normal; // overriding "word-break" from .card so that numbers are not wrapped at commas and periods
+}
+
+.gt-query-count-column {
+  min-width: 4.1rem;
+  text-align: right;
+  padding-left: 0 !important; // create more space
 }
 
 .gt-query-other-column {
-  width: 4rem;
+  min-width: 4rem;
   text-align: right;
   padding-left: 0 !important; // create more space
-  word-wrap: normal; // overriding "word-break" from .card so that numbers are not wrapped at commas and periods
-}
-
-.gt-query-rows-column {
-  width: 4rem;
-  text-align: right;
-  padding-left: 0 !important; // create more space
-  word-wrap: normal; // overriding "word-break" from .card so that numbers are not wrapped at commas and periods
 }
 
 .gt-sortable-table-header {

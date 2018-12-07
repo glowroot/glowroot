@@ -73,7 +73,7 @@
         </th>
         <th scope="col"
             ng-attr-aria-sort="{{ngAttrAriaSort('execution-count')}}"
-            class="gt-query-other-column">
+            class="gt-query-count-column">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('execution-count')}}" class="gt-sortable-table-header">
             Total<br>
             <span ng-class="sortIconClass('execution-count')"
@@ -106,7 +106,7 @@
         <td class="gt-query-total-column">
           {{serviceCall.totalDurationNanos / 1000000 | gtMillis}}
         </td>
-        <td class="gt-query-other-column">
+        <td class="gt-query-count-column">
           {{serviceCall.executionCount | number}}
         </td>
         <td class="gt-query-other-column">

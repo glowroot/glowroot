@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-/* global glowroot, SqlPrettyPrinter, angular, $, gtClipboard, console */
+/* global glowroot, HandlebarsRendering, SqlPrettyPrinter, angular, $, gtClipboard, console */
 
 glowroot.controller('TransactionQueriesCtrl', [
   '$scope',
   '$http',
   '$location',
   '$timeout',
+  '$filter',
   'locationChanges',
   'charts',
   'modals',
   'queryStrings',
   'httpErrors',
-  function ($scope, $http, $location, $timeout, locationChanges, charts, modals, queryStrings, httpErrors) {
+  function ($scope, $http, $location, $timeout, $filter, locationChanges, charts, modals, queryStrings, httpErrors) {
 
     $scope.$parent.activeTabItem = 'queries';
 
@@ -326,6 +327,10 @@ glowroot.controller('TransactionQueriesCtrl', [
             $scope.showQueries = data.length;
             $scope.queries = data;
             var queryTypes = {};
+            var maxTotalDurationNanos = 0;
+            var maxExecutionCount = 0;
+            var maxTimePerExecution = 0;
+            var maxRowsPerExecution = 0;
             angular.forEach($scope.queries, function (query) {
               query.timePerExecution = query.totalDurationNanos / (1000000 * query.executionCount);
               if (query.totalRows === undefined) {
@@ -337,6 +342,22 @@ glowroot.controller('TransactionQueriesCtrl', [
                 queryTypes[query.queryType] = 0;
               }
               queryTypes[query.queryType] += query.totalDurationNanos;
+              maxTotalDurationNanos = Math.max(maxTotalDurationNanos, query.totalDurationNanos);
+              maxExecutionCount = Math.max(maxExecutionCount, query.executionCount);
+              maxTimePerExecution = Math.max(maxTimePerExecution, query.timePerExecution);
+              maxRowsPerExecution = Math.max(maxRowsPerExecution, query.rowsPerExecution);
+            });
+            var otherColumnsLength = HandlebarsRendering.formatMillis(maxTotalDurationNanos / 1000000).length
+                + $filter('number')(maxExecutionCount).length
+                + HandlebarsRendering.formatMillis(maxTimePerExecution).length
+                + HandlebarsRendering.formatCount(maxRowsPerExecution).length;
+            var maxQueryTextLength = 98 - otherColumnsLength * 0.6;
+            angular.forEach($scope.queries, function (query) {
+              if (query.truncatedQueryText.length > maxQueryTextLength) {
+                query.text = query.truncatedQueryText.substring(0, maxQueryTextLength - 3) + '...';
+              } else {
+                query.text = query.truncatedQueryText;
+              }
             });
             $scope.queryTypes = Object.keys(queryTypes);
             $scope.queryTypes.sort(function (left, right) {

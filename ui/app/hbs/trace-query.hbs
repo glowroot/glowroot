@@ -23,8 +23,8 @@
     {{/ifLongQuery}}
   </td>
   <td class="gt-trace-query-total-column">{{nanosToMillis totalDurationNanos}}{{#if active}}..{{/if}}</td>
-  <td class="gt-trace-query-other-column">{{formatInteger executionCount}}</td>
+  <td class="gt-trace-query-count-column">{{formatInteger executionCount}}</td>
   <td class="gt-trace-query-other-column">{{formatMillis timePerExecution}}{{#if active}}..{{/if}}</td>
-  <td class="gt-trace-query-rows-column">{{formatCount rowsPerExecution}}{{#if active}}{{#ifNotUndefined rowsPerExecution}}
+  <td class="gt-trace-query-other-column">{{formatCount rowsPerExecution}}{{#if active}}{{#ifNotUndefined rowsPerExecution}}
     ..{{/ifNotUndefined}}{{/if}}</td>
 </tr>

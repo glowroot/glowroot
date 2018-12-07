@@ -46,8 +46,7 @@
     </div>
   </div>
   <div ng-if="showQueries">
-    <table class="table gt-query-table"
-           style="table-layout: fixed;">
+    <table class="table gt-query-table">
       <thead>
       <tr>
         <th style="vertical-align: middle;">
@@ -72,7 +71,7 @@
           </a>
         </th>
         <th scope="col"
-            class="gt-query-other-column"
+            class="gt-query-count-column"
             ng-attr-aria-sort="{{ngAttrAriaSort('execution-count')}}">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('execution-count')}}" class="gt-sortable-table-header">
             Total<br>
@@ -95,7 +94,7 @@
           </a>
         </th>
         <th scope="col"
-            class="gt-query-rows-column"
+            class="gt-query-other-column"
             ng-attr-aria-sort="{{ngAttrAriaSort('rows-per-execution')}}">
           <a ng-href="{{currentTabUrl()}}{{sortQueryString('rows-per-execution')}}" class="gt-sortable-table-header">
             Avg<br>
@@ -114,18 +113,18 @@
         <th scope="row" class="gt-query-text-column"
             ng-click="showQueryModal(query)"
             style="font-weight: normal;">
-          {{query.truncatedQueryText}}
+          {{query.text}}
         </th>
         <td class="gt-query-total-column">
           {{query.totalDurationNanos / 1000000 | gtMillis}}
         </td>
-        <td class="gt-query-other-column">
+        <td class="gt-query-count-column">
           {{query.executionCount | number}}
         </td>
         <td class="gt-query-other-column">
           {{query.timePerExecution | gtMillis}}
         </td>
-        <td class="gt-query-rows-column">
+        <td class="gt-query-other-column">
           {{query.rowsPerExecution | gtCount}}
         </td>
       </tr>
@@ -137,7 +136,7 @@
             ng-click="showQueryModal(query)"
             colspan="5"
             style="padding-bottom: 4px;">
-          {{query.truncatedQueryText}}
+          {{query.text}}
         </td>
       </tr>
       <tr ng-repeat-end>
@@ -145,13 +144,13 @@
         <td class="gt-query-total-column border-top-0 pt-0">
           {{query.totalDurationNanos / 1000000 | gtMillis}}
         </td>
-        <td class="gt-query-other-column border-top-0 pt-0">
+        <td class="gt-query-count-column border-top-0 pt-0">
           {{query.executionCount}}
         </td>
         <td class="gt-query-other-column border-top-0 pt-0">
           {{query.timePerExecution | gtMillis}}
         </td>
-        <td class="gt-query-rows-column border-top-0 pt-0">
+        <td class="gt-query-other-column border-top-0 pt-0">
           {{query.rowsPerExecution | gtCount}}
         </td>
       </tr>
