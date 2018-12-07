@@ -21,6 +21,20 @@
       "timerName": "spring batch",
       "transactionType": "Background",
       "transactionNameTemplate": "Spring Batch: {{this.name}}"
+    },
+    {
+      "className": "org.springframework.jms.listener.SessionAwareMessageListener",
+      "methodName": "onMessage",
+      "methodParameterTypes": [
+        "javax.jms.Message",
+        "javax.jms.Session"
+      ],
+      "nestingGroup": "jms",
+      "captureKind": "transaction",
+      "transactionType": "Background",
+      "transactionNameTemplate": "JMS Message: {{this.class.simpleName}}",
+      "alreadyInTransactionBehavior": "capture-trace-entry",
+      "timerName": "jms message"
     }
   ],
   "aspects": [
