@@ -28,6 +28,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ConfigDefaults;
 import org.glowroot.common.live.LiveAggregateRepository;
@@ -49,6 +51,7 @@ class LayoutService {
 
     private static final String AGENT_ID = "";
 
+    private static final Logger logger = LoggerFactory.getLogger(LayoutService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final boolean central;
@@ -120,20 +123,17 @@ class LayoutService {
                 .lastDisplayPart(Iterables.getLast(agentRollupDisplayParts))
                 .permissions(permissions)
                 .build();
-        Set<String> transactionTypes = Sets.newHashSet();
-        transactionTypes.addAll(transactionTypeRepository.read(agentRollupId));
-        transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(agentRollupId));
-        return buildAgentRollupLayout(agentRollup, transactionTypes,
+        return buildAgentRollupLayout(agentRollup,
                 traceAttributeNameRepository.read(agentRollupId));
     }
 
     private @Nullable AgentRollupLayout buildAgentRollupLayout(FilteredAgentRollup agentRollup,
-            Set<String> transactionTypes, Map<String, List<String>> traceAttributeNames)
-            throws Exception {
+            Map<String, List<String>> traceAttributeNames) throws Exception {
         UiDefaultsConfig uiConfig;
         try {
             uiConfig = configRepository.getUiDefaultsConfig(agentRollup.id());
         } catch (AgentConfigNotFoundException e) {
+            logger.debug(e.getMessage(), e);
             uiConfig = UiDefaultsConfig.newBuilder()
                     .setDefaultTransactionType(ConfigDefaults.UI_DEFAULTS_TRANSACTION_TYPE)
                     .addAllDefaultPercentile(ConfigDefaults.UI_DEFAULTS_PERCENTILES)
@@ -151,18 +151,18 @@ class LayoutService {
                 glowrootVersion = environment.getJavaInfo().getGlowrootAgentVersion();
             }
         }
-        Permissions permissions = agentRollup.permissions();
-        String defaultTransactionType = uiConfig.getDefaultTransactionType();
-        Set<String> transactionTypesWithDefault = Sets.newTreeSet(transactionTypes);
-        transactionTypesWithDefault.add(defaultTransactionType);
+        Set<String> transactionTypes = Sets.newTreeSet();
+        transactionTypes.addAll(transactionTypeRepository.read(agentRollup.id()));
+        transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(agentRollup.id()));
+        transactionTypes.add(uiConfig.getDefaultTransactionType());
         return ImmutableAgentRollupLayout.builder()
                 .id(agentRollup.id())
                 .display(agentRollup.display())
                 .glowrootVersion(glowrootVersion)
-                .permissions(permissions)
-                .addAllTransactionTypes(transactionTypesWithDefault)
+                .permissions(agentRollup.permissions())
+                .addAllTransactionTypes(transactionTypes)
                 .putAllTraceAttributeNames(traceAttributeNames)
-                .defaultTransactionType(defaultTransactionType)
+                .defaultTransactionType(uiConfig.getDefaultTransactionType())
                 .defaultPercentiles(uiConfig.getDefaultPercentileList())
                 .defaultGaugeNames(uiConfig.getDefaultGaugeNameList())
                 .build();
@@ -195,14 +195,10 @@ class LayoutService {
         boolean showNavbarConfig = permissions.config().view();
         // a couple of special cases for embedded ui
         UiDefaultsConfig uiConfig = configRepository.getUiDefaultsConfig(AGENT_ID);
-        String defaultTransactionType = uiConfig.getDefaultTransactionType();
         Set<String> transactionTypes = Sets.newTreeSet();
-        List<String> storedTransactionTypes = transactionTypeRepository.read(AGENT_ID);
-        if (storedTransactionTypes != null) {
-            transactionTypes.addAll(storedTransactionTypes);
-        }
-        transactionTypes.add(defaultTransactionType);
-
+        transactionTypes.addAll(transactionTypeRepository.read(AGENT_ID));
+        transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(AGENT_ID));
+        transactionTypes.add(uiConfig.getDefaultTransactionType());
         AgentRollupLayout embeddedAgentRollup = ImmutableAgentRollupLayout.builder()
                 .id(AGENT_ID)
                 .display(getEmbeddedAgentDisplayName())
@@ -210,7 +206,7 @@ class LayoutService {
                 .permissions(permissions)
                 .addAllTransactionTypes(transactionTypes)
                 .putAllTraceAttributeNames(traceAttributeNameRepository.read(AGENT_ID))
-                .defaultTransactionType(defaultTransactionType)
+                .defaultTransactionType(uiConfig.getDefaultTransactionType())
                 .defaultPercentiles(uiConfig.getDefaultPercentileList())
                 .defaultGaugeNames(uiConfig.getDefaultGaugeNameList())
                 .build();

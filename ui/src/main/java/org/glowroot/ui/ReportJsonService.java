@@ -31,17 +31,19 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.live.ImmutableAggregateQuery;
 import org.glowroot.common.live.ImmutableOverviewAggregate;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
 import org.glowroot.common.live.ImmutableThroughputAggregate;
+import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.live.LiveAggregateRepository.AggregateQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
@@ -52,6 +54,7 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common2.repo.ActiveAgentRepository;
 import org.glowroot.common2.repo.AggregateRepository;
 import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common2.repo.TransactionTypeRepository;
@@ -74,6 +77,7 @@ class ReportJsonService {
 
     private static final double NANOSECONDS_PER_MILLISECOND = 1000000.0;
 
+    private static final Logger logger = LoggerFactory.getLogger(ReportJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final ConfigRepository configRepository;
@@ -81,18 +85,21 @@ class ReportJsonService {
     private final TransactionTypeRepository transactionTypeRepository;
     private final AggregateRepository aggregateRepository;
     private final GaugeValueRepository gaugeValueRepository;
+    private final LiveAggregateRepository liveAggregateRepository;
     private final RollupLevelService rollupLevelService;
 
     ReportJsonService(ConfigRepository configRepository,
             ActiveAgentRepository activeAgentRepository,
             TransactionTypeRepository transactionTypeRepository,
             AggregateRepository aggregateRepository, GaugeValueRepository gaugeValueRepository,
+            LiveAggregateRepository liveAggregateRepository,
             RollupLevelService rollupLevelService) {
         this.configRepository = configRepository;
         this.activeAgentRepository = activeAgentRepository;
         this.transactionTypeRepository = transactionTypeRepository;
         this.aggregateRepository = aggregateRepository;
         this.gaugeValueRepository = gaugeValueRepository;
+        this.liveAggregateRepository = liveAggregateRepository;
         this.rollupLevelService = rollupLevelService;
     }
 
@@ -131,15 +138,22 @@ class ReportJsonService {
         Date from = fromToPair.from();
         Date to = fromToPair.to();
 
-        Set<String> transactionTypes = Sets.newHashSet();
+        Set<String> transactionTypes = Sets.newTreeSet();
         Set<Gauge> gauges = Sets.newHashSet();
         for (String agentRollupId : request.agentRollupIds()) {
             transactionTypes.addAll(transactionTypeRepository.read(agentRollupId));
+            transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(agentRollupId));
+            try {
+                transactionTypes.add(configRepository.getUiDefaultsConfig(agentRollupId)
+                        .getDefaultTransactionType());
+            } catch (AgentConfigNotFoundException e) {
+                logger.debug(e.getMessage(), e);
+            }
             gauges.addAll(
                     gaugeValueRepository.getGauges(agentRollupId, from.getTime(), to.getTime()));
         }
         return mapper.writeValueAsString(ImmutableTransactionTypesAndGaugesReponse.builder()
-                .addAllTransactionTypes(Ordering.natural().sortedCopy(transactionTypes))
+                .addAllTransactionTypes(transactionTypes)
                 .addAllGauges(new GaugeOrdering().sortedCopy(gauges))
                 .build());
     }

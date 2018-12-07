@@ -16,6 +16,7 @@
 package org.glowroot.ui;
 
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -26,11 +27,13 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.common.config.PluginNameComparison;
+import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Versions;
@@ -64,12 +67,15 @@ class ConfigJsonService {
 
     private final TransactionTypeRepository transactionTypeRepository;
     private final GaugeValueRepository gaugeValueRepository;
+    private final LiveAggregateRepository liveAggregateRepository;
     private final ConfigRepository configRepository;
 
     ConfigJsonService(TransactionTypeRepository transactionTypeRepository,
-            GaugeValueRepository gaugeValueRepository, ConfigRepository configRepository) {
+            GaugeValueRepository gaugeValueRepository,
+            LiveAggregateRepository liveAggregateRepository, ConfigRepository configRepository) {
         this.transactionTypeRepository = transactionTypeRepository;
         this.gaugeValueRepository = gaugeValueRepository;
+        this.liveAggregateRepository = liveAggregateRepository;
         this.configRepository = configRepository;
     }
 
@@ -82,10 +88,11 @@ class ConfigJsonService {
     @GET(path = "/backend/config/transaction", permission = "agent:config:view:transaction")
     String getTransactionConfig(@BindAgentId String agentId) throws Exception {
         TransactionConfig config = configRepository.getTransactionConfig(agentId);
-        List<String> transactionTypes = transactionTypeRepository.read(agentId);
-        if (transactionTypes == null) {
-            transactionTypes = ImmutableList.of();
-        }
+        Set<String> transactionTypes = Sets.newTreeSet();
+        transactionTypes.addAll(transactionTypeRepository.read(agentId));
+        transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(agentId));
+        transactionTypes
+                .add(configRepository.getUiDefaultsConfig(agentId).getDefaultTransactionType());
         return mapper.writeValueAsString(ImmutableTransactionConfigResponse.builder()
                 .config(TransactionConfigDto.create(config))
                 .defaultTransactionType(
@@ -104,10 +111,9 @@ class ConfigJsonService {
     @GET(path = "/backend/config/ui-defaults", permission = "agent:config:view:uiDefaults")
     String getUiDefaultsConfig(@BindAgentRollupId String agentRollupId) throws Exception {
         UiDefaultsConfig config = configRepository.getUiDefaultsConfig(agentRollupId);
-        List<String> transactionTypes = transactionTypeRepository.read(agentRollupId);
-        if (transactionTypes == null) {
-            transactionTypes = ImmutableList.of();
-        }
+        Set<String> transactionTypes = Sets.newTreeSet();
+        transactionTypes.addAll(transactionTypeRepository.read(agentRollupId));
+        transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(agentRollupId));
         List<Gauge> gauges = gaugeValueRepository.getRecentlyActiveGauges(agentRollupId);
         ImmutableList<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
         return mapper.writeValueAsString(ImmutableUiDefaultsConfigResponse.builder()
