@@ -127,7 +127,7 @@ $state-danger-text: $gt-red;
 // font preloading url (see index.html) in sync when new font-awesome versions are released, and the
 // urls are revved during grunt build already so the versioned url is not needed
 @font-face {
-  font-family: 'Font Awesome 5 Free';
+  font-family: 'Font Awesome Free';
   src: url('../fonts/fa-regular-400.woff2') format('woff2'),
   url('../fonts/fa-regular-400.woff') format('woff');
   font-weight: 400;
@@ -135,7 +135,7 @@ $state-danger-text: $gt-red;
 }
 
 @font-face {
-  font-family: 'Font Awesome 5 Free';
+  font-family: 'Font Awesome Free';
   src: url('../fonts/fa-solid-900.woff2') format('woff2'),
   url('../fonts/fa-solid-900.woff') format('woff');
   font-weight: 900;
@@ -143,13 +143,13 @@ $state-danger-text: $gt-red;
 }
 
 .far {
-  font-family: 'Font Awesome 5 Free';
+  font-family: 'Font Awesome Free';
   font-weight: 400;
 }
 
 .fa,
 .fas {
-  font-family: 'Font Awesome 5 Free';
+  font-family: 'Font Awesome Free';
   font-weight: 900;
 }
 
