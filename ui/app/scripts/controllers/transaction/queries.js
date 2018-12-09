@@ -324,6 +324,14 @@ glowroot.controller('TransactionQueriesCtrl', [
                 query.text = query.truncatedQueryText;
               }
             });
+            $scope.limitExceededBucket = undefined;
+            for (var i = 0; i < $scope.queries.length; i++) {
+              if ($scope.queries[i].text === 'LIMIT EXCEEDED BUCKET') {
+                $scope.limitExceededBucket = $scope.queries[i];
+                $scope.queries.splice(i, 1);
+                break;
+              }
+            }
             $scope.queryTypes = Object.keys(queryTypes);
             $scope.queryTypes.sort(function (left, right) {
               return queryTypes[right] - queryTypes[left];

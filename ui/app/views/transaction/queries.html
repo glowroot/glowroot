@@ -128,6 +128,24 @@
           {{query.rowsPerExecution | gtCount}}
         </td>
       </tr>
+      <tr ng-if="limitExceededBucket">
+        <th scope="row" class="gt-query-text-column"
+            style="font-weight: normal;">
+          {{limitExceededBucket.truncatedQueryText}}
+        </th>
+        <td class="gt-query-total-column">
+          {{limitExceededBucket.totalDurationNanos / 1000000 | gtMillis}}
+        </td>
+        <td class="gt-query-count-column">
+          {{limitExceededBucket.executionCount | number}}
+        </td>
+        <td class="gt-query-other-column">
+          {{limitExceededBucket.timePerExecution | gtMillis}}
+        </td>
+        <td class="gt-query-other-column">
+          {{limitExceededBucket.rowsPerExecution | gtCount}}
+        </td>
+      </tr>
       </tbody>
       <!-- TODO apply scope="row" appropriately for small screens -->
       <tbody ng-if="smallScreen()">
@@ -152,6 +170,28 @@
         </td>
         <td class="gt-query-other-column border-top-0 pt-0">
           {{query.rowsPerExecution | gtCount}}
+        </td>
+      </tr>
+      <tr ng-if="limitExceededBucket">
+        <td class="gt-query-text-column"
+            colspan="5"
+            style="padding-bottom: 4px;">
+          {{limitExceededBucket.text}}
+        </td>
+      </tr>
+      <tr ng-if="limitExceededBucket">
+        <td class="border-top-0 pt-0"></td>
+        <td class="gt-query-total-column border-top-0 pt-0">
+          {{limitExceededBucket.totalDurationNanos / 1000000 | gtMillis}}
+        </td>
+        <td class="gt-query-count-column border-top-0 pt-0">
+          {{limitExceededBucket.executionCount}}
+        </td>
+        <td class="gt-query-other-column border-top-0 pt-0">
+          {{limitExceededBucket.timePerExecution | gtMillis}}
+        </td>
+        <td class="gt-query-other-column border-top-0 pt-0">
+          {{limitExceededBucket.rowsPerExecution | gtCount}}
         </td>
       </tr>
       </tbody>
