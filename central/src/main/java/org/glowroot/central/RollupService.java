@@ -30,6 +30,7 @@ import org.glowroot.central.repo.ActiveAgentDao;
 import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.SyntheticResultDao;
+import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
 
@@ -66,6 +67,7 @@ class RollupService implements Runnable {
 
     @Override
     public void run() {
+        Session.setInRollupThread(true);
         while (!closed) {
             try {
                 MILLISECONDS.sleep(millisUntilNextRollup(clock.currentTimeMillis()));

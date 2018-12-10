@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
 
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -152,17 +151,17 @@ public class MoreFutures {
 
     private static <V> ListenableFuture<?> transformAsync(ListenableFuture<V> future,
             ExecutorService asyncExecutor, AsyncFunction<V, /*@Nullable*/ Object> function) {
-        Semaphore perThreadSemaphore = Session.getPerThreadSemaphore();
+        boolean inRollupThread = Session.isInRollupThread();
         return Futures.transformAsync(future,
                 new AsyncFunction<V, /*@Nullable*/ Object>() {
                     @Override
                     public ListenableFuture</*@Nullable*/ Object> apply(V input) throws Exception {
-                        Semaphore priorPerThreadSemaphore = Session.getPerThreadSemaphore();
-                        Session.setPerThreadSemaphore(perThreadSemaphore);
+                        boolean priorInRollupThread = Session.isInRollupThread();
+                        Session.setInRollupThread(inRollupThread);
                         try {
                             return function.apply(input);
                         } finally {
-                            Session.setPerThreadSemaphore(priorPerThreadSemaphore);
+                            Session.setInRollupThread(priorInRollupThread);
                         }
                     }
                 },

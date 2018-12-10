@@ -53,20 +53,22 @@ public class Session {
 
     private static final Logger logger = LoggerFactory.getLogger(Session.class);
 
-    // limit concurrent async queries per thread (mainly so the rollup thread doesn't hog them all)
     @SuppressWarnings("nullness:type.argument.type.incompatible")
-    private static final ThreadLocal<Semaphore> perThreadSemaphores = new ThreadLocal<Semaphore>() {
+    private static final ThreadLocal<Boolean> inRollupThread = new ThreadLocal<Boolean>() {
         @Override
-        protected Semaphore initialValue() {
-            return new Semaphore(512);
+        protected Boolean initialValue() {
+            return false;
         }
     };
 
-    // limit concurrent async queries overall to avoid BusyPoolException
-    // separate read/write limits in order to give some preference to UI requests which are primarly
-    // reads, compared to the bulk of the concurrent queries which are writes
-    private final Semaphore overallReadSemaphore;
-    private final Semaphore overallWriteSemaphore;
+    // limit concurrent queries to avoid BusyPoolException
+    // separate read/write limits in order to give some preference to UI requests which are
+    // primarily reads, compared to the bulk of the concurrent queries which are writes
+    // separate rollup limit in order to prevent rollup from hogging too many, and also to prevent
+    // rollup from not getting enough
+    private final Semaphore readSemaphore;
+    private final Semaphore writeSemaphore;
+    private final Semaphore rollupSemaphore;
 
     private final com.datastax.driver.core.Session wrappedSession;
     private final String keyspaceName;
@@ -83,8 +85,9 @@ public class Session {
         this.keyspaceName = keyspaceName;
         this.writeConsistencyLevel = writeConsistencyLevel;
 
-        overallReadSemaphore = new Semaphore(maxConcurrentQueries / 2);
-        overallWriteSemaphore = new Semaphore(maxConcurrentQueries / 2);
+        readSemaphore = new Semaphore(maxConcurrentQueries / 4);
+        writeSemaphore = new Semaphore(maxConcurrentQueries / 2);
+        rollupSemaphore = new Semaphore(maxConcurrentQueries / 4);
 
         cassandraWriteMetrics = new CassandraWriteMetrics(wrappedSession, keyspaceName);
 
@@ -326,11 +329,11 @@ public class Session {
     }
 
     public void updateSchemaWithRetry(String query) throws InterruptedException {
-        overallWriteSemaphore.acquire();
+        writeSemaphore.acquire();
         try {
             updateSchemaWithRetry(wrappedSession, query);
         } finally {
-            overallWriteSemaphore.release();
+            writeSemaphore.release();
         }
     }
 
@@ -346,35 +349,40 @@ public class Session {
         updateSchemaWithRetry(createTableQuery);
     }
 
-    public static Semaphore getPerThreadSemaphore() {
-        return perThreadSemaphores.get();
+    public static boolean isInRollupThread() {
+        return inRollupThread.get();
     }
 
-    public static void setPerThreadSemaphore(Semaphore semaphore) {
-        perThreadSemaphores.set(semaphore);
+    public static void setInRollupThread(boolean value) {
+        inRollupThread.set(value);
     }
 
     private ListenableFuture<ResultSet> throttleRead(DoUnderThrottle doUnderThrottle)
             throws Exception {
-        return throttle(doUnderThrottle, overallReadSemaphore);
+        if (inRollupThread.get()) {
+            return throttle(doUnderThrottle, rollupSemaphore);
+        } else {
+            return throttle(doUnderThrottle, readSemaphore);
+        }
     }
 
     private ListenableFuture<ResultSet> throttleWrite(DoUnderThrottle doUnderThrottle)
             throws Exception {
-        return throttle(doUnderThrottle, overallWriteSemaphore);
+        if (inRollupThread.get()) {
+            return throttle(doUnderThrottle, rollupSemaphore);
+        } else {
+            return throttle(doUnderThrottle, writeSemaphore);
+        }
     }
 
     private static ListenableFuture<ResultSet> throttle(DoUnderThrottle doUnderThrottle,
             Semaphore overallSemaphore) throws Exception {
-        Semaphore perThreadSemaphore = perThreadSemaphores.get();
-        perThreadSemaphore.acquire();
         overallSemaphore.acquire();
         SettableFuture<ResultSet> outerFuture = SettableFuture.create();
         ResultSetFuture innerFuture;
         try {
             innerFuture = doUnderThrottle.execute();
         } catch (Throwable t) {
-            perThreadSemaphore.release();
             overallSemaphore.release();
             Throwables.propagateIfPossible(t, Exception.class);
             throw new Exception(t);
@@ -382,13 +390,11 @@ public class Session {
         Futures.addCallback(innerFuture, new FutureCallback<ResultSet>() {
             @Override
             public void onSuccess(ResultSet result) {
-                perThreadSemaphore.release();
                 overallSemaphore.release();
                 outerFuture.set(result);
             }
             @Override
             public void onFailure(Throwable t) {
-                perThreadSemaphore.release();
                 overallSemaphore.release();
                 outerFuture.setException(t);
             }
