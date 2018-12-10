@@ -8,14 +8,14 @@ before_install:
   - sh -e /etc/init.d/xvfb start
     # NewRatio is to leave as much memory as possible to old gen
   - echo "MAVEN_OPTS=\"-Xmx768m -XX:NewRatio=20\"" > ~/.mavenrc
-  - build/travis-ci/start-sauce-connect.sh
 install: true
 script:
     # travis ci provides a default settings xml that has lots of unnecessary repositories which slows build down
   - rm ~/.m2/settings.xml
   - build/travis-ci/build.sh $TARGET
 after_script:
-  - build/travis-ci/stop-sauce-connect.sh
+  # stop sauce connect if it has been started
+  - if [ -f sauce-connect.pid ]; then build/travis-ci/stop-sauce-connect.sh; fi
 cache:
   directories:
   - $HOME/.m2

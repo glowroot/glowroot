@@ -25,6 +25,17 @@ then
   cassandra_java_home_opt=-Dcassandra.java.home=/usr/lib/jvm/java-8-openjdk-amd64
 fi
 
+# see https://github.com/travis-ci/travis-build/blob/master/lib/travis/build/bash/travis_start_sauce_connect.bash
+start_sauce_connect() {
+  curl https://saucelabs.com/downloads/sc-4.5.2-linux.tar.gz | tar -zx
+  sc-4.5.2-linux/bin/sc -i $TRAVIS_JOB_NUMBER -f sauce-connect.ready -d sauce-connect.pid -N &
+  SAUCE_CONNECT_PID=$!
+  while test ! -f sauce-connect.ready && ps -f $SAUCE_CONNECT_PID &> /dev/null; do
+    sleep .5
+  done
+  test -f sauce-connect.ready
+}
+
 test1_excluded_plugin_modules="!:glowroot-agent-cassandra-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-elasticsearch-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-hibernate-plugin"
@@ -406,6 +417,7 @@ case "$1" in
 
  "saucelabs1") if [[ $SAUCE_USERNAME && "$TRAVIS_PULL_REQUEST" == "false" ]]
                then
+                 start_sauce_connect
                  mvn clean install -DskipTests \
                                    -B
                  cd webdriver-tests
@@ -427,6 +439,7 @@ case "$1" in
 
  "saucelabs2") if [[ $SAUCE_USERNAME && "$TRAVIS_PULL_REQUEST" == "false" ]]
                then
+                 start_sauce_connect
                  mvn clean install -DskipTests \
                                    -B
                  cd webdriver-tests
@@ -448,6 +461,7 @@ case "$1" in
 
  "saucelabs3") if [[ $SAUCE_USERNAME && "$TRAVIS_PULL_REQUEST" == "false" ]]
                then
+                 start_sauce_connect
                  mvn clean install -DskipTests \
                                    -B
                  cd webdriver-tests
