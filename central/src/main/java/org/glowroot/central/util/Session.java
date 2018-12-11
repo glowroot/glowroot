@@ -15,10 +15,14 @@
  */
 package org.glowroot.central.util;
 
+import java.lang.management.ManagementFactory;
 import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
@@ -62,13 +66,14 @@ public class Session {
     };
 
     // limit concurrent queries to avoid BusyPoolException
-    // separate read/write limits in order to give some preference to UI requests which are
-    // primarily reads, compared to the bulk of the concurrent queries which are writes
-    // separate rollup limit in order to prevent rollup from hogging too many, and also to prevent
-    // rollup from not getting enough
-    private final Semaphore readSemaphore;
-    private final Semaphore writeSemaphore;
-    private final Semaphore rollupSemaphore;
+    // separate read/write query limits in order to give some preference to UI requests which are
+    // primarily read queries, compared to the bulk of the concurrent queries which are primarily
+    // write queries
+    // separate rollup query limit in order to prevent rollup from hogging too many, and also to
+    // prevent rollup from not getting enough
+    private final Semaphore readQuerySemaphore;
+    private final Semaphore writeQuerySemaphore;
+    private final Semaphore rollupQuerySemaphore;
 
     private final com.datastax.driver.core.Session wrappedSession;
     private final String keyspaceName;
@@ -80,20 +85,28 @@ public class Session {
 
     public Session(com.datastax.driver.core.Session wrappedSession, String keyspaceName,
             @Nullable ConsistencyLevel writeConsistencyLevel, int maxConcurrentQueries)
-            throws InterruptedException {
+            throws Exception {
         this.wrappedSession = wrappedSession;
         this.keyspaceName = keyspaceName;
         this.writeConsistencyLevel = writeConsistencyLevel;
 
-        readSemaphore = new Semaphore(maxConcurrentQueries / 4);
-        writeSemaphore = new Semaphore(maxConcurrentQueries / 2);
-        rollupSemaphore = new Semaphore(maxConcurrentQueries / 4);
+        readQuerySemaphore = new Semaphore(maxConcurrentQueries / 4);
+        writeQuerySemaphore = new Semaphore(maxConcurrentQueries / 2);
+        rollupQuerySemaphore = new Semaphore(maxConcurrentQueries / 4);
 
         cassandraWriteMetrics = new CassandraWriteMetrics(wrappedSession, keyspaceName);
 
         updateSchemaWithRetry(wrappedSession, "create keyspace if not exists " + keyspaceName
                 + " with replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
         wrappedSession.execute("use " + keyspaceName);
+
+        MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
+        platformMBeanServer.registerMBean(new SemaphoreStats(readQuerySemaphore),
+                ObjectName.getInstance("org.glowroot.central:type=ReadQuerySemaphore"));
+        platformMBeanServer.registerMBean(new SemaphoreStats(writeQuerySemaphore),
+                ObjectName.getInstance("org.glowroot.central:type=WriteQuerySemaphore"));
+        platformMBeanServer.registerMBean(new SemaphoreStats(rollupQuerySemaphore),
+                ObjectName.getInstance("org.glowroot.central:type=RollupQuerySemaphore"));
     }
 
     public CassandraWriteMetrics getCassandraWriteMetrics() {
@@ -243,7 +256,14 @@ public class Session {
         return wrappedSession.getCluster().getMetadata().getKeyspace(keyspaceName);
     }
 
-    public void close() throws InterruptedException {
+    public void close() throws Exception {
+        MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
+        platformMBeanServer.unregisterMBean(
+                ObjectName.getInstance("org.glowroot.central:type=ReadQuerySemaphore"));
+        platformMBeanServer.unregisterMBean(
+                ObjectName.getInstance("org.glowroot.central:type=WriteQuerySemaphore"));
+        platformMBeanServer.unregisterMBean(
+                ObjectName.getInstance("org.glowroot.central:type=RollupQuerySemaphore"));
         wrappedSession.close();
         cassandraWriteMetrics.close();
     }
@@ -329,11 +349,11 @@ public class Session {
     }
 
     public void updateSchemaWithRetry(String query) throws InterruptedException {
-        writeSemaphore.acquire();
+        writeQuerySemaphore.acquire();
         try {
             updateSchemaWithRetry(wrappedSession, query);
         } finally {
-            writeSemaphore.release();
+            writeQuerySemaphore.release();
         }
     }
 
@@ -360,18 +380,18 @@ public class Session {
     private ListenableFuture<ResultSet> throttleRead(DoUnderThrottle doUnderThrottle)
             throws Exception {
         if (inRollupThread.get()) {
-            return throttle(doUnderThrottle, rollupSemaphore);
+            return throttle(doUnderThrottle, rollupQuerySemaphore);
         } else {
-            return throttle(doUnderThrottle, readSemaphore);
+            return throttle(doUnderThrottle, readQuerySemaphore);
         }
     }
 
     private ListenableFuture<ResultSet> throttleWrite(DoUnderThrottle doUnderThrottle)
             throws Exception {
         if (inRollupThread.get()) {
-            return throttle(doUnderThrottle, rollupSemaphore);
+            return throttle(doUnderThrottle, rollupQuerySemaphore);
         } else {
-            return throttle(doUnderThrottle, writeSemaphore);
+            return throttle(doUnderThrottle, writeQuerySemaphore);
         }
     }
 
@@ -473,5 +493,24 @@ public class Session {
 
     private interface DoUnderThrottle {
         ResultSetFuture execute();
+    }
+
+    private static class SemaphoreStats implements SemaphoreStatsMXBean {
+
+        private final Semaphore semaphore;
+
+        private SemaphoreStats(Semaphore semaphore) {
+            this.semaphore = semaphore;
+        }
+
+        @Override
+        public int getAvailablePermits() {
+            return semaphore.availablePermits();
+        }
+
+        @Override
+        public int getQueueLength() {
+            return semaphore.getQueueLength();
+        }
     }
 }
