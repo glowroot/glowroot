@@ -542,11 +542,15 @@ public class CentralModule {
             }
             builder.cassandraSymmetricEncryptionKey(cassandraSymmetricEncryptionKey);
         }
-        String cassandraPoolMaxRequestsPerConnection =
-                properties.get("glowroot.cassandra.pool.maxRequestsPerConnection");
-        if (!Strings.isNullOrEmpty(cassandraPoolMaxRequestsPerConnection)) {
-            builder.cassandraPoolMaxRequestsPerConnection(
-                    Integer.parseInt(cassandraPoolMaxRequestsPerConnection));
+        String cassandraMaxConcurrentQueries =
+                properties.get("glowroot.cassandra.maxConcurrentQueries");
+        if (Strings.isNullOrEmpty(cassandraMaxConcurrentQueries)) {
+            // support old setting prior to 0.12.4
+            cassandraMaxConcurrentQueries =
+                    properties.get("glowroot.cassandra.pool.maxRequestsPerConnection");
+        }
+        if (!Strings.isNullOrEmpty(cassandraMaxConcurrentQueries)) {
+            builder.cassandraMaxConcurrentQueries(Integer.parseInt(cassandraMaxConcurrentQueries));
         }
         String cassandraPoolTimeoutMillis = properties.get("glowroot.cassandra.pool.timeoutMillis");
         if (!Strings.isNullOrEmpty(cassandraPoolTimeoutMillis)) {
@@ -731,9 +735,10 @@ public class CentralModule {
                             createCluster(centralConfig, defaultTimestampGenerator).connect(),
                             keyspace, writeConsistencyLevelOverride,
                             // max concurrent queries before throwing BusyPoolException is "max
-                            // requests per connection" + "max queue size" (which are both set to
-                            // the same value)
-                            centralConfig.cassandraPoolMaxRequestsPerConnection() * 3);
+                            // requests per connection" + "max queue size" (which are set to
+                            // cassandraMaxConcurrentQueries and cassandraMaxConcurrentQueries * 2
+                            // respectively)
+                            centralConfig.cassandraMaxConcurrentQueries() * 3);
                 }
                 String cassandraVersion = verifyCassandraVersion(session);
                 KeyspaceMetadata keyspaceMetadata =
@@ -790,14 +795,14 @@ public class CentralModule {
                         .setConsistencyLevel(centralConfig.cassandraReadConsistencyLevel()))
                 .withPoolingOptions(new PoolingOptions()
                         .setMaxRequestsPerConnection(HostDistance.LOCAL,
-                                centralConfig.cassandraPoolMaxRequestsPerConnection())
+                                centralConfig.cassandraMaxConcurrentQueries())
                         .setMaxRequestsPerConnection(HostDistance.REMOTE,
-                                centralConfig.cassandraPoolMaxRequestsPerConnection())
+                                centralConfig.cassandraMaxConcurrentQueries())
                         // using 2x "max requests per connection", so that thread-based
                         // throttling can allow up to 3x "max requests per connection", which is
-                        // split between read and write, where each can allow up to 1.5x "max
-                        // requests per connection" which will keep the pool saturated
-                        .setMaxQueueSize(centralConfig.cassandraPoolMaxRequestsPerConnection() * 2)
+                        // split 50% writes / 25% reads / 25% rollups, which will keep the pool
+                        // saturated with writes alone
+                        .setMaxQueueSize(centralConfig.cassandraMaxConcurrentQueries() * 2)
                         .setPoolTimeoutMillis(centralConfig.cassandraPoolTimeoutMillis()))
                 .withTimestampGenerator(defaultTimestampGenerator);
         String cassandraUsername = centralConfig.cassandraUsername();
@@ -917,7 +922,7 @@ public class CentralModule {
         }
 
         @Value.Default
-        int cassandraPoolMaxRequestsPerConnection() {
+        int cassandraMaxConcurrentQueries() {
             return 1024;
         }
 
