@@ -378,6 +378,9 @@ glowroot.controller('ConfigAlertCtrl', [
       if (!postData.pagerDutyNotification.pagerDutyIntegrationKey) {
         delete postData.pagerDutyNotification;
       }
+      if (!postData.slackNotification.slackWebhookId) {
+        delete postData.slackNotification;
+      }
       var url;
       if (version) {
         url = 'backend/config/alerts/update';

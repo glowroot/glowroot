@@ -349,8 +349,12 @@ public class AlertingService {
                 }
             }
             if (slackWebhookUrl == null) {
-                logger.warn("{} - alert config refers to non-existent webhook id: {}",
-                        agentRollupDisplay, slackNotification.getSlackWebhookId());
+                // need to check slackWebhookId because of bug in 0.12.2 and 0.12.3 that created
+                // empty slack notifications via the UI
+                if (slackNotification.getSlackWebhookId().isEmpty()) {
+                    logger.warn("{} - alert config refers to non-existent webhook id: {}",
+                            agentRollupDisplay, slackNotification.getSlackWebhookId());
+                }
             } else {
                 for (String slackChannel : slackNotification.getSlackChannelList()) {
                     sendSlackWithRetry(centralDisplay, agentRollupDisplay, slackWebhookUrl,
