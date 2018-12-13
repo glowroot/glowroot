@@ -15,7 +15,10 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.List;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.immutables.value.Value;
 
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.agent.api.Instrumentation.AlreadyInTransactionBehavior;
@@ -28,9 +31,19 @@ public interface SyntheticResultDao extends SyntheticResultRepository {
     void store(String agentRollupId, String syntheticMonitorId, String syntheticMonitorDisplay,
             long captureTime, long durationNanos, @Nullable String errorMessage) throws Exception;
 
+    List<SyntheticResultRollup0> readLastFromRollup0(String agentRollupId,
+            String syntheticMonitorId, int x) throws Exception;
+
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Rollup synthetic results",
             traceHeadline = "Rollup synthetic results: {{0}}", timer = "rollup synthetic results",
             alreadyInTransactionBehavior = AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION)
     void rollup(String agentRollupId) throws Exception;
+
+    @Value.Immutable
+    public interface SyntheticResultRollup0 {
+        long captureTime();
+        double totalDurationNanos();
+        boolean error();
+    }
 }

@@ -478,10 +478,18 @@ class AlertConfigJsonService {
 
         private static SyntheticMonitorConditionDto toDto(
                 AlertConfig.AlertCondition.SyntheticMonitorCondition condition) {
-            return ImmutableSyntheticMonitorConditionDto.builder()
-                    .syntheticMonitorId(condition.getSyntheticMonitorId())
-                    .thresholdMillis(condition.getThresholdMillis())
-                    .build();
+            ImmutableSyntheticMonitorConditionDto.Builder builder =
+                    ImmutableSyntheticMonitorConditionDto.builder()
+                            .syntheticMonitorId(condition.getSyntheticMonitorId())
+                            .thresholdMillis(condition.getThresholdMillis());
+            int consecutiveCount = condition.getConsecutiveCount();
+            if (consecutiveCount == 0) {
+                // this is needed to support agent configs that were saved prior to 0.12.4
+                builder.consecutiveCount(1);
+            } else {
+                builder.consecutiveCount(consecutiveCount);
+            }
+            return builder.build();
         }
 
         private static HeartbeatConditionDto toDto(
@@ -518,6 +526,7 @@ class AlertConfigJsonService {
             return AlertConfig.AlertCondition.SyntheticMonitorCondition.newBuilder()
                     .setSyntheticMonitorId(condition.syntheticMonitorId())
                     .setThresholdMillis(condition.thresholdMillis())
+                    .setConsecutiveCount(condition.consecutiveCount())
                     .build();
         }
 
@@ -556,6 +565,7 @@ class AlertConfigJsonService {
         public interface SyntheticMonitorConditionDto extends AlertConditionDto {
             String syntheticMonitorId();
             int thresholdMillis();
+            int consecutiveCount();
         }
 
         @Value.Immutable

@@ -432,6 +432,7 @@ glowroot.run([
       percentage: new RegExp('^' + percentileRegexp + '$'),
       percentageList: new RegExp('^(' + percentileRegexp + ' *, *)*' + percentileRegexp + '$'),
       integer: /^(0|[1-9][0-9]*)$/,
+      positiveInteger: /^[1-9][0-9]*$/,
       // tolerant of missing whole (.2) and missing decimal (2.)
       double: /^(0|[1-9][0-9]*)?(\.[0-9]*)?$/
     };

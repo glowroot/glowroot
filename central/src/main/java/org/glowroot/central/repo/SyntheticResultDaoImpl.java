@@ -72,6 +72,8 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     private final List<PreparedStatement> readNeedsRollup;
     private final List<PreparedStatement> deleteNeedsRollup;
 
+    private final PreparedStatement readLastFromRollup0;
+
     SyntheticResultDaoImpl(Session session, ConfigRepositoryImpl configRepository,
             ExecutorService asyncExecutor, Clock clock) throws Exception {
         this.session = session;
@@ -141,6 +143,10 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         this.insertNeedsRollup = insertNeedsRollup;
         this.readNeedsRollup = readNeedsRollup;
         this.deleteNeedsRollup = deleteNeedsRollup;
+
+        readLastFromRollup0 = session.prepare("select capture_time, total_duration_nanos,"
+                + " error_intervals from synthetic_result_rollup_0 where agent_rollup_id = ? and"
+                + " synthetic_config_id = ? order by capture_time desc limit ?");
     }
 
     // synthetic result records are not rolled up to their parent, but are stored directly for
@@ -242,6 +248,30 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
                     .totalDurationNanos(totalDurationNanos)
                     .executionCount(executionCount)
                     .addAllErrorIntervals(errorIntervals)
+                    .build());
+        }
+        return syntheticResults;
+    }
+
+    @Override
+    public List<SyntheticResultRollup0> readLastFromRollup0(String agentRollupId,
+            String syntheticMonitorId, int x) throws Exception {
+        BoundStatement boundStatement = readLastFromRollup0.bind();
+        int i = 0;
+        boundStatement.setString(i++, agentRollupId);
+        boundStatement.setString(i++, syntheticMonitorId);
+        boundStatement.setInt(i++, x);
+        ResultSet results = session.read(boundStatement);
+        List<SyntheticResultRollup0> syntheticResults = new ArrayList<>();
+        for (Row row : results) {
+            i = 0;
+            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            double totalDurationNanos = row.getDouble(i++);
+            ByteBuffer errorIntervalsBytes = row.getBytes(i++);
+            syntheticResults.add(ImmutableSyntheticResultRollup0.builder()
+                    .captureTime(captureTime)
+                    .totalDurationNanos(totalDurationNanos)
+                    .error(errorIntervalsBytes != null)
                     .build());
         }
         return syntheticResults;

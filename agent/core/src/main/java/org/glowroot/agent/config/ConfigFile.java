@@ -177,6 +177,17 @@ class ConfigFile {
                 // upgrade from 0.9.21 to 0.9.22
                 alertObjectNode.put("severity", "critical");
             }
+            if (alertObjectNode.has("condition")) {
+                JsonNode conditionNode = alertObjectNode.get("condition");
+                if (conditionNode instanceof ObjectNode) {
+                    ObjectNode conditionObjectNode = (ObjectNode) conditionNode;
+                    if (conditionObjectNode.path("conditionType").asText().equals(
+                            "synthetic-monitor") && !conditionObjectNode.has("consecutiveCount")) {
+                        // upgrade from 0.12.3 to 0.12.4
+                        conditionObjectNode.put("consecutiveCount", 1);
+                    }
+                }
+            }
         }
     }
 

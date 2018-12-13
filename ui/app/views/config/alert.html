@@ -285,7 +285,7 @@
             </div>
           </div>
           <div gt-form-group
-               gt-label="Threshold"
+               gt-label="Duration threshold"
                gt-model="config.condition.thresholdMillis"
                gt-number="true"
                gt-pattern="pattern.integer"
@@ -294,7 +294,20 @@
                gt-width="7em"
                gt-addon="milliseconds">
             <div class="help-block">
-              If the synthetic monitor time is greater than or equal to this threshold, then an alert will be triggered.
+              If the synthetic monitor duration is greater than or equal to this, then it is considered a failure.
+            </div>
+          </div>
+          <div gt-form-group
+               gt-label="Consecutive count"
+               gt-model="config.condition.consecutiveCount"
+               gt-number="true"
+               gt-pattern="pattern.positiveInteger"
+               gt-required="loaded"
+               gt-disabled="!agentRollup.permissions.config.edit.alerts"
+               gt-width="7em">
+            <div class="help-block">
+              If the synthetic monitor fails this number of times in a row (by either exceeding the duration threshold
+              or returning an error), then the alert will be triggered.
             </div>
           </div>
         </div>

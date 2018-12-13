@@ -16,6 +16,7 @@
 package org.glowroot.central;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,15 +24,14 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -71,6 +71,7 @@ import org.glowroot.central.repo.ActiveAgentDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.IncidentDao;
 import org.glowroot.central.repo.SyntheticResultDao;
+import org.glowroot.central.repo.SyntheticResultDao.SyntheticResultRollup0;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Styles;
@@ -333,56 +334,110 @@ class SyntheticMonitorService implements Runnable {
                 () -> runJava(sb.toString()));
     }
 
-    private CompletableFuture<?> runJava(String javaSource) {
-        return submitAsync(new Callable</*@Nullable*/ Void>() {
-            @Override
-            public @Nullable Void call() throws Exception {
-                Class<?> syntheticUserTestClass = Compilations.compile(javaSource);
-                // validation for default constructor and test method occurs on save
-                Constructor<?> defaultConstructor = syntheticUserTestClass.getConstructor();
-                Method method = syntheticUserTestClass.getMethod("test", WebDriver.class);
-                Settings.Builder settings = Settings.builder()
-                        .requestHeaders(REQUEST_HEADERS)
-                        .userAgent(userAgent);
-                HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig();
-                if (!httpProxyConfig.host().isEmpty()) {
-                    int proxyPort = MoreObjects.firstNonNull(httpProxyConfig.port(), 80);
-                    settings.proxy(new ProxyConfig(ProxyConfig.Type.HTTP, httpProxyConfig.host(),
-                            proxyPort, httpProxyConfig.username(),
-                            httpProxyConfig.encryptedPassword()));
-                }
-                JBrowserDriver driver = new JBrowserDriver(settings.build());
-                try {
-                    method.invoke(defaultConstructor.newInstance(), driver);
-                } finally {
-                    driver.quit();
-                }
-                return null;
-            }
-        }, syntheticUserTestExecutor);
-    }
-
-    private CompletableFuture<?> runPing(String url) {
-        CompletableFuture</*@Nullable*/ Void> future = new CompletableFuture<>();
+    private FutureWithStartTick runJava(String javaSource) throws Exception {
+        Class<?> syntheticUserTestClass = Compilations.compile(javaSource);
+        // validation for default constructor and test method occurs on save
+        Constructor<?> defaultConstructor = syntheticUserTestClass.getConstructor();
+        Method method = syntheticUserTestClass.getMethod("test", WebDriver.class);
+        Settings.Builder settings = Settings.builder()
+                .requestHeaders(REQUEST_HEADERS)
+                .userAgent(userAgent);
+        HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig();
+        if (!httpProxyConfig.host().isEmpty()) {
+            int proxyPort = MoreObjects.firstNonNull(httpProxyConfig.port(), 80);
+            settings.proxy(new ProxyConfig(ProxyConfig.Type.HTTP, httpProxyConfig.host(),
+                    proxyPort, httpProxyConfig.username(),
+                    httpProxyConfig.encryptedPassword()));
+        }
+        JBrowserDriver driver = new JBrowserDriver(settings.build());
+        long startTick = ticker.read();
+        FutureWithStartTick future = new FutureWithStartTick(startTick);
         syntheticUserTestExecutor.execute(() -> {
             try {
-                HttpGet httpGet = new HttpGet(url);
-                httpGet.setHeader("Glowroot-Transaction-Type", "Synthetic");
-                RequestConfig.Builder config = RequestConfig.custom()
-                        // wait an extra second to make sure no edge case where
-                        // SocketTimeoutException occurs with elapsed time < PING_TIMEOUT_MILLIS
-                        .setSocketTimeout(PING_TIMEOUT_MILLIS + 1000);
-                HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig();
-                if (!httpProxyConfig.host().isEmpty()) {
-                    int proxyPort = MoreObjects.firstNonNull(httpProxyConfig.port(), 80);
-                    config.setProxy(new HttpHost(httpProxyConfig.host(), proxyPort));
-                }
-                httpGet.setConfig(config.build());
+                future.complete(runJava(method, defaultConstructor, driver, startTick));
+            } catch (Throwable t) {
+                // unexpected exception
+                future.completeExceptionally(t);
+            }
+        });
+        return future;
+    }
+
+    public SyntheticRunResult runJava(Method method, Constructor<?> defaultConstructor,
+            JBrowserDriver driver, long startTick) throws Exception {
+        try {
+            return runJavaInternal(method, defaultConstructor, driver, startTick);
+        } catch (InterruptedException e) {
+            // probably shutdown requested (see close method above)
+            logger.debug(e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            // unexpected exception
+            logger.error(e.getMessage(), e);
+            throw e;
+        } catch (Throwable t) {
+            // unexpected exception
+            logger.error(t.getMessage(), t);
+            throw new Exception(t);
+        }
+    }
+
+    private SyntheticRunResult runJavaInternal(Method method, Constructor<?> defaultConstructor,
+            JBrowserDriver driver, long startTick) throws Exception {
+        long captureTime;
+        long durationNanos;
+        try {
+            method.invoke(defaultConstructor.newInstance(), driver);
+            // capture time and duration before calling driver.quit()
+            captureTime = clock.currentTimeMillis();
+            durationNanos = ticker.read() - startTick;
+        } catch (InvocationTargetException e) {
+            logger.debug(e.getMessage(), e);
+            Throwable throwable = e.getTargetException();
+            if (throwable instanceof InterruptedException) {
+                // probably shutdown requested (see close method above)
+                throw (InterruptedException) throwable;
+            }
+            return ImmutableSyntheticRunResult.builder()
+                    .captureTime(clock.currentTimeMillis())
+                    .durationNanos(ticker.read() - startTick)
+                    .throwable(throwable)
+                    .build();
+        } finally {
+            driver.quit();
+        }
+        return ImmutableSyntheticRunResult.builder()
+                .captureTime(captureTime)
+                .durationNanos(durationNanos)
+                .build();
+    }
+
+    private FutureWithStartTick runPing(String url) throws Exception {
+        HttpGet httpGet = new HttpGet(url);
+        httpGet.setHeader("Glowroot-Transaction-Type", "Synthetic");
+        RequestConfig.Builder config = RequestConfig.custom()
+                // wait an extra second to make sure no edge case where
+                // SocketTimeoutException occurs with elapsed time < PING_TIMEOUT_MILLIS
+                .setSocketTimeout(PING_TIMEOUT_MILLIS + 1000);
+        HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig();
+        if (!httpProxyConfig.host().isEmpty()) {
+            int proxyPort = MoreObjects.firstNonNull(httpProxyConfig.port(), 80);
+            config.setProxy(new HttpHost(httpProxyConfig.host(), proxyPort));
+        }
+        httpGet.setConfig(config.build());
+        long startTick = ticker.read();
+        FutureWithStartTick future = new FutureWithStartTick(startTick);
+        syntheticUserTestExecutor.execute(() -> {
+            try {
                 httpClient.execute(httpGet, getHttpClientContext(),
                         new CompletingFutureCallback(future));
             } catch (Throwable t) {
                 logger.debug(t.getMessage(), t);
-                future.completeExceptionally(t);
+                future.complete(ImmutableSyntheticRunResult.builder()
+                        .captureTime(clock.currentTimeMillis())
+                        .durationNanos(ticker.read() - startTick)
+                        .throwable(t)
+                        .build());
             }
         });
         return future;
@@ -390,31 +445,89 @@ class SyntheticMonitorService implements Runnable {
 
     private void runSyntheticMonitor(AgentRollup agentRollup,
             SyntheticMonitorConfig syntheticMonitorConfig, List<AlertConfig> alertConfigs,
-            Callable<CompletableFuture<?>> callable) throws Exception {
+            Callable<FutureWithStartTick> callable) throws Exception {
         SyntheticMonitorUniqueKey uniqueKey = ImmutableSyntheticMonitorUniqueKey
                 .of(agentRollup.id(), syntheticMonitorConfig.getId());
         if (!activeSyntheticMonitors.add(uniqueKey)) {
             return;
         }
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        long startTime = ticker.read();
-        CompletableFuture<?> future = callable.call();
-        future.whenComplete((@Nullable Object v, @Nullable Throwable t) -> {
-            activeSyntheticMonitors.remove(uniqueKey);
-            long durationNanos = ticker.read() - startTime;
-            long captureTime = clock.currentTimeMillis();
-            if (t instanceof InterruptedException) {
-                // probably shutdown requested (see close method above)
-                logger.debug(t.getMessage(), t);
-                return;
+        FutureWithStartTick future = callable.call();
+        // important that uniqueKey is always removed on completion even on unexpected errors
+        future.whenComplete((v, t) -> activeSyntheticMonitors.remove(uniqueKey));
+        OnRunComplete onRunComplete = new OnRunComplete(agentRollup, syntheticMonitorConfig);
+        if (alertConfigs.isEmpty()) {
+            future.thenAccept(onRunComplete);
+            return;
+        }
+        int maxAlertThresholdMillis = 0;
+        for (AlertConfig alertConfig : alertConfigs) {
+            maxAlertThresholdMillis = Math.max(maxAlertThresholdMillis,
+                    alertConfig.getCondition().getSyntheticMonitorCondition().getThresholdMillis());
+        }
+        long captureTime;
+        long durationNanos;
+        boolean success;
+        String errorMessage;
+        try {
+            // wait an extra second to make sure no edge case where TimeoutException occurs with
+            // stopwatch.elapsed(MILLISECONDS) < maxAlertThresholdMillis
+            SyntheticRunResult result = future.get(maxAlertThresholdMillis + 1000L, MILLISECONDS);
+            captureTime = result.captureTime();
+            durationNanos = result.durationNanos();
+            Throwable throwable = result.throwable();
+            if (throwable == null) {
+                success = true;
+                errorMessage = null;
+            } else {
+                success = false;
+                errorMessage = getRootCause(throwable).getMessage();
             }
+        } catch (TimeoutException e) {
+            logger.debug(e.getMessage(), e);
+            captureTime = clock.currentTimeMillis();
+            durationNanos = 0; // durationNanos is only used below when success is true
+            success = false;
+            errorMessage = null;
+        }
+        if (success) {
+            for (AlertConfig alertConfig : alertConfigs) {
+                AlertCondition alertCondition = alertConfig.getCondition();
+                SyntheticMonitorCondition condition = alertCondition.getSyntheticMonitorCondition();
+                boolean currentlyTriggered =
+                        durationNanos >= MILLISECONDS.toNanos(condition.getThresholdMillis());
+                sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfig,
+                        condition, captureTime, currentlyTriggered, null);
+            }
+        } else {
+            sendAlertOnErrorIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfigs,
+                    errorMessage, captureTime);
+        }
+        // need to run at end to ensure new synthetic response doesn't get stored before consecutive
+        // count is checked in sendAlertOnErrorIfStatusChanged()
+        future.thenAccept(onRunComplete);
+    }
+
+    private class OnRunComplete implements Consumer<SyntheticRunResult> {
+
+        private final AgentRollup agentRollup;
+        private final SyntheticMonitorConfig syntheticMonitorConfig;
+
+        private OnRunComplete(AgentRollup agentRollup,
+                SyntheticMonitorConfig syntheticMonitorConfig) {
+            this.agentRollup = agentRollup;
+            this.syntheticMonitorConfig = syntheticMonitorConfig;
+        }
+
+        @Override
+        public void accept(SyntheticRunResult syntheticRunResult) {
             String errorMessage = null;
+            long durationNanos = syntheticRunResult.durationNanos();
+            Throwable t = syntheticRunResult.throwable();
             if (syntheticMonitorConfig.getKind() == SyntheticMonitorKind.PING
                     && durationNanos >= PING_TIMEOUT_NANOS) {
                 durationNanos = PING_TIMEOUT_NANOS;
                 errorMessage = "Timeout";
             } else if (t != null) {
-                logger.debug(t.getMessage(), t);
                 // using Throwable.toString() to include the exception class name
                 // because sometimes hard to know what message means without this context
                 // e.g. java.net.UnknownHostException: google.com
@@ -425,8 +538,8 @@ class SyntheticMonitorService implements Runnable {
             }
             try {
                 syntheticResponseDao.store(agentRollup.id(), syntheticMonitorConfig.getId(),
-                        MoreConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig), captureTime,
-                        durationNanos, errorMessage);
+                        MoreConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig),
+                        syntheticRunResult.captureTime(), durationNanos, errorMessage);
             } catch (InterruptedException e) {
                 // probably shutdown requested (see close method above)
                 logger.debug(e.getMessage(), e);
@@ -434,45 +547,6 @@ class SyntheticMonitorService implements Runnable {
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }
-        });
-        if (alertConfigs.isEmpty()) {
-            return;
-        }
-        int maxAlertThresholdMillis = 0;
-        for (AlertConfig alertConfig : alertConfigs) {
-            maxAlertThresholdMillis = Math.max(maxAlertThresholdMillis,
-                    alertConfig.getCondition().getSyntheticMonitorCondition().getThresholdMillis());
-        }
-        boolean success;
-        String errorMessage;
-        try {
-            // wait an extra second to make sure no edge case where TimeoutException occurs with
-            // stopwatch.elapsed(MILLISECONDS) < maxAlertThresholdMillis
-            future.get(maxAlertThresholdMillis + 1000L, MILLISECONDS);
-            success = true;
-            errorMessage = null;
-        } catch (TimeoutException e) {
-            logger.debug(e.getMessage(), e);
-            success = false;
-            errorMessage = null;
-        } catch (ExecutionException e) {
-            logger.debug(e.getMessage(), e);
-            success = false;
-            errorMessage = getRootCause(e).getMessage();
-        }
-        long captureTime = clock.currentTimeMillis();
-        if (success) {
-            for (AlertConfig alertConfig : alertConfigs) {
-                AlertCondition alertCondition = alertConfig.getCondition();
-                SyntheticMonitorCondition condition = alertCondition.getSyntheticMonitorCondition();
-                boolean currentlyTriggered =
-                        stopwatch.elapsed(MILLISECONDS) >= condition.getThresholdMillis();
-                sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfig,
-                        condition, captureTime, currentlyTriggered, null);
-            }
-        } else {
-            sendAlertOnErrorIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfigs,
-                    errorMessage, captureTime);
         }
     }
 
@@ -498,13 +572,35 @@ class SyntheticMonitorService implements Runnable {
             incidentDao.resolveIncident(openIncident, endTime);
             sendAlert(agentRollup.id(), agentRollup.display(), syntheticMonitorConfig,
                     alertConfig, condition, endTime, true, null);
-        } else if (openIncident == null && currentlyTriggered) {
+        } else if (openIncident == null && currentlyTriggered && consecutiveCountHit(agentRollup,
+                syntheticMonitorConfig, condition)) {
             // the start time for the incident is the end time of the interval evaluated above
             incidentDao.insertOpenIncident(agentRollup.id(), alertCondition,
                     alertConfig.getSeverity(), alertConfig.getNotification(), endTime);
             sendAlert(agentRollup.id(), agentRollup.display(), syntheticMonitorConfig,
                     alertConfig, condition, endTime, false, errorMessage);
         }
+    }
+
+    private boolean consecutiveCountHit(AgentRollup agentRollup,
+            SyntheticMonitorConfig syntheticMonitorConfig, SyntheticMonitorCondition condition)
+            throws Exception {
+        int consecutiveCount = condition.getConsecutiveCount();
+        if (consecutiveCount == 1) {
+            return true;
+        }
+        List<SyntheticResultRollup0> syntheticResults = syntheticResponseDao.readLastFromRollup0(
+                agentRollup.id(), syntheticMonitorConfig.getId(), consecutiveCount - 1);
+        if (syntheticResults.size() < consecutiveCount - 1) {
+            return false;
+        }
+        for (SyntheticResultRollup0 syntheticResult : syntheticResults) {
+            if (!syntheticResult.error() && syntheticResult.totalDurationNanos() < MILLISECONDS
+                    .toNanos(condition.getThresholdMillis())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void sendAlert(String agentRollupId, String agentRollupDisplay,
@@ -566,19 +662,6 @@ class SyntheticMonitorService implements Runnable {
         agentRollupConsumer.accept(agentRollup);
     }
 
-    private static <V> CompletableFuture<V> submitAsync(Callable<V> callable,
-            ExecutorService executor) {
-        CompletableFuture<V> future = new CompletableFuture<>();
-        executor.execute(() -> {
-            try {
-                future.complete(callable.call());
-            } catch (Throwable t) {
-                future.completeExceptionally(t);
-            }
-        });
-        return future;
-    }
-
     private static Throwable getRootCause(Throwable t) {
         Throwable cause = t.getCause();
         if (cause == null) {
@@ -600,33 +683,63 @@ class SyntheticMonitorService implements Runnable {
         String syntheticMonitorId();
     }
 
-    private static class CompletingFutureCallback implements FutureCallback<HttpResponse> {
+    private static class FutureWithStartTick extends CompletableFuture<SyntheticRunResult> {
 
-        private final CompletableFuture</*@Nullable*/ Void> future;
+        private final long startTick;
 
-        private CompletingFutureCallback(CompletableFuture</*@Nullable*/ Void> future) {
+        private FutureWithStartTick(long startTick) {
+            this.startTick = startTick;
+        }
+    }
+
+    @Value.Immutable
+    interface SyntheticRunResult {
+        long captureTime();
+        long durationNanos();
+        @Nullable
+        Throwable throwable();
+    }
+
+    private class CompletingFutureCallback implements FutureCallback<HttpResponse> {
+
+        private final FutureWithStartTick future;
+
+        private CompletingFutureCallback(FutureWithStartTick future) {
             this.future = future;
         }
 
         @Override
         public void completed(HttpResponse response) {
+            ImmutableSyntheticRunResult.Builder builder = ImmutableSyntheticRunResult.builder()
+                    .captureTime(clock.currentTimeMillis())
+                    .durationNanos(ticker.read() - future.startTick);
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode < 400) {
-                future.complete(null);
+                future.complete(builder.build());
             } else {
-                future.completeExceptionally(
-                        new RuntimeException("Unexpected response status code: " + statusCode));
+                future.complete(builder
+                        .throwable(new RuntimeException(
+                                "Unexpected response status code: " + statusCode))
+                        .build());
             }
         }
 
         @Override
         public void failed(Exception ex) {
-            future.completeExceptionally(ex);
+            future.complete(ImmutableSyntheticRunResult.builder()
+                    .captureTime(clock.currentTimeMillis())
+                    .durationNanos(ticker.read() - future.startTick)
+                    .throwable(ex)
+                    .build());
         }
 
         @Override
         public void cancelled() {
-            future.completeExceptionally(new RuntimeException("Unexpected cancellation"));
+            future.complete(ImmutableSyntheticRunResult.builder()
+                    .captureTime(clock.currentTimeMillis())
+                    .durationNanos(ticker.read() - future.startTick)
+                    .throwable(new RuntimeException("Unexpected cancellation"))
+                    .build());
         }
     }
 }

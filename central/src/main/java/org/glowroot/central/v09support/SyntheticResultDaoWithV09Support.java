@@ -95,6 +95,12 @@ public class SyntheticResultDaoWithV09Support implements SyntheticResultDao {
     }
 
     @Override
+    public List<SyntheticResultRollup0> readLastFromRollup0(String agentRollupId,
+            String syntheticMonitorId, int x) throws Exception {
+        return delegate.readLastFromRollup0(agentRollupId, syntheticMonitorId, x);
+    }
+
+    @Override
     public void rollup(String agentRollupId) throws Exception {
         delegate.rollup(agentRollupId);
         if (agentRollupIdsWithV09Data.contains(agentRollupId)
