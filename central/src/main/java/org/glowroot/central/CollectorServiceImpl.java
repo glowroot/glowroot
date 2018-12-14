@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -76,6 +77,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase {
@@ -191,7 +193,8 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                         .build());
             }
         }
-        throttleCollectAggregates(request.getAgentId(), false, request.getCaptureTime(),
+        throttleCollectAggregates(request.getAgentId(), false,
+                getFutureProofAggregateCaptureTime(request.getCaptureTime()),
                 sharedQueryTexts, request.getAggregatesByTypeList(), responseObserver);
     }
 
@@ -369,8 +372,9 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         }
         long maxCaptureTime = 0;
         try {
-            gaugeValueDao.store(postV09AgentId, request.getGaugeValueList());
-            for (GaugeValue gaugeValue : request.getGaugeValueList()) {
+            List<GaugeValue> gaugeValues = getFutureProofGaugeValues(request.getGaugeValueList());
+            gaugeValueDao.store(postV09AgentId, gaugeValues);
+            for (GaugeValue gaugeValue : gaugeValues) {
                 maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
             }
         } catch (Throwable t) {
@@ -426,7 +430,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             return;
         }
         try {
-            traceDao.store(postV09AgentId, trace);
+            traceDao.store(postV09AgentId, getFutureProofTrace(trace));
         } catch (Throwable t) {
             logger.error("{} - {}", getDisplayForLogging(postV09AgentId), t.getMessage(), t);
             responseObserver.onError(t);
@@ -434,6 +438,56 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         }
         responseObserver.onNext(EmptyMessage.getDefaultInstance());
         responseObserver.onCompleted();
+    }
+
+    private long getFutureProofAggregateCaptureTime(long captureTime) {
+        long currentTimeMillis = clock.currentTimeMillis();
+        if (tooFarInTheFuture(captureTime, currentTimeMillis)) {
+            // too far in the future just use current time
+            return (long) Math.floor(currentTimeMillis / 60000.0) * 60000;
+        } else {
+            return captureTime;
+        }
+    }
+
+    private List<GaugeValue> getFutureProofGaugeValues(List<GaugeValue> gaugeValues) {
+        List<GaugeValue> futureProofGaugeValues = new ArrayList<>(gaugeValues);
+        long currentTimeMillis = clock.currentTimeMillis();
+        for (ListIterator<GaugeValue> i = futureProofGaugeValues.listIterator(); i.hasNext();) {
+            GaugeValue gaugeValue = i.next();
+            if (tooFarInTheFuture(gaugeValue.getCaptureTime(), currentTimeMillis)) {
+                // too far in the future just use current time
+                i.set(gaugeValue.toBuilder()
+                        .setCaptureTime(currentTimeMillis)
+                        .build());
+            }
+        }
+        return futureProofGaugeValues;
+    }
+
+    private Trace getFutureProofTrace(Trace trace) {
+        long currentTimeMillis = clock.currentTimeMillis();
+        if (tooFarInTheFuture(trace.getHeader().getCaptureTime(), currentTimeMillis)) {
+            // too far in the future just use current time
+            return trace.toBuilder()
+                    .setHeader(trace.getHeader().toBuilder()
+                            .setCaptureTime(currentTimeMillis))
+                    .build();
+        } else {
+            return trace;
+        }
+    }
+
+    // far in the future capture times cause major problems for Cassandra TWCS since then every
+    // rollup of recent data must consider an (increasingly) old sstable and (worse) all of the
+    // sstables in between (because of possibility of tombstones in more recent sstables
+    // invalidating the data read from the old sstable)
+    //
+    // another problem with far in the future capture times is that the adjusted TTL (see
+    // Common.getAdjustedTTL()) will be really large, preventing that data from expiring along with
+    // its friends (probably also contributing to TWCS problems)
+    private boolean tooFarInTheFuture(long captureTime, long currentTimeMillis) {
+        return captureTime - currentTimeMillis > HOURS.toMillis(1);
     }
 
     private int getNextDelayMillis() {
@@ -571,8 +625,9 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                 aggregatesByTypeList.add(aggregatesByType.build());
             }
             throttleCollectAggregates(streamHeader.getAgentId(), streamHeader.getPostV09(),
-                    streamHeader.getCaptureTime(), sharedQueryTexts, aggregatesByTypeList,
-                    responseObserver);
+                    getFutureProofAggregateCaptureTime(streamHeader.getCaptureTime()),
+                    sharedQueryTexts,
+                    aggregatesByTypeList, responseObserver);
         }
 
         private void logError(Throwable t) {

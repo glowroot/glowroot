@@ -427,20 +427,37 @@ public class CentralModule {
                 return;
             }
             command = Tools::truncateAllData;
-        } else if (commandName.equals("execute-range-deletes")) {
+        } else if (commandName.equals("delete-old-data")
+                || commandName.equals("delete-bad-future-data")) {
             if (args.size() != 2) {
-                startupLogger.error("execute-range-deletes requires two args (partial table name"
-                        + " and rollup level), exiting");
+                startupLogger.error(
+                        "{} requires two args (partial table name and rollup level), exiting",
+                        commandName);
                 return;
             }
             String partialTableName = args.get(0);
-            if (!partialTableName.equals("query") && !partialTableName.equals("service_call")
-                    && !partialTableName.equals("profile")) {
-                startupLogger.error("partial table name must be one of \"query\", \"service_call\""
-                        + " or \"profile\", exiting");
+            if (!partialTableName.equals("query")
+                    && !partialTableName.equals("service_call")
+                    && !partialTableName.equals("profile")
+                    && !partialTableName.equals("overview")
+                    && !partialTableName.equals("histogram")
+                    && !partialTableName.equals("throughput")
+                    && !partialTableName.equals("summary")
+                    && !partialTableName.equals("error_summary")
+                    && !partialTableName.equals("gauge_value")) {
+                startupLogger.error("partial table name must be one of \"query\", \"service_call\","
+                        + " \"profile\", \"overview\", \"histogram\", \"throughput\" or"
+                        + " \"gauge_value\", exiting");
                 return;
             }
-            command = Tools::executeDeletes;
+            if (commandName.equals("delete-old-data")) {
+                command = Tools::deleteOldData;
+            } else if (commandName.equals("delete-bad-future-data")) {
+                command = Tools::deleteBadFutureData;
+            } else {
+                startupLogger.error("unexpected command '{}', exiting", commandName);
+                return;
+            }
         } else {
             startupLogger.error("unexpected command '{}', exiting", commandName);
             return;
