@@ -93,7 +93,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         ListenableFuture<?> future = session.writeAsync(boundStatement);
         futures.add(MoreFutures.onSuccessAndFailure(future,
                 () -> traceAttributeNamesCache.invalidate(agentRollupId),
-                () -> rateLimiter.invalidate(rateLimiterKey)));
+                () -> rateLimiter.release(rateLimiterKey)));
     }
 
     private int getTraceTTL() throws Exception {

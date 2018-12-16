@@ -103,6 +103,7 @@ public class CentralModule {
     private final Cluster cluster;
     private final Session session;
     private final ExecutorService repoAsyncExecutor;
+    private final CentralRepoModule repos;
     private final AlertingService alertingService;
     private final CentralAlertingService centralAlertingService;
     private final GrpcServer grpcServer;
@@ -129,6 +130,7 @@ public class CentralModule {
         Cluster cluster = null;
         Session session = null;
         ExecutorService repoAsyncExecutor = null;
+        CentralRepoModule repos = null;
         AlertingService alertingService = null;
         CentralAlertingService centralAlertingService = null;
         GrpcServer grpcServer = null;
@@ -173,7 +175,7 @@ public class CentralModule {
             repoAsyncExecutor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
                     .setDaemon(true)
                     .build());
-            CentralRepoModule repos = new CentralRepoModule(clusterManager, session,
+            repos = new CentralRepoModule(clusterManager, session,
                     centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor, clock);
 
             if (initialSchemaVersion == null) {
@@ -296,6 +298,9 @@ public class CentralModule {
             if (alertingService != null) {
                 alertingService.close();
             }
+            if (repos != null) {
+                repos.close();
+            }
             if (repoAsyncExecutor != null) {
                 repoAsyncExecutor.shutdown();
             }
@@ -314,6 +319,7 @@ public class CentralModule {
         this.cluster = cluster;
         this.session = session;
         this.repoAsyncExecutor = repoAsyncExecutor;
+        this.repos = repos;
         this.alertingService = alertingService;
         this.centralAlertingService = centralAlertingService;
         this.grpcServer = grpcServer;
@@ -342,6 +348,7 @@ public class CentralModule {
             grpcServer.close();
             centralAlertingService.close();
             alertingService.close();
+            repos.close();
             repoAsyncExecutor.shutdown();
             session.close();
             cluster.close();
@@ -380,6 +387,7 @@ public class CentralModule {
         Session session = null;
         Cluster cluster = null;
         ExecutorService repoAsyncExecutor = null;
+        CentralRepoModule repos = null;
         try {
             session = connect(centralConfig);
             cluster = session.getCluster();
@@ -392,11 +400,14 @@ public class CentralModule {
             repoAsyncExecutor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
                     .setDaemon(true)
                     .build());
-            new CentralRepoModule(ClusterManager.create(), session,
+            repos = new CentralRepoModule(ClusterManager.create(), session,
                     centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor,
                     Clock.systemClock());
             schemaUpgrade.updateSchemaVersionToCurent();
         } finally {
+            if (repos != null) {
+                repos.close();
+            }
             if (repoAsyncExecutor != null) {
                 repoAsyncExecutor.shutdown();
             }
@@ -471,6 +482,7 @@ public class CentralModule {
         Session session = null;
         Cluster cluster = null;
         ExecutorService repoAsyncExecutor = null;
+        CentralRepoModule repos = null;
         boolean success;
         try {
             session = connect(centralConfig);
@@ -489,7 +501,7 @@ public class CentralModule {
             repoAsyncExecutor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
                     .setDaemon(true)
                     .build());
-            CentralRepoModule repos = new CentralRepoModule(ClusterManager.create(), session,
+            repos = new CentralRepoModule(ClusterManager.create(), session,
                     centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor,
                     Clock.systemClock());
             if (initialSchemaVersion == null) {
@@ -499,6 +511,9 @@ public class CentralModule {
             startupLogger.info("running {}", commandName);
             success = command.run(new Tools(session, repos), args);
         } finally {
+            if (repos != null) {
+                repos.close();
+            }
             if (repoAsyncExecutor != null) {
                 repoAsyncExecutor.shutdown();
             }

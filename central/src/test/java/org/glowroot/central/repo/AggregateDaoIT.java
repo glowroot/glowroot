@@ -80,6 +80,7 @@ public class AggregateDaoIT {
     private static AgentConfigDao agentConfigDao;
     private static ActiveAgentDao activeAgentDao;
     private static ExecutorService asyncExecutor;
+    private static FullQueryTextDao fullQueryTextDao;
     private static AggregateDao aggregateDao;
 
     @BeforeClass
@@ -98,8 +99,7 @@ public class AggregateDaoIT {
         TransactionTypeDao transactionTypeDao =
                 new TransactionTypeDao(session, configRepository, clusterManager);
         asyncExecutor = Executors.newCachedThreadPool();
-        FullQueryTextDao fullQueryTextDao =
-                new FullQueryTextDao(session, configRepository, asyncExecutor);
+        fullQueryTextDao = new FullQueryTextDao(session, configRepository, asyncExecutor);
         RollupLevelService rollupLevelService =
                 new RollupLevelService(configRepository, Clock.systemClock());
         activeAgentDao = new ActiveAgentDao(session, agentConfigDao, configRepository,
@@ -111,6 +111,7 @@ public class AggregateDaoIT {
 
     @AfterClass
     public static void tearDown() throws Exception {
+        fullQueryTextDao.close();
         asyncExecutor.shutdown();
         session.close();
         cluster.close();

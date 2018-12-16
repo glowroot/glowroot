@@ -494,23 +494,4 @@ public class Session {
     private interface DoUnderThrottle {
         ResultSetFuture execute();
     }
-
-    private static class SemaphoreStats implements SemaphoreStatsMXBean {
-
-        private final Semaphore semaphore;
-
-        private SemaphoreStats(Semaphore semaphore) {
-            this.semaphore = semaphore;
-        }
-
-        @Override
-        public int getAvailablePermits() {
-            return semaphore.availablePermits();
-        }
-
-        @Override
-        public int getQueueLength() {
-            return semaphore.getQueueLength();
-        }
-    }
 }

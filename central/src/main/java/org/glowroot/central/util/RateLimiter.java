@@ -26,24 +26,38 @@ public class RateLimiter<T extends /*@NonNull*/ Object> {
 
     private final Cache<T, Boolean> acquiredRecently;
 
-    public RateLimiter() {
-        this(NO_MAXIMUM_SIZE);
+    public RateLimiter() throws Exception {
+        this(NO_MAXIMUM_SIZE, false);
     }
 
-    public RateLimiter(int maximumSize) {
+    public RateLimiter(int maximumSize, boolean recordStats) throws Exception {
         CacheBuilder<Object, Object> cache = CacheBuilder.newBuilder()
                 .expireAfterWrite(1, DAYS);
         if (maximumSize != NO_MAXIMUM_SIZE) {
             cache.maximumSize(maximumSize);
         }
+        if (recordStats) {
+            cache.recordStats();
+        }
         acquiredRecently = cache.build();
     }
 
     public boolean tryAcquire(T key) {
-        return acquiredRecently.asMap().putIfAbsent(key, true) == null;
+        // don't use asMap().putIfAbsent() because it doesn't update the guava cache stats
+        Boolean val = acquiredRecently.getIfPresent(key);
+        if (val == null) {
+            acquiredRecently.put(key, true);
+            return true;
+        } else {
+            return false;
+        }
     }
 
-    public void invalidate(T key) {
+    public void release(T key) {
         acquiredRecently.invalidate(key);
+    }
+
+    public LocalCacheStats getLocalCacheStats() {
+        return new LocalCacheStats(acquiredRecently);
     }
 }

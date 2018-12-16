@@ -15,9 +15,13 @@
  */
 package org.glowroot.central.repo;
 
+import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
@@ -58,8 +62,8 @@ class FullQueryTextDao {
     private final PreparedStatement readPS;
     private final PreparedStatement readTtlPS;
 
-    private final RateLimiter<FullQueryTextKey> rateLimiter = new RateLimiter<>(100000);
-    private final RateLimiter<String> rateLimiterForSha1 = new RateLimiter<>(10000);
+    private final RateLimiter<FullQueryTextKey> rateLimiter = new RateLimiter<>(100000, true);
+    private final RateLimiter<String> rateLimiterForSha1 = new RateLimiter<>(10000, true);
 
     FullQueryTextDao(Session session, ConfigRepositoryImpl configRepository,
             ExecutorService asyncExecutor) throws Exception {
@@ -90,6 +94,12 @@ class FullQueryTextDao {
                 "select full_query_text from full_query_text where full_query_text_sha1 = ?");
         readTtlPS = session.prepare(
                 "select TTL(full_query_text) from full_query_text where full_query_text_sha1 = ?");
+
+        MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
+        platformMBeanServer.registerMBean(rateLimiter.getLocalCacheStats(),
+                ObjectName.getInstance("org.glowroot.central:type=FullQueryTextRateLimiter"));
+        platformMBeanServer.registerMBean(rateLimiterForSha1.getLocalCacheStats(), ObjectName
+                .getInstance("org.glowroot.central:type=FullQueryTextRateLimiterForSha1"));
     }
 
     @Nullable
@@ -114,11 +124,11 @@ class FullQueryTextDao {
         try {
             future2 = storeInternal(rateLimiterKey.fullTextSha1(), fullText);
         } catch (Exception e) {
-            invalidateBoth(rateLimiterKey);
+            releaseBothRateLimiters(rateLimiterKey);
             throw e;
         }
         return ImmutableList.of(future,
-                MoreFutures.onFailure(future2, () -> invalidateBoth(rateLimiterKey)));
+                MoreFutures.onFailure(future2, () -> releaseBothRateLimiters(rateLimiterKey)));
     }
 
     List<Future<?>> updateTTL(String agentRollupId, String fullTextSha1) throws Exception {
@@ -137,7 +147,7 @@ class FullQueryTextDao {
             readFuture = session.readAsyncFailIfNoRows(boundStatement,
                     "full query text record not found for sha1: " + fullTextSha1);
         } catch (Exception e) {
-            invalidateBoth(rateLimiterKey);
+            releaseBothRateLimiters(rateLimiterKey);
             throw e;
         }
         ListenableFuture<?> future2 =
@@ -151,7 +161,7 @@ class FullQueryTextDao {
                     }
                 });
         return ImmutableList.of(future,
-                MoreFutures.onFailure(future2, () -> invalidateBoth(rateLimiterKey)));
+                MoreFutures.onFailure(future2, () -> releaseBothRateLimiters(rateLimiterKey)));
     }
 
     List<Future<?>> updateCheckTTL(String agentRollupId, String fullTextSha1) throws Exception {
@@ -222,16 +232,16 @@ class FullQueryTextDao {
             boundStatement.setString(i++, rateLimiterKey.fullTextSha1());
             boundStatement.setInt(i++, getTTL());
             ListenableFuture<?> future = session.writeAsync(boundStatement);
-            return MoreFutures.onFailure(future, () -> rateLimiter.invalidate(rateLimiterKey));
+            return MoreFutures.onFailure(future, () -> rateLimiter.release(rateLimiterKey));
         } catch (Exception e) {
-            rateLimiter.invalidate(rateLimiterKey);
+            rateLimiter.release(rateLimiterKey);
             throw e;
         }
     }
 
-    private void invalidateBoth(FullQueryTextKey rateLimiterKey) {
-        rateLimiter.invalidate(rateLimiterKey);
-        rateLimiterForSha1.invalidate(rateLimiterKey.fullTextSha1());
+    private void releaseBothRateLimiters(FullQueryTextKey rateLimiterKey) {
+        rateLimiter.release(rateLimiterKey);
+        rateLimiterForSha1.release(rateLimiterKey.fullTextSha1());
     }
 
     private int getTTL() throws Exception {
@@ -248,6 +258,14 @@ class FullQueryTextDao {
                 + DAYS.toSeconds(1)
                 + HOURS.toSeconds(expirationHours);
         return Ints.saturatedCast(ttl);
+    }
+
+    public void close() throws Exception {
+        MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
+        platformMBeanServer.unregisterMBean(ObjectName
+                .getInstance("org.glowroot.central:type=FullQueryTextRateLimiter"));
+        platformMBeanServer.unregisterMBean(ObjectName
+                .getInstance("org.glowroot.central:type=FullQueryTextRateLimiterForSha1"));
     }
 
     @Value.Immutable

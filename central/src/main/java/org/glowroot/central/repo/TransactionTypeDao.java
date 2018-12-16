@@ -91,13 +91,13 @@ class TransactionTypeDao implements TransactionTypeRepository {
                         configRepository.getCentralStorageConfig().getMaxRollupTTL());
                 future = session.writeAsync(boundStatement);
             } catch (Exception e) {
-                rateLimiter.invalidate(rateLimiterKey);
+                rateLimiter.release(rateLimiterKey);
                 transactionTypesCache.invalidate(agentRollupId);
                 throw e;
             }
             futures.add(MoreFutures.onSuccessAndFailure(future,
                     () -> transactionTypesCache.invalidate(agentRollupId),
-                    () -> rateLimiter.invalidate(rateLimiterKey)));
+                    () -> rateLimiter.release(rateLimiterKey)));
         }
         return futures;
     }

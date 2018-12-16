@@ -47,6 +47,7 @@ public class CentralRepoModule {
     private final IncidentDao incidentDao;
     private final TransactionTypeDao transactionTypeDao;
     private final TraceAttributeNameDao traceAttributeNameDao;
+    private final FullQueryTextDao fullQueryTextDao;
     private final AggregateDao aggregateDao;
     private final TraceDao traceDao;
     private final GaugeValueDao gaugeValueDao;
@@ -102,8 +103,7 @@ public class CentralRepoModule {
             v09TraceLastExpirationTime = checkNotNull(row.getTimestamp(i++)).getTime();
             v09AggregateLastExpirationTime = checkNotNull(row.getTimestamp(i++)).getTime();
         }
-        FullQueryTextDao fullQueryTextDao =
-                new FullQueryTextDao(session, configRepository, asyncExecutor);
+        fullQueryTextDao = new FullQueryTextDao(session, configRepository, asyncExecutor);
         AggregateDaoImpl aggregateDaoImpl = new AggregateDaoImpl(session, activeAgentDao,
                 transactionTypeDao, fullQueryTextDao, configRepository, asyncExecutor, clock);
         GaugeValueDaoImpl gaugeValueDaoImpl =
@@ -196,5 +196,9 @@ public class CentralRepoModule {
 
     public V09AgentRollupDao getV09AgentRollupDao() {
         return v09AgentRollupDao;
+    }
+
+    public void close() throws Exception {
+        fullQueryTextDao.close();
     }
 }
