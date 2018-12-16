@@ -15,6 +15,7 @@
  */
 package org.glowroot.central;
 
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -24,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.ActiveAgentDao;
-import org.glowroot.central.repo.ActiveAgentDao.AgentConfigUpdate;
+import org.glowroot.central.repo.ActiveAgentDao.AgentConfigAndUpdateToken;
 import org.glowroot.central.repo.AgentConfigDao;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
@@ -103,9 +104,9 @@ class UpdateAgentConfigIfNeededService implements Runnable {
     }
 
     void updateAgentConfigIfNeededAndConnected(String agentId) throws InterruptedException {
-        AgentConfigUpdate agentConfigUpdate;
+        AgentConfigAndUpdateToken agentConfigAndUpdateToken;
         try {
-            agentConfigUpdate = agentConfigDao.readForUpdate(agentId);
+            agentConfigAndUpdateToken = agentConfigDao.readForUpdate(agentId);
         } catch (InterruptedException e) {
             // probably shutdown requested (see close method above)
             throw e;
@@ -113,14 +114,18 @@ class UpdateAgentConfigIfNeededService implements Runnable {
             logger.error(e.getMessage(), e);
             return;
         }
-        if (agentConfigUpdate == null) {
+        if (agentConfigAndUpdateToken == null) {
+            return;
+        }
+        UUID updateToken = agentConfigAndUpdateToken.updateToken();
+        if (updateToken == null) {
             return;
         }
         try {
             boolean updated = downstreamService.updateAgentConfigIfConnected(agentId,
-                    agentConfigUpdate.config());
+                    agentConfigAndUpdateToken.config());
             if (updated) {
-                agentConfigDao.markUpdated(agentId, agentConfigUpdate.configUpdateToken());
+                agentConfigDao.markUpdated(agentId, updateToken);
             }
         } catch (InterruptedException e) {
             // probably shutdown requested (see close method above)

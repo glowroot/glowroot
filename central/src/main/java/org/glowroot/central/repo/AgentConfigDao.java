@@ -33,7 +33,7 @@ import com.google.common.base.Optional;
 import com.google.protobuf.ByteString;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.central.repo.ActiveAgentDao.AgentConfigUpdate;
+import org.glowroot.central.repo.ActiveAgentDao.AgentConfigAndUpdateToken;
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
@@ -55,11 +55,10 @@ public class AgentConfigDao {
 
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
-    private final PreparedStatement readForUpdatePS;
     private final PreparedStatement updatePS;
     private final PreparedStatement markUpdatedPS;
 
-    private final Cache<String, Optional<AgentConfig>> agentConfigCache;
+    private final Cache<String, Optional<AgentConfigAndUpdateToken>> agentConfigCache;
 
     AgentConfigDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
@@ -75,10 +74,9 @@ public class AgentConfigDao {
                 + " config_update, config_update_token) values (?, ?, ?, ?)");
         updatePS = session.prepare("update agent_config set config = ?, config_update = ?,"
                 + " config_update_token = ? where agent_rollup_id = ? if config = ?");
-        readPS = session.prepare("select config from agent_config where agent_rollup_id = ?");
+        readPS = session.prepare(
+                "select config, config_update_token from agent_config where agent_rollup_id = ?");
 
-        readForUpdatePS = session.prepare("select config, config_update_token from agent_config"
-                + " where agent_rollup_id = ? and config_update = true allow filtering");
         markUpdatedPS = session.prepare("update agent_config set config_update = false,"
                 + " config_update_token = null where agent_rollup_id = ? if config_update_token"
                 + " = ?");
@@ -188,25 +186,17 @@ public class AgentConfigDao {
     }
 
     public @Nullable AgentConfig read(String agentRollupId) throws Exception {
-        return agentConfigCache.get(agentRollupId).orNull();
+        Optional<AgentConfigAndUpdateToken> optional = agentConfigCache.get(agentRollupId);
+        if (optional.isPresent()) {
+            return optional.get().config();
+        } else {
+            return null;
+        }
     }
 
     // does not apply to agent rollups
-    public @Nullable AgentConfigUpdate readForUpdate(String agentId) throws Exception {
-        BoundStatement boundStatement = readForUpdatePS.bind();
-        boundStatement.setString(0, agentId);
-        ResultSet results = session.read(boundStatement);
-        Row row = results.one();
-        if (row == null) {
-            // no pending config update for this agent (or agent has been manually deleted)
-            return null;
-        }
-        ByteBuffer bytes = checkNotNull(row.getBytes(0));
-        UUID configUpdateToken = checkNotNull(row.getUUID(1));
-        return ImmutableAgentConfigUpdate.builder()
-                .config(AgentConfig.parseFrom(bytes))
-                .configUpdateToken(configUpdateToken)
-                .build();
+    public @Nullable AgentConfigAndUpdateToken readForUpdate(String agentId) throws Exception {
+        return agentConfigCache.get(agentId).orNull();
     }
 
     // does not apply to agent rollups
@@ -293,9 +283,10 @@ public class AgentConfigDao {
                 .build();
     }
 
-    private class AgentConfigCacheLoader implements CacheLoader<String, Optional<AgentConfig>> {
+    private class AgentConfigCacheLoader
+            implements CacheLoader<String, Optional<AgentConfigAndUpdateToken>> {
         @Override
-        public Optional<AgentConfig> load(String agentRollupId) throws Exception {
+        public Optional<AgentConfigAndUpdateToken> load(String agentRollupId) throws Exception {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.setString(0, agentRollupId);
             ResultSet results = session.read(boundStatement);
@@ -304,8 +295,13 @@ public class AgentConfigDao {
                 // agent must have been manually deleted
                 return Optional.absent();
             }
-            ByteBuffer bytes = checkNotNull(row.getBytes(0));
-            return Optional.of(AgentConfig.parseFrom(bytes));
+            int i = 0;
+            ByteBuffer bytes = checkNotNull(row.getBytes(i++));
+            UUID updateToken = row.getUUID(i++);
+            return Optional.of(ImmutableAgentConfigAndUpdateToken.builder()
+                    .config(AgentConfig.parseFrom(bytes))
+                    .updateToken(updateToken)
+                    .build());
         }
     }
 

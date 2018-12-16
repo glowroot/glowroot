@@ -25,6 +25,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Future;
 
+import javax.annotation.Nullable;
+
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
@@ -190,8 +192,9 @@ public class ActiveAgentDao implements ActiveAgentRepository {
     }
 
     @Value.Immutable
-    public interface AgentConfigUpdate {
+    public interface AgentConfigAndUpdateToken {
         AgentConfig config();
-        UUID configUpdateToken();
+        @Nullable
+        UUID updateToken();
     }
 }
