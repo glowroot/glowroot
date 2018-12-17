@@ -554,31 +554,20 @@ public class TraceDaoImpl implements TraceDao {
             if (fullTextSha1.isEmpty()) {
                 String fullText = sharedQueryText.getFullText();
                 if (fullText.length() > 2 * Constants.TRACE_QUERY_TEXT_TRUNCATE) {
+                    // relying on agent side to rate limit (re-)sending the same full text
                     fullTextSha1 = SHA_1.hashString(fullText, UTF_8).toString();
-                    futures.addAll(fullQueryTextDao.store(agentId, fullTextSha1, fullText));
-                    for (int i = 1; i < agentRollupIds.size(); i++) {
-                        futures.addAll(fullQueryTextDao.updateCheckTTL(agentRollupIds.get(i),
-                                fullTextSha1));
-                    }
-                    sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
+                    futures.addAll(fullQueryTextDao.store(agentRollupIds, fullTextSha1, fullText));
+                    sharedQueryText = Trace.SharedQueryText.newBuilder()
                             .setTruncatedText(
                                     fullText.substring(0, Constants.TRACE_QUERY_TEXT_TRUNCATE))
                             .setTruncatedEndText(fullText.substring(
                                     fullText.length() - Constants.TRACE_QUERY_TEXT_TRUNCATE,
                                     fullText.length()))
                             .setFullTextSha1(fullTextSha1)
-                            .build());
-                } else {
-                    sharedQueryTexts.add(sharedQueryText);
+                            .build();
                 }
-            } else {
-                futures.addAll(fullQueryTextDao.updateTTL(agentId, fullTextSha1));
-                for (int i = 1; i < agentRollupIds.size(); i++) {
-                    futures.addAll(
-                            fullQueryTextDao.updateCheckTTL(agentRollupIds.get(i), fullTextSha1));
-                }
-                sharedQueryTexts.add(sharedQueryText);
             }
+            sharedQueryTexts.add(sharedQueryText);
         }
 
         // wait for success before proceeding in order to ensure cannot end up with orphaned

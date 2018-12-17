@@ -435,28 +435,17 @@ public class AggregateDaoImpl implements AggregateDao {
             if (fullTextSha1.isEmpty()) {
                 String fullText = sharedQueryText.getFullText();
                 if (fullText.length() > Constants.AGGREGATE_QUERY_TEXT_TRUNCATE) {
+                    // relying on agent side to rate limit (re-)sending the same full text
                     fullTextSha1 = SHA_1.hashString(fullText, UTF_8).toString();
-                    futures.addAll(fullQueryTextDao.store(agentId, fullTextSha1, fullText));
-                    for (int i = 1; i < agentRollupIds.size(); i++) {
-                        futures.addAll(fullQueryTextDao.updateCheckTTL(agentRollupIds.get(i),
-                                fullTextSha1));
-                    }
-                    sharedQueryTexts.add(Aggregate.SharedQueryText.newBuilder()
+                    futures.addAll(fullQueryTextDao.store(agentRollupIds, fullTextSha1, fullText));
+                    sharedQueryText = Aggregate.SharedQueryText.newBuilder()
                             .setTruncatedText(fullText.substring(0,
                                     Constants.AGGREGATE_QUERY_TEXT_TRUNCATE))
                             .setFullTextSha1(fullTextSha1)
-                            .build());
-                } else {
-                    sharedQueryTexts.add(sharedQueryText);
+                            .build();
                 }
-            } else {
-                futures.addAll(fullQueryTextDao.updateTTL(agentId, fullTextSha1));
-                for (int i = 1; i < agentRollupIds.size(); i++) {
-                    futures.addAll(
-                            fullQueryTextDao.updateCheckTTL(agentRollupIds.get(i), fullTextSha1));
-                }
-                sharedQueryTexts.add(sharedQueryText);
             }
+            sharedQueryTexts.add(sharedQueryText);
         }
 
         // wait for success before proceeding in order to ensure cannot end up with orphaned

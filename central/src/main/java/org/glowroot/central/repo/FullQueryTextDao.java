@@ -16,6 +16,7 @@
 package org.glowroot.central.repo;
 
 import java.lang.management.ManagementFactory;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -27,7 +28,6 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.Futures;
@@ -43,7 +43,6 @@ import org.glowroot.common.util.Styles;
 import org.glowroot.common2.config.CentralStorageConfig;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -62,8 +61,7 @@ class FullQueryTextDao {
     private final PreparedStatement readPS;
     private final PreparedStatement readTtlPS;
 
-    private final RateLimiter<FullQueryTextKey> rateLimiter = new RateLimiter<>(100000, true);
-    private final RateLimiter<String> rateLimiterForSha1 = new RateLimiter<>(10000, true);
+    private final RateLimiter<String> rateLimiter = new RateLimiter<>(100000, true);
 
     FullQueryTextDao(Session session, ConfigRepositoryImpl configRepository,
             ExecutorService asyncExecutor) throws Exception {
@@ -96,10 +94,8 @@ class FullQueryTextDao {
                 "select TTL(full_query_text) from full_query_text where full_query_text_sha1 = ?");
 
         MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
-        platformMBeanServer.registerMBean(rateLimiter.getLocalCacheStats(),
-                ObjectName.getInstance("org.glowroot.central:type=FullQueryTextRateLimiter"));
-        platformMBeanServer.registerMBean(rateLimiterForSha1.getLocalCacheStats(), ObjectName
-                .getInstance("org.glowroot.central:type=FullQueryTextRateLimiterForSha1"));
+        platformMBeanServer.registerMBean(rateLimiter.getLocalCacheStats(), ObjectName
+                .getInstance("org.glowroot.central:type=FullQueryTextRateLimiter"));
     }
 
     @Nullable
@@ -111,65 +107,30 @@ class FullQueryTextDao {
         return getFullTextUsingPS(agentRollupId, fullTextSha1, readCheckV1PS);
     }
 
-    List<Future<?>> store(String agentId, String fullTextSha1, String fullText) throws Exception {
-        FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentId, fullTextSha1);
-        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
-            return ImmutableList.of();
+    List<Future<?>> store(List<String> agentRollupIds, String fullTextSha1, String fullText)
+            throws Exception {
+        // relying on agent side to rate limit (re-)sending the same full text
+        List<Future<?>> futures = new ArrayList<>();
+        for (String agentRollupId : agentRollupIds) {
+            BoundStatement boundStatement = insertCheckV2PS.bind();
+            int i = 0;
+            boundStatement.setString(i++, agentRollupId);
+            boundStatement.setString(i++, fullTextSha1);
+            boundStatement.setInt(i++, getTTL());
+            futures.add(session.writeAsync(boundStatement));
         }
-        Future<?> future = storeCheckInternal(rateLimiterKey);
-        if (!rateLimiterForSha1.tryAcquire(fullTextSha1)) {
-            return ImmutableList.of(future);
+        if (!rateLimiter.tryAcquire(fullTextSha1)) {
+            return futures;
         }
         ListenableFuture<?> future2;
         try {
-            future2 = storeInternal(rateLimiterKey.fullTextSha1(), fullText);
+            future2 = storeInternal(fullTextSha1, fullText);
         } catch (Exception e) {
-            releaseBothRateLimiters(rateLimiterKey);
+            rateLimiter.release(fullTextSha1);
             throw e;
         }
-        return ImmutableList.of(future,
-                MoreFutures.onFailure(future2, () -> releaseBothRateLimiters(rateLimiterKey)));
-    }
-
-    List<Future<?>> updateTTL(String agentRollupId, String fullTextSha1) throws Exception {
-        FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollupId, fullTextSha1);
-        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
-            return ImmutableList.of();
-        }
-        Future<?> future = storeCheckInternal(rateLimiterKey);
-        if (!rateLimiterForSha1.tryAcquire(fullTextSha1)) {
-            return ImmutableList.of(future);
-        }
-        ListenableFuture<ResultSet> readFuture;
-        try {
-            BoundStatement boundStatement = readPS.bind();
-            boundStatement.setString(0, fullTextSha1);
-            readFuture = session.readAsyncFailIfNoRows(boundStatement,
-                    "full query text record not found for sha1: " + fullTextSha1);
-        } catch (Exception e) {
-            releaseBothRateLimiters(rateLimiterKey);
-            throw e;
-        }
-        ListenableFuture<?> future2 =
-                MoreFutures.transformAsync(readFuture, asyncExecutor, new DoWithResults() {
-                    @Override
-                    public ListenableFuture<?> execute(ResultSet results) throws Exception {
-                        // not null due to calling executeAsyncFailIfNoRows() above
-                        Row row = checkNotNull(results.one());
-                        String fullText = checkNotNull(row.getString(0));
-                        return storeInternal(rateLimiterKey.fullTextSha1(), fullText);
-                    }
-                });
-        return ImmutableList.of(future,
-                MoreFutures.onFailure(future2, () -> releaseBothRateLimiters(rateLimiterKey)));
-    }
-
-    List<Future<?>> updateCheckTTL(String agentRollupId, String fullTextSha1) throws Exception {
-        FullQueryTextKey rateLimiterKey = ImmutableFullQueryTextKey.of(agentRollupId, fullTextSha1);
-        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
-            return ImmutableList.of();
-        }
-        return ImmutableList.of(storeCheckInternal(rateLimiterKey));
+        futures.add(MoreFutures.onFailure(future2, () -> rateLimiter.release(fullTextSha1)));
+        return futures;
     }
 
     private @Nullable String getFullTextUsingPS(String agentRollupId, String fullTextSha1,
@@ -205,7 +166,9 @@ class FullQueryTextDao {
                     return insertAndCompleteFuture(ttl);
                 } else {
                     int existingTTL = row.getInt(0);
-                    if (existingTTL < ttl && existingTTL != 0) {
+                    if (existingTTL != 0 && ttl > existingTTL + DAYS.toSeconds(1)) {
+                        // only overwrite if bumping TTL at least 1 day
+                        // also, never overwrite with smaller TTL
                         return insertAndCompleteFuture(ttl);
                     } else {
                         return Futures.immediateFuture(null);
@@ -223,27 +186,6 @@ class FullQueryTextDao {
         });
     }
 
-    private ListenableFuture<?> storeCheckInternal(FullQueryTextKey rateLimiterKey)
-            throws Exception {
-        try {
-            BoundStatement boundStatement = insertCheckV2PS.bind();
-            int i = 0;
-            boundStatement.setString(i++, rateLimiterKey.agentRollupId());
-            boundStatement.setString(i++, rateLimiterKey.fullTextSha1());
-            boundStatement.setInt(i++, getTTL());
-            ListenableFuture<?> future = session.writeAsync(boundStatement);
-            return MoreFutures.onFailure(future, () -> rateLimiter.release(rateLimiterKey));
-        } catch (Exception e) {
-            rateLimiter.release(rateLimiterKey);
-            throw e;
-        }
-    }
-
-    private void releaseBothRateLimiters(FullQueryTextKey rateLimiterKey) {
-        rateLimiter.release(rateLimiterKey);
-        rateLimiterForSha1.release(rateLimiterKey.fullTextSha1());
-    }
-
     private int getTTL() throws Exception {
         CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
         int queryRollupExpirationHours =
@@ -254,8 +196,9 @@ class FullQueryTextDao {
         RollupConfig lastRollupConfig = Iterables.getLast(rollupConfigs);
         // adding largest rollup interval to account for query being retained longer by rollups
         long ttl = MILLISECONDS.toSeconds(lastRollupConfig.intervalMillis())
-                // adding 1 day to account for rateLimiter
-                + DAYS.toSeconds(1)
+                // adding 2 days to account for worst case client side rate limiter + server side
+                // rate limiter
+                + DAYS.toSeconds(2)
                 + HOURS.toSeconds(expirationHours);
         return Ints.saturatedCast(ttl);
     }
@@ -264,14 +207,12 @@ class FullQueryTextDao {
         MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
         platformMBeanServer.unregisterMBean(ObjectName
                 .getInstance("org.glowroot.central:type=FullQueryTextRateLimiter"));
-        platformMBeanServer.unregisterMBean(ObjectName
-                .getInstance("org.glowroot.central:type=FullQueryTextRateLimiterForSha1"));
     }
 
     @Value.Immutable
     @Styles.AllParameters
     interface FullQueryTextKey {
-        String agentRollupId();
+        String agentId();
         String fullTextSha1();
     }
 }
