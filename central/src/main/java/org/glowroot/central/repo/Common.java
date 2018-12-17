@@ -16,6 +16,7 @@
 package org.glowroot.central.repo;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -33,7 +34,6 @@ import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -77,9 +77,12 @@ class Common {
         return Math.max(needsRollupAdjustedTTL, 60);
     }
 
-    static List<NeedsRollup> getNeedsRollupList(String agentRollupId, int rollupLevel,
+    static Collection<NeedsRollup> getNeedsRollupList(String agentRollupId, int rollupLevel,
             long rollupIntervalMillis, List<PreparedStatement> readNeedsRollup, Session session,
             Clock clock) throws Exception {
+        // capture current time before reading data to prevent race condition with optimization
+        // that prevents duplicate needs rollup data which is also based on current time
+        long currentTimeMillis = clock.currentTimeMillis();
         BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind();
         boundStatement.setString(0, agentRollupId);
         ResultSet results = session.read(boundStatement);
@@ -87,6 +90,22 @@ class Common {
         for (Row row : results) {
             int i = 0;
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            if (!isOldEnoughToRollup(captureTime, currentTimeMillis, rollupIntervalMillis)) {
+                // normally, the last "needs rollup" capture time is in the near future, so don't
+                // roll it up since it is likely still being added to
+                //
+                // this is mostly to avoid rolling up this data twice, but also currently the UI
+                // assumes when it finds rolled up data, it doesn't check for non-rolled up data for
+                // same interval
+                //
+                // and now another reason: optimization for gauge_needs_rollup_1 relies on it being
+                // safe to not re-insert the same data up until rollupIntervalMillis after the
+                // rollup capture time
+                //
+                // safe to "break" instead of just "continue" since results are ordered by
+                // capture_time
+                break;
+            }
             UUID uniqueness = row.getUUID(i++);
             Set<String> keys = checkNotNull(row.getSet(i++, String.class));
             NeedsRollup needsRollup = needsRollupMap.get(captureTime);
@@ -97,25 +116,7 @@ class Common {
             needsRollup.keys.addAll(keys);
             needsRollup.uniquenessKeysForDeletion.add(uniqueness);
         }
-        if (needsRollupMap.isEmpty()) {
-            return ImmutableList.of();
-        }
-        List<NeedsRollup> needsRollupList = Lists.newArrayList(needsRollupMap.values());
-        NeedsRollup lastNeedsRollup = Iterables.getLast(needsRollupList);
-        if (lastNeedsRollup.getCaptureTime() > clock.currentTimeMillis() - rollupIntervalMillis) {
-            // normally, the last "needs rollup" capture time is in the near future, so don't roll
-            // it up since it is likely still being added to
-            //
-            // this is mostly to avoid rolling up this data twice, but also currently the UI assumes
-            // when it finds rolled up data, it doesn't check for non-rolled up data for same
-            // interval
-            //
-            // the above conditional is to force the rollup of the last "needs rollup" if it is more
-            // than one rollup interval in the past, otherwise the last "needs rollup" could expire
-            // due to TTL prior to it being rolled up
-            needsRollupList.remove(needsRollupList.size() - 1);
-        }
-        return needsRollupList;
+        return needsRollupMap.values();
     }
 
     static List<NeedsRollupFromChildren> getNeedsRollupFromChildrenList(String agentRollupId,
@@ -192,6 +193,11 @@ class Common {
             futures.add(session.writeAsync(boundStatement));
         }
         MoreFutures.waitForAll(futures);
+    }
+
+    static boolean isOldEnoughToRollup(long captureTime, long currentTimeMillis,
+            long intervalMillis) {
+        return captureTime < currentTimeMillis - intervalMillis;
     }
 
     static class NeedsRollup {

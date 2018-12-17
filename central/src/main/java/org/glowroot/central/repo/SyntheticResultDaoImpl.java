@@ -17,6 +17,7 @@ package org.glowroot.central.repo;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -291,8 +292,8 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     private void rollup(String agentRollupId, int rollupLevel, int ttl) throws Exception {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         long rollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
-        List<NeedsRollup> needsRollupList = Common.getNeedsRollupList(agentRollupId, rollupLevel,
-                rollupIntervalMillis, readNeedsRollup, session, clock);
+        Collection<NeedsRollup> needsRollupList = Common.getNeedsRollupList(agentRollupId,
+                rollupLevel, rollupIntervalMillis, readNeedsRollup, session, clock);
         Long nextRollupIntervalMillis = null;
         if (rollupLevel + 1 < rollupConfigs.size()) {
             nextRollupIntervalMillis = rollupConfigs.get(rollupLevel + 1).intervalMillis();

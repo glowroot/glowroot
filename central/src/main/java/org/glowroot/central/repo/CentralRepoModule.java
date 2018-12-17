@@ -106,8 +106,8 @@ public class CentralRepoModule {
         fullQueryTextDao = new FullQueryTextDao(session, configRepository, asyncExecutor);
         AggregateDaoImpl aggregateDaoImpl = new AggregateDaoImpl(session, activeAgentDao,
                 transactionTypeDao, fullQueryTextDao, configRepository, asyncExecutor, clock);
-        GaugeValueDaoImpl gaugeValueDaoImpl =
-                new GaugeValueDaoImpl(session, configRepository, asyncExecutor, clock);
+        GaugeValueDaoImpl gaugeValueDaoImpl = new GaugeValueDaoImpl(session, configRepository,
+                clusterManager, asyncExecutor, clock);
         SyntheticResultDaoImpl syntheticResultDaoImpl = new SyntheticResultDaoImpl(session,
                 configRepository, asyncExecutor, clock);
         if (v09AggregateLastExpirationTime < clock.currentTimeMillis()) {

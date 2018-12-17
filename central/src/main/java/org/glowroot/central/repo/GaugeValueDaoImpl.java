@@ -15,12 +15,16 @@
  */
 package org.glowroot.central.repo;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
@@ -31,21 +35,26 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.immutables.serial.Serial;
+import org.immutables.value.Value;
 
 import org.glowroot.central.repo.Common.NeedsRollup;
 import org.glowroot.central.repo.Common.NeedsRollupFromChildren;
+import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.MoreFutures.DoRollup;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.common.util.Styles;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common2.repo.util.Gauges;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
@@ -54,6 +63,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class GaugeValueDaoImpl implements GaugeValueDao {
 
@@ -79,8 +89,13 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     private final PreparedStatement readNeedsRollupFromChild;
     private final PreparedStatement deleteNeedsRollupFromChild;
 
+    // needs rollup caches are only to reduce pressure on the needs rollup tables by reducing
+    // duplicate entries
+    private final ConcurrentMap<NeedsRollupKey, ImmutableSet<String>> needsRollupCache1;
+
     GaugeValueDaoImpl(Session session, ConfigRepositoryImpl configRepository,
-            ExecutorService asyncExecutor, Clock clock) throws Exception {
+            ClusterManager clusterManager, ExecutorService asyncExecutor, Clock clock)
+            throws Exception {
         this.session = session;
         this.configRepository = configRepository;
         this.asyncExecutor = asyncExecutor;
@@ -166,6 +181,9 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                 + " agent_rollup = ?");
         deleteNeedsRollupFromChild = session.prepare("delete from gauge_needs_rollup_from_child"
                 + " where agent_rollup = ? and capture_time = ? and uniqueness = ?");
+
+        needsRollupCache1 =
+                clusterManager.createReplicatedMap("gaugeNeedsRollupCache1", 5, MINUTES);
     }
 
     @Override
@@ -205,10 +223,34 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         futures.clear();
 
         // insert into gauge_needs_rollup_1
+        Map<NeedsRollupKey, ImmutableSet<String>> updatesForNeedsRollupCache1 = new HashMap<>();
         SetMultimap<Long, String> rollupCaptureTimes = getRollupCaptureTimes(gaugeValues);
         for (Map.Entry<Long, Set<String>> entry : Multimaps.asMap(rollupCaptureTimes).entrySet()) {
-            BoundStatement boundStatement = insertNeedsRollup.get(0).bind();
             Long captureTime = entry.getKey();
+            Set<String> gaugeNames = entry.getValue();
+            NeedsRollupKey needsRollupKey = ImmutableNeedsRollupKey.of(agentId, captureTime);
+            ImmutableSet<String> needsRollupGaugeNames = needsRollupCache1.get(needsRollupKey);
+            if (needsRollupGaugeNames == null) {
+                // first insert for this key
+                updatesForNeedsRollupCache1.put(needsRollupKey,
+                        ImmutableSet.copyOf(gaugeNames));
+            } else if (needsRollupGaugeNames.containsAll(gaugeNames)) {
+                // capture current time after getting data from cache to prevent race condition with
+                // reading the data in Common.getNeedsRollupList()
+                if (!Common.isOldEnoughToRollup(captureTime, clock.currentTimeMillis(),
+                        configRepository.getRollupConfigs().get(0).intervalMillis())) {
+                    // completely covered by prior inserts that haven't been rolled up yet so no
+                    // need to re-insert same data
+                    continue;
+                }
+            } else {
+                // merge will maybe help prevent a few subsequent inserts
+                Set<String> combined = new HashSet<>(needsRollupGaugeNames);
+                combined.addAll(gaugeNames);
+                updatesForNeedsRollupCache1.put(needsRollupKey,
+                        ImmutableSet.copyOf(gaugeNames));
+            }
+            BoundStatement boundStatement = insertNeedsRollup.get(0).bind();
             int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
             int needsRollupAdjustedTTL = Common.getNeedsRollupAdjustedTTL(adjustedTTL,
                     configRepository.getRollupConfigs());
@@ -216,11 +258,14 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             boundStatement.setString(i++, agentId);
             boundStatement.setTimestamp(i++, new Date(captureTime));
             boundStatement.setUUID(i++, UUIDs.timeBased());
-            boundStatement.setSet(i++, entry.getValue());
+            boundStatement.setSet(i++, gaugeNames);
             boundStatement.setInt(i++, needsRollupAdjustedTTL);
             futures.add(session.writeAsync(boundStatement));
         }
         MoreFutures.waitForAll(futures);
+
+        // update the cache now that the above inserts were successful
+        needsRollupCache1.putAll(updatesForNeedsRollupCache1);
     }
 
     @Override
@@ -286,6 +331,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     // parent rollup depends on the 1-minute child rollup
     public void rollup(String agentRollupId, @Nullable String parentAgentRollupId, boolean leaf)
             throws Exception {
+
         List<Integer> ttls = getTTLs();
         int rollupLevel;
         if (leaf) {
@@ -357,8 +403,8 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             int ttl) throws Exception {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         long rollupIntervalMillis = rollupConfigs.get(rollupLevel - 1).intervalMillis();
-        List<NeedsRollup> needsRollupList = Common.getNeedsRollupList(agentRollupId, rollupLevel,
-                rollupIntervalMillis, readNeedsRollup, session, clock);
+        Collection<NeedsRollup> needsRollupList = Common.getNeedsRollupList(agentRollupId,
+                rollupLevel, rollupIntervalMillis, readNeedsRollup, session, clock);
         Long nextRollupIntervalMillis = null;
         if (rollupLevel < rollupConfigs.size()) {
             nextRollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
@@ -501,5 +547,13 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         }
         session.updateSchemaWithRetry("truncate gauge_name");
         session.updateSchemaWithRetry("truncate gauge_needs_rollup_from_child");
+    }
+
+    @Value.Immutable
+    @Serial.Structural
+    @Styles.AllParameters
+    interface NeedsRollupKey extends Serializable {
+        String agentRollupId();
+        long captureTime();
     }
 }

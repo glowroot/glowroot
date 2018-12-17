@@ -61,7 +61,7 @@ public class GaugeValueDaoIT {
                 agentConfigDao, userDao, roleDao, "");
         asyncExecutor = Executors.newCachedThreadPool();
         gaugeValueDao = new GaugeValueDaoWithV09Support(ImmutableSet.of(), 0, Clock.systemClock(),
-                new GaugeValueDaoImpl(session, configRepository, asyncExecutor,
+                new GaugeValueDaoImpl(session, configRepository, clusterManager, asyncExecutor,
                         Clock.systemClock()));
     }
 

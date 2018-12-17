@@ -901,8 +901,8 @@ public class AggregateDaoImpl implements AggregateDao {
             throws Exception {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         long rollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
-        List<NeedsRollup> needsRollupList = Common.getNeedsRollupList(agentRollupId, rollupLevel,
-                rollupIntervalMillis, readNeedsRollup, session, clock);
+        Collection<NeedsRollup> needsRollupList = Common.getNeedsRollupList(agentRollupId,
+                rollupLevel, rollupIntervalMillis, readNeedsRollup, session, clock);
         Long nextRollupIntervalMillis = null;
         if (rollupLevel + 1 < rollupConfigs.size()) {
             nextRollupIntervalMillis = rollupConfigs.get(rollupLevel + 1).intervalMillis();
