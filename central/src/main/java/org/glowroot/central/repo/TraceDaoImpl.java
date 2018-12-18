@@ -1312,6 +1312,7 @@ public class TraceDaoImpl implements TraceDao {
                         .durationNanos(durationNanos)
                         .partial(partial)
                         .error(error)
+                        .checkLiveTraces(false)
                         .build());
             }
         }

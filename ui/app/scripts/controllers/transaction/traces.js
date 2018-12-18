@@ -317,9 +317,10 @@ glowroot.controller('TracesCtrl', [
       if (item) {
         plot.unhighlight();
         plot.highlight(item.series, item.datapoint);
-        var agentId = plot.getData()[item.seriesIndex].data[item.dataIndex][2];
-        var traceId = plot.getData()[item.seriesIndex].data[item.dataIndex][3];
-        var checkLiveTraces = item.seriesIndex === 2;
+        var point = plot.getData()[item.seriesIndex].data[item.dataIndex];
+        var agentId = point[2];
+        var traceId = point[3];
+        var checkLiveTraces = point[4];
         if (originalEvent.ctrlKey) {
           var url = $location.url();
           if (url.indexOf('?') === -1) {

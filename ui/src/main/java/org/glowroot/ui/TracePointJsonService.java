@@ -320,6 +320,9 @@ class TracePointJsonService {
             jg.writeNumber(point.durationNanos() / (double) NANOSECONDS_PER_MILLISECOND);
             jg.writeString(point.agentId());
             jg.writeString(point.traceId());
+            if (point.checkLiveTraces()) {
+                jg.writeBoolean(true);
+            }
             jg.writeEndArray();
         }
     }

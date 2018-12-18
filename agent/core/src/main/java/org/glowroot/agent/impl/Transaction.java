@@ -848,7 +848,7 @@ public class Transaction {
         this.captureTime = captureTime;
     }
 
-    long getCaptureTime() {
+    public long getCaptureTime() {
         return captureTime;
     }
 

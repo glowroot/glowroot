@@ -190,6 +190,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                         .durationNanos(captureTick - startTick)
                         .partial(true)
                         .error(transaction.getErrorMessage() != null)
+                        .checkLiveTraces(true)
                         .build());
             }
         }
@@ -216,10 +217,12 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
                 points.add(ImmutableTracePoint.builder()
                         .agentId(AGENT_ID)
                         .traceId(transaction.getTraceId())
-                        .captureTime(captureTime)
+                        // by the time transaction is in pending list, the capture time is set
+                        .captureTime(transaction.getCaptureTime())
                         .durationNanos(transaction.getDurationNanos())
                         .partial(false)
                         .error(transaction.getErrorMessage() != null)
+                        .checkLiveTraces(true)
                         .build());
             }
         }

@@ -599,6 +599,7 @@ public class TraceDao implements TraceRepository {
                     .durationNanos(resultSet.getLong(i++))
                     .partial(resultSet.getBoolean(i++))
                     .error(resultSet.getBoolean(i++))
+                    .checkLiveTraces(false)
                     .build();
         }
     }

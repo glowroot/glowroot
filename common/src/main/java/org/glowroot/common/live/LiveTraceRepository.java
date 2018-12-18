@@ -167,6 +167,9 @@ public interface LiveTraceRepository {
         long durationNanos();
         boolean partial();
         boolean error();
+        // checkLiveTraces is needed for active traces, but also needed for pending traces, just in
+        // case the pending trace still isn't stored when it is clicked on
+        boolean checkLiveTraces();
     }
 
     enum TraceKind {
