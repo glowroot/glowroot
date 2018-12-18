@@ -18,6 +18,8 @@ package org.glowroot.agent.embedded.util;
 import java.io.File;
 import java.io.IOException;
 import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Ticker;
 import com.google.common.io.ByteSource;
@@ -31,16 +33,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class CappedDatabaseResizeTest {
 
     private File tempFile;
+    private ScheduledExecutorService scheduledExecutor;
     private CappedDatabase cappedDatabase;
 
     @Before
     public void onBefore() throws IOException {
         tempFile = File.createTempFile("glowroot-test-", ".capped.db");
-        cappedDatabase = new CappedDatabase(tempFile, 2, Ticker.systemTicker());
+        scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+        cappedDatabase = new CappedDatabase(tempFile, 2, scheduledExecutor, Ticker.systemTicker());
     }
 
     @After
     public void onAfter() throws IOException {
+        scheduledExecutor.shutdownNow();
         cappedDatabase.close();
         tempFile.delete();
     }
@@ -91,7 +96,7 @@ public class CappedDatabaseResizeTest {
 
         // also test close and re-open
         cappedDatabase.close();
-        cappedDatabase = new CappedDatabase(tempFile, 2, Ticker.systemTicker());
+        cappedDatabase = new CappedDatabase(tempFile, 2, scheduledExecutor, Ticker.systemTicker());
         text2 = cappedDatabase.read(cappedId).read();
         assertThat(text2).isEqualTo(text);
     }
@@ -112,7 +117,7 @@ public class CappedDatabaseResizeTest {
 
         // also test close and re-open
         cappedDatabase.close();
-        cappedDatabase = new CappedDatabase(tempFile, 2, Ticker.systemTicker());
+        cappedDatabase = new CappedDatabase(tempFile, 2, scheduledExecutor, Ticker.systemTicker());
         text2 = cappedDatabase.read(cappedId).read();
         assertThat(text2).isEqualTo(text);
     }

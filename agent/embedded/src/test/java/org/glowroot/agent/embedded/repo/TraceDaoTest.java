@@ -16,6 +16,8 @@
 package org.glowroot.agent.embedded.repo;
 
 import java.io.File;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Ticker;
 import org.junit.AfterClass;
@@ -48,6 +50,7 @@ public class TraceDaoTest {
 
     private static DataSource dataSource;
     private static File cappedFile;
+    private static ScheduledExecutorService scheduledExecutor;
     private static CappedDatabase cappedDatabase;
     private static TraceDao traceDao;
 
@@ -58,13 +61,16 @@ public class TraceDaoTest {
             dataSource.execute("drop table trace");
         }
         cappedFile = File.createTempFile("glowroot-test-", ".capped.db");
-        cappedDatabase = new CappedDatabase(cappedFile, 1000000, Ticker.systemTicker());
+        scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+        cappedDatabase =
+                new CappedDatabase(cappedFile, 1000000, scheduledExecutor, Ticker.systemTicker());
         traceDao = new TraceDao(dataSource, cappedDatabase, mock(TransactionTypeDao.class),
                 mock(FullQueryTextDao.class), mock(TraceAttributeNameDao.class));
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
+        scheduledExecutor.shutdownNow();
         dataSource.close();
         cappedDatabase.close();
         cappedFile.delete();

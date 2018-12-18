@@ -19,8 +19,18 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
-import org.glowroot.common.util.OnlyUsedByTests;
+import javax.annotation.Nullable;
+
+import com.google.common.base.Ticker;
+
+import org.glowroot.common.util.ScheduledRunnable;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 // Needs to be externally synchronized around startBlock()/write()/endBlock().
 class CappedDatabaseOutputStream extends OutputStream {
@@ -28,9 +38,12 @@ class CappedDatabaseOutputStream extends OutputStream {
     static final int HEADER_SKIP_BYTES = 20;
     static final int BLOCK_HEADER_SKIP_BYTES = 8;
 
+    // aggressive fsync interval to minimize chance of invalid trace records on abrupt JVM stop
+    private static final int FSYNC_INTERVAL_MILLIS = 100;
     private static final int HEADER_CURR_INDEX_POS = 0;
 
     private final File file;
+    private final Ticker ticker;
     private RandomAccessFile out;
 
     // currIndex is ever-increasing even over capped boundary
@@ -46,8 +59,27 @@ class CappedDatabaseOutputStream extends OutputStream {
     private long blockStartIndex;
     private long blockStartPosition;
 
-    CappedDatabaseOutputStream(File file, int requestedSizeKb) throws IOException {
+    private final AtomicBoolean fsyncNeeded = new AtomicBoolean();
+    private final AtomicLong lastFsyncTick = new AtomicLong();
+
+    private final FsyncRunnable fsyncScheduledRunnable;
+
+    static CappedDatabaseOutputStream create(File file, int requestedSizeKb,
+            @Nullable ScheduledExecutorService scheduledExecutor, Ticker ticker)
+            throws IOException {
+        CappedDatabaseOutputStream out =
+                new CappedDatabaseOutputStream(file, requestedSizeKb, ticker);
+        if (scheduledExecutor != null) {
+            out.fsyncScheduledRunnable.scheduleWithFixedDelay(scheduledExecutor,
+                    FSYNC_INTERVAL_MILLIS, FSYNC_INTERVAL_MILLIS, MILLISECONDS);
+        }
+        return out;
+    }
+
+    private CappedDatabaseOutputStream(File file, int requestedSizeKb, Ticker ticker)
+            throws IOException {
         this.file = file;
+        this.ticker = ticker;
         boolean newFile = !file.exists() || file.length() == 0;
         out = new RandomAccessFile(file, "rw");
         if (newFile) {
@@ -66,6 +98,8 @@ class CappedDatabaseOutputStream extends OutputStream {
             sizeBytes = sizeKb * 1024L;
             lastResizeBaseIndex = out.readLong();
         }
+        lastFsyncTick.set(ticker.read());
+        fsyncScheduledRunnable = new FsyncRunnable();
     }
 
     void startBlock() {
@@ -84,7 +118,12 @@ class CappedDatabaseOutputStream extends OutputStream {
     long endBlock() throws IOException {
         out.seek(HEADER_SKIP_BYTES + blockStartPosition);
         out.writeLong(currIndex - blockStartIndex - BLOCK_HEADER_SKIP_BYTES);
-        out.getFD().sync();
+        fsyncNeeded.set(true);
+        if (ticker.read() - lastFsyncTick.get() > SECONDS.toNanos(2)) {
+            // scheduled fsyncs must have fallen behind (since they share a single thread with other
+            // tasks in order to keep number of threads down), so force an fsync now
+            fsyncIfNeeded();
+        }
         return blockStartIndex;
     }
 
@@ -156,6 +195,7 @@ class CappedDatabaseOutputStream extends OutputStream {
 
     @Override
     public void close() throws IOException {
+        fsyncScheduledRunnable.cancel();
         out.close();
     }
 
@@ -191,6 +231,13 @@ class CappedDatabaseOutputStream extends OutputStream {
         out.writeLong(currIndex);
     }
 
+    private void fsyncIfNeeded() throws IOException {
+        if (fsyncNeeded.getAndSet(false)) {
+            out.getFD().sync();
+            lastFsyncTick.set(ticker.read());
+        }
+    }
+
     private boolean performEasyResize(int newSizeKb) throws IOException {
         if (newSizeKb == sizeKb) {
             return true;
@@ -219,11 +266,6 @@ class CappedDatabaseOutputStream extends OutputStream {
         return false;
     }
 
-    @OnlyUsedByTests
-    void sync() throws IOException {
-        out.getFD().sync();
-    }
-
     private static void copy(RandomAccessFile in, RandomAccessFile out, long numBytes)
             throws IOException {
         byte[] block = new byte[1024];
@@ -232,6 +274,13 @@ class CappedDatabaseOutputStream extends OutputStream {
             int n = in.read(block, 0, (int) Math.min(1024L, numBytes - total));
             out.write(block, 0, n);
             total += n;
+        }
+    }
+
+    private class FsyncRunnable extends ScheduledRunnable {
+        @Override
+        protected void runInternal() throws IOException {
+            fsyncIfNeeded();
         }
     }
 }

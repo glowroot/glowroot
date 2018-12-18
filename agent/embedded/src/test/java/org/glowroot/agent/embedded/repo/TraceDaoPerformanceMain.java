@@ -16,6 +16,8 @@
 package org.glowroot.agent.embedded.repo;
 
 import java.io.File;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Ticker;
@@ -36,8 +38,9 @@ public class TraceDaoPerformanceMain {
 
     public static void main(String[] args) throws Exception {
         DataSource dataSource = new DataSource();
-        CappedDatabase cappedDatabase =
-                new CappedDatabase(new File("glowroot.capped.db"), 1000000, Ticker.systemTicker());
+        ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+        CappedDatabase cappedDatabase = new CappedDatabase(new File("glowroot.capped.db"), 1000000,
+                scheduledExecutor, Ticker.systemTicker());
         TraceDao traceDao = new TraceDao(dataSource, cappedDatabase,
                 mock(TransactionTypeDao.class), mock(FullQueryTextDao.class),
                 mock(TraceAttributeNameDao.class));

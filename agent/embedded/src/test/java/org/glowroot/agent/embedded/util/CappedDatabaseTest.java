@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Ticker;
 import com.google.common.io.ByteSource;
@@ -34,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class CappedDatabaseTest {
 
     private File tempFile;
+    private ScheduledExecutorService scheduledExecutor;
     private CappedDatabase cappedDatabase;
 
     @Rule
@@ -42,11 +45,13 @@ public class CappedDatabaseTest {
     @Before
     public void onBefore() throws IOException {
         tempFile = File.createTempFile("glowroot-test-", ".capped.db");
-        cappedDatabase = new CappedDatabase(tempFile, 1, Ticker.systemTicker());
+        scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+        cappedDatabase = new CappedDatabase(tempFile, 1, scheduledExecutor, Ticker.systemTicker());
     }
 
     @After
     public void onAfter() throws IOException {
+        scheduledExecutor.shutdownNow();
         cappedDatabase.close();
         tempFile.delete();
     }

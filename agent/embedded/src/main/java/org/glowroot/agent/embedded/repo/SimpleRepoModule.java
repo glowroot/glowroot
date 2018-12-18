@@ -84,11 +84,11 @@ public class SimpleRepoModule {
         for (int i = 0; i < storageConfig.rollupCappedDatabaseSizesMb().size(); i++) {
             File file = new File(dataDir, "rollup-" + i + "-detail.capped.db");
             int sizeKb = storageConfig.rollupCappedDatabaseSizesMb().get(i) * 1024;
-            rollupCappedDatabases.add(new CappedDatabase(file, sizeKb, ticker));
+            rollupCappedDatabases.add(new CappedDatabase(file, sizeKb, backgroundExecutor, ticker));
         }
         this.rollupCappedDatabases = ImmutableList.copyOf(rollupCappedDatabases);
         traceCappedDatabase = new CappedDatabase(new File(dataDir, "trace-detail.capped.db"),
-                storageConfig.traceCappedDatabaseSizeMb() * 1024, ticker);
+                storageConfig.traceCappedDatabaseSizeMb() * 1024, backgroundExecutor, ticker);
 
         SchemaUpgrade schemaUpgrade = new SchemaUpgrade(dataSource);
         Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();

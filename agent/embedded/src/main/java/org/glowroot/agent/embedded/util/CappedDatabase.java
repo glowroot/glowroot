@@ -26,7 +26,9 @@ import java.io.RandomAccessFile;
 import java.io.Reader;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.StandardSystemProperty;
@@ -82,10 +84,12 @@ public class CappedDatabase {
     private final Ticker ticker;
     private final Map<String, CappedDatabaseStats> statsByType = Maps.newHashMap();
 
-    public CappedDatabase(File file, int requestedSizeKb, Ticker ticker) throws IOException {
+    public CappedDatabase(File file, int requestedSizeKb,
+            @Nullable ScheduledExecutorService scheduledExecutor, Ticker ticker)
+            throws IOException {
         this.file = file;
         this.ticker = ticker;
-        out = new CappedDatabaseOutputStream(file, requestedSizeKb);
+        out = CappedDatabaseOutputStream.create(file, requestedSizeKb, scheduledExecutor, ticker);
         inFile = new RandomAccessFile(file, "r");
         shutdownHookThread = new ShutdownHookThread();
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);

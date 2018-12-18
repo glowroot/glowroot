@@ -18,6 +18,8 @@ package org.glowroot.agent.embedded.repo;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
@@ -58,6 +60,7 @@ public class AggregateDaoTest {
 
     private DataSource dataSource;
     private File cappedFile;
+    private ScheduledExecutorService scheduledExecutor;
     private CappedDatabase cappedDatabase;
     private AggregateDao aggregateDao;
 
@@ -71,7 +74,9 @@ public class AggregateDaoTest {
             dataSource.execute("drop table transaction_point");
         }
         cappedFile = File.createTempFile("glowroot-test-", ".capped.db");
-        cappedDatabase = new CappedDatabase(cappedFile, 1000000, Ticker.systemTicker());
+        scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+        cappedDatabase =
+                new CappedDatabase(cappedFile, 1000000, scheduledExecutor, Ticker.systemTicker());
         ConfigRepositoryImpl configRepository = mock(ConfigRepositoryImpl.class);
         when(configRepository.getAdvancedConfig(AGENT_ID))
                 .thenReturn(AdvancedConfig.getDefaultInstance());
@@ -87,6 +92,7 @@ public class AggregateDaoTest {
 
     @After
     public void afterEachTest() throws Exception {
+        scheduledExecutor.shutdownNow();
         dataSource.close();
         cappedDatabase.close();
         cappedFile.delete();

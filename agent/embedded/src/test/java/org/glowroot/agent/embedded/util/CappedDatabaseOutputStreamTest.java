@@ -20,7 +20,10 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 import java.io.Writer;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
+import com.google.common.base.Ticker;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,18 +35,22 @@ public class CappedDatabaseOutputStreamTest {
     private static final int BLOCK_HEADER_SIZE = 8;
 
     private File tempFile;
+    private ScheduledExecutorService scheduledExecutor;
     private CappedDatabaseOutputStream cappedOut;
     private RandomAccessFile in;
 
     @Before
     public void onBefore() throws IOException {
         tempFile = File.createTempFile("glowroot-test-", ".capped.txt");
-        cappedOut = new CappedDatabaseOutputStream(tempFile, 10);
+        scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+        cappedOut = CappedDatabaseOutputStream.create(tempFile, 10, scheduledExecutor,
+                Ticker.systemTicker());
         in = new RandomAccessFile(tempFile, "r");
     }
 
     @After
     public void onAfter() throws IOException {
+        scheduledExecutor.shutdownNow();
         cappedOut.close();
         in.close();
         tempFile.delete();
@@ -60,7 +67,6 @@ public class CappedDatabaseOutputStreamTest {
         out.write(text);
         out.flush();
         long cappedId = cappedOut.endBlock();
-        cappedOut.sync();
 
         // then
         assertWrite(text, cappedId);
@@ -76,7 +82,6 @@ public class CappedDatabaseOutputStreamTest {
         cappedOut.write(text.getBytes());
         cappedOut.flush();
         long cappedId = cappedOut.endBlock();
-        cappedOut.sync();
 
         // then
         assertWrite(text, cappedId);
@@ -98,7 +103,6 @@ public class CappedDatabaseOutputStreamTest {
         cappedOut.write('9');
         cappedOut.flush();
         long cappedId = cappedOut.endBlock();
-        cappedOut.sync();
 
         // then
         assertWrite("0123456789", cappedId);
