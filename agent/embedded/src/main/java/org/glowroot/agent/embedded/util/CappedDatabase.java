@@ -135,6 +135,7 @@ public class CappedDatabase {
     }
 
     private long write(String type, Copier copier) throws IOException {
+        long blockStartIndex;
         synchronized (lock) {
             if (closed) {
                 return -1;
@@ -155,22 +156,19 @@ public class CappedDatabase {
             }
             stats.record(countingStreamBeforeCompression.getCount(),
                     countingStreamAfterCompression.getCount(), endTick - startTick);
-            return out.endBlock();
+            blockStartIndex = out.endBlock();
         }
+        // fsync (if really needed here) does not need to be done under lock
+        out.fsyncIfReallyNeeded();
+        return blockStartIndex;
     }
 
     public <T extends /*@NonNull*/ AbstractMessage> /*@Nullable*/ T readMessage(long cappedId,
             Parser<T> parser) throws IOException {
-        boolean overwritten;
-        boolean inTheFuture;
-        synchronized (lock) {
-            overwritten = out.isOverwritten(cappedId);
-            inTheFuture = cappedId >= out.getCurrIndex();
-        }
-        if (overwritten) {
+        if (out.isOverwritten(cappedId)) {
             return null;
         }
-        if (inTheFuture) {
+        if (out.isInTheFuture(cappedId)) {
             // this can happen when the glowroot folder is copied for analysis without shutting down
             // the JVM and glowroot.capped.db is copied first, then new data is written to
             // glowroot.capped.db and the new capped ids are written to glowroot.h2.db and then
@@ -186,10 +184,7 @@ public class CappedDatabase {
         try {
             return parser.parseFrom(input);
         } catch (Exception e) {
-            synchronized (lock) {
-                overwritten = out.isOverwritten(cappedId);
-            }
-            if (!overwritten) {
+            if (!out.isOverwritten(cappedId)) {
                 logger.error(e.getMessage(), e);
             }
             return null;
@@ -200,16 +195,10 @@ public class CappedDatabase {
 
     public <T extends /*@NonNull*/ MessageLite> List<T> readMessages(long cappedId,
             Parser<T> parser) throws IOException {
-        boolean overwritten;
-        boolean inTheFuture;
-        synchronized (lock) {
-            overwritten = out.isOverwritten(cappedId);
-            inTheFuture = cappedId >= out.getCurrIndex();
-        }
-        if (overwritten) {
+        if (out.isOverwritten(cappedId)) {
             return ImmutableList.of();
         }
-        if (inTheFuture) {
+        if (out.isInTheFuture(cappedId)) {
             // this can happen when the glowroot folder is copied for analysis without shutting down
             // the JVM and glowroot.capped.db is copied first, then new data is written to
             // glowroot.capped.db and the new capped ids are written to glowroot.h2.db and then
@@ -231,10 +220,7 @@ public class CappedDatabase {
                 messages.add(message);
             }
         } catch (Exception e) {
-            synchronized (lock) {
-                overwritten = out.isOverwritten(cappedId);
-            }
-            if (!overwritten) {
+            if (!out.isOverwritten(cappedId)) {
                 logger.error(e.getMessage(), e);
             }
             return ImmutableList.of();
@@ -250,15 +236,11 @@ public class CappedDatabase {
     }
 
     boolean isExpired(long cappedId) {
-        synchronized (lock) {
-            return out.isOverwritten(cappedId);
-        }
+        return out.isOverwritten(cappedId);
     }
 
     public long getSmallestNonExpiredId() {
-        synchronized (lock) {
-            return out.getSmallestNonOverwrittenId();
-        }
+        return out.getSmallestNonOverwrittenId();
     }
 
     public void resize(int newSizeKb) throws IOException {

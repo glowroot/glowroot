@@ -48,13 +48,16 @@ class CappedDatabaseOutputStream extends OutputStream {
 
     // currIndex is ever-increasing even over capped boundary
     // (btw it would take writing 2.9g per second for 100 years for currIndex to hit Long.MAX_VALUE)
-    private long currIndex;
+    // volatile so it can be read outside of the external synchronization
+    private volatile long currIndex;
     // lastResizeBaseIndex is the smallest currIndex saved during the last resize
     private long lastResizeBaseIndex;
-    // sizeKb is volatile so it can be read outside of the external synchronization around
-    // startBlock()/write()/endBlock()
+    // volatile so it can be read outside of the external synchronization
     private volatile int sizeKb;
     private long sizeBytes;
+
+    // volatile so it can be read outside of the external synchronization
+    private volatile long smallestNonOverwrittenId;
 
     private long blockStartIndex;
     private long blockStartPosition;
@@ -98,6 +101,8 @@ class CappedDatabaseOutputStream extends OutputStream {
             sizeBytes = sizeKb * 1024L;
             lastResizeBaseIndex = out.readLong();
         }
+        smallestNonOverwrittenId =
+                calculateSmallestNonOverwrittenId(lastResizeBaseIndex, currIndex, sizeBytes);
         lastFsyncTick.set(ticker.read());
         fsyncScheduledRunnable = new FsyncRunnable();
     }
@@ -113,35 +118,40 @@ class CappedDatabaseOutputStream extends OutputStream {
         blockStartPosition = (currIndex - lastResizeBaseIndex) % sizeBytes;
         // make space for block size to be written at start position
         currIndex += BLOCK_HEADER_SKIP_BYTES;
+        updateSmallestNonOverwrittenId();
     }
 
     long endBlock() throws IOException {
         out.seek(HEADER_SKIP_BYTES + blockStartPosition);
         out.writeLong(currIndex - blockStartIndex - BLOCK_HEADER_SKIP_BYTES);
         fsyncNeeded.set(true);
+        return blockStartIndex;
+    }
+
+    void fsyncIfReallyNeeded() throws IOException {
         if (ticker.read() - lastFsyncTick.get() > SECONDS.toNanos(2)) {
             // scheduled fsyncs must have fallen behind (since they share a single thread with other
             // tasks in order to keep number of threads down), so force an fsync now
             fsyncIfNeeded();
         }
-        return blockStartIndex;
     }
 
+    // this is ok to call outside of external synchronization
+    boolean isInTheFuture(long cappedId) {
+        return cappedId >= currIndex;
+    }
+
+    // this is ok to call outside of external synchronization
     boolean isOverwritten(long cappedId) {
-        return cappedId < getSmallestNonOverwrittenId();
+        return cappedId < smallestNonOverwrittenId;
     }
 
+    // this is ok to call outside of external synchronization
     long getSmallestNonOverwrittenId() {
-        // need to check lastResizeBaseIndex in case it was recently resized larger, in which case
-        // currIndex - sizeBytes would be less than lastResizeBaseIndex
-        return Math.max(lastResizeBaseIndex, currIndex - sizeBytes);
+        return smallestNonOverwrittenId;
     }
 
-    long getCurrIndex() {
-        return currIndex;
-    }
-
-    // this is ok to read outside of external synchronization around startBlock()/write()/endBlock()
+    // this is ok to call outside of external synchronization
     int getSizeKb() {
         return sizeKb;
     }
@@ -191,6 +201,7 @@ class CappedDatabaseOutputStream extends OutputStream {
         sizeKb = newSizeKb;
         sizeBytes = newSizeBytes;
         out = new RandomAccessFile(file, "rw");
+        updateSmallestNonOverwrittenId();
     }
 
     @Override
@@ -229,6 +240,7 @@ class CappedDatabaseOutputStream extends OutputStream {
         currIndex += len;
         out.seek(HEADER_CURR_INDEX_POS);
         out.writeLong(currIndex);
+        updateSmallestNonOverwrittenId();
     }
 
     private void fsyncIfNeeded() throws IOException {
@@ -248,6 +260,7 @@ class CappedDatabaseOutputStream extends OutputStream {
             out.writeInt(newSizeKb);
             sizeKb = newSizeKb;
             sizeBytes = newSizeBytes;
+            updateSmallestNonOverwrittenId();
             return true;
         }
         return false;
@@ -264,6 +277,20 @@ class CappedDatabaseOutputStream extends OutputStream {
             return true;
         }
         return false;
+    }
+
+    // must be called under lock
+    private void updateSmallestNonOverwrittenId() {
+        smallestNonOverwrittenId =
+                calculateSmallestNonOverwrittenId(lastResizeBaseIndex, currIndex, sizeBytes);
+    }
+
+    // separate static method to satisfy checker framework since calling from constructor
+    private static long calculateSmallestNonOverwrittenId(long lastResizeBaseIndex, long currIndex,
+            long sizeBytes) {
+        // need to check lastResizeBaseIndex in case it was recently resized larger, in which case
+        // currIndex - sizeBytes would be less than lastResizeBaseIndex
+        return Math.max(lastResizeBaseIndex, currIndex - sizeBytes);
     }
 
     private static void copy(RandomAccessFile in, RandomAccessFile out, long numBytes)

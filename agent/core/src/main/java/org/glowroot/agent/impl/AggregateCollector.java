@@ -51,7 +51,6 @@ import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-// must be used under an appropriate lock
 @Styles.Private
 class AggregateCollector {
 
@@ -75,6 +74,11 @@ class AggregateCollector {
     private @MonotonicNonNull MutableProfile mainThreadProfile;
     private @MonotonicNonNull MutableProfile auxThreadProfile;
 
+    // lock is primarily for visibility (there is almost no contention since written via a single
+    // thread and flushed afterwards via a different thread, with potential concurrent access by the
+    // UI for "live" data when running the embedded collector)
+    private final Object lock = new Object();
+
     AggregateCollector(@Nullable String transactionName, int maxQueryAggregates,
             int maxServiceCallAggregates) {
         this.transactionName = transactionName;
@@ -92,139 +96,157 @@ class AggregateCollector {
     }
 
     void mergeDataFrom(Transaction transaction) {
-        long totalDurationNanos = transaction.getDurationNanos();
-        this.totalDurationNanos += totalDurationNanos;
-        transactionCount++;
-        if (transaction.getErrorMessage() != null) {
-            errorCount++;
-        }
-        if (transaction.isAsync()) {
-            asyncTransactions = true;
-        }
-        mainThreadStats.mergeThreadStats(transaction.getMainThreadStats());
-        mainThreadRootTimers.mergeRootTimer(transaction.getMainThreadRootTimer());
-        if (transaction.hasAuxThreadContexts()) {
-            if (auxThreadRootTimer == null) {
-                auxThreadRootTimer = MutableAggregateTimer.createAuxThreadRootTimer();
+        synchronized (lock) {
+            long totalDurationNanos = transaction.getDurationNanos();
+            this.totalDurationNanos += totalDurationNanos;
+            transactionCount++;
+            if (transaction.getErrorMessage() != null) {
+                errorCount++;
             }
-            transaction.mergeAuxThreadTimersInto(auxThreadRootTimer);
-            if (auxThreadStats == null) {
-                auxThreadStats = new ThreadStatsCollectorImpl();
+            if (transaction.isAsync()) {
+                asyncTransactions = true;
             }
-            transaction.mergeAuxThreadStatsInto(auxThreadStats);
-        }
-        if (transaction.hasAsyncTimers()) {
-            if (asyncTimers == null) {
-                asyncTimers = new RootTimerCollectorImpl();
+            mainThreadStats.mergeThreadStats(transaction.getMainThreadStats());
+            mainThreadRootTimers.mergeRootTimer(transaction.getMainThreadRootTimer());
+            if (transaction.hasAuxThreadContexts()) {
+                if (auxThreadRootTimer == null) {
+                    auxThreadRootTimer = MutableAggregateTimer.createAuxThreadRootTimer();
+                }
+                transaction.mergeAuxThreadTimersInto(auxThreadRootTimer);
+                if (auxThreadStats == null) {
+                    auxThreadStats = new ThreadStatsCollectorImpl();
+                }
+                transaction.mergeAuxThreadStatsInto(auxThreadStats);
             }
-            transaction.mergeAsyncTimersInto(asyncTimers);
-        }
-        durationNanosHistogram.add(totalDurationNanos);
-        transaction.mergeQueriesInto(queries);
-        transaction.mergeServiceCallsInto(serviceCalls);
-        ThreadProfile toBeMergedMainThreadProfile = transaction.getMainThreadProfile();
-        if (toBeMergedMainThreadProfile != null) {
-            if (mainThreadProfile == null) {
-                mainThreadProfile = new MutableProfile();
+            if (transaction.hasAsyncTimers()) {
+                if (asyncTimers == null) {
+                    asyncTimers = new RootTimerCollectorImpl();
+                }
+                transaction.mergeAsyncTimersInto(asyncTimers);
             }
-            toBeMergedMainThreadProfile.mergeInto(mainThreadProfile);
-        }
-        ThreadProfile toBeMergedAuxThreadProfile = transaction.getAuxThreadProfile();
-        if (toBeMergedAuxThreadProfile != null) {
-            if (auxThreadProfile == null) {
-                auxThreadProfile = new MutableProfile();
+            durationNanosHistogram.add(totalDurationNanos);
+            transaction.mergeQueriesInto(queries);
+            transaction.mergeServiceCallsInto(serviceCalls);
+            ThreadProfile toBeMergedMainThreadProfile = transaction.getMainThreadProfile();
+            if (toBeMergedMainThreadProfile != null) {
+                if (mainThreadProfile == null) {
+                    mainThreadProfile = new MutableProfile();
+                }
+                toBeMergedMainThreadProfile.mergeInto(mainThreadProfile);
             }
-            toBeMergedAuxThreadProfile.mergeInto(auxThreadProfile);
+            ThreadProfile toBeMergedAuxThreadProfile = transaction.getAuxThreadProfile();
+            if (toBeMergedAuxThreadProfile != null) {
+                if (auxThreadProfile == null) {
+                    auxThreadProfile = new MutableProfile();
+                }
+                toBeMergedAuxThreadProfile.mergeInto(auxThreadProfile);
+            }
         }
     }
 
     Aggregate build(SharedQueryTextCollection sharedQueryTextCollection,
             ScratchBuffer scratchBuffer) {
-        Aggregate.Builder builder = Aggregate.newBuilder()
-                .setTotalDurationNanos(totalDurationNanos)
-                .setTransactionCount(transactionCount)
-                .setErrorCount(errorCount)
-                .setAsyncTransactions(asyncTransactions)
-                .addAllMainThreadRootTimer(mainThreadRootTimers.toProto())
-                .setMainThreadStats(mainThreadStats.toProto())
-                .setDurationNanosHistogram(durationNanosHistogram.toProto(scratchBuffer));
-        if (auxThreadRootTimer != null) {
-            builder.setAuxThreadRootTimer(auxThreadRootTimer.toProto());
-            // aux thread stats is non-null when aux thread root timer is non-null
-            builder.setAuxThreadStats(checkNotNull(auxThreadStats).toProto());
+        synchronized (lock) {
+            Aggregate.Builder builder = Aggregate.newBuilder()
+                    .setTotalDurationNanos(totalDurationNanos)
+                    .setTransactionCount(transactionCount)
+                    .setErrorCount(errorCount)
+                    .setAsyncTransactions(asyncTransactions)
+                    .addAllMainThreadRootTimer(mainThreadRootTimers.toProto())
+                    .setMainThreadStats(mainThreadStats.toProto())
+                    .setDurationNanosHistogram(durationNanosHistogram.toProto(scratchBuffer));
+            if (auxThreadRootTimer != null) {
+                builder.setAuxThreadRootTimer(auxThreadRootTimer.toProto());
+                // aux thread stats is non-null when aux thread root timer is non-null
+                builder.setAuxThreadStats(checkNotNull(auxThreadStats).toProto());
+            }
+            if (asyncTimers != null) {
+                builder.addAllAsyncTimer(asyncTimers.toProto());
+            }
+            if (queries != null) {
+                builder.addAllQuery(queries.toAggregateProto(sharedQueryTextCollection, false));
+            }
+            if (serviceCalls != null) {
+                builder.addAllServiceCall(serviceCalls.toAggregateProto());
+            }
+            if (mainThreadProfile != null) {
+                builder.setMainThreadProfile(mainThreadProfile.toProto());
+            }
+            if (auxThreadProfile != null) {
+                builder.setAuxThreadProfile(auxThreadProfile.toProto());
+            }
+            return builder.build();
         }
-        if (asyncTimers != null) {
-            builder.addAllAsyncTimer(asyncTimers.toProto());
-        }
-        if (queries != null) {
-            builder.addAllQuery(queries.toAggregateProto(sharedQueryTextCollection, false));
-        }
-        if (serviceCalls != null) {
-            builder.addAllServiceCall(serviceCalls.toAggregateProto());
-        }
-        if (mainThreadProfile != null) {
-            builder.setMainThreadProfile(mainThreadProfile.toProto());
-        }
-        if (auxThreadProfile != null) {
-            builder.setAuxThreadProfile(auxThreadProfile.toProto());
-        }
-        return builder.build();
     }
 
     void mergeOverallSummaryInto(OverallSummaryCollector collector) {
-        collector.mergeSummary(totalDurationNanos, transactionCount, 0);
+        synchronized (lock) {
+            collector.mergeSummary(totalDurationNanos, transactionCount, 0);
+        }
     }
 
     void mergeTransactionNameSummariesInto(TransactionNameSummaryCollector collector) {
         checkNotNull(transactionName);
-        collector.collect(transactionName, totalDurationNanos, transactionCount, 0);
+        synchronized (lock) {
+            collector.collect(transactionName, totalDurationNanos, transactionCount, 0);
+        }
     }
 
     void mergeOverallErrorSummaryInto(OverallErrorSummaryCollector collector) {
-        collector.mergeErrorSummary(errorCount, transactionCount, 0);
+        synchronized (lock) {
+            collector.mergeErrorSummary(errorCount, transactionCount, 0);
+        }
     }
 
     void mergeTransactionNameErrorSummariesInto(TransactionNameErrorSummaryCollector collector) {
         checkNotNull(transactionName);
-        if (errorCount != 0) {
-            collector.collect(transactionName, errorCount, transactionCount, 0);
+        synchronized (lock) {
+            if (errorCount != 0) {
+                collector.collect(transactionName, errorCount, transactionCount, 0);
+            }
         }
     }
 
     OverviewAggregate getOverviewAggregate(long captureTime) {
-        ImmutableOverviewAggregate.Builder builder = ImmutableOverviewAggregate.builder()
-                .captureTime(captureTime)
-                .totalDurationNanos(totalDurationNanos)
-                .transactionCount(transactionCount)
-                .asyncTransactions(asyncTransactions)
-                .mainThreadRootTimers(mainThreadRootTimers.toProto())
-                .mainThreadStats(mainThreadStats.toProto());
-        if (auxThreadRootTimer != null) {
-            builder.auxThreadRootTimer(auxThreadRootTimer.toProto());
-            // aux thread stats is non-null when aux thread root timer is non-null
-            builder.auxThreadStats(checkNotNull(auxThreadStats).toProto());
+        synchronized (lock) {
+            ImmutableOverviewAggregate.Builder builder = ImmutableOverviewAggregate.builder()
+                    .captureTime(captureTime)
+                    .totalDurationNanos(totalDurationNanos)
+                    .transactionCount(transactionCount)
+                    .asyncTransactions(asyncTransactions)
+                    .mainThreadRootTimers(mainThreadRootTimers.toProto())
+                    .mainThreadStats(mainThreadStats.toProto());
+            if (auxThreadRootTimer != null) {
+                builder.auxThreadRootTimer(auxThreadRootTimer.toProto());
+                // aux thread stats is non-null when aux thread root timer is non-null
+                builder.auxThreadStats(checkNotNull(auxThreadStats).toProto());
+            }
+            if (asyncTimers != null) {
+                builder.asyncTimers(asyncTimers.toProto());
+            }
+            return builder.build();
         }
-        if (asyncTimers != null) {
-            builder.asyncTimers(asyncTimers.toProto());
-        }
-        return builder.build();
     }
 
     PercentileAggregate getPercentileAggregate(long captureTime) {
-        return ImmutablePercentileAggregate.builder()
-                .captureTime(captureTime)
-                .totalDurationNanos(totalDurationNanos)
-                .transactionCount(transactionCount)
-                .durationNanosHistogram(durationNanosHistogram.toProto(new ScratchBuffer()))
-                .build();
+        synchronized (lock) {
+            return ImmutablePercentileAggregate.builder()
+                    .captureTime(captureTime)
+                    .totalDurationNanos(totalDurationNanos)
+                    .transactionCount(transactionCount)
+                    .durationNanosHistogram(durationNanosHistogram.toProto(new ScratchBuffer()))
+                    .build();
+        }
     }
 
     ThroughputAggregate getThroughputAggregate(long captureTime) {
-        return ImmutableThroughputAggregate.builder()
-                .captureTime(captureTime)
-                .transactionCount(transactionCount)
-                .errorCount(errorCount)
-                .build();
+        synchronized (lock) {
+            return ImmutableThroughputAggregate.builder()
+                    .captureTime(captureTime)
+                    .transactionCount(transactionCount)
+                    .errorCount(errorCount)
+                    .build();
+        }
     }
 
     @Nullable
@@ -232,30 +254,40 @@ class AggregateCollector {
         if (queries == null) {
             return null;
         }
-        return queries.getFullQueryText(fullQueryTextSha1);
+        synchronized (lock) {
+            return queries.getFullQueryText(fullQueryTextSha1);
+        }
     }
 
     void mergeQueriesInto(org.glowroot.common.model.QueryCollector collector) {
         if (queries != null) {
-            queries.mergeQueriesInto(collector);
+            synchronized (lock) {
+                queries.mergeQueriesInto(collector);
+            }
         }
     }
 
     void mergeServiceCallsInto(org.glowroot.common.model.ServiceCallCollector collector) {
         if (serviceCalls != null) {
-            serviceCalls.mergeServiceCallsInto(collector);
+            synchronized (lock) {
+                serviceCalls.mergeServiceCallsInto(collector);
+            }
         }
     }
 
     void mergeMainThreadProfilesInto(ProfileCollector collector) {
-        if (mainThreadProfile != null) {
-            collector.mergeProfile(mainThreadProfile.toProto());
+        synchronized (lock) {
+            if (mainThreadProfile != null) {
+                collector.mergeProfile(mainThreadProfile.toProto());
+            }
         }
     }
 
     void mergeAuxThreadProfilesInto(ProfileCollector collector) {
-        if (auxThreadProfile != null) {
-            collector.mergeProfile(auxThreadProfile.toProto());
+        synchronized (lock) {
+            if (auxThreadProfile != null) {
+                collector.mergeProfile(auxThreadProfile.toProto());
+            }
         }
     }
 

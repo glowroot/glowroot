@@ -18,8 +18,7 @@ package org.glowroot.agent.impl;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.annotation.concurrent.GuardedBy;
+import java.util.concurrent.ConcurrentMap;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -54,13 +53,8 @@ public class AggregateIntervalCollector {
     private final int maxServiceCallAggregates;
     private final Clock clock;
 
-    @GuardedBy("lock")
-    private final Map<String, IntervalTypeCollector> typeCollectors = Maps.newHashMap();
-
-    // lock is primarily for visibility (there is almost no contention since written via a single
-    // thread and flushed afterwards via a different thread, with potential concurrent access by the
-    // UI for "live" data when running the embedded collector)
-    private final Object lock = new Object();
+    private final ConcurrentMap<String, IntervalTypeCollector> typeCollectors =
+            Maps.newConcurrentMap();
 
     AggregateIntervalCollector(long currentTime, long aggregateIntervalMillis,
             int maxTransactionAggregates, int maxQueryAggregates, int maxServiceCallAggregates,
@@ -77,167 +71,144 @@ public class AggregateIntervalCollector {
     }
 
     public void add(Transaction transaction) {
-        synchronized (lock) {
-            IntervalTypeCollector typeCollector =
-                    getTypeCollector(transaction.getTransactionType());
-            typeCollector.add(transaction);
+        IntervalTypeCollector typeCollector = typeCollectors.get(transaction.getTransactionType());
+        if (typeCollector == null) {
+            // don't need to worry about race condition here because add() is only called from a
+            // single thread (TransactionProcessorLoop)
+            typeCollector = new IntervalTypeCollector();
+            typeCollectors.put(transaction.getTransactionType(), typeCollector);
         }
+        typeCollector.add(transaction);
     }
 
     public void mergeOverallSummaryInto(OverallSummaryCollector collector, String transactionType) {
-        synchronized (lock) {
-            IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
-            if (typeCollector == null) {
-                return;
-            }
-            typeCollector.overallAggregateCollector.mergeOverallSummaryInto(collector);
+        IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
+        if (typeCollector == null) {
+            return;
         }
+        typeCollector.overallAggregateCollector.mergeOverallSummaryInto(collector);
     }
 
     public void mergeTransactionNameSummariesInto(TransactionNameSummaryCollector collector,
             String transactionType) {
-        synchronized (lock) {
-            IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
-            if (typeCollector == null) {
-                return;
-            }
-            for (AggregateCollector aggregateCollector : typeCollector.transactionAggregateCollectors
-                    .values()) {
-                aggregateCollector.mergeTransactionNameSummariesInto(collector);
-            }
+        IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
+        if (typeCollector == null) {
+            return;
+        }
+        for (AggregateCollector aggregateCollector : typeCollector.transactionAggregateCollectors
+                .values()) {
+            aggregateCollector.mergeTransactionNameSummariesInto(collector);
         }
     }
 
     public void mergeOverallErrorSummaryInto(OverallErrorSummaryCollector collector,
             String transactionType) {
-        synchronized (lock) {
-            IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
-            if (typeCollector == null) {
-                return;
-            }
-            typeCollector.overallAggregateCollector.mergeOverallErrorSummaryInto(collector);
+        IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
+        if (typeCollector == null) {
+            return;
         }
+        typeCollector.overallAggregateCollector.mergeOverallErrorSummaryInto(collector);
     }
 
     public void mergeTransactionNameErrorSummariesInto(
             TransactionNameErrorSummaryCollector collector, String transactionType) {
-        synchronized (lock) {
-            IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
-            if (typeCollector == null) {
-                return;
-            }
-            for (AggregateCollector aggregateCollector : typeCollector.transactionAggregateCollectors
-                    .values()) {
-                aggregateCollector.mergeTransactionNameErrorSummariesInto(collector);
-            }
+        IntervalTypeCollector typeCollector = typeCollectors.get(transactionType);
+        if (typeCollector == null) {
+            return;
+        }
+        for (AggregateCollector aggregateCollector : typeCollector.transactionAggregateCollectors
+                .values()) {
+            aggregateCollector.mergeTransactionNameErrorSummariesInto(collector);
         }
     }
 
     public @Nullable OverviewAggregate getOverviewAggregate(String transactionType,
             @Nullable String transactionName) {
-        synchronized (lock) {
-            AggregateCollector aggregateCollector =
-                    getAggregateCollector(transactionType, transactionName);
-            if (aggregateCollector == null) {
-                return null;
-            }
-            long liveCaptureTime = Math.min(captureTime, clock.currentTimeMillis());
-            return aggregateCollector.getOverviewAggregate(liveCaptureTime);
+        AggregateCollector aggregateCollector =
+                getAggregateCollector(transactionType, transactionName);
+        if (aggregateCollector == null) {
+            return null;
         }
+        long liveCaptureTime = Math.min(captureTime, clock.currentTimeMillis());
+        return aggregateCollector.getOverviewAggregate(liveCaptureTime);
     }
 
     public @Nullable PercentileAggregate getPercentileAggregate(String transactionType,
             @Nullable String transactionName) {
-        synchronized (lock) {
-            AggregateCollector aggregateCollector =
-                    getAggregateCollector(transactionType, transactionName);
-            if (aggregateCollector == null) {
-                return null;
-            }
-            long liveCaptureTime = Math.min(captureTime, clock.currentTimeMillis());
-            return aggregateCollector.getPercentileAggregate(liveCaptureTime);
+        AggregateCollector aggregateCollector =
+                getAggregateCollector(transactionType, transactionName);
+        if (aggregateCollector == null) {
+            return null;
         }
+        long liveCaptureTime = Math.min(captureTime, clock.currentTimeMillis());
+        return aggregateCollector.getPercentileAggregate(liveCaptureTime);
     }
 
     public @Nullable ThroughputAggregate getThroughputAggregate(String transactionType,
             @Nullable String transactionName) {
-        synchronized (lock) {
-            AggregateCollector aggregateCollector =
-                    getAggregateCollector(transactionType, transactionName);
-            if (aggregateCollector == null) {
-                return null;
-            }
-            long liveCaptureTime = Math.min(captureTime, clock.currentTimeMillis());
-            return aggregateCollector.getThroughputAggregate(liveCaptureTime);
+        AggregateCollector aggregateCollector =
+                getAggregateCollector(transactionType, transactionName);
+        if (aggregateCollector == null) {
+            return null;
         }
+        long liveCaptureTime = Math.min(captureTime, clock.currentTimeMillis());
+        return aggregateCollector.getThroughputAggregate(liveCaptureTime);
     }
 
     public @Nullable String getFullQueryText(String fullQueryTextSha1) {
-        synchronized (lock) {
-            for (IntervalTypeCollector typeCollector : typeCollectors.values()) {
-                String fullQueryText = typeCollector.getFullQueryText(fullQueryTextSha1);
-                if (fullQueryText != null) {
-                    return fullQueryText;
-                }
+        for (IntervalTypeCollector typeCollector : typeCollectors.values()) {
+            String fullQueryText = typeCollector.getFullQueryText(fullQueryTextSha1);
+            if (fullQueryText != null) {
+                return fullQueryText;
             }
-            return null;
         }
+        return null;
     }
 
     public void mergeQueriesInto(QueryCollector collector, String transactionType,
             @Nullable String transactionName) {
-        synchronized (lock) {
-            AggregateCollector aggregateCollector =
-                    getAggregateCollector(transactionType, transactionName);
-            if (aggregateCollector == null) {
-                return;
-            }
-            aggregateCollector.mergeQueriesInto(collector);
+        AggregateCollector aggregateCollector =
+                getAggregateCollector(transactionType, transactionName);
+        if (aggregateCollector == null) {
+            return;
         }
+        aggregateCollector.mergeQueriesInto(collector);
     }
 
     public void mergeServiceCallsInto(ServiceCallCollector collector, String transactionType,
             @Nullable String transactionName) {
-        synchronized (lock) {
-            AggregateCollector aggregateCollector =
-                    getAggregateCollector(transactionType, transactionName);
-            if (aggregateCollector == null) {
-                return;
-            }
-            aggregateCollector.mergeServiceCallsInto(collector);
+        AggregateCollector aggregateCollector =
+                getAggregateCollector(transactionType, transactionName);
+        if (aggregateCollector == null) {
+            return;
         }
+        aggregateCollector.mergeServiceCallsInto(collector);
     }
 
     public void mergeMainThreadProfilesInto(ProfileCollector collector, String transactionType,
             @Nullable String transactionName) {
-        synchronized (lock) {
-            AggregateCollector aggregateCollector =
-                    getAggregateCollector(transactionType, transactionName);
-            if (aggregateCollector == null) {
-                return;
-            }
-            aggregateCollector.mergeMainThreadProfilesInto(collector);
+        AggregateCollector aggregateCollector =
+                getAggregateCollector(transactionType, transactionName);
+        if (aggregateCollector == null) {
+            return;
         }
+        aggregateCollector.mergeMainThreadProfilesInto(collector);
     }
 
     public void mergeAuxThreadProfilesInto(ProfileCollector collector, String transactionType,
             @Nullable String transactionName) {
-        synchronized (lock) {
-            AggregateCollector aggregateCollector =
-                    getAggregateCollector(transactionType, transactionName);
-            if (aggregateCollector == null) {
-                return;
-            }
-            aggregateCollector.mergeAuxThreadProfilesInto(collector);
+        AggregateCollector aggregateCollector =
+                getAggregateCollector(transactionType, transactionName);
+        if (aggregateCollector == null) {
+            return;
         }
+        aggregateCollector.mergeAuxThreadProfilesInto(collector);
     }
 
     // TODO report checker framework issue that occurs without this suppression
     @SuppressWarnings("return.type.incompatible")
     Set<String> getTransactionTypes() {
-        synchronized (lock) {
-            return typeCollectors.keySet();
-        }
+        return typeCollectors.keySet();
     }
 
     void flush(Collector collector) throws Exception {
@@ -245,23 +216,10 @@ public class AggregateIntervalCollector {
     }
 
     void clear() {
-        synchronized (lock) {
-            typeCollectors.clear();
-        }
+        typeCollectors.clear();
     }
 
-    @GuardedBy("lock")
-    private IntervalTypeCollector getTypeCollector(String transactionType) {
-        IntervalTypeCollector typeCollector;
-        typeCollector = typeCollectors.get(transactionType);
-        if (typeCollector == null) {
-            typeCollector = new IntervalTypeCollector();
-            typeCollectors.put(transactionType, typeCollector);
-        }
-        return typeCollector;
-    }
-
-    @GuardedBy("lock")
+    // can be called without lock
     private @Nullable AggregateCollector getAggregateCollector(String transactionType,
             @Nullable String transactionName) {
         IntervalTypeCollector intervalTypeCollector = typeCollectors.get(transactionType);
@@ -291,6 +249,8 @@ public class AggregateIntervalCollector {
             AggregateCollector transactionAggregateCollector =
                     transactionAggregateCollectors.get(transaction.getTransactionName());
             if (transactionAggregateCollector == null) {
+                // don't need to worry about race condition here because add() is only called from a
+                // single thread (TransactionProcessorLoop)
                 if (transactionAggregateCollectors.size() < maxTransactionAggregates) {
                     transactionAggregateCollector =
                             createTransactionAggregateCollector(transaction.getTransactionName());
@@ -347,26 +307,24 @@ public class AggregateIntervalCollector {
 
         @Override
         public void accept(AggregateVisitor aggregateVisitor) throws Exception {
-            synchronized (lock) {
-                SharedQueryTextCollectionImpl sharedQueryTextCollector =
-                        new SharedQueryTextCollectionImpl();
-                ScratchBuffer scratchBuffer = new ScratchBuffer();
-                for (Map.Entry<String, IntervalTypeCollector> e : typeCollectors.entrySet()) {
-                    String transactionType = e.getKey();
-                    IntervalTypeCollector intervalTypeCollector = e.getValue();
-                    Aggregate overallAggregate = intervalTypeCollector.overallAggregateCollector
-                            .build(sharedQueryTextCollector, scratchBuffer);
-                    aggregateVisitor.visitOverallAggregate(transactionType,
+            SharedQueryTextCollectionImpl sharedQueryTextCollector =
+                    new SharedQueryTextCollectionImpl();
+            ScratchBuffer scratchBuffer = new ScratchBuffer();
+            for (Map.Entry<String, IntervalTypeCollector> e : typeCollectors.entrySet()) {
+                String transactionType = e.getKey();
+                IntervalTypeCollector intervalTypeCollector = e.getValue();
+                Aggregate overallAggregate = intervalTypeCollector.overallAggregateCollector
+                        .build(sharedQueryTextCollector, scratchBuffer);
+                aggregateVisitor.visitOverallAggregate(transactionType,
+                        sharedQueryTextCollector.getAndClearLastestSharedQueryTexts(),
+                        overallAggregate);
+                for (Map.Entry<String, AggregateCollector> f : intervalTypeCollector.transactionAggregateCollectors
+                        .entrySet()) {
+                    Aggregate transactionAggregate =
+                            f.getValue().build(sharedQueryTextCollector, scratchBuffer);
+                    aggregateVisitor.visitTransactionAggregate(transactionType, f.getKey(),
                             sharedQueryTextCollector.getAndClearLastestSharedQueryTexts(),
-                            overallAggregate);
-                    for (Map.Entry<String, AggregateCollector> f : intervalTypeCollector.transactionAggregateCollectors
-                            .entrySet()) {
-                        Aggregate transactionAggregate =
-                                f.getValue().build(sharedQueryTextCollector, scratchBuffer);
-                        aggregateVisitor.visitTransactionAggregate(transactionType, f.getKey(),
-                                sharedQueryTextCollector.getAndClearLastestSharedQueryTexts(),
-                                transactionAggregate);
-                    }
+                            transactionAggregate);
                 }
             }
         }
