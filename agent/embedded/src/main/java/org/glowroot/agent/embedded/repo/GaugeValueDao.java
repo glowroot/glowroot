@@ -178,9 +178,14 @@ public class GaugeValueDao implements GaugeValueRepository {
     @Override
     public long getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel)
             throws Exception {
+        Long gaugeId = gaugeIdDao.getGaugeId(gaugeName);
+        if (gaugeId == null) {
+            // not necessarily an error, gauge id not created until first store
+            return Long.MAX_VALUE;
+        }
         Long oldestCaptureTime = dataSource.queryForOptionalLong("select top 1 capture_time from"
                 + " gauge_value_rollup_" + castUntainted(rollupLevel) + " where gauge_id = ? order"
-                + " by capture_time", gaugeName);
+                + " by capture_time", gaugeId);
         return oldestCaptureTime == null ? Long.MAX_VALUE : oldestCaptureTime;
     }
 
