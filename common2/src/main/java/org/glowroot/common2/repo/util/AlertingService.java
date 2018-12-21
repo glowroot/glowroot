@@ -66,6 +66,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.EmailNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.PagerDutyNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.SlackNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
@@ -320,7 +321,8 @@ public class AlertingService {
             String agentRollupDisplay, AlertConfig alertConfig, long endTime, String subject,
             String messageText, boolean ok) throws Exception {
         AlertNotification alertNotification = alertConfig.getNotification();
-        if (alertNotification.hasEmailNotification()) {
+        EmailNotification emailNotification = alertNotification.getEmailNotification();
+        if (emailNotification.getEmailAddressCount() > 0) {
             SmtpConfig smtpConfig = configRepository.getSmtpConfig();
             if (smtpConfig.host().isEmpty()) {
                 if (smtpHostWarningRateLimiter.tryAcquire()) {
@@ -329,18 +331,18 @@ public class AlertingService {
                 }
             } else {
                 sendEmail(centralDisplay, agentRollupDisplay, subject,
-                        alertNotification.getEmailNotification().getEmailAddressList(),
+                        emailNotification.getEmailAddressList(),
                         messageText, smtpConfig, null, configRepository.getLazySecretKey(),
                         mailService);
             }
         }
-        if (alertNotification.hasPagerDutyNotification()) {
+        PagerDutyNotification pagerDutyNotification = alertNotification.getPagerDutyNotification();
+        if (!pagerDutyNotification.getPagerDutyIntegrationKey().isEmpty()) {
             sendPagerDutyWithRetry(agentRollupId, agentRollupDisplay, alertConfig,
-                    alertNotification.getPagerDutyNotification(), endTime, subject, messageText,
-                    ok);
+                    pagerDutyNotification, endTime, subject, messageText, ok);
         }
-        if (alertNotification.hasSlackNotification()) {
-            SlackNotification slackNotification = alertNotification.getSlackNotification();
+        SlackNotification slackNotification = alertNotification.getSlackNotification();
+        if (!slackNotification.getSlackWebhookId().isEmpty()) {
             String slackWebhookUrl = null;
             for (SlackWebhook webhook : configRepository.getSlackConfig().webhooks()) {
                 if (webhook.id().equals(slackNotification.getSlackWebhookId())) {
@@ -349,12 +351,8 @@ public class AlertingService {
                 }
             }
             if (slackWebhookUrl == null) {
-                // need to check slackWebhookId because of bug in 0.12.2 and 0.12.3 that created
-                // empty slack notifications via the UI
-                if (slackNotification.getSlackWebhookId().isEmpty()) {
-                    logger.warn("{} - alert config refers to non-existent webhook id: {}",
-                            agentRollupDisplay, slackNotification.getSlackWebhookId());
-                }
+                logger.warn("{} - alert config refers to non-existent webhook id: {}",
+                        agentRollupDisplay, slackNotification.getSlackWebhookId());
             } else {
                 for (String slackChannel : slackNotification.getSlackChannelList()) {
                     sendSlackWithRetry(centralDisplay, agentRollupDisplay, slackWebhookUrl,
