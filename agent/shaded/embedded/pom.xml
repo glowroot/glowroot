@@ -159,8 +159,8 @@
               <excludes>
                 <!-- these resource files are actually read from org/h2/util/data.zip whose
                   internals do not get shaded -->
-                <exclude>/org/h2/res/*</exclude>
-                <exclude>/org/h2/server/web/res/*</exclude>
+                <exclude>org.h2.res.*</exclude>
+                <exclude>org.h2.server.web.res.*</exclude>
               </excludes>
             </relocation>
             <relocation>
