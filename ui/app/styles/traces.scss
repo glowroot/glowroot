@@ -26,22 +26,44 @@
   max-width: inherit; // override max-width from bootstrap
 }
 
+.gt-full-width-modal.modal .gt-close-sticky {
+  position: sticky; // not supported by all browsers, but designed so fallback is acceptable
+  height: 0;
+  top: 20px; // top is needed for browsers that support sticky
+  margin-top: 20px;
+  z-index: 100;
+}
+
 .gt-full-width-modal.modal .close {
-  position: absolute;
-  right: 25px;
-  top: 20px;
+  margin-right: 25px;
+}
+
+.gt-full-width-modal.modal .modal-body {
+  padding-top: 20px; // override .modal-body top padding due to margin-top of close button above
 }
 
 .gt-full-height-modal .modal-dialog {
-  align-items: inherit !important; // override align-items from bootstrap to make it fill available height
+  align-items: inherit !important; // override align-items to make it fill available height
+}
+
+#queryModal .gt-clipboard-sticky {
+  position: sticky; // not supported by all browsers, but designed so fallback is acceptable
+  top: 50px; // top is needed for browsers that support sticky
+  height: 0;
+  margin-top: 30px;
+  margin-bottom: -30px;
+  margin-right: 26px;
+  z-index: 100;
+}
+
+.gt-full-width-modal-copy {
+  @extend button.close;
 }
 
 #queryModal .gt-clip {
-  position: absolute;
-  right: 26px;
-  top: 50px;
-  z-index: 100;
+  position: static;
   color: #7f7f7f;
+  float: right;
 }
 
 .modal .close {

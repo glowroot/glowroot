@@ -205,10 +205,16 @@
   <div class="modal-dialog modal-dialog-centered"
        role="document">
     <div class="modal-content">
-      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
-      <span class="fas fa-clipboard gt-clip d-none"></span>
+      <div class="gt-close-sticky">
+        <!-- enclosing div is needed so that button clickable space doesn't consume entire page width -->
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="gt-clipboard-sticky">
+        <!-- enclosing div is needed so that clipboard clickable space doesn't consume entire page width -->
+        <span class="fas fa-clipboard gt-clip d-none"></span>
+      </div>
       <div class="modal-body">
         <div gt-spinner
              gt-show="showModalSpinner"
