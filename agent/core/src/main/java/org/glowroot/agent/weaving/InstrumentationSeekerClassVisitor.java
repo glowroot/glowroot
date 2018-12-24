@@ -117,14 +117,14 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
             String transactionType = transactionAnnotationVisitor.transactionType;
             if (transactionType == null) {
                 logger.error("@Instrumentation.Transaction had no transactionType attribute: {}",
-                        Type.getType(owner).getClassName());
+                        ClassNames.fromInternalName(owner));
                 return;
             }
             String transactionNameTemplate = transactionAnnotationVisitor.transactionNameTemplate;
             if (transactionNameTemplate == null) {
                 logger.error(
                         "@Instrumentation.Transaction had no transactionNameTemplate attribute: {}",
-                        Type.getType(owner).getClassName());
+                        ClassNames.fromInternalName(owner));
                 return;
             }
             String traceHeadline = transactionAnnotationVisitor.traceHeadline;
@@ -136,7 +136,7 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
             String timerName = transactionAnnotationVisitor.timerName;
             if (timerName == null) {
                 logger.error("@Instrumentation.Transaction had no timerName attribute: {}",
-                        Type.getType(owner).getClassName());
+                        ClassNames.fromInternalName(owner));
                 return;
             }
             AlreadyInTransactionBehavior alreadyInTransactionBehavior = MoreObjects.firstNonNull(
@@ -160,13 +160,13 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
             String messageTemplate = traceEntryAnnotationVisitor.messageTemplate;
             if (messageTemplate == null) {
                 logger.error("@Instrumentation.TraceEntry had no messageTemplate attribute: {}",
-                        Type.getType(owner).getClassName());
+                        ClassNames.fromInternalName(owner));
                 return;
             }
             String timerName = traceEntryAnnotationVisitor.timerName;
             if (timerName == null) {
                 logger.error("@Instrumentation.TraceEntry had no timerName attribute: {}",
-                        Type.getType(owner).getClassName());
+                        ClassNames.fromInternalName(owner));
                 return;
             }
             instrumentationConfigs.add(startBuilder()
@@ -184,7 +184,7 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
             String timerName = timerAnnotationVisitor.timerName;
             if (timerName == null) {
                 logger.error("@Instrumentation.Timer had no value attribute: {}",
-                        Type.getType(owner).getClassName());
+                        ClassNames.fromInternalName(owner));
                 return;
             }
             instrumentationConfigs.add(startBuilder()
