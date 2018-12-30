@@ -82,6 +82,7 @@ class LdapAuthentication {
         }
     }
 
+    @Instrumentation.TraceEntry(message = "create ldap context", timer = "ldap")
     private static LdapContext createLdapContext(String username, String password,
             LdapConfig ldapConfig) throws NamingException {
         Hashtable<String, Object> env = new Hashtable<String, Object>();
