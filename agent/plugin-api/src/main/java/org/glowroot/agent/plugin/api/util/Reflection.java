@@ -27,6 +27,15 @@ public class Reflection {
 
     private Reflection() {}
 
+    public static @Nullable Class<?> getClass(String name, @Nullable ClassLoader loader) {
+        return getClass(name, loader, false);
+    }
+
+    public static @Nullable Class<?> getClassWithWarnIfNotFound(String name,
+            @Nullable ClassLoader loader) {
+        return getClass(name, loader, true);
+    }
+
     public static @Nullable Method getMethod(@Nullable Class<?> clazz, String methodName,
             Class<?>... parameterTypes) {
         if (clazz == null) {
@@ -34,8 +43,11 @@ public class Reflection {
         }
         try {
             return clazz.getMethod(methodName, parameterTypes);
-        } catch (Exception e) {
+        } catch (NoSuchMethodException e) {
             logger.debug(e.getMessage(), e);
+            return null;
+        } catch (Throwable t) {
+            logger.warn(t.getMessage(), t);
             return null;
         }
     }
@@ -48,8 +60,11 @@ public class Reflection {
             Field field = clazz.getDeclaredField(fieldName);
             field.setAccessible(true);
             return field;
-        } catch (Exception e) {
+        } catch (NoSuchFieldException e) {
             logger.debug(e.getMessage(), e);
+            return null;
+        } catch (Throwable t) {
+            logger.warn(t.getMessage(), t);
             return null;
         }
     }
@@ -99,5 +114,21 @@ public class Reflection {
                     field.getName(), t);
             return null;
         }
+    }
+
+    private static @Nullable Class<?> getClass(String name, @Nullable ClassLoader loader,
+            boolean warnIfNotFound) {
+        try {
+            return Class.forName(name, false, loader);
+        } catch (ClassNotFoundException e) {
+            if (warnIfNotFound) {
+                logger.warn(e.getMessage(), e);
+            } else {
+                logger.debug(e.getMessage(), e);
+            }
+        } catch (Throwable t) {
+            logger.warn(t.getMessage(), t);
+        }
+        return null;
     }
 }

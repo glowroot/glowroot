@@ -17,6 +17,7 @@ package org.glowroot.agent.plugin.httpclient;
 
 import java.lang.reflect.Field;
 
+import org.glowroot.agent.plugin.api.ClassInfo;
 import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.Reflection;
@@ -27,8 +28,8 @@ public class OkHttpClientCallInvoker {
 
     private final @Nullable Field originalRequestField;
 
-    public OkHttpClientCallInvoker(Class<?> clazz) {
-        originalRequestField = getRequestField(clazz);
+    public OkHttpClientCallInvoker(ClassInfo classInfo) {
+        originalRequestField = getRequestField(classInfo.getLoader());
     }
 
     public @Nullable Object getOriginalRequest(Object call) {
@@ -38,20 +39,21 @@ public class OkHttpClientCallInvoker {
         return Reflection.getFieldValue(originalRequestField, call);
     }
 
-    private static @Nullable Field getRequestField(Class<?> clazz) {
-        Class<?> callClass = getCallClass(clazz);
+    private static @Nullable Field getRequestField(@Nullable ClassLoader loader) {
+        Class<?> callClass =
+                Reflection.getClassWithWarnIfNotFound("com.squareup.okhttp.Call", loader);
         if (callClass == null) {
             return null;
         }
         try {
-            Field field = clazz.getDeclaredField("originalRequest");
+            Field field = callClass.getDeclaredField("originalRequest");
             field.setAccessible(true);
             return field;
         } catch (NoSuchFieldException e) {
             // okhttp version prior to 2.2.0
             Field field;
             try {
-                field = clazz.getDeclaredField("request");
+                field = callClass.getDeclaredField("request");
                 field.setAccessible(true);
                 return field;
             } catch (Exception f) {
@@ -60,15 +62,6 @@ public class OkHttpClientCallInvoker {
                 logger.debug(f.getMessage(), f);
             }
         } catch (Exception e) {
-            logger.warn(e.getMessage(), e);
-        }
-        return null;
-    }
-
-    private static @Nullable Class<?> getCallClass(Class<?> clazz) {
-        try {
-            return Class.forName("com.squareup.okhttp.Call", false, clazz.getClassLoader());
-        } catch (ClassNotFoundException e) {
             logger.warn(e.getMessage(), e);
         }
         return null;

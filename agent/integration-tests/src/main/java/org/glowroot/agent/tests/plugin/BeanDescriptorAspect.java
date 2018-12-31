@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
  */
 package org.glowroot.agent.tests.plugin;
 
-import java.lang.reflect.Method;
-
 import org.glowroot.agent.plugin.api.Agent;
+import org.glowroot.agent.plugin.api.ClassInfo;
 import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.MethodInfo;
 import org.glowroot.agent.plugin.api.OptionalThreadContext;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
@@ -41,7 +41,8 @@ public class BeanDescriptorAspect {
         @OnBefore
         public static TraceEntry onBefore(OptionalThreadContext context,
                 @BindClassMeta TestClassMeta meta) {
-            return context.startTraceEntry(MessageSupplier.create(meta.clazz.getName()), timerName);
+            return context.startTraceEntry(MessageSupplier.create(meta.classInfo.getName()),
+                    timerName);
         }
         @OnAfter
         public static void onAfter(@BindTraveler TraceEntry traceEntry) {
@@ -59,7 +60,7 @@ public class BeanDescriptorAspect {
         @OnBefore
         public static TraceEntry onBefore(OptionalThreadContext context,
                 @BindMethodMeta TestMethodMeta meta) {
-            return context.startTraceEntry(MessageSupplier.create(meta.method.getName()),
+            return context.startTraceEntry(MessageSupplier.create(meta.methodInfo.getName()),
                     timerName);
         }
         @OnAfter
@@ -70,19 +71,19 @@ public class BeanDescriptorAspect {
 
     public static class TestClassMeta {
 
-        private final Class<?> clazz;
+        private final ClassInfo classInfo;
 
-        public TestClassMeta(Class<?> clazz) {
-            this.clazz = clazz;
+        public TestClassMeta(ClassInfo classInfo) {
+            this.classInfo = classInfo;
         }
     }
 
     public static class TestMethodMeta {
 
-        private final Method method;
+        private final MethodInfo methodInfo;
 
-        public TestMethodMeta(Method method) {
-            this.method = method;
+        public TestMethodMeta(MethodInfo methodInfo) {
+            this.methodInfo = methodInfo;
         }
     }
 }

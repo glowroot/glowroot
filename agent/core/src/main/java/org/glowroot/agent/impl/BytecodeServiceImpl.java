@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.impl;
 
-import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -28,6 +27,7 @@ import org.glowroot.agent.bytecode.api.MessageTemplate;
 import org.glowroot.agent.bytecode.api.ThreadContextPlus;
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.MethodInfo;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.weaving.BootstrapMetaHolders;
 import org.glowroot.agent.weaving.GenericMessageSupplier;
@@ -113,8 +113,8 @@ public class BytecodeServiceImpl implements BytecodeService {
     }
 
     @Override
-    public MessageTemplate createMessageTemplate(String template, Method method) {
-        return MessageTemplateImpl.create(template, method);
+    public MessageTemplate createMessageTemplate(String template, MethodInfo methodInfo) {
+        return MessageTemplateImpl.create(template, methodInfo);
     }
 
     @Override

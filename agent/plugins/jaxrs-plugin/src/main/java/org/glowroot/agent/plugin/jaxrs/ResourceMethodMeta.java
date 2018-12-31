@@ -20,7 +20,9 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 
 import org.glowroot.agent.plugin.api.Logger;
+import org.glowroot.agent.plugin.api.MethodInfo;
 import org.glowroot.agent.plugin.api.checker.Nullable;
+import org.glowroot.agent.plugin.api.util.Reflection;
 
 public class ResourceMethodMeta {
 
@@ -33,14 +35,13 @@ public class ResourceMethodMeta {
 
     private final String altTransactionName;
 
-    public ResourceMethodMeta(Method method) {
-        Class<?> resourceClass = method.getDeclaringClass();
-        resourceClassName = resourceClass.getName();
-        methodName = method.getName();
-        String classPath = getPath(resourceClass);
-        String methodPath = getPath(method);
+    public ResourceMethodMeta(MethodInfo methodInfo) {
+        resourceClassName = methodInfo.getDeclaringClassName();
+        methodName = methodInfo.getName();
+        String classPath = getPath(getClass(methodInfo));
+        String methodPath = getPath(getMethod(methodInfo));
         path = combine(classPath, methodPath);
-        altTransactionName = resourceClass.getSimpleName() + "#" + methodName;
+        altTransactionName = getSimpleName(resourceClassName) + "#" + methodName;
     }
 
     String getResourceClassName() {
@@ -59,7 +60,10 @@ public class ResourceMethodMeta {
         return altTransactionName;
     }
 
-    private static @Nullable String getPath(AnnotatedElement annotatedElement) {
+    private static @Nullable String getPath(@Nullable AnnotatedElement annotatedElement) {
+        if (annotatedElement == null) {
+            return null;
+        }
         try {
             for (Annotation annotation : annotatedElement.getDeclaredAnnotations()) {
                 Class<?> annotationClass = annotation.annotationType();
@@ -77,6 +81,27 @@ public class ResourceMethodMeta {
             String attributeName) throws Exception {
         Method method = pathClass.getMethod(attributeName);
         return (String) method.invoke(path);
+    }
+
+    private static @Nullable Class<?> getClass(MethodInfo methodInfo) {
+        return Reflection.getClass(methodInfo.getDeclaringClassName(), methodInfo.getLoader());
+    }
+
+    private static @Nullable Method getMethod(MethodInfo methodInfo) {
+        Class<?> declaringClass =
+                Reflection.getClass(methodInfo.getDeclaringClassName(), methodInfo.getLoader());
+        if (declaringClass == null) {
+            // declaring class is probably a lambda class
+            return null;
+        }
+        Class<?>[] parameterTypes = methodInfo.getParameterTypes()
+                .toArray(new Class<?>[methodInfo.getParameterTypes().size()]);
+        try {
+            return declaringClass.getDeclaredMethod(methodInfo.getName(), parameterTypes);
+        } catch (Exception e) {
+            logger.debug(e.getMessage(), e);
+        }
+        return null;
     }
 
     // VisibleForTesting
@@ -104,5 +129,18 @@ public class ResourceMethodMeta {
 
     private static String replacePathSegmentsWithAsterisk(String path) {
         return path.replaceAll("\\{[^}]*\\}", "*");
+    }
+
+    private static String getSimpleName(String className) {
+        return substringAfterLast(substringAfterLast(className, '.'), '$');
+    }
+
+    private static String substringAfterLast(String str, char c) {
+        int index = str.lastIndexOf(c);
+        if (index == -1) {
+            return str;
+        } else {
+            return str.substring(index + 1);
+        }
     }
 }

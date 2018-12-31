@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.jaxws;
 
-import java.lang.reflect.Method;
+import org.glowroot.agent.plugin.api.MethodInfo;
 
 public class ServiceMethodMeta {
 
@@ -24,11 +24,10 @@ public class ServiceMethodMeta {
 
     private final String altTransactionName;
 
-    public ServiceMethodMeta(Method method) {
-        Class<?> serviceClass = method.getDeclaringClass();
-        serviceClassName = serviceClass.getName();
-        methodName = method.getName();
-        altTransactionName = serviceClass.getSimpleName() + "#" + methodName;
+    public ServiceMethodMeta(MethodInfo methodInfo) {
+        serviceClassName = methodInfo.getDeclaringClassName();
+        methodName = methodInfo.getName();
+        altTransactionName = getSimpleName(serviceClassName) + "#" + methodName;
     }
 
     String getServiceClassName() {
@@ -41,5 +40,18 @@ public class ServiceMethodMeta {
 
     String getAltTransactionName() {
         return altTransactionName;
+    }
+
+    private static String getSimpleName(String className) {
+        return substringAfterLast(substringAfterLast(className, '.'), '$');
+    }
+
+    private static String substringAfterLast(String str, char c) {
+        int index = str.lastIndexOf(c);
+        if (index == -1) {
+            return str;
+        } else {
+            return str.substring(index + 1);
+        }
     }
 }

@@ -17,13 +17,11 @@ package org.glowroot.agent.plugin.servlet;
 
 import java.lang.reflect.Method;
 
-import org.glowroot.agent.plugin.api.Logger;
+import org.glowroot.agent.plugin.api.ClassInfo;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.Reflection;
 
 public class RequestInvoker {
-
-    private static final Logger logger = Logger.getLogger(RequestInvoker.class);
 
     // these ServletRequest methods were introduced in Servlet 3.0
     private final @Nullable Method getRemotePortMethod;
@@ -31,8 +29,9 @@ public class RequestInvoker {
     private final @Nullable Method getLocalNameMethod;
     private final @Nullable Method getLocalPortMethod;
 
-    public RequestInvoker(Class<?> clazz) {
-        Class<?> servletRequestClass = getServletRequestClass(clazz);
+    public RequestInvoker(ClassInfo classInfo) {
+        Class<?> servletRequestClass = Reflection
+                .getClassWithWarnIfNotFound("javax.servlet.ServletRequest", classInfo.getLoader());
         getRemotePortMethod = Reflection.getMethod(servletRequestClass, "getRemotePort");
         getLocalAddrMethod = Reflection.getMethod(servletRequestClass, "getLocalAddr");
         getLocalNameMethod = Reflection.getMethod(servletRequestClass, "getLocalName");
@@ -69,14 +68,5 @@ public class RequestInvoker {
 
     int getLocalPort(Object request) {
         return Reflection.invokeWithDefault(getLocalPortMethod, request, -1);
-    }
-
-    static @Nullable Class<?> getServletRequestClass(Class<?> clazz) {
-        try {
-            return Class.forName("javax.servlet.ServletRequest", false, clazz.getClassLoader());
-        } catch (ClassNotFoundException e) {
-            logger.warn(e.getMessage(), e);
-        }
-        return null;
     }
 }

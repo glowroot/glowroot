@@ -15,10 +15,13 @@
  */
 package org.glowroot.agent.weaving;
 
-import java.lang.reflect.Method;
+import java.util.List;
 
+import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import org.glowroot.agent.plugin.api.ClassInfo;
+import org.glowroot.agent.plugin.api.MethodInfo;
 import org.glowroot.agent.plugin.api.ParameterHolder;
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindMethodMeta;
@@ -1500,38 +1503,37 @@ public class SomeAspect {
 
     public static class TestClassMeta {
 
-        private final Class<?> clazz;
+        private final ClassInfo classInfo;
 
-        public TestClassMeta(Class<?> clazz) {
-            this.clazz = clazz;
+        public TestClassMeta(ClassInfo classInfo) {
+            this.classInfo = classInfo;
         }
 
         public String getClazzName() {
-            return clazz.getName();
+            return classInfo.getName();
         }
     }
 
     public static class TestMethodMeta {
 
-        private final Method method;
+        private final MethodInfo methodInfo;
 
-        public TestMethodMeta(Method method) {
-            this.method = method;
+        public TestMethodMeta(MethodInfo methodInfo) {
+            this.methodInfo = methodInfo;
         }
 
         public String getDeclaringClassName() {
-            return method.getDeclaringClass().getName();
+            return methodInfo.getDeclaringClassName();
         }
 
         public String getReturnTypeName() {
-            return method.getReturnType().getName();
+            return methodInfo.getReturnType().getName();
         }
 
-        public String[] getParameterTypeNames() {
-            Class<?>[] parameterTypes = method.getParameterTypes();
-            String[] parameterTypeNames = new String[parameterTypes.length];
-            for (int i = 0; i < parameterTypes.length; i++) {
-                parameterTypeNames[i] = parameterTypes[i].getName();
+        public List<String> getParameterTypeNames() {
+            List<String> parameterTypeNames = Lists.newArrayList();
+            for (Class<?> parameterType : methodInfo.getParameterTypes()) {
+                parameterTypeNames.add(parameterType.getName());
             }
             return parameterTypeNames;
         }

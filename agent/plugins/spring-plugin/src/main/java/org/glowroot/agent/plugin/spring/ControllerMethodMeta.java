@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.spring;
 
-import java.lang.reflect.Method;
+import org.glowroot.agent.plugin.api.MethodInfo;
 
 public class ControllerMethodMeta {
 
@@ -24,11 +24,10 @@ public class ControllerMethodMeta {
 
     private final String altTransactionName;
 
-    public ControllerMethodMeta(Method method) {
-        Class<?> controllerClass = method.getDeclaringClass();
-        controllerClassName = controllerClass.getName();
-        methodName = method.getName();
-        altTransactionName = controllerClass.getSimpleName() + "#" + methodName;
+    public ControllerMethodMeta(MethodInfo methodInfo) {
+        controllerClassName = methodInfo.getDeclaringClassName();
+        methodName = methodInfo.getName();
+        altTransactionName = getSimpleName(controllerClassName) + "#" + methodName;
     }
 
     String getControllerClassName() {
@@ -41,5 +40,18 @@ public class ControllerMethodMeta {
 
     String getAltTransactionName() {
         return altTransactionName;
+    }
+
+    private static String getSimpleName(String className) {
+        return substringAfterLast(substringAfterLast(className, '.'), '$');
+    }
+
+    private static String substringAfterLast(String str, char c) {
+        int index = str.lastIndexOf(c);
+        if (index == -1) {
+            return str;
+        } else {
+            return str.substring(index + 1);
+        }
     }
 }

@@ -259,8 +259,10 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.impl.TransactionRegistry");
         types.add("org.glowroot.agent.model.TimerNameImpl");
         types.add("org.glowroot.agent.model.TransactionTimer");
+        types.add("org.glowroot.agent.plugin.api.ClassInfo");
         types.add("org.glowroot.agent.plugin.api.MessageSupplier");
         types.add("org.glowroot.agent.plugin.api.MessageSupplier$1");
+        types.add("org.glowroot.agent.plugin.api.MethodInfo");
         types.add("org.glowroot.agent.plugin.api.OptionalThreadContext");
         types.add("org.glowroot.agent.plugin.api.ParameterHolder");
         types.add("org.glowroot.agent.plugin.api.ThreadContext");
@@ -322,10 +324,12 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ClassAnalyzer$BridgeMethodClassVisitor");
         types.add("org.glowroot.agent.weaving.ClassAnalyzer$BridgeMethodClassVisitor"
                 + "$BridgeMethodVisitor");
+        types.add("org.glowroot.agent.weaving.ClassInfoImpl");
         types.add("org.glowroot.agent.weaving.ClassLoaders");
         types.add("org.glowroot.agent.weaving.ClassLoaders$LazyDefinedClass");
         types.add("org.glowroot.agent.weaving.ClassNames");
         types.add("org.glowroot.agent.weaving.FrameDeduppingMethodVisitor");
+        types.add("org.glowroot.agent.weaving.MethodInfoImpl");
         types.add("org.glowroot.agent.weaving.Weaver$ActiveWeaving");
         types.add("org.glowroot.agent.weaving.Weaver$HikariCpProxyHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$HikariCpProxyHackMethodVisitor");

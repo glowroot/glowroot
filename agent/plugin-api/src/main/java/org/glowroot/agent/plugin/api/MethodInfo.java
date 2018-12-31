@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.executor;
+package org.glowroot.agent.plugin.api;
 
-import org.glowroot.agent.plugin.api.ClassInfo;
+import java.util.List;
 
-public class FutureClassMeta {
+import org.glowroot.agent.plugin.api.checker.Nullable;
 
-    private final boolean nonStandardFuture;
+public interface MethodInfo {
 
-    public FutureClassMeta(ClassInfo classInfo) {
-        // javax.ejb.AsyncResult is final, so don't need to worry about sub-classes
-        nonStandardFuture = classInfo.getName().equals("javax.ejb.AsyncResult");
-    }
+    String getName();
 
-    public boolean isNonStandardFuture() {
-        return nonStandardFuture;
-    }
+    Class<?> getReturnType();
+
+    List<Class<?>> getParameterTypes();
+
+    String getDeclaringClassName();
+
+    @Nullable
+    ClassLoader getLoader();
 }

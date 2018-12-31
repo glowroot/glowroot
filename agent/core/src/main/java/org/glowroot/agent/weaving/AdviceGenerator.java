@@ -665,8 +665,8 @@ class AdviceGenerator {
 
     @RequiresNonNull("methodMetaInternalName")
     private void generateMethodMetaConstructor(ClassWriter cw) {
-        MethodVisitor mv =
-                cw.visitMethod(ACC_PUBLIC, "<init>", "(Ljava/lang/reflect/Method;)V", null, null);
+        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, "<init>",
+                "(Lorg/glowroot/agent/plugin/api/MethodInfo;)V", null, null);
         mv.visitCode();
         mv.visitVarInsn(ALOAD, 0);
         mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
@@ -683,7 +683,8 @@ class AdviceGenerator {
             }
             mv.visitVarInsn(ALOAD, 1);
             mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Bytecode",
-                    "createMessageTemplate", "(Ljava/lang/String;Ljava/lang/reflect/Method;)"
+                    "createMessageTemplate",
+                    "(Ljava/lang/String;Lorg/glowroot/agent/plugin/api/MethodInfo;)"
                             + "Lorg/glowroot/agent/bytecode/api/MessageTemplate;",
                     false);
         } else {
@@ -696,7 +697,8 @@ class AdviceGenerator {
             mv.visitLdcInsn(config.transactionNameTemplate());
             mv.visitVarInsn(ALOAD, 1);
             mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Bytecode",
-                    "createMessageTemplate", "(Ljava/lang/String;Ljava/lang/reflect/Method;)"
+                    "createMessageTemplate",
+                    "(Ljava/lang/String;Lorg/glowroot/agent/plugin/api/MethodInfo;)"
                             + "Lorg/glowroot/agent/bytecode/api/MessageTemplate;",
                     false);
             mv.visitFieldInsn(PUTFIELD, methodMetaInternalName, "transactionNameTemplate",
@@ -707,7 +709,8 @@ class AdviceGenerator {
             mv.visitLdcInsn(config.transactionUserTemplate());
             mv.visitVarInsn(ALOAD, 1);
             mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Bytecode",
-                    "createMessageTemplate", "(Ljava/lang/String;Ljava/lang/reflect/Method;)"
+                    "createMessageTemplate",
+                    "(Ljava/lang/String;Lorg/glowroot/agent/plugin/api/MethodInfo;)"
                             + "Lorg/glowroot/agent/bytecode/api/MessageTemplate;",
                     false);
             mv.visitFieldInsn(PUTFIELD, methodMetaInternalName, "transactionUserTemplate",
@@ -719,7 +722,8 @@ class AdviceGenerator {
             mv.visitLdcInsn(attrTemplate);
             mv.visitVarInsn(ALOAD, 1);
             mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Bytecode",
-                    "createMessageTemplate", "(Ljava/lang/String;Ljava/lang/reflect/Method;)"
+                    "createMessageTemplate",
+                    "(Ljava/lang/String;Lorg/glowroot/agent/plugin/api/MethodInfo;)"
                             + "Lorg/glowroot/agent/bytecode/api/MessageTemplate;",
                     false);
             mv.visitFieldInsn(PUTFIELD, methodMetaInternalName,

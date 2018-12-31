@@ -17,6 +17,7 @@ package org.glowroot.agent.plugin.logger;
 
 import java.lang.reflect.Method;
 
+import org.glowroot.agent.plugin.api.ClassInfo;
 import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.Reflection;
@@ -35,10 +36,12 @@ public class LoggingEventInvoker {
 
     private final @Nullable Method toIntMethod;
 
-    public LoggingEventInvoker(Class<?> clazz) {
-        Class<?> loggerClass = getLoggerClass(clazz);
+    public LoggingEventInvoker(ClassInfo classInfo) {
+        Class<?> loggerClass = Reflection
+                .getClassWithWarnIfNotFound("ch.qos.logback.classic.Logger", classInfo.getLoader());
         getLoggerNameMethod = Reflection.getMethod(loggerClass, "getName");
-        Class<?> loggingEventClass = getLoggingEventClass(clazz);
+        Class<?> loggingEventClass = Reflection.getClassWithWarnIfNotFound(
+                "ch.qos.logback.classic.spi.LoggingEvent", classInfo.getLoader());
         getFormattedMessageMethod = Reflection.getMethod(loggingEventClass, "getFormattedMessage");
         getLevelMethod = Reflection.getMethod(loggingEventClass, "getLevel");
         if (loggingEventClass == null) {
@@ -49,9 +52,8 @@ public class LoggingEventInvoker {
             Method localGetThrowableMethod = null;
             try {
                 localGetThrowableProxyMethod = loggingEventClass.getMethod("getThrowableProxy");
-                Class<?> throwableProxyClass =
-                        Class.forName("ch.qos.logback.classic.spi.ThrowableProxy", false,
-                                clazz.getClassLoader());
+                Class<?> throwableProxyClass = Class.forName(
+                        "ch.qos.logback.classic.spi.ThrowableProxy", false, classInfo.getLoader());
                 localGetThrowableMethod = throwableProxyClass.getMethod("getThrowable");
             } catch (Throwable t) {
                 logger.debug(t.getMessage(), t);
@@ -60,7 +62,7 @@ public class LoggingEventInvoker {
                             loggingEventClass.getMethod("getThrowableInformation");
                     Class<?> throwableInformationClass =
                             Class.forName("ch.qos.logback.classic.spi.ThrowableInformation", false,
-                                    clazz.getClassLoader());
+                                    classInfo.getLoader());
                     localGetThrowableMethod =
                             Reflection.getMethod(throwableInformationClass, "getThrowable");
                 } catch (Throwable tt) {
@@ -73,7 +75,9 @@ public class LoggingEventInvoker {
             getThrowableProxyMethod = localGetThrowableProxyMethod;
             getThrowableMethod = localGetThrowableMethod;
         }
-        toIntMethod = Reflection.getMethod(getLevelClass(clazz), "toInt");
+        Class<?> levelClass = Reflection.getClassWithWarnIfNotFound("ch.qos.logback.classic.Level",
+                classInfo.getLoader());
+        toIntMethod = Reflection.getMethod(levelClass, "toInt");
     }
 
     String getFormattedMessage(Object loggingEvent) {
@@ -100,34 +104,5 @@ public class LoggingEventInvoker {
 
     String getLoggerName(Object logger) {
         return Reflection.invokeWithDefault(getLoggerNameMethod, logger, "");
-    }
-
-    private static @Nullable Class<?> getLoggerClass(Class<?> clazz) {
-        try {
-            return Class.forName("ch.qos.logback.classic.Logger", false, clazz.getClassLoader());
-        } catch (ClassNotFoundException e) {
-            logger.warn(e.getMessage(), e);
-        }
-        return null;
-    }
-
-    private static @Nullable Class<?> getLoggingEventClass(Class<?> clazz) {
-        try {
-            return Class.forName("ch.qos.logback.classic.spi.LoggingEvent", false,
-                    clazz.getClassLoader());
-        } catch (ClassNotFoundException e) {
-            logger.warn(e.getMessage(), e);
-        }
-        return null;
-    }
-
-    private static @Nullable Class<?> getLevelClass(Class<?> clazz) {
-        try {
-            return Class.forName("ch.qos.logback.classic.Level", false,
-                    clazz.getClassLoader());
-        } catch (ClassNotFoundException e) {
-            logger.warn(e.getMessage(), e);
-        }
-        return null;
     }
 }

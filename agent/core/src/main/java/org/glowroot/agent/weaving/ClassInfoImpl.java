@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.servlet;
+package org.glowroot.agent.weaving;
 
-import org.junit.Test;
+import javax.annotation.Nullable;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.glowroot.agent.plugin.api.ClassInfo;
 
-public class ResponseInvokerTest {
+public class ClassInfoImpl implements ClassInfo {
 
-    @Test
-    public void shouldNotFindServletResponseClass() {
-        assertThat(ResponseInvoker.getServletResponseClass(Object.class)).isNull();
+    private final String name;
+    private final @Nullable ClassLoader loader;
+
+    public ClassInfoImpl(String name, @Nullable ClassLoader loader) {
+        this.name = name;
+        this.loader = loader;
     }
 
-    @Test
-    public void shouldNotFindGetContentTypeMethod() {
-        assertThat(new ResponseInvoker(Object.class).hasGetContentTypeMethod()).isFalse();
+    public String getName() {
+        return name;
+    }
+
+    public @Nullable ClassLoader getLoader() {
+        return loader;
     }
 }

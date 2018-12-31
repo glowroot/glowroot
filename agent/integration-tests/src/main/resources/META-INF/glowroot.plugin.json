@@ -132,6 +132,16 @@
       "traceEntryCaptureSelfNested": true,
       "timerName": "recurse",
       "traceEntryMessageTemplate": "Recurse"
+    },
+    {
+      "className": "org.glowroot.agent.tests.javaagent.LambdaWeavingIT$Lambda",
+      "methodName": "execute",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "captureKind": "trace-entry",
+      "timerName": "lambda",
+      "traceEntryMessageTemplate": "lambda: {{0}} => {{_}}"
     }
   ],
   "aspects": [

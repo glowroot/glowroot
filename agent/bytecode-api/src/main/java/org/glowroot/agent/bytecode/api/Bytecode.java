@@ -15,11 +15,10 @@
  */
 package org.glowroot.agent.bytecode.api;
 
-import java.lang.reflect.Method;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.plugin.api.MessageSupplier;
+import org.glowroot.agent.plugin.api.MethodInfo;
 import org.glowroot.agent.plugin.api.TraceEntry;
 
 public class Bytecode {
@@ -62,8 +61,8 @@ public class Bytecode {
         return service.getMethodMeta(index);
     }
 
-    public static MessageTemplate createMessageTemplate(String template, Method method) {
-        return service.createMessageTemplate(template, method);
+    public static MessageTemplate createMessageTemplate(String template, MethodInfo methodInfo) {
+        return service.createMessageTemplate(template, methodInfo);
     }
 
     public static MessageSupplier createMessageSupplier(MessageTemplate template,

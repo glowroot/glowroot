@@ -17,7 +17,6 @@ package org.glowroot.agent.weaving;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.MessageTemplate;
+import org.glowroot.agent.plugin.api.MethodInfo;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -46,7 +46,7 @@ public class MessageTemplateImpl implements MessageTemplate {
     private final ImmutableList<ArgPathPart> argPathParts;
     private final ImmutableList<ValuePathPart> returnPathParts;
 
-    public static MessageTemplateImpl create(String template, Method method) {
+    public static MessageTemplateImpl create(String template, MethodInfo methodInfo) {
         List<Part> allParts = Lists.newArrayList();
         List<ValuePathPart> thisPathParts = Lists.newArrayList();
         List<ArgPathPart> argPathParts = Lists.newArrayList();
@@ -70,15 +70,23 @@ public class MessageTemplateImpl implements MessageTemplate {
                 remaining = path.substring(index + 1);
             }
             if (base.equals("this")) {
-                ValuePathPart part = new ValuePathPart(PartType.THIS_PATH,
-                        method.getDeclaringClass(), remaining);
+                Class<?> clazz;
+                try {
+                    clazz = Class.forName(methodInfo.getDeclaringClassName(), false,
+                            methodInfo.getLoader());
+                } catch (ClassNotFoundException e) {
+                    logger.debug(e.getMessage(), e);
+                    clazz = null;
+                }
+                ValuePathPart part = new ValuePathPart(PartType.THIS_PATH, clazz, remaining);
                 allParts.add(part);
                 thisPathParts.add(part);
             } else if (base.matches("[0-9]+")) {
                 int argNumber = Integer.parseInt(base);
-                if (argNumber < method.getParameterTypes().length) {
-                    ArgPathPart part = new ArgPathPart(method.getParameterTypes()[argNumber],
-                            remaining, argNumber);
+                List<Class<?>> parameterTypes = methodInfo.getParameterTypes();
+                if (argNumber < parameterTypes.size()) {
+                    ArgPathPart part =
+                            new ArgPathPart(parameterTypes.get(argNumber), remaining, argNumber);
                     allParts.add(part);
                     argPathParts.add(part);
                 } else {
@@ -86,8 +94,8 @@ public class MessageTemplateImpl implements MessageTemplate {
                             "<requested arg index out of bounds: " + argNumber + ">"));
                 }
             } else if (base.equals("_")) {
-                ValuePathPart part =
-                        new ValuePathPart(PartType.RETURN_PATH, method.getReturnType(), remaining);
+                ValuePathPart part = new ValuePathPart(PartType.RETURN_PATH,
+                        methodInfo.getReturnType(), remaining);
                 allParts.add(part);
                 returnPathParts.add(part);
             } else if (base.equals("methodName")) {
@@ -166,9 +174,9 @@ public class MessageTemplateImpl implements MessageTemplate {
         private final PathEvaluator pathEvaluator;
 
         @VisibleForTesting
-        ValuePathPart(PartType partType, Class<?> valueClass, String propertyPath) {
+        ValuePathPart(PartType partType, @Nullable Class<?> type, String pathAndFormat) {
             super(partType);
-            this.pathEvaluator = new PathEvaluator(valueClass, propertyPath);
+            this.pathEvaluator = PathEvaluator.create(type, pathAndFormat);
         }
 
         String evaluatePart(@Nullable Object base) {
@@ -279,8 +287,10 @@ public class MessageTemplateImpl implements MessageTemplate {
         private final @Nullable String format;
         private final @Nullable String formatArg;
 
-        PathEvaluator(Class<?> baseClass, String pathAndFormat) {
+        static PathEvaluator create(@Nullable Class<?> type, String pathAndFormat) {
             String path;
+            String format;
+            String formatArg;
             int index = pathAndFormat.indexOf('|');
             if (index == -1) {
                 path = pathAndFormat;
@@ -299,25 +309,31 @@ public class MessageTemplateImpl implements MessageTemplate {
                     formatArg = formatAndArg.substring(index + 1);
                 }
             }
-            List<String> parts = Lists.newArrayList(splitter.split(path));
             List<Accessor> accessors = Lists.newArrayList();
-            Class<?> currClass = baseClass;
+            if (type == null) {
+                return new PathEvaluator(accessors, splitter.splitToList(path), format, formatArg);
+            }
+            List<String> parts = Lists.newArrayList(splitter.split(path));
+            Class<?> currType = type;
             while (!parts.isEmpty()) {
                 String currPart = parts.remove(0);
-                Accessor accessor = Beans.loadPossiblyArrayBasedAccessor(currClass, currPart);
+                Accessor accessor = Beans.loadPossiblyArrayBasedAccessor(currType, currPart);
                 if (accessor == null) {
                     parts.add(0, currPart);
                     break;
                 }
                 accessors.add(accessor);
-                currClass = accessor.getValueType();
+                currType = accessor.getValueType();
             }
+            return new PathEvaluator(accessors, parts, format, formatArg);
+        }
+
+        private PathEvaluator(List<Accessor> accessors, List<String> remainingPath,
+                @Nullable String format, @Nullable String formatArg) {
             this.accessors = accessors.toArray(new Accessor[accessors.size()]);
-            if (parts.isEmpty()) {
-                remainingPath = ImmutableList.of();
-            } else {
-                remainingPath = ImmutableList.copyOf(parts);
-            }
+            this.remainingPath = remainingPath;
+            this.format = format;
+            this.formatArg = formatArg;
         }
 
         @Nullable

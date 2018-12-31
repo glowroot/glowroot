@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import org.glowroot.agent.plugin.api.ClassInfo;
 import org.glowroot.agent.plugin.api.util.Reflection;
 
 public class TraceGeneratorInvoker {
@@ -30,7 +31,9 @@ public class TraceGeneratorInvoker {
     private final @Nullable Method attributesMethod;
     private final @Nullable Method errorMethod;
 
-    public TraceGeneratorInvoker(Class<?> clazz) {
+    public TraceGeneratorInvoker(ClassInfo classInfo) {
+        Class<?> clazz = Reflection.getClass("org.glowroot.agent.tests.app.TraceGenerator",
+                classInfo.getLoader());
         transactionTypeMethod = Reflection.getMethod(clazz, "transactionType");
         transactionNameMethod = Reflection.getMethod(clazz, "transactionName");
         headlineMethod = Reflection.getMethod(clazz, "headline");

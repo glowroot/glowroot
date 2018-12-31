@@ -18,6 +18,7 @@ package org.glowroot.agent.plugin.httpclient;
 import java.lang.reflect.Method;
 import java.net.URI;
 
+import org.glowroot.agent.plugin.api.ClassInfo;
 import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.Reflection;
@@ -29,8 +30,9 @@ public class AsyncHttpClientRequestInvoker {
     private final @Nullable Method getUrlMethod;
     private final @Nullable Method getURIMethod;
 
-    public AsyncHttpClientRequestInvoker(Class<?> clazz) {
-        Class<?> requestClass = getRequestClass(clazz);
+    public AsyncHttpClientRequestInvoker(ClassInfo classInfo) {
+        Class<?> requestClass = Reflection
+                .getClassWithWarnIfNotFound("com.ning.http.client.Request", classInfo.getLoader());
         getUrlMethod = Reflection.getMethod(requestClass, "getUrl");
         // in async-http-client versions from 1.7.12 up until just prior to 1.9.0, getUrl() stripped
         // trailing "/"
@@ -55,14 +57,5 @@ public class AsyncHttpClientRequestInvoker {
         }
         URI uri = Reflection.invoke(getURIMethod, request);
         return uri == null ? "" : uri.toString();
-    }
-
-    private static @Nullable Class<?> getRequestClass(Class<?> clazz) {
-        try {
-            return Class.forName("com.ning.http.client.Request", false, clazz.getClassLoader());
-        } catch (ClassNotFoundException e) {
-            logger.warn(e.getMessage(), e);
-        }
-        return null;
     }
 }

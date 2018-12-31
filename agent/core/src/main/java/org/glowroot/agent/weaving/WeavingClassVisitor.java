@@ -51,17 +51,17 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.Bytecode;
 import org.glowroot.agent.bytecode.api.Util;
+import org.glowroot.agent.plugin.api.ClassInfo;
+import org.glowroot.agent.plugin.api.MethodInfo;
 import org.glowroot.agent.plugin.api.weaving.Shim;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.objectweb.asm.Opcodes.AASTORE;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.ALOAD;
-import static org.objectweb.asm.Opcodes.ANEWARRAY;
 import static org.objectweb.asm.Opcodes.ASM7;
 import static org.objectweb.asm.Opcodes.ASTORE;
 import static org.objectweb.asm.Opcodes.ATHROW;
@@ -70,11 +70,13 @@ import static org.objectweb.asm.Opcodes.GETSTATIC;
 import static org.objectweb.asm.Opcodes.GOTO;
 import static org.objectweb.asm.Opcodes.ICONST_0;
 import static org.objectweb.asm.Opcodes.ILOAD;
+import static org.objectweb.asm.Opcodes.INVOKEINTERFACE;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
 import static org.objectweb.asm.Opcodes.IRETURN;
 import static org.objectweb.asm.Opcodes.NEW;
+import static org.objectweb.asm.Opcodes.POP;
 import static org.objectweb.asm.Opcodes.PUTSTATIC;
 import static org.objectweb.asm.Opcodes.RETURN;
 import static org.objectweb.asm.Opcodes.V1_5;
@@ -85,6 +87,10 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private static final Type bytecodeType = Type.getType(Bytecode.class);
     private static final Type bytecodeUtilType = Type.getType(Util.class);
+    private static final Type classInfoType = Type.getType(ClassInfo.class);
+    private static final Type classInfoImplType = Type.getType(ClassInfoImpl.class);
+    private static final Type methodInfoType = Type.getType(MethodInfo.class);
+    private static final Type methodInfoImplType = Type.getType(MethodInfoImpl.class);
 
     private static final AtomicLong metaHolderCounter = new AtomicLong();
 
@@ -253,22 +259,22 @@ class WeavingClassVisitor extends ClassVisitor {
         }
         // handle metas at end, since handleInheritedMethodsThatNowFulfillAdvice()
         // above could add new metas
-        handleMetaHolders();
+        if (metaHolderInternalName != null) {
+            handleMetaHolders();
+        }
         cw.visitEnd();
     }
 
-    @RequiresNonNull("type")
+    @RequiresNonNull({"type", "metaHolderInternalName"})
     private void handleMetaHolders() {
-        if (metaHolderInternalName != null) {
-            if (loader == null) {
-                initializeBoostrapMetaHolders();
-            } else {
-                try {
-                    generateMetaHolder();
-                } catch (Exception e) {
-                    // this will terminate weaving and get logged by WeavingClassFileTransformer
-                    throw new RuntimeException(e);
-                }
+        if (loader == null) {
+            initializeBoostrapMetaHolders();
+        } else {
+            try {
+                generateMetaHolder();
+            } catch (Exception e) {
+                // this will terminate weaving and get logged by WeavingClassFileTransformer
+                throw new RuntimeException(e);
             }
         }
     }
@@ -289,7 +295,7 @@ class WeavingClassVisitor extends ClassVisitor {
                         + '$' + methodMetaInternalName.replace('/', '$');
                 BootstrapMetaHolders.createMethodMetaHolder(metaHolderInternalName,
                         methodMetaFieldName, methodMetaType, type, methodMetaGroup.methodName(),
-                        methodMetaGroup.methodParameterTypes());
+                        methodMetaGroup.methodReturnType(), methodMetaGroup.methodParameterTypes());
             }
         }
     }
@@ -316,9 +322,16 @@ class WeavingClassVisitor extends ClassVisitor {
             fv.visitEnd();
             mv.visitTypeInsn(NEW, classMetaInternalName);
             mv.visitInsn(DUP);
-            loadType(mv, type, metaHolderType);
+            mv.visitTypeInsn(NEW, classInfoImplType.getInternalName());
+            mv.visitInsn(DUP);
+            mv.visitLdcInsn(type.getClassName());
+            mv.visitLdcInsn(metaHolderType);
+            mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getClassLoader",
+                    "()Ljava/lang/ClassLoader;", false);
+            mv.visitMethodInsn(INVOKESPECIAL, classInfoImplType.getInternalName(), "<init>",
+                    "(Ljava/lang/String;Ljava/lang/ClassLoader;)V", false);
             mv.visitMethodInsn(INVOKESPECIAL, classMetaInternalName, "<init>",
-                    "(Ljava/lang/Class;)V", false);
+                    "(L" + classInfoType.getInternalName() + ";)V", false);
             mv.visitFieldInsn(PUTSTATIC, metaHolderInternalName, classMetaFieldName,
                     "L" + classMetaInternalName + ";");
         }
@@ -332,20 +345,32 @@ class WeavingClassVisitor extends ClassVisitor {
                 fv.visitEnd();
                 mv.visitTypeInsn(NEW, methodMetaInternalName);
                 mv.visitInsn(DUP);
-                loadType(mv, type, metaHolderType);
+                mv.visitTypeInsn(NEW, methodInfoImplType.getInternalName());
+                mv.visitInsn(DUP);
                 mv.visitLdcInsn(methodMetaGroup.methodName());
-                mv.visitLdcInsn(methodMetaGroup.methodParameterTypes().size());
-                mv.visitTypeInsn(ANEWARRAY, "java/lang/Class");
-                for (int i = 0; i < methodMetaGroup.methodParameterTypes().size(); i++) {
+                loadType(mv, methodMetaGroup.methodReturnType(), metaHolderType);
+                mv.visitTypeInsn(NEW, "java/util/ArrayList");
+                mv.visitInsn(DUP);
+                List<Type> methodParameterTypes = methodMetaGroup.methodParameterTypes();
+                mv.visitLdcInsn(methodParameterTypes.size());
+                mv.visitMethodInsn(INVOKESPECIAL, "java/util/ArrayList", "<init>", "(I)V", false);
+                for (int i = 0; i < methodParameterTypes.size(); i++) {
                     mv.visitInsn(DUP);
-                    mv.visitLdcInsn(i);
-                    loadType(mv, methodMetaGroup.methodParameterTypes().get(i), metaHolderType);
-                    mv.visitInsn(AASTORE);
+                    loadType(mv, methodParameterTypes.get(i), metaHolderType);
+                    mv.visitMethodInsn(INVOKEINTERFACE, "java/util/List", "add",
+                            "(Ljava/lang/Object;)Z", true);
+                    mv.visitInsn(POP);
                 }
-                mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getDeclaredMethod",
-                        "(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;", false);
+                mv.visitLdcInsn(type.getClassName());
+                mv.visitLdcInsn(metaHolderType);
+                mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getClassLoader",
+                        "()Ljava/lang/ClassLoader;", false);
+                mv.visitMethodInsn(INVOKESPECIAL, methodInfoImplType.getInternalName(), "<init>",
+                        "(Ljava/lang/String;Ljava/lang/Class;Ljava/util/List;Ljava/lang/String;"
+                                + "Ljava/lang/ClassLoader;)V",
+                        false);
                 mv.visitMethodInsn(INVOKESPECIAL, methodMetaInternalName, "<init>",
-                        "(Ljava/lang/reflect/Method;)V", false);
+                        "(L" + methodInfoType.getInternalName() + ";)V", false);
                 mv.visitFieldInsn(PUTSTATIC, metaHolderInternalName, methodMetaFieldName,
                         "L" + methodMetaInternalName + ";");
             }
@@ -357,7 +382,7 @@ class WeavingClassVisitor extends ClassVisitor {
         mv.visitLabel(l2);
         mv.visitVarInsn(ASTORE, 0);
         mv.visitVarInsn(ALOAD, 0);
-        mv.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Bytecode", "logThrowable",
+        mv.visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(), "logThrowable",
                 "(Ljava/lang/Throwable;)V", false);
         mv.visitVarInsn(ALOAD, 0);
         mv.visitInsn(ATHROW);
@@ -416,8 +441,8 @@ class WeavingClassVisitor extends ClassVisitor {
     }
 
     private static void loadObjectType(MethodVisitor mv, Type type, Type ownerType) {
-        // may not have access to type in meta holder, so need to use Class.forName()
-        // instead of class constant
+        // may not have access to type in meta holder (e.g. if type is private), so need to use
+        // Class.forName() instead of class constant
         mv.visitLdcInsn(type.getClassName());
         mv.visitInsn(ICONST_0);
         mv.visitLdcInsn(ownerType);
@@ -493,10 +518,10 @@ class WeavingClassVisitor extends ClassVisitor {
         Integer methodMetaUniqueNum = null;
         if (!methodMetaTypes.isEmpty()) {
             methodMetaUniqueNum = ++methodMetaCounter;
-            List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(methodDesc));
             methodMetaGroups.add(ImmutableMethodMetaGroup.builder()
                     .methodName(methodName)
-                    .addAllMethodParameterTypes(parameterTypes)
+                    .methodReturnType(Type.getReturnType(methodDesc))
+                    .addMethodParameterTypes(Type.getArgumentTypes(methodDesc))
                     .uniqueNum(methodMetaUniqueNum)
                     .addAllMethodMetaTypes(methodMetaTypes)
                     .build());
@@ -664,6 +689,7 @@ class WeavingClassVisitor extends ClassVisitor {
     @Value.Immutable
     interface MethodMetaGroup {
         String methodName();
+        Type methodReturnType();
         ImmutableList<Type> methodParameterTypes();
         int uniqueNum();
         ImmutableSet<Type> methodMetaTypes();

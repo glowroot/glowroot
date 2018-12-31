@@ -33,7 +33,7 @@ public class PathEvaluatorTest {
     @Test
     public void shouldCallGetterMethod() throws Exception {
         // given
-        PathEvaluator pathEvaluator = new PathEvaluator(SomeObject.class, "one");
+        PathEvaluator pathEvaluator = PathEvaluator.create(SomeObject.class, "one");
         // when
         String value = (String) pathEvaluator.evaluateOnBase(new SomeObject());
         // then
@@ -43,7 +43,7 @@ public class PathEvaluatorTest {
     @Test
     public void shouldCallBooleanGetterMethod() throws Exception {
         // given
-        PathEvaluator pathEvaluator = new PathEvaluator(SomeObject.class, "two");
+        PathEvaluator pathEvaluator = PathEvaluator.create(SomeObject.class, "two");
         // when
         boolean value = (Boolean) pathEvaluator.evaluateOnBase(new SomeObject());
         // then
@@ -53,7 +53,7 @@ public class PathEvaluatorTest {
     @Test
     public void shouldCallNonGetterMethod() throws Exception {
         // given
-        PathEvaluator pathEvaluator = new PathEvaluator(SomeObject.class, "three");
+        PathEvaluator pathEvaluator = PathEvaluator.create(SomeObject.class, "three");
         // when
         String value = (String) pathEvaluator.evaluateOnBase(new SomeObject());
         // then
@@ -63,7 +63,7 @@ public class PathEvaluatorTest {
     @Test
     public void shouldGetField() throws Exception {
         // given
-        PathEvaluator pathEvaluator = new PathEvaluator(SomeObject.class, "four");
+        PathEvaluator pathEvaluator = PathEvaluator.create(SomeObject.class, "four");
         // when
         String value = (String) pathEvaluator.evaluateOnBase(new SomeObject());
         // then
@@ -73,7 +73,7 @@ public class PathEvaluatorTest {
     @Test
     public void shouldCallMethodOnPackagePrivateClass() throws Exception {
         // given
-        PathEvaluator pathEvaluator = new PathEvaluator(List.class, "size");
+        PathEvaluator pathEvaluator = PathEvaluator.create(List.class, "size");
         List<String> list = Lists.newArrayList();
         list = Collections.synchronizedList(list);
         // when
@@ -85,7 +85,7 @@ public class PathEvaluatorTest {
     @Test
     public void shouldTestNestedPath() throws Exception {
         // given
-        PathEvaluator pathEvaluator = new PathEvaluator(A.class, "b.str");
+        PathEvaluator pathEvaluator = PathEvaluator.create(A.class, "b.str");
         // when
         String value = (String) pathEvaluator.evaluateOnBase(new A());
         // then
@@ -95,7 +95,7 @@ public class PathEvaluatorTest {
     @Test
     public void shouldTestNestedPathWithNull() throws Exception {
         // given
-        PathEvaluator pathEvaluator = new PathEvaluator(A.class, "b.nil.str");
+        PathEvaluator pathEvaluator = PathEvaluator.create(A.class, "b.nil.str");
         // when
         String value = (String) pathEvaluator.evaluateOnBase(new A());
         // then
@@ -105,7 +105,7 @@ public class PathEvaluatorTest {
     @Test
     public void shouldTestNestedArrayPathNavigation() throws Exception {
         // given
-        PathEvaluator pathEvaluator = new PathEvaluator(A.class, "b.c.d.str");
+        PathEvaluator pathEvaluator = PathEvaluator.create(A.class, "b.c.d.str");
         // when
         Object[] value = (Object[]) pathEvaluator.evaluateOnBase(new A());
         // then
@@ -115,7 +115,7 @@ public class PathEvaluatorTest {
     @Test
     public void shouldTestRemainingPath() throws Exception {
         // given
-        PathEvaluator pathEvaluator = new PathEvaluator(A.class, "b.eee");
+        PathEvaluator pathEvaluator = PathEvaluator.create(A.class, "b.eee");
         A a = new A();
         a.b = new E();
         // when

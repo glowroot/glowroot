@@ -17,7 +17,9 @@ package org.glowroot.agent.ui.sandbox;
 
 import java.lang.reflect.Method;
 
+import org.glowroot.agent.plugin.api.ClassInfo;
 import org.glowroot.agent.plugin.api.Logger;
+import org.glowroot.agent.plugin.api.util.Reflection;
 
 public class ExpensiveCallInvoker {
 
@@ -25,15 +27,11 @@ public class ExpensiveCallInvoker {
 
     private final Method getTraceEntryMessageMethod;
 
-    public ExpensiveCallInvoker(Class<?> clazz) {
-        Class<?> expensiveCallClass = null;
-        try {
-            expensiveCallClass = Class.forName("org.glowroot.agent.ui.sandbox.ExpensiveCall", false,
-                    clazz.getClassLoader());
-        } catch (ClassNotFoundException e) {
-            logger.warn(e.getMessage(), e);
-        }
-        getTraceEntryMessageMethod = getMethod(expensiveCallClass, "getTraceEntryMessage");
+    public ExpensiveCallInvoker(ClassInfo classInfo) {
+        Class<?> expensiveCallClass = Reflection.getClassWithWarnIfNotFound(
+                "org.glowroot.agent.ui.sandbox.ExpensiveCall", classInfo.getLoader());
+        getTraceEntryMessageMethod =
+                Reflection.getMethod(expensiveCallClass, "getTraceEntryMessage");
     }
 
     String getTraceEntryMessage(Object expensiveCall) {
@@ -45,21 +43,6 @@ public class ExpensiveCallInvoker {
         } catch (Throwable t) {
             logger.warn("error calling ExpensiveCall.getTraceEntryMessage()", t);
             return "<error calling ExpensiveCall.getTraceEntryMessage()>";
-        }
-    }
-
-    private static Method getMethod(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
-        if (clazz == null) {
-            return null;
-        }
-        try {
-            return clazz.getMethod(methodName, parameterTypes);
-        } catch (SecurityException e) {
-            logger.warn(e.getMessage(), e);
-            return null;
-        } catch (NoSuchMethodException e) {
-            logger.warn(e.getMessage(), e);
-            return null;
         }
     }
 }
