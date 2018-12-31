@@ -56,6 +56,10 @@
               <include>org.glowroot:glowroot-agent-embedded-unshaded</include>
               <include>org.glowroot:glowroot-common2</include>
               <include>org.glowroot:glowroot-ui</include>
+              <!-- don't shade agent api since that will cause the
+                @org.glowroot.agent.api.Instrumentation.TraceEntry annotations that are present in
+                the glowroot-ui to not work -->
+              <include>org.glowroot:glowroot-agent-api</include>
               <include>com.h2database:h2</include>
               <include>com.ning:compress-lzf</include>
               <include>com.sun.mail:mailapi</include>

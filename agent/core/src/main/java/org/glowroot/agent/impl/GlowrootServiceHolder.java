@@ -13,27 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.api.internal;
+package org.glowroot.agent.impl;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class GlowrootServiceHolder {
 
-    private static volatile @Nullable GlowrootService service;
+    private static volatile @Nullable GlowrootServiceImpl service;
     private static volatile @Nullable Exception retrievedTooEarlyLocation;
 
     private GlowrootServiceHolder() {}
 
-    public static GlowrootService get() {
+    public static @Nullable GlowrootServiceImpl get() {
         if (service == null) {
             retrievedTooEarlyLocation = new Exception();
-            return NopGlowrootService.INSTANCE;
+            return null;
         } else {
             return service;
         }
     }
 
-    public static void set(GlowrootService service) {
+    public static void set(GlowrootServiceImpl service) {
         GlowrootServiceHolder.service = service;
     }
 

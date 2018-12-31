@@ -23,11 +23,6 @@
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-api</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent-plugin-api</artifactId>
       <version>${project.version}</version>
     </dependency>

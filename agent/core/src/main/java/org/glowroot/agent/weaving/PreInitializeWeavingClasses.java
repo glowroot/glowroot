@@ -252,7 +252,6 @@ public class PreInitializeWeavingClasses {
 
     private static List<String> getGlowrootUsedTypes() {
         List<String> types = Lists.newArrayList();
-        types.add("org.glowroot.agent.api.Instrumentation$AlreadyInTransactionBehavior");
         types.add("org.glowroot.agent.impl.NestedTimerMap");
         types.add("org.glowroot.agent.impl.ThreadContextImpl");
         types.add("org.glowroot.agent.impl.TimerImpl");

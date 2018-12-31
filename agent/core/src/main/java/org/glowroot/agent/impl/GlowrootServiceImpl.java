@@ -23,10 +23,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.api.internal.GlowrootService;
 import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 
-public class GlowrootServiceImpl implements GlowrootService {
+public class GlowrootServiceImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(GlowrootServiceImpl.class);
 
@@ -36,7 +35,6 @@ public class GlowrootServiceImpl implements GlowrootService {
         this.transactionRegistry = transactionRegistry;
     }
 
-    @Override
     public void setTransactionType(@Nullable String transactionType) {
         if (Strings.isNullOrEmpty(transactionType)) {
             return;
@@ -47,7 +45,6 @@ public class GlowrootServiceImpl implements GlowrootService {
         }
     }
 
-    @Override
     public void setTransactionName(@Nullable String transactionName) {
         if (Strings.isNullOrEmpty(transactionName)) {
             return;
@@ -58,7 +55,6 @@ public class GlowrootServiceImpl implements GlowrootService {
         }
     }
 
-    @Override
     public void setTransactionUser(@Nullable String user) {
         if (Strings.isNullOrEmpty(user)) {
             return;
@@ -69,7 +65,6 @@ public class GlowrootServiceImpl implements GlowrootService {
         }
     }
 
-    @Override
     public void addTransactionAttribute(String name, @Nullable String value) {
         if (name == null) {
             logger.error("addTransactionAttribute(): argument 'name' must be non-null");
@@ -81,7 +76,6 @@ public class GlowrootServiceImpl implements GlowrootService {
         }
     }
 
-    @Override
     public void setTransactionSlowThreshold(long threshold, TimeUnit unit) {
         if (threshold < 0) {
             logger.error(
@@ -99,7 +93,6 @@ public class GlowrootServiceImpl implements GlowrootService {
         }
     }
 
-    @Override
     public void setTransactionOuter() {
         Transaction transaction = transactionRegistry.getCurrentTransaction();
         if (transaction != null) {

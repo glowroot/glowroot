@@ -353,7 +353,6 @@ public class JavaagentContainer implements Container {
                 javaagentJarFile = file;
             } else if (name.matches("glowroot-common-[0-9.]+(-SNAPSHOT)?.jar")
                     || name.matches("glowroot-wire-api-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-agent-api-[0-9.]+(-SNAPSHOT)?.jar")
                     || name.matches("glowroot-agent-plugin-api-[0-9.]+(-SNAPSHOT)?.jar")
                     || name.matches("glowroot-agent-bytecode-api-[0-9.]+(-SNAPSHOT)?.jar")
                     || name.matches("glowroot-build-error-prone-jdk6-[0-9.]+(-SNAPSHOT)?.jar")) {
@@ -361,7 +360,6 @@ public class JavaagentContainer implements Container {
                 maybeBootPaths.add(path);
             } else if (file.getAbsolutePath().endsWith(File.separator + "common" + targetClasses)
                     || file.getAbsolutePath().endsWith(File.separator + "wire-api" + targetClasses)
-                    || file.getAbsolutePath().endsWith(File.separator + "api" + targetClasses)
                     || file.getAbsolutePath()
                             .endsWith(File.separator + "plugin-api" + targetClasses)
                     || file.getAbsolutePath()
@@ -370,6 +368,12 @@ public class JavaagentContainer implements Container {
                             .endsWith(File.separator + "error-prone-jdk6" + targetClasses)) {
                 // these are glowroot-agent-core-unshaded transitive dependencies
                 maybeBootPaths.add(path);
+            } else if (name.matches("glowroot-agent-api-[0-9.]+(-SNAPSHOT)?.jar")) {
+                // agent-api lives with the application
+                paths.add(path);
+            } else if (file.getAbsolutePath().endsWith(File.separator + "api" + targetClasses)) {
+                // agent-api lives with the application
+                paths.add(path);
             } else if (name.matches("asm-.*\\.jar")
                     || name.matches("grpc-.*\\.jar")
                     || name.matches("opencensus-.*\\.jar")

@@ -34,8 +34,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.api.internal.GlowrootService;
-import org.glowroot.agent.api.internal.GlowrootServiceHolder;
 import org.glowroot.agent.bytecode.api.BytecodeServiceHolder;
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.config.ConfigService;
@@ -44,6 +42,7 @@ import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.impl.BytecodeServiceImpl;
 import org.glowroot.agent.impl.BytecodeServiceImpl.OnEnteringMain;
 import org.glowroot.agent.impl.ConfigServiceImpl;
+import org.glowroot.agent.impl.GlowrootServiceHolder;
 import org.glowroot.agent.impl.GlowrootServiceImpl;
 import org.glowroot.agent.impl.PluginServiceImpl;
 import org.glowroot.agent.impl.PluginServiceImpl.ConfigServiceFactory;
@@ -159,8 +158,7 @@ public class AgentModule {
 
         // need to initialize glowroot-agent-api, glowroot-agent-plugin-api and glowroot-weaving-api
         // services before enabling instrumentation
-        GlowrootService glowrootService = new GlowrootServiceImpl(transactionRegistry);
-        GlowrootServiceHolder.set(glowrootService);
+        GlowrootServiceHolder.set(new GlowrootServiceImpl(transactionRegistry));
         ConfigServiceFactory configServiceFactory = new ConfigServiceFactory() {
             @Override
             public org.glowroot.agent.plugin.api.config.ConfigService create(String pluginId) {

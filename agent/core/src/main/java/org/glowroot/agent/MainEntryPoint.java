@@ -283,15 +283,20 @@ public class MainEntryPoint {
         }
         if (collectorAddress == null) {
             File embeddedCollectorJarFile = directories.getEmbeddedCollectorJarFile();
-            if (embeddedCollectorJarFile != null && instrumentation != null) {
-                instrumentation
-                        .appendToSystemClassLoaderSearch(new JarFile(embeddedCollectorJarFile));
+
+            ClassLoader embeddedLoader;
+            if (embeddedCollectorJarFile == null) {
+                embeddedLoader = ClassLoader.getSystemClassLoader();
+            } else {
+                embeddedLoader =
+                        new URLClassLoader(new URL[] {embeddedCollectorJarFile.toURI().toURL()},
+                                ClassLoader.getSystemClassLoader());
             }
             Class<?> factoryClass;
             try {
                 factoryClass = Class.forName(
                         "org.glowroot.agent.embedded.init.EmbeddedGlowrootAgentInitFactory", true,
-                        ClassLoader.getSystemClassLoader());
+                        embeddedLoader);
             } catch (ClassNotFoundException e) {
                 if (embeddedCollectorJarFile == null) {
                     startupLogger.error("missing lib/glowroot-embedded-collector.jar");

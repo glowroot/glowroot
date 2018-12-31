@@ -35,7 +35,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.bytecode.api.Bytecode;
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -223,8 +222,7 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             // package name"
             return true;
         }
-        if (name.equals(Glowroot.class.getName())
-                || name.equals(Agent.class.getName())
+        if (name.equals(Agent.class.getName())
                 || name.equals(Bytecode.class.getName())
                 || name.equals(org.glowroot.agent.plugin.api.util.ImmutableList.class.getName())
                 || name.equals(org.glowroot.agent.plugin.api.util.ImmutableMap.class.getName())

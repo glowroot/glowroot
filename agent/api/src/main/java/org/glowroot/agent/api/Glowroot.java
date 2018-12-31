@@ -15,16 +15,46 @@
  */
 package org.glowroot.agent.api;
 
+import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import org.glowroot.agent.api.internal.FwdGlowrootService;
 import org.glowroot.agent.api.internal.GlowrootService;
-import org.glowroot.agent.api.internal.GlowrootServiceHolder;
+import org.glowroot.agent.api.internal.NopGlowrootService;
+import org.glowroot.agent.impl.GlowrootServiceImpl;
 
 public class Glowroot {
 
-    private static final GlowrootService service = GlowrootServiceHolder.get();
+    private static final GlowrootService service = getGlowrootService();
+
+    private static GlowrootService getGlowrootService() {
+        Class<?> clazz;
+        try {
+            clazz = Class.forName("org.glowroot.agent.impl.GlowrootServiceHolder");
+        } catch (ClassNotFoundException e) {
+            // this is ok, just means Glowroot is not running
+            return NopGlowrootService.INSTANCE;
+        }
+        Method method;
+        try {
+            method = clazz.getMethod("get");
+            GlowrootServiceImpl impl = (GlowrootServiceImpl) method.invoke(null);
+            if (impl == null) {
+                // the location stack trace of above call to GlowrootServiceHolder.get() will have
+                // been caught above and if glowroot agent is running, it will log
+                // "Glowroot Agent API was called too early" along with the location stack trace
+                return NopGlowrootService.INSTANCE;
+            } else {
+                return new FwdGlowrootService(impl);
+            }
+        } catch (Exception e) {
+            // this is unexpected
+            e.printStackTrace();
+            return NopGlowrootService.INSTANCE;
+        }
+    }
 
     private Glowroot() {}
 

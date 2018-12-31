@@ -29,7 +29,6 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.common.config.ImmutableInstrumentationConfig;
 import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.AlreadyInTransactionBehavior;
@@ -244,14 +243,11 @@ class InstrumentationSeekerClassVisitor extends ClassVisitor {
         }
 
         private static AlreadyInTransactionBehavior toProto(String value) {
-            if (value.equals(
-                    Instrumentation.AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY.name())) {
+            if (value.equals("CAPTURE_TRACE_ENTRY")) {
                 return AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY;
-            } else if (value.equals(
-                    Instrumentation.AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION.name())) {
+            } else if (value.equals("CAPTURE_NEW_TRANSACTION")) {
                 return AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION;
-            } else if (value
-                    .equals(Instrumentation.AlreadyInTransactionBehavior.DO_NOTHING.name())) {
+            } else if (value.equals("DO_NOTHING")) {
                 return AlreadyInTransactionBehavior.DO_NOTHING;
             } else {
                 throw new IllegalStateException(
