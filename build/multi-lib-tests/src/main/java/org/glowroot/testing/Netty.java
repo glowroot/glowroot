@@ -57,8 +57,14 @@ public class Netty {
         for (int i = 1; i <= 7; i++) {
             runNetty("4.1.0.CR" + i, "netty-4.x");
         }
-        for (int i = 0; i <= 31; i++) {
-            runNetty("4.1." + i + ".Final", "netty-4.x");
+        for (int i = 0; i <= 32; i++) {
+            if (i == 28) {
+                // Netty 4.1.28 fails on Java 6, see https://github.com/netty/netty/issues/8166
+                runNettyJava7("4.1." + i + ".Final", "netty-4.x");
+            } else {
+                runNetty("4.1." + i + ".Final", "netty-4.x");
+            }
+            runNettyJava7("4.1." + i + ".Final", "netty-http2-4.1.x");
         }
     }
 
@@ -101,6 +107,11 @@ public class Netty {
     private static void runNetty(String version, String... profile) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "netty.version", version);
         Util.runTests(MODULE_PATH, profile, JAVA8, JAVA7, JAVA6);
+    }
+
+    private static void runNettyJava7(String version, String... profile) throws Exception {
+        Util.updateLibVersion(MODULE_PATH, "netty.version", version);
+        Util.runTests(MODULE_PATH, profile, JAVA8, JAVA7);
     }
 
     private static void runVertx(String vertxVersion, String nettyVersion, String profile)

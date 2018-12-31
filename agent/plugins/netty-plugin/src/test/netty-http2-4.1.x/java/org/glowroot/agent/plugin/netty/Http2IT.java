@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,17 @@
 package org.glowroot.agent.plugin.netty;
 
 import java.net.ServerSocket;
+import java.util.concurrent.Future;
 
-import org.apache.http.NoHttpResponseException;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
+import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
+import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
+import org.apache.hc.core5.http2.HttpVersionPolicy;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
@@ -34,7 +36,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class NettyIT {
+public class Http2IT {
 
     private static Container container;
 
@@ -53,26 +55,15 @@ public class NettyIT {
         container.checkAndReset();
     }
 
+    @Ignore
     @Test
-    public void shouldCaptureHttpGet() throws Exception {
+    public void shouldCaptureHttp2Get() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteHttpGet.class);
-
+        Trace trace = container.execute(ExecuteHttp2Get.class);
         // then
         assertThat(trace.getHeader().getTransactionName()).isEqualTo("/abc");
         assertThat(trace.getHeader().getHeadline()).isEqualTo("GET /abc?xyz=123");
-        assertThat(trace.getEntryCount()).isZero();
-    }
-
-    @Test
-    public void shouldCaptureHttpGetWithException() throws Exception {
-        // when
-        Trace trace = container.execute(ExecuteHttpGetWithException.class);
-
-        // then
-        assertThat(trace.getHeader().getTransactionName()).isEqualTo("/exception");
-        assertThat(trace.getEntryCount()).isZero();
-        assertThat(trace.getHeader().getPartial()).isFalse();
+        assertThat(trace.getEntryList()).isEmpty();
     }
 
     private static int getAvailablePort() throws Exception {
@@ -82,35 +73,24 @@ public class NettyIT {
         return port;
     }
 
-    public static class ExecuteHttpGet implements AppUnderTest {
+    public static class ExecuteHttp2Get implements AppUnderTest {
 
         @Override
         public void executeApp() throws Exception {
             int port = getAvailablePort();
-            HttpServer server = new HttpServer(port);
-            CloseableHttpClient httpClient = HttpClients.createDefault();
-            HttpGet httpGet = new HttpGet("http://localhost:" + port + "/abc?xyz=123");
-            int code = httpClient.execute(httpGet).getStatusLine().getStatusCode();
+            Http2Server server = new Http2Server(port, false);
+            CloseableHttpAsyncClient httpClient = HttpAsyncClientBuilder.create()
+                    .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_2)
+                    .build();
+            httpClient.start();
+            SimpleHttpRequest httpGet =
+                    new SimpleHttpRequest("GET", "http://localhost:" + port + "/hello1");
+            Future<SimpleHttpResponse> future = httpClient.execute(httpGet, null);
+            SimpleHttpResponse response = future.get();
+            httpClient.close();
+            int code = response.getCode();
             if (code != 200) {
                 throw new IllegalStateException("Unexpected response code: " + code);
-            }
-            server.close();
-        }
-    }
-
-    public static class ExecuteHttpGetWithException implements AppUnderTest {
-
-        @Override
-        public void executeApp() throws Exception {
-            int port = getAvailablePort();
-            HttpServer server = new HttpServer(port);
-            CloseableHttpClient httpClient = HttpClientBuilder.create()
-                    .disableAutomaticRetries()
-                    .build();
-            HttpGet httpGet = new HttpGet("http://localhost:" + port + "/exception");
-            try {
-                httpClient.execute(httpGet);
-            } catch (NoHttpResponseException e) {
             }
             server.close();
         }

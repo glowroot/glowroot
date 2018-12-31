@@ -85,11 +85,19 @@ public final class Http2ServerHandler extends Http2ConnectionHandler implements 
     @Override
     public void onSettingsRead(ChannelHandlerContext ctx, Http2Settings settings) {}
 
-    @Override
+    // since 4.1.22
     public void onPingRead(ChannelHandlerContext ctx, long data) {}
 
-    @Override
+    // prior to 4.1.22
+    public void onPingRead(@SuppressWarnings("unused") ChannelHandlerContext ctx,
+            @SuppressWarnings("unused") ByteBuf data) {}
+
+    // since 4.1.22
     public void onPingAckRead(ChannelHandlerContext ctx, long data) {}
+
+    // prior to 4.1.22
+    public void onPingAckRead(@SuppressWarnings("unused") ChannelHandlerContext ctx,
+            @SuppressWarnings("unused") ByteBuf data) {}
 
     @Override
     public void onPushPromiseRead(ChannelHandlerContext ctx, int streamId, int promisedStreamId,

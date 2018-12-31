@@ -38,14 +38,6 @@
       <artifactId>guava</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <!-- using apache httpclient instead of asynchttpclient to avoid netty conflicts with
-        different netty versions -->
-      <groupId>org.apache.httpcomponents.client5</groupId>
-      <artifactId>httpclient5</artifactId>
-      <version>5.0-beta2</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -62,23 +54,6 @@
         </executions>
       </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <!-- httpclient5 requires Java 7+ -->
-          <artifactId>maven-compiler-plugin</artifactId>
-          <executions>
-            <execution>
-              <id>default-testCompile</id>
-              <configuration>
-                <source>1.7</source>
-                <target>1.7</target>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 
   <profiles>
@@ -127,15 +102,83 @@
       </dependencies>
     </profile>
     <profile>
-      <id>netty-4.x</id>
+      <!-- separate profile since can't find any http/2 client libraries that support Java 6 -->
+      <id>netty-http2-4.1.x</id>
       <properties>
-        <netty.version>4.1.27.Final</netty.version>
+        <netty.version>4.1.32.Final</netty.version>
       </properties>
       <dependencies>
         <dependency>
           <groupId>io.netty</groupId>
           <artifactId>netty-all</artifactId>
           <version>${netty.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <!-- httpclient5 is needed for http/2 support -->
+          <groupId>org.apache.httpcomponents.client5</groupId>
+          <artifactId>httpclient5</artifactId>
+          <version>5.0-beta3</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>generate-test-sources</phase>
+                <goals>
+                  <goal>add-test-source</goal>
+                </goals>
+                <configuration>
+                  <sources>
+                    <source>src/test/netty-http2-4.1.x/java</source>
+                  </sources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <!-- httpclient5 requires Java 7+ -->
+              <artifactId>maven-compiler-plugin</artifactId>
+              <executions>
+                <execution>
+                  <id>default-testCompile</id>
+                  <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+    <profile>
+      <id>netty-4.x</id>
+      <properties>
+        <netty.version>4.1.32.Final</netty.version>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-all</artifactId>
+          <version>${netty.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <!-- using apache httpclient instead of asynchttpclient to avoid netty conflicts with
+            different play versions -->
+          <groupId>org.apache.httpcomponents</groupId>
+          <artifactId>httpclient</artifactId>
+          <version>4.5.6</version>
           <scope>test</scope>
         </dependency>
       </dependencies>
@@ -173,6 +216,14 @@
           <version>${netty.version}</version>
           <scope>test</scope>
         </dependency>
+        <dependency>
+          <!-- using apache httpclient instead of asynchttpclient to avoid netty conflicts with
+            different play versions -->
+          <groupId>org.apache.httpcomponents</groupId>
+          <artifactId>httpclient</artifactId>
+          <version>4.5.6</version>
+          <scope>test</scope>
+        </dependency>
       </dependencies>
       <build>
         <plugins>
@@ -207,6 +258,14 @@
           <groupId>io.vertx</groupId>
           <artifactId>vertx-core</artifactId>
           <version>${vertx.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <!-- using apache httpclient instead of asynchttpclient to avoid netty conflicts with
+            different play versions -->
+          <groupId>org.apache.httpcomponents</groupId>
+          <artifactId>httpclient</artifactId>
+          <version>4.5.6</version>
           <scope>test</scope>
         </dependency>
       </dependencies>
@@ -261,6 +320,14 @@
           <version>${vertx.version}</version>
           <scope>test</scope>
         </dependency>
+        <dependency>
+          <!-- using apache httpclient instead of asynchttpclient to avoid netty conflicts with
+            different play versions -->
+          <groupId>org.apache.httpcomponents</groupId>
+          <artifactId>httpclient</artifactId>
+          <version>4.5.6</version>
+          <scope>test</scope>
+        </dependency>
       </dependencies>
       <build>
         <plugins>
@@ -295,6 +362,14 @@
           <groupId>org.vert-x</groupId>
           <artifactId>vertx-core</artifactId>
           <version>${vertx.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <!-- using apache httpclient instead of asynchttpclient to avoid netty conflicts with
+            different play versions -->
+          <groupId>org.apache.httpcomponents</groupId>
+          <artifactId>httpclient</artifactId>
+          <version>4.5.6</version>
           <scope>test</scope>
         </dependency>
       </dependencies>
