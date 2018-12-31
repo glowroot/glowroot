@@ -18,7 +18,6 @@ package org.glowroot.agent.plugin.httpclient;
 import java.net.URL;
 
 import com.squareup.okhttp.Callback;
-import com.squareup.okhttp.HttpUrl;
 import com.squareup.okhttp.Request;
 
 import org.glowroot.agent.plugin.api.Agent;
@@ -59,13 +58,7 @@ public class OkHttpClient2xAspect {
             } else {
                 method += " ";
             }
-            HttpUrl httpUrl = originalRequest.httpUrl();
-            String url;
-            if (httpUrl == null) {
-                url = "";
-            } else {
-                url = httpUrl.toString();
-            }
+            String url = originalRequest.urlString();
             return context.startServiceCallEntry("HTTP", method + Uris.stripQueryString(url),
                     MessageSupplier.create("http client request: {}{}", method, url), timerName);
         }
