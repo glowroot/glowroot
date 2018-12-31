@@ -15,6 +15,10 @@
  */
 package org.glowroot.agent.init;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
@@ -23,18 +27,32 @@ import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.model.ErrorMessage;
+import org.glowroot.agent.util.RateLimitedLogger;
+import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage.LogEvent;
 import org.glowroot.wire.api.model.Proto;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 class CollectorLogbackAppender extends UnsynchronizedAppenderBase<ILoggingEvent> {
 
     private static final Logger logger = LoggerFactory.getLogger(CollectorLogbackAppender.class);
 
+    // back pressure on writing data to network
+    private static final int PENDING_LIMIT = 100;
+
     private final CollectorProxy collector;
+    private final ExecutorService flushingExecutor;
+
+    private final AtomicInteger pendingCount = new AtomicInteger();
+
+    private final RateLimitedLogger backPressureLogger =
+            new RateLimitedLogger(TransactionCollector.class);
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
-    private final ThreadLocal<Boolean> inLogging = new ThreadLocal<Boolean>() {
+    private final ThreadLocal<Boolean> inFlush = new ThreadLocal<Boolean>() {
         @Override
         protected Boolean initialValue() {
             return false;
@@ -43,11 +61,13 @@ class CollectorLogbackAppender extends UnsynchronizedAppenderBase<ILoggingEvent>
 
     CollectorLogbackAppender(CollectorProxy collector) {
         this.collector = collector;
+        flushingExecutor =
+                Executors.newSingleThreadExecutor(ThreadFactories.create("Glowroot-Log-Flushing"));
     }
 
     @Override
     protected void append(ILoggingEvent event) {
-        if (inLogging.get()) {
+        if (inFlush.get()) {
             return;
         }
         if (event.getLevel() == Level.DEBUG && event.getLoggerName().startsWith("io.grpc.")) {
@@ -68,15 +88,39 @@ class CollectorLogbackAppender extends UnsynchronizedAppenderBase<ILoggingEvent>
         if (throwable != null) {
             builder.setThrowable(toProto(throwable));
         }
-        LogEvent logEvent = builder.build();
-        inLogging.set(true);
-        try {
-            collector.log(logEvent);
-        } catch (Exception e) {
-            // this won't be recursively sent to collector.log() thanks to ThreadLocal check
-            logger.error(e.getMessage(), e);
-        } finally {
-            inLogging.set(false);
+        flush(builder.build());
+    }
+
+    private void flush(final LogEvent logEvent) {
+        if (pendingCount.get() >= PENDING_LIMIT) {
+            backPressureLogger.warn("not sending log message to the central collector because of an"
+                    + " excessive backlog of {} log messages already waiting to be sent",
+                    PENDING_LIMIT);
+            return;
+        }
+        pendingCount.incrementAndGet();
+        flushingExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                inFlush.set(true);
+                try {
+                    collector.log(logEvent);
+                } catch (Exception e) {
+                    // this won't be recursively sent to collector.log() thanks to ThreadLocal check
+                    logger.error(e.getMessage(), e);
+                } finally {
+                    inFlush.set(false);
+                    pendingCount.decrementAndGet();
+                }
+            }
+        });
+    }
+
+    void close() throws InterruptedException {
+        flushingExecutor.shutdown();
+        flushingExecutor.shutdown();
+        if (!flushingExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException("Could not terminate executor");
         }
     }
 

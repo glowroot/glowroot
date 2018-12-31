@@ -48,7 +48,7 @@ public class TransactionCollector {
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionCollector.class);
 
-    // back pressure on trace collection
+    // back pressure on writing captured data to disk/network
     private static final int PENDING_LIMIT = 100;
 
     private final ExecutorService dedicatedExecutor;

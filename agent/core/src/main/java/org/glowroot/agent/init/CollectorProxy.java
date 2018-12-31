@@ -17,13 +17,10 @@ package org.glowroot.agent.init;
 
 import java.io.File;
 import java.util.List;
-import java.util.Queue;
+import java.util.concurrent.CountDownLatch;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Queues;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
@@ -31,22 +28,15 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.LogMessage.LogEvent;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 @VisibleForTesting
 public class CollectorProxy implements Collector {
 
-    private static final Logger logger = LoggerFactory.getLogger(CollectorProxy.class);
-
     private volatile @MonotonicNonNull Collector instance;
 
-    // 10 minutes of aggregates
-    private final Queue<AggregateReader> earlyAggregateReaders = Queues.newArrayBlockingQueue(10);
-
-    // 10 minutes of gauge values
-    private final Queue<List<GaugeValue>> earlyGaugeValues = Queues.newArrayBlockingQueue(120);
-
-    private final Queue<TraceReader> earlyTraceReaders = Queues.newArrayBlockingQueue(10);
-
-    private final Queue<LogEvent> earlyLogEvents = Queues.newArrayBlockingQueue(100);
+    private final CountDownLatch latch = new CountDownLatch(1);
 
     @Override
     public void init(List<File> confDirs, Environment environment, AgentConfig agentConfig,
@@ -58,12 +48,8 @@ public class CollectorProxy implements Collector {
     @Override
     public void collectAggregates(AggregateReader aggregateReader) throws Exception {
         if (instance == null) {
-            earlyAggregateReaders.offer(aggregateReader);
-            if (instance != null) {
-                // just in case the instance field was set and the final drain occurred in between
-                // the conditional check and the offer above
-                earlyAggregateReaders.remove(aggregateReader);
-                instance.collectAggregates(aggregateReader);
+            if (latch.await(2, MINUTES)) {
+                checkNotNull(instance).collectAggregates(aggregateReader);
             }
         } else {
             instance.collectAggregates(aggregateReader);
@@ -73,12 +59,8 @@ public class CollectorProxy implements Collector {
     @Override
     public void collectGaugeValues(List<GaugeValue> gaugeValues) throws Exception {
         if (instance == null) {
-            earlyGaugeValues.offer(gaugeValues);
-            if (instance != null) {
-                // just in case the instance field was set and the final drain occurred in between
-                // the conditional check and the offer above
-                earlyGaugeValues.remove(gaugeValues);
-                instance.collectGaugeValues(gaugeValues);
+            if (latch.await(2, MINUTES)) {
+                checkNotNull(instance).collectGaugeValues(gaugeValues);
             }
         } else {
             instance.collectGaugeValues(gaugeValues);
@@ -88,12 +70,8 @@ public class CollectorProxy implements Collector {
     @Override
     public void collectTrace(TraceReader traceReader) throws Exception {
         if (instance == null) {
-            earlyTraceReaders.offer(traceReader);
-            if (instance != null) {
-                // just in case the instance field was set and the final drain occurred in between
-                // the conditional check and the offer above
-                earlyTraceReaders.remove(traceReader);
-                instance.collectTrace(traceReader);
+            if (latch.await(2, MINUTES)) {
+                checkNotNull(instance).collectTrace(traceReader);
             }
         } else {
             instance.collectTrace(traceReader);
@@ -103,12 +81,8 @@ public class CollectorProxy implements Collector {
     @Override
     public void log(LogEvent logEvent) throws Exception {
         if (instance == null) {
-            earlyLogEvents.offer(logEvent);
-            if (instance != null) {
-                // just in case the instance field was set and the final drain occurred in between
-                // the conditional check and the offer above
-                earlyLogEvents.remove(logEvent);
-                instance.log(logEvent);
+            if (latch.await(2, MINUTES)) {
+                checkNotNull(instance).log(logEvent);
             }
         } else {
             instance.log(logEvent);
@@ -117,32 +91,7 @@ public class CollectorProxy implements Collector {
 
     @VisibleForTesting
     public void setInstance(Collector instance) {
-        drainTo(instance);
-        // drain a second time to help preserve order and not encounter anything in the final drain
-        // (which at worst could lead to unordered log event delivery)
-        drainTo(instance);
         this.instance = instance;
-        // need to drain one last time in case anything was added in between second drain and
-        // setting the instance field
-        drainTo(instance);
-    }
-
-    private void drainTo(Collector instance) {
-        try {
-            while (!earlyAggregateReaders.isEmpty()) {
-                instance.collectAggregates(earlyAggregateReaders.remove());
-            }
-            while (!earlyGaugeValues.isEmpty()) {
-                instance.collectGaugeValues(earlyGaugeValues.remove());
-            }
-            while (!earlyTraceReaders.isEmpty()) {
-                instance.collectTrace(earlyTraceReaders.remove());
-            }
-            while (!earlyLogEvents.isEmpty()) {
-                instance.log(earlyLogEvents.remove());
-            }
-        } catch (Throwable t) {
-            logger.error(t.getMessage(), t);
-        }
+        latch.countDown();
     }
 }

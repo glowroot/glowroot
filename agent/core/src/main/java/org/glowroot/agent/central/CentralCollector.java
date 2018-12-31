@@ -71,6 +71,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class CentralCollector implements Collector {
 
@@ -78,6 +79,14 @@ public class CentralCollector implements Collector {
 
     // log startup messages using logger name "org.glowroot"
     private static final Logger startupLogger = LoggerFactory.getLogger("org.glowroot");
+
+    // this is needed for webdriver tests that set aggregate interval to 1 second, which
+    // then causes issues with aggregate backlogging due to the 0-10 seconds delay
+    private static final boolean SKIP_DELAY;
+
+    static {
+        SKIP_DELAY = Integer.getInteger("glowroot.internal.rollup.0.intervalMillis", 60000) < 10000;
+    }
 
     private final String agentId;
     private final String collectorAddress;
@@ -148,7 +157,7 @@ public class CentralCollector implements Collector {
                 .setOverwriteExistingAgentConfig(
                         !agentId.equals(configSyncedAgentId) || configReadOnly)
                 .build();
-        centralConnection.callInit(new GrpcCall<InitResponse>() {
+        centralConnection.asyncCallInit(new GrpcCall<InitResponse>() {
             @Override
             public void call(StreamObserver<InitResponse> responseObserver) {
                 collectorServiceStub.collectInit(initMessage, responseObserver);
@@ -188,19 +197,22 @@ public class CentralCollector implements Collector {
 
     // collecting even when no aggregates since collection triggers transaction-based alerts
     @Override
-    public void collectAggregates(AggregateReader aggregateReader) {
-        centralConnection.callWithAFewRetries(nextAggregateDelayMillis,
-                new CollectAggregatesGrpcCall(aggregateReader));
+    public void collectAggregates(AggregateReader aggregateReader) throws InterruptedException {
+        if (!SKIP_DELAY) {
+            MILLISECONDS.sleep(nextAggregateDelayMillis);
+        }
+        centralConnection
+                .blockingCallWithAFewRetries(new CollectAggregatesGrpcCall(aggregateReader));
     }
 
     @Override
-    public void collectGaugeValues(List<GaugeValue> gaugeValues) {
+    public void collectGaugeValues(List<GaugeValue> gaugeValues) throws InterruptedException {
         final GaugeValueMessage gaugeValueMessage = GaugeValueMessage.newBuilder()
                 .setAgentId(agentId)
                 .addAllGaugeValue(gaugeValues)
                 .setPostV09(true)
                 .build();
-        centralConnection.callWithAFewRetries(new GrpcCall<GaugeValueResponseMessage>() {
+        centralConnection.blockingCallWithAFewRetries(new GrpcCall<GaugeValueResponseMessage>() {
             @Override
             public void call(StreamObserver<GaugeValueResponseMessage> responseObserver) {
                 collectorServiceStub.collectGaugeValues(gaugeValueMessage, responseObserver);
@@ -214,7 +226,7 @@ public class CentralCollector implements Collector {
                             .setAgentConfig(configService.getAgentConfig())
                             .build();
                     // only once, since resendInit will continue to be sent back until it succeeds
-                    centralConnection.callOnce(new GrpcCall<InitResponse>() {
+                    centralConnection.asyncCallOnce(new GrpcCall<InitResponse>() {
                         @Override
                         void call(StreamObserver<InitResponse> responseObserver) {
                             collectorServiceStub.collectInit(initMessage, responseObserver);
@@ -226,18 +238,18 @@ public class CentralCollector implements Collector {
     }
 
     @Override
-    public void collectTrace(TraceReader traceReader) {
+    public void collectTrace(TraceReader traceReader) throws InterruptedException {
         if (traceReader.partial()) {
             // do not retry partial transactions since they are live and reading from the trace
             // reader will not be idempotent, so could lead to confusing results
-            centralConnection.callOnce(new CollectTraceGrpcCall(traceReader));
+            centralConnection.blockingCallOnce(new CollectTraceGrpcCall(traceReader));
         } else {
-            centralConnection.callWithAFewRetries(new CollectTraceGrpcCall(traceReader));
+            centralConnection.blockingCallWithAFewRetries(new CollectTraceGrpcCall(traceReader));
         }
     }
 
     @Override
-    public void log(LogEvent logEvent) {
+    public void log(LogEvent logEvent) throws InterruptedException {
         if (centralConnection.suppressLogCollector()) {
             return;
         }
@@ -250,7 +262,7 @@ public class CentralCollector implements Collector {
                 .setLogEvent(logEvent)
                 .setPostV09(true)
                 .build();
-        centralConnection.callWithAFewRetries(new GrpcCall<EmptyMessage>() {
+        centralConnection.blockingCallWithAFewRetries(new GrpcCall<EmptyMessage>() {
             @Override
             public void call(StreamObserver<EmptyMessage> responseObserver) {
                 collectorServiceStub.log(logMessage, responseObserver);

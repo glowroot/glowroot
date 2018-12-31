@@ -17,6 +17,7 @@ package org.glowroot.agent.impl;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -24,6 +25,7 @@ import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -46,12 +48,15 @@ public class TransactionProcessor {
 
     // back pressure on transaction collection
     private static final int TRANSACTION_PENDING_LIMIT = 1000;
-    // back pressure on aggregate flushing
+    // back pressure on writing captured data to disk/network
     private static final int AGGREGATE_PENDING_LIMIT = 5;
 
     private volatile AggregateIntervalCollector activeIntervalCollector;
-    private final List<AggregateIntervalCollector> pendingIntervalCollectors =
-            Lists.newCopyOnWriteArrayList();
+
+    // need to guarantee these are processed in order (at least when running embedded collector
+    // due to rollups relying on not seeing old data after newer data has been seen)
+    private final BlockingQueue<AggregateIntervalCollector> pendingIntervalCollectors =
+            Queues.newLinkedBlockingQueue(AGGREGATE_PENDING_LIMIT);
 
     private final ExecutorService processingExecutor;
     private final ExecutorService flushingExecutor;
@@ -93,6 +98,7 @@ public class TransactionProcessor {
                         configService.getAdvancedConfig().maxQueryAggregates(),
                         configService.getAdvancedConfig().maxServiceCallAggregates(), clock);
         processingExecutor.execute(new TransactionProcessorLoop());
+        flushingExecutor.execute(new AggregateFlushingLoop());
     }
 
     public Set<String> getTransactionTypes() {
@@ -119,7 +125,9 @@ public class TransactionProcessor {
 
     public void clearInMemoryData() {
         activeIntervalCollector.clear();
-        pendingIntervalCollectors.clear();
+        synchronized (pendingIntervalCollectors) {
+            pendingIntervalCollectors.clear();
+        }
     }
 
     void processOnCompletion(Transaction transaction) {
@@ -169,7 +177,8 @@ public class TransactionProcessor {
         if (!processingExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
         }
-        flushingExecutor.shutdown();
+        // shutdownNow() is needed here to send interrupt to flushing thread
+        flushingExecutor.shutdownNow();
         if (!flushingExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
         }
@@ -258,26 +267,43 @@ public class TransactionProcessor {
         }
 
         private void flushActiveIntervalCollector() {
-            if (pendingIntervalCollectors.size() >= AGGREGATE_PENDING_LIMIT) {
+            boolean accepted;
+            synchronized (pendingIntervalCollectors) {
+                accepted = pendingIntervalCollectors.offer(activeIntervalCollector);
+                if (accepted) {
+                    pendingIntervalCollectors.notifyAll();
+                }
+            }
+            if (!accepted) {
+                // don't log under synchronized lock
                 logger.warn("not storing an aggregate because of an excessive backlog of {}"
                         + " aggregates already waiting to be stored", AGGREGATE_PENDING_LIMIT);
-                return;
             }
-            final AggregateIntervalCollector intervalCollector = activeIntervalCollector;
-            pendingIntervalCollectors.add(intervalCollector);
-            // flush in separate thread to avoid pending transactions from piling up quickly
-            flushingExecutor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        intervalCollector.flush(collector);
-                    } catch (Throwable t) {
-                        logger.error(t.getMessage(), t);
-                    } finally {
-                        pendingIntervalCollectors.remove(intervalCollector);
+        }
+    }
+
+    private class AggregateFlushingLoop implements Runnable {
+        @Override
+        public void run() {
+            while (!closed) {
+                try {
+                    AggregateIntervalCollector intervalCollector;
+                    synchronized (pendingIntervalCollectors) {
+                        if (pendingIntervalCollectors.peek() == null) {
+                            pendingIntervalCollectors.wait();
+                            continue;
+                        }
+                        intervalCollector = pendingIntervalCollectors.remove();
                     }
+                    intervalCollector.flush(collector);
+                } catch (InterruptedException e) {
+                    // probably shutdown requested (see close method above)
+                    logger.debug(e.getMessage(), e);
+                } catch (Throwable e) {
+                    // log and continue processing
+                    logger.error(e.getMessage(), e);
                 }
-            });
+            }
         }
     }
 

@@ -18,12 +18,12 @@ package org.glowroot.agent.central;
 import java.io.File;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.annotation.concurrent.GuardedBy;
 import javax.net.ssl.SSLException;
 
 import com.google.common.base.Splitter;
@@ -55,9 +55,6 @@ class CentralConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(CentralConnection.class);
 
-    // back pressure on connection to the central collector
-    private static final int PENDING_LIMIT = 100;
-
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private final ThreadLocal<Boolean> suppressLogCollector = new ThreadLocal<Boolean>() {
         @Override
@@ -75,13 +72,6 @@ class CentralConnection {
     private final AtomicBoolean inConnectionFailure;
 
     private final Random random = new Random();
-
-    private final RateLimitedLogger discardingDataLogger =
-            new RateLimitedLogger(CentralConnection.class);
-
-    // count does not include init call
-    @GuardedBy("discardingDataLogger")
-    private int pendingRequestCount;
 
     private final RateLimitedLogger initConnectionErrorLogger =
             new RateLimitedLogger(CentralConnection.class, true);
@@ -159,83 +149,52 @@ class CentralConnection {
         return channel;
     }
 
-    <T extends /*@NonNull*/ Object> void callOnce(GrpcCall<T> call) {
-        callWithAFewRetries(0, -1, call);
+    <T extends /*@NonNull*/ Object> void blockingCallOnce(GrpcCall<T> call)
+            throws InterruptedException {
+        blockingCallWithAFewRetries(-1, call);
     }
 
     // important that these calls are idempotent
-    <T extends /*@NonNull*/ Object> void callWithAFewRetries(GrpcCall<T> call) {
-        callWithAFewRetries(0, call);
+    <T extends /*@NonNull*/ Object> void blockingCallWithAFewRetries(GrpcCall<T> call)
+            throws InterruptedException {
+        blockingCallWithAFewRetries(30000, call);
     }
 
     // important that these calls are idempotent
-    <T extends /*@NonNull*/ Object> void callWithAFewRetries(int initialDelayMillis,
-            GrpcCall<T> call) {
-        callWithAFewRetries(initialDelayMillis, 60, call);
-    }
-
-    // important that these calls are idempotent
-    private <T extends /*@NonNull*/ Object> void callWithAFewRetries(int initialDelayMillis,
-            final int maxTotalInSeconds, final GrpcCall<T> call) {
+    private <T extends /*@NonNull*/ Object> void blockingCallWithAFewRetries(int maxTotalMillis,
+            GrpcCall<T> call) throws InterruptedException {
         if (closed) {
             return;
         }
         if (inConnectionFailure.get()) {
             return;
         }
-        boolean logWarningAndDoNotSend = false;
-        synchronized (discardingDataLogger) {
-            if (pendingRequestCount >= PENDING_LIMIT) {
-                logWarningAndDoNotSend = true;
-            } else {
-                pendingRequestCount++;
-            }
-        }
-        if (logWarningAndDoNotSend) {
-            // it is important not to perform logging under the above synchronized lock in order to
-            // eliminate possibility of deadlock
-            suppressLogCollector(new Runnable() {
-                @Override
-                public void run() {
-                    discardingDataLogger.warn("not sending data to the central collector"
-                            + " because pending request limit ({}) exceeded", PENDING_LIMIT);
-                }
-            });
+        RetryingStreamObserver<T> responseObserver =
+                new RetryingStreamObserver<T>(call, maxTotalMillis, maxTotalMillis, false);
+        call.call(responseObserver);
+        responseObserver.waitForFinish();
+    }
+
+    <T extends /*@NonNull*/ Object> void asyncCallOnce(GrpcCall<T> call) {
+        if (closed) {
             return;
         }
-        // TODO revisit retry/backoff after next grpc version
-
-        // 60 seconds should be enough time to restart central collector instance without losing
-        // data (though better to use central collector cluster)
-        //
-        // this cannot retry over too long a period since it retains memory of rpc message for
-        // that duration
-        if (initialDelayMillis > 0) {
-            retryExecutor.schedule(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        call.call(new RetryingStreamObserver<T>(call, maxTotalInSeconds,
-                                maxTotalInSeconds, false));
-                    } catch (Throwable t) {
-                        logger.error(t.getMessage(), t);
-                    }
-                }
-            }, initialDelayMillis, MILLISECONDS);
-        } else {
-            call.call(new RetryingStreamObserver<T>(call, maxTotalInSeconds, maxTotalInSeconds,
-                    false));
+        if (inConnectionFailure.get()) {
+            return;
         }
+        RetryingStreamObserver<T> responseObserver =
+                new RetryingStreamObserver<T>(call, -1, -1, false);
+        call.call(responseObserver);
     }
 
     // important that these calls are idempotent
-    <T extends /*@NonNull*/ Object> void callInit(GrpcCall<T> call) {
+    <T extends /*@NonNull*/ Object> void asyncCallInit(GrpcCall<T> call) {
         if (closed) {
             return;
         }
         // important here not to check inConnectionFailure, since need this to succeed if/when
         // connection is re-established
-        call.call(new RetryingStreamObserver<T>(call, 15, -1, true));
+        call.call(new RetryingStreamObserver<T>(call, 15000, -1, true));
     }
 
     void suppressLogCollector(Runnable runnable) {
@@ -355,22 +314,23 @@ class CentralConnection {
         void doWithResponse(@SuppressWarnings("unused") T response) {}
     }
 
-    private class RetryingStreamObserver<T extends /*@NonNull*/ Object>
-            implements StreamObserver<T> {
+    class RetryingStreamObserver<T extends /*@NonNull*/ Object> implements StreamObserver<T> {
 
         private final GrpcCall<T> grpcCall;
-        private final int maxSingleDelayInSeconds;
-        private final int maxTotalInSeconds;
+        private final int maxSingleDelayMillis;
+        private final int maxTotalMillis;
         private final boolean init;
         private final Stopwatch stopwatch = Stopwatch.createStarted();
 
-        private volatile long nextDelayInSeconds = 4;
+        private volatile long nextDelayMillis = 2000;
 
-        private RetryingStreamObserver(GrpcCall<T> grpcCall, int maxSingleDelayInSeconds,
-                int maxTotalInSeconds, boolean init) {
+        private final CountDownLatch latch = new CountDownLatch(1);
+
+        private RetryingStreamObserver(GrpcCall<T> grpcCall, int maxSingleDelayMillis,
+                int maxTotalMillis, boolean init) {
             this.grpcCall = grpcCall;
-            this.maxSingleDelayInSeconds = maxSingleDelayInSeconds;
-            this.maxTotalInSeconds = maxTotalInSeconds;
+            this.maxSingleDelayMillis = maxSingleDelayMillis;
+            this.maxTotalMillis = maxTotalMillis;
             this.init = init;
         }
 
@@ -392,7 +352,7 @@ class CentralConnection {
             if (init) {
                 initCallSucceeded = true;
             }
-            decrementPendingRequestCount();
+            latch.countDown();
         }
 
         @Override
@@ -408,9 +368,13 @@ class CentralConnection {
             }
         }
 
-        private void onErrorInternal(final Throwable t) {
+        private void waitForFinish() throws InterruptedException {
+            latch.await();
+        }
+
+        private void onErrorInternal(final Throwable t) throws InterruptedException {
             if (closed) {
-                decrementPendingRequestCount();
+                latch.countDown();
                 return;
             }
             if (init) {
@@ -425,15 +389,17 @@ class CentralConnection {
                 });
             }
             if (inConnectionFailure.get()) {
-                decrementPendingRequestCount();
+                latch.countDown();
                 return;
             }
-            suppressLogCollector(new Runnable() {
-                @Override
-                public void run() {
-                    logger.debug(t.getMessage(), t);
-                }
-            });
+            if (logger.isDebugEnabled()) {
+                suppressLogCollector(new Runnable() {
+                    @Override
+                    public void run() {
+                        logger.debug(t.getMessage(), t);
+                    }
+                });
+            }
             if (!retryOnError(t)) {
                 if (initCallSucceeded) {
                     suppressLogCollector(new Runnable() {
@@ -446,46 +412,30 @@ class CentralConnection {
                         }
                     });
                 }
-                decrementPendingRequestCount();
+                latch.countDown();
                 return;
             }
-
             // retry delay doubles on average each time, randomized +/- 50%
             double randomizedDoubling = 0.5 + random.nextDouble();
-            long currDelay = (long) (nextDelayInSeconds * randomizedDoubling);
-            nextDelayInSeconds = Math.min(nextDelayInSeconds * 2, maxSingleDelayInSeconds);
-
-            // TODO revisit retry/backoff after next grpc version
-            retryExecutor.schedule(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        grpcCall.call(RetryingStreamObserver.this);
-                    } catch (final Throwable t) {
-                        // intentionally capturing InterruptedException here as well to ensure
-                        // reconnect is attempted no matter what
-                        suppressLogCollector(new Runnable() {
-                            @Override
-                            public void run() {
-                                logger.error(t.getMessage(), t);
-                            }
-                        });
+            MILLISECONDS.sleep((long) (nextDelayMillis * randomizedDoubling));
+            nextDelayMillis = Math.min(nextDelayMillis * 2, maxSingleDelayMillis);
+            try {
+                grpcCall.call(RetryingStreamObserver.this);
+            } catch (final Throwable u) {
+                // intentionally capturing InterruptedException here as well to ensure
+                // reconnect is attempted no matter what
+                suppressLogCollector(new Runnable() {
+                    @Override
+                    public void run() {
+                        logger.error(u.getMessage(), u);
                     }
-                }
-            }, currDelay, SECONDS);
-        }
-
-        private void decrementPendingRequestCount() {
-            if (!init) {
-                synchronized (discardingDataLogger) {
-                    pendingRequestCount--;
-                }
+                });
             }
         }
 
         private boolean retryOnError(Throwable t) {
             return init || !isResourceExhaustedException(t)
-                    && stopwatch.elapsed(SECONDS) < maxTotalInSeconds;
+                    && stopwatch.elapsed(MILLISECONDS) < maxTotalMillis;
         }
 
         private boolean isResourceExhaustedException(Throwable t) {

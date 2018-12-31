@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -37,6 +38,7 @@ import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -47,9 +49,11 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.LazyPlatformMBeanServer.InitListener;
+import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.agent.weaving.Java9;
 import org.glowroot.common.config.GaugeConfig;
@@ -66,6 +70,9 @@ class GaugeCollector extends ScheduledRunnable {
 
     private static final Logger logger = LoggerFactory.getLogger(GaugeCollector.class);
 
+    // back pressure on writing captured data to disk/network
+    private static final int PENDING_LIMIT = 60;
+
     private final ConfigService configService;
     private final Collector collector;
     private final LazyPlatformMBeanServer lazyPlatformMBeanServer;
@@ -81,9 +88,19 @@ class GaugeCollector extends ScheduledRunnable {
     private final ScheduledExecutorService collectionExecutor;
     private final ExecutorService flushingExecutor;
 
+    // need to guarantee these are processed in order (at least when running embedded collector
+    // due to rollups relying on not seeing old data after newer data has been seen)
+    private final BlockingQueue<List<GaugeValue>> pending =
+            Queues.newLinkedBlockingQueue(PENDING_LIMIT);
+
+    private final RateLimitedLogger backPressureLogger =
+            new RateLimitedLogger(TransactionCollector.class);
+
     // since gauges have their own dedicated thread, don't need to worry about thread safety of
     // priorRawCounterValues (except can't initialize here outside of the dedicated thread)
     private @MonotonicNonNull Map<String, RawCounterValue> priorRawCounterValues;
+
+    private volatile boolean closed;
 
     GaugeCollector(ConfigService configService, Collector collector,
             LazyPlatformMBeanServer lazyPlatformMBeanServer,
@@ -117,6 +134,7 @@ class GaugeCollector extends ScheduledRunnable {
                 }
             }
         });
+        flushingExecutor.execute(new GaugeFlushingLoop());
     }
 
     @Override
@@ -130,17 +148,10 @@ class GaugeCollector extends ScheduledRunnable {
         for (GaugeConfig gaugeConfig : configService.getGaugeConfigs()) {
             gaugeValues.addAll(collectGaugeValues(gaugeConfig, mbeanServers));
         }
-        flushingExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    collector.collectGaugeValues(gaugeValues);
-                } catch (Throwable t) {
-                    // log and terminate successfully
-                    logger.error(t.getMessage(), t);
-                }
-            }
-        });
+        if (!pending.offer(gaugeValues)) {
+            backPressureLogger.warn("not storing a gauge collection because of an excessive backlog"
+                    + " of {} gauge collections already waiting to be stored", PENDING_LIMIT);
+        }
     }
 
     void scheduleWithFixedDelay(long period, TimeUnit unit) {
@@ -148,11 +159,13 @@ class GaugeCollector extends ScheduledRunnable {
     }
 
     void close() throws InterruptedException {
+        closed = true;
         collectionExecutor.shutdown();
         if (!collectionExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
         }
-        flushingExecutor.shutdown();
+        // shutdownNow() is needed here to send interrupt to flushing thread
+        flushingExecutor.shutdownNow();
         if (!flushingExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
         }
@@ -345,5 +358,22 @@ class GaugeCollector extends ScheduledRunnable {
     interface RawCounterValue {
         double value();
         long captureTick();
+    }
+
+    private class GaugeFlushingLoop implements Runnable {
+        @Override
+        public void run() {
+            while (!closed) {
+                try {
+                    collector.collectGaugeValues(pending.take());
+                } catch (InterruptedException e) {
+                    // probably shutdown requested (see close method above)
+                    logger.debug(e.getMessage(), e);
+                } catch (Throwable e) {
+                    // log and continue processing
+                    logger.error(e.getMessage(), e);
+                }
+            }
+        }
     }
 }

@@ -59,6 +59,7 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
     private final @Nullable String collectorAuthority;
     private final @Nullable Class<? extends Collector> customCollectorClass;
 
+    private volatile @MonotonicNonNull CollectorLogbackAppender collectorLogbackAppender;
     private volatile @MonotonicNonNull AgentModule agentModule;
     private volatile @MonotonicNonNull CentralCollector centralCollector;
 
@@ -95,8 +96,7 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
 
         final CollectorProxy collectorProxy = new CollectorProxy();
 
-        CollectorLogbackAppender collectorLogbackAppender =
-                new CollectorLogbackAppender(collectorProxy);
+        collectorLogbackAppender = new CollectorLogbackAppender(collectorProxy);
         collectorLogbackAppender.setName(CollectorLogbackAppender.class.getName());
         collectorLogbackAppender.setContext((Context) LoggerFactory.getILoggerFactory());
         collectorLogbackAppender.start();
@@ -184,6 +184,7 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
                 throw new IllegalStateException("Could not terminate executor");
             }
         }
+        checkNotNull(collectorLogbackAppender).close();
         // and unlock the agent directory
         checkNotNull(agentDirLockCloseable).close();
     }
