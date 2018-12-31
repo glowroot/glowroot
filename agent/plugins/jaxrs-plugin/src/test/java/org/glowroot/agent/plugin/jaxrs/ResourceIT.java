@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -310,6 +310,24 @@ public class ResourceIT {
         assertThat(i.hasNext()).isFalse();
     }
 
+    @Test
+    public void shouldCaptureWhenInterfaceAnnotated() throws Exception {
+        // when
+        Trace trace = container.execute(WithInterfaceAnnotated.class, "Web");
+
+        // then
+        assertThat(trace.getHeader().getTransactionName()).isEqualTo("GET /another/*");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+                + " org.glowroot.agent.plugin.jaxrs.ResourceIT$AnotherResourceImpl.echo()");
+
+        assertThat(i.hasNext()).isFalse();
+    }
+
     public static class WithSimpleServletMapping extends InvokeJaxrsResourceInTomcat {
         @Override
         public void executeApp() throws Exception {
@@ -416,6 +434,13 @@ public class ResourceIT {
         }
     }
 
+    public static class WithInterfaceAnnotated extends InvokeJaxrsResourceInTomcat {
+        @Override
+        public void executeApp() throws Exception {
+            executeApp("webapp1", "", "/another/1");
+        }
+    }
+
     @Path("simple")
     public static class SimpleResource {
         @GET
@@ -439,5 +464,27 @@ public class ResourceIT {
         public Response echo() {
             return Response.status(200).build();
         }
+    }
+
+    @Path("another")
+    public static class AnotherResourceImpl implements AnotherResource {
+        @Override
+        public Response echo(String msg) {
+            return new YetAnotherResource().echo(msg);
+        }
+    }
+
+    public static class YetAnotherResource implements AnotherResource {
+
+        @Override
+        public Response echo(String msg) {
+            return Response.status(200).entity(msg).build();
+        }
+    }
+
+    public interface AnotherResource {
+        @GET
+        @Path("{param}")
+        Response echo(@PathParam("param") String msg);
     }
 }

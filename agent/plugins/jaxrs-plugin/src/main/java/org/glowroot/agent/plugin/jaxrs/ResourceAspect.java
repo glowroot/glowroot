@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.weaving.BindMethodMeta;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
+import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
@@ -37,13 +38,17 @@ public class ResourceAspect {
     private static final BooleanProperty useAltTransactionNaming =
             Agent.getConfigService("jaxrs").getBooleanProperty("useAltTransactionNaming");
 
-    @Pointcut(classAnnotation = "javax.ws.rs.Path",
-            methodAnnotation = "javax.ws.rs.Path|javax.ws.rs.DELETE|javax.ws.rs.GET"
-                    + "|javax.ws.rs.HEAD|javax.ws.rs.OPTIONS|javax.ws.rs.POST|javax.ws.rs.PUT",
+    @Pointcut(methodAnnotation = "javax.ws.rs.Path|javax.ws.rs.DELETE|javax.ws.rs.GET"
+            + "|javax.ws.rs.HEAD|javax.ws.rs.OPTIONS|javax.ws.rs.POST|javax.ws.rs.PUT",
             methodParameterTypes = {".."}, timerName = "jaxrs resource")
     public static class ResourceAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(ResourceAdvice.class);
+
+        @IsEnabled
+        public static boolean isEnabled(@BindMethodMeta ResourceMethodMeta resourceMethodMeta) {
+            return resourceMethodMeta.hasClassPathAnnotation();
+        }
 
         @OnBefore
         public static TraceEntry onBefore(ThreadContext context,

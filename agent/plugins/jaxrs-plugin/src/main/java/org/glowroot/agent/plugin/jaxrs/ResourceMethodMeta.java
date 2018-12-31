@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,13 +35,19 @@ public class ResourceMethodMeta {
 
     private final String altTransactionName;
 
+    private final boolean hasClassPathAnnotation;
+
     public ResourceMethodMeta(MethodInfo methodInfo) {
         resourceClassName = methodInfo.getDeclaringClassName();
         methodName = methodInfo.getName();
-        String classPath = getPath(getClass(methodInfo));
-        String methodPath = getPath(getMethod(methodInfo));
+        Class<?> clazz = getClass(methodInfo);
+        String classPath = getPath(clazz);
+        String methodPath = getMethodPath(methodInfo, clazz);
+
         path = combine(classPath, methodPath);
         altTransactionName = getSimpleName(resourceClassName) + "#" + methodName;
+
+        hasClassPathAnnotation = classPath != null;
     }
 
     String getResourceClassName() {
@@ -58,6 +64,10 @@ public class ResourceMethodMeta {
 
     String getAltTransactionName() {
         return altTransactionName;
+    }
+
+    boolean hasClassPathAnnotation() {
+        return hasClassPathAnnotation;
     }
 
     private static @Nullable String getPath(@Nullable AnnotatedElement annotatedElement) {
@@ -77,6 +87,30 @@ public class ResourceMethodMeta {
         return null;
     }
 
+    private static @Nullable String getMethodPath(MethodInfo methodInfo, @Nullable Class<?> clazz) {
+        if (clazz == null) {
+            return null;
+        }
+        String methodPath = getPath(getMethod(methodInfo, clazz));
+        if (methodPath != null) {
+            return methodPath;
+        }
+        Class<?> superclass = clazz.getSuperclass();
+        if (superclass != null) {
+            methodPath = getMethodPath(methodInfo, superclass);
+            if (methodPath != null) {
+                return methodPath;
+            }
+        }
+        for (Class<?> iface : clazz.getInterfaces()) {
+            methodPath = getMethodPath(methodInfo, iface);
+            if (methodPath != null) {
+                return methodPath;
+            }
+        }
+        return null;
+    }
+
     private static @Nullable String getPathAttribute(Class<?> pathClass, Object path,
             String attributeName) throws Exception {
         Method method = pathClass.getMethod(attributeName);
@@ -87,9 +121,8 @@ public class ResourceMethodMeta {
         return Reflection.getClass(methodInfo.getDeclaringClassName(), methodInfo.getLoader());
     }
 
-    private static @Nullable Method getMethod(MethodInfo methodInfo) {
-        Class<?> declaringClass =
-                Reflection.getClass(methodInfo.getDeclaringClassName(), methodInfo.getLoader());
+    private static @Nullable Method getMethod(MethodInfo methodInfo,
+            @Nullable Class<?> declaringClass) {
         if (declaringClass == null) {
             // declaring class is probably a lambda class
             return null;
