@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -484,7 +484,7 @@ class AlertConfigJsonService {
                             .thresholdMillis(condition.getThresholdMillis());
             int consecutiveCount = condition.getConsecutiveCount();
             if (consecutiveCount == 0) {
-                // this is needed to support agent configs that were saved prior to 0.12.4
+                // this is needed to support agent configs that were saved prior to 0.13.0
                 builder.consecutiveCount(1);
             } else {
                 builder.consecutiveCount(consecutiveCount);

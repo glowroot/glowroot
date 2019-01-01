@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -183,7 +183,7 @@ class ConfigFile {
                     ObjectNode conditionObjectNode = (ObjectNode) conditionNode;
                     if (conditionObjectNode.path("conditionType").asText().equals(
                             "synthetic-monitor") && !conditionObjectNode.has("consecutiveCount")) {
-                        // upgrade from 0.12.3 to 0.12.4
+                        // upgrade from 0.12.3 to 0.13.0
                         conditionObjectNode.put("consecutiveCount", 1);
                     }
                 }
