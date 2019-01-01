@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,15 +128,15 @@ public class UiModule {
                 configRepository));
         jsonServices
                 .add(new JvmJsonService(environmentRepository, configRepository, liveJvmService));
-        jsonServices
-                .add(new IncidentJsonService(central, incidentRepository, configRepository, clock));
+        jsonServices.add(new IncidentJsonService(central, incidentRepository, configRepository,
+                syntheticResultRepository, clock));
         jsonServices.add(new ReportJsonService(configRepository, activeAgentRepository,
                 transactionTypeRepository, aggregateRepository, gaugeValueRepository,
                 liveAggregateRepository, rollupLevelService));
         jsonServices.add(new ConfigJsonService(transactionTypeRepository, gaugeValueRepository,
                 liveAggregateRepository, configRepository));
-        jsonServices
-                .add(new AlertConfigJsonService(configRepository, gaugeValueRepository, central));
+        jsonServices.add(new AlertConfigJsonService(configRepository, gaugeValueRepository,
+                syntheticResultRepository, clock, central));
         jsonServices.add(new UserConfigJsonService(configRepository));
         jsonServices
                 .add(new RoleConfigJsonService(central, configRepository, activeAgentRepository));

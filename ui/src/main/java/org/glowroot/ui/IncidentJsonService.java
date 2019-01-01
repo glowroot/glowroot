@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.IncidentRepository;
 import org.glowroot.common2.repo.IncidentRepository.OpenIncident;
 import org.glowroot.common2.repo.IncidentRepository.ResolvedIncident;
+import org.glowroot.common2.repo.SyntheticResultRepository;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
@@ -50,13 +51,16 @@ class IncidentJsonService {
     private final boolean central;
     private final IncidentRepository incidentRepository;
     private final ConfigRepository configRepository;
+    private final @Nullable SyntheticResultRepository syntheticResultRepository;
     private final Clock clock;
 
     IncidentJsonService(boolean central, IncidentRepository incidentRepository,
-            ConfigRepository configRepository, Clock clock) {
+            ConfigRepository configRepository,
+            @Nullable SyntheticResultRepository syntheticResultRepository, Clock clock) {
         this.central = central;
         this.incidentRepository = incidentRepository;
         this.configRepository = configRepository;
+        this.syntheticResultRepository = syntheticResultRepository;
         this.clock = clock;
     }
 
@@ -96,7 +100,8 @@ class IncidentJsonService {
                 .durationMillis(clock.currentTimeMillis() - incident.openTime())
                 .severity(toString(incident.severity()))
                 .display(AlertConfigJsonService.getConditionDisplay(incident.agentRollupId(),
-                        incident.condition(), configRepository))
+                        incident.condition(), clock.currentTimeMillis(), configRepository,
+                        syntheticResultRepository))
                 .agentRollupId(incident.agentRollupId());
         setConditionFields(builder, incident.condition());
         return builder.build();
@@ -111,7 +116,8 @@ class IncidentJsonService {
                 .resolveTime(incident.resolveTime())
                 .severity(toString(incident.severity()))
                 .display(AlertConfigJsonService.getConditionDisplay(incident.agentRollupId(),
-                        incident.condition(), configRepository))
+                        incident.condition(), incident.resolveTime(), configRepository,
+                        syntheticResultRepository))
                 .agentRollupId(incident.agentRollupId());
         setConditionFields(builder, incident.condition());
         return builder.build();

@@ -32,6 +32,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
+import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Versions;
@@ -41,6 +42,7 @@ import org.glowroot.common2.config.SlackConfig.SlackWebhook;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
+import org.glowroot.common2.repo.SyntheticResultRepository;
 import org.glowroot.common2.repo.Utils;
 import org.glowroot.common2.repo.util.AlertingService;
 import org.glowroot.common2.repo.util.Formatting;
@@ -58,6 +60,7 @@ import org.glowroot.wire.api.model.Proto.OptionalDouble;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static java.util.concurrent.TimeUnit.DAYS;
 
 @JsonService
 class AlertConfigJsonService {
@@ -74,12 +77,18 @@ class AlertConfigJsonService {
 
     private final ConfigRepository configRepository;
     private final GaugeValueRepository gaugeValueRepository;
+    private final @Nullable SyntheticResultRepository syntheticResultRepository;
+    private final Clock clock;
     private final boolean central;
 
     AlertConfigJsonService(ConfigRepository configRepository,
-            GaugeValueRepository gaugeValueRepository, boolean central) {
+            GaugeValueRepository gaugeValueRepository,
+            @Nullable SyntheticResultRepository syntheticResultRepository, Clock clock,
+            boolean central) {
         this.configRepository = configRepository;
         this.gaugeValueRepository = gaugeValueRepository;
+        this.syntheticResultRepository = syntheticResultRepository;
+        this.clock = clock;
         this.central = central;
     }
 
@@ -100,7 +109,8 @@ class AlertConfigJsonService {
             for (AlertConfig alertConfig : alertConfigs) {
                 alertListItems.add(ImmutableAlertListItem.of(Versions.getVersion(alertConfig),
                         getConditionDisplay(agentRollupId, alertConfig.getCondition(),
-                                configRepository)));
+                                clock.currentTimeMillis(), configRepository,
+                                syntheticResultRepository)));
             }
             alertListItems = orderingByName.immutableSortedCopy(alertListItems);
             return mapper.writeValueAsString(alertListItems);
@@ -144,7 +154,8 @@ class AlertConfigJsonService {
         if (alertConfig != null) {
             builder.config(AlertConfigDto.toDto(alertConfig))
                     .heading(getConditionDisplay(agentRollupId, alertConfig.getCondition(),
-                            configRepository));
+                            clock.currentTimeMillis(), configRepository,
+                            syntheticResultRepository));
         }
         builder.addAllGauges(getGaugeDropdownItems(agentRollupId))
                 .addAllSyntheticMonitors(getSyntheticMonitorDropdownItems(agentRollupId))
@@ -179,17 +190,18 @@ class AlertConfigJsonService {
         return items;
     }
 
+    // syntheticResultRepository is null for embedded
     static String getConditionDisplay(String agentRollupId, AlertCondition alertCondition,
-            ConfigRepository configRepository) throws Exception {
+            long currentOrResolveTime, ConfigRepository configRepository,
+            @Nullable SyntheticResultRepository syntheticResultRepository) throws Exception {
         switch (alertCondition.getValCase()) {
             case METRIC_CONDITION:
                 return getConditionDisplay(alertCondition.getMetricCondition());
             case SYNTHETIC_MONITOR_CONDITION:
-                SyntheticMonitorCondition condition = alertCondition.getSyntheticMonitorCondition();
-                SyntheticMonitorConfig syntheticMonitorConfig =
-                        configRepository.getSyntheticMonitorConfig(agentRollupId,
-                                condition.getSyntheticMonitorId());
-                return getConditionDisplay(condition, syntheticMonitorConfig);
+                checkNotNull(syntheticResultRepository);
+                return getConditionDisplay(alertCondition.getSyntheticMonitorCondition(),
+                        agentRollupId, currentOrResolveTime, configRepository,
+                        syntheticResultRepository);
             case HEARTBEAT_CONDITION:
                 return getConditionDisplay(alertCondition.getHeartbeatCondition());
             default:
@@ -275,14 +287,35 @@ class AlertConfigJsonService {
     }
 
     private static String getConditionDisplay(SyntheticMonitorCondition condition,
-            @Nullable SyntheticMonitorConfig syntheticMonitorConfig) {
+            String agentRollupId, long currentOrResolveTime, ConfigRepository configRepository,
+            SyntheticResultRepository syntheticResultRepository) throws Exception {
+        SyntheticMonitorConfig syntheticMonitorConfig =
+                configRepository.getSyntheticMonitorConfig(agentRollupId,
+                        condition.getSyntheticMonitorId());
+        String syntheticMonitorDisplay;
+        if (syntheticMonitorConfig == null) {
+            syntheticMonitorDisplay = syntheticResultRepository
+                    .getSyntheticMonitorIds(agentRollupId, currentOrResolveTime,
+                            currentOrResolveTime)
+                    .get(condition.getSyntheticMonitorId());
+            if (syntheticMonitorDisplay == null) {
+                // expand the search
+                syntheticMonitorDisplay = syntheticResultRepository
+                        .getSyntheticMonitorIds(agentRollupId,
+                                currentOrResolveTime - DAYS.toMillis(30),
+                                currentOrResolveTime + DAYS.toMillis(30))
+                        .get(condition.getSyntheticMonitorId());
+                if (syntheticMonitorDisplay == null) {
+                    syntheticMonitorDisplay = "<NOT FOUND>";
+                }
+            }
+        } else {
+            syntheticMonitorDisplay =
+                    MoreConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig);
+        }
         StringBuilder sb = new StringBuilder();
         sb.append("Synthetic monitor - ");
-        if (syntheticMonitorConfig == null) {
-            sb.append("<NOT FOUND>");
-        } else {
-            sb.append(MoreConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig));
-        }
+        sb.append(syntheticMonitorDisplay);
         sb.append(" exceeds ");
         sb.append(AlertingService.getWithUnit(condition.getThresholdMillis(), "millisecond"));
         sb.append(" or results in error");
