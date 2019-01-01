@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,10 +35,10 @@ public interface GlowrootAgentInit {
             String glowrootVersion, Closeable agentDirLockCloseable) throws Exception;
 
     @OnlyUsedByTests
-    void setSlowThresholdToZero() throws Exception;
+    void initConfigForTests() throws Exception;
 
     @OnlyUsedByTests
-    void resetConfig() throws Exception;
+    void resetConfigForTests() throws Exception;
 
     @OnlyUsedByTests
     void close() throws Exception;

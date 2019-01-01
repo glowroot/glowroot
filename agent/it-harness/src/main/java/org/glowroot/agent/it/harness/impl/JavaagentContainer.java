@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -190,12 +190,12 @@ public class JavaagentContainer implements Container {
                 .withCompression("gzip");
         if (server == null) {
             configService = null;
-            javaagentService.setSlowThresholdToZero(Void.getDefaultInstance());
+            javaagentService.initConfigForTests(Void.getDefaultInstance());
         } else {
             configService = new ConfigServiceImpl(server, true);
             // need to set through config service so config service can keep track of changes,
             // otherwise it will clobber slow threshold value on next update through config service
-            configService.setSlowThresholdToZero();
+            configService.resetConfigForTests();
         }
         shutdownHook = new ShutdownHookThread(javaagentService);
         // unfortunately, ctrl-c during maven test will kill the maven process, but won't kill the
@@ -258,11 +258,11 @@ public class JavaagentContainer implements Container {
     @Override
     public void checkAndReset() throws Exception {
         if (configService == null) {
-            javaagentService.resetConfig(Void.getDefaultInstance());
+            javaagentService.resetConfigForTests(Void.getDefaultInstance());
         } else {
             // need to reset through config service so config service can keep track of changes,
             // otherwise it will clobber the reset config on next update through config service
-            configService.resetConfig();
+            configService.resetConfigForTests();
         }
         if (traceCollector != null) {
             traceCollector.checkAndResetLogMessages();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,11 +111,11 @@ class JavaagentServiceImpl extends JavaagentServiceImplBase {
     }
 
     @Override
-    public void setSlowThresholdToZero(Void request, StreamObserver<Void> responseObserver) {
+    public void initConfigForTests(Void request, StreamObserver<Void> responseObserver) {
         try {
             GlowrootAgentInit glowrootAgentInit =
                     checkNotNull(MainEntryPoint.getGlowrootAgentInit());
-            glowrootAgentInit.setSlowThresholdToZero();
+            glowrootAgentInit.initConfigForTests();
         } catch (Throwable t) {
             logger.error(t.getMessage(), t);
             responseObserver.onError(t);
@@ -126,11 +126,11 @@ class JavaagentServiceImpl extends JavaagentServiceImplBase {
     }
 
     @Override
-    public void resetConfig(Void request, StreamObserver<Void> responseObserver) {
+    public void resetConfigForTests(Void request, StreamObserver<Void> responseObserver) {
         try {
             GlowrootAgentInit glowrootAgentInit =
                     checkNotNull(MainEntryPoint.getGlowrootAgentInit());
-            glowrootAgentInit.resetConfig();
+            glowrootAgentInit.resetConfigForTests();
         } catch (Throwable t) {
             logger.error(t.getMessage(), t);
             responseObserver.onError(t);

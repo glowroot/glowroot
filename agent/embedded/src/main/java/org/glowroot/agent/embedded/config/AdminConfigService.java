@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -350,7 +350,7 @@ public class AdminConfigService {
     }
 
     @OnlyUsedByTests
-    public void resetAdminConfig() throws IOException {
+    public void resetAdminConfigForTests() throws IOException {
         generalConfig = ImmutableEmbeddedAdminGeneralConfig.builder().build();
         userConfigs = ImmutableList.<UserConfig>of(ImmutableUserConfig.builder()
                 .username("anonymous")
@@ -361,7 +361,10 @@ public class AdminConfigService {
                 .addPermissions("agent:transaction", "agent:error", "agent:jvm",
                         "agent:config:view", "agent:config:edit", "admin")
                 .build());
-        webConfig = ImmutableEmbeddedWebConfig.builder().build();
+        webConfig = ImmutableEmbeddedWebConfig.builder()
+                .port(webConfig.port()) // preserve for tests (changing here wouldn't have immediate
+                                        // effect anyways)
+                .build();
         storageConfig = ImmutableEmbeddedStorageConfig.builder().build();
         smtpConfig = ImmutableSmtpConfig.builder().build();
         httpProxyConfig = ImmutableHttpProxyConfig.builder().build();

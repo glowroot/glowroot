@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -377,7 +377,7 @@ public class ConfigService {
     }
 
     @OnlyUsedByTests
-    public void setSlowThresholdToZero() throws IOException {
+    public void initConfigForTests() throws IOException {
         transactionConfig = ImmutableTransactionConfig.copyOf(transactionConfig)
                 .withSlowThresholdMillis(0);
         writeAll();
@@ -385,9 +385,9 @@ public class ConfigService {
     }
 
     @OnlyUsedByTests
-    public void resetConfig() throws IOException {
+    public void resetConfigForTests() throws IOException {
         transactionConfig = ImmutableTransactionConfig.builder()
-                .slowThresholdMillis(0)
+                .slowThresholdMillis(0) // default for tests
                 .build();
         jvmConfig = ImmutableJvmConfig.builder().build();
         uiDefaultsConfig = ImmutableUiDefaultsConfig.builder().build();

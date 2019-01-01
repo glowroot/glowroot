@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ class ConfigServiceImpl implements ConfigService {
                 .build());
     }
 
-    void setSlowThresholdToZero() throws Exception {
+    void initConfigForTests() throws Exception {
         AgentConfig agentConfig = server.getAgentConfig();
         server.updateAgentConfig(agentConfig.toBuilder()
                 .setTransactionConfig(agentConfig.getTransactionConfig().toBuilder()
@@ -125,11 +125,11 @@ class ConfigServiceImpl implements ConfigService {
                 .build());
     }
 
-    void resetConfig() throws Exception {
+    void resetConfigForTests() throws Exception {
         AgentConfig.Builder builder = AgentConfig.newBuilder()
-                .setTransactionConfig(getDefaultTransactionConfig())
-                .setAdvancedConfig(getDefaultAdvancedConfig())
-                .addAllGaugeConfig(getDefaultGaugeConfigs());
+                .setTransactionConfig(getDefaultTransactionConfigForTests())
+                .setAdvancedConfig(getDefaultAdvancedConfigForTests())
+                .addAllGaugeConfig(getDefaultGaugeConfigsForTests());
         for (PluginConfig pluginConfig : server.getAgentConfig().getPluginConfigList()) {
             PluginConfig.Builder pluginConfigBuilder = PluginConfig.newBuilder()
                     .setId(pluginConfig.getId());
@@ -198,16 +198,16 @@ class ConfigServiceImpl implements ConfigService {
                 .build());
     }
 
-    private static TransactionConfig getDefaultTransactionConfig() {
+    private static TransactionConfig getDefaultTransactionConfigForTests() {
         // TODO this needs to be kept in sync with default values
         return TransactionConfig.newBuilder()
                 .setProfilingIntervalMillis(of(1000))
-                .setSlowThresholdMillis(of(0))
+                .setSlowThresholdMillis(of(0)) // default for tests
                 .setCaptureThreadStats(true)
                 .build();
     }
 
-    private static AdvancedConfig getDefaultAdvancedConfig() {
+    private static AdvancedConfig getDefaultAdvancedConfigForTests() {
         // TODO this needs to be kept in sync with default values
         return AdvancedConfig.newBuilder()
                 .setWeavingTimer(false)
@@ -216,12 +216,12 @@ class ConfigServiceImpl implements ConfigService {
                 .setMaxQueryAggregates(of(500))
                 .setMaxServiceCallAggregates(of(500))
                 .setMaxTraceEntriesPerTransaction(of(2000))
-                .setMaxProfileSamplesPerTransaction(of(10000))
+                .setMaxProfileSamplesPerTransaction(of(50000))
                 .setMbeanGaugeNotFoundDelaySeconds(of(60))
                 .build();
     }
 
-    private static List<GaugeConfig> getDefaultGaugeConfigs() {
+    private static List<GaugeConfig> getDefaultGaugeConfigsForTests() {
         // TODO this needs to be kept in sync with default values
         List<GaugeConfig> defaultGaugeConfigs = Lists.newArrayList();
         defaultGaugeConfigs.add(GaugeConfig.newBuilder()

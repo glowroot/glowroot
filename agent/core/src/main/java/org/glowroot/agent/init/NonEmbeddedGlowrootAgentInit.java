@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,16 +158,16 @@ public class NonEmbeddedGlowrootAgentInit implements GlowrootAgentInit {
 
     @Override
     @OnlyUsedByTests
-    public void setSlowThresholdToZero() throws IOException {
+    public void initConfigForTests() throws IOException {
         AgentModule agentModule = checkNotNull(this.agentModule);
-        agentModule.getConfigService().setSlowThresholdToZero();
+        agentModule.getConfigService().initConfigForTests();
     }
 
     @Override
     @OnlyUsedByTests
-    public void resetConfig() throws Exception {
+    public void resetConfigForTests() throws Exception {
         AgentModule agentModule = checkNotNull(this.agentModule);
-        agentModule.getConfigService().resetConfig();
+        agentModule.getConfigService().resetConfigForTests();
         agentModule.getLiveWeavingService().reweave("");
     }
 
