@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,8 +127,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     private volatile boolean mayHaveChildAuxThreadContext;
 
-    // this is not used much, so overhead of Long seems good tradeoff for avoiding extra field
-    private volatile @MonotonicNonNull Long detachedTime;
+    private volatile boolean detached;
 
     // only ever non-null for main thread context
     private final @Nullable ThreadContextImpl outerTransactionThreadContext;
@@ -503,7 +502,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
         // context holder has been cleared (at least after the thread completes its next trace entry
         // or profile sample, which both perform memory barrier reads)
         transaction.memoryBarrierWrite();
-        detachedTime = ticker.read();
+        detached = true;
     }
 
     private QueryDataMap getOrCreateQueriesForType(String queryType) {
@@ -1032,7 +1031,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
             entry = entry.getNextTraceEntry();
             entryIsRoot = false;
         }
-        if (detachedTime != null && !traceEntryComponent.isEmpty()) {
+        if (detached && !traceEntryComponent.isEmpty()) {
             TraceEntryImpl rootEntry = getRootEntry();
             parentChildMap.put(rootEntry,
                     new TraceEntryImpl(this, rootEntry, DETACHED_MESSAGE_SUPPLIER,
