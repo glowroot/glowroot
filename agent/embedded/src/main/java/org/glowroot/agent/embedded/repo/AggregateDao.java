@@ -300,12 +300,6 @@ public class AggregateDao implements AggregateRepository {
         return dataSource.query(new ThroughputAggregateQuery(query));
     }
 
-    @Override
-    public @Nullable String readFullQueryText(String agentRollupId, String fullQueryTextSha1)
-            throws Exception {
-        return fullQueryTextDao.getFullText(fullQueryTextSha1);
-    }
-
     // query.from() is non-inclusive
     @Override
     public void mergeQueriesInto(String agentRollupId, AggregateQuery query,
@@ -374,6 +368,12 @@ public class AggregateDao implements AggregateRepository {
         mergeProfilesInto(collector, query, "aux_thread_profile_capped_id");
     }
 
+    @Override
+    public @Nullable String readFullQueryText(String agentRollupId, String fullQueryTextSha1)
+            throws Exception {
+        return fullQueryTextDao.getFullText(fullQueryTextSha1);
+    }
+
     // query.from() is non-inclusive
     @Override
     public boolean hasMainThreadProfile(String agentRollupId, AggregateQuery query)
@@ -420,7 +420,7 @@ public class AggregateDao implements AggregateRepository {
         return dataSource.query(new ShouldHaveSomethingQuery(query, "service_calls_capped_id"));
     }
 
-    void deleteBefore(long captureTime, int rollupLevel) throws Exception {
+    void deleteBefore(long captureTime, int rollupLevel) throws SQLException {
         dataSource.deleteBefore("aggregate_tt_rollup_" + castUntainted(rollupLevel), captureTime);
         dataSource.deleteBefore("aggregate_tn_rollup_" + castUntainted(rollupLevel), captureTime);
     }

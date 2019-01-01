@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.glowroot.agent.config;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 
@@ -131,7 +130,7 @@ public abstract class PluginCache {
     }
 
     private static List<PluginDescriptor> createForOfflineViewer(List<File> pluginJars,
-            @Nullable File pluginsDir) throws IOException, URISyntaxException {
+            @Nullable File pluginsDir) throws IOException {
         List<PluginDescriptor> pluginDescriptors = readPluginDescriptors(pluginJars, pluginsDir);
         List<PluginDescriptor> pluginDescriptorsWithoutAdvice = Lists.newArrayList();
         for (PluginDescriptor pluginDescriptor : pluginDescriptors) {
@@ -144,7 +143,7 @@ public abstract class PluginCache {
     }
 
     private static List<PluginDescriptor> readPluginDescriptors(List<File> pluginJars,
-            @Nullable File pluginsDir) throws IOException, URISyntaxException {
+            @Nullable File pluginsDir) throws IOException {
         List<PluginDescriptor> pluginDescriptors = Lists.newArrayList();
         for (File pluginJar : pluginJars) {
             URL url = new URL("jar:" + pluginJar.toURI() + "!/META-INF/glowroot.plugin.json");

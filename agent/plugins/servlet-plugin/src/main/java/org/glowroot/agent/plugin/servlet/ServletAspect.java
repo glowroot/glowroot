@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,7 +147,7 @@ public class ServletAspect {
             if (traceEntry == null) {
                 return;
             }
-            if (res == null || !(res instanceof HttpServletResponse)) {
+            if (!(res instanceof HttpServletResponse)) {
                 // seems nothing sensible to do here other than ignore
                 return;
             }
@@ -195,7 +195,7 @@ public class ServletAspect {
             if (context.getServletRequestInfo() != null) {
                 return null;
             }
-            if (req == null || !(req instanceof HttpServletRequest)) {
+            if (!(req instanceof HttpServletRequest)) {
                 // seems nothing sensible to do here other than ignore
                 return null;
             }

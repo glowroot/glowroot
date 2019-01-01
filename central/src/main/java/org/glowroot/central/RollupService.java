@@ -131,8 +131,8 @@ class RollupService implements Runnable {
                         "Timed out waiting for worker rollup thread to terminate");
             }
         } catch (InterruptedException e) {
-            // this shouldn't happen, shutdown was already requested
-            logger.debug(e.getMessage(), e);
+            // this is unexpected (but not harmful since already closing)
+            logger.error(e.getMessage(), e);
         }
     }
 

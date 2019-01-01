@@ -693,12 +693,6 @@ public class AggregateDaoImpl implements AggregateDao {
         return throughputAggregates;
     }
 
-    @Override
-    public @Nullable String readFullQueryText(String agentRollupId, String fullQueryTextSha1)
-            throws Exception {
-        return fullQueryTextDao.getFullText(agentRollupId, fullQueryTextSha1);
-    }
-
     // query.from() is non-inclusive
     @Override
     public void mergeQueriesInto(String agentRollupId, AggregateQuery query,
@@ -753,6 +747,12 @@ public class AggregateDaoImpl implements AggregateDao {
     public void mergeAuxThreadProfilesInto(String agentRollupId, AggregateQuery query,
             ProfileCollector collector) throws Exception {
         mergeProfilesInto(agentRollupId, query, auxThreadProfileTable, collector);
+    }
+
+    @Override
+    public @Nullable String readFullQueryText(String agentRollupId, String fullQueryTextSha1)
+            throws Exception {
+        return fullQueryTextDao.getFullText(agentRollupId, fullQueryTextSha1);
     }
 
     // query.from() is non-inclusive

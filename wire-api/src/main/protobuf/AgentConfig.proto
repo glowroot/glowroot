@@ -55,7 +55,6 @@ message AgentConfig {
   }
 
   message AdvancedConfig {
-    bool weaving_timer = 1;
     // optionals used below due to non-zero default value
     OptionalInt32 immediate_partial_store_threshold_seconds = 2;
     OptionalInt32 max_transaction_aggregates = 3;
@@ -64,6 +63,7 @@ message AgentConfig {
     OptionalInt32 max_trace_entries_per_transaction = 6;
     OptionalInt32 max_profile_samples_per_transaction = 7;
     OptionalInt32 mbean_gauge_not_found_delay_seconds = 8;
+    bool weaving_timer = 1;
   }
 
   message GaugeConfig {

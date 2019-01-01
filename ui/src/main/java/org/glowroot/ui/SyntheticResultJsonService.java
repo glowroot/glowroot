@@ -182,9 +182,7 @@ class SyntheticResultJsonService {
                 }
             }
         }
-        ImmutableList<SyntheticMonitor> sortedSyntheticMonitors =
-                new SyntheticMonitorOrdering().immutableSortedCopy(syntheticMonitors);
-        return sortedSyntheticMonitors;
+        return new SyntheticMonitorOrdering().immutableSortedCopy(syntheticMonitors);
     }
 
     private List<SyntheticResult> getSyntheticResults(String agentRollupId, long from, long to,

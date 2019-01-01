@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -189,7 +189,7 @@ public class GaugeValueDao implements GaugeValueRepository {
         return oldestCaptureTime == null ? Long.MAX_VALUE : oldestCaptureTime;
     }
 
-    void deleteBefore(long captureTime, int rollupLevel) throws Exception {
+    void deleteBefore(long captureTime, int rollupLevel) throws SQLException {
         dataSource.deleteBefore("gauge_value_rollup_" + castUntainted(rollupLevel), captureTime);
     }
 

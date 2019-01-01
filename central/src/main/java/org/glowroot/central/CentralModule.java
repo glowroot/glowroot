@@ -791,7 +791,7 @@ public class CentralModule {
                 if (session == null) {
                     ConsistencyLevel writeConsistencyLevelOverride;
                     if (centralConfig.cassandraWriteConsistencyLevel() == centralConfig
-                            .cassandraWriteConsistencyLevel()) {
+                            .cassandraReadConsistencyLevel()) {
                         writeConsistencyLevelOverride = null;
                     } else {
                         writeConsistencyLevelOverride =

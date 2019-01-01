@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.glowroot.agent.embedded.init;
 
 import java.io.File;
+import java.sql.SQLException;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -51,14 +52,13 @@ class EmbeddedCollector implements Collector {
     private final AlertingService alertingService;
     private final HttpClient httpClient;
 
-    EmbeddedCollector(EnvironmentDao environmentDao, AggregateDao aggregateDao,
-            TraceDao traceRepository, GaugeValueDao gaugeValueRepository,
-            ConfigRepositoryImpl configRepository, AlertingService alertingService,
-            HttpClient httpClient) {
+    EmbeddedCollector(EnvironmentDao environmentDao, AggregateDao aggregateDao, TraceDao traceDao,
+            GaugeValueDao gaugeValueDao, ConfigRepositoryImpl configRepository,
+            AlertingService alertingService, HttpClient httpClient) {
         this.environmentDao = environmentDao;
         this.aggregateDao = aggregateDao;
-        this.traceDao = traceRepository;
-        this.gaugeValueDao = gaugeValueRepository;
+        this.traceDao = traceDao;
+        this.gaugeValueDao = gaugeValueDao;
         this.configRepository = configRepository;
         this.alertingService = alertingService;
         this.httpClient = httpClient;
@@ -66,7 +66,7 @@ class EmbeddedCollector implements Collector {
 
     @Override
     public void init(List<File> confDirs, Environment environment, AgentConfig agentConfig,
-            AgentConfigUpdater agentConfigUpdater) throws Exception {
+            AgentConfigUpdater agentConfigUpdater) throws SQLException {
         environmentDao.store(environment);
     }
 

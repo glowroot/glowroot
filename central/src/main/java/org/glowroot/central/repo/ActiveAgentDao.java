@@ -193,7 +193,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
         return lastRolledUpTime;
     }
 
-    private AgentRollup createAgentRollup(String agentRollupId,
+    private static AgentRollup createAgentRollup(String agentRollupId,
             Multimap<String, String> parentChildMap, Map<String, String> agentDisplayMap)
             throws Exception {
         Collection<String> childAgentRollupIds = parentChildMap.get(agentRollupId);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -248,47 +248,6 @@ public class LazyPlatformMBeanServer {
         return platformMBeanServer;
     }
 
-    private Set<ObjectName> queryNamesAcrossAll(@Nullable ObjectName name, @Nullable QueryExp query,
-            List<MBeanServer> mbeanServers) throws Exception {
-        Set<ObjectName> objects = Sets.newHashSet();
-        for (MBeanServer mbeanServer : mbeanServers) {
-            objects.addAll(mbeanServer.queryNames(name, query));
-        }
-        return objects;
-    }
-
-    private MBeanInfo getMBeanInfoAcrossAll(ObjectName name, List<MBeanServer> mbeanServers)
-            throws Exception {
-        InstanceNotFoundException firstException = null;
-        for (MBeanServer mbeanServer : mbeanServers) {
-            try {
-                return mbeanServer.getMBeanInfo(name);
-            } catch (InstanceNotFoundException e) {
-                logger.debug(e.getMessage(), e);
-                if (firstException == null) {
-                    firstException = e;
-                }
-            }
-        }
-        throw checkNotNull(firstException);
-    }
-
-    private Object getAttributeAcrossAll(ObjectName name, String attribute,
-            List<MBeanServer> mbeanServers) throws Exception {
-        InstanceNotFoundException firstException = null;
-        for (MBeanServer mbeanServer : mbeanServers) {
-            try {
-                return mbeanServer.getAttribute(name, attribute);
-            } catch (InstanceNotFoundException e) {
-                logger.debug(e.getMessage(), e);
-                if (firstException == null) {
-                    firstException = e;
-                }
-            }
-        }
-        throw checkNotNull(firstException);
-    }
-
     @OnlyUsedByTests
     public void close() throws Exception {
         ensureInit();
@@ -333,6 +292,47 @@ public class LazyPlatformMBeanServer {
         } catch (Throwable t) {
             logger.warn(t.getMessage(), t);
         }
+    }
+
+    private static Set<ObjectName> queryNamesAcrossAll(@Nullable ObjectName name,
+            @Nullable QueryExp query, List<MBeanServer> mbeanServers) {
+        Set<ObjectName> objects = Sets.newHashSet();
+        for (MBeanServer mbeanServer : mbeanServers) {
+            objects.addAll(mbeanServer.queryNames(name, query));
+        }
+        return objects;
+    }
+
+    private static MBeanInfo getMBeanInfoAcrossAll(ObjectName name, List<MBeanServer> mbeanServers)
+            throws Exception {
+        InstanceNotFoundException firstException = null;
+        for (MBeanServer mbeanServer : mbeanServers) {
+            try {
+                return mbeanServer.getMBeanInfo(name);
+            } catch (InstanceNotFoundException e) {
+                logger.debug(e.getMessage(), e);
+                if (firstException == null) {
+                    firstException = e;
+                }
+            }
+        }
+        throw checkNotNull(firstException);
+    }
+
+    private static Object getAttributeAcrossAll(ObjectName name, String attribute,
+            List<MBeanServer> mbeanServers) throws Exception {
+        InstanceNotFoundException firstException = null;
+        for (MBeanServer mbeanServer : mbeanServers) {
+            try {
+                return mbeanServer.getAttribute(name, attribute);
+            } catch (InstanceNotFoundException e) {
+                logger.debug(e.getMessage(), e);
+                if (firstException == null) {
+                    firstException = e;
+                }
+            }
+        }
+        throw checkNotNull(firstException);
     }
 
     public interface InitListener {

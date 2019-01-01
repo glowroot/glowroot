@@ -320,7 +320,7 @@ class GrpcServer {
             delegatingSslContext.reloadCertificate();
         }
 
-        private boolean certificateModified(WatchKey watchKey) {
+        private static boolean certificateModified(WatchKey watchKey) {
             for (WatchEvent<?> event : watchKey.pollEvents()) {
                 Object context = event.context();
                 if (context instanceof Path) {

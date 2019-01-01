@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,7 @@ class GaugeIdDao {
                 gaugeName);
     }
 
-    void deleteBefore(long captureTime) throws Exception {
+    void deleteBefore(long captureTime) throws SQLException {
         synchronized (lock) {
             // subtracting 1 day to account for rate limiting of updates
             dataSource.update("delete from gauge_id where last_capture_time < ?",

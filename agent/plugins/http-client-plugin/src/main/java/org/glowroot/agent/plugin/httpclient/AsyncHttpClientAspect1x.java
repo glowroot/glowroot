@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ public class AsyncHttpClientAspect1x {
 
     // the field and method names are verbose since they will be mixed in to existing classes
     @Mixin("com.ning.http.client.ListenableFuture")
-    public abstract static class ListenableFutureImpl<V> implements ListenableFutureMixin<V> {
+    public abstract static class ListenableFutureImpl implements ListenableFutureMixin {
 
         // volatile not needed, only accessed by the main thread
         private transient @Nullable AsyncTraceEntry glowroot$asyncTraceEntry;
@@ -77,7 +77,7 @@ public class AsyncHttpClientAspect1x {
     // the method names are verbose since they will be mixed in to existing classes
     // NOTE this interface cannot extend ListenableFuture since ListenableFuture extends this
     // interface after the mixin takes place
-    public interface ListenableFutureMixin<V> {
+    public interface ListenableFutureMixin {
 
         @Nullable
         AsyncTraceEntry glowroot$getAsyncTraceEntry();
@@ -116,7 +116,7 @@ public class AsyncHttpClientAspect1x {
                     MessageSupplier.create("http client request: {}{}", method, url), timerName);
         }
         @OnReturn
-        public static <T extends ListenableFutureMixin<?> & ListenableFuture<?>> void onReturn(
+        public static <T extends ListenableFutureMixin & ListenableFuture<?>> void onReturn(
                 final @BindReturn @Nullable T future,
                 final @BindTraveler @Nullable AsyncTraceEntry asyncTraceEntry) {
             if (asyncTraceEntry == null) {
@@ -153,7 +153,7 @@ public class AsyncHttpClientAspect1x {
         }
         // this is hacky way to find out if future ended with exception or not
         @Nullable
-        private static <T extends ListenableFutureMixin<?> & ListenableFuture<?>> Throwable getException(
+        private static <T extends ListenableFutureMixin & ListenableFuture<?>> Throwable getException(
                 T future) {
             future.glowroot$setIgnoreGet(true);
             try {
@@ -172,12 +172,12 @@ public class AsyncHttpClientAspect1x {
             methodParameterTypes = {".."}, suppressionKey = "wait-on-future")
     public static class FutureGetAdvice {
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver ListenableFutureMixin<?> future) {
+        public static boolean isEnabled(@BindReceiver ListenableFutureMixin future) {
             return !future.glowroot$getIgnoreGet();
         }
         @OnBefore
         public static @Nullable Timer onBefore(ThreadContext threadContext,
-                @BindReceiver ListenableFutureMixin<?> future) {
+                @BindReceiver ListenableFutureMixin future) {
             AsyncTraceEntry asyncTraceEntry = future.glowroot$getAsyncTraceEntry();
             if (asyncTraceEntry == null) {
                 return null;

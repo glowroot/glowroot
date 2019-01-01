@@ -16,7 +16,6 @@
 package org.glowroot.agent.weaving;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.util.List;
 import java.util.Map;
@@ -187,7 +186,7 @@ public class AdviceCache {
         return advisors;
     }
 
-    private static List<MixinType> getMixinTypes(List<MixinClass> mixinClasses) throws IOException {
+    private static List<MixinType> getMixinTypes(List<MixinClass> mixinClasses) {
         List<MixinType> mixinTypes = Lists.newArrayList();
         for (MixinClass mixinClass : mixinClasses) {
             mixinTypes.add(MixinType.create(mixinClass));

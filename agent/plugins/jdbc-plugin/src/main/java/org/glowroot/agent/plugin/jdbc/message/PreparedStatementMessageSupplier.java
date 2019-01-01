@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,20 @@ public class PreparedStatementMessageSupplier extends QueryMessageSupplier {
                         buildPatternList("captureBindParametersIncludes");
                 captureBindParametersExcludePatterns =
                         buildPatternList("captureBindParametersExcludes");
+            }
+            private List<Pattern> buildPatternList(String propertyName) {
+                List<String> values = configService.getListProperty(propertyName).value();
+                List<Pattern> patterns = new ArrayList<Pattern>();
+                for (String value : values) {
+                    try {
+                        patterns.add(Pattern.compile(value.trim(), Pattern.DOTALL));
+                    } catch (PatternSyntaxException e) {
+                        logger.warn("the jdbc plugin configuration property {} contains an invalid"
+                                + " regular expression: {}\n{}", propertyName, value.trim(),
+                                e.getMessage());
+                    }
+                }
+                return ImmutableList.copyOf(patterns);
             }
         });
     }
@@ -111,19 +125,5 @@ public class PreparedStatementMessageSupplier extends QueryMessageSupplier {
             first = false;
         }
         sb.append("]");
-    }
-
-    private static List<Pattern> buildPatternList(String propertyName) {
-        List<String> values = configService.getListProperty(propertyName).value();
-        List<Pattern> patterns = new ArrayList<Pattern>();
-        for (String value : values) {
-            try {
-                patterns.add(Pattern.compile(value.trim(), Pattern.DOTALL));
-            } catch (PatternSyntaxException e) {
-                logger.warn("the jdbc plugin configuration property {} contains an invalid regular"
-                        + " expression: {}\n{}", propertyName, value.trim(), e.getMessage());
-            }
-        }
-        return ImmutableList.copyOf(patterns);
     }
 }

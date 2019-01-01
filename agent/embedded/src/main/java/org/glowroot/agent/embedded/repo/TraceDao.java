@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ public class TraceDao implements TraceRepository {
             ImmutableColumn.of("error", ColumnType.BOOLEAN),
             ImmutableColumn.of("start_time", ColumnType.BIGINT),
             ImmutableColumn.of("capture_time", ColumnType.BIGINT),
-            ImmutableColumn.of("duration_nanos", ColumnType.BIGINT), // nanoseconds
+            ImmutableColumn.of("duration_nanos", ColumnType.BIGINT),
             ImmutableColumn.of("transaction_type", ColumnType.VARCHAR),
             ImmutableColumn.of("transaction_name", ColumnType.VARCHAR),
             ImmutableColumn.of("headline", ColumnType.VARCHAR),
@@ -307,7 +307,7 @@ public class TraceDao implements TraceRepository {
         return traceCappedDatabase.readMessage(cappedId, Profile.parser());
     }
 
-    void deleteBefore(long captureTime) throws Exception {
+    void deleteBefore(long captureTime) throws SQLException {
         traceAttributeNameDao.deleteBefore(captureTime);
         dataSource.deleteBefore("trace", captureTime);
         dataSource.deleteBefore("trace_attribute", captureTime);

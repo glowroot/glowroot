@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package org.glowroot.agent.weaving;
 
-import java.io.IOException;
-
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
@@ -27,7 +25,7 @@ import org.glowroot.agent.weaving.PluginDetail.MixinClass;
 @Value.Immutable
 abstract class MixinType {
 
-    static MixinType create(MixinClass mixinClass) throws IOException {
+    static MixinType create(MixinClass mixinClass) {
         return ImmutableMixinType.builder()
                 .addTargets(mixinClass.mixin().value())
                 .addAllInterfaces(mixinClass.interfaces())

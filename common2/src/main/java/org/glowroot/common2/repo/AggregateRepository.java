@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,9 +72,6 @@ public interface AggregateRepository {
     List<ThroughputAggregate> readThroughputAggregates(String agentRollupId, AggregateQuery query)
             throws Exception;
 
-    @Nullable
-    String readFullQueryText(String agentRollupId, String fullQueryTextSha1) throws Exception;
-
     // query.from() is non-inclusive
     void mergeQueriesInto(String agentRollupId, AggregateQuery query, QueryCollector collector)
             throws Exception;
@@ -90,6 +87,9 @@ public interface AggregateRepository {
     // query.from() is non-inclusive
     void mergeAuxThreadProfilesInto(String agentRollupId, AggregateQuery query,
             ProfileCollector collector) throws Exception;
+
+    @Nullable
+    String readFullQueryText(String agentRollupId, String fullQueryTextSha1) throws Exception;
 
     // query.from() is non-inclusive
     boolean hasMainThreadProfile(String agentRollupId, AggregateQuery query) throws Exception;

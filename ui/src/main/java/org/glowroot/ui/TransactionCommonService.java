@@ -328,18 +328,6 @@ class TransactionCommonService {
         return queryCollector;
     }
 
-    @Nullable
-    String readFullQueryText(String agentRollupId, String fullQueryTextSha1) throws Exception {
-        // checking live data is not efficient since must perform many sha1 hashes
-        // so check repository first
-        String fullQueryText =
-                aggregateRepository.readFullQueryText(agentRollupId, fullQueryTextSha1);
-        if (fullQueryText != null) {
-            return fullQueryText;
-        }
-        return liveAggregateRepository.getFullQueryText(agentRollupId, fullQueryTextSha1);
-    }
-
     // query.from() is non-inclusive
     ServiceCallCollector getMergedServiceCalls(String agentRollupId, AggregateQuery query)
             throws Exception {
@@ -384,6 +372,18 @@ class TransactionCommonService {
             profile.truncateBranches(minSamples);
         }
         return profileCollector;
+    }
+
+    @Nullable
+    String readFullQueryText(String agentRollupId, String fullQueryTextSha1) throws Exception {
+        // checking live data is not efficient since must perform many sha1 hashes
+        // so check repository first
+        String fullQueryText =
+                aggregateRepository.readFullQueryText(agentRollupId, fullQueryTextSha1);
+        if (fullQueryText != null) {
+            return fullQueryText;
+        }
+        return liveAggregateRepository.getFullQueryText(agentRollupId, fullQueryTextSha1);
     }
 
     boolean hasMainThreadProfile(String agentRollupId, AggregateQuery query) throws Exception {

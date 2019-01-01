@@ -1264,7 +1264,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     private static List<PluginConfig> buildPluginConfigs(List<PluginConfig> newConfigs,
-            AgentConfig agentConfig) throws OptimisticLockException {
+            AgentConfig agentConfig) {
         List<PluginConfig> pluginConfigs = new ArrayList<>();
         Map<String, PluginConfig> remainingNewConfigs = new HashMap<>();
         for (PluginConfig newConfig : newConfigs) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -305,7 +305,8 @@ public class StatementAspect {
         }
         @OnBefore
         public static @Nullable QueryEntry onBefore(ThreadContext context,
-                @BindReceiver HasStatementMirrorMixin statement, @BindParameter @Nullable String sql) {
+                @BindReceiver HasStatementMirrorMixin statement,
+                @BindParameter @Nullable String sql) {
             if (sql == null) {
                 // seems nothing sensible to do here other than ignore
                 return null;
@@ -346,7 +347,8 @@ public class StatementAspect {
         }
         @OnBefore
         public static @Nullable QueryEntry onBefore(ThreadContext context,
-                @BindReceiver HasStatementMirrorMixin statement, @BindParameter @Nullable String sql) {
+                @BindReceiver HasStatementMirrorMixin statement,
+                @BindParameter @Nullable String sql) {
             return StatementExecuteAdvice.onBefore(context, statement, sql);
         }
         @OnReturn
@@ -385,7 +387,8 @@ public class StatementAspect {
         }
         @OnBefore
         public static @Nullable QueryEntry onBefore(ThreadContext context,
-                @BindReceiver HasStatementMirrorMixin statement, @BindParameter @Nullable String sql) {
+                @BindReceiver HasStatementMirrorMixin statement,
+                @BindParameter @Nullable String sql) {
             return StatementExecuteAdvice.onBefore(context, statement, sql);
         }
         @OnReturn

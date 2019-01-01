@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.glowroot.agent.embedded.repo;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -96,7 +97,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         lastCaptureTimeUpdatedInThePastDay.put(key, true);
     }
 
-    void deleteBefore(long captureTime) throws Exception {
+    void deleteBefore(long captureTime) throws SQLException {
         // subtracting 1 day to account for rate limiting of updates
         dataSource.deleteBeforeUsingLock("trace_attribute_name", "last_capture_time",
                 captureTime - DAYS.toMillis(1), lock);

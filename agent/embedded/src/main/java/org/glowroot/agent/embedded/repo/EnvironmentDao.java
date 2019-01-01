@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ public class EnvironmentDao implements EnvironmentRepository {
         init(dataSource);
     }
 
-    public void store(Environment environment) throws Exception {
+    public void store(Environment environment) throws SQLException {
         dataSource.update(new EnvironmentBinder(environment));
     }
 

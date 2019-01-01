@@ -78,11 +78,11 @@ glowroot.directive('gtButtonGroup', [
       scope: {},
       transclude: true,
       template: ''
-      + '<div class="clearfix">'
-      + '  <span ng-transclude style="margin-right: 15px;"></span>'
-      + '  <div class="gt-button-spinner d-none"></div>'
-      + '  <div class="gt-button-message d-none" style="padding-top: 4px;"></div>'
-      + '</div>',
+          + '<div class="clearfix">'
+          + '  <span ng-transclude style="margin-right: 15px;"></span>'
+          + '  <div class="gt-button-spinner d-none"></div>'
+          + '  <div class="gt-button-message d-none" style="padding-top: 4px;"></div>'
+          + '</div>',
       controller: [
         '$element',
         function ($element) {
@@ -463,11 +463,22 @@ glowroot.directive('gtMultiselect', [
           buttonClass: 'btn btn-secondary',
           buttonContainer: '<div class="dropdown" />',
           templates: {
-            button: '<button type="button" class="multiselect dropdown-toggle" data-toggle="dropdown" data-flip="false"><span class="multiselect-selected-text"></span> <b class="caret"></b></button>',
+            button: '<button type="button" class="multiselect dropdown-toggle" data-toggle="dropdown" data-flip="false">'
+                + '<span class="multiselect-selected-text"></span>'
+                + ' <b class="caret"></b>'
+                + '</button>',
             ul: '<ul class="multiselect-container dropdown-menu p-1 m-0"></ul>',
-            filter: '<li class="multiselect-item multiselect-filter"><input class="form-control multiselect-search" type="text" /></li>',
+            filter: '<li class="multiselect-item multiselect-filter">'
+                + '<input class="form-control multiselect-search" type="text" />'
+                + '</li>',
             filterClearBtn: '',
-            li: '<li><a tabIndex="0" class="dropdown-item" style="padding: 2px 0;"><label class="custom-control custom-checkbox" style="padding-left: 36px;"><div class="custom-control-label"></div></label></a></li>',
+            li: '<li>'
+                + '<a tabIndex="0" class="dropdown-item" style="padding: 2px 0;">'
+                + '<label class="custom-control custom-checkbox" style="padding-left: 36px;">'
+                + '<div class="custom-control-label"></div>'
+                + '</label>'
+                + '</a>'
+                + '</li>',
           },
           optionLabel: function (element) {
             return $(element).data('val').indentedDisplay;
@@ -475,10 +486,10 @@ glowroot.directive('gtMultiselect', [
           optionFullText: function (element) {
             return $(element).data('val').display;
           },
-          onDropdownShown: function() {
+          onDropdownShown: function () {
             iElement.parent().find('.multiselect-search').focus();
           },
-          onDropdownHidden: function() {
+          onDropdownHidden: function () {
             iElement.removeClass('ng-untouched');
             iElement.addClass('ng-touched');
           }

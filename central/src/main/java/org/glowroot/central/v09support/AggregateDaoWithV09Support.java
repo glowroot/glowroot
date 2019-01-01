@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,18 +140,6 @@ public class AggregateDaoWithV09Support implements AggregateDao {
                 (id, q) -> delegate.readThroughputAggregates(id, q));
     }
 
-    @Override
-    public @Nullable String readFullQueryText(String agentRollupId, String fullQueryTextSha1)
-            throws Exception {
-        String value = delegate.readFullQueryText(agentRollupId, fullQueryTextSha1);
-        if (value == null && clock.currentTimeMillis() < v09FqtLastExpirationTime
-                && agentRollupIdsWithV09Data.contains(agentRollupId)) {
-            value = delegate.readFullQueryText(V09Support.convertToV09(agentRollupId),
-                    fullQueryTextSha1);
-        }
-        return value;
-    }
-
     // query.from() is non-inclusive
     @Override
     public void mergeQueriesInto(String agentRollupId, AggregateQuery query,
@@ -182,6 +170,18 @@ public class AggregateDaoWithV09Support implements AggregateDao {
             ProfileCollector collector) throws Exception {
         splitMergeIfNeeded(agentRollupId, query,
                 (id, q) -> delegate.mergeAuxThreadProfilesInto(id, q, collector));
+    }
+
+    @Override
+    public @Nullable String readFullQueryText(String agentRollupId, String fullQueryTextSha1)
+            throws Exception {
+        String value = delegate.readFullQueryText(agentRollupId, fullQueryTextSha1);
+        if (value == null && clock.currentTimeMillis() < v09FqtLastExpirationTime
+                && agentRollupIdsWithV09Data.contains(agentRollupId)) {
+            value = delegate.readFullQueryText(V09Support.convertToV09(agentRollupId),
+                    fullQueryTextSha1);
+        }
+        return value;
     }
 
     // query.from() is non-inclusive

@@ -481,18 +481,6 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         }
     }
 
-    // far in the future capture times cause major problems for Cassandra TWCS since then every
-    // rollup of recent data must consider an (increasingly) old sstable and (worse) all of the
-    // sstables in between (because of possibility of tombstones in more recent sstables
-    // invalidating the data read from the old sstable)
-    //
-    // another problem with far in the future capture times is that the adjusted TTL (see
-    // Common.getAdjustedTTL()) will be really large, preventing that data from expiring along with
-    // its friends (probably also contributing to TWCS problems)
-    private boolean tooFarInTheFuture(long captureTime, long currentTimeMillis) {
-        return captureTime - currentTimeMillis > HOURS.toMillis(1);
-    }
-
     private int getNextDelayMillis() {
         long currentishTimeMillis = clock.currentTimeMillis() + 10000;
         if (currentishTimeMillis > currentMinute) {
@@ -506,6 +494,18 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
 
     private String getAgentIdForLogging(String agentId, boolean postV09) {
         return grpcCommon.getAgentIdForLogging(agentId, postV09);
+    }
+
+    // far in the future capture times cause major problems for Cassandra TWCS since then every
+    // rollup of recent data must consider an (increasingly) old sstable and (worse) all of the
+    // sstables in between (because of possibility of tombstones in more recent sstables
+    // invalidating the data read from the old sstable)
+    //
+    // another problem with far in the future capture times is that the adjusted TTL (see
+    // Common.getAdjustedTTL()) will be really large, preventing that data from expiring along with
+    // its friends (probably also contributing to TWCS problems)
+    private static boolean tooFarInTheFuture(long captureTime, long currentTimeMillis) {
+        return captureTime - currentTimeMillis > HOURS.toMillis(1);
     }
 
     private static String toString(Proto.Throwable t) {

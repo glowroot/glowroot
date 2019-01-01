@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ class Routes {
             }
             sb.append(route.substring(end));
             simplifiedRoute = sb.toString();
-            simplifiedRoutes.putIfAbsent(route, simplifiedRoute);
+            simplifiedRoutes.put(route, simplifiedRoute);
         }
         return simplifiedRoute;
     }
