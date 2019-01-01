@@ -64,6 +64,35 @@
         "java.lang.String",
         "java.lang.String"
       ],
+      "captureKind": "transaction",
+      "alreadyInTransactionBehavior": "do-nothing",
+      "timerName": "THIS SHOULD NEVER HAPPEN IN TESTS SINCE DO NOTHING",
+      "traceEntryMessageTemplate": "THIS SHOULD NEVER HAPPEN IN TESTS SINCE DO NOTHING",
+      "transactionType": "THIS SHOULD NEVER HAPPEN IN TESTS SINCE DO NOTHING",
+      "transactionNameTemplate": "THIS SHOULD NEVER HAPPEN IN TESTS SINCE DO NOTHING"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.LevelFour",
+      "methodName": "call",
+      "methodParameterTypes": [
+        "java.lang.String",
+        "java.lang.String"
+      ],
+      "captureKind": "transaction",
+      "alreadyInTransactionBehavior": "do-nothing",
+      "timerName": "THIS SHOULD NEVER HAPPEN IN TESTS SINCE DO NOTHING",
+      "traceEntryMessageTemplate": "THIS SHOULD NEVER HAPPEN IN TESTS SINCE DO NOTHING",
+      "transactionType": "THIS SHOULD NEVER HAPPEN IN TESTS SINCE DO NOTHING",
+      "transactionNameTemplate": "THIS SHOULD NEVER HAPPEN IN TESTS SINCE DO NOTHING",
+      "enabledProperty": "DUMMY"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.LevelFour",
+      "methodName": "call",
+      "methodParameterTypes": [
+        "java.lang.String",
+        "java.lang.String"
+      ],
       "captureKind": "trace-entry",
       "timerName": "level four",
       "traceEntryMessageTemplate": "Level Four: {{0}}, {{1}}"
