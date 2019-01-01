@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -576,11 +576,6 @@ public class CentralModule {
         }
         String cassandraMaxConcurrentQueries =
                 properties.get("glowroot.cassandra.maxConcurrentQueries");
-        if (Strings.isNullOrEmpty(cassandraMaxConcurrentQueries)) {
-            // support old setting prior to 0.12.4
-            cassandraMaxConcurrentQueries =
-                    properties.get("glowroot.cassandra.pool.maxRequestsPerConnection");
-        }
         if (!Strings.isNullOrEmpty(cassandraMaxConcurrentQueries)) {
             builder.cassandraMaxConcurrentQueries(Integer.parseInt(cassandraMaxConcurrentQueries));
         }
@@ -681,6 +676,11 @@ public class CentralModule {
                 upgradePropertyNames.put("jgroups.tcp.initial_hosts=" + initialHosts,
                         "jgroups.initialNodes=" + initialNodes);
             }
+        }
+        // upgrade from 0.12.3 to 0.13.0
+        if (props.containsKey("cassandra.pool.maxRequestsPerConnection")) {
+            upgradePropertyNames.put("cassandra.pool.maxRequestsPerConnection",
+                    "cassandra.maxConcurrentQueries");
         }
         if (!upgradePropertyNames.isEmpty()) {
             PropertiesFiles.upgradeIfNeeded(propFile, upgradePropertyNames);
