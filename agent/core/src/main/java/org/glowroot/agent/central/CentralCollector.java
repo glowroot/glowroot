@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import org.glowroot.agent.live.LiveTraceRepositoryImpl;
 import org.glowroot.agent.live.LiveWeavingServiceImpl;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.PropertiesFiles;
+import org.glowroot.common.util.Version;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.CollectorServiceGrpc;
@@ -304,7 +305,7 @@ public class CentralCollector implements Collector {
         Pattern pattern = Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)\\b.*");
         Matcher matcher = pattern.matcher(agentVersion);
         if (!matcher.matches()) {
-            if (!agentVersion.equals("unknown")) {
+            if (!agentVersion.equals(Version.UNKNOWN_VERSION)) {
                 // conditional is to suppress warning when running tests
                 startupLogger.warn("could not parse agent version: {}", agentVersion);
             }

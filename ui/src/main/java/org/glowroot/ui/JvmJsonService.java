@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,9 +53,10 @@ import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToDockerAlpinePidOneException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
+import org.glowroot.common.util.Masking;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.common.util.Masking;
+import org.glowroot.common.util.Version;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.EnvironmentRepository;
@@ -525,10 +526,8 @@ class JvmJsonService {
 
     private String getAgentVersion(String agentId) throws Exception {
         Environment environment = environmentRepository.read(agentId);
-        if (environment == null) {
-            return "unknown";
-        }
-        return environment.getJavaInfo().getGlowrootAgentVersion();
+        return environment == null ? Version.UNKNOWN_VERSION
+                : environment.getJavaInfo().getGlowrootAgentVersion();
     }
 
     private static void writeAvailability(String fieldName, Availability availability,
