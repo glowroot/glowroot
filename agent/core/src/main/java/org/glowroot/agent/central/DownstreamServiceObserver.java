@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CapabilitiesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CentralRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CentralRequest.MessageCase;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CurrentTimeResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.EntriesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ExceptionResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ExplicitGcDisabledResponse;
@@ -245,6 +246,9 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                 return;
             case SYSTEM_PROPERTIES_REQUEST:
                 systemPropertiesAndRespond(request, responseObserver);
+                return;
+            case CURRENT_TIME_REQUEST:
+                currentTimeAndRespond(request, responseObserver);
                 return;
             case CAPABILITIES_REQUEST:
                 capabilitiesAndRespond(request, responseObserver);
@@ -553,6 +557,23 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                 .setRequestId(request.getRequestId())
                 .setSystemPropertiesResponse(SystemPropertiesResponse.newBuilder()
                         .putAllSystemProperties(systemProperties))
+                .build());
+    }
+
+    private void currentTimeAndRespond(CentralRequest request,
+            StreamObserver<AgentResponse> responseObserver) {
+        long currentTime;
+        try {
+            currentTime = liveJvmService.getCurrentTime("");
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            sendExceptionResponse(request, responseObserver);
+            return;
+        }
+        responseObserver.onNext(AgentResponse.newBuilder()
+                .setRequestId(request.getRequestId())
+                .setCurrentTimeResponse(CurrentTimeResponse.newBuilder()
+                        .setCurrentTimeMillis(currentTime))
                 .build());
     }
 

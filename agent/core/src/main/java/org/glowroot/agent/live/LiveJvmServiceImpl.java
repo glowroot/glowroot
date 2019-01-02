@@ -57,6 +57,7 @@ import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.live.LiveJvmService;
+import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Masking;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Availability;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
@@ -88,16 +89,18 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     private final Availability threadAllocatedBytesAvailability;
     private final ConfigService configService;
     private final @Nullable File glowrootJarFile;
+    private final Clock clock;
 
     public LiveJvmServiceImpl(LazyPlatformMBeanServer lazyPlatformMBeanServer,
             TransactionRegistry transactionRegistry, TraceCollector traceCollector,
             Availability threadAllocatedBytesAvailability, ConfigService configService,
-            @Nullable File glowrootJarFile) {
+            @Nullable File glowrootJarFile, Clock clock) {
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
         threadDumpService = new ThreadDumpService(transactionRegistry, traceCollector);
         this.threadAllocatedBytesAvailability = threadAllocatedBytesAvailability;
         this.configService = configService;
         this.glowrootJarFile = glowrootJarFile;
+        this.clock = clock;
     }
 
     @Override
@@ -274,11 +277,16 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public Map<String, String> getSystemProperties(String agentId) throws Exception {
+    public Map<String, String> getSystemProperties(String agentId) {
         Map<String, String> systemProperties =
                 ManagementFactory.getRuntimeMXBean().getSystemProperties();
         List<String> maskSystemProperties = configService.getJvmConfig().maskSystemProperties();
         return Masking.maskSystemProperties(systemProperties, maskSystemProperties);
+    }
+
+    @Override
+    public long getCurrentTime(String agentId) {
+        return clock.currentTimeMillis();
     }
 
     @Override

@@ -65,6 +65,17 @@
       {{data.host.osVersion}}
     </div>
   </div>
+  <div class="row gt-jvm-general-row" ng-if="supportsHostCurrentTime()">
+    <div class="col-md-3 text-md-right font-weight-600">
+      Current time
+    </div>
+    <div class="col-md-9" ng-if="data.agentNotConnected || layout.offlineViewer">
+      -
+    </div>
+    <div class="col-md-9" ng-if="!data.agentNotConnected && !layout.offlineViewer">
+      {{data.host.currentTime | date:'medium'}}
+    </div>
+  </div>
 </fieldset>
 <fieldset class="gt-fieldset-environment">
   <legend class="gt-legend">

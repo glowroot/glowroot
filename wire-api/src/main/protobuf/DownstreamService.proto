@@ -32,6 +32,7 @@ message CentralRequest {
     MatchingMBeanObjectNamesRequest matching_mbean_object_names_request = 305;
     MBeanMetaRequest mbean_meta_request = 306;
     SystemPropertiesRequest system_properties_request = 310;
+    CurrentTimeRequest current_time_request = 312;
     CapabilitiesRequest capabilities_request = 307;
 
     // LiveWeavingService
@@ -70,6 +71,7 @@ message AgentResponse {
     MatchingMBeanObjectNamesResponse matching_mbean_object_names_response = 305;
     MBeanMetaResponse mbean_meta_response = 306;
     SystemPropertiesResponse system_properties_response = 310;
+    CurrentTimeResponse current_time_response = 312;
     CapabilitiesResponse capabilities_response = 307;
 
     // LiveWeavingService
@@ -201,6 +203,13 @@ message SystemPropertiesRequest {
 
 message SystemPropertiesResponse {
   map<string, string> system_properties = 1;
+}
+
+message CurrentTimeRequest {
+}
+
+message CurrentTimeResponse {
+  int64 current_time_millis = 1;
 }
 
 message CapabilitiesRequest {

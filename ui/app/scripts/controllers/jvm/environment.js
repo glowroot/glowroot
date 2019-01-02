@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,11 +47,26 @@ glowroot.controller('JvmEnvironmentCtrl', [
       }
     };
 
+    $scope.supportsHostCurrentTime = function () {
+      // host current time was introduced in agent version 0.13.0
+      return $scope.agentRollup.glowrootVersion.lastIndexOf('0.9.', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.10.', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.11.', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.12.', 0) === -1;
+    };
+
     $http.get('backend/jvm/environment?agent-id=' + encodeURIComponent($scope.agentId))
         .then(function (response) {
           $scope.loaded = true;
           $scope.data = response.data;
-          $scope.uptime = Date.now() - response.data.process.startTime;
+          if (response.data.host.currentTime) {
+            $scope.uptime = response.data.host.currentTime - response.data.process.startTime;
+          } else if (!response.data.agentNotConnected && !$scope.layout.offlineViewer) {
+            // host currentTime introduced in 0.13.0
+            $scope.uptime = Date.now() - response.data.process.startTime;
+          } else {
+            delete $scope.uptime;
+          }
         }, function (response) {
           httpErrors.handle(response, $scope);
         });

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AvailableDiskSpac
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CapabilitiesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CentralRequest;
+import org.glowroot.wire.api.model.DownstreamServiceOuterClass.CurrentTimeRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.EntriesRequest;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.EntriesResponse;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ExplicitGcDisabledRequest;
@@ -269,6 +270,13 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
                 .setSystemPropertiesRequest(SystemPropertiesRequest.getDefaultInstance())
                 .build());
         return responseWrapper.getSystemPropertiesResponse().getSystemPropertiesMap();
+    }
+
+    long currentTime(String agentId) throws Exception {
+        AgentResponse responseWrapper = runOnCluster(agentId, CentralRequest.newBuilder()
+                .setCurrentTimeRequest(CurrentTimeRequest.getDefaultInstance())
+                .build());
+        return responseWrapper.getCurrentTimeResponse().getCurrentTimeMillis();
     }
 
     Capabilities capabilities(String agentId) throws Exception {

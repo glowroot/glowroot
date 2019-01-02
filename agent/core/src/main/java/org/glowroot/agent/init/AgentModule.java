@@ -293,7 +293,7 @@ public class AgentModule {
                 configService, adviceCache, jvmRetransformClassesSupported);
         liveJvmService = new LiveJvmServiceImpl(lazyPlatformMBeanServer, transactionRegistry,
                 traceCollector, threadAllocatedBytes.getAvailability(), configService,
-                glowrootJarFile);
+                glowrootJarFile, clock);
     }
 
     public ConfigService getConfigService() {

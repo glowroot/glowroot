@@ -110,13 +110,21 @@ class JvmJsonService {
         HostInfo hostInfo = environment.getHostInfo();
         ProcessInfo processInfo = environment.getProcessInfo();
         JavaInfo javaInfo = environment.getJavaInfo();
-
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
             jg.writeStartObject();
+            Long hostCurrentTime = null;
             if (liveJvmService != null) {
                 jg.writeBooleanField("agentNotConnected", !liveJvmService.isAvailable(agentId));
+                try {
+                    hostCurrentTime = liveJvmService.getCurrentTime(agentId);
+                } catch (AgentNotConnectedException e) {
+                    logger.debug(e.getMessage(), e);
+                } catch (AgentUnsupportedOperationException e) {
+                    // this operation introduced in 0.13.0
+                    logger.debug(e.getMessage(), e);
+                }
             }
             jg.writeObjectFieldStart("host");
             jg.writeStringField("hostname", hostInfo.getHostname());
@@ -127,6 +135,9 @@ class JvmJsonService {
             }
             jg.writeStringField("osName", hostInfo.getOsName());
             jg.writeStringField("osVersion", hostInfo.getOsVersion());
+            if (hostCurrentTime != null) {
+                jg.writeNumberField("currentTime", hostCurrentTime);
+            }
             jg.writeEndObject();
             jg.writeObjectFieldStart("process");
             if (processInfo.hasProcessId()) {
