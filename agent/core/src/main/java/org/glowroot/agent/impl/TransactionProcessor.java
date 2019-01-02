@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public class TransactionProcessor {
     private final ExecutorService processingExecutor;
     private final ExecutorService flushingExecutor;
     private final Collector collector;
-    private final TransactionCollector traceCollector;
+    private final TraceCollector traceCollector;
     private final ConfigService configService;
     private final Clock clock;
 
@@ -81,7 +81,7 @@ public class TransactionProcessor {
 
     private volatile boolean closed;
 
-    public TransactionProcessor(Collector collector, TransactionCollector traceCollector,
+    public TransactionProcessor(Collector collector, TraceCollector traceCollector,
             ConfigService configService, long aggregateIntervalMillis, Clock clock) {
         this.collector = collector;
         this.traceCollector = traceCollector;
@@ -218,7 +218,7 @@ public class TransactionProcessor {
             // send to the trace collector before removing from transaction registry so that the
             // trace collector can cover the gap (via TraceCollector.getPendingTransactions())
             // between removing the transaction from the registry and storing it
-            traceCollector.onCompletedTransaction(transaction);
+            traceCollector.collectTrace(transaction);
 
             transaction.removeFromActiveTransactions();
 

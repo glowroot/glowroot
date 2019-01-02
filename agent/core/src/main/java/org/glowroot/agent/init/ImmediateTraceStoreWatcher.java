@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
+import org.glowroot.agent.impl.TraceCollector;
 import org.glowroot.agent.impl.Transaction;
-import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.util.Tickers;
 import org.glowroot.common.util.ScheduledRunnable;
@@ -41,16 +41,16 @@ class ImmediateTraceStoreWatcher extends ScheduledRunnable {
 
     private final ScheduledExecutorService backgroundExecutor;
     private final TransactionRegistry transactionRegistry;
-    private final TransactionCollector transactionCollector;
+    private final TraceCollector traceCollector;
     private final ConfigService configService;
     private final Ticker ticker;
 
     ImmediateTraceStoreWatcher(ScheduledExecutorService backgroundExecutor,
-            TransactionRegistry transactionRegistry, TransactionCollector transactionCollector,
+            TransactionRegistry transactionRegistry, TraceCollector traceCollector,
             ConfigService configService, Ticker ticker) {
         this.backgroundExecutor = backgroundExecutor;
         this.transactionRegistry = transactionRegistry;
-        this.transactionCollector = transactionCollector;
+        this.traceCollector = traceCollector;
         this.configService = configService;
         this.ticker = ticker;
     }
@@ -77,7 +77,7 @@ class ImmediateTraceStoreWatcher extends ScheduledRunnable {
                         Math.max(0, SECONDS.toMillis(immediatePartialStoreThresholdSeconds)
                                 - NANOSECONDS.toMillis(transaction.getDurationNanos()));
                 ScheduledRunnable immediateTraceStoreRunnable =
-                        new ImmediateTraceStoreRunnable(transaction, transactionCollector);
+                        new ImmediateTraceStoreRunnable(transaction, traceCollector);
                 immediateTraceStoreRunnable.scheduleWithFixedDelay(backgroundExecutor,
                         initialDelayMillis, SECONDS.toMillis(immediatePartialStoreThresholdSeconds),
                         MILLISECONDS);
@@ -90,14 +90,13 @@ class ImmediateTraceStoreWatcher extends ScheduledRunnable {
     static class ImmediateTraceStoreRunnable extends ScheduledRunnable {
 
         private final Transaction transaction;
-        private final TransactionCollector transactionCollector;
+        private final TraceCollector traceCollector;
         private volatile boolean transactionPreviouslyCompleted;
 
         @VisibleForTesting
-        ImmediateTraceStoreRunnable(Transaction transaction,
-                TransactionCollector transactionCollector) {
+        ImmediateTraceStoreRunnable(Transaction transaction, TraceCollector traceCollector) {
             this.transaction = transaction;
-            this.transactionCollector = transactionCollector;
+            this.traceCollector = traceCollector;
         }
 
         @Override
@@ -113,8 +112,8 @@ class ImmediateTraceStoreWatcher extends ScheduledRunnable {
                     transactionPreviouslyCompleted = true;
                     return;
                 }
-            } else if (transactionCollector.shouldStoreSlow(transaction)) {
-                transactionCollector.storePartialTrace(transaction);
+            } else if (traceCollector.shouldStoreSlow(transaction)) {
+                traceCollector.storePartialTrace(transaction);
             }
         }
     }

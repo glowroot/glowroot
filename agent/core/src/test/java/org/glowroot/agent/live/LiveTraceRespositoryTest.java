@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.glowroot.agent.impl.Transaction;
-import org.glowroot.agent.impl.TransactionCollector;
+import org.glowroot.agent.impl.TraceCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.common.util.Clock;
 
@@ -32,15 +32,15 @@ import static org.mockito.Mockito.when;
 public class LiveTraceRespositoryTest {
 
     private LiveTraceRepositoryImpl liveTraceRepository;
-    private TransactionCollector transactionCollector;
+    private TraceCollector traceCollector;
 
     @Before
     public void beforeEachTest() {
         TransactionRegistry transactionRegistry = mock(TransactionRegistry.class);
-        transactionCollector = mock(TransactionCollector.class);
+        traceCollector = mock(TraceCollector.class);
         Clock clock = mock(Clock.class);
         Ticker ticker = mock(Ticker.class);
-        liveTraceRepository = new LiveTraceRepositoryImpl(transactionRegistry, transactionCollector,
+        liveTraceRepository = new LiveTraceRepositoryImpl(transactionRegistry, traceCollector,
                 clock, ticker);
     }
 
@@ -48,7 +48,7 @@ public class LiveTraceRespositoryTest {
     public void testShouldNotStore() throws Exception {
         // given
         Transaction transaction = mock(Transaction.class);
-        when(transactionCollector.shouldStoreSlow(any(Transaction.class))).thenReturn(false);
+        when(traceCollector.shouldStoreSlow(any(Transaction.class))).thenReturn(false);
         when(transaction.getTransactionType()).thenReturn("tt");
         when(transaction.getTransactionName()).thenReturn("tn");
         // when
@@ -61,7 +61,7 @@ public class LiveTraceRespositoryTest {
     public void testShouldStoreButDifferentTransactionType() throws Exception {
         // given
         Transaction transaction = mock(Transaction.class);
-        when(transactionCollector.shouldStoreSlow(any(Transaction.class))).thenReturn(true);
+        when(traceCollector.shouldStoreSlow(any(Transaction.class))).thenReturn(true);
         when(transaction.getTransactionType()).thenReturn("tt");
         when(transaction.getTransactionName()).thenReturn("tn");
         // when
@@ -74,7 +74,7 @@ public class LiveTraceRespositoryTest {
     public void testShouldStoreAndSameTransactionTypeButNullTransactionName() throws Exception {
         // given
         Transaction transaction = mock(Transaction.class);
-        when(transactionCollector.shouldStoreSlow(any(Transaction.class))).thenReturn(true);
+        when(traceCollector.shouldStoreSlow(any(Transaction.class))).thenReturn(true);
         when(transaction.getTransactionType()).thenReturn("tt");
         when(transaction.getTransactionName()).thenReturn("tn");
         // when
@@ -87,7 +87,7 @@ public class LiveTraceRespositoryTest {
     public void testShouldStoreAndSameTransactionTypeButDiffTransactionName() throws Exception {
         // given
         Transaction transaction = mock(Transaction.class);
-        when(transactionCollector.shouldStoreSlow(any(Transaction.class))).thenReturn(true);
+        when(traceCollector.shouldStoreSlow(any(Transaction.class))).thenReturn(true);
         when(transaction.getTransactionType()).thenReturn("tt");
         when(transaction.getTransactionName()).thenReturn("tn");
         // when
@@ -100,7 +100,7 @@ public class LiveTraceRespositoryTest {
     public void testShouldMatch() throws Exception {
         // given
         Transaction transaction = mock(Transaction.class);
-        when(transactionCollector.shouldStoreSlow(any(Transaction.class))).thenReturn(true);
+        when(traceCollector.shouldStoreSlow(any(Transaction.class))).thenReturn(true);
         when(transaction.getTransactionType()).thenReturn("tt");
         when(transaction.getTransactionName()).thenReturn("tn");
         // when

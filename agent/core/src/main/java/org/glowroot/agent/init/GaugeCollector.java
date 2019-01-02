@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,6 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.agent.util.LazyPlatformMBeanServer.InitListener;
@@ -94,7 +93,7 @@ class GaugeCollector extends ScheduledRunnable {
             Queues.newLinkedBlockingQueue(PENDING_LIMIT);
 
     private final RateLimitedLogger backPressureLogger =
-            new RateLimitedLogger(TransactionCollector.class);
+            new RateLimitedLogger(GaugeCollector.class);
 
     // since gauges have their own dedicated thread, don't need to worry about thread safety of
     // priorRawCounterValues (except can't initialize here outside of the dedicated thread)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.config.ConfigService;
-import org.glowroot.agent.impl.TransactionCollector;
+import org.glowroot.agent.impl.TraceCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.agent.util.LazyPlatformMBeanServer;
@@ -90,11 +90,11 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     private final @Nullable File glowrootJarFile;
 
     public LiveJvmServiceImpl(LazyPlatformMBeanServer lazyPlatformMBeanServer,
-            TransactionRegistry transactionRegistry, TransactionCollector transactionCollector,
+            TransactionRegistry transactionRegistry, TraceCollector traceCollector,
             Availability threadAllocatedBytesAvailability, ConfigService configService,
             @Nullable File glowrootJarFile) {
         this.lazyPlatformMBeanServer = lazyPlatformMBeanServer;
-        threadDumpService = new ThreadDumpService(transactionRegistry, transactionCollector);
+        threadDumpService = new ThreadDumpService(transactionRegistry, traceCollector);
         this.threadAllocatedBytesAvailability = threadAllocatedBytesAvailability;
         this.configService = configService;
         this.glowrootJarFile = glowrootJarFile;

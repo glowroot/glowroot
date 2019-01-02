@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,10 +29,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.collector.Collector.TraceReader;
 import org.glowroot.agent.collector.Collector.TraceVisitor;
+import org.glowroot.agent.impl.TraceCollector;
 import org.glowroot.agent.impl.TraceCreator;
 import org.glowroot.agent.impl.Transaction;
 import org.glowroot.agent.impl.Transaction.TraceEntryVisitor;
-import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.common.live.ImmutableEntries;
@@ -51,14 +51,14 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     private static final String AGENT_ID = "";
 
     private final TransactionRegistry transactionRegistry;
-    private final TransactionCollector transactionCollector;
+    private final TraceCollector traceCollector;
     private final Clock clock;
     private final Ticker ticker;
 
     public LiveTraceRepositoryImpl(TransactionRegistry transactionRegistry,
-            TransactionCollector transactionCollector, Clock clock, Ticker ticker) {
+            TraceCollector traceCollector, Clock clock, Ticker ticker) {
         this.transactionRegistry = transactionRegistry;
-        this.transactionCollector = transactionCollector;
+        this.traceCollector = traceCollector;
         this.clock = clock;
         this.ticker = ticker;
     }
@@ -68,7 +68,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     @Override
     public Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
-                transactionCollector.getPendingTransactions())) {
+                traceCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
                 return createTraceHeader(transaction);
             }
@@ -79,7 +79,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     @Override
     public @Nullable Entries getEntries(String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
-                transactionCollector.getPendingTransactions())) {
+                traceCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
                 CollectingEntryVisitor visitor = new CollectingEntryVisitor();
                 transaction.visitEntries(ticker.read(), visitor);
@@ -96,7 +96,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     @Override
     public @Nullable Queries getQueries(String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
-                transactionCollector.getPendingTransactions())) {
+                traceCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
                 return ImmutableQueries.builder()
                         .addAllQueries(transaction.getQueries())
@@ -111,7 +111,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     @Override
     public @Nullable Profile getMainThreadProfile(String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
-                transactionCollector.getPendingTransactions())) {
+                traceCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
                 return transaction.getMainThreadProfileProtobuf();
             }
@@ -122,7 +122,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     @Override
     public @Nullable Profile getAuxThreadProfile(String agentId, String traceId) {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
-                transactionCollector.getPendingTransactions())) {
+                traceCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
                 return transaction.getAuxThreadProfileProtobuf();
             }
@@ -133,7 +133,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     @Override
     public @Nullable Trace getFullTrace(String agentId, String traceId) throws Exception {
         for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
-                transactionCollector.getPendingTransactions())) {
+                traceCollector.getPendingTransactions())) {
             if (transaction.getTraceId().equals(traceId)) {
                 CollectingTraceVisitor traceVisitor = new CollectingTraceVisitor();
                 TraceReader traceReader = createTraceReader(transaction);
@@ -212,7 +212,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     public List<TracePoint> getMatchingPendingPoints(TraceKind traceKind, String transactionType,
             @Nullable String transactionName, TracePointFilter filter, long captureTime) {
         List<TracePoint> points = Lists.newArrayList();
-        for (Transaction transaction : transactionCollector.getPendingTransactions()) {
+        for (Transaction transaction : traceCollector.getPendingTransactions()) {
             if (matches(transaction, traceKind, transactionType, transactionName, filter)) {
                 points.add(ImmutableTracePoint.builder()
                         .agentId(AGENT_ID)
@@ -232,7 +232,7 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
     @VisibleForTesting
     boolean matchesActive(Transaction transaction, String transactionType,
             @Nullable String transactionName) {
-        if (!transactionCollector.shouldStoreSlow(transaction)) {
+        if (!traceCollector.shouldStoreSlow(transaction)) {
             return false;
         }
         if (!transactionType.equals(transaction.getTransactionType())) {
@@ -277,10 +277,10 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
 
     private boolean matchesKind(Transaction transaction, TraceKind traceKind) {
         if (traceKind == TraceKind.SLOW) {
-            return transactionCollector.shouldStoreSlow(transaction);
+            return traceCollector.shouldStoreSlow(transaction);
         } else {
             // TraceKind.ERROR
-            return transactionCollector.shouldStoreError(transaction);
+            return traceCollector.shouldStoreError(transaction);
         }
     }
 

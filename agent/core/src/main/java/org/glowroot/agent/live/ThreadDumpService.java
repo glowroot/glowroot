@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.impl.ThreadContextImpl;
+import org.glowroot.agent.impl.TraceCollector;
 import org.glowroot.agent.impl.Transaction;
-import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.ThreadDump;
@@ -43,12 +43,11 @@ class ThreadDumpService {
     private static final Logger logger = LoggerFactory.getLogger(ThreadDumpService.class);
 
     private final TransactionRegistry transactionRegistry;
-    private final TransactionCollector transactionCollector;
+    private final TraceCollector traceCollector;
 
-    ThreadDumpService(TransactionRegistry transactionRegistry,
-            TransactionCollector transactionCollector) {
+    ThreadDumpService(TransactionRegistry transactionRegistry, TraceCollector traceCollector) {
         this.transactionRegistry = transactionRegistry;
-        this.transactionCollector = transactionCollector;
+        this.traceCollector = traceCollector;
     }
 
     ThreadDump getThreadDump() {
@@ -93,7 +92,7 @@ class ThreadDumpService {
                 transactionThreadInfo = new TransactionThreadInfo(transaction.getHeadline(),
                         transaction.getTransactionType(), transaction.getTransactionName(),
                         transaction.getDurationNanos(), transaction.getCpuNanos(),
-                        transactionCollector.shouldStoreSlow(transaction));
+                        traceCollector.shouldStoreSlow(transaction));
                 transactionThreadInfos.put(traceId, transactionThreadInfo);
             }
             transactionThreadInfo.threadInfos.add(threadInfo);

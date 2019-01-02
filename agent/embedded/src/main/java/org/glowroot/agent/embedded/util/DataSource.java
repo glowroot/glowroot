@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -353,8 +353,7 @@ public class DataSource {
         if (closed) {
             // this can get called a lot inserting traces, and these can get backlogged
             // on the lock below during jvm shutdown without pre-checking here (and backlogging
-            // ends up generating warning messages from
-            // TransactionCollectorImpl.logPendingLimitWarning())
+            // ends up generating warning messages from TraceCollector)
             return 0;
         }
         synchronized (lock) {
@@ -373,8 +372,7 @@ public class DataSource {
         if (closed) {
             // this can get called a lot inserting traces, and these can get backlogged
             // on the lock below during jvm shutdown without pre-checking here (and backlogging
-            // ends up generating warning messages from
-            // TransactionCollectorImpl.logPendingLimitWarning())
+            // ends up generating warning messages from TraceCollector)
             return new int[0];
         }
         synchronized (lock) {

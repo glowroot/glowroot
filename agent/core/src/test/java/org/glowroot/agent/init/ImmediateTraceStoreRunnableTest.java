@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.glowroot.agent.impl.TraceCollector;
 import org.glowroot.agent.impl.Transaction;
-import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.init.ImmediateTraceStoreWatcher.ImmediateTraceStoreRunnable;
 import org.glowroot.common.util.ScheduledRunnable.TerminateSubsequentExecutionsException;
 
@@ -38,13 +38,13 @@ public class ImmediateTraceStoreRunnableTest {
         // given
         Transaction transaction = mock(Transaction.class);
         when(transaction.isCompleted()).thenReturn(true);
-        TransactionCollector transactionCollector = mock(TransactionCollector.class);
+        TraceCollector traceCollector = mock(TraceCollector.class);
         ImmediateTraceStoreRunnable immediateTraceStoreRunnable =
-                new ImmediateTraceStoreRunnable(transaction, transactionCollector);
+                new ImmediateTraceStoreRunnable(transaction, traceCollector);
         // when
         immediateTraceStoreRunnable.run();
         // then
-        verifyZeroInteractions(transactionCollector);
+        verifyZeroInteractions(traceCollector);
     }
 
     @Test
@@ -53,9 +53,9 @@ public class ImmediateTraceStoreRunnableTest {
         thrown.expect(TerminateSubsequentExecutionsException.class);
         Transaction transaction = mock(Transaction.class);
         when(transaction.isCompleted()).thenReturn(true);
-        TransactionCollector transactionCollector = mock(TransactionCollector.class);
+        TraceCollector traceCollector = mock(TraceCollector.class);
         ImmediateTraceStoreRunnable immediateTraceStoreRunnable =
-                new ImmediateTraceStoreRunnable(transaction, transactionCollector);
+                new ImmediateTraceStoreRunnable(transaction, traceCollector);
         // when
         immediateTraceStoreRunnable.run();
         immediateTraceStoreRunnable.run();

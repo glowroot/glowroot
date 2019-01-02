@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,9 +44,9 @@ import org.glowroot.common.util.OnlyUsedByTests;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class TransactionCollector {
+public class TraceCollector {
 
-    private static final Logger logger = LoggerFactory.getLogger(TransactionCollector.class);
+    private static final Logger logger = LoggerFactory.getLogger(TraceCollector.class);
 
     // back pressure on writing captured data to disk/network
     private static final int PENDING_LIMIT = 100;
@@ -58,14 +58,14 @@ public class TransactionCollector {
     private final Set<Transaction> pendingTransactions = Sets.newCopyOnWriteArraySet();
 
     private final RateLimitedLogger backPressureLogger =
-            new RateLimitedLogger(TransactionCollector.class);
+            new RateLimitedLogger(TraceCollector.class);
 
     // visibility is provided by memoryBarrier in org.glowroot.config.ConfigService
     private Map<String, SlowThresholdOverridesForType> slowThresholdOverrides = ImmutableMap.of();
     // visibility is provided by memoryBarrier in org.glowroot.config.ConfigService
     private long defaultSlowThresholdNanos;
 
-    public TransactionCollector(final ConfigService configService, Collector collector, Clock clock,
+    public TraceCollector(final ConfigService configService, Collector collector, Clock clock,
             Ticker ticker) {
         this.collector = collector;
         this.clock = clock;
@@ -122,7 +122,7 @@ public class TransactionCollector {
         }
     }
 
-    void onCompletedTransaction(final Transaction transaction) {
+    void collectTrace(final Transaction transaction) {
         final boolean slow = shouldStoreSlow(transaction);
         if (!slow && !shouldStoreError(transaction)) {
             return;
@@ -203,7 +203,7 @@ public class TransactionCollector {
                     .entrySet()) {
                 builder.put(entry.getKey(), entry.getValue().toImmutable());
             }
-            TransactionCollector.this.slowThresholdOverrides = ImmutableMap.copyOf(builder);
+            TraceCollector.this.slowThresholdOverrides = ImmutableMap.copyOf(builder);
             defaultSlowThresholdNanos =
                     MILLISECONDS.toNanos(transactionConfig.slowThresholdMillis());
         }

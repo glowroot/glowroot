@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.impl.TransactionCollector;
 import org.glowroot.agent.model.ErrorMessage;
 import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.agent.util.ThreadFactories;
@@ -49,7 +48,7 @@ class CollectorLogbackAppender extends UnsynchronizedAppenderBase<ILoggingEvent>
     private final AtomicInteger pendingCount = new AtomicInteger();
 
     private final RateLimitedLogger backPressureLogger =
-            new RateLimitedLogger(TransactionCollector.class);
+            new RateLimitedLogger(CollectorLogbackAppender.class);
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
     private final ThreadLocal<Boolean> inFlush = new ThreadLocal<Boolean>() {

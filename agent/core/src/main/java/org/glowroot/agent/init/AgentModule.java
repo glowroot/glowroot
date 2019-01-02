@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ import org.glowroot.agent.impl.PluginServiceImpl;
 import org.glowroot.agent.impl.PluginServiceImpl.ConfigServiceFactory;
 import org.glowroot.agent.impl.StackTraceCollector;
 import org.glowroot.agent.impl.TimerNameCache;
-import org.glowroot.agent.impl.TransactionCollector;
+import org.glowroot.agent.impl.TraceCollector;
 import org.glowroot.agent.impl.TransactionProcessor;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.impl.TransactionService;
@@ -107,7 +107,7 @@ public class AgentModule {
     private final BytecodeServiceImpl bytecodeService;
 
     private volatile @MonotonicNonNull DeadlockedActiveWeavingRunnable deadlockedActiveWeavingRunnable;
-    private volatile @MonotonicNonNull TransactionCollector traceCollector;
+    private volatile @MonotonicNonNull TraceCollector traceCollector;
     private volatile @MonotonicNonNull TransactionProcessor transactionProcessor;
 
     private volatile @MonotonicNonNull LazyPlatformMBeanServer lazyPlatformMBeanServer;
@@ -248,7 +248,7 @@ public class AgentModule {
         userProfileScheduler.setBackgroundExecutor(backgroundExecutor);
         OptionalService<ThreadAllocatedBytes> threadAllocatedBytes = ThreadAllocatedBytes.create();
         transactionService.setThreadAllocatedBytes(threadAllocatedBytes.getService());
-        traceCollector = new TransactionCollector(configService, collector, clock, ticker);
+        traceCollector = new TraceCollector(configService, collector, clock, ticker);
         transactionProcessor = new TransactionProcessor(collector, traceCollector, configService,
                 ROLLUP_0_INTERVAL_MILLIS, clock);
         transactionService.setTransactionProcessor(transactionProcessor);
