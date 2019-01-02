@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -795,6 +795,48 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 return agentConfig.toBuilder()
                         .clearAlertConfig()
                         .addAllAlertConfig(existingConfigs)
+                        .build();
+            }
+        });
+        notifyAgentConfigListeners(agentRollupId);
+    }
+
+    // central supports alert configs on rollups
+    @Override
+    public void disableAllAlertConfigs(String agentRollupId) throws Exception {
+        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
+            @Override
+            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
+                List<AlertConfig> disabledAlertConfigs = new ArrayList<>();
+                for (AlertConfig alertConfig : agentConfig.getAlertConfigList()) {
+                    disabledAlertConfigs.add(alertConfig.toBuilder()
+                            .setDisabled(true)
+                            .build());
+                }
+                return agentConfig.toBuilder()
+                        .clearAlertConfig()
+                        .addAllAlertConfig(disabledAlertConfigs)
+                        .build();
+            }
+        });
+        notifyAgentConfigListeners(agentRollupId);
+    }
+
+    // central supports alert configs on rollups
+    @Override
+    public void enableAllAlertConfigs(String agentRollupId) throws Exception {
+        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
+            @Override
+            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
+                List<AlertConfig> enabledAlertConfigs = new ArrayList<>();
+                for (AlertConfig alertConfig : agentConfig.getAlertConfigList()) {
+                    enabledAlertConfigs.add(alertConfig.toBuilder()
+                            .setDisabled(false)
+                            .build());
+                }
+                return agentConfig.toBuilder()
+                        .clearAlertConfig()
+                        .addAllAlertConfig(enabledAlertConfigs)
                         .build();
             }
         });

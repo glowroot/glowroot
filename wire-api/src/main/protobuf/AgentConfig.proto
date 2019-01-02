@@ -122,6 +122,8 @@ message AgentConfig {
     AlertSeverity severity = 3;
     AlertNotification notification = 2;
 
+    bool disabled = 4;
+
     message AlertCondition {
       oneof val {
         MetricCondition metric_condition = 1;

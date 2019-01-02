@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2018 the original author or authors.
+  Copyright 2012-2019 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -422,33 +422,44 @@
              gt-disabled="!agentRollup.permissions.config.edit.alerts"
              gt-width="30em"
              ng-if="config.slackNotification.slackWebhookId">
-        <div class="help-block">
-          Comma separated list of channels, e.g. <em>#alerts</em>
+          <div class="help-block">
+            Comma separated list of channels, e.g. <em>#alerts</em>
+          </div>
         </div>
-  </div>
-  </fieldset>
-  <div class="form-group row gt-form-buttons-below-fieldset"
-       ng-if="agentRollup.permissions.config.edit.alerts">
-    <div class="offset-xl-3 col-xl-9">
-      <div gt-button-group>
-        <div gt-button
-             gt-label="{{config.version ? 'Save changes' : 'Add'}}"
-             gt-click="save(deferred)"
-             gt-validate-form="formCtrl"
-             class="d-inline-block">
+      </fieldset>
+      <fieldset class="gt-fieldset">
+        <legend class="gt-legend">
+          Disable/Enable
+        </legend>
+        <div gt-form-group
+             gt-type="checkbox"
+             gt-checkbox-label="Disabled"
+             gt-model="config.disabled"
+             gt-disabled="!agentRollup.permissions.config.edit.alerts">
         </div>
-        <div gt-button
-             ng-if="config.version"
-             gt-label="Delete"
-             gt-click="delete(deferred)"
-             gt-btn-class="btn-danger"
-             class="d-inline-block">
+      </fieldset>
+      <div class="form-group row gt-form-buttons-below-fieldset"
+           ng-if="agentRollup.permissions.config.edit.alerts">
+        <div class="offset-xl-3 col-xl-9">
+          <div gt-button-group>
+            <div gt-button
+                 gt-label="{{config.version ? 'Save changes' : 'Add'}}"
+                 gt-click="save(deferred)"
+                 gt-validate-form="formCtrl"
+                 class="d-inline-block">
+            </div>
+            <div gt-button
+                 ng-if="config.version"
+                 gt-label="Delete"
+                 gt-click="delete(deferred)"
+                 gt-btn-class="btn-danger"
+                 class="d-inline-block">
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </form>
   </div>
-  </form>
-</div>
 </div>
 <!-- each page with confirmation dialog needs its own confirmation dom so that it is deleted on $destroy -->
 <div ng-include="'template/gt-confirmation.html'"></div>

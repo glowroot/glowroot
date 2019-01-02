@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -172,7 +172,11 @@ glowroot.controller('ConfigAlertCtrl', [
         } else {
           $scope.page.timePeriodMinutes = data.config.condition.timePeriodSeconds / 60;
         }
-        $scope.heading = data.heading;
+        if (data.config.disabled) {
+          $scope.heading = 'DISABLED - ' + data.heading;
+        } else {
+          $scope.heading = data.heading;
+        }
         $scope.page.emailAddresses = data.config.emailNotification.emailAddresses.join(', ');
         $scope.page.slackChannels = data.config.slackNotification.slackChannels.join(', ');
       } else {
@@ -251,7 +255,8 @@ glowroot.controller('ConfigAlertCtrl', [
                 condition: {
                   conditionType: 'metric',
                   metric: ''
-                }
+                },
+                disabled: false
               },
               gauges: response.data.gauges,
               syntheticMonitors: response.data.syntheticMonitors,

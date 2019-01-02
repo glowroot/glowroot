@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,12 +108,16 @@ class CentralAlertingService {
         }
         List<AlertConfig> aggregateAlertConfigs = new ArrayList<>();
         for (AlertConfig alertConfig : alertConfigs) {
-            AlertCondition condition = alertConfig.getCondition();
-            if (isAggregateMetricCondition(condition)) {
+            if (alertConfig.getDisabled()) {
+                continue;
+            }
+            if (isAggregateCondition(alertConfig.getCondition())) {
                 aggregateAlertConfigs.add(alertConfig);
             }
         }
-        checkAlertsAsync(agentId, agentDisplay, endTime, aggregateAlertConfigs);
+        if (!aggregateAlertConfigs.isEmpty()) {
+            checkAlertsAsync(agentId, agentDisplay, endTime, aggregateAlertConfigs);
+        }
     }
 
     void checkGaugeAndHeartbeatAlertsAsync(String agentId, String agentDisplay, long endTime)
@@ -134,13 +138,18 @@ class CentralAlertingService {
         }
         List<AlertConfig> gaugeAndHeartbeatAlertConfigs = new ArrayList<>();
         for (AlertConfig alertConfig : alertConfigs) {
+            if (alertConfig.getDisabled()) {
+                continue;
+            }
             AlertCondition condition = alertConfig.getCondition();
-            if (isGaugeMetricCondition(condition)
+            if (isGaugeCondition(condition)
                     || condition.getValCase() == AlertCondition.ValCase.HEARTBEAT_CONDITION) {
                 gaugeAndHeartbeatAlertConfigs.add(alertConfig);
             }
         }
-        checkAlertsAsync(agentId, agentDisplay, endTime, gaugeAndHeartbeatAlertConfigs);
+        if (!gaugeAndHeartbeatAlertConfigs.isEmpty()) {
+            checkAlertsAsync(agentId, agentDisplay, endTime, gaugeAndHeartbeatAlertConfigs);
+        }
     }
 
     @Instrumentation.Transaction(transactionType = "Background", transactionName = "Check alert",
@@ -164,14 +173,19 @@ class CentralAlertingService {
         }
         List<AlertConfig> aggregateAndGaugeAndHeartbeatAlertConfigs = new ArrayList<>();
         for (AlertConfig alertConfig : alertConfigs) {
+            if (alertConfig.getDisabled()) {
+                continue;
+            }
             AlertCondition condition = alertConfig.getCondition();
             if (condition.getValCase() == AlertCondition.ValCase.METRIC_CONDITION
                     || condition.getValCase() == AlertCondition.ValCase.HEARTBEAT_CONDITION) {
                 aggregateAndGaugeAndHeartbeatAlertConfigs.add(alertConfig);
             }
         }
-        checkAlertsAsync(agentRollupId, agentRollupDisplay, endTime,
-                aggregateAndGaugeAndHeartbeatAlertConfigs);
+        if (!aggregateAndGaugeAndHeartbeatAlertConfigs.isEmpty()) {
+            checkAlertsAsync(agentRollupId, agentRollupDisplay, endTime,
+                    aggregateAndGaugeAndHeartbeatAlertConfigs);
+        }
     }
 
     private void checkAlertsAsync(String agentRollupId, String agentRollupDisplay, long endTime,
@@ -220,7 +234,7 @@ class CentralAlertingService {
         }
     }
 
-    private static boolean isAggregateMetricCondition(AlertCondition alertCondition) {
+    private static boolean isAggregateCondition(AlertCondition alertCondition) {
         if (alertCondition.getValCase() != AlertCondition.ValCase.METRIC_CONDITION) {
             return false;
         }
@@ -228,7 +242,7 @@ class CentralAlertingService {
         return metric.startsWith("transaction:") || metric.startsWith("error:");
     }
 
-    private static boolean isGaugeMetricCondition(AlertCondition alertCondition) {
+    private static boolean isGaugeCondition(AlertCondition alertCondition) {
         return alertCondition.getValCase() == AlertCondition.ValCase.METRIC_CONDITION
                 && alertCondition.getMetricCondition().getMetric().startsWith("gauge:");
     }

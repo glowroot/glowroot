@@ -104,16 +104,7 @@ class AlertConfigJsonService {
             }
             return getAlertResponse(agentRollupId, alertConfig);
         } else {
-            List<AlertListItem> alertListItems = Lists.newArrayList();
-            List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(agentRollupId);
-            for (AlertConfig alertConfig : alertConfigs) {
-                alertListItems.add(ImmutableAlertListItem.of(Versions.getVersion(alertConfig),
-                        getConditionDisplay(agentRollupId, alertConfig.getCondition(),
-                                clock.currentTimeMillis(), configRepository,
-                                syntheticResultRepository)));
-            }
-            alertListItems = orderingByName.immutableSortedCopy(alertListItems);
-            return mapper.writeValueAsString(alertListItems);
+            return getAlertList(agentRollupId);
         }
     }
 
@@ -148,6 +139,20 @@ class AlertConfigJsonService {
         configRepository.deleteAlertConfig(agentRollupId, request.version().get());
     }
 
+    // central supports alert configs on rollups
+    @POST(path = "/backend/config/alerts/disable-all", permission = "agent:config:edit:alerts")
+    String disableAll(@BindAgentRollupId String agentRollupId) throws Exception {
+        configRepository.disableAllAlertConfigs(agentRollupId);
+        return getAlertList(agentRollupId);
+    }
+
+    // central supports alert configs on rollups
+    @POST(path = "/backend/config/alerts/enable-all", permission = "agent:config:edit:alerts")
+    String enableAll(@BindAgentRollupId String agentRollupId) throws Exception {
+        configRepository.enableAllAlertConfigs(agentRollupId);
+        return getAlertList(agentRollupId);
+    }
+
     private String getAlertResponse(String agentRollupId, @Nullable AlertConfig alertConfig)
             throws Exception {
         ImmutableAlertConfigResponse.Builder builder = ImmutableAlertConfigResponse.builder();
@@ -168,6 +173,22 @@ class AlertConfigJsonService {
                     .build());
         }
         return mapper.writeValueAsString(builder.build());
+    }
+
+    private String getAlertList(String agentRollupId) throws Exception {
+        List<AlertListItem> alertListItems = Lists.newArrayList();
+        List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(agentRollupId);
+        for (AlertConfig alertConfig : alertConfigs) {
+            alertListItems.add(ImmutableAlertListItem.builder()
+                    .version(Versions.getVersion(alertConfig))
+                    .display(getConditionDisplay(agentRollupId, alertConfig.getCondition(),
+                            clock.currentTimeMillis(), configRepository,
+                            syntheticResultRepository))
+                    .disabled(alertConfig.getDisabled())
+                    .build());
+        }
+        alertListItems = orderingByName.immutableSortedCopy(alertListItems);
+        return mapper.writeValueAsString(alertListItems);
     }
 
     private List<Gauge> getGaugeDropdownItems(String agentRollupId)
@@ -328,10 +349,10 @@ class AlertConfigJsonService {
     }
 
     @Value.Immutable
-    @Styles.AllParameters
     interface AlertListItem {
         String version();
         String display();
+        boolean disabled();
     }
 
     @Value.Immutable
@@ -363,11 +384,12 @@ class AlertConfigJsonService {
     @Value.Immutable
     abstract static class AlertConfigDto {
 
-        public abstract AlertConditionDto condition();
-        public abstract AlertSeverity severity();
-        public abstract @Nullable ImmutableEmailNotificationDto emailNotification();
-        public abstract @Nullable ImmutablePagerDutyNotificationDto pagerDutyNotification();
-        public abstract @Nullable ImmutableSlackNotificationDto slackNotification();
+        abstract AlertConditionDto condition();
+        abstract AlertSeverity severity();
+        abstract @Nullable ImmutableEmailNotificationDto emailNotification();
+        abstract @Nullable ImmutablePagerDutyNotificationDto pagerDutyNotification();
+        abstract @Nullable ImmutableSlackNotificationDto slackNotification();
+        abstract boolean disabled();
 
         abstract Optional<String> version(); // absent for insert operations
 
@@ -385,7 +407,8 @@ class AlertConfigJsonService {
             if (notification.hasSlackNotification()) {
                 builder.slackNotification(toDto(notification.getSlackNotification()));
             }
-            return builder.version(Optional.of(Versions.getVersion(config)))
+            return builder.disabled(config.getDisabled())
+                    .version(Optional.of(Versions.getVersion(config)))
                     .build();
         }
 
@@ -407,7 +430,8 @@ class AlertConfigJsonService {
                 builder.getNotificationBuilder()
                         .setSlackNotification(toProto(slackNotification));
             }
-            return builder.build();
+            return builder.setDisabled(disabled())
+                    .build();
         }
 
         private static AlertConditionDto toDto(AlertConfig.AlertCondition alertCondition) {

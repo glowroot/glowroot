@@ -37,6 +37,7 @@ import org.glowroot.agent.embedded.config.AdminConfigService;
 import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.config.AlertConfig;
 import org.glowroot.common.config.GaugeConfig;
+import org.glowroot.common.config.ImmutableAlertConfig;
 import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.config.JvmConfig;
 import org.glowroot.common.config.TransactionConfig;
@@ -485,19 +486,20 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void insertAlertConfig(String agentRollupId, AgentConfig.AlertConfig config)
+    public void insertAlertConfig(String agentRollupId, AgentConfig.AlertConfig protoConfig)
             throws Exception {
+        String version = Versions.getVersion(protoConfig);
+        ImmutableAlertConfig config = AlertConfig.create(protoConfig);
         synchronized (writeLock) {
             List<AlertConfig> configs =
                     Lists.newArrayList(configService.getAlertConfigs());
             // check for exact duplicate
-            String version = Versions.getVersion(config);
             for (AlertConfig loopConfig : configs) {
                 if (Versions.getVersion(loopConfig.toProto()).equals(version)) {
                     throw new IllegalStateException("This exact alert already exists");
                 }
             }
-            configs.add(AlertConfig.create(config));
+            configs.add(config);
             configService.updateAlertConfigs(configs);
         }
     }
@@ -526,21 +528,53 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void deleteAlertConfig(String agentRollupId, String version) throws Exception {
-        List<AlertConfig> configs = Lists.newArrayList(configService.getAlertConfigs());
-        boolean found = false;
-        for (ListIterator<AlertConfig> i = configs.listIterator(); i.hasNext();) {
-            AlertConfig loopConfig = i.next();
-            String loopVersion = Versions.getVersion(loopConfig.toProto());
-            if (version.equals(loopVersion)) {
-                i.remove();
-                found = true;
-                break;
+        synchronized (writeLock) {
+            List<AlertConfig> configs = Lists.newArrayList(configService.getAlertConfigs());
+            boolean found = false;
+            for (ListIterator<AlertConfig> i = configs.listIterator(); i.hasNext();) {
+                AlertConfig loopConfig = i.next();
+                String loopVersion = Versions.getVersion(loopConfig.toProto());
+                if (version.equals(loopVersion)) {
+                    i.remove();
+                    found = true;
+                    break;
+                }
             }
+            if (!found) {
+                throw new OptimisticLockException();
+            }
+            configService.updateAlertConfigs(configs);
         }
-        if (!found) {
-            throw new OptimisticLockException();
+    }
+
+    // central supports alert configs on rollups
+    @Override
+    public void disableAllAlertConfigs(String agentRollupId) throws Exception {
+        synchronized (writeLock) {
+            List<AlertConfig> configs = Lists.newArrayList();
+            for (AlertConfig alertConfig : configService.getAlertConfigs()) {
+                configs.add(ImmutableAlertConfig.builder()
+                        .copyFrom(alertConfig)
+                        .disabled(true)
+                        .build());
+            }
+            configService.updateAlertConfigs(configs);
         }
-        configService.updateAlertConfigs(configs);
+    }
+
+    // central supports alert configs on rollups
+    @Override
+    public void enableAllAlertConfigs(String agentRollupId) throws Exception {
+        synchronized (writeLock) {
+            List<AlertConfig> configs = Lists.newArrayList();
+            for (AlertConfig alertConfig : configService.getAlertConfigs()) {
+                configs.add(ImmutableAlertConfig.builder()
+                        .copyFrom(alertConfig)
+                        .disabled(false)
+                        .build());
+            }
+            configService.updateAlertConfigs(configs);
+        }
     }
 
     @Override

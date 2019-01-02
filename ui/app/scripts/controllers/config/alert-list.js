@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,46 @@ glowroot.controller('ConfigAlertListCtrl', [
       } else {
         return queryString + '&new';
       }
+    };
+
+    $scope.someAlertsDisabled = function () {
+      for (var i = 0; i < $scope.configs.length; i++) {
+        if ($scope.configs[i].disabled) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    $scope.someAlertsEnabled = function () {
+      for (var i = 0; i < $scope.configs.length; i++) {
+        if (!$scope.configs[i].disabled) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    $scope.disableAllAlerts = function (deferred) {
+      $http.post('backend/config/alerts/disable-all?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
+          .then(function (response) {
+            $scope.loaded = true;
+            $scope.configs = response.data;
+            deferred.resolve('All disabled');
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
+    };
+
+    $scope.enableAllAlerts = function (deferred) {
+      $http.post('backend/config/alerts/enable-all?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
+          .then(function (response) {
+            $scope.loaded = true;
+            $scope.configs = response.data;
+            deferred.resolve('All enabled');
+          }, function (response) {
+            httpErrors.handle(response, $scope, deferred);
+          });
     };
 
     $http.get('backend/config/alerts?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
