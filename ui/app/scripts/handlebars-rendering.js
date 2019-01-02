@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -627,9 +627,7 @@ HandlebarsRendering = (function () {
         $.get(url)
             .done(function (data) {
               if (data.overwritten) {
-                $selector.append('<div style="padding: 1em;">The trace entries have expired, see'
-                    + ' <a href="admin/storage#trace-capped-database-size">'
-                    + 'Configuration &gt; Storage &gt; Trace detail data</a></div>');
+                $selector.append('<div style="padding: 1em;">The trace entries have expired</div>');
               } else if (data.expired) {
                 $selector.append('<div style="padding: 1em;">This trace has expired</div>');
               } else {
@@ -730,9 +728,7 @@ HandlebarsRendering = (function () {
         $.get(url)
             .done(function (data) {
               if (data.overwritten) {
-                $selector.append('<div style="padding: 1em;">The trace query stats have expired, see'
-                    + ' <a href="admin/storage#trace-capped-database-size">'
-                    + 'Configuration &gt; Storage &gt; Trace detail data</a></div>');
+                $selector.append('<div style="padding: 1em;">The trace query stats have expired</div>');
               } else if (data.expired) {
                 $selector.append('<div style="padding: 1em;">This trace has expired</div>');
               } else {
@@ -855,9 +851,7 @@ HandlebarsRendering = (function () {
         $.get(url)
             .done(function (data) {
               if (data.overwritten) {
-                $selector.find('.gt-profile').html('<div style="padding: 1em;">The profile has expired, see'
-                    + ' <a href="admin/storage#trace-capped-database-size">'
-                    + 'Configuration &gt; Storage &gt; Trace detail data</a></div>');
+                $selector.find('.gt-profile').html('<div style="padding: 1em;">The thread profile has expired</div>');
               } else if (data.expired) {
                 $selector.find('.gt-profile').html.append('<div style="padding: 1em;">This trace has expired</div>');
               } else {
