@@ -308,16 +308,6 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
                 futures.add(rollupOne(rollupLevel, agentRollupId, syntheticMonitorId, from,
                         captureTime, adjustedTTL));
             }
-            if (futures.isEmpty()) {
-                // no rollups occurred, warning already logged inside rollupOne() above
-                // this can happen there is an old "needs rollup" record that was created prior to
-                // TTL was introduced in 0.9.6, and when the "last needs rollup" record wasn't
-                // processed (also prior to 0.9.6), and when the corresponding old data has expired
-                Common.postRollup(agentRollupId, needsRollup.getCaptureTime(), syntheticMonitorIds,
-                        needsRollup.getUniquenessKeysForDeletion(), null, null,
-                        deleteNeedsRollup.get(rollupLevel - 1), -1, session);
-                continue;
-            }
             // wait for above async work to ensure rollup complete before proceeding
             MoreFutures.waitForAll(futures);
 
