@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package org_glowroot_central_repo_model;
+package org_glowroot_central_repo_proto;
 
-option java_package = "org.glowroot.central.repo.model";
+option java_package = "org.glowroot.central.repo.proto";
 
 option java_outer_classname = "Stored";
 

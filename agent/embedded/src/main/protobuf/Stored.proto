@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package org_glowroot_agent_embedded_repo_model;
+package org_glowroot_agent_embedded_repo_proto;
 
-option java_package = "org.glowroot.agent.embedded.repo.model";
+option java_package = "org.glowroot.agent.embedded.repo.proto";
 
 option java_outer_classname = "Stored";
 

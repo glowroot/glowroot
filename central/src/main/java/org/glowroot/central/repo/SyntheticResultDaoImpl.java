@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.central.repo.Common.NeedsRollup;
-import org.glowroot.central.repo.model.Stored;
+import org.glowroot.central.repo.proto.Stored;
 import org.glowroot.central.util.Messages;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.MoreFutures.DoRollup;

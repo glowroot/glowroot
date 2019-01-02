@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import org.immutables.value.Value;
 
 import org.glowroot.agent.collector.Collector.AggregateReader;
 import org.glowroot.agent.collector.Collector.AggregateVisitor;
-import org.glowroot.agent.embedded.repo.model.Stored;
+import org.glowroot.agent.embedded.repo.proto.Stored;
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource;
 import org.glowroot.agent.embedded.util.DataSource.JdbcQuery;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Untainted;
 
 import org.glowroot.agent.embedded.repo.AggregateDao.TruncatedQueryText;
-import org.glowroot.agent.embedded.repo.model.Stored;
+import org.glowroot.agent.embedded.repo.proto.Stored;
 import org.glowroot.agent.embedded.util.CappedDatabase;
 import org.glowroot.agent.embedded.util.DataSource.JdbcUpdate;
 import org.glowroot.agent.embedded.util.RowMappers;
