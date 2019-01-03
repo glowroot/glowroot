@@ -16,15 +16,18 @@
 package org.glowroot.agent.impl;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import com.google.common.collect.Queues;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
@@ -49,13 +52,18 @@ public class TraceCollector {
     private static final Logger logger = LoggerFactory.getLogger(TraceCollector.class);
 
     // back pressure on writing captured data to disk/network
-    private static final int PENDING_LIMIT = 100;
+    private static final int PENDING_LIMIT = 50;
 
     private final ExecutorService dedicatedExecutor;
     private final Collector collector;
     private final Clock clock;
     private final Ticker ticker;
-    private final Set<Transaction> pendingTransactions = Sets.newCopyOnWriteArraySet();
+    // covers normal complete, partial complete and partial incomplete separately
+    private final BlockingQueue<PendingTrace> pendingTraces =
+            Queues.newLinkedBlockingQueue(PENDING_LIMIT * 3);
+    private final AtomicInteger normalCompletePendingCount = new AtomicInteger();
+    private final AtomicInteger partialCompletePendingCount = new AtomicInteger();
+    private final AtomicInteger partialIncompletePendingCount = new AtomicInteger();
 
     private final RateLimitedLogger backPressureLogger =
             new RateLimitedLogger(TraceCollector.class);
@@ -65,6 +73,8 @@ public class TraceCollector {
     // visibility is provided by memoryBarrier in org.glowroot.config.ConfigService
     private long defaultSlowThresholdNanos;
 
+    private volatile boolean closed;
+
     public TraceCollector(final ConfigService configService, Collector collector, Clock clock,
             Ticker ticker) {
         this.collector = collector;
@@ -72,6 +82,7 @@ public class TraceCollector {
         this.ticker = ticker;
         dedicatedExecutor = Executors
                 .newSingleThreadExecutor(ThreadFactories.create("Glowroot-Trace-Collector"));
+        dedicatedExecutor.execute(new TraceCollectorLoop());
         configService.addConfigListener(new UpdateLocalConfig(configService));
     }
 
@@ -111,59 +122,69 @@ public class TraceCollector {
     }
 
     public Collection<Transaction> getPendingTransactions() {
+        List<Transaction> pendingTransactions = Lists.newArrayList();
+        for (PendingTrace pendingTrace : pendingTraces) {
+            pendingTransactions.add(pendingTrace.transaction());
+        }
         return pendingTransactions;
     }
 
     @OnlyUsedByTests
     public void close() throws InterruptedException {
-        dedicatedExecutor.shutdown();
+        closed = true;
+        // shutdownNow() is needed here to send interrupt to collector thread
+        dedicatedExecutor.shutdownNow();
         if (!dedicatedExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
         }
     }
 
-    void collectTrace(final Transaction transaction) {
-        final boolean slow = shouldStoreSlow(transaction);
+    void collectTrace(Transaction transaction) {
+        boolean slow = shouldStoreSlow(transaction);
         if (!slow && !shouldStoreError(transaction)) {
             return;
         }
-        // limit doesn't apply to transactions that were already (partially) stored to make sure
-        // they don't get left out in case they cause an avalanche of slowness
-        if (pendingTransactions.size() >= PENDING_LIMIT && !transaction.isPartiallyStored()) {
-            backPressureLogger.warn("not storing a trace because of an excessive backlog of {}"
-                    + " traces already waiting to be stored", PENDING_LIMIT);
+        // don't need to worry about race condition since only ever called from a single thread
+        if (transaction.isPartiallyStored()
+                && partialCompletePendingCount.get() >= PENDING_LIMIT) {
+            backPressureLogger.warn("not storing a completed (and once partial) trace because of an"
+                    + " excessive backlog of {} completed (and once partial) traces already waiting"
+                    + " to be stored", PENDING_LIMIT);
+            return;
+        } else if (!transaction.isPartiallyStored()
+                && normalCompletePendingCount.get() >= PENDING_LIMIT) {
+            backPressureLogger.warn("not storing a completed trace because of an excessive backlog"
+                    + " of {} completed traces already waiting to be stored", PENDING_LIMIT);
             return;
         }
-        pendingTransactions.add(transaction);
-        dedicatedExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    TraceReader traceReader =
-                            TraceCreator.createTraceReaderForCompleted(transaction, slow);
-                    collector.collectTrace(traceReader);
-                } catch (Throwable t) {
-                    logger.error(t.getMessage(), t);
-                } finally {
-                    pendingTransactions.remove(transaction);
-                }
-            }
-        });
+        PendingTrace pendingTransaction = ImmutablePendingTrace.builder()
+                .transaction(transaction)
+                .slow(slow)
+                .partial(false)
+                .build();
+        if (!pendingTraces.offer(pendingTransaction)) {
+            // this should never happen
+            backPressureLogger.warn("not storing a trace because of an excessive backlog of {}"
+                    + " traces already waiting to be stored", PENDING_LIMIT * 3);
+        }
     }
 
-    // no need to throttle partial trace storage since throttling is handled upstream by using a
-    // single thread executor in PartialTraceStorageWatcher
     public void storePartialTrace(Transaction transaction) {
-        try {
-            TraceReader traceReader = TraceCreator.createTraceReaderForPartial(transaction,
-                    clock.currentTimeMillis(), ticker.read());
-            // one last check if transaction has completed
-            if (!transaction.isCompleted()) {
-                transaction.setPartiallyStored();
-                collector.collectTrace(traceReader);
-            }
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+        // don't need to worry about race condition since only ever called from a single thread
+        if (partialIncompletePendingCount.get() >= PENDING_LIMIT) {
+            backPressureLogger.warn("not storing a partial trace because of an excessive backlog of"
+                    + " {} partial traces already waiting to be stored", PENDING_LIMIT);
+            return;
+        }
+        PendingTrace pendingTransaction = ImmutablePendingTrace.builder()
+                .transaction(transaction)
+                .slow(false)
+                .partial(true)
+                .build();
+        if (!pendingTraces.offer(pendingTransaction)) {
+            // this should never happen
+            backPressureLogger.warn("not storing a trace because of an excessive backlog of {}"
+                    + " traces already waiting to be stored", PENDING_LIMIT * 3);
         }
     }
 
@@ -207,6 +228,52 @@ public class TraceCollector {
             defaultSlowThresholdNanos =
                     MILLISECONDS.toNanos(transactionConfig.slowThresholdMillis());
         }
+    }
+
+    private class TraceCollectorLoop implements Runnable {
+
+        @Override
+        public void run() {
+            while (!closed) {
+                try {
+                    PendingTrace pendingTrace = pendingTraces.take();
+                    if (pendingTrace.partial()) {
+                        collectPartial(pendingTrace.transaction());
+                    } else {
+                        collectCompleted(pendingTrace.transaction(), pendingTrace.slow());
+                    }
+                } catch (InterruptedException e) {
+                    // probably shutdown requested (see close method above)
+                    logger.debug(e.getMessage(), e);
+                } catch (Throwable e) {
+                    // log and continue processing
+                    logger.error(e.getMessage(), e);
+                }
+            }
+        }
+
+        private void collectPartial(Transaction transaction) throws Exception {
+            TraceReader traceReader = TraceCreator.createTraceReaderForPartial(transaction,
+                    clock.currentTimeMillis(), ticker.read());
+            // one last check if transaction has completed
+            if (!transaction.isCompleted()) {
+                transaction.setPartiallyStored();
+                collector.collectTrace(traceReader);
+            }
+        }
+
+        private void collectCompleted(Transaction transaction, boolean slow) throws Exception {
+            TraceReader traceReader = TraceCreator.createTraceReaderForCompleted(
+                    transaction, slow);
+            collector.collectTrace(traceReader);
+        }
+    }
+
+    @Value.Immutable
+    public interface PendingTrace {
+        Transaction transaction();
+        boolean slow();
+        boolean partial();
     }
 
     @Value.Immutable
