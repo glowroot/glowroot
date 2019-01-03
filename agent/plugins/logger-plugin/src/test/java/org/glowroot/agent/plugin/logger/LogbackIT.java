@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +113,7 @@ public class LogbackIT {
         assertThat(entry.getMessage())
                 .isEqualTo("log warn: o.g.a.p.l.LogbackIT$ShouldLogWithThrowable - def_t");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("456");
+        assertThat(entry.getError().getMessage()).isEqualTo("java.lang.IllegalStateException: 456");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -123,7 +123,7 @@ public class LogbackIT {
         assertThat(entry.getMessage())
                 .isEqualTo("log error: o.g.a.p.l.LogbackIT$ShouldLogWithThrowable - efg_t");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("567");
+        assertThat(entry.getError().getMessage()).isEqualTo("java.lang.IllegalStateException: 567");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -203,7 +203,8 @@ public class LogbackIT {
         if (OLD_LOGBACK) {
             assertThat(entry.getError().getMessage()).isEqualTo("def_1_t d");
         } else {
-            assertThat(entry.getError().getMessage()).isEqualTo("456");
+            assertThat(entry.getError().getMessage())
+                    .isEqualTo("java.lang.IllegalStateException: 456");
             assertThat(entry.getError().getException().getStackTraceElementList().get(0)
                     .getMethodName()).isEqualTo("transactionMarker");
         }
@@ -216,7 +217,8 @@ public class LogbackIT {
         if (OLD_LOGBACK) {
             assertThat(entry.getError().getMessage()).isEqualTo("efg_1_t e");
         } else {
-            assertThat(entry.getError().getMessage()).isEqualTo("567");
+            assertThat(entry.getError().getMessage())
+                    .isEqualTo("java.lang.IllegalStateException: 567");
             assertThat(entry.getError().getException().getStackTraceElementList().get(0)
                     .getMethodName()).isEqualTo("transactionMarker");
         }
@@ -282,7 +284,8 @@ public class LogbackIT {
         if (OLD_LOGBACK) {
             assertThat(entry.getError().getMessage()).isEqualTo("def_3_t d e f");
         } else {
-            assertThat(entry.getError().getMessage()).isEqualTo("456");
+            assertThat(entry.getError().getMessage())
+                    .isEqualTo("java.lang.IllegalStateException: 456");
             assertThat(entry.getError().getException().getStackTraceElementList().get(0)
                     .getMethodName()).isEqualTo("transactionMarker");
         }
@@ -295,7 +298,8 @@ public class LogbackIT {
         if (OLD_LOGBACK) {
             assertThat(entry.getError().getMessage()).isEqualTo("efg_3_t e f g");
         } else {
-            assertThat(entry.getError().getMessage()).isEqualTo("567");
+            assertThat(entry.getError().getMessage())
+                    .isEqualTo("java.lang.IllegalStateException: 567");
             assertThat(entry.getError().getException().getStackTraceElementList().get(0)
                     .getMethodName()).isEqualTo("transactionMarker");
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.api.Glowroot;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common.util.Throwables;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -530,13 +531,7 @@ public class CommonHandler {
             jg.writeStartObject();
             String message;
             if (simplifiedMessage == null) {
-                Throwable cause = e;
-                Throwable childCause = cause.getCause();
-                while (childCause != null) {
-                    cause = childCause;
-                    childCause = cause.getCause();
-                }
-                message = cause.getMessage();
+                message = Throwables.getBestMessage(e);
             } else {
                 message = simplifiedMessage;
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,7 +119,8 @@ public class CommitRollbackIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jdbc commit");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("A commit failure");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.sql.SQLException: A commit failure");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -186,7 +187,8 @@ public class CommitRollbackIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jdbc rollback");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("A rollback failure");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.sql.SQLException: A rollback failure");
 
         assertThat(i.hasNext()).isFalse();
     }

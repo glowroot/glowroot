@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -128,7 +128,8 @@ public class CommonHandlerTest {
         // then
         String content = ((ByteBuf) httpResponse.getContent()).toString(ISO_8859_1);
         ObjectNode node = (ObjectNode) new ObjectMapper().readTree(content);
-        assertThat(node.get("message").asText()).isEqualTo("Another message");
+        assertThat(node.get("message").asText())
+                .isEqualTo("java.sql.SQLException: Another message");
         assertThat(node.get("stackTrace")).isNotNull();
         assertThat(httpResponse.getStatus()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }
@@ -143,7 +144,7 @@ public class CommonHandlerTest {
         // then
         String content = ((ByteBuf) httpResponse.getContent()).toString(ISO_8859_1);
         ObjectNode node = (ObjectNode) new ObjectMapper().readTree(content);
-        assertThat(node.get("message").asText()).isEqualTo("Banother message");
+        assertThat(node.get("message").asText()).isEqualTo("java.lang.Exception: Banother message");
         assertThat(node.get("stackTrace")).isNotNull();
         assertThat(httpResponse.getStatus()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }
@@ -158,7 +159,7 @@ public class CommonHandlerTest {
         // then
         String content = ((ByteBuf) httpResponse.getContent()).toString(ISO_8859_1);
         ObjectNode node = (ObjectNode) new ObjectMapper().readTree(content);
-        assertThat(node.get("message").asText()).isEqualTo("Wrapped message");
+        assertThat(node.get("message").asText()).isEqualTo("java.lang.Exception: Wrapped message");
         assertThat(node.get("stackTrace")).isNotNull();
         assertThat(httpResponse.getStatus()).isEqualTo(HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.common.util.Throwables;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -287,16 +288,6 @@ class CentralConnection {
         return null;
     }
 
-    private static String getRootCauseMessage(Throwable t) {
-        Throwable cause = t.getCause();
-        if (cause == null) {
-            // using toString() instead of getMessage() in order to capture exception class name
-            return t.toString();
-        } else {
-            return getRootCauseMessage(cause);
-        }
-    }
-
     @Value.Immutable
     interface ParsedCollectorAddress {
         boolean https();
@@ -383,7 +374,7 @@ class CentralConnection {
                     public void run() {
                         initConnectionErrorLogger.warn("unable to establish connection with the"
                                 + " central collector {} (will keep trying...): {}",
-                                collectorAddress, getRootCauseMessage(t));
+                                collectorAddress, Throwables.getBestMessage(t));
                         logger.debug(t.getMessage(), t);
                     }
                 });
@@ -407,7 +398,7 @@ class CentralConnection {
                         public void run() {
                             connectionErrorLogger.warn(
                                     "unable to send data to the central collector: {}",
-                                    getRootCauseMessage(t));
+                                    Throwables.getBestMessage(t));
                             logger.debug(t.getMessage(), t);
                         }
                     });

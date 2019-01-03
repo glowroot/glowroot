@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -32,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.bytecode.api.MessageTemplate;
 import org.glowroot.agent.plugin.api.MethodInfo;
+import org.glowroot.common.util.Throwables;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -188,15 +188,10 @@ public class MessageTemplateImpl implements MessageTemplate {
                 return valueOf(pathEvaluator.evaluateOnBase(base));
             } catch (InvocationTargetException e) {
                 logger.debug(e.getMessage(), e);
-                // InvocationTargetException has the problem of obscuring the original message
-                // to try to use cause
-                Throwable t = MoreObjects.firstNonNull(e.getCause(), e);
-                // using toString() instead of getMessage() in order to capture exception class name
-                return "<error evaluating: " + t.toString() + ">";
+                return "<error evaluating: " + Throwables.getBestMessage(e) + ">";
             } catch (Exception e) {
                 logger.warn(e.getMessage(), e);
-                // using toString() instead of getMessage() in order to capture exception class name
-                return "<error evaluating: " + e.toString() + ">";
+                return "<error evaluating: " + Throwables.getBestMessage(e) + ">";
             }
         }
 

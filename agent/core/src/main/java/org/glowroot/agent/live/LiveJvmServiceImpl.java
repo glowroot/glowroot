@@ -59,6 +59,7 @@ import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.common.live.LiveJvmService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Masking;
+import org.glowroot.common.util.Throwables;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Availability;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.Capabilities;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapDumpFileInfo;
@@ -318,9 +319,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                 } catch (Exception e) {
                     // log exception at debug level
                     logger.debug(e.getMessage(), e);
-                    Throwable rootCause = getRootCause(e);
-                    value = "<" + rootCause.getClass().getName() + ": " + rootCause.getMessage()
-                            + ">";
+                    value = "<" + Throwables.getBestMessage(e) + ">";
                 }
             }
             attributes.add(MBeanDump.MBeanAttribute.newBuilder()
@@ -386,15 +385,6 @@ public class LiveJvmServiceImpl implements LiveJvmService {
             file = new File(dir, "heap-dump-" + timestamp + "-" + i + extension);
         }
         return file;
-    }
-
-    private static Throwable getRootCause(Throwable t) {
-        Throwable cause = t.getCause();
-        if (cause == null) {
-            return t;
-        } else {
-            return getRootCause(cause);
-        }
     }
 
     // see list of allowed attribute value types:

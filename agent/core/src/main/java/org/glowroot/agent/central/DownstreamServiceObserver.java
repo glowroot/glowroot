@@ -39,6 +39,7 @@ import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreExcep
 import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.common.live.LiveTraceRepository.Queries;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.common.util.Throwables;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc;
 import org.glowroot.wire.api.model.DownstreamServiceGrpc.DownstreamServiceStub;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.AgentConfigUpdateResponse;
@@ -184,7 +185,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                 @Override
                 public void run() {
                     lostConnectionLogger.warn("lost connection to the central collector (will keep"
-                            + " trying to re-establish...): {}", getRootCauseMessage(t));
+                            + " trying to re-establish...): {}", Throwables.getBestMessage(t));
                     logger.debug(t.getMessage(), t);
                 }
             });
@@ -865,15 +866,6 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                 .setRequestId(request.getRequestId())
                 .setExceptionResponse(ExceptionResponse.getDefaultInstance())
                 .build());
-    }
-
-    private static @Nullable String getRootCauseMessage(Throwable t) {
-        Throwable cause = t.getCause();
-        if (cause == null) {
-            return t.getMessage();
-        } else {
-            return getRootCauseMessage(cause);
-        }
     }
 
     private class RetryAfterError implements Runnable {

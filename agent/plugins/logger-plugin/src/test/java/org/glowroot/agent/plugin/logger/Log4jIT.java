@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ public class Log4jIT {
         assertThat(entry.getMessage())
                 .isEqualTo("log warn: o.g.a.p.l.Log4jIT$ShouldLogWithThrowable - def_");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("456");
+        assertThat(entry.getError().getMessage()).isEqualTo("java.lang.IllegalStateException: 456");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -114,7 +114,7 @@ public class Log4jIT {
         assertThat(entry.getMessage())
                 .isEqualTo("log error: o.g.a.p.l.Log4jIT$ShouldLogWithThrowable - efg_");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("567");
+        assertThat(entry.getError().getMessage()).isEqualTo("java.lang.IllegalStateException: 567");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -124,7 +124,7 @@ public class Log4jIT {
         assertThat(entry.getMessage())
                 .isEqualTo("log fatal: o.g.a.p.l.Log4jIT$ShouldLogWithThrowable - fgh_");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("678");
+        assertThat(entry.getError().getMessage()).isEqualTo("java.lang.IllegalStateException: 678");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -217,7 +217,8 @@ public class Log4jIT {
         assertThat(entry.getMessage()).isEqualTo(
                 "log warn: o.g.a.p.l.Log4jIT$ShouldLogWithPriorityAndThrowable - def___");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("456_");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 456_");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -227,7 +228,8 @@ public class Log4jIT {
         assertThat(entry.getMessage()).isEqualTo(
                 "log error: o.g.a.p.l.Log4jIT$ShouldLogWithPriorityAndThrowable - efg___");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("567_");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 567_");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -237,7 +239,8 @@ public class Log4jIT {
         assertThat(entry.getMessage()).isEqualTo(
                 "log fatal: o.g.a.p.l.Log4jIT$ShouldLogWithPriorityAndThrowable - fgh___");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("678_");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 678_");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -298,7 +301,8 @@ public class Log4jIT {
         assertThat(entry.getMessage())
                 .isEqualTo("log warn: o.g.a.p.l.Log4jIT$ShouldLocalizedLog - def____");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("456__");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 456__");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -308,7 +312,8 @@ public class Log4jIT {
         assertThat(entry.getMessage())
                 .isEqualTo("log error: o.g.a.p.l.Log4jIT$ShouldLocalizedLog - efg____");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("567__");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 567__");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -318,7 +323,8 @@ public class Log4jIT {
         assertThat(entry.getMessage())
                 .isEqualTo("log fatal: o.g.a.p.l.Log4jIT$ShouldLocalizedLog - fgh____");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("678__");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 678__");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -379,7 +385,8 @@ public class Log4jIT {
         assertThat(entry.getMessage()).isEqualTo(
                 "log warn: o.g.a.p.l.Log4jIT$ShouldLocalizedLogWithParameters - def____");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("456__");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 456__");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -389,7 +396,8 @@ public class Log4jIT {
         assertThat(entry.getMessage()).isEqualTo(
                 "log error: o.g.a.p.l.Log4jIT$ShouldLocalizedLogWithParameters - efg____");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("567__");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 567__");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -399,7 +407,8 @@ public class Log4jIT {
         assertThat(entry.getMessage()).isEqualTo(
                 "log fatal: o.g.a.p.l.Log4jIT$ShouldLocalizedLogWithParameters - fgh____");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("678__");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 678__");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -422,7 +431,8 @@ public class Log4jIT {
         assertThat(entry.getMessage()).isEqualTo(
                 "log warn: o.g.a.p.l.Log4jIT$ShouldLocalizedLogWithEmptyParameters - def____");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("456__");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 456__");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -432,7 +442,8 @@ public class Log4jIT {
         assertThat(entry.getMessage()).isEqualTo(
                 "log error: o.g.a.p.l.Log4jIT$ShouldLocalizedLogWithEmptyParameters - efg____");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("567__");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 567__");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -442,7 +453,8 @@ public class Log4jIT {
         assertThat(entry.getMessage()).isEqualTo(
                 "log fatal: o.g.a.p.l.Log4jIT$ShouldLocalizedLogWithEmptyParameters - fgh____");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("678__");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 678__");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");

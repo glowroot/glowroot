@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,7 +137,7 @@ public class JavaLoggingIT {
         assertThat(entry.getMessage())
                 .isEqualTo("log info: o.g.a.p.l.JavaLoggingIT$ShouldLogWithThrowable - cde_");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("345");
+        assertThat(entry.getError().getMessage()).isEqualTo("java.lang.IllegalStateException: 345");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -147,7 +147,7 @@ public class JavaLoggingIT {
         assertThat(entry.getMessage())
                 .isEqualTo("log warning: o.g.a.p.l.JavaLoggingIT$ShouldLogWithThrowable - def_");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("456");
+        assertThat(entry.getError().getMessage()).isEqualTo("java.lang.IllegalStateException: 456");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -157,7 +157,7 @@ public class JavaLoggingIT {
         assertThat(entry.getMessage())
                 .isEqualTo("log severe: o.g.a.p.l.JavaLoggingIT$ShouldLogWithThrowable - efg_");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("567");
+        assertThat(entry.getError().getMessage()).isEqualTo("java.lang.IllegalStateException: 567");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -281,7 +281,8 @@ public class JavaLoggingIT {
         assertThat(entry.getMessage()).isEqualTo(
                 "log info: o.g.a.p.l.JavaLoggingIT$ShouldLogWithPriorityAndThrowable - cde___");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("345_");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 345_");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -291,7 +292,8 @@ public class JavaLoggingIT {
         assertThat(entry.getMessage()).isEqualTo(
                 "log warning: o.g.a.p.l.JavaLoggingIT$ShouldLogWithPriorityAndThrowable - def___");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("456_");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 456_");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");
@@ -301,7 +303,8 @@ public class JavaLoggingIT {
         assertThat(entry.getMessage()).isEqualTo(
                 "log severe: o.g.a.p.l.JavaLoggingIT$ShouldLogWithPriorityAndThrowable - efg___");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("567_");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 567_");
         assertThat(
                 entry.getError().getException().getStackTraceElementList().get(0).getMethodName())
                         .isEqualTo("transactionMarker");

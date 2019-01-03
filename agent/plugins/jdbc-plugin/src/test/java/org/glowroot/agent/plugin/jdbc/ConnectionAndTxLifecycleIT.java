@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,7 +132,8 @@ public class ConnectionAndTxLifecycleIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jdbc get connection");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("A getconnection failure");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.sql.SQLException: A getconnection failure");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -186,7 +187,8 @@ public class ConnectionAndTxLifecycleIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jdbc connection close");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("A close failure");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.sql.SQLException: A close failure");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -273,13 +275,15 @@ public class ConnectionAndTxLifecycleIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jdbc set autocommit: false");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("A setautocommit failure");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.sql.SQLException: A setautocommit failure");
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("jdbc set autocommit: true");
 
-        assertThat(entry.getError().getMessage()).isEqualTo("A setautocommit failure");
+        assertThat(entry.getError().getMessage())
+                .isEqualTo("java.sql.SQLException: A setautocommit failure");
 
         assertThat(i.hasNext()).isFalse();
     }

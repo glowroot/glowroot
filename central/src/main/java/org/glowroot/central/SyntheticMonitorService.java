@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,7 @@ import org.glowroot.central.repo.SyntheticResultDao.SyntheticResultRollup0;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Styles;
+import org.glowroot.common.util.Throwables;
 import org.glowroot.common.util.Version;
 import org.glowroot.common2.config.HttpProxyConfig;
 import org.glowroot.common2.config.MoreConfigDefaults;
@@ -480,7 +481,7 @@ class SyntheticMonitorService implements Runnable {
                 errorMessage = null;
             } else {
                 success = false;
-                errorMessage = getRootCause(throwable).getMessage();
+                errorMessage = Throwables.getBestMessage(throwable);
             }
         } catch (TimeoutException e) {
             logger.debug(e.getMessage(), e);
@@ -528,13 +529,7 @@ class SyntheticMonitorService implements Runnable {
                 durationNanos = PING_TIMEOUT_NANOS;
                 errorMessage = "Timeout";
             } else if (t != null) {
-                // using Throwable.toString() to include the exception class name
-                // because sometimes hard to know what message means without this context
-                // e.g. java.net.UnknownHostException: google.com
-                errorMessage = getRootCause(t).toString();
-                if (errorMessage == null) {
-                    errorMessage = t.getClass().getName();
-                }
+                errorMessage = Throwables.getBestMessage(t);
             }
             try {
                 syntheticResponseDao.store(agentRollup.id(), syntheticMonitorConfig.getId(),
@@ -660,15 +655,6 @@ class SyntheticMonitorService implements Runnable {
             consumeAgentRollups(childAgentRollup, agentRollupConsumer);
         }
         agentRollupConsumer.accept(agentRollup);
-    }
-
-    private static Throwable getRootCause(Throwable t) {
-        Throwable cause = t.getCause();
-        if (cause == null) {
-            return t;
-        } else {
-            return getRootCause(cause);
-        }
     }
 
     @SuppressWarnings("return.type.incompatible")
