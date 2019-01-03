@@ -35,6 +35,18 @@
       "transactionNameTemplate": "JMS Message: {{this.class.simpleName}}",
       "alreadyInTransactionBehavior": "capture-trace-entry",
       "timerName": "jms message"
+    },
+    {
+      "classAnnotation": "org.springframework.stereotype.Component|org.springframework.stereotype.Controller|org.springframework.stereotype.Repository|org.springframework.stereotype.Service|org.springframework.web.bind.annotation.RestController",
+      "methodAnnotation": "org.springframework.scheduling.annotation.Scheduled",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "captureKind": "transaction",
+      "transactionType": "Background",
+      "transactionNameTemplate": "Spring scheduled: {{this.class.simpleName}}#{{methodName}}",
+      "traceEntryMessageTemplate": "Spring scheduled: {{this.class.name}}.{{methodName}}()",
+      "timerName": "spring scheduled"
     }
   ],
   "aspects": [
