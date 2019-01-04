@@ -1,5 +1,5 @@
 <!--
-  Copyright 2017-2018 the original author or authors.
+  Copyright 2017-2019 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -37,31 +37,35 @@
     <div ng-form
          name="formCtrl"
          style="padding-top: 15px;">
-      <div class="form-group row">
-        <label class="col-xl-3 gt-check-legend-xl">
-          Synthetic monitor type
-        </label>
-        <div class="col-xl-9">
-          <div class="radio">
-            <label>
-              <input type="radio"
-                     ng-model="config.kind"
-                     ng-disabled="!agentRollup.permissions.config.edit.syntheticMonitors"
-                     value="ping">
-              Ping
-            </label>
-          </div>
-          <div class="radio">
-            <label>
-              <input type="radio"
-                     ng-model="config.kind"
-                     ng-disabled="!agentRollup.permissions.config.edit.syntheticMonitors"
-                     value="java">
-              Java
-            </label>
+      <fieldset class="form-group">
+        <div class="row">
+          <legend class="col-xl-3 gt-check-legend-xl">
+            Synthetic monitor type
+          </legend>
+          <div class="col-xl-9">
+            <div class="form-check">
+              <label class="form-check-label">
+                <input class="form-check-input"
+                       type="radio"
+                       ng-model="config.kind"
+                       ng-disabled="!agentRollup.permissions.config.edit.syntheticMonitors"
+                       value="ping">
+                Ping
+              </label>
+            </div>
+            <div class="form-check">
+              <label class="form-check-label">
+                <input class="form-check-input"
+                       type="radio"
+                       ng-model="config.kind"
+                       ng-disabled="!agentRollup.permissions.config.edit.syntheticMonitors"
+                       value="java">
+                Java
+              </label>
+            </div>
           </div>
         </div>
-      </div>
+      </fieldset>
       <div ng-if="config.kind === 'ping'">
         <div gt-form-group
              gt-type="url"

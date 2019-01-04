@@ -19,10 +19,15 @@
   <div ng-include src="'template/gt-http-error-overlay.html'"></div>
   <div style="text-align: center; margin-top: -2px; margin-bottom: 6px; color: #555;"
        ng-if="auxiliary || hasUnfilteredAuxThreadProfile">
-    <label class="radio-inline"
+    <label class="form-check-label form-check-inline"
            ng-class="{'disabled': !hasUnfilteredMainThreadProfile}">
-      <input type="radio" name="view" value="main" ng-click="clickTopRadioButton(false)"
-             ng-checked="!auxiliary && !onlyExistsAuxThreadProfile" ng-disabled="!hasUnfilteredMainThreadProfile">
+      <input class="form-check-input"
+             type="radio"
+             name="view"
+             value="main"
+             ng-click="clickTopRadioButton(false)"
+             ng-checked="!auxiliary && !onlyExistsAuxThreadProfile"
+             ng-disabled="!hasUnfilteredMainThreadProfile">
       <a class="gt-radio-link"
          href="transaction/thread-profile{{tabQueryString(false)}}"
          ng-click="clickActiveTopLink($event, false)"
@@ -31,8 +36,11 @@
       </a>
       <span ng-if="!hasUnfilteredMainThreadProfile" class="gt-radio-disabled">Main thread profile</span>
     </label>
-    <label class="radio-inline">
-      <input type="radio" name="view" value="aux" ng-click="clickTopRadioButton(true)"
+    <label class="form-check-label form-check-inline">
+      <input class="form-check-input"
+             type="radio"
+             name="view"
+             value="aux" ng-click="clickTopRadioButton(true)"
              ng-checked="auxiliary || (!hasUnfilteredMainThreadProfile && hasUnfilteredAuxThreadProfile)">
       <a class="gt-radio-link"
          href="transaction/thread-profile{{tabQueryString(true)}}"
