@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2018 the original author or authors.
+  Copyright 2013-2019 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -466,7 +466,7 @@
             <div gt-button
                  gt-label="Update TWCS window sizes"
                  gt-click="updateCassandraTwcsWindowSizes(deferred)"
-                 gt-btn-class="gt-btn-warning"
+                 gt-btn-class="btn-secondary"
                  gt-dont-validate-form="true"
                  gt-confirm-header="Update TWCS window sizes?"
                  gt-confirm-body="This could trigger a lot of window major compactions."
@@ -476,7 +476,7 @@
             <div gt-button
                  gt-label="Defrag H2 data"
                  gt-click="defragH2Data(deferred)"
-                 gt-btn-class="gt-btn-warning"
+                 gt-btn-class="btn-secondary"
                  gt-dont-validate-form="true"
                  gt-confirm-header="Defrag H2 data?"
                  gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot will not capture any new data."
@@ -486,7 +486,7 @@
             <div gt-button
                  gt-label="Compact H2 data"
                  gt-click="compactH2Data(deferred)"
-                 gt-btn-class="gt-btn-warning"
+                 gt-btn-class="btn-secondary"
                  gt-dont-validate-form="true"
                  gt-confirm-header="Compact H2 data?"
                  gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot will not capture any new data."
@@ -496,7 +496,7 @@
             <div gt-button
                  gt-label="Analyze H2 disk space"
                  gt-click="analyzeH2DiskSpace(deferred)"
-                 gt-btn-class="gt-btn-warning"
+                 gt-btn-class="btn-secondary"
                  gt-dont-validate-form="true"
                  gt-confirm-header="Analyze H2 disk space?"
                  gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot data capture will be impacted."
@@ -506,7 +506,7 @@
             <div gt-button
                  gt-label="Analyze trace counts"
                  gt-click="analyzeTraceCounts(deferred)"
-                 gt-btn-class="gt-btn-warning"
+                 gt-btn-class="btn-secondary"
                  gt-dont-validate-form="true"
                  gt-confirm-header="Analyze trace counts?"
                  gt-confirm-body="This could take several minutes depending on the number of traces, during which time Glowroot data capture will be impacted."
