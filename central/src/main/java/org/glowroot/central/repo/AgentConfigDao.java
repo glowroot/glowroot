@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ public class AgentConfigDao {
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
     private final PreparedStatement updatePS;
+    private final PreparedStatement updateCentralOnlyPS;
     private final PreparedStatement markUpdatedPS;
 
     private final Cache<String, Optional<AgentConfigAndUpdateToken>> agentConfigCache;
@@ -74,6 +75,8 @@ public class AgentConfigDao {
                 + " config_update, config_update_token) values (?, ?, ?, ?)");
         updatePS = session.prepare("update agent_config set config = ?, config_update = ?,"
                 + " config_update_token = ? where agent_rollup_id = ? if config = ?");
+        updateCentralOnlyPS = session.prepare(
+                "update agent_config set config = ? where agent_rollup_id = ? if config = ?");
         readPS = session.prepare(
                 "select config, config_update_token from agent_config where agent_rollup_id = ?");
 
@@ -135,6 +138,17 @@ public class AgentConfigDao {
     }
 
     void update(String agentRollupId, AgentConfigUpdater agentConfigUpdater) throws Exception {
+        update(agentRollupId, agentConfigUpdater, false);
+    }
+
+    // only call this method when updating AgentConfig data that resides only on central
+    void updateCentralOnly(String agentRollupId, AgentConfigUpdater agentConfigUpdater)
+            throws Exception {
+        update(agentRollupId, agentConfigUpdater, true);
+    }
+
+    void update(String agentRollupId, AgentConfigUpdater agentConfigUpdater, boolean centralOnly)
+            throws Exception {
         for (int j = 0; j < 10; j++) {
             BoundStatement boundStatement = readPS.bind();
             boundStatement.setString(0, agentRollupId);
@@ -145,17 +159,23 @@ public class AgentConfigDao {
             }
             ByteString currValue = ByteString.copyFrom(checkNotNull(row.getBytes(0)));
             AgentConfig currAgentConfig = AgentConfig.parseFrom(currValue);
-            if (currAgentConfig.getConfigReadOnly()) {
+            if (!centralOnly && currAgentConfig.getConfigReadOnly()) {
                 throw new IllegalStateException("This agent is running with config.readOnly=true so"
                         + " it does not allow config updates via the central collector");
             }
             AgentConfig updatedAgentConfig = agentConfigUpdater.updateAgentConfig(currAgentConfig);
 
-            boundStatement = updatePS.bind();
+            if (centralOnly) {
+                boundStatement = updateCentralOnlyPS.bind();
+            } else {
+                boundStatement = updatePS.bind();
+            }
             int i = 0;
             boundStatement.setBytes(i++, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
-            boundStatement.setBool(i++, true);
-            boundStatement.setUUID(i++, UUIDs.random());
+            if (!centralOnly) {
+                boundStatement.setBool(i++, true);
+                boundStatement.setUUID(i++, UUIDs.random());
+            }
             boundStatement.setString(i++, agentRollupId);
             boundStatement.setBytes(i++, ByteBuffer.wrap(currValue.toByteArray()));
             results = session.update(boundStatement);

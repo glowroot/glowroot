@@ -490,7 +490,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public void updateGeneralConfig(String agentId, GeneralConfig config, String priorVersion)
             throws Exception {
-        agentConfigDao.update(agentId, new AgentConfigUpdater() {
+        agentConfigDao.updateCentralOnly(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
                 String existingVersion = Versions.getVersion(agentConfig.getGeneralConfig());
