@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +113,11 @@ class InstrumentationConfigJsonService {
             return;
         }
         if (central) {
-            liveWeavingService.preloadClasspathCache(agentId);
+            try {
+                liveWeavingService.preloadClasspathCache(agentId);
+            } catch (AgentNotConnectedException e) {
+                logger.debug(e.getMessage(), e);
+            }
         } else {
             // HttpServer is configured with a very small thread pool to keep number of threads down
             // (currently only a single thread), so spawn a background thread to perform the
