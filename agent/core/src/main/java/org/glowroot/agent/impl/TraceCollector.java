@@ -85,14 +85,33 @@ public class TraceCollector {
         if (slowThresholdMillis != Transaction.USE_GENERAL_STORE_THRESHOLD) {
             return durationNanos >= MILLISECONDS.toNanos(slowThresholdMillis);
         }
-        // check if there is a matching transaction type / transaction name specific slow threshold
+        // check if there is a matching transaction type / transaction name / user specific slow threshold
         if (!slowThresholdOverrides.isEmpty()) {
             SlowThresholdOverridesForType slowThresholdOverrideForType =
                     slowThresholdOverrides.get(transaction.getTransactionType());
             if (slowThresholdOverrideForType != null) {
-                Long slowThresholdNanos =
-                        slowThresholdOverrideForType.thresholdNanos()
-                                .get(transaction.getTransactionName());
+                String transactionName = transaction.getTransactionName();
+                String user = transaction.getUser();
+                Long slowThresholdNanos;
+                ImmutablePair pair;
+                // check transaction name & user
+                if (!user.isEmpty()) {
+                    pair = ImmutablePair.of(transactionName, user);
+                    slowThresholdNanos = slowThresholdOverrideForType.thresholdNanos().get(pair);
+                    if (slowThresholdNanos != null) {
+                        return durationNanos >= slowThresholdNanos;
+                    }
+                }
+                // check transaction name only
+                pair = ImmutablePair.of(transactionName, "");
+                slowThresholdNanos = slowThresholdOverrideForType.thresholdNanos().get(pair);
+                // check user only
+                if (!user.isEmpty()) {
+                    pair = ImmutablePair.of("", user);
+                    slowThresholdNanos = minNonNull(
+                            slowThresholdOverrideForType.thresholdNanos().get(pair),
+                            slowThresholdNanos);
+                }
                 if (slowThresholdNanos != null) {
                     return durationNanos >= slowThresholdNanos;
                 }
@@ -104,6 +123,18 @@ public class TraceCollector {
         }
         // fall back to default slow trace threshold
         return durationNanos >= defaultSlowThresholdNanos;
+    }
+
+    private Long minNonNull(Long l1, Long l2) {
+        if (l1 != null && l2 != null) {
+            return Math.min(l1, l2);
+        } else if (l1 != null) {
+            return l1;
+        } else if (l2 != null) {
+            return l2;
+        } else {
+            return null;
+        }
     }
 
     public boolean shouldStoreError(Transaction transaction) {
@@ -190,12 +221,13 @@ public class TraceCollector {
                     slowThresholdOverrides.put(transactionType, slowThresholdOverrideForType);
                 }
                 String transactionName = slowThresholdOverride.transactionName();
+                String user = slowThresholdOverride.user();
                 long thresholdNanos = MILLISECONDS.toNanos(slowThresholdOverride.thresholdMillis());
-                if (transactionName.isEmpty()) {
+                if (transactionName.isEmpty() && user.isEmpty()) {
                     slowThresholdOverrideForType.defaultThresholdNanos = thresholdNanos;
                 } else {
-                    slowThresholdOverrideForType.thresholdNanos.put(transactionName,
-                            thresholdNanos);
+                    ImmutablePair pair = ImmutablePair.of(transactionName, user);
+                    slowThresholdOverrideForType.thresholdNanos.put(pair, thresholdNanos);
                 }
             }
             Map<String, SlowThresholdOverridesForType> builder = Maps.newHashMap();
@@ -210,18 +242,25 @@ public class TraceCollector {
     }
 
     @Value.Immutable
+    @Value.Style(allParameters = true)
+    interface Pair {
+        String transactionName();
+        String user();
+    }
+
+    @Value.Immutable
+    @Value.Style(deepImmutablesDetection = true)
     interface SlowThresholdOverridesForType {
         @Nullable
         Long defaultThresholdNanos();
-        Map<String, Long> thresholdNanos(); // key is transaction name
+        Map<Pair, Long> thresholdNanos();
     }
 
-    // need separate builder type to avoid exception in case of duplicate
-    // transactionType/transactionName pair
+    // need separate builder type to avoid exception in case of duplicate pair
     private static class SlowThresholdOverridesForTypeBuilder {
 
         private @Nullable Long defaultThresholdNanos;
-        private Map<String, Long> thresholdNanos = Maps.newHashMap();
+        private Map<Pair, Long> thresholdNanos = Maps.newHashMap();
 
         private SlowThresholdOverridesForType toImmutable() {
             return ImmutableSlowThresholdOverridesForType.builder()

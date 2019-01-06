@@ -65,6 +65,7 @@ glowroot.controller('ConfigTransactionCtrl', [
       $scope.config.slowThresholdOverrides.push({
         transactionType: defaultTransactionType,
         transactionName: '',
+        user: '',
         thresholdMillis: null
       });
     };

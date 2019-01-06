@@ -41,6 +41,7 @@ message AgentConfig {
     string transaction_type = 1;
     string transaction_name = 2;
     int32 threshold_millis = 3;
+    string user = 4;
   }
 
   message JvmConfig {

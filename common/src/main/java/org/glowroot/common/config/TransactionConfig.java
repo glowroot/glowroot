@@ -57,6 +57,7 @@ public abstract class TransactionConfig {
             builder.addSlowThresholdOverride(AgentConfig.SlowThresholdOverride.newBuilder()
                     .setTransactionType(slowThresholdOverride.transactionType())
                     .setTransactionName(slowThresholdOverride.transactionName())
+                    .setUser(slowThresholdOverride.user())
                     .setThresholdMillis(slowThresholdOverride.thresholdMillis())
                     .build());
         }
@@ -77,6 +78,7 @@ public abstract class TransactionConfig {
             builder.addSlowThresholdOverrides(ImmutableSlowThresholdOverride.builder()
                     .transactionType(slowThresholdOverride.getTransactionType())
                     .transactionName(slowThresholdOverride.getTransactionName())
+                    .user(slowThresholdOverride.getUser())
                     .thresholdMillis(slowThresholdOverride.getThresholdMillis())
                     .build());
         }
@@ -97,6 +99,10 @@ public abstract class TransactionConfig {
         public String transactionName() {
             return "";
         }
+
+        @Value.Default
+        @JsonInclude(Include.NON_EMPTY)
+        public String user() { return ""; }
 
         public abstract int thresholdMillis();
     }

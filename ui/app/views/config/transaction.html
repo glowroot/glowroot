@@ -106,6 +106,15 @@
                 </div>
               </div>
               <div gt-form-group
+                   gt-label="User"
+                   gt-model="slowThresholdOverride.user"
+                   gt-disabled="!agentRollup.permissions.config.edit.transaction"
+                   gt-width="40em">
+                <div class="help-block">
+                  The user this override applies to. If empty, this override will apply to all users.
+                </div>
+              </div>
+              <div gt-form-group
                    gt-label="Slow threshold"
                    gt-model="slowThresholdOverride.thresholdMillis"
                    gt-number="true"
