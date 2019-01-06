@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -409,12 +409,14 @@ class ConfigJsonService {
 
         abstract String transactionType();
         abstract String transactionName();
+        abstract String user();
         abstract int thresholdMillis();
 
         private SlowThresholdOverride convert() {
             return SlowThresholdOverride.newBuilder()
                     .setTransactionType(transactionType())
                     .setTransactionName(transactionName())
+                    .setUser(user())
                     .setThresholdMillis(thresholdMillis())
                     .build();
         }
@@ -424,6 +426,7 @@ class ConfigJsonService {
             return ImmutableSlowThresholdOverrideDto.builder()
                     .transactionType(slowThreshold.getTransactionType())
                     .transactionName(slowThreshold.getTransactionName())
+                    .user(slowThreshold.getUser())
                     .thresholdMillis(slowThreshold.getThresholdMillis())
                     .build();
         }
@@ -438,6 +441,10 @@ class ConfigJsonService {
                 return compare;
             }
             compare = left.transactionName().compareToIgnoreCase(right.transactionName());
+            if (compare != 0) {
+                return compare;
+            }
+            compare = left.user().compareToIgnoreCase(right.user());
             if (compare != 0) {
                 return compare;
             }

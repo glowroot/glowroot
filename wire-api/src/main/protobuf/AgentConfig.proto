@@ -40,6 +40,7 @@ message AgentConfig {
   message SlowThresholdOverride {
     string transaction_type = 1;
     string transaction_name = 2;
+    string user = 4;
     int32 threshold_millis = 3;
   }
 

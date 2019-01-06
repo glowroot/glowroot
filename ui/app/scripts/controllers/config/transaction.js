@@ -61,10 +61,20 @@ glowroot.controller('ConfigTransactionCtrl', [
           && $scope.agentRollup.glowrootVersion.lastIndexOf('0.10.0,', 0) === -1);
     };
 
+    $scope.supportsSlowThreholdUserOverrides = function () {
+      // host current time was introduced in agent version 0.13.0
+      return $scope.agentRollup.glowrootVersion.lastIndexOf('0.9.', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.10.', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.11.', 0) === -1
+          && $scope.agentRollup.glowrootVersion.lastIndexOf('0.12.', 0) === -1;
+    };
+
+
     $scope.addSlowThresholdOverride = function () {
       $scope.config.slowThresholdOverrides.push({
         transactionType: defaultTransactionType,
         transactionName: '',
+        user: '',
         thresholdMillis: null
       });
     };

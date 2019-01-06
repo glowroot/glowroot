@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ public abstract class TransactionConfig {
             builder.addSlowThresholdOverride(AgentConfig.SlowThresholdOverride.newBuilder()
                     .setTransactionType(slowThresholdOverride.transactionType())
                     .setTransactionName(slowThresholdOverride.transactionName())
+                    .setUser(slowThresholdOverride.user())
                     .setThresholdMillis(slowThresholdOverride.thresholdMillis())
                     .build());
         }
@@ -77,6 +78,7 @@ public abstract class TransactionConfig {
             builder.addSlowThresholdOverrides(ImmutableSlowThresholdOverride.builder()
                     .transactionType(slowThresholdOverride.getTransactionType())
                     .transactionName(slowThresholdOverride.getTransactionName())
+                    .user(slowThresholdOverride.getUser())
                     .thresholdMillis(slowThresholdOverride.getThresholdMillis())
                     .build());
         }
@@ -95,6 +97,12 @@ public abstract class TransactionConfig {
         @Value.Default
         @JsonInclude(Include.NON_EMPTY)
         public String transactionName() {
+            return "";
+        }
+
+        @Value.Default
+        @JsonInclude(Include.NON_EMPTY)
+        public String user() {
             return "";
         }
 
