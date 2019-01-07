@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ public class TransactionService implements ConfigListener {
     private final TransactionRegistry transactionRegistry;
     private final ConfigService configService;
     private final TimerNameCache timerNameCache;
-    private final UserProfileScheduler userProfileScheduler;
     private final Clock clock;
     private final Ticker ticker;
 
@@ -57,21 +56,19 @@ public class TransactionService implements ConfigListener {
     private @Nullable ThreadAllocatedBytes threadAllocatedBytes;
 
     public static TransactionService create(TransactionRegistry transactionRegistry,
-            ConfigService configService, TimerNameCache timerNameCache,
-            UserProfileScheduler userProfileScheduler, Ticker ticker, Clock clock) {
+            ConfigService configService, TimerNameCache timerNameCache, Ticker ticker,
+            Clock clock) {
         TransactionService transactionService = new TransactionService(transactionRegistry,
-                configService, timerNameCache, userProfileScheduler, ticker, clock);
+                configService, timerNameCache, ticker, clock);
         configService.addConfigListener(transactionService);
         return transactionService;
     }
 
     private TransactionService(TransactionRegistry transactionRegistry, ConfigService configService,
-            TimerNameCache timerNameCache, UserProfileScheduler userProfileScheduler, Ticker ticker,
-            Clock clock) {
+            TimerNameCache timerNameCache, Ticker ticker, Clock clock) {
         this.transactionRegistry = transactionRegistry;
         this.configService = configService;
         this.timerNameCache = timerNameCache;
-        this.userProfileScheduler = userProfileScheduler;
         this.clock = clock;
         this.ticker = ticker;
     }
@@ -95,8 +92,7 @@ public class TransactionService implements ConfigListener {
                 transactionType, transactionName, messageSupplier, timerName, captureThreadStats,
                 maxTraceEntries, maxQueryAggregates, maxServiceCallAggregates, maxProfileSamples,
                 threadAllocatedBytes, transactionCompletionCallback, ticker, transactionRegistry,
-                this, configService, userProfileScheduler, threadContextHolder, rootNestingGroupId,
-                rootSuppressionKeyId);
+                this, configService, threadContextHolder, rootNestingGroupId, rootSuppressionKeyId);
         SelfRemovableEntry transactionEntry = transactionRegistry.addTransaction(transaction);
         transaction.setTransactionEntry(transactionEntry);
         threadContextHolder.set(transaction.getMainThreadContext());

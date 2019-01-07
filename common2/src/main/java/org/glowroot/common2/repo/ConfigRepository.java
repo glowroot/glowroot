@@ -52,7 +52,6 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfi
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -91,8 +90,6 @@ public interface ConfigRepository {
 
     // central supports ui config on rollups
     UiDefaultsConfig getUiDefaultsConfig(String agentRollupId) throws Exception;
-
-    UserRecordingConfig getUserRecordingConfig(String agentId) throws Exception;
 
     // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
     AdvancedConfig getAdvancedConfig(String agentRollupId) throws Exception;
@@ -231,9 +228,6 @@ public interface ConfigRepository {
     void deleteInstrumentationConfigs(String agentId, List<String> versions) throws Exception;
 
     void insertInstrumentationConfigs(String agentId, List<InstrumentationConfig> configs)
-            throws Exception;
-
-    void updateUserRecordingConfig(String agentId, UserRecordingConfig config, String priorVersion)
             throws Exception;
 
     // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)

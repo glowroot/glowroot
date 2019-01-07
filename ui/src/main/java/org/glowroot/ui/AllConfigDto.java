@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,14 +35,12 @@ import org.glowroot.common.config.ImmutableJvmConfig;
 import org.glowroot.common.config.ImmutableSyntheticMonitorConfig;
 import org.glowroot.common.config.ImmutableTransactionConfig;
 import org.glowroot.common.config.ImmutableUiDefaultsConfig;
-import org.glowroot.common.config.ImmutableUserRecordingConfig;
 import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.config.JvmConfig;
 import org.glowroot.common.config.PropertyValue;
 import org.glowroot.common.config.SyntheticMonitorConfig;
 import org.glowroot.common.config.TransactionConfig;
 import org.glowroot.common.config.UiDefaultsConfig;
-import org.glowroot.common.config.UserRecordingConfig;
 import org.glowroot.common.util.Versions;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
@@ -63,11 +61,6 @@ abstract class AllConfigDto {
     @Value.Default
     ImmutableUiDefaultsConfig uiDefaults() {
         return ImmutableUiDefaultsConfig.builder().build();
-    }
-
-    @Value.Default
-    ImmutableUserRecordingConfig userRecording() {
-        return ImmutableUserRecordingConfig.builder().build();
     }
 
     @Value.Default
@@ -97,7 +90,6 @@ abstract class AllConfigDto {
                 .setTransactionConfig(transactions().toProto())
                 .setJvmConfig(jvm().toProto())
                 .setUiDefaultsConfig(uiDefaults().toProto())
-                .setUserRecordingConfig(userRecording().toProto())
                 .setAdvancedConfig(advanced().toProto());
         for (GaugeConfig gaugeConfig : gauges()) {
             builder.addGaugeConfig(gaugeConfig.toProto());
@@ -122,7 +114,6 @@ abstract class AllConfigDto {
                 .transactions(TransactionConfig.create(config.getTransactionConfig()))
                 .jvm(JvmConfig.create(config.getJvmConfig()))
                 .uiDefaults(UiDefaultsConfig.create(config.getUiDefaultsConfig()))
-                .userRecording(UserRecordingConfig.create(config.getUserRecordingConfig()))
                 .advanced(AdvancedConfig.create(config.getAdvancedConfig()));
         for (AgentConfig.GaugeConfig gaugeConfig : config.getGaugeConfigList()) {
             builder.addGauges(GaugeConfig.create(gaugeConfig));

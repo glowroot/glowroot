@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import org.glowroot.common.config.JvmConfig;
 import org.glowroot.common.config.SyntheticMonitorConfig;
 import org.glowroot.common.config.TransactionConfig;
 import org.glowroot.common.config.UiDefaultsConfig;
-import org.glowroot.common.config.UserRecordingConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 
@@ -41,7 +40,6 @@ public abstract class AllConfig {
     abstract TransactionConfig transaction();
     abstract JvmConfig jvm();
     abstract UiDefaultsConfig uiDefaults();
-    abstract UserRecordingConfig userRecording();
     abstract AdvancedConfig advanced();
     abstract List<GaugeConfig> gauges();
     abstract List<SyntheticMonitorConfig> syntheticMonitors();
@@ -54,7 +52,6 @@ public abstract class AllConfig {
                 .transaction(TransactionConfig.create(config.getTransactionConfig()))
                 .jvm(JvmConfig.create(config.getJvmConfig()))
                 .uiDefaults(UiDefaultsConfig.create(config.getUiDefaultsConfig()))
-                .userRecording(UserRecordingConfig.create(config.getUserRecordingConfig()))
                 .advanced(AdvancedConfig.create(config.getAdvancedConfig()));
         for (AgentConfig.GaugeConfig gaugeConfig : config.getGaugeConfigList()) {
             builder.addGauges(GaugeConfig.create(gaugeConfig));

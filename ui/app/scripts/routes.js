@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -524,11 +524,6 @@ glowroot.config([
       url: '/instrumentation?v',
       templateUrl: 'views/config/instrumentation.html',
       controller: 'ConfigInstrumentationCtrl'
-    });
-    $stateProvider.state('config.userRecording', {
-      url: '/user-recording',
-      templateUrl: 'views/config/user-recording.html',
-      controller: 'ConfigUserRecordingCtrl'
     });
     $stateProvider.state('config.advanced', {
       url: '/advanced',

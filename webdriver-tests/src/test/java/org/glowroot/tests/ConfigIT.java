@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import org.glowroot.tests.config.ConfigSidebar;
 import org.glowroot.tests.config.JvmConfigPage;
 import org.glowroot.tests.config.TransactionConfigPage;
 import org.glowroot.tests.config.UiDefaultsConfigPage;
-import org.glowroot.tests.config.UserRecordingConfigPage;
 import org.glowroot.tests.util.Utils;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -118,36 +117,6 @@ public class ConfigIT extends WebDriverIT {
         configSidebar.clickUiDefaultsLink();
         assertThat(page.getDefaultPercentilesTextField().getAttribute("value"))
                 .isEqualTo("3, 4, 5, 6");
-    }
-
-    @Test
-    public void shouldUpdateUserRecordingConfig() throws Exception {
-        // given
-        App app = app();
-        GlobalNavbar globalNavbar = globalNavbar();
-        UserRecordingConfigPage page = new UserRecordingConfigPage(driver);
-
-        app.open();
-        globalNavbar.clickConfigLink();
-        // user recording config is not accessible via config sidebar currently
-        app.open("/config/user-recording");
-
-        // when
-        page.getUsersTextField().clear();
-        page.getUsersTextField().sendKeys("abc,xyz");
-        page.getProfileIntervalTextField().clear();
-        page.getProfileIntervalTextField().sendKeys("2345");
-        page.clickSaveButton();
-        // wait for save to finish
-        SECONDS.sleep(1);
-
-        // then
-        app.open();
-        globalNavbar.clickConfigLink();
-        // user recording config is not accessible via config sidebar currently
-        app.open("/config/user-recording");
-        assertThat(page.getUsersTextField().getAttribute("value")).isEqualTo("abc, xyz");
-        assertThat(page.getProfileIntervalTextField().getAttribute("value")).isEqualTo("2345");
     }
 
     @Test

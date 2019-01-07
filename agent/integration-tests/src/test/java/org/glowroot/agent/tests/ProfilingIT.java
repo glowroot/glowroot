@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2016 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.Threads;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -73,41 +72,6 @@ public class ProfilingIT {
         setProfilingIntervalMillis(0);
         // when
         Trace trace = container.execute(ShouldGenerateTraceWithProfile.class);
-        // then
-        assertThat(trace.getHeader().getMainThreadProfileSampleCount()).isZero();
-    }
-
-    @Test
-    public void shouldReadUserRecordingProfile() throws Exception {
-        // given
-        UserRecordingConfig userRecordingConfig = UserRecordingConfig.newBuilder()
-                .addUser("able")
-                .setProfilingIntervalMillis(ProtoOptional.of(20))
-                .build();
-        container.getConfigService().updateUserRecordingConfig(userRecordingConfig);
-        setProfilingIntervalMillis(0);
-
-        // when
-        Trace trace = container.execute(ShouldGenerateTraceWithProfileForAble.class);
-
-        // then
-        // profiler should have captured about 10 stack traces
-        assertThat(trace.getHeader().getMainThreadProfileSampleCount()).isBetween(5L, 15L);
-    }
-
-    @Test
-    public void shouldNotReadUserRecordingProfile() throws Exception {
-        // given
-        UserRecordingConfig userRecordingConfig = UserRecordingConfig.newBuilder()
-                .addUser("baker")
-                .setProfilingIntervalMillis(ProtoOptional.of(20))
-                .build();
-        container.getConfigService().updateUserRecordingConfig(userRecordingConfig);
-        setProfilingIntervalMillis(0);
-
-        // when
-        Trace trace = container.execute(ShouldGenerateTraceWithProfileForAble.class);
-
         // then
         assertThat(trace.getHeader().getMainThreadProfileSampleCount()).isZero();
     }

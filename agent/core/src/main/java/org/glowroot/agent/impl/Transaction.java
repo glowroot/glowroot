@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -148,9 +148,8 @@ public class Transaction {
     private volatile int slowThresholdMillis = USE_GENERAL_STORE_THRESHOLD;
     private volatile int slowThresholdMillisPriority = Integer.MIN_VALUE;
 
-    // these are stored in the trace so they are only scheduled a single time, and also so they can
-    // be canceled at trace completion
-    private volatile @MonotonicNonNull Cancellable userProfileRunnable;
+    // this is stored in the trace so it is only scheduled a single time, and also so it can be
+    // canceled at trace completion
     private volatile @MonotonicNonNull Cancellable immedateTraceStoreRunnable;
 
     private volatile boolean partiallyStored;
@@ -196,8 +195,6 @@ public class Transaction {
 
     private final Ticker ticker;
 
-    private final UserProfileScheduler userProfileScheduler;
-
     private @Nullable SelfRemovableEntry transactionEntry;
 
     @GuardedBy("mainThreadContext")
@@ -217,8 +214,8 @@ public class Transaction {
             int maxProfileSamples, @Nullable ThreadAllocatedBytes threadAllocatedBytes,
             CompletionCallback completionCallback, Ticker ticker,
             TransactionRegistry transactionRegistry, TransactionService transactionService,
-            ConfigService configService, UserProfileScheduler userProfileScheduler,
-            ThreadContextThreadLocal.Holder threadContextHolder, int rootNestingGroupId,
+            ConfigService configService, ThreadContextThreadLocal.Holder threadContextHolder,
+            int rootNestingGroupId,
             int rootSuppressionKeyId) {
         this.startTime = startTime;
         this.startTick = startTick;
@@ -230,7 +227,6 @@ public class Transaction {
         this.maxProfileSamples = maxProfileSamples;
         this.completionCallback = completionCallback;
         this.ticker = ticker;
-        this.userProfileScheduler = userProfileScheduler;
         this.transactionRegistry = transactionRegistry;
         this.transactionService = transactionService;
         this.configService = configService;
@@ -636,9 +632,6 @@ public class Transaction {
         if (priority > userPriority && !user.isEmpty()) {
             this.user = user;
             userPriority = priority;
-            if (userProfileRunnable == null) {
-                userProfileScheduler.maybeScheduleUserProfiling(this, user);
-            }
         }
     }
 
@@ -670,13 +663,6 @@ public class Transaction {
             // use the minimum threshold from the same override source
             this.slowThresholdMillis = Math.min(this.slowThresholdMillis, slowThresholdMillis);
         }
-    }
-
-    void setUserProfileRunnable(Cancellable userProfileRunnable) {
-        if (this.userProfileRunnable != null) {
-            logger.warn("setUserProfileRunnable(): overwriting non-null userProfileRunnable");
-        }
-        this.userProfileRunnable = userProfileRunnable;
     }
 
     public void setImmediateTraceStoreRunnable(Cancellable immedateTraceStoreRunnable) {
@@ -837,9 +823,6 @@ public class Transaction {
         }
         if (immedateTraceStoreRunnable != null) {
             immedateTraceStoreRunnable.cancel();
-        }
-        if (userProfileRunnable != null) {
-            userProfileRunnable.cancel();
         }
         completionCallback.completed(this);
     }

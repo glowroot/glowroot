@@ -385,9 +385,6 @@ class LayoutService {
                                 .instrumentation(authentication.isPermittedForAgentRollup(
                                         agentRollupId, "agent:config:edit:instrumentation")
                                         && !configReadOnly)
-                                .userRecording(authentication.isPermittedForAgentRollup(
-                                        agentRollupId, "agent:config:edit:userRecording")
-                                        && !configReadOnly)
                                 // central supports advanced config on rollups (maxQueryAggregates
                                 // and maxServiceCallAggregates)
                                 .advanced(authentication.isPermittedForAgentRollup(agentRollupId,
@@ -550,7 +547,6 @@ class LayoutService {
         boolean uiDefaults();
         boolean plugins();
         boolean instrumentation();
-        boolean userRecording();
         boolean advanced();
         boolean all();
     }

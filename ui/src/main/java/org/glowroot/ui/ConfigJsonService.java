@@ -54,7 +54,6 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginPrope
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SlowThresholdOverride;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -142,12 +141,6 @@ class ConfigJsonService {
             }
             return mapper.writeValueAsString(pluginResponses);
         }
-    }
-
-    @GET(path = "/backend/config/user-recording", permission = "agent:config:view:userRecording")
-    String getUserRecordingConfig(@BindAgentId String agentId) throws Exception {
-        UserRecordingConfig config = configRepository.getUserRecordingConfig(agentId);
-        return mapper.writeValueAsString(UserRecordingConfigDto.create(config));
     }
 
     // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
@@ -255,18 +248,6 @@ class ConfigJsonService {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
         return getPluginConfigInternal(agentId, pluginId);
-    }
-
-    @POST(path = "/backend/config/user-recording", permission = "agent:config:edit:userRecording")
-    String updateUserRecordingConfig(@BindAgentId String agentId,
-            @BindRequest UserRecordingConfigDto configDto) throws Exception {
-        try {
-            configRepository.updateUserRecordingConfig(agentId, configDto.convert(),
-                    configDto.version());
-        } catch (OptimisticLockException e) {
-            throw new JsonServiceException(PRECONDITION_FAILED, e);
-        }
-        return getUserRecordingConfig(agentId);
     }
 
     // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
@@ -471,36 +452,6 @@ class ConfigJsonService {
                     .maskSystemProperties(config.getMaskSystemPropertyList())
                     .maskMBeanAttributes(config.getMaskMbeanAttributeList())
                     .version(Versions.getVersion(config))
-                    .build();
-        }
-    }
-
-    @Value.Immutable
-    abstract static class UserRecordingConfigDto {
-
-        abstract ImmutableList<String> users();
-        abstract @Nullable Integer profilingIntervalMillis();
-        abstract String version();
-
-        private UserRecordingConfig convert() {
-            UserRecordingConfig.Builder builder = UserRecordingConfig.newBuilder()
-                    .addAllUser(users());
-            Integer profilingIntervalMillis = profilingIntervalMillis();
-            if (profilingIntervalMillis != null) {
-                builder.setProfilingIntervalMillis(
-                        OptionalInt32.newBuilder().setValue(profilingIntervalMillis));
-            }
-            return builder.build();
-        }
-
-        private static UserRecordingConfigDto create(UserRecordingConfig config) {
-            ImmutableUserRecordingConfigDto.Builder builder =
-                    ImmutableUserRecordingConfigDto.builder()
-                            .users(config.getUserList());
-            if (config.hasProfilingIntervalMillis()) {
-                builder.profilingIntervalMillis(config.getProfilingIntervalMillis().getValue());
-            }
-            return builder.version(Versions.getVersion(config))
                     .build();
         }
     }

@@ -46,7 +46,6 @@ import org.glowroot.common.config.ImmutableMBeanAttribute;
 import org.glowroot.common.config.ImmutableSyntheticMonitorConfig;
 import org.glowroot.common.config.ImmutableTransactionConfig;
 import org.glowroot.common.config.ImmutableUiDefaultsConfig;
-import org.glowroot.common.config.ImmutableUserRecordingConfig;
 import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.config.JvmConfig;
 import org.glowroot.common.config.PropertyValue;
@@ -54,7 +53,6 @@ import org.glowroot.common.config.PropertyValue.PropertyType;
 import org.glowroot.common.config.SyntheticMonitorConfig;
 import org.glowroot.common.config.TransactionConfig;
 import org.glowroot.common.config.UiDefaultsConfig;
-import org.glowroot.common.config.UserRecordingConfig;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
@@ -75,7 +73,6 @@ public class ConfigService {
     private volatile TransactionConfig transactionConfig;
     private volatile JvmConfig jvmConfig;
     private volatile UiDefaultsConfig uiDefaultsConfig;
-    private volatile UserRecordingConfig userRecordingConfig;
     private volatile AdvancedConfig advancedConfig;
     private volatile ImmutableList<GaugeConfig> gaugeConfigs;
     private volatile ImmutableList<SyntheticMonitorConfig> syntheticMonitorConfigs;
@@ -123,13 +120,6 @@ public class ConfigService {
             this.uiDefaultsConfig = ImmutableUiDefaultsConfig.builder().build();
         } else {
             this.uiDefaultsConfig = uiDefaultsConfig;
-        }
-        UserRecordingConfig userRecordingConfig =
-                configFile.getConfig("userRecording", ImmutableUserRecordingConfig.class);
-        if (userRecordingConfig == null) {
-            this.userRecordingConfig = ImmutableUserRecordingConfig.builder().build();
-        } else {
-            this.userRecordingConfig = userRecordingConfig;
         }
         AdvancedConfig advancedConfig =
                 configFile.getConfig("advanced", ImmutableAdvancedConfig.class);
@@ -190,10 +180,6 @@ public class ConfigService {
         return uiDefaultsConfig;
     }
 
-    public UserRecordingConfig getUserRecordingConfig() {
-        return userRecordingConfig;
-    }
-
     public AdvancedConfig getAdvancedConfig() {
         return advancedConfig;
     }
@@ -247,7 +233,6 @@ public class ConfigService {
         for (InstrumentationConfig instrumentationConfig : instrumentationConfigs) {
             builder.addInstrumentationConfig(instrumentationConfig.toProto());
         }
-        builder.setUserRecordingConfig(userRecordingConfig.toProto());
         builder.setAdvancedConfig(advancedConfig.toProto());
         return builder.build();
     }
@@ -312,12 +297,6 @@ public class ConfigService {
         notifyConfigListeners();
     }
 
-    public void updateUserRecordingConfig(UserRecordingConfig config) throws IOException {
-        configFile.writeConfig("userRecording", config);
-        userRecordingConfig = config;
-        notifyConfigListeners();
-    }
-
     public void updateAdvancedConfig(AdvancedConfig config) throws IOException {
         configFile.writeConfig("advanced", config);
         advancedConfig = config;
@@ -329,7 +308,6 @@ public class ConfigService {
         configs.put("transactions", config.transaction());
         configs.put("jvm", config.jvm());
         configs.put("uiDefaults", config.uiDefaults());
-        configs.put("userRecording", config.userRecording());
         configs.put("advanced", config.advanced());
         configs.put("gauges", config.gauges());
         configs.put("syntheticMonitors", config.syntheticMonitors());
@@ -340,7 +318,6 @@ public class ConfigService {
         this.transactionConfig = config.transaction();
         this.jvmConfig = config.jvm();
         this.uiDefaultsConfig = config.uiDefaults();
-        this.userRecordingConfig = config.userRecording();
         this.advancedConfig = config.advanced();
         this.gaugeConfigs = ImmutableList.copyOf(config.gauges());
         this.syntheticMonitorConfigs = ImmutableList.copyOf(config.syntheticMonitors());
@@ -391,7 +368,6 @@ public class ConfigService {
                 .build();
         jvmConfig = ImmutableJvmConfig.builder().build();
         uiDefaultsConfig = ImmutableUiDefaultsConfig.builder().build();
-        userRecordingConfig = ImmutableUserRecordingConfig.builder().build();
         advancedConfig = ImmutableAdvancedConfig.builder().build();
         gaugeConfigs = getDefaultGaugeConfigs();
         syntheticMonitorConfigs = ImmutableList.of();
@@ -409,7 +385,6 @@ public class ConfigService {
         configs.put("transactions", transactionConfig);
         configs.put("jvm", jvmConfig);
         configs.put("uiDefaults", uiDefaultsConfig);
-        configs.put("userRecording", userRecordingConfig);
         configs.put("advanced", advancedConfig);
         configs.put("gauges", gaugeConfigs);
         configs.put("syntheticMonitors", syntheticMonitorConfigs);

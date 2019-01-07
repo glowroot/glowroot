@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,6 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MBeanAttribute;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -165,28 +164,6 @@ public class ConfigRepositoryIT {
         configRepository.updateUiDefaultsConfig(agentId, updatedConfig,
                 Versions.getVersion(config));
         config = configRepository.getUiDefaultsConfig(agentId);
-
-        // then
-        assertThat(config).isEqualTo(updatedConfig);
-    }
-
-    @Test
-    public void shouldUpdateUserRecordingConfig() throws Exception {
-        // given
-        String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
-        UserRecordingConfig config = configRepository.getUserRecordingConfig(agentId);
-        UserRecordingConfig updatedConfig = UserRecordingConfig.newBuilder()
-                .addUser("x")
-                .addUser("y")
-                .addUser("z")
-                .setProfilingIntervalMillis(OptionalInt32.newBuilder().setValue(1234))
-                .build();
-
-        // when
-        configRepository.updateUserRecordingConfig(agentId, updatedConfig,
-                Versions.getVersion(config));
-        config = configRepository.getUserRecordingConfig(agentId);
 
         // then
         assertThat(config).isEqualTo(updatedConfig);

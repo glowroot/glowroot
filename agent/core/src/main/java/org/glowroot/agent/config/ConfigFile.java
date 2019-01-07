@@ -33,15 +33,15 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 // TODO if config.json file has unrecognized top-level node (something other than "transactions",
-// "uiDefaults", "userRecording", "advanced", etc) then log warning and remove that node
+// "uiDefaults", "advanced", etc) then log warning and remove that node
 class ConfigFile {
 
     private static final Logger logger = LoggerFactory.getLogger(ConfigFile.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final List<String> keyOrder =
-            ImmutableList.of("transactions", "jvm", "uiDefaults", "userRecording", "advanced",
-                    "gauges", "syntheticMonitors", "alerts", "plugins", "instrumentation");
+            ImmutableList.of("transactions", "jvm", "uiDefaults", "advanced", "gauges",
+                    "syntheticMonitors", "alerts", "plugins", "instrumentation");
 
     private final File file;
     private final ObjectNode rootObjectNode;
@@ -111,6 +111,7 @@ class ConfigFile {
         upgradeAdvancedIfNeeded(rootObjectNode);
         upgradePluginPropertiesIfNeeded(rootObjectNode);
         upgradeSlowThresholdOverrideIfNeeded(rootObjectNode);
+        removeUserRecordingIfNeeded(rootObjectNode);
         return rootObjectNode;
     }
 
@@ -239,19 +240,6 @@ class ConfigFile {
         }
     }
 
-    private static void upgradeSlowThresholdOverrideIfNeeded(ObjectNode rootObjectNode) {
-        JsonNode transactionsNode = rootObjectNode.get("transactions");
-        if (transactionsNode == null || !transactionsNode.isObject()) {
-            return;
-        }
-        ObjectNode transactionsObjectNode = (ObjectNode) transactionsNode;
-        if (transactionsObjectNode.has("slowThresholds")) {
-            // upgrade from 0.11.1 to 0.12.0
-            transactionsObjectNode.set("slowThresholdOverrides",
-                    transactionsObjectNode.remove("slowThresholds"));
-        }
-    }
-
     private static void upgradePluginPropertiesIfNeeded(ObjectNode rootObjectNode) {
         JsonNode pluginsNode = rootObjectNode.get("plugins");
         if (pluginsNode == null || !pluginsNode.isArray()) {
@@ -271,6 +259,23 @@ class ConfigFile {
                 return;
             }
         }
+    }
+
+    private static void upgradeSlowThresholdOverrideIfNeeded(ObjectNode rootObjectNode) {
+        JsonNode transactionsNode = rootObjectNode.get("transactions");
+        if (transactionsNode == null || !transactionsNode.isObject()) {
+            return;
+        }
+        ObjectNode transactionsObjectNode = (ObjectNode) transactionsNode;
+        if (transactionsObjectNode.has("slowThresholds")) {
+            // upgrade from 0.11.1 to 0.12.0
+            transactionsObjectNode.set("slowThresholdOverrides",
+                    transactionsObjectNode.remove("slowThresholds"));
+        }
+    }
+
+    private static void removeUserRecordingIfNeeded(ObjectNode rootObjectNode) {
+        rootObjectNode.remove("userRecording");
     }
 
     private static void upgradeJdbcPluginPropertiesIfNeeded(ObjectNode propertiesObjectNode) {

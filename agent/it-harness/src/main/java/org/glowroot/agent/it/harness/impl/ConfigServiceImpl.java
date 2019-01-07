@@ -33,7 +33,6 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfi
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.StringList;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 class ConfigServiceImpl implements ConfigService {
@@ -99,14 +98,6 @@ class ConfigServiceImpl implements ConfigService {
         } else {
             return 0;
         }
-    }
-
-    @Override
-    public void updateUserRecordingConfig(UserRecordingConfig config) throws Exception {
-        AgentConfig agentConfig = server.getAgentConfig();
-        server.updateAgentConfig(agentConfig.toBuilder()
-                .setUserRecordingConfig(config)
-                .build());
     }
 
     @Override

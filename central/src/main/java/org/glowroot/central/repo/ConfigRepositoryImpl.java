@@ -85,7 +85,6 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginPrope
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 
 public class ConfigRepositoryImpl implements ConfigRepository {
 
@@ -168,15 +167,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             throw new AgentConfigNotFoundException(agentRollupId);
         }
         return agentConfig.getUiDefaultsConfig();
-    }
-
-    @Override
-    public UserRecordingConfig getUserRecordingConfig(String agentId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentId);
-        if (agentConfig == null) {
-            throw new AgentConfigNotFoundException(agentId);
-        }
-        return agentConfig.getUserRecordingConfig();
     }
 
     // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
@@ -933,24 +923,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 }
                 return builder.clearInstrumentationConfig()
                         .addAllInstrumentationConfig(existingConfigs)
-                        .build();
-            }
-        });
-        notifyAgentConfigListeners(agentId);
-    }
-
-    @Override
-    public void updateUserRecordingConfig(String agentId, UserRecordingConfig config,
-            String priorVersion) throws Exception {
-        agentConfigDao.update(agentId, new AgentConfigUpdater() {
-            @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                String existingVersion = Versions.getVersion(agentConfig.getUserRecordingConfig());
-                if (!priorVersion.equals(existingVersion)) {
-                    throw new OptimisticLockException();
-                }
-                return agentConfig.toBuilder()
-                        .setUserRecordingConfig(config)
                         .build();
             }
         });

@@ -52,7 +52,6 @@ import org.glowroot.agent.impl.TraceCollector;
 import org.glowroot.agent.impl.TransactionProcessor;
 import org.glowroot.agent.impl.TransactionRegistry;
 import org.glowroot.agent.impl.TransactionService;
-import org.glowroot.agent.impl.UserProfileScheduler;
 import org.glowroot.agent.init.PreCheckLoadedClasses.PreCheckClassFileTransformer;
 import org.glowroot.agent.live.LiveAggregateRepositoryImpl;
 import org.glowroot.agent.live.LiveJvmServiceImpl;
@@ -102,7 +101,6 @@ public class AgentModule {
     private final Weaver weaver;
     private final Random random;
 
-    private final UserProfileScheduler userProfileScheduler;
     private final TransactionService transactionService;
     private final BytecodeServiceImpl bytecodeService;
 
@@ -169,9 +167,8 @@ public class AgentModule {
         PluginService pluginService = new PluginServiceImpl(timerNameCache, configServiceFactory);
         PluginServiceHolder.set(pluginService);
         random = new Random();
-        userProfileScheduler = new UserProfileScheduler(configService, random);
         transactionService = TransactionService.create(transactionRegistry, configService,
-                timerNameCache, userProfileScheduler, ticker, clock);
+                timerNameCache, ticker, clock);
         bytecodeService = new BytecodeServiceImpl(transactionRegistry, transactionService);
         BytecodeServiceHolder.set(bytecodeService);
 
@@ -245,7 +242,6 @@ public class AgentModule {
 
         // complete initialization of glowroot-agent-api, glowroot-agent-plugin-api and
         // glowroot-weaving-api services
-        userProfileScheduler.setBackgroundExecutor(backgroundExecutor);
         OptionalService<ThreadAllocatedBytes> threadAllocatedBytes = ThreadAllocatedBytes.create();
         transactionService.setThreadAllocatedBytes(threadAllocatedBytes.getService());
         traceCollector = new TraceCollector(configService, collector, clock, ticker);

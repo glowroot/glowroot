@@ -15,7 +15,6 @@ message AgentConfig {
   TransactionConfig transaction_config = 2;
   JvmConfig jvm_config = 17;
   UiDefaultsConfig ui_defaults_config = 3;
-  UserRecordingConfig user_recording_config = 4;
   AdvancedConfig advanced_config = 5;
 
   repeated GaugeConfig gauge_config = 10;
@@ -53,11 +52,6 @@ message AgentConfig {
     string default_transaction_type = 1;
     repeated double default_percentile = 2;
     repeated string default_gauge_name = 3;
-  }
-
-  message UserRecordingConfig {
-    repeated string user = 1;
-    OptionalInt32 profiling_interval_millis = 2; // absent means N/A
   }
 
   message AdvancedConfig {

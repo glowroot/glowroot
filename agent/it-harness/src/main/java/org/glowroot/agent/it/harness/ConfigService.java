@@ -20,13 +20,10 @@ import java.util.List;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UserRecordingConfig;
 
 public interface ConfigService {
 
     void updateTransactionConfig(TransactionConfig config) throws Exception;
-
-    void updateUserRecordingConfig(UserRecordingConfig config) throws Exception;
 
     // convenience methods wrapping updatePluginConfig()
     void setPluginProperty(String pluginId, String propertyName, boolean propertyValue)

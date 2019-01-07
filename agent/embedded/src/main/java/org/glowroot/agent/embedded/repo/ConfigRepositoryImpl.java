@@ -42,7 +42,6 @@ import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.config.JvmConfig;
 import org.glowroot.common.config.TransactionConfig;
 import org.glowroot.common.config.UiDefaultsConfig;
-import org.glowroot.common.config.UserRecordingConfig;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Versions;
 import org.glowroot.common2.config.AllCentralAdminConfig;
@@ -128,11 +127,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public AgentConfig.UiDefaultsConfig getUiDefaultsConfig(String agentRollupId) {
         return configService.getUiDefaultsConfig().toProto();
-    }
-
-    @Override
-    public AgentConfig.UserRecordingConfig getUserRecordingConfig(String agentId) {
-        return configService.getUserRecordingConfig().toProto();
     }
 
     @Override
@@ -660,18 +654,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 }
             }
             configService.updateInstrumentationConfigs(existingConfigs);
-        }
-    }
-
-    @Override
-    public void updateUserRecordingConfig(String agentId,
-            AgentConfig.UserRecordingConfig protoConfig, String priorVersion) throws Exception {
-        UserRecordingConfig config = UserRecordingConfig.create(protoConfig);
-        synchronized (writeLock) {
-            String currVersion =
-                    Versions.getVersion(configService.getUserRecordingConfig().toProto());
-            checkVersionsEqual(currVersion, priorVersion);
-            configService.updateUserRecordingConfig(config);
         }
     }
 

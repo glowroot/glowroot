@@ -183,7 +183,6 @@ public abstract class WebDriverIT {
                 + "\"defaultPercentiles\":[50.0,95.0,99.0],"
                 + "\"defaultGaugeNames\":[\"java.lang:type=Memory:HeapMemoryUsage.used\"],"
                 + "\"version\":\"$version\"}");
-        resetCentralConfig("/user-recording", false, "{\"version\":\"$version\"}");
         resetCentralConfig("/advanced", true, "{\"immediatePartialStoreThresholdSeconds\":60,"
                 + "\"maxTransactionAggregates\":500,"
                 + "\"maxQueryAggregates\":500,"
