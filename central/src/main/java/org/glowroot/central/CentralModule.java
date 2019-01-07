@@ -459,8 +459,8 @@ public class CentralModule {
                     && !partialTableName.equals("error_summary")
                     && !partialTableName.equals("gauge_value")) {
                 startupLogger.error("partial table name must be one of \"query\", \"service_call\","
-                        + " \"profile\", \"overview\", \"histogram\", \"throughput\" or"
-                        + " \"gauge_value\", exiting");
+                        + " \"profile\", \"overview\", \"histogram\", \"throughput\", \"summary\","
+                        + " \"error_summary\" or \"gauge_value\", exiting");
                 return;
             }
             if (commandName.equals("delete-old-data")) {
