@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ public class SimpleRepoModule {
     private final DataSource dataSource;
     private final ImmutableList<CappedDatabase> rollupCappedDatabases;
     private final CappedDatabase traceCappedDatabase;
+    private final AlertingDisabledDao alertingDisabledDao;
     private final EnvironmentDao environmentDao;
     private final TransactionTypeDao transactionTypeDao;
     private final AggregateDao aggregateDao;
@@ -98,6 +99,7 @@ public class SimpleRepoModule {
             schemaUpgrade.upgrade();
         }
 
+        alertingDisabledDao = new AlertingDisabledDao(dataSource);
         environmentDao = new EnvironmentDao(dataSource);
         transactionTypeDao = new TransactionTypeDao(dataSource);
         rollupLevelService = new RollupLevelService(configRepository, clock);
@@ -118,8 +120,8 @@ public class SimpleRepoModule {
         }
 
         repoAdmin = new RepoAdminImpl(dataSource, rollupCappedDatabases, traceCappedDatabase,
-                configRepository, environmentDao, gaugeIdDao, gaugeNameDao, gaugeValueDao,
-                transactionTypeDao, fullQueryTextDao, traceAttributeNameDao, clock);
+                configRepository, alertingDisabledDao, environmentDao, gaugeIdDao, gaugeNameDao,
+                gaugeValueDao, transactionTypeDao, fullQueryTextDao, traceAttributeNameDao, clock);
 
         httpClient = new HttpClient(configRepository);
 
@@ -148,6 +150,10 @@ public class SimpleRepoModule {
                 "org.glowroot:type=TraceCappedDatabase");
         platformMBeanServerLifecycle.lazyRegisterMBean(new H2DatabaseStats(dataSource),
                 "org.glowroot:type=H2Database");
+    }
+
+    public AlertingDisabledDao getAlertingDisabledDao() {
+        return alertingDisabledDao;
     }
 
     public EnvironmentDao getEnvironmentDao() {

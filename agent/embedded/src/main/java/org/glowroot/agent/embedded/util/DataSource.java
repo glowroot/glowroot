@@ -221,7 +221,7 @@ public class DataSource {
                     }
                     long val = resultSet.getLong(1);
                     if (resultSet.wasNull()) {
-                        logger.warn("more than one row returned: {}", sql);
+                        logger.warn("no rows returned: {}", sql);
                     }
                     if (resultSet.next()) {
                         logger.warn("more than one row returned: {}", sql);

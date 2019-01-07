@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -261,7 +261,7 @@ public abstract class WebDriverIT {
     private static void deleteAllAlerts() throws Exception {
         String content = httpGet("http://localhost:" + getUiPort()
                 + "/backend/config/alerts?agent-rollup-id=" + agentId);
-        ArrayNode alerts = (ArrayNode) new ObjectMapper().readTree(content);
+        ArrayNode alerts = (ArrayNode) new ObjectMapper().readTree(content).get("alerts");
         for (JsonNode alert : alerts) {
             String version = alert.get("version").asText();
             httpPost(

@@ -27,6 +27,8 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.agent.api.Instrumentation.AlreadyInTransactionBehavior;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
+import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.AlertingDisabledRepository;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.util.AlertingService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
@@ -42,6 +44,8 @@ class CentralAlertingService {
     private final ConfigRepositoryImpl configRepository;
     private final AlertingService alertingService;
     private final HeartbeatAlertingService heartbeatAlertingService;
+    private final AlertingDisabledRepository alertingDisabledRepository;
+    private final Clock clock;
 
     private final ExecutorService alertCheckingExecutor;
 
@@ -50,10 +54,13 @@ class CentralAlertingService {
     private volatile boolean closed;
 
     CentralAlertingService(ConfigRepositoryImpl configRepository, AlertingService alertingService,
-            HeartbeatAlertingService heartbeatAlertingService) {
+            HeartbeatAlertingService heartbeatAlertingService,
+            AlertingDisabledRepository alertingDisabledRepository, Clock clock) {
         this.configRepository = configRepository;
         this.alertingService = alertingService;
         this.heartbeatAlertingService = heartbeatAlertingService;
+        this.alertingDisabledRepository = alertingDisabledRepository;
+        this.clock = clock;
         alertCheckingExecutor = Executors.newSingleThreadExecutor();
     }
 
@@ -94,6 +101,9 @@ class CentralAlertingService {
             throws InterruptedException {
         List<AlertConfig> alertConfigs;
         try {
+            if (isCurrentlyDisabled(agentId)) {
+                return;
+            }
             alertConfigs = configRepository.getAlertConfigs(agentId);
         } catch (InterruptedException e) {
             // probably shutdown requested
@@ -108,9 +118,6 @@ class CentralAlertingService {
         }
         List<AlertConfig> aggregateAlertConfigs = new ArrayList<>();
         for (AlertConfig alertConfig : alertConfigs) {
-            if (alertConfig.getDisabled()) {
-                continue;
-            }
             if (isAggregateCondition(alertConfig.getCondition())) {
                 aggregateAlertConfigs.add(alertConfig);
             }
@@ -124,6 +131,9 @@ class CentralAlertingService {
             throws InterruptedException {
         List<AlertConfig> alertConfigs;
         try {
+            if (isCurrentlyDisabled(agentId)) {
+                return;
+            }
             alertConfigs = configRepository.getAlertConfigs(agentId);
         } catch (InterruptedException e) {
             // probably shutdown requested
@@ -138,9 +148,6 @@ class CentralAlertingService {
         }
         List<AlertConfig> gaugeAndHeartbeatAlertConfigs = new ArrayList<>();
         for (AlertConfig alertConfig : alertConfigs) {
-            if (alertConfig.getDisabled()) {
-                continue;
-            }
             AlertCondition condition = alertConfig.getCondition();
             if (isGaugeCondition(condition)
                     || condition.getValCase() == AlertCondition.ValCase.HEARTBEAT_CONDITION) {
@@ -159,6 +166,9 @@ class CentralAlertingService {
             String agentRollupDisplay, long endTime) throws InterruptedException {
         List<AlertConfig> alertConfigs;
         try {
+            if (isCurrentlyDisabled(agentRollupId)) {
+                return;
+            }
             alertConfigs = configRepository.getAlertConfigs(agentRollupId);
         } catch (InterruptedException e) {
             // probably shutdown requested
@@ -173,9 +183,6 @@ class CentralAlertingService {
         }
         List<AlertConfig> aggregateAndGaugeAndHeartbeatAlertConfigs = new ArrayList<>();
         for (AlertConfig alertConfig : alertConfigs) {
-            if (alertConfig.getDisabled()) {
-                continue;
-            }
             AlertCondition condition = alertConfig.getCondition();
             if (condition.getValCase() == AlertCondition.ValCase.METRIC_CONDITION
                     || condition.getValCase() == AlertCondition.ValCase.HEARTBEAT_CONDITION) {
@@ -186,6 +193,12 @@ class CentralAlertingService {
             checkAlertsAsync(agentRollupId, agentRollupDisplay, endTime,
                     aggregateAndGaugeAndHeartbeatAlertConfigs);
         }
+    }
+
+    private boolean isCurrentlyDisabled(String agentRollupId) throws Exception {
+        Long disabledUntilTime =
+                alertingDisabledRepository.getAlertingDisabledUntilTime(agentRollupId);
+        return disabledUntilTime != null && disabledUntilTime > clock.currentTimeMillis();
     }
 
     private void checkAlertsAsync(String agentRollupId, String agentRollupDisplay, long endTime,

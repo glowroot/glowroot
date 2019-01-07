@@ -113,6 +113,7 @@ public interface ConfigRepository {
     // central supports alert configs on rollups
     List<AlertConfig> getAlertConfigs(String agentRollupId) throws Exception;
 
+    // central supports alert configs on rollups
     @Nullable
     AlertConfig getAlertConfig(String agentRollupId, String version) throws Exception;
 
@@ -214,15 +215,9 @@ public interface ConfigRepository {
     // central supports alert configs on rollups
     void deleteAlertConfig(String agentRollupId, String version) throws Exception;
 
-    // central supports alert configs on rollups
-    void disableAllAlertConfigs(String agentRollupId) throws Exception;
-
-    // central supports alert configs on rollups
-    void enableAllAlertConfigs(String agentRollupId) throws Exception;
-
     // central supports ui config on rollups
-    void updateUiDefaultsConfig(String agentRollupId, UiDefaultsConfig uiConfig,
-            String priorVersion) throws Exception;
+    void updateUiDefaultsConfig(String agentRollupId, UiDefaultsConfig config, String priorVersion)
+            throws Exception;
 
     // only plugin id and property names and values are used
     void updatePluginConfig(String agentId, PluginConfig config, String priorVersion)

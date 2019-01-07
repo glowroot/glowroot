@@ -199,7 +199,8 @@ public class CentralModule {
                     repos.getHeartbeatDao(), repos.getIncidentDao(), alertingService,
                     repos.getConfigRepository());
             centralAlertingService = new CentralAlertingService(repos.getConfigRepository(),
-                    alertingService, heartbeatAlertingService);
+                    alertingService, heartbeatAlertingService, repos.getAlertingDisabledDao(),
+                    clock);
 
             grpcServer = new GrpcServer(centralConfig.grpcBindAddress(),
                     centralConfig.grpcHttpPort(), centralConfig.grpcHttpsPort(),
@@ -243,6 +244,7 @@ public class CentralModule {
                     .clock(clock)
                     .liveJvmService(new LiveJvmServiceImpl(downstreamService))
                     .configRepository(repos.getConfigRepository())
+                    .alertingDisabledRepository(repos.getAlertingDisabledDao())
                     .activeAgentRepository(repos.getActiveAgentDao())
                     .environmentRepository(repos.getEnvironmentDao())
                     .transactionTypeRepository(repos.getTransactionTypeDao())

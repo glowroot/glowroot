@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ class RepoAdminImpl implements RepoAdmin {
     private final List<CappedDatabase> rollupCappedDatabases;
     private final CappedDatabase traceCappedDatabase;
     private final ConfigRepositoryImpl configRepository;
+    private final AlertingDisabledDao alertingDisabledDao;
     private final EnvironmentDao environmentDao;
     private final GaugeIdDao gaugeIdDao;
     private final GaugeNameDao gaugeNameDao;
@@ -56,14 +57,15 @@ class RepoAdminImpl implements RepoAdmin {
 
     RepoAdminImpl(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
             CappedDatabase traceCappedDatabase, ConfigRepositoryImpl configRepository,
-            EnvironmentDao environmentDao, GaugeIdDao gaugeIdDao, GaugeNameDao gaugeNameDao,
-            GaugeValueDao gaugeValueDao, TransactionTypeDao transactionTypeDao,
-            FullQueryTextDao fullQueryTextDao, TraceAttributeNameDao traceAttributeNameDao,
-            Clock clock) {
+            AlertingDisabledDao alertingDisabledDao, EnvironmentDao environmentDao,
+            GaugeIdDao gaugeIdDao, GaugeNameDao gaugeNameDao, GaugeValueDao gaugeValueDao,
+            TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
+            TraceAttributeNameDao traceAttributeNameDao, Clock clock) {
         this.dataSource = dataSource;
         this.rollupCappedDatabases = rollupCappedDatabases;
         this.traceCappedDatabase = traceCappedDatabase;
         this.configRepository = configRepository;
+        this.alertingDisabledDao = alertingDisabledDao;
         this.environmentDao = environmentDao;
         this.gaugeIdDao = gaugeIdDao;
         this.gaugeNameDao = gaugeNameDao;
@@ -85,6 +87,7 @@ class RepoAdminImpl implements RepoAdmin {
     public void deleteAllData() throws Exception {
         Environment environment = environmentDao.read("");
         dataSource.deleteAll();
+        alertingDisabledDao.reinitAfterDeletingDatabase();
         environmentDao.reinitAfterDeletingDatabase();
         gaugeIdDao.invalidateCache();
         gaugeNameDao.invalidateCache();

@@ -38,6 +38,7 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.common2.config.EmbeddedWebConfig;
 import org.glowroot.common2.repo.ActiveAgentRepository;
 import org.glowroot.common2.repo.AggregateRepository;
+import org.glowroot.common2.repo.AlertingDisabledRepository;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.EnvironmentRepository;
 import org.glowroot.common2.repo.GaugeValueRepository;
@@ -80,6 +81,7 @@ public class UiModule {
             Clock clock,
             @Nullable LiveJvmService liveJvmService,
             final ConfigRepository configRepository,
+            AlertingDisabledRepository alertingDisabledRepository,
             ActiveAgentRepository activeAgentRepository,
             EnvironmentRepository environmentRepository,
             TransactionTypeRepository transactionTypeRepository,
@@ -135,8 +137,8 @@ public class UiModule {
                 liveAggregateRepository, rollupLevelService));
         jsonServices.add(new ConfigJsonService(transactionTypeRepository, gaugeValueRepository,
                 liveAggregateRepository, configRepository));
-        jsonServices.add(new AlertConfigJsonService(configRepository, gaugeValueRepository,
-                syntheticResultRepository, clock, central));
+        jsonServices.add(new AlertConfigJsonService(configRepository, alertingDisabledRepository,
+                gaugeValueRepository, syntheticResultRepository, clock, central));
         jsonServices.add(new UserConfigJsonService(configRepository));
         jsonServices
                 .add(new RoleConfigJsonService(central, configRepository, activeAgentRepository));

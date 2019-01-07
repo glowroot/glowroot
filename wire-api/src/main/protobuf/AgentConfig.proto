@@ -11,7 +11,7 @@ message AgentConfig {
   // only used when sending to central and storing in central
   bool config_read_only = 18;
 
-  GeneralConfig general_config = 16;
+  GeneralConfig general_config = 16; // only stored in central
   TransactionConfig transaction_config = 2;
   JvmConfig jvm_config = 17;
   UiDefaultsConfig ui_defaults_config = 3;
@@ -122,7 +122,7 @@ message AgentConfig {
     AlertSeverity severity = 3;
     AlertNotification notification = 2;
 
-    bool disabled = 4;
+    // do not use field number 4 -- it was used in a 0.13.0-SNAPSHOT release (for a 'disabled' flag)
 
     message AlertCondition {
       oneof val {

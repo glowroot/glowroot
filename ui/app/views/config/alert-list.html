@@ -21,16 +21,22 @@
     <div ng-hide="hideMainContent()">
       <div ng-include src="'template/gt-loading-overlay.html'"></div>
       <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+      <div ng-if="disabledForNextMillis && !layout.offlineViewer"
+           class="alert alert-danger"
+           role="alert"
+           style="margin: 0 15px 30px;">
+        Alerting is disabled for the next {{disabledForNextMillis | gtDuration}}.
+      </div>
       <div style="margin: 15px;">
-        <div ng-if="!configs.length"
+        <div ng-if="!alerts.length"
              style="font-style: italic;">
           There are no configured alerts
         </div>
-        <div ng-repeat="config in configs"
+        <div ng-repeat="alert in alerts"
              class="gt-second-line-indent"
              style="padding-bottom: 8px;">
-          <a ng-href="config/alert{{configQueryString(config)}}">
-            {{config.disabled ? 'DISABLED - ' : ''}} {{config.display}}
+          <a ng-href="config/alert{{alertQueryString(alert)}}">
+            {{alert.display}}
           </a>
         </div>
         <!-- ng-if="loaded" is used to prevent jitter of seeing this section very briefly
@@ -42,21 +48,72 @@
                href="config/alert{{newQueryString()}}">
               Add new
             </a>
+            <button ng-click="displayDisableAlertingModal()"
+                    ng-if="!disabledForNextMillis && !layout.offlineViewer"
+                    class="btn btn-secondary gt-button-spacing">
+              Temporarily disable alerting
+            </button>
             <div gt-button
-                 gt-btn-class="gt-btn-warning"
-                 gt-label="Disable all alerts"
-                 gt-click="disableAllAlerts(deferred)"
-                 ng-if="someAlertsEnabled()"
-                 class="d-inline-block">
-            </div>
-            <div gt-button
-                 gt-btn-class="gt-btn-warning"
-                 gt-label="Enable all alerts"
-                 gt-click="enableAllAlerts(deferred)"
-                 ng-if="someAlertsDisabled()"
+                 gt-btn-class="btn-secondary"
+                 gt-label="Re-enable alerting"
+                 gt-click="reEnableAlerting(deferred)"
+                 ng-if="disabledForNextMillis && !layout.offlineViewer"
                  class="d-inline-block">
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal" id="disableAlertingModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered"
+       style="max-width: 500px;">
+    <div class="modal-content">
+      <div ng-form
+           gt-form-with-primary-button>
+        <div class="modal-header">
+          <h3>Temporarily disable alerting</h3>
+        </div>
+        <div class="modal-body">
+          <div class="container">
+            <div class="form-group">
+              <label class="col-form-label pb-3"
+                     for="forNext">
+                How long do you want to disable alerts?
+              </label>
+              <div class="input-group">
+                <input type="text"
+                       class="form-control"
+                       ng-model="page.disableForNext"
+                       ng-pattern="pattern.integer"
+                       name="forNext"
+                       id="forNext"
+                       style="max-width: 7em;">
+                <div gt-input-group-dropdown
+                     gt-model="page.disableForNextUnit"
+                     gt-items="disableForNextUnits"
+                     class="input-group-append">
+                </div>
+              </div>
+              <div class="help-block pt-3">
+                NOTE: you can re-enable manually at any time.
+              </div>
+            </div>
+            <div style="min-height: 60px;">
+              <div class="d-inline-block">
+                <div gt-spinner
+                     gt-show="disablingAlerting"
+                     class="gt-left-aligned-spinner"
+                     style="width: 50px; margin-bottom: -30px;">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" ng-click="disableAlerting()">Temporarily disable alerting</button>
+          <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
         </div>
       </div>
     </div>

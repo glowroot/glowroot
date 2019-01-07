@@ -40,12 +40,6 @@ public abstract class AlertConfig {
     public abstract @Nullable ImmutablePagerDutyNotification pagerDutyNotification();
     public abstract @Nullable ImmutableSlackNotification slackNotification();
 
-    @Value.Default
-    @JsonInclude(Include.NON_EMPTY)
-    public boolean disabled() {
-        return false;
-    }
-
     public static ImmutableAlertConfig create(AgentConfig.AlertConfig config) {
         ImmutableAlertConfig.Builder builder = ImmutableAlertConfig.builder()
                 .condition(create(config.getCondition()))
@@ -60,8 +54,7 @@ public abstract class AlertConfig {
         if (notification.hasSlackNotification()) {
             builder.slackNotification(create(notification.getSlackNotification()));
         }
-        return builder.disabled(config.getDisabled())
-                .build();
+        return builder.build();
     }
 
     public AgentConfig.AlertConfig toProto() {
@@ -82,8 +75,7 @@ public abstract class AlertConfig {
             builder.getNotificationBuilder()
                     .setSlackNotification(toProto(slackNotification));
         }
-        return builder.setDisabled(disabled())
-                .build();
+        return builder.build();
     }
 
     private static AlertCondition create(AgentConfig.AlertConfig.AlertCondition alertCondition) {

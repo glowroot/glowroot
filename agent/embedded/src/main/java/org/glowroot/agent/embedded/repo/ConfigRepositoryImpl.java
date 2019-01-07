@@ -469,19 +469,18 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void insertSyntheticMonitorConfig(String agentRollupId,
-            AgentConfig.SyntheticMonitorConfig config) throws Exception {
+            AgentConfig.SyntheticMonitorConfig config) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateSyntheticMonitorConfig(String agentRollupId,
-            AgentConfig.SyntheticMonitorConfig config, String priorVersion) throws Exception {
+            AgentConfig.SyntheticMonitorConfig config, String priorVersion) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void deleteSyntheticMonitorConfig(String agentRollupId, String syntheticMonitorId)
-            throws Exception {
+    public void deleteSyntheticMonitorConfig(String agentRollupId, String syntheticMonitorId) {
         throw new UnsupportedOperationException();
     }
 
@@ -542,36 +541,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
             if (!found) {
                 throw new OptimisticLockException();
-            }
-            configService.updateAlertConfigs(configs);
-        }
-    }
-
-    // central supports alert configs on rollups
-    @Override
-    public void disableAllAlertConfigs(String agentRollupId) throws Exception {
-        synchronized (writeLock) {
-            List<AlertConfig> configs = Lists.newArrayList();
-            for (AlertConfig alertConfig : configService.getAlertConfigs()) {
-                configs.add(ImmutableAlertConfig.builder()
-                        .copyFrom(alertConfig)
-                        .disabled(true)
-                        .build());
-            }
-            configService.updateAlertConfigs(configs);
-        }
-    }
-
-    // central supports alert configs on rollups
-    @Override
-    public void enableAllAlertConfigs(String agentRollupId) throws Exception {
-        synchronized (writeLock) {
-            List<AlertConfig> configs = Lists.newArrayList();
-            for (AlertConfig alertConfig : configService.getAlertConfigs()) {
-                configs.add(ImmutableAlertConfig.builder()
-                        .copyFrom(alertConfig)
-                        .disabled(false)
-                        .build());
             }
             configService.updateAlertConfigs(configs);
         }

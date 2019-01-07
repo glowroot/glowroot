@@ -39,6 +39,7 @@ import org.glowroot.common.util.Versions;
 import org.glowroot.common2.config.MoreConfigDefaults;
 import org.glowroot.common2.config.PagerDutyConfig.PagerDutyIntegrationKey;
 import org.glowroot.common2.config.SlackConfig.SlackWebhook;
+import org.glowroot.common2.repo.AlertingDisabledRepository;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
@@ -76,16 +77,19 @@ class AlertConfigJsonService {
     };
 
     private final ConfigRepository configRepository;
+    private final AlertingDisabledRepository alertingDisableRepository;
     private final GaugeValueRepository gaugeValueRepository;
     private final @Nullable SyntheticResultRepository syntheticResultRepository;
     private final Clock clock;
     private final boolean central;
 
     AlertConfigJsonService(ConfigRepository configRepository,
+            AlertingDisabledRepository alertingDisableRepository,
             GaugeValueRepository gaugeValueRepository,
             @Nullable SyntheticResultRepository syntheticResultRepository, Clock clock,
             boolean central) {
         this.configRepository = configRepository;
+        this.alertingDisableRepository = alertingDisableRepository;
         this.gaugeValueRepository = gaugeValueRepository;
         this.syntheticResultRepository = syntheticResultRepository;
         this.clock = clock;
@@ -140,16 +144,18 @@ class AlertConfigJsonService {
     }
 
     // central supports alert configs on rollups
-    @POST(path = "/backend/config/alerts/disable-all", permission = "agent:config:edit:alerts")
-    String disableAll(@BindAgentRollupId String agentRollupId) throws Exception {
-        configRepository.disableAllAlertConfigs(agentRollupId);
+    @POST(path = "/backend/config/disable-alerting", permission = "agent:config:edit:alerts")
+    String disableAlerting(@BindAgentRollupId String agentRollupId,
+            @BindRequest DisableAlertingRequest request) throws Exception {
+        alertingDisableRepository.setAlertingDisabledUntilTime(agentRollupId,
+                clock.currentTimeMillis() + request.disableForNextMillis());
         return getAlertList(agentRollupId);
     }
 
     // central supports alert configs on rollups
-    @POST(path = "/backend/config/alerts/enable-all", permission = "agent:config:edit:alerts")
-    String enableAll(@BindAgentRollupId String agentRollupId) throws Exception {
-        configRepository.enableAllAlertConfigs(agentRollupId);
+    @POST(path = "/backend/config/re-enable-alerting", permission = "agent:config:edit:alerts")
+    String reEnableAlerting(@BindAgentRollupId String agentRollupId) throws Exception {
+        alertingDisableRepository.setAlertingDisabledUntilTime(agentRollupId, null);
         return getAlertList(agentRollupId);
     }
 
@@ -184,11 +190,20 @@ class AlertConfigJsonService {
                     .display(getConditionDisplay(agentRollupId, alertConfig.getCondition(),
                             clock.currentTimeMillis(), configRepository,
                             syntheticResultRepository))
-                    .disabled(alertConfig.getDisabled())
                     .build());
         }
         alertListItems = orderingByName.immutableSortedCopy(alertListItems);
-        return mapper.writeValueAsString(alertListItems);
+        ImmutableAlertListResponse.Builder builder = ImmutableAlertListResponse.builder()
+                .alerts(alertListItems);
+        Long disabledUntilTime =
+                alertingDisableRepository.getAlertingDisabledUntilTime(agentRollupId);
+        if (disabledUntilTime != null) {
+            long disabledForNextMillis = disabledUntilTime - clock.currentTimeMillis();
+            if (disabledForNextMillis > 0) {
+                builder.disabledForNextMillis(disabledForNextMillis);
+            }
+        }
+        return mapper.writeValueAsString(builder.build());
     }
 
     private List<Gauge> getGaugeDropdownItems(String agentRollupId)
@@ -349,10 +364,16 @@ class AlertConfigJsonService {
     }
 
     @Value.Immutable
+    interface AlertListResponse {
+        List<AlertListItem> alerts();
+        @Nullable
+        Long disabledForNextMillis();
+    }
+
+    @Value.Immutable
     interface AlertListItem {
         String version();
         String display();
-        boolean disabled();
     }
 
     @Value.Immutable
@@ -382,6 +403,11 @@ class AlertConfigJsonService {
     }
 
     @Value.Immutable
+    interface DisableAlertingRequest {
+        long disableForNextMillis();
+    }
+
+    @Value.Immutable
     abstract static class AlertConfigDto {
 
         abstract AlertConditionDto condition();
@@ -389,7 +415,6 @@ class AlertConfigJsonService {
         abstract @Nullable ImmutableEmailNotificationDto emailNotification();
         abstract @Nullable ImmutablePagerDutyNotificationDto pagerDutyNotification();
         abstract @Nullable ImmutableSlackNotificationDto slackNotification();
-        abstract boolean disabled();
 
         abstract Optional<String> version(); // absent for insert operations
 
@@ -407,8 +432,7 @@ class AlertConfigJsonService {
             if (notification.hasSlackNotification()) {
                 builder.slackNotification(toDto(notification.getSlackNotification()));
             }
-            return builder.disabled(config.getDisabled())
-                    .version(Optional.of(Versions.getVersion(config)))
+            return builder.version(Optional.of(Versions.getVersion(config)))
                     .build();
         }
 
@@ -430,8 +454,7 @@ class AlertConfigJsonService {
                 builder.getNotificationBuilder()
                         .setSlackNotification(toProto(slackNotification));
             }
-            return builder.setDisabled(disabled())
-                    .build();
+            return builder.build();
         }
 
         private static AlertConditionDto toDto(AlertConfig.AlertCondition alertCondition) {

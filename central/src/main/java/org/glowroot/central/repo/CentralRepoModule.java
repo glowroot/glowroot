@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ public class CentralRepoModule {
     private final UserDao userDao;
     private final RoleDao roleDao;
     private final ConfigRepositoryImpl configRepository;
+    private final AlertingDisabledDao alertingDisabledDao;
     private final RollupLevelService rollupLevelService;
     private final ActiveAgentDao activeAgentDao;
     private final EnvironmentDao environmentDao;
@@ -63,6 +64,7 @@ public class CentralRepoModule {
         roleDao = new RoleDao(session, clusterManager);
         configRepository = new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao,
                 roleDao, cassandraSymmetricEncryptionKey);
+        alertingDisabledDao = new AlertingDisabledDao(session, clock);
         rollupLevelService = new RollupLevelService(configRepository, clock);
         activeAgentDao = new ActiveAgentDao(session, agentConfigDao, configRepository,
                 rollupLevelService, clock);
@@ -148,6 +150,10 @@ public class CentralRepoModule {
 
     public ConfigRepositoryImpl getConfigRepository() {
         return configRepository;
+    }
+
+    public AlertingDisabledDao getAlertingDisabledDao() {
+        return alertingDisabledDao;
     }
 
     public RollupLevelService getRollupLevelService() {

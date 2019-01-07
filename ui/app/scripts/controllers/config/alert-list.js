@@ -14,29 +14,48 @@
  * limitations under the License.
  */
 
-/* global glowroot */
+/* global glowroot, $ */
 
 glowroot.controller('ConfigAlertListCtrl', [
   '$scope',
   '$location',
   '$http',
   '$filter',
+  '$interval',
+  'modals',
   'queryStrings',
   'httpErrors',
-  function ($scope, $location, $http, $filter, queryStrings, httpErrors) {
+  function ($scope, $location, $http, $filter, $interval, modals, queryStrings, httpErrors) {
+
+    $scope.page = {};
 
     if ($scope.hideMainContent()) {
       return;
     }
 
-    $scope.configQueryString = function (config) {
+    $scope.disableForNextUnits = [
+      {
+        display: 'minutes',
+        value: 'minutes'
+      },
+      {
+        display: 'hours',
+        value: 'hours'
+      },
+      {
+        display: 'days',
+        value: 'days'
+      }
+    ];
+
+    $scope.alertQueryString = function (alert) {
       var query = {};
       if ($scope.agentId) {
         query.agentId = $scope.agentId;
       } else if ($scope.agentRollupId) {
         query.agentRollupId = $scope.agentRollupId;
       }
-      query.v = config.version;
+      query.v = alert.version;
       return queryStrings.encodeObject(query);
     };
 
@@ -49,41 +68,55 @@ glowroot.controller('ConfigAlertListCtrl', [
       }
     };
 
-    $scope.someAlertsDisabled = function () {
-      for (var i = 0; i < $scope.configs.length; i++) {
-        if ($scope.configs[i].disabled) {
-          return true;
-        }
+    function onNewData(data) {
+      $scope.alerts = data.alerts;
+      $scope.disabledForNextMillis = data.disabledForNextMillis;
+      if ($scope.disabledForNextMillis) {
+        // this is needed so that gtDuration filter never displays milliseconds (on the very last countdown)
+        $scope.disabledForNextMillis = Math.floor($scope.disabledForNextMillis / 1000) * 1000;
       }
-      return false;
+    }
+
+    $scope.displayDisableAlertingModal = function () {
+      $scope.page.disableForNextUnit = 'hours';
+      $scope.page.disableForNext = 1;
+      modals.display('#disableAlertingModal', true);
     };
 
-    $scope.someAlertsEnabled = function () {
-      for (var i = 0; i < $scope.configs.length; i++) {
-        if (!$scope.configs[i].disabled) {
-          return true;
-        }
+    $scope.disableAlerting = function () {
+      var disableForNextMillis;
+      if ($scope.page.disableForNextUnit === 'minutes') {
+        disableForNextMillis = $scope.page.disableForNext * 60 * 1000;
+      } else if ($scope.page.disableForNextUnit === 'hours') {
+        disableForNextMillis = $scope.page.disableForNext * 60 * 1000 * 60;
+      } else if ($scope.page.disableForNextUnit === 'days') {
+        disableForNextMillis = $scope.page.disableForNext * 60 * 1000 * 60 * 24;
       }
-      return false;
-    };
-
-    $scope.disableAllAlerts = function (deferred) {
-      $http.post('backend/config/alerts/disable-all?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
+      var postData = {
+        disableForNextMillis: disableForNextMillis,
+      };
+      $scope.disablingAlerting = true;
+      var url = 'backend/config/disable-alerting?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId);
+      $http.post(url, postData)
           .then(function (response) {
-            $scope.loaded = true;
-            $scope.configs = response.data;
-            deferred.resolve('All disabled');
+            $scope.disablingAlerting = false;
+            onNewData(response.data);
+            $('#disableAlertingModal').modal('hide');
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            $scope.disablingAlerting = false;
+            httpErrors.handle(response, $scope);
           });
     };
 
-    $scope.enableAllAlerts = function (deferred) {
-      $http.post('backend/config/alerts/enable-all?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
+    $scope.reEnableAlerting = function (deferred) {
+      var postData = {
+        disableForNextMillis: null,
+      };
+      var url = 'backend/config/re-enable-alerting?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId);
+      $http.post(url, postData)
           .then(function (response) {
-            $scope.loaded = true;
-            $scope.configs = response.data;
-            deferred.resolve('All enabled');
+            onNewData(response.data);
+            deferred.resolve('Alerting enabled');
           }, function (response) {
             httpErrors.handle(response, $scope, deferred);
           });
@@ -92,9 +125,19 @@ glowroot.controller('ConfigAlertListCtrl', [
     $http.get('backend/config/alerts?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))
         .then(function (response) {
           $scope.loaded = true;
-          $scope.configs = response.data;
+          onNewData(response.data);
         }, function (response) {
           httpErrors.handle(response, $scope);
         });
+
+    var promise = $interval(function () {
+      if ($scope.disabledForNextMillis) {
+        $scope.disabledForNextMillis = Math.max($scope.disabledForNextMillis - 1000, 0);
+      }
+    }, 1000);
+
+    $scope.$on('$destroy', function () {
+      $interval.cancel(promise);
+    });
   }
 ]);

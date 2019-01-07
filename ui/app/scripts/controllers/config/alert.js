@@ -172,11 +172,7 @@ glowroot.controller('ConfigAlertCtrl', [
         } else {
           $scope.page.timePeriodMinutes = data.config.condition.timePeriodSeconds / 60;
         }
-        if (data.config.disabled) {
-          $scope.heading = 'DISABLED - ' + data.heading;
-        } else {
-          $scope.heading = data.heading;
-        }
+        $scope.heading = data.heading;
         $scope.page.emailAddresses = data.config.emailNotification.emailAddresses.join(', ');
         $scope.page.slackChannels = data.config.slackNotification.slackChannels.join(', ');
       } else {
@@ -255,8 +251,7 @@ glowroot.controller('ConfigAlertCtrl', [
                 condition: {
                   conditionType: 'metric',
                   metric: ''
-                },
-                disabled: false
+                }
               },
               gauges: response.data.gauges,
               syntheticMonitors: response.data.syntheticMonitors,
