@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,8 +96,14 @@ public class Session {
 
         cassandraWriteMetrics = new CassandraWriteMetrics(wrappedSession, keyspaceName);
 
-        updateSchemaWithRetry(wrappedSession, "create keyspace if not exists " + keyspaceName
-                + " with replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 }");
+        if (wrappedSession.getCluster().getMetadata().getKeyspace(keyspaceName) == null) {
+            // "create keyspace if not exists" requires create permission on all keyspaces
+            // so only run it if needed, to allow the central collector to be run under more
+            // restrictive Cassandra permission if desired
+            updateSchemaWithRetry(wrappedSession, "create keyspace if not exists " + keyspaceName
+                    + " with replication = { 'class' : 'SimpleStrategy', 'replication_factor'"
+                    + " : 1 }");
+        }
         wrappedSession.execute("use " + keyspaceName);
 
         MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
