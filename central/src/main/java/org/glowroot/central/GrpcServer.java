@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,7 +137,8 @@ class GrpcServer {
 
     void close() throws InterruptedException {
         if (confDirWatchExecutor != null) {
-            confDirWatchExecutor.shutdown();
+            // shutdownNow() is needed here to send interrupt to conf dir watching thread
+            confDirWatchExecutor.shutdownNow();
         }
 
         // immediately start sending "shutting-down" responses for new downstream requests
