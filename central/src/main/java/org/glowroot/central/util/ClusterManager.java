@@ -106,9 +106,12 @@ public abstract class ClusterManager {
         private ClusterManagerImpl(File confDir, String jgroupsConfigurationFile,
                 Map<String, String> jgroupsProperties) {
             GlobalConfiguration configuration = new GlobalConfigurationBuilder()
-                    .transport().defaultTransport()
+                    .transport()
+                    .defaultTransport()
                     .addProperty("configurationFile",
                             getConfigurationFilePropertyValue(confDir, jgroupsConfigurationFile))
+                    .globalJmxStatistics()
+                    .enable()
                     .build();
             cacheManager = doWithSystemProperties(jgroupsProperties,
                     () -> new DefaultCacheManager(configuration));
@@ -127,7 +130,9 @@ public abstract class ClusterManager {
                     .memory()
                     .size(size)
                     .evictionType(EvictionType.COUNT)
-                    .evictionStrategy(EvictionStrategy.REMOVE);
+                    .evictionStrategy(EvictionStrategy.REMOVE)
+                    .jmxStatistics()
+                    .enable();
             cacheManager.defineConfiguration(cacheName, configurationBuilder.build());
             return new CacheImpl<K, V>(cacheManager.getCache(cacheName), loader);
         }
@@ -137,7 +142,9 @@ public abstract class ClusterManager {
                 String cacheName, CacheLoader<K, V> loader) {
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.clustering()
-                    .cacheMode(CacheMode.INVALIDATION_ASYNC);
+                    .cacheMode(CacheMode.INVALIDATION_ASYNC)
+                    .jmxStatistics()
+                    .enable();
             cacheManager.defineConfiguration(cacheName, configurationBuilder.build());
             return new CacheImpl<K, V>(cacheManager.getCache(cacheName), loader);
         }
@@ -159,9 +166,11 @@ public abstract class ClusterManager {
                 String mapName, long expirationTime, TimeUnit expirationUnit) {
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.clustering()
-                    .cacheMode(CacheMode.REPL_ASYNC);
-            configurationBuilder.expiration()
-                    .lifespan(expirationTime, expirationUnit);
+                    .cacheMode(CacheMode.REPL_ASYNC)
+                    .expiration()
+                    .lifespan(expirationTime, expirationUnit)
+                    .jmxStatistics()
+                    .enable();
             cacheManager.defineConfiguration(mapName, configurationBuilder.build());
             return cacheManager.getCache(mapName);
         }
@@ -171,7 +180,9 @@ public abstract class ClusterManager {
                 String cacheName) {
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.clustering()
-                    .cacheMode(CacheMode.LOCAL);
+                    .cacheMode(CacheMode.LOCAL)
+                    .jmxStatistics()
+                    .enable();
             cacheManager.defineConfiguration(cacheName, configurationBuilder.build());
             return new DistributedExecutionMapImpl<K, V>(cacheManager.getCache(cacheName));
         }
