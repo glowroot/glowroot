@@ -225,8 +225,9 @@ public class CentralModule {
                     repos.getGaugeValueDao(), repos.getSyntheticResultDao(), centralAlertingService,
                     clock);
             syntheticMonitorService = new SyntheticMonitorService(repos.getActiveAgentDao(),
-                    repos.getConfigRepository(), repos.getIncidentDao(), alertingService,
-                    repos.getSyntheticResultDao(), clusterManager, ticker, clock, version);
+                    repos.getConfigRepository(), repos.getAlertingDisabledDao(),
+                    repos.getIncidentDao(), alertingService, repos.getSyntheticResultDao(),
+                    clusterManager, ticker, clock, version);
 
             ClusterManager clusterManagerEffectivelyFinal = clusterManager;
             uiModule = new CreateUiModuleBuilder()

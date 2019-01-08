@@ -26,9 +26,9 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.agent.api.Instrumentation.AlreadyInTransactionBehavior;
+import org.glowroot.central.repo.AlertingDisabledDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.common.util.Clock;
-import org.glowroot.common2.repo.AlertingDisabledRepository;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.util.AlertingService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
@@ -44,7 +44,7 @@ class CentralAlertingService {
     private final ConfigRepositoryImpl configRepository;
     private final AlertingService alertingService;
     private final HeartbeatAlertingService heartbeatAlertingService;
-    private final AlertingDisabledRepository alertingDisabledRepository;
+    private final AlertingDisabledDao alertingDisabledDao;
     private final Clock clock;
 
     private final ExecutorService alertCheckingExecutor;
@@ -55,11 +55,11 @@ class CentralAlertingService {
 
     CentralAlertingService(ConfigRepositoryImpl configRepository, AlertingService alertingService,
             HeartbeatAlertingService heartbeatAlertingService,
-            AlertingDisabledRepository alertingDisabledRepository, Clock clock) {
+            AlertingDisabledDao alertingDisabledDao, Clock clock) {
         this.configRepository = configRepository;
         this.alertingService = alertingService;
         this.heartbeatAlertingService = heartbeatAlertingService;
-        this.alertingDisabledRepository = alertingDisabledRepository;
+        this.alertingDisabledDao = alertingDisabledDao;
         this.clock = clock;
         alertCheckingExecutor = Executors.newSingleThreadExecutor();
     }
@@ -197,7 +197,7 @@ class CentralAlertingService {
 
     private boolean isCurrentlyDisabled(String agentRollupId) throws Exception {
         Long disabledUntilTime =
-                alertingDisabledRepository.getAlertingDisabledUntilTime(agentRollupId);
+                alertingDisabledDao.getAlertingDisabledUntilTime(agentRollupId);
         return disabledUntilTime != null && disabledUntilTime > clock.currentTimeMillis();
     }
 

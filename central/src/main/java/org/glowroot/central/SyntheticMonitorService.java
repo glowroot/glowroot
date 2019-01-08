@@ -68,6 +68,7 @@ import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.agent.api.Instrumentation.AlreadyInTransactionBehavior;
 import org.glowroot.central.RollupService.AgentRollupConsumer;
 import org.glowroot.central.repo.ActiveAgentDao;
+import org.glowroot.central.repo.AlertingDisabledDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.IncidentDao;
 import org.glowroot.central.repo.SyntheticResultDao;
@@ -127,6 +128,7 @@ class SyntheticMonitorService implements Runnable {
 
     private final ActiveAgentDao activeAgentDao;
     private final ConfigRepositoryImpl configRepository;
+    private final AlertingDisabledDao alertingDisabledDao;
     private final IncidentDao incidentDao;
     private final AlertingService alertingService;
 
@@ -152,11 +154,12 @@ class SyntheticMonitorService implements Runnable {
     private volatile boolean closed;
 
     SyntheticMonitorService(ActiveAgentDao activeAgentDao, ConfigRepositoryImpl configRepository,
-            IncidentDao incidentDao, AlertingService alertingService,
-            SyntheticResultDao syntheticResponseDao, ClusterManager clusterManager, Ticker ticker,
-            Clock clock, String version) {
+            AlertingDisabledDao alertingDisabledDao, IncidentDao incidentDao,
+            AlertingService alertingService, SyntheticResultDao syntheticResponseDao,
+            ClusterManager clusterManager, Ticker ticker, Clock clock, String version) {
         this.activeAgentDao = activeAgentDao;
         this.configRepository = configRepository;
+        this.alertingDisabledDao = alertingDisabledDao;
         this.incidentDao = incidentDao;
         this.alertingService = alertingService;
         this.syntheticResponseDao = syntheticResponseDao;
@@ -490,22 +493,30 @@ class SyntheticMonitorService implements Runnable {
             success = false;
             errorMessage = null;
         }
-        if (success) {
-            for (AlertConfig alertConfig : alertConfigs) {
-                AlertCondition alertCondition = alertConfig.getCondition();
-                SyntheticMonitorCondition condition = alertCondition.getSyntheticMonitorCondition();
-                boolean currentlyTriggered =
-                        durationNanos >= MILLISECONDS.toNanos(condition.getThresholdMillis());
-                sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfig,
-                        condition, captureTime, currentlyTriggered, null);
+        if (!isCurrentlyDisabled(agentRollup.id())) {
+            if (success) {
+                for (AlertConfig alertConfig : alertConfigs) {
+                    AlertCondition alertCondition = alertConfig.getCondition();
+                    SyntheticMonitorCondition condition =
+                            alertCondition.getSyntheticMonitorCondition();
+                    boolean currentlyTriggered =
+                            durationNanos >= MILLISECONDS.toNanos(condition.getThresholdMillis());
+                    sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfig,
+                            condition, captureTime, currentlyTriggered, null);
+                }
+            } else {
+                sendAlertOnErrorIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfigs,
+                        errorMessage, captureTime);
             }
-        } else {
-            sendAlertOnErrorIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfigs,
-                    errorMessage, captureTime);
         }
         // need to run at end to ensure new synthetic response doesn't get stored before consecutive
         // count is checked in sendAlertOnErrorIfStatusChanged()
         future.thenAccept(onRunComplete);
+    }
+
+    private boolean isCurrentlyDisabled(String agentRollupId) throws Exception {
+        Long disabledUntilTime = alertingDisabledDao.getAlertingDisabledUntilTime(agentRollupId);
+        return disabledUntilTime != null && disabledUntilTime > clock.currentTimeMillis();
     }
 
     private class OnRunComplete implements Consumer<SyntheticRunResult> {
