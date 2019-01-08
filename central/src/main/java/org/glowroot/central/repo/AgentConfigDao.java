@@ -60,8 +60,10 @@ public class AgentConfigDao {
     private final PreparedStatement markUpdatedPS;
 
     private final Cache<String, Optional<AgentConfigAndUpdateToken>> agentConfigCache;
+    private final Cache<String, List<String>> agentRollupDisplayPartsCache;
 
-    AgentConfigDao(Session session, ClusterManager clusterManager) throws Exception {
+    AgentConfigDao(Session session, ClusterManager clusterManager,
+            int targetMaxActiveAgentsInPast7Days) throws Exception {
         this.session = session;
 
         session.createTableWithLCS("create table if not exists agent_config (agent_rollup_id"
@@ -84,8 +86,13 @@ public class AgentConfigDao {
                 + " config_update_token = null where agent_rollup_id = ? if config_update_token"
                 + " = ?");
 
-        agentConfigCache =
-                clusterManager.createCache("agentConfigCache", new AgentConfigCacheLoader());
+        // these objects are larger, cache less of them
+        agentConfigCache = clusterManager.createPerAgentCache("agentConfigCache",
+                targetMaxActiveAgentsInPast7Days, new AgentConfigCacheLoader());
+        // these objects are smaller, and read more via ActiveAgentDao, cache more of them
+        agentRollupDisplayPartsCache = clusterManager.createPerAgentCache(
+                "agentRollupDisplayPartsCache", targetMaxActiveAgentsInPast7Days * 10,
+                new AgentRollupDisplayPartsCacheLoader());
     }
 
     public AgentConfig store(String agentId, AgentConfig agentConfig, boolean overwriteExisting)
@@ -105,6 +112,7 @@ public class AgentConfigDao {
             boundStatement.setToNull(i++);
             session.write(boundStatement);
             agentConfigCache.invalidate(agentId);
+            agentRollupDisplayPartsCache.invalidate(agentId);
         }
         String agentRollupId = AgentRollupIds.getParent(agentId);
         if (agentRollupId != null) {
@@ -132,6 +140,7 @@ public class AgentConfigDao {
                 boundStatement.setToNull(i++);
                 session.write(boundStatement);
                 agentConfigCache.invalidate(loopAgentRollupId);
+                agentRollupDisplayPartsCache.invalidate(loopAgentRollupId);
             }
         }
         return updatedAgentConfig;
@@ -183,6 +192,7 @@ public class AgentConfigDao {
             boolean applied = row.getBool("[applied]");
             if (applied) {
                 agentConfigCache.invalidate(agentRollupId);
+                agentRollupDisplayPartsCache.invalidate(agentRollupId);
                 return;
             }
             MILLISECONDS.sleep(200);
@@ -196,13 +206,7 @@ public class AgentConfigDao {
     }
 
     public List<String> readAgentRollupDisplayParts(String agentRollupId) throws Exception {
-        List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentRollupId);
-        List<String> displayParts = new ArrayList<>();
-        for (ListIterator<String> i = agentRollupIds.listIterator(agentRollupIds.size()); i
-                .hasPrevious();) {
-            displayParts.add(readAgentRollupLastDisplayPart(i.previous()));
-        }
-        return displayParts;
+        return agentRollupDisplayPartsCache.get(agentRollupId);
     }
 
     public @Nullable AgentConfig read(String agentRollupId) throws Exception {
@@ -226,18 +230,6 @@ public class AgentConfigDao {
         boundStatement.setString(i++, agentId);
         boundStatement.setUUID(i++, configUpdateToken);
         session.update(boundStatement);
-    }
-
-    private String readAgentRollupLastDisplayPart(String agentRollupId) throws Exception {
-        AgentConfig agentConfig = read(agentRollupId);
-        if (agentConfig == null) {
-            return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
-        }
-        String display = agentConfig.getGeneralConfig().getDisplay();
-        if (display.isEmpty()) {
-            return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
-        }
-        return display;
     }
 
     private static AgentConfig buildUpdatedAgentConfig(AgentConfig agentConfig,
@@ -322,6 +314,30 @@ public class AgentConfigDao {
                     .config(AgentConfig.parseFrom(bytes))
                     .updateToken(updateToken)
                     .build());
+        }
+    }
+
+    private class AgentRollupDisplayPartsCacheLoader implements CacheLoader<String, List<String>> {
+        @Override
+        public List<String> load(String agentRollupId) throws Exception {
+            List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentRollupId);
+            List<String> displayParts = new ArrayList<>();
+            for (ListIterator<String> i = agentRollupIds.listIterator(agentRollupIds.size()); i
+                    .hasPrevious();) {
+                displayParts.add(readAgentRollupLastDisplayPart(i.previous()));
+            }
+            return displayParts;
+        }
+        private String readAgentRollupLastDisplayPart(String agentRollupId) throws Exception {
+            AgentConfig agentConfig = read(agentRollupId);
+            if (agentConfig == null) {
+                return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
+            }
+            String display = agentConfig.getGeneralConfig().getDisplay();
+            if (display.isEmpty()) {
+                return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
+            }
+            return display;
         }
     }
 

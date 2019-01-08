@@ -96,6 +96,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class CentralModule {
 
+    private static final int TARGET_MAX_ACTIVE_AGENTS_IN_PAST_7_DAYS = 10000;
+    private static final int TARGET_MAX_CENTRAL_UI_USERS = 100;
+
     // need to wait to init logger until after establishing centralDir
     private static volatile @MonotonicNonNull Logger startupLogger;
 
@@ -176,7 +179,8 @@ public class CentralModule {
                     .setDaemon(true)
                     .build());
             repos = new CentralRepoModule(clusterManager, session,
-                    centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor, clock);
+                    centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor,
+                    TARGET_MAX_ACTIVE_AGENTS_IN_PAST_7_DAYS, TARGET_MAX_CENTRAL_UI_USERS, clock);
 
             if (initialSchemaVersion == null) {
                 schemaUpgrade.updateSchemaVersionToCurent();
@@ -404,7 +408,7 @@ public class CentralModule {
                     .setDaemon(true)
                     .build());
             repos = new CentralRepoModule(ClusterManager.create(), session,
-                    centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor,
+                    centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor, 10, 10,
                     Clock.systemClock());
             schemaUpgrade.updateSchemaVersionToCurent();
         } finally {
@@ -505,7 +509,7 @@ public class CentralModule {
                     .setDaemon(true)
                     .build());
             repos = new CentralRepoModule(ClusterManager.create(), session,
-                    centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor,
+                    centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor, 10, 10,
                     Clock.systemClock());
             if (initialSchemaVersion == null) {
                 schemaUpgrade.updateSchemaVersionToCurent();

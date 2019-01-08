@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,13 +91,13 @@ public class AggregateDaoIT {
         session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
                 PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
-        agentConfigDao = new AgentConfigDao(session, clusterManager);
+        agentConfigDao = new AgentConfigDao(session, clusterManager, 10);
         UserDao userDao = new UserDao(session, clusterManager);
         RoleDao roleDao = new RoleDao(session, clusterManager);
         ConfigRepositoryImpl configRepository =
                 new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao, roleDao, "");
         TransactionTypeDao transactionTypeDao =
-                new TransactionTypeDao(session, configRepository, clusterManager);
+                new TransactionTypeDao(session, configRepository, clusterManager, 10);
         asyncExecutor = Executors.newCachedThreadPool();
         fullQueryTextDao = new FullQueryTextDao(session, configRepository, asyncExecutor);
         RollupLevelService rollupLevelService =

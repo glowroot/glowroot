@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
     private final Cache<String, Map<String, List<String>>> traceAttributeNamesCache;
 
     TraceAttributeNameDao(Session session, ConfigRepositoryImpl configRepository,
-            ClusterManager clusterManager) throws Exception {
+            ClusterManager clusterManager, int targetMaxCentralUiUsers) throws Exception {
         this.session = session;
         this.configRepository = configRepository;
 
@@ -68,8 +68,10 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         readPS = session.prepare("select transaction_type, trace_attribute_name from"
                 + " trace_attribute_name where agent_rollup = ?");
 
-        traceAttributeNamesCache = clusterManager.createCache("traceAttributeNamesCache",
-                new TraceAttributeNameCacheLoader());
+        // this cache is primarily used for calculating Glowroot-Agent-Rollup-Layout-Version, which
+        // is performed on the user's current agent-id/agent-rollup-id
+        traceAttributeNamesCache = clusterManager.createPerAgentCache("traceAttributeNamesCache",
+                targetMaxCentralUiUsers, new TraceAttributeNameCacheLoader());
     }
 
     @Override

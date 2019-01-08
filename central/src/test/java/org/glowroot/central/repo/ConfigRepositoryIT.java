@@ -85,7 +85,7 @@ public class ConfigRepositoryIT {
 
         clusterManager = ClusterManager.create();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
-        agentConfigDao = new AgentConfigDao(session, clusterManager);
+        agentConfigDao = new AgentConfigDao(session, clusterManager, 10);
         UserDao userDao = new UserDao(session, clusterManager);
         RoleDao roleDao = new RoleDao(session, clusterManager);
         configRepository =

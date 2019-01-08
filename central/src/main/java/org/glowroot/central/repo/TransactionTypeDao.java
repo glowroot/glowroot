@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
     private final Cache<String, List<String>> transactionTypesCache;
 
     TransactionTypeDao(Session session, ConfigRepositoryImpl configRepository,
-            ClusterManager clusterManager) throws Exception {
+            ClusterManager clusterManager, int targetMaxCentralUiUsers) throws Exception {
         this.session = session;
         this.configRepository = configRepository;
 
@@ -63,8 +63,10 @@ class TransactionTypeDao implements TransactionTypeRepository {
         readPS = session.prepare(
                 "select transaction_type from transaction_type where one = 1 and agent_rollup = ?");
 
-        transactionTypesCache = clusterManager.createCache("transactionTypesCache",
-                new TransactionTypeCacheLoader());
+        // this cache is primarily used for calculating Glowroot-Agent-Rollup-Layout-Version, which
+        // is performed on the user's current agent-id/agent-rollup-id
+        transactionTypesCache = clusterManager.createPerAgentCache("transactionTypesCache",
+                targetMaxCentralUiUsers, new TransactionTypeCacheLoader());
     }
 
     @Override

@@ -56,10 +56,12 @@ public class CentralRepoModule {
     private final V09AgentRollupDao v09AgentRollupDao;
 
     public CentralRepoModule(ClusterManager clusterManager, Session session,
-            String cassandraSymmetricEncryptionKey, ExecutorService asyncExecutor, Clock clock)
+            String cassandraSymmetricEncryptionKey, ExecutorService asyncExecutor,
+            int targetMaxActiveAgentsInPast7Days, int targetMaxCentralUiUsers, Clock clock)
             throws Exception {
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
-        agentConfigDao = new AgentConfigDao(session, clusterManager);
+        agentConfigDao =
+                new AgentConfigDao(session, clusterManager, targetMaxActiveAgentsInPast7Days);
         userDao = new UserDao(session, clusterManager);
         roleDao = new RoleDao(session, clusterManager);
         configRepository = new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao,
@@ -71,9 +73,10 @@ public class CentralRepoModule {
         environmentDao = new EnvironmentDao(session);
         heartbeatDao = new HeartbeatDao(session, clock);
         incidentDao = new IncidentDao(session, clock);
-        transactionTypeDao = new TransactionTypeDao(session, configRepository, clusterManager);
-        traceAttributeNameDao =
-                new TraceAttributeNameDao(session, configRepository, clusterManager);
+        transactionTypeDao = new TransactionTypeDao(session, configRepository, clusterManager,
+                targetMaxCentralUiUsers);
+        traceAttributeNameDao = new TraceAttributeNameDao(session, configRepository, clusterManager,
+                targetMaxCentralUiUsers);
 
         Set<String> agentRollupIdsWithV09Data;
         long v09LastCaptureTime;

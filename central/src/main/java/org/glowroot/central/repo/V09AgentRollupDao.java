@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,8 +55,8 @@ public class V09AgentRollupDao {
         readPS = session.prepare(
                 "select v09_agent_id, v09_agent_rollup_id from v09_agent_rollup where one = 1");
 
-        agentRollupIdsCache =
-                clusterManager.createCache("v09AgentRollupIdCache", new AgentRollupIdCacheLoader());
+        agentRollupIdsCache = clusterManager.createSelfBoundedCache("v09AgentRollupIdCache",
+                new AgentRollupIdCacheLoader());
     }
 
     public void store(String v09AgentId, String v09AgentRollupId) throws Exception {

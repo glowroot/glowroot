@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,8 @@ import org.infinispan.configuration.cache.CacheMode;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.global.GlobalConfiguration;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
+import org.infinispan.eviction.EvictionStrategy;
+import org.infinispan.eviction.EvictionType;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 import org.infinispan.remoting.transport.Address;
@@ -50,6 +52,7 @@ import org.glowroot.common2.repo.util.LockSet.LockSetImpl;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public abstract class ClusterManager {
@@ -76,7 +79,10 @@ public abstract class ClusterManager {
         }
     }
 
-    public abstract <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createCache(
+    public abstract <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createPerAgentCache(
+            String cacheName, int size, CacheLoader<K, V> loader);
+
+    public abstract <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createSelfBoundedCache(
             String cacheName, CacheLoader<K, V> loader);
 
     public abstract <K extends /*@NonNull*/ Serializable> LockSet<K> createReplicatedLockSet(
@@ -109,7 +115,25 @@ public abstract class ClusterManager {
         }
 
         @Override
-        public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createCache(
+        public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createPerAgentCache(
+                String cacheName, int size, CacheLoader<K, V> loader) {
+            ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
+            // "max idle" is to keep memory down for deployments with few agents
+            // "size" is to keep memory bounded for deployments with lots of agents
+            configurationBuilder.clustering()
+                    .cacheMode(CacheMode.INVALIDATION_ASYNC)
+                    .expiration()
+                    .maxIdle(30, MINUTES)
+                    .memory()
+                    .size(size)
+                    .evictionType(EvictionType.COUNT)
+                    .evictionStrategy(EvictionStrategy.REMOVE);
+            cacheManager.defineConfiguration(cacheName, configurationBuilder.build());
+            return new CacheImpl<K, V>(cacheManager.getCache(cacheName), loader);
+        }
+
+        @Override
+        public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createSelfBoundedCache(
                 String cacheName, CacheLoader<K, V> loader) {
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.clustering()
@@ -207,7 +231,13 @@ public abstract class ClusterManager {
     private static class NonClusterManager extends ClusterManager {
 
         @Override
-        public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createCache(
+        public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createPerAgentCache(
+                String cacheName, int size, CacheLoader<K, V> loader) {
+            return new NonClusterCacheImpl<K, V>(new ConcurrentHashMap<>(), loader);
+        }
+
+        @Override
+        public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createSelfBoundedCache(
                 String cacheName, CacheLoader<K, V> loader) {
             return new NonClusterCacheImpl<K, V>(new ConcurrentHashMap<>(), loader);
         }
