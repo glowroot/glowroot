@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,7 +106,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 84;
+    private static final int CURR_SCHEMA_VERSION = 85;
 
     private final Session session;
     private final Clock clock;
@@ -507,6 +507,11 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 84) {
             populateSyntheticMonitorIdTable();
             updateSchemaVersion(84);
+        }
+        // 0.12.3 to 0.13.0
+        if (initialSchemaVersion < 85) {
+            populateAgentDisplayTable();
+            updateSchemaVersion(85);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -2716,6 +2721,36 @@ public class SchemaUpgrade {
                     MoreConfigDefaults.getDisplayOrDefault(config));
         }
         return syntheticMonitorDisplays;
+    }
+
+    private void populateAgentDisplayTable() throws Exception {
+        dropTableIfExists("agent_display");
+        session.createTableWithLCS("create table if not exists agent_display (agent_rollup_id"
+                + " varchar, display varchar, primary key (agent_rollup_id))");
+        PreparedStatement insertPS = session
+                .prepare("insert into agent_display (agent_rollup_id, display) values (?, ?)");
+        ResultSet results = session.read("select agent_rollup_id, config from agent_config");
+        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        for (Row row : results) {
+            String agentRollupId = row.getString(0);
+            AgentConfig agentConfig;
+            try {
+                agentConfig = AgentConfig.parseFrom(checkNotNull(row.getBytes(1)));
+            } catch (InvalidProtocolBufferException e) {
+                logger.error(e.getMessage(), e);
+                continue;
+            }
+            String display = agentConfig.getGeneralConfig().getDisplay();
+            if (!display.isEmpty()) {
+                BoundStatement boundStatement = insertPS.bind();
+                int i = 0;
+                boundStatement.setString(i++, agentRollupId);
+                boundStatement.setString(i++, display);
+                futures.add(session.writeAsync(boundStatement));
+                waitForSome(futures);
+            }
+        }
+        MoreFutures.waitForAll(futures);
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)

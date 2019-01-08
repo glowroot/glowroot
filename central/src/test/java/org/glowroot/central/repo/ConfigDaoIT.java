@@ -15,8 +15,12 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PoolingOptions;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -32,27 +36,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConfigDaoIT {
 
+    private static ClusterManager clusterManager;
     private static Cluster cluster;
     private static Session session;
-    private static ClusterManager clusterManager;
+    private static ExecutorService asyncExecutor;
     private static AgentConfigDao agentConfigDao;
 
     @BeforeClass
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
+        clusterManager = ClusterManager.create();
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
                 PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
-        clusterManager = ClusterManager.create();
-
-        agentConfigDao = new AgentConfigDao(session, clusterManager, 10);
+        asyncExecutor = Executors.newCachedThreadPool();
+        AgentDisplayDao agentDisplayDao =
+                new AgentDisplayDao(session, clusterManager, MoreExecutors.directExecutor(), 10);
+        agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager, 10);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        clusterManager.close();
+        asyncExecutor.shutdown();
         session.close();
         cluster.close();
+        clusterManager.close();
         SharedSetupRunListener.stopCassandra();
     }
 

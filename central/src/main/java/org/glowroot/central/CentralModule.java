@@ -208,13 +208,15 @@ public class CentralModule {
 
             grpcServer = new GrpcServer(centralConfig.grpcBindAddress(),
                     centralConfig.grpcHttpPort(), centralConfig.grpcHttpsPort(),
-                    directories.getConfDir(), repos.getAgentConfigDao(), repos.getActiveAgentDao(),
-                    repos.getEnvironmentDao(), repos.getHeartbeatDao(), repos.getAggregateDao(),
-                    repos.getGaugeValueDao(), repos.getTraceDao(), repos.getV09AgentRollupDao(),
-                    centralAlertingService, clusterManager, clock, version);
+                    directories.getConfDir(), repos.getAgentDisplayDao(), repos.getAgentConfigDao(),
+                    repos.getActiveAgentDao(), repos.getEnvironmentDao(), repos.getHeartbeatDao(),
+                    repos.getAggregateDao(), repos.getGaugeValueDao(), repos.getTraceDao(),
+                    repos.getV09AgentRollupDao(), centralAlertingService, clusterManager, clock,
+                    version);
             DownstreamServiceImpl downstreamService = grpcServer.getDownstreamService();
             updateAgentConfigIfNeededService = new UpdateAgentConfigIfNeededService(
-                    repos.getActiveAgentDao(), repos.getAgentConfigDao(), downstreamService, clock);
+                    repos.getAgentDisplayDao(), repos.getAgentConfigDao(),
+                    repos.getActiveAgentDao(), downstreamService, clock);
             UpdateAgentConfigIfNeededService updateAgentConfigIfNeededServiceEffectivelyFinal =
                     updateAgentConfigIfNeededService;
             repos.getConfigRepository().addAgentConfigListener(new AgentConfigListener() {
@@ -248,6 +250,7 @@ public class CentralModule {
                     .logFileNamePattern(Pattern.compile("glowroot-central.*\\.log"))
                     .clock(clock)
                     .liveJvmService(new LiveJvmServiceImpl(downstreamService))
+                    .agentDisplayRepository(repos.getAgentDisplayDao())
                     .configRepository(repos.getConfigRepository())
                     .alertingDisabledRepository(repos.getAlertingDisabledDao())
                     .activeAgentRepository(repos.getActiveAgentDao())

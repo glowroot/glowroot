@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Future;
@@ -57,6 +60,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 public class ActiveAgentDao implements ActiveAgentRepository {
 
     private final Session session;
+    private final AgentDisplayDao agentDisplayDao;
     private final AgentConfigDao agentConfigDao;
     private final ConfigRepositoryImpl configRepository;
     private final RollupLevelService rollupLevelService;
@@ -65,10 +69,11 @@ public class ActiveAgentDao implements ActiveAgentRepository {
     private final ImmutableList<PreparedStatement> insertPS;
     private final ImmutableList<PreparedStatement> readPS;
 
-    ActiveAgentDao(Session session, AgentConfigDao agentConfigDao,
+    ActiveAgentDao(Session session, AgentDisplayDao agentDisplayDao, AgentConfigDao agentConfigDao,
             ConfigRepositoryImpl configRepository, RollupLevelService rollupLevelService,
             Clock clock) throws Exception {
         this.session = session;
+        this.agentDisplayDao = agentDisplayDao;
         this.agentConfigDao = agentConfigDao;
         this.configRepository = configRepository;
         this.rollupLevelService = rollupLevelService;
@@ -112,11 +117,13 @@ public class ActiveAgentDao implements ActiveAgentRepository {
         boundStatement.setTimestamp(0, new Date(rolledUpFrom));
         boundStatement.setTimestamp(1, new Date(rolledUpTo));
         ResultSet results = session.read(boundStatement);
+        Set<String> allAgentRollupIds = new HashSet<>();
         Set<String> topLevelAgentRollupIds = new HashSet<>();
         Multimap<String, String> childMultimap = HashMultimap.create();
         for (Row row : results) {
             String agentId = checkNotNull(row.getString(0));
             List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);
+            allAgentRollupIds.addAll(agentRollupIds);
             if (agentRollupIds.size() == 1) {
                 topLevelAgentRollupIds.add(agentId);
             } else {
@@ -127,9 +134,19 @@ public class ActiveAgentDao implements ActiveAgentRepository {
                 }
             }
         }
+        Map<String, Future<String>> agentDisplayFutureMap = new HashMap<>();
+        for (String agentRollupId : allAgentRollupIds) {
+            agentDisplayFutureMap.put(agentRollupId,
+                    agentDisplayDao.readLastDisplayPartAsync(agentRollupId));
+        }
+        Map<String, String> agentDisplayMap = new HashMap<>();
+        for (Map.Entry<String, Future<String>> entry : agentDisplayFutureMap.entrySet()) {
+            agentDisplayMap.put(entry.getKey(), entry.getValue().get());
+        }
         List<AgentRollup> agentRollups = new ArrayList<>();
         for (String topLevelAgentRollupId : topLevelAgentRollupIds) {
-            agentRollups.add(createAgentRollup(topLevelAgentRollupId, childMultimap));
+            agentRollups
+                    .add(createAgentRollup(topLevelAgentRollupId, childMultimap, agentDisplayMap));
         }
         agentRollups.sort(Comparator.comparing(AgentRollup::display));
         return agentRollups;
@@ -164,17 +181,23 @@ public class ActiveAgentDao implements ActiveAgentRepository {
     }
 
     private AgentRollup createAgentRollup(String agentRollupId,
-            Multimap<String, String> parentChildMap) throws Exception {
+            Multimap<String, String> parentChildMap, Map<String, String> agentDisplayMap)
+            throws Exception {
         Collection<String> childAgentRollupIds = parentChildMap.get(agentRollupId);
-        List<String> agentRollupDisplayParts =
-                configRepository.readAgentRollupDisplayParts(agentRollupId);
+        List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentRollupId);
+        List<String> displayParts = new ArrayList<>();
+        for (ListIterator<String> i = agentRollupIds.listIterator(agentRollupIds.size()); i
+                .hasPrevious();) {
+            displayParts.add(checkNotNull(agentDisplayMap.get(i.previous())));
+        }
         ImmutableAgentRollup.Builder builder = ImmutableAgentRollup.builder()
                 .id(agentRollupId)
-                .display(Joiner.on(" :: ").join(agentRollupDisplayParts))
-                .lastDisplayPart(Iterables.getLast(agentRollupDisplayParts));
+                .display(Joiner.on(" :: ").join(displayParts))
+                .lastDisplayPart(Iterables.getLast(displayParts));
         List<AgentRollup> childAgentRollups = new ArrayList<>();
         for (String childAgentRollupId : childAgentRollupIds) {
-            childAgentRollups.add(createAgentRollup(childAgentRollupId, parentChildMap));
+            childAgentRollups
+                    .add(createAgentRollup(childAgentRollupId, parentChildMap, agentDisplayMap));
         }
         childAgentRollups.sort(Comparator.comparing(AgentRollup::display));
         return builder.addAllChildren(childAgentRollups)

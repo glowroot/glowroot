@@ -22,7 +22,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
 import com.datastax.driver.core.BoundStatement;
@@ -59,7 +59,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
 
     private final Session session;
     private final ConfigRepositoryImpl configRepository;
-    private final ExecutorService asyncExecutor;
+    private final Executor asyncExecutor;
     private final Clock clock;
 
     private final SyntheticMonitorIdDao syntheticMonitorIdDao;
@@ -76,7 +76,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     private final PreparedStatement readLastFromRollup0;
 
     SyntheticResultDaoImpl(Session session, ConfigRepositoryImpl configRepository,
-            ExecutorService asyncExecutor, Clock clock) throws Exception {
+            Executor asyncExecutor, Clock clock) throws Exception {
         this.session = session;
         this.configRepository = configRepository;
         this.asyncExecutor = asyncExecutor;

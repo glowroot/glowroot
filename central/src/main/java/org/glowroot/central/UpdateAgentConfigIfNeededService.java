@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.ActiveAgentDao;
 import org.glowroot.central.repo.ActiveAgentDao.AgentConfigAndUpdateToken;
 import org.glowroot.central.repo.AgentConfigDao;
+import org.glowroot.central.repo.AgentDisplayDao;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
 
@@ -38,8 +39,9 @@ class UpdateAgentConfigIfNeededService implements Runnable {
     private static final Logger logger =
             LoggerFactory.getLogger(UpdateAgentConfigIfNeededService.class);
 
-    private final ActiveAgentDao activeAgentDao;
+    private final AgentDisplayDao agentDisplayDao;
     private final AgentConfigDao agentConfigDao;
+    private final ActiveAgentDao activeAgentDao;
     private final DownstreamServiceImpl downstreamService;
     private final Clock clock;
 
@@ -47,10 +49,12 @@ class UpdateAgentConfigIfNeededService implements Runnable {
 
     private volatile boolean closed;
 
-    UpdateAgentConfigIfNeededService(ActiveAgentDao activeAgentDao, AgentConfigDao agentConfigDao,
+    UpdateAgentConfigIfNeededService(AgentDisplayDao agentDisplayDao,
+            AgentConfigDao agentConfigDao, ActiveAgentDao activeAgentDao,
             DownstreamServiceImpl downstreamService, Clock clock) {
-        this.activeAgentDao = activeAgentDao;
+        this.agentDisplayDao = agentDisplayDao;
         this.agentConfigDao = agentConfigDao;
+        this.activeAgentDao = activeAgentDao;
         this.downstreamService = downstreamService;
         this.clock = clock;
         executor = Executors.newSingleThreadExecutor();
@@ -137,7 +141,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
 
     private String getDisplayForLogging(String agentRollupId) throws InterruptedException {
         try {
-            return agentConfigDao.readAgentRollupDisplay(agentRollupId);
+            return agentDisplayDao.readFullDisplay(agentRollupId);
         } catch (InterruptedException e) {
             // probably shutdown requested (see close method above)
             throw e;

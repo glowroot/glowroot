@@ -36,6 +36,7 @@ import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Version;
 import org.glowroot.common.util.Versions;
+import org.glowroot.common2.repo.AgentDisplayRepository;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
@@ -58,6 +59,7 @@ class LayoutService {
     private final boolean central;
     private final boolean offlineViewer;
     private final String version;
+    private final AgentDisplayRepository agentDisplayRepository;
     private final ConfigRepository configRepository;
     private final TransactionTypeRepository transactionTypeRepository;
     private final TraceAttributeNameRepository traceAttributeNameRepository;
@@ -65,13 +67,15 @@ class LayoutService {
     private final LiveAggregateRepository liveAggregateRepository;
 
     LayoutService(boolean central, boolean offlineViewer, String version,
-            ConfigRepository configRepository, TransactionTypeRepository transactionTypeRepository,
+            AgentDisplayRepository agentDisplayRepository, ConfigRepository configRepository,
+            TransactionTypeRepository transactionTypeRepository,
             TraceAttributeNameRepository traceAttributeNameRepository,
             EnvironmentRepository environmentRepository,
             LiveAggregateRepository liveAggregateRepository) {
         this.central = central;
         this.offlineViewer = offlineViewer;
         this.version = version;
+        this.agentDisplayRepository = agentDisplayRepository;
         this.configRepository = configRepository;
         this.transactionTypeRepository = transactionTypeRepository;
         this.traceAttributeNameRepository = traceAttributeNameRepository;
@@ -116,12 +120,11 @@ class LayoutService {
         }
         Permissions permissions =
                 LayoutService.getPermissions(authentication, agentRollupId, configReadOnly);
-        List<String> agentRollupDisplayParts =
-                configRepository.readAgentRollupDisplayParts(agentRollupId);
+        List<String> displayParts = agentDisplayRepository.readDisplayParts(agentRollupId);
         FilteredAgentRollup agentRollup = ImmutableFilteredAgentRollup.builder()
                 .id(agentRollupId)
-                .display(Joiner.on(" :: ").join(agentRollupDisplayParts))
-                .lastDisplayPart(Iterables.getLast(agentRollupDisplayParts))
+                .display(Joiner.on(" :: ").join(displayParts))
+                .lastDisplayPart(Iterables.getLast(displayParts))
                 .permissions(permissions)
                 .build();
         return buildAgentRollupLayout(agentRollup,

@@ -37,6 +37,7 @@ import org.glowroot.common.live.LiveWeavingService;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.config.EmbeddedWebConfig;
 import org.glowroot.common2.repo.ActiveAgentRepository;
+import org.glowroot.common2.repo.AgentDisplayRepository;
 import org.glowroot.common2.repo.AggregateRepository;
 import org.glowroot.common2.repo.AlertingDisabledRepository;
 import org.glowroot.common2.repo.ConfigRepository;
@@ -80,6 +81,7 @@ public class UiModule {
             @Nullable Ticker ticker, // @Nullable to deal with shading from glowroot server
             Clock clock,
             @Nullable LiveJvmService liveJvmService,
+            AgentDisplayRepository agentDisplayRepository,
             final ConfigRepository configRepository,
             AlertingDisabledRepository alertingDisabledRepository,
             ActiveAgentRepository activeAgentRepository,
@@ -103,8 +105,8 @@ public class UiModule {
 
         TransactionCommonService transactionCommonService = new TransactionCommonService(
                 aggregateRepository, liveAggregateRepository, configRepository, clock);
-        TraceCommonService traceCommonService =
-                new TraceCommonService(traceRepository, liveTraceRepository, configRepository);
+        TraceCommonService traceCommonService = new TraceCommonService(traceRepository,
+                liveTraceRepository, agentDisplayRepository);
         ErrorCommonService errorCommonService =
                 new ErrorCommonService(aggregateRepository, liveAggregateRepository);
         MailService mailService = new MailService();
@@ -114,8 +116,8 @@ public class UiModule {
                 mailService, httpClient);
 
         LayoutService layoutService = new LayoutService(central, offlineViewer, version,
-                configRepository, transactionTypeRepository, traceAttributeNameRepository,
-                environmentRepository, liveAggregateRepository);
+                agentDisplayRepository, configRepository, transactionTypeRepository,
+                traceAttributeNameRepository, environmentRepository, liveAggregateRepository);
 
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(new LayoutJsonService(activeAgentRepository, layoutService));
@@ -130,11 +132,11 @@ public class UiModule {
                 configRepository));
         jsonServices
                 .add(new JvmJsonService(environmentRepository, configRepository, liveJvmService));
-        jsonServices.add(new IncidentJsonService(central, incidentRepository, configRepository,
-                syntheticResultRepository, clock));
-        jsonServices.add(new ReportJsonService(configRepository, activeAgentRepository,
-                transactionTypeRepository, aggregateRepository, gaugeValueRepository,
-                liveAggregateRepository, rollupLevelService));
+        jsonServices.add(new IncidentJsonService(central, incidentRepository,
+                agentDisplayRepository, configRepository, syntheticResultRepository, clock));
+        jsonServices.add(new ReportJsonService(agentDisplayRepository, configRepository,
+                activeAgentRepository, transactionTypeRepository, aggregateRepository,
+                gaugeValueRepository, liveAggregateRepository, rollupLevelService));
         jsonServices.add(new ConfigJsonService(transactionTypeRepository, gaugeValueRepository,
                 liveAggregateRepository, configRepository));
         jsonServices.add(new AlertConfigJsonService(configRepository, alertingDisabledRepository,

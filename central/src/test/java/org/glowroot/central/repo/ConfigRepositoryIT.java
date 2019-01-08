@@ -17,10 +17,13 @@ package org.glowroot.central.repo;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PoolingOptions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -65,15 +68,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConfigRepositoryIT {
 
+    private static ClusterManager clusterManager;
     private static Cluster cluster;
     private static Session session;
-    private static ClusterManager clusterManager;
+    private static ExecutorService asyncExecutor;
     private static ConfigRepository configRepository;
     private static AgentConfigDao agentConfigDao;
 
     @BeforeClass
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
+        clusterManager = ClusterManager.create();
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
                 PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
@@ -82,10 +87,12 @@ public class ConfigRepositoryIT {
         session.updateSchemaWithRetry("drop table if exists role");
         session.updateSchemaWithRetry("drop table if exists central_config");
         session.updateSchemaWithRetry("drop table if exists agent");
+        asyncExecutor = Executors.newCachedThreadPool();
 
-        clusterManager = ClusterManager.create();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
-        agentConfigDao = new AgentConfigDao(session, clusterManager, 10);
+        AgentDisplayDao agentDisplayDao =
+                new AgentDisplayDao(session, clusterManager, MoreExecutors.directExecutor(), 10);
+        agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager, 10);
         UserDao userDao = new UserDao(session, clusterManager);
         RoleDao roleDao = new RoleDao(session, clusterManager);
         configRepository =
@@ -94,7 +101,7 @@ public class ConfigRepositoryIT {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        clusterManager.close();
+        asyncExecutor.shutdown();
         // remove bad data so other tests don't have issue
         session.updateSchemaWithRetry("drop table if exists agent_config");
         session.updateSchemaWithRetry("drop table if exists user");
@@ -102,6 +109,7 @@ public class ConfigRepositoryIT {
         session.updateSchemaWithRetry("drop table if exists central_config");
         session.close();
         cluster.close();
+        clusterManager.close();
         SharedSetupRunListener.stopCassandra();
     }
 

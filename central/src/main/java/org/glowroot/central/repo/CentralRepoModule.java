@@ -36,6 +36,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CentralRepoModule {
 
+    private final AgentDisplayDao agentDisplayDao;
     private final AgentConfigDao agentConfigDao;
     private final UserDao userDao;
     private final RoleDao roleDao;
@@ -60,16 +61,18 @@ public class CentralRepoModule {
             int targetMaxActiveAgentsInPast7Days, int targetMaxCentralUiUsers, Clock clock)
             throws Exception {
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
-        agentConfigDao =
-                new AgentConfigDao(session, clusterManager, targetMaxActiveAgentsInPast7Days);
+        agentDisplayDao = new AgentDisplayDao(session, clusterManager, asyncExecutor,
+                targetMaxActiveAgentsInPast7Days);
+        agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager,
+                targetMaxActiveAgentsInPast7Days);
         userDao = new UserDao(session, clusterManager);
         roleDao = new RoleDao(session, clusterManager);
         configRepository = new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao,
                 roleDao, cassandraSymmetricEncryptionKey);
         alertingDisabledDao = new AlertingDisabledDao(session, clock);
         rollupLevelService = new RollupLevelService(configRepository, clock);
-        activeAgentDao = new ActiveAgentDao(session, agentConfigDao, configRepository,
-                rollupLevelService, clock);
+        activeAgentDao = new ActiveAgentDao(session, agentDisplayDao, agentConfigDao,
+                configRepository, rollupLevelService, clock);
         environmentDao = new EnvironmentDao(session);
         heartbeatDao = new HeartbeatDao(session, clock);
         incidentDao = new IncidentDao(session, clock);
@@ -137,6 +140,10 @@ public class CentralRepoModule {
         }
         // need to create V09AgentRollupDao as long as new v09 agents may connect in the future
         v09AgentRollupDao = new V09AgentRollupDao(session, clusterManager);
+    }
+
+    public AgentDisplayDao getAgentDisplayDao() {
+        return agentDisplayDao;
     }
 
     public AgentConfigDao getAgentConfigDao() {

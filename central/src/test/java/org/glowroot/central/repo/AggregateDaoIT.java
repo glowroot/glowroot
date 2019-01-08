@@ -77,9 +77,9 @@ public class AggregateDaoIT {
     private static ClusterManager clusterManager;
     private static Cluster cluster;
     private static Session session;
+    private static ExecutorService asyncExecutor;
     private static AgentConfigDao agentConfigDao;
     private static ActiveAgentDao activeAgentDao;
-    private static ExecutorService asyncExecutor;
     private static FullQueryTextDao fullQueryTextDao;
     private static AggregateDao aggregateDao;
 
@@ -90,20 +90,22 @@ public class AggregateDaoIT {
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
                 PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+        asyncExecutor = Executors.newCachedThreadPool();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
-        agentConfigDao = new AgentConfigDao(session, clusterManager, 10);
+        AgentDisplayDao agentDisplayDao =
+                new AgentDisplayDao(session, clusterManager, asyncExecutor, 10);
+        agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager, 10);
         UserDao userDao = new UserDao(session, clusterManager);
         RoleDao roleDao = new RoleDao(session, clusterManager);
         ConfigRepositoryImpl configRepository =
                 new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao, roleDao, "");
         TransactionTypeDao transactionTypeDao =
                 new TransactionTypeDao(session, configRepository, clusterManager, 10);
-        asyncExecutor = Executors.newCachedThreadPool();
         fullQueryTextDao = new FullQueryTextDao(session, configRepository, asyncExecutor);
         RollupLevelService rollupLevelService =
                 new RollupLevelService(configRepository, Clock.systemClock());
-        activeAgentDao = new ActiveAgentDao(session, agentConfigDao, configRepository,
-                rollupLevelService, Clock.systemClock());
+        activeAgentDao = new ActiveAgentDao(session, agentDisplayDao, agentConfigDao,
+                configRepository, rollupLevelService, Clock.systemClock());
         aggregateDao = new AggregateDaoWithV09Support(ImmutableSet.of(), 0, 0, Clock.systemClock(),
                 new AggregateDaoImpl(session, activeAgentDao, transactionTypeDao, fullQueryTextDao,
                         configRepository, asyncExecutor, Clock.systemClock()));

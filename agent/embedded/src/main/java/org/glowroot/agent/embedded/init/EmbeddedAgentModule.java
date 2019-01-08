@@ -40,6 +40,7 @@ import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginCache;
+import org.glowroot.agent.embedded.repo.AgentDisplayRepositoryImpl;
 import org.glowroot.agent.embedded.repo.ConfigRepositoryImpl;
 import org.glowroot.agent.embedded.repo.PlatformMBeanServerLifecycle;
 import org.glowroot.agent.embedded.repo.SimpleRepoModule;
@@ -237,6 +238,7 @@ class EmbeddedAgentModule {
                     .ticker(ticker)
                     .clock(clock)
                     .liveJvmService(agentModule.getLiveJvmService())
+                    .agentDisplayRepository(new AgentDisplayRepositoryImpl())
                     .configRepository(simpleRepoModule.getConfigRepository())
                     .alertingDisabledRepository(simpleRepoModule.getAlertingDisabledDao())
                     .activeAgentRepository(new ActiveAgentRepositoryImpl())
@@ -277,6 +279,7 @@ class EmbeddedAgentModule {
                     .ticker(ticker)
                     .clock(clock)
                     .liveJvmService(null)
+                    .agentDisplayRepository(new AgentDisplayRepositoryImpl())
                     .configRepository(simpleRepoModule.getConfigRepository())
                     .alertingDisabledRepository(simpleRepoModule.getAlertingDisabledDao())
                     .activeAgentRepository(new ActiveAgentRepositoryImpl())

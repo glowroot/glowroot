@@ -50,13 +50,16 @@ public class SyntheticResultDaoIT {
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
                 PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+        asyncExecutor = Executors.newCachedThreadPool();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
-        AgentConfigDao agentConfigDao = new AgentConfigDao(session, clusterManager, 10);
+        AgentDisplayDao agentDisplayDao =
+                new AgentDisplayDao(session, clusterManager, asyncExecutor, 10);
+        AgentConfigDao agentConfigDao =
+                new AgentConfigDao(session, agentDisplayDao, clusterManager, 10);
         UserDao userDao = new UserDao(session, clusterManager);
         RoleDao roleDao = new RoleDao(session, clusterManager);
         ConfigRepositoryImpl configRepository =
                 new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao, roleDao, "");
-        asyncExecutor = Executors.newCachedThreadPool();
         syntheticResultDao = new SyntheticResultDaoImpl(session, configRepository, asyncExecutor,
                 Clock.systemClock());
     }

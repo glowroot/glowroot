@@ -19,7 +19,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
 
@@ -28,7 +27,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.utils.UUIDs;
-import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.protobuf.ByteString;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -38,7 +36,6 @@ import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
-import org.glowroot.common2.config.MoreConfigDefaults;
 import org.glowroot.common2.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
@@ -52,6 +49,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class AgentConfigDao {
 
     private final Session session;
+    private final AgentDisplayDao agentDisplayDao;
 
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
@@ -60,11 +58,11 @@ public class AgentConfigDao {
     private final PreparedStatement markUpdatedPS;
 
     private final Cache<String, Optional<AgentConfigAndUpdateToken>> agentConfigCache;
-    private final Cache<String, List<String>> agentRollupDisplayPartsCache;
 
-    AgentConfigDao(Session session, ClusterManager clusterManager,
+    AgentConfigDao(Session session, AgentDisplayDao agentDisplayDao, ClusterManager clusterManager,
             int targetMaxActiveAgentsInPast7Days) throws Exception {
         this.session = session;
+        this.agentDisplayDao = agentDisplayDao;
 
         session.createTableWithLCS("create table if not exists agent_config (agent_rollup_id"
                 + " varchar, config blob, config_update boolean, config_update_token uuid, primary"
@@ -86,13 +84,8 @@ public class AgentConfigDao {
                 + " config_update_token = null where agent_rollup_id = ? if config_update_token"
                 + " = ?");
 
-        // these objects are larger, cache less of them
         agentConfigCache = clusterManager.createPerAgentCache("agentConfigCache",
                 targetMaxActiveAgentsInPast7Days, new AgentConfigCacheLoader());
-        // these objects are smaller, and read more via ActiveAgentDao, cache more of them
-        agentRollupDisplayPartsCache = clusterManager.createPerAgentCache(
-                "agentRollupDisplayPartsCache", targetMaxActiveAgentsInPast7Days * 10,
-                new AgentRollupDisplayPartsCacheLoader());
     }
 
     public AgentConfig store(String agentId, AgentConfig agentConfig, boolean overwriteExisting)
@@ -112,7 +105,6 @@ public class AgentConfigDao {
             boundStatement.setToNull(i++);
             session.write(boundStatement);
             agentConfigCache.invalidate(agentId);
-            agentRollupDisplayPartsCache.invalidate(agentId);
         }
         String agentRollupId = AgentRollupIds.getParent(agentId);
         if (agentRollupId != null) {
@@ -140,7 +132,6 @@ public class AgentConfigDao {
                 boundStatement.setToNull(i++);
                 session.write(boundStatement);
                 agentConfigCache.invalidate(loopAgentRollupId);
-                agentRollupDisplayPartsCache.invalidate(loopAgentRollupId);
             }
         }
         return updatedAgentConfig;
@@ -192,21 +183,16 @@ public class AgentConfigDao {
             boolean applied = row.getBool("[applied]");
             if (applied) {
                 agentConfigCache.invalidate(agentRollupId);
-                agentRollupDisplayPartsCache.invalidate(agentRollupId);
+                String updatedDisplay = updatedAgentConfig.getGeneralConfig().getDisplay();
+                String currDisplay = currAgentConfig.getGeneralConfig().getDisplay();
+                if (!updatedDisplay.equals(currDisplay)) {
+                    agentDisplayDao.store(agentRollupId, updatedDisplay);
+                }
                 return;
             }
             MILLISECONDS.sleep(200);
         }
         throw new OptimisticLockException();
-    }
-
-    public String readAgentRollupDisplay(String agentRollupId) throws Exception {
-        List<String> displayParts = readAgentRollupDisplayParts(agentRollupId);
-        return Joiner.on(" :: ").join(displayParts);
-    }
-
-    public List<String> readAgentRollupDisplayParts(String agentRollupId) throws Exception {
-        return agentRollupDisplayPartsCache.get(agentRollupId);
     }
 
     public @Nullable AgentConfig read(String agentRollupId) throws Exception {
@@ -314,30 +300,6 @@ public class AgentConfigDao {
                     .config(AgentConfig.parseFrom(bytes))
                     .updateToken(updateToken)
                     .build());
-        }
-    }
-
-    private class AgentRollupDisplayPartsCacheLoader implements CacheLoader<String, List<String>> {
-        @Override
-        public List<String> load(String agentRollupId) throws Exception {
-            List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentRollupId);
-            List<String> displayParts = new ArrayList<>();
-            for (ListIterator<String> i = agentRollupIds.listIterator(agentRollupIds.size()); i
-                    .hasPrevious();) {
-                displayParts.add(readAgentRollupLastDisplayPart(i.previous()));
-            }
-            return displayParts;
-        }
-        private String readAgentRollupLastDisplayPart(String agentRollupId) throws Exception {
-            AgentConfig agentConfig = read(agentRollupId);
-            if (agentConfig == null) {
-                return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
-            }
-            String display = agentConfig.getGeneralConfig().getDisplay();
-            if (display.isEmpty()) {
-                return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
-            }
-            return display;
         }
     }
 

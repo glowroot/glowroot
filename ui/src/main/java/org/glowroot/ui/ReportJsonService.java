@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common2.repo.ActiveAgentRepository;
+import org.glowroot.common2.repo.AgentDisplayRepository;
 import org.glowroot.common2.repo.AggregateRepository;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
@@ -80,6 +81,7 @@ class ReportJsonService {
     private static final Logger logger = LoggerFactory.getLogger(ReportJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
+    private final AgentDisplayRepository agentDisplayRepository;
     private final ConfigRepository configRepository;
     private final ActiveAgentRepository activeAgentRepository;
     private final TransactionTypeRepository transactionTypeRepository;
@@ -88,12 +90,13 @@ class ReportJsonService {
     private final LiveAggregateRepository liveAggregateRepository;
     private final RollupLevelService rollupLevelService;
 
-    ReportJsonService(ConfigRepository configRepository,
-            ActiveAgentRepository activeAgentRepository,
+    ReportJsonService(AgentDisplayRepository agentDisplayRepository,
+            ConfigRepository configRepository, ActiveAgentRepository activeAgentRepository,
             TransactionTypeRepository transactionTypeRepository,
             AggregateRepository aggregateRepository, GaugeValueRepository gaugeValueRepository,
             LiveAggregateRepository liveAggregateRepository,
             RollupLevelService rollupLevelService) {
+        this.agentDisplayRepository = agentDisplayRepository;
         this.configRepository = configRepository;
         this.activeAgentRepository = activeAgentRepository;
         this.transactionTypeRepository = transactionTypeRepository;
@@ -311,7 +314,7 @@ class ReportJsonService {
             TimeZone timeZone, double gapMillis) throws Exception {
 
         DataSeries dataSeries =
-                new DataSeries(configRepository.readAgentRollupDisplay(agentRollupId));
+                new DataSeries(agentDisplayRepository.readFullDisplay(agentRollupId));
         List<OverviewAggregate> aggregates =
                 aggregateRepository.readOverviewAggregates(agentRollupId, query);
         aggregates =
@@ -357,7 +360,7 @@ class ReportJsonService {
             double percentile, RollupCaptureTimeFn rollupCaptureTimeFn, ROLLUP rollup,
             TimeZone timeZone, double gapMillis) throws Exception {
         DataSeries dataSeries =
-                new DataSeries(configRepository.readAgentRollupDisplay(agentRollupId));
+                new DataSeries(agentDisplayRepository.readFullDisplay(agentRollupId));
         List<PercentileAggregate> aggregates =
                 aggregateRepository.readPercentileAggregates(agentRollupId, query);
         aggregates = TransactionCommonService.rollUpPercentileAggregates(aggregates,
@@ -400,7 +403,7 @@ class ReportJsonService {
             RollupCaptureTimeFn rollupCaptureTimeFn, ROLLUP rollup, TimeZone timeZone,
             double gapMillis, ThroughputAggregateFn throughputAggregateFn) throws Exception {
         DataSeries dataSeries =
-                new DataSeries(configRepository.readAgentRollupDisplay(agentRollupId));
+                new DataSeries(agentDisplayRepository.readFullDisplay(agentRollupId));
         List<ThroughputAggregate> aggregates =
                 aggregateRepository.readThroughputAggregates(agentRollupId, query);
         aggregates = TransactionCommonService.rollUpThroughputAggregates(aggregates,
@@ -443,7 +446,7 @@ class ReportJsonService {
             Date to, int rollupLevel, RollupCaptureTimeFn rollupCaptureTimeFn, ROLLUP rollup,
             TimeZone timeZone, double gapMillis) throws Exception {
         DataSeries dataSeries =
-                new DataSeries(configRepository.readAgentRollupDisplay(agentRollupId));
+                new DataSeries(agentDisplayRepository.readFullDisplay(agentRollupId));
         // from + 1 to make from non-inclusive, since data points are displayed as midpoint of
         // time range
         List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(agentRollupId,

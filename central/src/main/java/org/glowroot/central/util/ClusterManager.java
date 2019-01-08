@@ -25,14 +25,20 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.infinispan.configuration.cache.CacheMode;
+import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.global.GlobalConfiguration;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
@@ -46,6 +52,7 @@ import org.infinispan.util.function.TriConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.central.util.AsyncCache.AsyncCacheLoader;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.common2.repo.util.LockSet;
 import org.glowroot.common2.repo.util.LockSet.LockSetImpl;
@@ -82,6 +89,9 @@ public abstract class ClusterManager {
     public abstract <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createPerAgentCache(
             String cacheName, int size, CacheLoader<K, V> loader);
 
+    public abstract <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> AsyncCache<K, V> createPerAgentAsyncCache(
+            String cacheName, int size, AsyncCacheLoader<K, V> loader);
+
     public abstract <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createSelfBoundedCache(
             String cacheName, CacheLoader<K, V> loader);
 
@@ -102,6 +112,7 @@ public abstract class ClusterManager {
     private static class ClusterManagerImpl extends ClusterManager {
 
         private final EmbeddedCacheManager cacheManager;
+        private final Executor executor;
 
         private ClusterManagerImpl(File confDir, String jgroupsConfigurationFile,
                 Map<String, String> jgroupsProperties) {
@@ -115,26 +126,21 @@ public abstract class ClusterManager {
                     .build();
             cacheManager = doWithSystemProperties(jgroupsProperties,
                     () -> new DefaultCacheManager(configuration));
+            executor = MoreExecutors2.newCachedThreadPool(10, "Cluster-Manager-Worker");
         }
 
         @Override
         public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createPerAgentCache(
                 String cacheName, int size, CacheLoader<K, V> loader) {
-            ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
-            // "max idle" is to keep memory down for deployments with few agents
-            // "size" is to keep memory bounded for deployments with lots of agents
-            configurationBuilder.clustering()
-                    .cacheMode(CacheMode.INVALIDATION_ASYNC)
-                    .expiration()
-                    .maxIdle(30, MINUTES)
-                    .memory()
-                    .size(size)
-                    .evictionType(EvictionType.COUNT)
-                    .evictionStrategy(EvictionStrategy.REMOVE)
-                    .jmxStatistics()
-                    .enable();
-            cacheManager.defineConfiguration(cacheName, configurationBuilder.build());
+            cacheManager.defineConfiguration(cacheName, createCacheConfiguration(size));
             return new CacheImpl<K, V>(cacheManager.getCache(cacheName), loader);
+        }
+
+        @Override
+        public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> AsyncCache<K, V> createPerAgentAsyncCache(
+                String cacheName, int size, AsyncCacheLoader<K, V> loader) {
+            cacheManager.defineConfiguration(cacheName, createCacheConfiguration(size));
+            return new AsyncCacheImpl<K, V>(cacheManager.getCache(cacheName), loader, executor);
         }
 
         @Override
@@ -237,6 +243,23 @@ public abstract class ClusterManager {
                 }
             }
         }
+
+        private static Configuration createCacheConfiguration(int size) {
+            ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
+            // "max idle" is to keep memory down for deployments with few agents
+            // "size" is to keep memory bounded for deployments with lots of agents
+            configurationBuilder.clustering()
+                    .cacheMode(CacheMode.INVALIDATION_ASYNC)
+                    .expiration()
+                    .maxIdle(30, MINUTES)
+                    .memory()
+                    .size(size)
+                    .evictionType(EvictionType.COUNT)
+                    .evictionStrategy(EvictionStrategy.REMOVE)
+                    .jmxStatistics()
+                    .enable();
+            return configurationBuilder.build();
+        }
     }
 
     private static class NonClusterManager extends ClusterManager {
@@ -244,19 +267,25 @@ public abstract class ClusterManager {
         @Override
         public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createPerAgentCache(
                 String cacheName, int size, CacheLoader<K, V> loader) {
-            return new NonClusterCacheImpl<K, V>(new ConcurrentHashMap<>(), loader);
+            return new NonClusterCacheImpl<K, V>(loader);
+        }
+
+        @Override
+        public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> AsyncCache<K, V> createPerAgentAsyncCache(
+                String cacheName, int size, AsyncCacheLoader<K, V> loader) {
+            return new NonClusterAsyncCacheImpl<K, V>(loader);
         }
 
         @Override
         public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createSelfBoundedCache(
                 String cacheName, CacheLoader<K, V> loader) {
-            return new NonClusterCacheImpl<K, V>(new ConcurrentHashMap<>(), loader);
+            return new NonClusterCacheImpl<K, V>(loader);
         }
 
         @Override
         public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> DistributedExecutionMap<K, V> createDistributedExecutionMap(
                 String cacheName) {
-            return new NonClusterDistributedExecutionMapImpl<>(new ConcurrentHashMap<>());
+            return new NonClusterDistributedExecutionMapImpl<>();
         }
 
         @Override
@@ -300,6 +329,7 @@ public abstract class ClusterManager {
             V value = cache.get(key);
             if (value == null) {
                 value = loader.load(key);
+                // FIXME there's a race condition if invalidation is received at this point
                 cache.putForExternalRead(key, value);
             }
             return value;
@@ -311,14 +341,52 @@ public abstract class ClusterManager {
         }
     }
 
+    private static class AsyncCacheImpl<K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object>
+            implements AsyncCache<K, V> {
+
+        private final org.infinispan.Cache<K, V> cache;
+        private final AsyncCacheLoader<K, V> loader;
+        private final Executor executor;
+
+        private AsyncCacheImpl(org.infinispan.Cache<K, V> cache, AsyncCacheLoader<K, V> loader,
+                Executor executor) {
+            this.cache = cache;
+            this.loader = loader;
+            this.executor = executor;
+        }
+
+        @Override
+        public ListenableFuture<V> get(K key) throws Exception {
+            V value = cache.get(key);
+            if (value != null) {
+                return Futures.immediateFuture(value);
+            }
+            ListenableFuture<V> future = loader.load(key);
+            // FIXME there's a race condition if invalidation is received at this point
+            Futures.addCallback(future, new FutureCallback<V>() {
+                @Override
+                public void onSuccess(@Nullable V v) {
+                    cache.putForExternalRead(key, v);
+                }
+                @Override
+                public void onFailure(Throwable t) {}
+            }, executor);
+            return future;
+        }
+
+        @Override
+        public void invalidate(K key) {
+            cache.remove(key);
+        }
+    }
+
     private static class NonClusterCacheImpl<K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object>
             implements Cache<K, V> {
 
-        private final ConcurrentMap<K, V> cache;
+        private final ConcurrentMap<K, V> cache = new ConcurrentHashMap<>();
         private final CacheLoader<K, V> loader;
 
-        private NonClusterCacheImpl(ConcurrentMap<K, V> cache, CacheLoader<K, V> loader) {
-            this.cache = cache;
+        private NonClusterCacheImpl(CacheLoader<K, V> loader) {
             this.loader = loader;
         }
 
@@ -327,9 +395,46 @@ public abstract class ClusterManager {
             V value = cache.get(key);
             if (value == null) {
                 value = loader.load(key);
+                // FIXME there's a race condition if invalidation is received at this point
                 cache.put(key, value);
             }
             return value;
+        }
+
+        @Override
+        public void invalidate(K key) {
+            cache.remove(key);
+        }
+    }
+
+    private static class NonClusterAsyncCacheImpl<K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object>
+            implements AsyncCache<K, V> {
+
+        private final ConcurrentMap<K, V> cache = new ConcurrentHashMap<>();
+        private final AsyncCacheLoader<K, V> loader;
+
+        private NonClusterAsyncCacheImpl(AsyncCacheLoader<K, V> loader) {
+            this.loader = loader;
+        }
+
+        @Override
+        public ListenableFuture<V> get(K key) throws Exception {
+            V value = cache.get(key);
+            if (value != null) {
+                return Futures.immediateFuture(value);
+            }
+            ListenableFuture<V> future = loader.load(key);
+            // FIXME there's a race condition if invalidation is received at this point
+            Futures.addCallback(future, new FutureCallback<V>() {
+                @Override
+                public void onSuccess(@Nullable V v) {
+                    cache.put(key, v);
+                }
+                @Override
+                public void onFailure(Throwable t) {}
+                // ok to use direct executor since the cache is just a simple ConcurrentHashMap
+            }, MoreExecutors.directExecutor());
+            return future;
         }
 
         @Override
@@ -387,11 +492,9 @@ public abstract class ClusterManager {
     private static class NonClusterDistributedExecutionMapImpl<K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object>
             implements DistributedExecutionMap<K, V> {
 
-        private final ConcurrentMap<K, V> cache;
+        private final ConcurrentMap<K, V> cache = new ConcurrentHashMap<>();
 
-        private NonClusterDistributedExecutionMapImpl(ConcurrentMap<K, V> cache) {
-            this.cache = cache;
-        }
+        private NonClusterDistributedExecutionMapImpl() {}
 
         @Override
         public @Nullable V get(K key) {

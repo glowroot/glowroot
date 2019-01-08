@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.glowroot.central.repo;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
 import javax.management.MBeanServer;
@@ -51,7 +51,7 @@ class FullQueryTextDao {
 
     private final Session session;
     private final ConfigRepositoryImpl configRepository;
-    private final ExecutorService asyncExecutor;
+    private final Executor asyncExecutor;
 
     private final PreparedStatement insertCheckV2PS;
     private final PreparedStatement readCheckV2PS;
@@ -63,8 +63,8 @@ class FullQueryTextDao {
 
     private final RateLimiter<String> rateLimiter = new RateLimiter<>(100000, true);
 
-    FullQueryTextDao(Session session, ConfigRepositoryImpl configRepository,
-            ExecutorService asyncExecutor) throws Exception {
+    FullQueryTextDao(Session session, ConfigRepositoryImpl configRepository, Executor asyncExecutor)
+            throws Exception {
         this.session = session;
         this.configRepository = configRepository;
         this.asyncExecutor = asyncExecutor;

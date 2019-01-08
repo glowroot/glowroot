@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,18 +18,18 @@ package org.glowroot.central;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.central.repo.AgentConfigDao;
+import org.glowroot.central.repo.AgentDisplayDao;
 import org.glowroot.central.repo.V09AgentRollupDao;
 
 class GrpcCommon {
 
     private static final Logger logger = LoggerFactory.getLogger(GrpcCommon.class);
 
-    private final AgentConfigDao agentConfigDao;
+    private final AgentDisplayDao agentDisplayDao;
     private final V09AgentRollupDao v09AgentRollupDao;
 
-    GrpcCommon(AgentConfigDao agentConfigDao, V09AgentRollupDao v09AgentRollupDao) {
-        this.agentConfigDao = agentConfigDao;
+    GrpcCommon(AgentDisplayDao agentDisplayDao, V09AgentRollupDao v09AgentRollupDao) {
+        this.agentDisplayDao = agentDisplayDao;
         this.v09AgentRollupDao = v09AgentRollupDao;
     }
 
@@ -49,7 +49,7 @@ class GrpcCommon {
 
     String getDisplayForLogging(String agentId) {
         try {
-            return agentConfigDao.readAgentRollupDisplay(agentId);
+            return agentDisplayDao.readFullDisplay(agentId);
         } catch (Exception e) {
             logger.error("{} - {}", agentId, e.getMessage(), e);
             return "id:" + agentId;

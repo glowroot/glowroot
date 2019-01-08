@@ -100,16 +100,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String readAgentRollupDisplay(String agentRollupId) {
-        return "";
-    }
-
-    @Override
-    public List<String> readAgentRollupDisplayParts(String agentRollupId) {
-        return ImmutableList.of("");
-    }
-
-    @Override
     public AgentConfig.GeneralConfig getGeneralConfig(String agentRollupId) {
         throw new UnsupportedOperationException();
     }

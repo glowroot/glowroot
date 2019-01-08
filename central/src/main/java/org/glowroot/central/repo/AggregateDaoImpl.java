@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
@@ -207,7 +207,7 @@ public class AggregateDaoImpl implements AggregateDao {
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
     private final ConfigRepositoryImpl configRepository;
-    private final ExecutorService asyncExecutor;
+    private final Executor asyncExecutor;
     private final Clock clock;
 
     // list index is rollupLevel
@@ -237,7 +237,7 @@ public class AggregateDaoImpl implements AggregateDao {
 
     AggregateDaoImpl(Session session, ActiveAgentDao activeAgentDao,
             TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
-            ConfigRepositoryImpl configRepository, ExecutorService asyncExecutor, Clock clock)
+            ConfigRepositoryImpl configRepository, Executor asyncExecutor, Clock clock)
             throws Exception {
         this.session = session;
         this.activeAgentDao = activeAgentDao;

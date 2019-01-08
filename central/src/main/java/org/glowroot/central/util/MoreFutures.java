@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
 import com.datastax.driver.core.ResultSet;
@@ -101,7 +101,7 @@ public class MoreFutures {
     }
 
     public static ListenableFuture<?> rollupAsync(ListenableFuture<ResultSet> input,
-            ExecutorService asyncExecutor, DoRollup function) {
+            Executor asyncExecutor, DoRollup function) {
         return transformAsync(input, asyncExecutor,
                 new AsyncFunction<ResultSet, /*@Nullable*/ Object>() {
                     @Override
@@ -117,7 +117,7 @@ public class MoreFutures {
     }
 
     public static ListenableFuture<?> rollupAsync(Collection<ListenableFuture<ResultSet>> futures,
-            ExecutorService asyncExecutor, DoRollup function) {
+            Executor asyncExecutor, DoRollup function) {
         return transformAsync(Futures.allAsList(futures), asyncExecutor,
                 new AsyncFunction<List<ResultSet>, /*@Nullable*/ Object>() {
                     @Override
@@ -137,7 +137,7 @@ public class MoreFutures {
     }
 
     public static ListenableFuture<?> transformAsync(ListenableFuture<ResultSet> input,
-            ExecutorService asyncExecutor, DoWithResults function) {
+            Executor asyncExecutor, DoWithResults function) {
         return transformAsync(input, asyncExecutor,
                 new AsyncFunction<ResultSet, /*@Nullable*/ Object>() {
                     @Override
@@ -150,7 +150,7 @@ public class MoreFutures {
     }
 
     private static <V> ListenableFuture<?> transformAsync(ListenableFuture<V> future,
-            ExecutorService asyncExecutor, AsyncFunction<V, /*@Nullable*/ Object> function) {
+            Executor asyncExecutor, AsyncFunction<V, /*@Nullable*/ Object> function) {
         boolean inRollupThread = Session.isInRollupThread();
         return Futures.transformAsync(future,
                 new AsyncFunction<V, /*@Nullable*/ Object>() {

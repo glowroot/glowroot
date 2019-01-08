@@ -123,16 +123,6 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public String readAgentRollupDisplay(String agentRollupId) throws Exception {
-        return agentConfigDao.readAgentRollupDisplay(agentRollupId);
-    }
-
-    @Override
-    public List<String> readAgentRollupDisplayParts(String agentRollupId) throws Exception {
-        return agentConfigDao.readAgentRollupDisplayParts(agentRollupId);
-    }
-
-    @Override
     public GeneralConfig getGeneralConfig(String agentRollupId) throws Exception {
         AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
         if (agentConfig == null) {

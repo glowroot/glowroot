@@ -42,8 +42,8 @@ public class GaugeValueDaoIT {
     private static ClusterManager clusterManager;
     private static Cluster cluster;
     private static Session session;
-    private static AgentConfigDao agentConfigDao;
     private static ExecutorService asyncExecutor;
+    private static AgentConfigDao agentConfigDao;
     private static GaugeValueDao gaugeValueDao;
 
     @BeforeClass
@@ -53,13 +53,15 @@ public class GaugeValueDaoIT {
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
                 PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+        asyncExecutor = Executors.newCachedThreadPool();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
-        agentConfigDao = new AgentConfigDao(session, clusterManager, 10);
+        AgentDisplayDao agentDisplayDao =
+                new AgentDisplayDao(session, clusterManager, asyncExecutor, 10);
+        agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager, 10);
         UserDao userDao = new UserDao(session, clusterManager);
         RoleDao roleDao = new RoleDao(session, clusterManager);
         ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(centralConfigDao,
                 agentConfigDao, userDao, roleDao, "");
-        asyncExecutor = Executors.newCachedThreadPool();
         gaugeValueDao = new GaugeValueDaoWithV09Support(ImmutableSet.of(), 0, Clock.systemClock(),
                 new GaugeValueDaoImpl(session, configRepository, clusterManager, asyncExecutor,
                         Clock.systemClock()));

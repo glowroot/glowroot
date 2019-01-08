@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import org.glowroot.common.live.LiveTraceRepository.Existence;
 import org.glowroot.common.live.LiveTraceRepository.Queries;
 import org.glowroot.common.model.MutableProfile;
 import org.glowroot.common.util.Styles;
-import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.AgentDisplayRepository;
 import org.glowroot.common2.repo.TraceRepository;
 import org.glowroot.common2.repo.TraceRepository.HeaderPlus;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
@@ -55,13 +55,13 @@ class TraceCommonService {
 
     private final TraceRepository traceRepository;
     private final LiveTraceRepository liveTraceRepository;
-    private final ConfigRepository configRepository;
+    private final AgentDisplayRepository agentDisplayRepository;
 
     TraceCommonService(TraceRepository traceRepository, LiveTraceRepository liveTraceRepository,
-            ConfigRepository configRepository) {
+            AgentDisplayRepository agentDisplayRepository) {
         this.traceRepository = traceRepository;
         this.liveTraceRepository = liveTraceRepository;
-        this.configRepository = configRepository;
+        this.agentDisplayRepository = agentDisplayRepository;
     }
 
     @Nullable
@@ -477,7 +477,7 @@ class TraceCommonService {
         try {
             jg.writeStartObject();
             if (!agentId.isEmpty()) {
-                jg.writeStringField("agent", configRepository.readAgentRollupDisplay(agentId));
+                jg.writeStringField("agent", agentDisplayRepository.readFullDisplay(agentId));
             }
             if (active) {
                 jg.writeBooleanField("active", active);
