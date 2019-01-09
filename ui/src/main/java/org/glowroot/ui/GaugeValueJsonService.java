@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -145,8 +145,7 @@ class GaugeValueJsonService {
         }
         long nonRolledUpFrom = from;
         if (!gaugeValues.isEmpty()) {
-            long lastRolledUpTime = Iterables.getLast(gaugeValues).getCaptureTime();
-            nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
+            nonRolledUpFrom = Iterables.getLast(gaugeValues).getCaptureTime() + 1;
         }
         List<GaugeValue> orderedNonRolledUpGaugeValues = Lists.newArrayList();
         int lowestLevel = agentRollupId.endsWith("::") ? 1 : 0;

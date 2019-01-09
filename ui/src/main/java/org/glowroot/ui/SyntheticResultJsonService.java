@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -196,8 +196,7 @@ class SyntheticResultJsonService {
         }
         long nonRolledUpFrom = from;
         if (!syntheticResults.isEmpty()) {
-            long lastRolledUpTime = Iterables.getLast(syntheticResults).captureTime();
-            nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
+            nonRolledUpFrom = Iterables.getLast(syntheticResults).captureTime() + 1;
         }
         List<SyntheticResult> orderedNonRolledUpSyntheticResults = Lists.newArrayList();
         orderedNonRolledUpSyntheticResults

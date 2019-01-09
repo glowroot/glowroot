@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -157,8 +157,7 @@ class TransactionCommonService {
         }
         long nonRolledUpFrom = revisedQuery.from();
         if (!aggregates.isEmpty()) {
-            long lastRolledUpTime = Iterables.getLast(aggregates).captureTime();
-            nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
+            nonRolledUpFrom = Iterables.getLast(aggregates).captureTime() + 1;
         }
         List<OverviewAggregate> orderedNonRolledUpAggregates = Lists.newArrayList();
         if (nonRolledUpFrom <= revisedTo) {
@@ -215,8 +214,7 @@ class TransactionCommonService {
         }
         long nonRolledUpFrom = revisedQuery.from();
         if (!aggregates.isEmpty()) {
-            long lastRolledUpTime = Iterables.getLast(aggregates).captureTime();
-            nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
+            nonRolledUpFrom = Iterables.getLast(aggregates).captureTime() + 1;
         }
         List<PercentileAggregate> orderedNonRolledUpAggregates = Lists.newArrayList();
         if (nonRolledUpFrom <= revisedTo) {
@@ -273,8 +271,7 @@ class TransactionCommonService {
         }
         long nonRolledUpFrom = revisedQuery.from();
         if (!aggregates.isEmpty()) {
-            long lastRolledUpTime = Iterables.getLast(aggregates).captureTime();
-            nonRolledUpFrom = Math.max(nonRolledUpFrom, lastRolledUpTime + 1);
+            nonRolledUpFrom = Iterables.getLast(aggregates).captureTime() + 1;
         }
         List<ThroughputAggregate> orderedNonRolledUpAggregates = Lists.newArrayList();
         if (nonRolledUpFrom <= revisedTo) {
