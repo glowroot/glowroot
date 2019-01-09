@@ -150,7 +150,7 @@ class RollupService implements Runnable {
         // need to roll up children first, since gauge values initial roll up from children is
         // done on the 1-min aggregates of the children
         boolean success = true;
-        for (AgentRollup childAgentRollup : agentRollup.children()) {
+        for (AgentRollup childAgentRollup : shuffle(agentRollup.children())) {
             boolean childSuccess = rollupGauges(childAgentRollup);
             success = success && childSuccess;
         }
@@ -173,7 +173,7 @@ class RollupService implements Runnable {
     }
 
     private void rollupSyntheticMonitors(AgentRollup agentRollup) throws Exception {
-        for (AgentRollup childAgentRollup : agentRollup.children()) {
+        for (AgentRollup childAgentRollup : shuffle(agentRollup.children())) {
             rollupSyntheticMonitors(childAgentRollup);
         }
         try {
