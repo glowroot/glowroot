@@ -31,6 +31,7 @@ import org.glowroot.central.repo.AgentDisplayDao;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
 
+import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -91,7 +92,8 @@ class UpdateAgentConfigIfNeededService implements Runnable {
             transactionName = "Outer update agent config loop", traceHeadline = "Outer rollup loop",
             timer = "outer rollup loop")
     private void runInternal() throws Exception {
-        for (AgentRollup agentRollup : activeAgentDao.readRecentlyActiveAgentRollups(7)) {
+        for (AgentRollup agentRollup : activeAgentDao
+                .readRecentlyActiveAgentRollups(DAYS.toMillis(7))) {
             updateAgentConfigIfNeededAndConnected(agentRollup);
         }
     }

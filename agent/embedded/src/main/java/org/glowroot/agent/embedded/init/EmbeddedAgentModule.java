@@ -410,7 +410,7 @@ class EmbeddedAgentModule {
     private static class ActiveAgentRepositoryImpl implements ActiveAgentRepository {
 
         @Override
-        public List<AgentRollup> readRecentlyActiveAgentRollups(int lastXDays) {
+        public List<AgentRollup> readRecentlyActiveAgentRollups(long lastXMillis) {
             return ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder()
                     .id("")
                     .display("")

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,9 @@ import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
 
+import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 class RollupService implements Runnable {
@@ -68,10 +71,21 @@ class RollupService implements Runnable {
     @Override
     public void run() {
         Session.setInRollupThread(true);
+        int counter = 0;
         while (!closed) {
             try {
                 MILLISECONDS.sleep(millisUntilNextRollup(clock.currentTimeMillis()));
-                runInternal();
+                // perform larger sweep approx every 100 minutes
+                long lastXMillis = counter++ % 100 == 0 ? DAYS.toMillis(7) : MINUTES.toMillis(30);
+                Stopwatch stopwatch = Stopwatch.createStarted();
+                List<AgentRollup> agentRollups =
+                        activeAgentDao.readRecentlyActiveAgentRollups(lastXMillis);
+                runInternal(agentRollups);
+                long elapsedInSeconds = stopwatch.elapsed(SECONDS);
+                if (elapsedInSeconds > 300) {
+                    logger.warn("rolling up data across {} agent rollup took {} seconds",
+                            count(agentRollups), elapsedInSeconds);
+                }
             } catch (InterruptedException e) {
                 // probably shutdown requested (see close method below)
                 logger.debug(e.getMessage(), e);
@@ -94,10 +108,10 @@ class RollupService implements Runnable {
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Outer rollup loop", traceHeadline = "Outer rollup loop",
             timer = "outer rollup loop")
-    private void runInternal() throws Exception {
+    private void runInternal(List<AgentRollup> agentRollups) throws Exception {
         // randomize order so that multiple central collector nodes will be less likely to perform
         // duplicative work
-        for (AgentRollup agentRollup : shuffle(activeAgentDao.readRecentlyActiveAgentRollups(7))) {
+        for (AgentRollup agentRollup : shuffle(agentRollups)) {
             rollupAggregates(agentRollup);
             rollupGauges(agentRollup);
             rollupSyntheticMonitors(agentRollup);
@@ -185,6 +199,14 @@ class RollupService implements Runnable {
         List<T> mutable = new ArrayList<>(agentRollups);
         Collections.shuffle(mutable);
         return mutable;
+    }
+
+    private static int count(List<AgentRollup> agentRollups) {
+        int count = agentRollups.size();
+        for (AgentRollup agentRollup : agentRollups) {
+            count += count(agentRollup.children());
+        }
+        return count;
     }
 
     @VisibleForTesting

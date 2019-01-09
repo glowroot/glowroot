@@ -93,6 +93,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMo
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig.SyntheticMonitorKind;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -243,7 +244,8 @@ class SyntheticMonitorService implements Runnable {
             traceHeadline = "Outer synthetic monitor loop",
             timer = "outer synthetic monitor loop")
     private void runInternal() throws Exception {
-        for (AgentRollup agentRollup : activeAgentDao.readRecentlyActiveAgentRollups(7)) {
+        for (AgentRollup agentRollup : activeAgentDao
+                .readRecentlyActiveAgentRollups(DAYS.toMillis(7))) {
             consumeAgentRollups(agentRollup, this::runSyntheticMonitors);
         }
     }

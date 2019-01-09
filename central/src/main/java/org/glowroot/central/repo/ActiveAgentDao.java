@@ -99,10 +99,9 @@ public class ActiveAgentDao implements ActiveAgentRepository {
     }
 
     @Override
-    public List<AgentRollup> readRecentlyActiveAgentRollups(int lastXDays) throws Exception {
+    public List<AgentRollup> readRecentlyActiveAgentRollups(long lastXMillis) throws Exception {
         long now = clock.currentTimeMillis();
-        // looking to the future just to be safe
-        return readActiveAgentRollups(now - DAYS.toMillis(lastXDays), now + DAYS.toMillis(7));
+        return readActiveAgentRollups(now - lastXMillis, now);
     }
 
     @Override
