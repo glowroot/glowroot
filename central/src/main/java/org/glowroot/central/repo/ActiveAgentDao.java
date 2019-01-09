@@ -91,8 +91,8 @@ public class ActiveAgentDao implements ActiveAgentRepository {
                     + " capture_time, agent_id))", rollupExpirationHours.get(i));
             insertPS.add(session.prepare("insert into active_agent_rollup_" + i + " (one,"
                     + " capture_time, agent_id) values (1, ?, ?) using ttl ?"));
-            readPS.add(session.prepare("select agent_id from active_agent_rollup_" + i + " where"
-                    + " one = 1 and capture_time >= ? and capture_time <= ?"));
+            readPS.add(session.prepare("select agent_id, capture_time from active_agent_rollup_"
+                    + i + " where one = 1 and capture_time >= ? and capture_time <= ?"));
         }
         this.insertPS = ImmutableList.copyOf(insertPS);
         this.readPS = ImmutableList.copyOf(readPS);
@@ -107,32 +107,20 @@ public class ActiveAgentDao implements ActiveAgentRepository {
 
     @Override
     public List<AgentRollup> readActiveAgentRollups(long from, long to) throws Exception {
-        int rollupLevel =
-                rollupLevelService.getRollupLevelForView(from, to, DataKind.GENERAL);
+        int rollupLevel = rollupLevelService.getRollupLevelForView(from, to, DataKind.GENERAL);
         long rollupIntervalMillis =
                 getRollupIntervalMillis(configRepository.getRollupConfigs(), rollupLevel);
-        long rolledUpFrom = CaptureTimes.getRollup(from, rollupIntervalMillis);
-        long rolledUpTo = CaptureTimes.getRollup(to, rollupIntervalMillis);
-        BoundStatement boundStatement = readPS.get(rollupLevel).bind();
-        boundStatement.setTimestamp(0, new Date(rolledUpFrom));
-        boundStatement.setTimestamp(1, new Date(rolledUpTo));
-        ResultSet results = session.read(boundStatement);
+        long revisedTo = CaptureTimes.getRollup(to, rollupIntervalMillis);
+
         Set<String> allAgentRollupIds = new HashSet<>();
         Set<String> topLevelAgentRollupIds = new HashSet<>();
         Multimap<String, String> childMultimap = HashMultimap.create();
-        for (Row row : results) {
-            String agentId = checkNotNull(row.getString(0));
-            List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);
-            allAgentRollupIds.addAll(agentRollupIds);
-            if (agentRollupIds.size() == 1) {
-                topLevelAgentRollupIds.add(agentId);
-            } else {
-                String topLevelAgentId = Iterables.getLast(agentRollupIds);
-                topLevelAgentRollupIds.add(topLevelAgentId);
-                for (int i = 1; i < agentRollupIds.size(); i++) {
-                    childMultimap.put(agentRollupIds.get(i), agentRollupIds.get(i - 1));
-                }
-            }
+        Long lastRolledUpTime = process(rollupLevel, from, revisedTo, allAgentRollupIds,
+                topLevelAgentRollupIds, childMultimap);
+        if (rollupLevel != 0) {
+            long revisedFrom = lastRolledUpTime == null ? from : lastRolledUpTime + 1;
+            process(0, revisedFrom, revisedTo, allAgentRollupIds, topLevelAgentRollupIds,
+                    childMultimap);
         }
         Map<String, Future<String>> agentDisplayFutureMap = new HashMap<>();
         for (String agentRollupId : allAgentRollupIds) {
@@ -178,6 +166,32 @@ public class ActiveAgentDao implements ActiveAgentRepository {
             futures.add(session.writeAsync(boundStatement));
         }
         return futures;
+    }
+
+    private @Nullable Long process(int rollupLevel, long from, long to,
+            Set<String> allAgentRollupIds, Set<String> topLevelAgentRollupIds,
+            Multimap<String, String> childMultimap) throws Exception {
+        BoundStatement boundStatement = readPS.get(rollupLevel).bind();
+        boundStatement.setTimestamp(0, new Date(from));
+        boundStatement.setTimestamp(1, new Date(to));
+        ResultSet results = session.read(boundStatement);
+        Long lastRolledUpTime = null;
+        for (Row row : results) {
+            String agentId = checkNotNull(row.getString(0));
+            lastRolledUpTime = checkNotNull(row.getTimestamp(1)).getTime();
+            List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);
+            allAgentRollupIds.addAll(agentRollupIds);
+            if (agentRollupIds.size() == 1) {
+                topLevelAgentRollupIds.add(agentId);
+            } else {
+                String topLevelAgentId = Iterables.getLast(agentRollupIds);
+                topLevelAgentRollupIds.add(topLevelAgentId);
+                for (int i = 1; i < agentRollupIds.size(); i++) {
+                    childMultimap.put(agentRollupIds.get(i), agentRollupIds.get(i - 1));
+                }
+            }
+        }
+        return lastRolledUpTime;
     }
 
     private AgentRollup createAgentRollup(String agentRollupId,
