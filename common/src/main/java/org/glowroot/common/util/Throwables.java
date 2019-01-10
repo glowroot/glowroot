@@ -22,20 +22,17 @@ public class Throwables {
     private Throwables() {}
 
     public static String getBestMessage(Throwable t) {
-        Throwable cause = t.getCause();
-        if (cause == null) {
-            // using Throwable.toString() to include the exception class name
-            // because sometimes hard to know what message means without this context
-            // e.g. java.net.UnknownHostException: google.com
-            String message = t.toString();
-            if (Strings.isNullOrEmpty(message)) {
-                // unlikely, but just in case
-                return t.getClass().getName();
-            } else {
-                return message;
-            }
+        // this method checks for exception causal loops (since guava 23.0)
+        Throwable rootCause = com.google.common.base.Throwables.getRootCause(t);
+        // using Throwable.toString() to include the exception class name
+        // because sometimes hard to know what message means without this context
+        // e.g. java.net.UnknownHostException: google.com
+        String message = rootCause.toString();
+        if (Strings.isNullOrEmpty(message)) {
+            // unlikely, but just in case
+            return rootCause.getClass().getName();
         } else {
-            return getBestMessage(cause);
+            return message;
         }
     }
 }
