@@ -305,8 +305,8 @@ class SyntheticMonitorService implements Runnable {
                 } catch (InterruptedException e) {
                     // probably shutdown requested (see close method above)
                     logger.debug(e.getMessage(), e);
-                } catch (Exception e) {
-                    logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
+                } catch (Throwable t) {
+                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
                 }
             });
         }
@@ -377,14 +377,10 @@ class SyntheticMonitorService implements Runnable {
             // probably shutdown requested (see close method above)
             logger.debug(e.getMessage(), e);
             throw e;
-        } catch (Exception e) {
-            // unexpected exception
-            logger.error(e.getMessage(), e);
-            throw e;
         } catch (Throwable t) {
             // unexpected exception
             logger.error(t.getMessage(), t);
-            throw new Exception(t);
+            throw t;
         }
     }
 

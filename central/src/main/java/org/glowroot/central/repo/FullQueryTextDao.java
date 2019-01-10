@@ -125,9 +125,9 @@ class FullQueryTextDao {
         ListenableFuture<?> future2;
         try {
             future2 = storeInternal(fullTextSha1, fullText);
-        } catch (Exception e) {
+        } catch (Throwable t) {
             rateLimiter.release(fullTextSha1);
-            throw e;
+            throw t;
         }
         futures.add(MoreFutures.onFailure(future2, () -> rateLimiter.release(fullTextSha1)));
         return futures;

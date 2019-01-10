@@ -38,7 +38,6 @@ import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.google.common.base.Function;
 import com.google.common.base.Stopwatch;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureCallback;
@@ -410,8 +409,7 @@ public class Session {
             innerFuture = doUnderThrottle.execute();
         } catch (Throwable t) {
             overallSemaphore.release();
-            Throwables.propagateIfPossible(t, Exception.class);
-            throw new Exception(t);
+            throw t;
         }
         Futures.addCallback(innerFuture, new FutureCallback<ResultSet>() {
             @Override
