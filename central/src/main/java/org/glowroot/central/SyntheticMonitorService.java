@@ -262,7 +262,7 @@ class SyntheticMonitorService implements Runnable {
             logger.debug(e.getMessage(), e);
             return;
         } catch (Exception e) {
-            logger.error("{} - {}", agentRollup.display(), e.getMessage(), e);
+            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
             return;
         }
         if (syntheticMonitorConfigs.isEmpty()) {
@@ -306,7 +306,7 @@ class SyntheticMonitorService implements Runnable {
                     // probably shutdown requested (see close method above)
                     logger.debug(e.getMessage(), e);
                 } catch (Exception e) {
-                    logger.error("{} - {}", agentRollup.display(), e.getMessage(), e);
+                    logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
                 }
             });
         }

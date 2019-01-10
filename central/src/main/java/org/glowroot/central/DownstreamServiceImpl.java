@@ -510,8 +510,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         public void onError(Throwable t) {
             logger.debug("{} - {}", t.getMessage(), t);
             if (agentId != null) {
-                logger.info("downstream connection lost with agent: {}",
-                        getDisplayForLogging(agentId));
+                logger.info("downstream connection lost with agent: {}", agentId);
                 connectedAgents.remove(agentId, ConnectedAgent.this);
             }
         }
@@ -523,7 +522,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
                     agentId = grpcCommon.getAgentId(hello.getAgentId(), hello.getPostV09());
                 } catch (Exception e) {
                     logger.error("{} - {}",
-                            getDisplayForLogging(hello.getAgentId(), hello.getPostV09()),
+                            getAgentIdForLogging(hello.getAgentId(), hello.getPostV09()),
                             e.getMessage(), e);
                     return;
                 }
@@ -533,8 +532,7 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
                             .setHelloAck(HelloAck.getDefaultInstance())
                             .build());
                 }
-                logger.info("downstream connection (re-)established with agent: {}",
-                        getDisplayForLogging(agentId));
+                logger.info("downstream connection (re-)established with agent: {}", agentId);
                 return;
             }
             if (agentId == null) {
@@ -553,9 +551,9 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
                 responseHolder.response.exchange(value, 1, MINUTES);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                logger.error("{} - {}", getDisplayForLogging(agentId), e.getMessage(), e);
+                logger.error("{} - {}", agentId, e.getMessage(), e);
             } catch (TimeoutException e) {
-                logger.error("{} - {}", getDisplayForLogging(agentId), e.getMessage(), e);
+                logger.error("{} - {}", agentId, e.getMessage(), e);
             }
         }
 
@@ -627,12 +625,8 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
             }
         }
 
-        private String getDisplayForLogging(String agentId, boolean postV09) {
-            return grpcCommon.getDisplayForLogging(agentId, postV09);
-        }
-
-        private String getDisplayForLogging(String agentId) {
-            return grpcCommon.getDisplayForLogging(agentId);
+        private String getAgentIdForLogging(String agentId, boolean postV09) {
+            return grpcCommon.getAgentIdForLogging(agentId, postV09);
         }
     }
 

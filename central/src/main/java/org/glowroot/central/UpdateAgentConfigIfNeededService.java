@@ -27,7 +27,6 @@ import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.ActiveAgentDao;
 import org.glowroot.central.repo.ActiveAgentDao.AgentConfigAndUpdateToken;
 import org.glowroot.central.repo.AgentConfigDao;
-import org.glowroot.central.repo.AgentDisplayDao;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
 
@@ -40,7 +39,6 @@ class UpdateAgentConfigIfNeededService implements Runnable {
     private static final Logger logger =
             LoggerFactory.getLogger(UpdateAgentConfigIfNeededService.class);
 
-    private final AgentDisplayDao agentDisplayDao;
     private final AgentConfigDao agentConfigDao;
     private final ActiveAgentDao activeAgentDao;
     private final DownstreamServiceImpl downstreamService;
@@ -50,10 +48,8 @@ class UpdateAgentConfigIfNeededService implements Runnable {
 
     private volatile boolean closed;
 
-    UpdateAgentConfigIfNeededService(AgentDisplayDao agentDisplayDao,
-            AgentConfigDao agentConfigDao, ActiveAgentDao activeAgentDao,
+    UpdateAgentConfigIfNeededService(AgentConfigDao agentConfigDao, ActiveAgentDao activeAgentDao,
             DownstreamServiceImpl downstreamService, Clock clock) {
-        this.agentDisplayDao = agentDisplayDao;
         this.agentConfigDao = agentConfigDao;
         this.activeAgentDao = activeAgentDao;
         this.downstreamService = downstreamService;
@@ -137,19 +133,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
             // probably shutdown requested (see close method above)
             throw e;
         } catch (Exception e) {
-            logger.error("{} - {}", getDisplayForLogging(agentId), e.getMessage(), e);
-        }
-    }
-
-    private String getDisplayForLogging(String agentRollupId) throws InterruptedException {
-        try {
-            return agentDisplayDao.readFullDisplay(agentRollupId);
-        } catch (InterruptedException e) {
-            // probably shutdown requested (see close method above)
-            throw e;
-        } catch (Exception e) {
-            logger.error("{} - {}", agentRollupId, e.getMessage(), e);
-            return "id:" + agentRollupId;
+            logger.error("{} - {}", agentId, e.getMessage(), e);
         }
     }
 

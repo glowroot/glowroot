@@ -79,7 +79,7 @@ class GrpcServer {
             V09AgentRollupDao v09AgentRollupDao, CentralAlertingService centralAlertingService,
             ClusterManager clusterManager, Clock clock, String version) throws IOException {
 
-        GrpcCommon grpcCommon = new GrpcCommon(agentDisplayDao, v09AgentRollupDao);
+        GrpcCommon grpcCommon = new GrpcCommon(v09AgentRollupDao);
         downstreamService = new DownstreamServiceImpl(grpcCommon, clusterManager);
 
         CollectorServiceImpl collectorService = new CollectorServiceImpl(agentDisplayDao,

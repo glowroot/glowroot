@@ -18,42 +18,30 @@ package org.glowroot.central;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.central.repo.AgentDisplayDao;
 import org.glowroot.central.repo.V09AgentRollupDao;
 
 class GrpcCommon {
 
     private static final Logger logger = LoggerFactory.getLogger(GrpcCommon.class);
 
-    private final AgentDisplayDao agentDisplayDao;
     private final V09AgentRollupDao v09AgentRollupDao;
 
-    GrpcCommon(AgentDisplayDao agentDisplayDao, V09AgentRollupDao v09AgentRollupDao) {
-        this.agentDisplayDao = agentDisplayDao;
+    GrpcCommon(V09AgentRollupDao v09AgentRollupDao) {
         this.v09AgentRollupDao = v09AgentRollupDao;
     }
 
-    String getDisplayForLogging(String agentId, boolean postV09) {
+    String getAgentIdForLogging(String agentId, boolean postV09) {
         if (postV09) {
-            return getDisplayForLogging(agentId);
+            return agentId;
         }
         String postV09AgentId;
         try {
             postV09AgentId = getAgentId(agentId, false);
         } catch (Exception e) {
-            logger.error("{} - v09:{}", agentId, e.getMessage(), e);
-            return "id:v09:" + agentId;
+            logger.error("{} (v09) - {}", agentId, e.getMessage(), e);
+            return agentId + " (v09)";
         }
-        return getDisplayForLogging(postV09AgentId);
-    }
-
-    String getDisplayForLogging(String agentId) {
-        try {
-            return agentDisplayDao.readFullDisplay(agentId);
-        } catch (Exception e) {
-            logger.error("{} - {}", agentId, e.getMessage(), e);
-            return "id:" + agentId;
-        }
+        return postV09AgentId;
     }
 
     String getAgentId(String agentId, boolean postV09) throws Exception {

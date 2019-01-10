@@ -215,8 +215,7 @@ public class CentralModule {
                     version);
             DownstreamServiceImpl downstreamService = grpcServer.getDownstreamService();
             updateAgentConfigIfNeededService = new UpdateAgentConfigIfNeededService(
-                    repos.getAgentDisplayDao(), repos.getAgentConfigDao(),
-                    repos.getActiveAgentDao(), downstreamService, clock);
+                    repos.getAgentConfigDao(), repos.getActiveAgentDao(), downstreamService, clock);
             UpdateAgentConfigIfNeededService updateAgentConfigIfNeededServiceEffectivelyFinal =
                     updateAgentConfigIfNeededService;
             repos.getConfigRepository().addAgentConfigListener(new AgentConfigListener() {

@@ -74,15 +74,14 @@ class CentralAlertingService {
         }
     }
 
-    void checkForDeletedAlerts(String agentRollupId, String agentRollupDisplay)
-            throws InterruptedException {
+    void checkForDeletedAlerts(String agentRollupId) throws InterruptedException {
         try {
             alertingService.checkForDeletedAlerts(agentRollupId);
         } catch (InterruptedException e) {
             // probably shutdown requested
             throw e;
         } catch (Exception e) {
-            logger.error("{} - {}", agentRollupDisplay, e.getMessage(), e);
+            logger.error("{} - {}", agentRollupId, e.getMessage(), e);
         }
     }
 
@@ -113,7 +112,7 @@ class CentralAlertingService {
             logger.debug(e.getMessage(), e);
             return;
         } catch (Exception e) {
-            logger.error("{} - {}", agentDisplay, e.getMessage(), e);
+            logger.error("{} - {}", agentId, e.getMessage(), e);
             return;
         }
         List<AlertConfig> aggregateAlertConfigs = new ArrayList<>();
@@ -143,7 +142,7 @@ class CentralAlertingService {
             logger.debug(e.getMessage(), e);
             return;
         } catch (Exception e) {
-            logger.error("{} - {}", agentDisplay, e.getMessage(), e);
+            logger.error("{} - {}", agentId, e.getMessage(), e);
             return;
         }
         List<AlertConfig> gaugeAndHeartbeatAlertConfigs = new ArrayList<>();
@@ -178,7 +177,7 @@ class CentralAlertingService {
             logger.debug(e.getMessage(), e);
             return;
         } catch (Exception e) {
-            logger.error("{} - {}", agentRollupDisplay, e.getMessage(), e);
+            logger.error("{} - {}", agentRollupId, e.getMessage(), e);
             return;
         }
         List<AlertConfig> aggregateAndGaugeAndHeartbeatAlertConfigs = new ArrayList<>();
@@ -215,7 +214,7 @@ class CentralAlertingService {
                     logger.debug(e.getMessage(), e);
                     return;
                 } catch (Throwable t) {
-                    logger.error("{} - {}", agentRollupDisplay, t.getMessage(), t);
+                    logger.error("{} - {}", agentRollupId, t.getMessage(), t);
                 }
             }
         });
