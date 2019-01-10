@@ -20,9 +20,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +36,7 @@ import org.glowroot.central.repo.ActiveAgentDao;
 import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.SyntheticResultDao;
+import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
@@ -42,6 +48,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 class RollupService implements Runnable {
 
+    private static final int MIN_WORKER_THREADS = 1;
+    private static final int MAX_WORKER_THREADS = 4;
+    private static final int INITIAL_WORKER_THREADS = 2;
+
     private static final Logger logger = LoggerFactory.getLogger(RollupService.class);
 
     private final ActiveAgentDao activeAgentDao;
@@ -51,7 +61,7 @@ class RollupService implements Runnable {
     private final CentralAlertingService centralAlertingService;
     private final Clock clock;
 
-    private final ExecutorService executor;
+    private final ExecutorService mainExecutor;
 
     private volatile boolean closed;
 
@@ -64,14 +74,16 @@ class RollupService implements Runnable {
         this.syntheticResultDao = syntheticResultDao;
         this.centralAlertingService = centralAlertingService;
         this.clock = clock;
-        executor = Executors.newSingleThreadExecutor();
-        executor.execute(castInitialized(this));
+        mainExecutor = Executors.newSingleThreadExecutor();
+        mainExecutor.execute(castInitialized(this));
     }
 
     @Override
     public void run() {
         Session.setInRollupThread(true);
         int counter = 0;
+        int numWorkerThreads = INITIAL_WORKER_THREADS;
+        ListeningExecutorService workerExecutor = newWorkerExecutor(numWorkerThreads);
         while (!closed) {
             try {
                 MILLISECONDS.sleep(millisUntilNextRollup(clock.currentTimeMillis()));
@@ -80,41 +92,72 @@ class RollupService implements Runnable {
                 Stopwatch stopwatch = Stopwatch.createStarted();
                 List<AgentRollup> agentRollups =
                         activeAgentDao.readRecentlyActiveAgentRollups(lastXMillis);
-                runInternal(agentRollups);
+                runInternal(agentRollups, workerExecutor);
                 long elapsedInSeconds = stopwatch.elapsed(SECONDS);
+                int oldNumWorkerThreads = numWorkerThreads;
                 if (elapsedInSeconds > 300) {
-                    logger.warn("rolling up data across {} agent rollup took {} seconds",
-                            count(agentRollups), elapsedInSeconds);
+                    if (numWorkerThreads < MAX_WORKER_THREADS) {
+                        numWorkerThreads++;
+                    } else {
+                        logger.warn("rolling up data across {} agent rollup took {} seconds (using"
+                                + " {} threads)", count(agentRollups), elapsedInSeconds,
+                                numWorkerThreads);
+                    }
+                } else if (elapsedInSeconds < 60 && numWorkerThreads > MIN_WORKER_THREADS) {
+                    numWorkerThreads--;
+                }
+                if (numWorkerThreads != oldNumWorkerThreads) {
+                    ExecutorService oldWorkerExecutor = workerExecutor;
+                    workerExecutor = newWorkerExecutor(numWorkerThreads);
+                    oldWorkerExecutor.shutdown();
+                    if (!oldWorkerExecutor.awaitTermination(10, SECONDS)) {
+                        logger.error("timed out waiting for old worker rollup thread to terminate");
+                    }
                 }
             } catch (InterruptedException e) {
                 // probably shutdown requested (see close method below)
                 logger.debug(e.getMessage(), e);
                 continue;
             } catch (Throwable t) {
+                // this probably should never happen since runInternal catches and logs exceptions
                 logger.error(t.getMessage(), t);
             }
+        }
+        // shutdownNow() is needed here to send interrupt to worker rollup thread
+        workerExecutor.shutdownNow();
+        try {
+            if (!workerExecutor.awaitTermination(10, SECONDS)) {
+                throw new IllegalStateException(
+                        "Timed out waiting for worker rollup thread to terminate");
+            }
+        } catch (InterruptedException e) {
+            // this shouldn't happen, shutdown was already requested
+            logger.debug(e.getMessage(), e);
         }
     }
 
     void close() throws InterruptedException {
         closed = true;
-        // shutdownNow() is needed here to send interrupt to RollupService thread
-        executor.shutdownNow();
-        if (!executor.awaitTermination(10, SECONDS)) {
-            throw new IllegalStateException("Timed out waiting for rollup thread to terminate");
+        // shutdownNow() is needed here to send interrupt to main rollup thread
+        mainExecutor.shutdownNow();
+        if (!mainExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException(
+                    "Timed out waiting for main rollup thread to terminate");
         }
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Outer rollup loop", traceHeadline = "Outer rollup loop",
             timer = "outer rollup loop")
-    private void runInternal(List<AgentRollup> agentRollups) throws Exception {
+    private void runInternal(List<AgentRollup> agentRollups,
+            ListeningExecutorService workerExecutor) throws Exception {
+        List<Future<?>> futures = new ArrayList<>();
         // randomize order so that multiple central collector nodes will be less likely to perform
         // duplicative work
         for (AgentRollup agentRollup : shuffle(agentRollups)) {
-            rollupAggregates(agentRollup);
-            rollupGauges(agentRollup);
-            rollupSyntheticMonitors(agentRollup);
+            futures.addAll(rollupAggregates(agentRollup, workerExecutor));
+            futures.add(rollupGauges(agentRollup, workerExecutor));
+            futures.addAll(rollupSyntheticMonitors(agentRollup, workerExecutor));
             // checking aggregate and gauge alerts after rollup since their calculation can depend
             // on rollups depending on time period length (and alerts on rollups are not checked
             // anywhere else)
@@ -122,77 +165,109 @@ class RollupService implements Runnable {
             // agent (not rollup) alerts are also checked right after receiving the respective data
             // (aggregate/gauge/heartbeat) from the agent, but need to also check these once a
             // minute in case no data has been received from the agent recently
-            checkAggregateAndGaugeAndHeartbeatAlertsAsync(agentRollup);
+            futures.addAll(
+                    checkAggregateAndGaugeAndHeartbeatAlertsAsync(agentRollup, workerExecutor));
         }
-        // FIXME keep this here as fallback, but also resolve alerts immediately when they are
-        // deleted (or when their condition is updated)
-        centralAlertingService.checkForAllDeletedAlerts();
+        // none of the futures should fail since they all catch and log exception at the end
+        MoreFutures.waitForAll(futures);
+        try {
+            // FIXME keep this here as fallback, but also resolve alerts immediately when they are
+            // deleted (or when their condition is updated)
+            centralAlertingService.checkForAllDeletedAlerts();
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
-    private void rollupAggregates(AgentRollup agentRollup) throws InterruptedException {
+    private List<Future<?>> rollupAggregates(AgentRollup agentRollup,
+            ListeningExecutorService workerExecutor) {
+        List<Future<?>> futures = new ArrayList<>();
         // randomize order so that multiple central collector nodes will be less likely to perform
         // duplicative work
         for (AgentRollup childAgentRollup : shuffle(agentRollup.children())) {
-            rollupAggregates(childAgentRollup);
+            futures.addAll(rollupAggregates(childAgentRollup, workerExecutor));
         }
-        try {
-            aggregateDao.rollup(agentRollup.id());
-        } catch (InterruptedException e) {
-            // probably shutdown requested (see close method above)
-            throw e;
-        } catch (Exception e) {
-            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
-        }
+        futures.add(workerExecutor.submit(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    aggregateDao.rollup(agentRollup.id());
+                } catch (InterruptedException e) {
+                    // probably shutdown requested (see close method above)
+                } catch (Throwable t) {
+                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                }
+            }
+        }));
+        return futures;
     }
 
-    // returns true on success, false on failure
-    private boolean rollupGauges(AgentRollup agentRollup) throws InterruptedException {
+    private ListenableFuture<?> rollupGauges(AgentRollup agentRollup,
+            ListeningExecutorService workerExecutor) {
+        List<AgentRollup> childAgentRollups = agentRollup.children();
+        if (childAgentRollups.isEmpty()) {
+            // optimization of common case
+            return workerExecutor.submit(new RollupGauges(agentRollup.id()));
+        }
         // need to roll up children first, since gauge values initial roll up from children is
         // done on the 1-min aggregates of the children
-        boolean success = true;
-        for (AgentRollup childAgentRollup : shuffle(agentRollup.children())) {
-            boolean childSuccess = rollupGauges(childAgentRollup);
-            success = success && childSuccess;
+        List<ListenableFuture<?>> futures = new ArrayList<>();
+        for (AgentRollup childAgentRollup : shuffle(childAgentRollups)) {
+            futures.add(rollupGauges(childAgentRollup, workerExecutor));
         }
-        if (!success) {
-            // need to _not_ roll up parent if exception occurs while rolling up a child, since
-            // gauge values initial roll up from children is done on the 1-min aggregates of the
-            // children
-            return false;
-        }
-        try {
-            gaugeValueDao.rollup(agentRollup.id());
-            return true;
-        } catch (InterruptedException e) {
-            // probably shutdown requested (see close method above)
-            throw e;
-        } catch (Exception e) {
-            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
-            return false;
-        }
+        // using _whenAllSucceed_ because need to _not_ roll up parent if exception occurs while
+        // rolling up a child, since gauge values initial roll up from children is done on the 1-min
+        // aggregates of the children
+        return Futures.whenAllSucceed(futures)
+                .run(new RollupGauges(agentRollup.id()), workerExecutor);
     }
 
-    private void rollupSyntheticMonitors(AgentRollup agentRollup) throws Exception {
+    private List<Future<?>> rollupSyntheticMonitors(AgentRollup agentRollup,
+            ListeningExecutorService workerExecutor) {
+        List<Future<?>> futures = new ArrayList<>();
         for (AgentRollup childAgentRollup : shuffle(agentRollup.children())) {
-            rollupSyntheticMonitors(childAgentRollup);
+            futures.addAll(rollupSyntheticMonitors(childAgentRollup, workerExecutor));
         }
-        try {
-            syntheticResultDao.rollup(agentRollup.id());
-        } catch (InterruptedException e) {
-            // probably shutdown requested (see close method above)
-            throw e;
-        } catch (Exception e) {
-            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
-        }
+        futures.add(workerExecutor.submit(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    syntheticResultDao.rollup(agentRollup.id());
+                } catch (InterruptedException e) {
+                    // probably shutdown requested (see close method above)
+                } catch (Throwable t) {
+                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                }
+            }
+        }));
+        return futures;
     }
 
-    private void checkAggregateAndGaugeAndHeartbeatAlertsAsync(AgentRollup agentRollup)
-            throws InterruptedException {
+    private List<Future<?>> checkAggregateAndGaugeAndHeartbeatAlertsAsync(AgentRollup agentRollup,
+            ListeningExecutorService workerExecutor) {
+        List<Future<?>> futures = new ArrayList<>();
         for (AgentRollup childAgentRollup : agentRollup.children()) {
-            checkAggregateAndGaugeAndHeartbeatAlertsAsync(childAgentRollup);
+            futures.addAll(checkAggregateAndGaugeAndHeartbeatAlertsAsync(childAgentRollup,
+                    workerExecutor));
         }
-        centralAlertingService.checkAggregateAndGaugeAndHeartbeatAlertsAsync(agentRollup.id(),
-                agentRollup.display(), clock.currentTimeMillis());
+        futures.add(workerExecutor.submit(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    centralAlertingService.checkAggregateAndGaugeAndHeartbeatAlertsAsync(
+                            agentRollup.id(), agentRollup.display(), clock.currentTimeMillis());
+                } catch (InterruptedException e) {
+                    // probably shutdown requested (see close method above)
+                } catch (Throwable t) {
+                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                }
+            }
+        }));
+        return futures;
+    }
+
+    private static ListeningExecutorService newWorkerExecutor(int numWorkerThreads) {
+        return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(numWorkerThreads));
     }
 
     private static <T> List<T> shuffle(List<T> agentRollups) {
@@ -222,5 +297,25 @@ class RollupService implements Runnable {
     @FunctionalInterface
     interface AgentRollupConsumer {
         void accept(AgentRollup agentRollup) throws Exception;
+    }
+
+    private class RollupGauges implements Runnable {
+
+        private final String agentRollupId;
+
+        private RollupGauges(String agentRollupId) {
+            this.agentRollupId = agentRollupId;
+        }
+
+        @Override
+        public void run() {
+            try {
+                gaugeValueDao.rollup(agentRollupId);
+            } catch (InterruptedException e) {
+                // probably shutdown requested (see close method above)
+            } catch (Throwable t) {
+                logger.error("{} - {}", agentRollupId, t.getMessage(), t);
+            }
+        }
     }
 }
