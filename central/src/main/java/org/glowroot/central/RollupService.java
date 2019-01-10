@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -36,6 +35,7 @@ import org.glowroot.central.repo.ActiveAgentDao;
 import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.SyntheticResultDao;
+import org.glowroot.central.util.MoreExecutors2;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
@@ -61,7 +61,7 @@ class RollupService implements Runnable {
     private final CentralAlertingService centralAlertingService;
     private final Clock clock;
 
-    private final ExecutorService mainExecutor;
+    private final ExecutorService mainLoopExecutor;
 
     private volatile boolean closed;
 
@@ -74,8 +74,8 @@ class RollupService implements Runnable {
         this.syntheticResultDao = syntheticResultDao;
         this.centralAlertingService = centralAlertingService;
         this.clock = clock;
-        mainExecutor = Executors.newSingleThreadExecutor();
-        mainExecutor.execute(castInitialized(this));
+        mainLoopExecutor = MoreExecutors2.newSingleThreadExecutor("Rollup-Main-Loop");
+        mainLoopExecutor.execute(castInitialized(this));
     }
 
     @Override
@@ -139,8 +139,8 @@ class RollupService implements Runnable {
     void close() throws InterruptedException {
         closed = true;
         // shutdownNow() is needed here to send interrupt to main rollup thread
-        mainExecutor.shutdownNow();
-        if (!mainExecutor.awaitTermination(10, SECONDS)) {
+        mainLoopExecutor.shutdownNow();
+        if (!mainLoopExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException(
                     "Timed out waiting for main rollup thread to terminate");
         }
@@ -267,7 +267,8 @@ class RollupService implements Runnable {
     }
 
     private static ListeningExecutorService newWorkerExecutor(int numWorkerThreads) {
-        return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(numWorkerThreads));
+        return MoreExecutors.listeningDecorator(
+                MoreExecutors2.newFixedThreadPool(numWorkerThreads, "Rollup-Worker-%d"));
     }
 
     private static <T> List<T> shuffle(List<T> agentRollups) {

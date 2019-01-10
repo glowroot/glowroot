@@ -17,7 +17,6 @@ package org.glowroot.central;
 
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
@@ -27,6 +26,7 @@ import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.ActiveAgentDao;
 import org.glowroot.central.repo.ActiveAgentDao.AgentConfigAndUpdateToken;
 import org.glowroot.central.repo.AgentConfigDao;
+import org.glowroot.central.util.MoreExecutors2;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
 
@@ -44,7 +44,8 @@ class UpdateAgentConfigIfNeededService implements Runnable {
     private final DownstreamServiceImpl downstreamService;
     private final Clock clock;
 
-    private final ExecutorService executor;
+    private final ExecutorService mainLoopExecutor;
+    private final ExecutorService workerExecutor;
 
     private volatile boolean closed;
 
@@ -54,8 +55,9 @@ class UpdateAgentConfigIfNeededService implements Runnable {
         this.activeAgentDao = activeAgentDao;
         this.downstreamService = downstreamService;
         this.clock = clock;
-        executor = Executors.newSingleThreadExecutor();
-        executor.execute(castInitialized(this));
+        workerExecutor = MoreExecutors2.newCachedThreadPool("Update-Agent-Config-Worker-%d");
+        mainLoopExecutor = MoreExecutors2.newSingleThreadExecutor("Update-Agent-Config-Main-Loop");
+        mainLoopExecutor.execute(castInitialized(this));
     }
 
     @Override
@@ -76,11 +78,17 @@ class UpdateAgentConfigIfNeededService implements Runnable {
 
     void close() throws InterruptedException {
         closed = true;
-        // shutdownNow() is needed here to send interrupt to UpdateAgentConfigIfNeededService thread
-        executor.shutdownNow();
-        if (!executor.awaitTermination(10, SECONDS)) {
+        // shutdownNow() is needed here to send interrupt to thread
+        mainLoopExecutor.shutdownNow();
+        if (!mainLoopExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException(
-                    "Timed out waiting for update agent config thread to terminate");
+                    "Timed out waiting for update agent config main loop thread to terminate");
+        }
+        // shutdownNow() is needed here to send interrupt to thread
+        workerExecutor.shutdownNow();
+        if (!workerExecutor.awaitTermination(10, SECONDS)) {
+            throw new IllegalStateException(
+                    "Timed out waiting for update agent config worker thread to terminate");
         }
     }
 
@@ -97,7 +105,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
     private void updateAgentConfigIfNeededAndConnected(AgentRollup agentRollup)
             throws InterruptedException {
         if (agentRollup.children().isEmpty()) {
-            updateAgentConfigIfNeededAndConnected(agentRollup.id());
+            updateAgentConfigIfNeededAndConnectedAsync(agentRollup.id());
         } else {
             for (AgentRollup childAgentRollup : agentRollup.children()) {
                 updateAgentConfigIfNeededAndConnected(childAgentRollup);
@@ -105,7 +113,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
         }
     }
 
-    void updateAgentConfigIfNeededAndConnected(String agentId) throws InterruptedException {
+    void updateAgentConfigIfNeededAndConnectedAsync(String agentId) throws InterruptedException {
         AgentConfigAndUpdateToken agentConfigAndUpdateToken;
         try {
             agentConfigAndUpdateToken = agentConfigDao.readForUpdate(agentId);
@@ -123,18 +131,22 @@ class UpdateAgentConfigIfNeededService implements Runnable {
         if (updateToken == null) {
             return;
         }
-        try {
-            boolean updated = downstreamService.updateAgentConfigIfConnected(agentId,
-                    agentConfigAndUpdateToken.config());
-            if (updated) {
-                agentConfigDao.markUpdated(agentId, updateToken);
+        workerExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    boolean updated = downstreamService.updateAgentConfigIfConnected(agentId,
+                            agentConfigAndUpdateToken.config());
+                    if (updated) {
+                        agentConfigDao.markUpdated(agentId, updateToken);
+                    }
+                } catch (InterruptedException e) {
+                    // probably shutdown requested (see close method above)
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                }
             }
-        } catch (InterruptedException e) {
-            // probably shutdown requested (see close method above)
-            throw e;
-        } catch (Exception e) {
-            logger.error("{} - {}", agentId, e.getMessage(), e);
-        }
+        });
     }
 
     @VisibleForTesting

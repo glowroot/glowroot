@@ -18,7 +18,6 @@ package org.glowroot.central;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
@@ -28,6 +27,7 @@ import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.agent.api.Instrumentation.AlreadyInTransactionBehavior;
 import org.glowroot.central.repo.AlertingDisabledDao;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
+import org.glowroot.central.util.MoreExecutors2;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.util.AlertingService;
@@ -47,7 +47,7 @@ class CentralAlertingService {
     private final AlertingDisabledDao alertingDisabledDao;
     private final Clock clock;
 
-    private final ExecutorService alertCheckingExecutor;
+    private final ExecutorService workerExecutor;
 
     private final Stopwatch stopwatch = Stopwatch.createStarted();
 
@@ -61,14 +61,14 @@ class CentralAlertingService {
         this.heartbeatAlertingService = heartbeatAlertingService;
         this.alertingDisabledDao = alertingDisabledDao;
         this.clock = clock;
-        alertCheckingExecutor = Executors.newSingleThreadExecutor();
+        workerExecutor = MoreExecutors2.newCachedThreadPool("Alert-Async-Worker-%d");
     }
 
     void close() throws InterruptedException {
         closed = true;
         // shutdownNow() is needed here to send interrupt to alert checking thread
-        alertCheckingExecutor.shutdownNow();
-        if (!alertCheckingExecutor.awaitTermination(10, SECONDS)) {
+        workerExecutor.shutdownNow();
+        if (!workerExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException(
                     "Timed out waiting for alert checking thread to terminate");
         }
@@ -205,7 +205,7 @@ class CentralAlertingService {
         if (closed) {
             return;
         }
-        alertCheckingExecutor.execute(() -> {
+        workerExecutor.execute(() -> {
             for (AlertConfig alertConfig : alertConfigs) {
                 try {
                     checkAlert(agentRollupId, agentRollupDisplay, endTime, alertConfig);

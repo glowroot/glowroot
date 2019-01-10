@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
 import com.datastax.driver.core.Cluster;
@@ -56,7 +55,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.RateLimiter;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -72,6 +70,7 @@ import org.glowroot.central.repo.RepoAdminImpl;
 import org.glowroot.central.repo.SchemaUpgrade;
 import org.glowroot.central.repo.Tools;
 import org.glowroot.central.util.ClusterManager;
+import org.glowroot.central.util.MoreExecutors2;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.util.Clock;
@@ -175,9 +174,7 @@ public class CentralModule {
             if (schemaUpgrade.reloadCentralConfiguration()) {
                 centralConfig = getCentralConfiguration(directories.getConfDir());
             }
-            repoAsyncExecutor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
-                    .setDaemon(true)
-                    .build());
+            repoAsyncExecutor = MoreExecutors2.newCachedThreadPool("Repo-Async-Worker-%d");
             repos = new CentralRepoModule(clusterManager, session,
                     centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor,
                     TARGET_MAX_ACTIVE_AGENTS_IN_PAST_7_DAYS, TARGET_MAX_CENTRAL_UI_USERS, clock);
@@ -223,7 +220,7 @@ public class CentralModule {
                 public void onChange(String agentId) throws Exception {
                     // TODO report checker framework issue that occurs without checkNotNull
                     checkNotNull(updateAgentConfigIfNeededServiceEffectivelyFinal)
-                            .updateAgentConfigIfNeededAndConnected(agentId);
+                            .updateAgentConfigIfNeededAndConnectedAsync(agentId);
                 }
             });
             rollupService = new RollupService(repos.getActiveAgentDao(), repos.getAggregateDao(),
@@ -406,9 +403,7 @@ public class CentralModule {
                 return;
             }
             startupLogger.info("creating glowroot central schema...");
-            repoAsyncExecutor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
-                    .setDaemon(true)
-                    .build());
+            repoAsyncExecutor = MoreExecutors2.newCachedThreadPool("Repo-Async-Worker-%d");
             repos = new CentralRepoModule(ClusterManager.create(), session,
                     centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor, 10, 10,
                     Clock.systemClock());
@@ -507,9 +502,7 @@ public class CentralModule {
                         schemaUpgrade.getCurrentSchemaVersion(), initialSchemaVersion);
                 return;
             }
-            repoAsyncExecutor = Executors.newCachedThreadPool(new ThreadFactoryBuilder()
-                    .setDaemon(true)
-                    .build());
+            repoAsyncExecutor = MoreExecutors2.newCachedThreadPool("Repo-Async-Worker-%d");
             repos = new CentralRepoModule(ClusterManager.create(), session,
                     centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor, 10, 10,
                     Clock.systemClock());

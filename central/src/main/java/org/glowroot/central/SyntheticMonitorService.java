@@ -25,7 +25,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -74,6 +73,7 @@ import org.glowroot.central.repo.IncidentDao;
 import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.central.repo.SyntheticResultDao.SyntheticResultRollup0;
 import org.glowroot.central.util.ClusterManager;
+import org.glowroot.central.util.MoreExecutors2;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Throwables;
@@ -143,14 +143,12 @@ class SyntheticMonitorService implements Runnable {
 
     private final UserAgent userAgent;
 
-    private final ExecutorService checkExecutor;
     private final ExecutorService mainLoopExecutor;
+    private final ExecutorService workerExecutor;
+    private final ListeningExecutorService subWorkerExecutor;
 
     private final Set<SyntheticMonitorUniqueKey> activeSyntheticMonitors =
             Sets.newConcurrentHashSet();
-
-    private final ListeningExecutorService syntheticUserTestExecutor =
-            MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
 
     private volatile boolean closed;
 
@@ -192,8 +190,11 @@ class SyntheticMonitorService implements Runnable {
                         + " Chrome/45.0.2454.85 Safari/537.36 GlowrootCentral" + shortVersion,
                 "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)"
                         + " Chrome/45.0.2454.85 Safari/537.36 GlowrootCentral" + shortVersion);
-        checkExecutor = Executors.newCachedThreadPool();
-        mainLoopExecutor = Executors.newSingleThreadExecutor();
+        // there is one subworker per worker, so using same max
+        subWorkerExecutor = MoreExecutors.listeningDecorator(
+                MoreExecutors2.newCachedThreadPool("Synthetic-Monitor-Sub-Worker-%d"));
+        workerExecutor = MoreExecutors2.newCachedThreadPool("Synthetic-Monitor-Worker-%d");
+        mainLoopExecutor = MoreExecutors2.newSingleThreadExecutor("Synthetic-Monitor-Main-Loop");
         mainLoopExecutor.execute(castInitialized(this));
     }
 
@@ -219,14 +220,14 @@ class SyntheticMonitorService implements Runnable {
     void close() throws Exception {
         closed = true;
         // shutdownNow() is needed to send interrupt to SyntheticMonitorService user test threads
-        syntheticUserTestExecutor.shutdownNow();
-        if (!syntheticUserTestExecutor.awaitTermination(10, SECONDS)) {
+        subWorkerExecutor.shutdownNow();
+        if (!subWorkerExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException(
                     "Timed out waiting for synthetic user test threads to terminate");
         }
         // shutdownNow() is needed to send interrupt to SyntheticMonitorService check threads
-        checkExecutor.shutdownNow();
-        if (!checkExecutor.awaitTermination(10, SECONDS)) {
+        workerExecutor.shutdownNow();
+        if (!workerExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException(
                     "Timed out waiting for synthetic monitor check threads to terminate");
         }
@@ -289,7 +290,7 @@ class SyntheticMonitorService implements Runnable {
                 // was run in the last 30 seconds (probably on a different cluster node)
                 continue;
             }
-            checkExecutor.execute(() -> {
+            workerExecutor.execute(() -> {
                 try {
                     switch (syntheticMonitorConfig.getKind()) {
                         case PING:
@@ -358,7 +359,7 @@ class SyntheticMonitorService implements Runnable {
         JBrowserDriver driver = new JBrowserDriver(settings.build());
         long startTick = ticker.read();
         FutureWithStartTick future = new FutureWithStartTick(startTick);
-        syntheticUserTestExecutor.execute(() -> {
+        subWorkerExecutor.execute(() -> {
             try {
                 future.complete(runJava(method, defaultConstructor, driver, startTick));
             } catch (Throwable t) {
@@ -429,7 +430,7 @@ class SyntheticMonitorService implements Runnable {
         httpGet.setConfig(config.build());
         long startTick = ticker.read();
         FutureWithStartTick future = new FutureWithStartTick(startTick);
-        syntheticUserTestExecutor.execute(() -> {
+        subWorkerExecutor.execute(() -> {
             try {
                 httpClient.execute(httpGet, getHttpClientContext(),
                         new CompletingFutureCallback(future));

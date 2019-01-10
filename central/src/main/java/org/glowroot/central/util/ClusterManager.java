@@ -126,7 +126,7 @@ public abstract class ClusterManager {
                     .build();
             cacheManager = doWithSystemProperties(jgroupsProperties,
                     () -> new DefaultCacheManager(configuration));
-            executor = MoreExecutors2.newCachedThreadPool(10, "Cluster-Manager-Worker");
+            executor = MoreExecutors2.newCachedThreadPool("Cluster-Manager-Worker");
         }
 
         @Override
@@ -365,7 +365,7 @@ public abstract class ClusterManager {
             // FIXME there's a race condition if invalidation is received at this point
             Futures.addCallback(future, new FutureCallback<V>() {
                 @Override
-                public void onSuccess(@Nullable V v) {
+                public void onSuccess(V v) {
                     cache.putForExternalRead(key, v);
                 }
                 @Override
@@ -427,7 +427,7 @@ public abstract class ClusterManager {
             // FIXME there's a race condition if invalidation is received at this point
             Futures.addCallback(future, new FutureCallback<V>() {
                 @Override
-                public void onSuccess(@Nullable V v) {
+                public void onSuccess(V v) {
                     cache.put(key, v);
                 }
                 @Override

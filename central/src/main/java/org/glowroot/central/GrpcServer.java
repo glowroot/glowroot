@@ -26,7 +26,6 @@ import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSessionContext;
@@ -50,6 +49,7 @@ import org.glowroot.central.repo.HeartbeatDao;
 import org.glowroot.central.repo.TraceDao;
 import org.glowroot.central.repo.V09AgentRollupDao;
 import org.glowroot.central.util.ClusterManager;
+import org.glowroot.central.util.MoreExecutors2;
 import org.glowroot.common.util.Clock;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -102,7 +102,7 @@ class GrpcServer {
             confDirWatchExecutor = null;
             httpsServer = null;
         } else {
-            confDirWatchExecutor = Executors.newSingleThreadExecutor();
+            confDirWatchExecutor = MoreExecutors2.newSingleThreadExecutor("Conf-Dir-Watcher");
             httpsServer = startServer(bindAddress, httpsPort, true, confDir, confDirWatchExecutor,
                     downstreamService, collectorService);
             startupLogger.info("gRPC listening on {}:{} (HTTPS)", bindAddress, httpsPort);
@@ -141,6 +141,10 @@ class GrpcServer {
         if (confDirWatchExecutor != null) {
             // shutdownNow() is needed here to send interrupt to conf dir watching thread
             confDirWatchExecutor.shutdownNow();
+            if (!confDirWatchExecutor.awaitTermination(10, SECONDS)) {
+                throw new IllegalStateException(
+                        "Timed out waiting for conf dir watching thread to terminate");
+            }
         }
 
         // immediately start sending "shutting-down" responses for new downstream requests
