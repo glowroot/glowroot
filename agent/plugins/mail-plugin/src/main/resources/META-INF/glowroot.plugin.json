@@ -1,0 +1,26 @@
+{
+  "name": "Mail Plugin",
+  "id": "mail",
+  "instrumentation": [
+    {
+      "className": "javax.mail.Service",
+      "methodName": "connect",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "mail connect {{this.uRLName}}",
+      "timerName": "mail"
+    },
+    {
+      "className": "javax.mail.Transport",
+      "methodName": "sendMessage",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "mail send message",
+      "timerName": "mail"
+    }
+  ]
+}
