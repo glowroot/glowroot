@@ -59,23 +59,24 @@ public class AsyncRestControllerIT {
 
     @Test
     public void shouldCaptureCallableAsyncController() throws Exception {
-        shouldCaptureCallableAsyncController("", CallableAsyncServlet.class);
+        shouldCaptureCallableAsyncController("", InvokeCallableAsyncController.class);
     }
 
     @Test
     public void shouldCaptureDeferredResultAsyncController() throws Exception {
-        shouldCaptureDeferredResultAsyncController("", DeferredResultAsyncServlet.class);
+        shouldCaptureDeferredResultAsyncController("", InvokeDeferredResultAsyncController.class);
     }
 
     @Test
     public void shouldCaptureCallableAsyncControllerWithContextPath() throws Exception {
-        shouldCaptureCallableAsyncController("/zzz", CallableAsyncServletWithContextPath.class);
+        shouldCaptureCallableAsyncController("/zzz",
+                InvokeCallableAsyncControllerWithContextPath.class);
     }
 
     @Test
     public void shouldCaptureDeferredResultAsyncControllerWithContextPath() throws Exception {
         shouldCaptureDeferredResultAsyncController("/zzz",
-                DeferredResultAsyncServletWithContextPath.class);
+                InvokeDeferredResultAsyncControllerWithContextPath.class);
     }
 
     private void shouldCaptureCallableAsyncController(String contextPath,
@@ -189,28 +190,29 @@ public class AsyncRestControllerIT {
         assertThat(i.hasNext()).isFalse();
     }
 
-    public static class CallableAsyncServlet extends InvokeSpringControllerInTomcat {
+    public static class InvokeCallableAsyncController extends InvokeSpringControllerInTomcat {
         @Override
         public void executeApp() throws Exception {
             executeApp("webapp1", "", "/rest-async");
         }
     }
 
-    public static class DeferredResultAsyncServlet extends InvokeSpringControllerInTomcat {
+    public static class InvokeDeferredResultAsyncController extends InvokeSpringControllerInTomcat {
         @Override
         public void executeApp() throws Exception {
             executeApp("webapp1", "", "/rest-async2");
         }
     }
 
-    public static class CallableAsyncServletWithContextPath extends InvokeSpringControllerInTomcat {
+    public static class InvokeCallableAsyncControllerWithContextPath
+            extends InvokeSpringControllerInTomcat {
         @Override
         public void executeApp() throws Exception {
             executeApp("webapp1", "/zzz", "/rest-async");
         }
     }
 
-    public static class DeferredResultAsyncServletWithContextPath
+    public static class InvokeDeferredResultAsyncControllerWithContextPath
             extends InvokeSpringControllerInTomcat {
         @Override
         public void executeApp() throws Exception {

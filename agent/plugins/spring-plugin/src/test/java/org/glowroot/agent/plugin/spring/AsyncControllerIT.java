@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,23 +59,24 @@ public class AsyncControllerIT {
 
     @Test
     public void shouldCaptureCallableAsyncController() throws Exception {
-        shouldCaptureCallableAsyncController("", CallableAsyncServlet.class);
+        shouldCaptureCallableAsyncController("", InvokeCallableAsyncController.class);
     }
 
     @Test
     public void shouldCaptureDeferredResultAsyncController() throws Exception {
-        shouldCaptureDeferredResultAsyncController("", DeferredResultAsyncServlet.class);
+        shouldCaptureDeferredResultAsyncController("", InvokeDeferredResultAsyncController.class);
     }
 
     @Test
     public void shouldCaptureCallableAsyncControllerWithContextPath() throws Exception {
-        shouldCaptureCallableAsyncController("/zzz", CallableAsyncServletWithContextPath.class);
+        shouldCaptureCallableAsyncController("/zzz",
+                InvokeCallableAsyncControllerWithContextPath.class);
     }
 
     @Test
     public void shouldCaptureDeferredResultAsyncControllerWithContextPath() throws Exception {
         shouldCaptureDeferredResultAsyncController("/zzz",
-                DeferredResultAsyncServletWithContextPath.class);
+                InvokeDeferredResultAsyncControllerWithContextPath.class);
     }
 
     private void shouldCaptureCallableAsyncController(String contextPath,
@@ -191,28 +192,29 @@ public class AsyncControllerIT {
         assertThat(i.hasNext()).isFalse();
     }
 
-    public static class CallableAsyncServlet extends InvokeSpringControllerInTomcat {
+    public static class InvokeCallableAsyncController extends InvokeSpringControllerInTomcat {
         @Override
         public void executeApp() throws Exception {
             executeApp("webapp1", "", "/async");
         }
     }
 
-    public static class DeferredResultAsyncServlet extends InvokeSpringControllerInTomcat {
+    public static class InvokeDeferredResultAsyncController extends InvokeSpringControllerInTomcat {
         @Override
         public void executeApp() throws Exception {
             executeApp("webapp1", "", "/async2");
         }
     }
 
-    public static class CallableAsyncServletWithContextPath extends InvokeSpringControllerInTomcat {
+    public static class InvokeCallableAsyncControllerWithContextPath
+            extends InvokeSpringControllerInTomcat {
         @Override
         public void executeApp() throws Exception {
             executeApp("webapp1", "/zzz", "/async");
         }
     }
 
-    public static class DeferredResultAsyncServletWithContextPath
+    public static class InvokeDeferredResultAsyncControllerWithContextPath
             extends InvokeSpringControllerInTomcat {
         @Override
         public void executeApp() throws Exception {
