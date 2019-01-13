@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -417,7 +417,6 @@ glowroot.directive('gtSelectpicker', [
     return {
       scope: {
         gtModel: '=',
-        gtSelectpickerOptions: '&',
         gtTitle: '&'
       },
       link: function (scope, iElement) {
@@ -425,7 +424,7 @@ glowroot.directive('gtSelectpicker', [
         // when going back and forth between two different transaction types
         iElement.attr('title', scope.gtTitle());
         // set style outside of $timeout to avoid style flicker on loading
-        iElement.selectpicker(scope.gtSelectpickerOptions());
+        iElement.selectpicker();
         scope.$watch('gtModel', function () {
           // only works inside of $timeout
           $timeout(function () {
