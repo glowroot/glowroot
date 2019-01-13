@@ -69,7 +69,6 @@ $navbar-inverse-link-color: #fff;
 .gt-navbar .nav-link, .gt-gears-btn, .gt-logout-btn {
   display: flex;
   align-items: center;
-  height: 100%;
   color: #fff !important;
   font-size: 1rem;
   font-weight: 600;
@@ -97,5 +96,9 @@ $navbar-inverse-link-color: #fff;
 @include media-breakpoint-up(md) {
   .gt-navbar .nav-item.active, .gt-gears-li.active {
     background-color: $navbar-inverse-link-active-bg;
+  }
+  .gt-navbar .nav-link, .gt-gears-btn, .gt-logout-btn {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
   }
 }
