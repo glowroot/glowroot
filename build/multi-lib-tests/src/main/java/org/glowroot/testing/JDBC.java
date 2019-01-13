@@ -31,6 +31,7 @@ public class JDBC {
         tomcatWrapped();
         glassfishWrapped();
         hikariCpWrapped();
+        bitronixWrapped();
     }
 
     private static void hsqldb() throws Exception {
@@ -195,6 +196,22 @@ public class JDBC {
         runHikariCpJava8Wrapped("3.3.0");
     }
 
+    private static void bitronixWrapped() throws Exception {
+        runBitronix2xWrapped("1.2");
+        runBitronix2xWrapped("1.3");
+        runBitronix2xWrapped("1.3.1");
+        runBitronix2xWrapped("1.3.2");
+        runBitronix2xWrapped("1.3.3");
+        runBitronix2xWrapped("2.0.0");
+        runBitronix2xWrapped("2.0.1");
+        runBitronix2xWrapped("2.1.0");
+        runBitronix2xWrapped("2.1.1");
+        runBitronix2xWrapped("2.1.2");
+        runBitronix2xWrapped("2.1.3");
+        runBitronix2xWrapped("2.1.4");
+        runBitronix3xWrapped("3.0.0-mk1");
+    }
+
     private static void runHsqldb(String version) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "hsqldb.version", version);
         Util.runTests(MODULE_PATH, "-Dglowroot.test.jdbcConnectionType=HSQLDB", JAVA8, JAVA7,
@@ -290,5 +307,18 @@ public class JDBC {
         Util.updateLibVersion(MODULE_PATH, "hikari.cp.artifactId", "HikariCP");
         Util.updateLibVersion(MODULE_PATH, "hikari.cp.version", version);
         Util.runTests(MODULE_PATH, "-Dglowroot.test.jdbcConnectionType=HIKARI_CP_WRAPPED", JAVA8);
+    }
+
+    private static void runBitronix2xWrapped(String version) throws Exception {
+        Util.updateLibVersion(MODULE_PATH, "bitronix.cp.groupId", "org.codehaus.btm");
+        Util.updateLibVersion(MODULE_PATH, "bitronix.cp.version", version);
+        Util.runTests(MODULE_PATH, "-Dglowroot.test.jdbcConnectionType=BITRONIX_WRAPPED", JAVA8,
+                JAVA7, JAVA6);
+    }
+
+    private static void runBitronix3xWrapped(String version) throws Exception {
+        Util.updateLibVersion(MODULE_PATH, "bitronix.cp.groupId", "com.github.marcus-nl.btm");
+        Util.updateLibVersion(MODULE_PATH, "bitronix.cp.version", version);
+        Util.runTests(MODULE_PATH, "-Dglowroot.test.jdbcConnectionType=BITRONIX_WRAPPED", JAVA8);
     }
 }

@@ -31,6 +31,8 @@
     <glassfish.jdbc.version>4.1.2</glassfish.jdbc.version>
     <hikari.cp.artifactId>HikariCP-java6</hikari.cp.artifactId>
     <hikari.cp.version>2.3.13</hikari.cp.version>
+    <bitronix.groupId>com.github.marcus-nl.btm</bitronix.groupId>
+    <bitronix.version>3.0.0-mk1</bitronix.version>
   </properties>
 
   <dependencies>
@@ -123,6 +125,20 @@
       <version>${hikari.cp.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>${bitronix.groupId}</groupId>
+      <artifactId>btm</artifactId>
+      <version>${bitronix.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.javassist</groupId>
+      <artifactId>javassist</artifactId>
+      <!-- this is needed to make bitronix use its JdbcJavassistProxyFactory which needs special
+        weaving consideration -->
+      <version>3.18.2-GA</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -181,6 +197,40 @@
               <!-- exclusion is needed due to https://issues.apache.org/jira/browse/MSHADE-206 -->
               <groupId>org.glowroot</groupId>
               <artifactId>glowroot-agent-core</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>test-java6</id>
+      <activation>
+        <property>
+          <name>glowroot.test.java6</name>
+        </property>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>javax.transaction</groupId>
+          <artifactId>jta</artifactId>
+          <version>1.1</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.glassfish.main.jdbc.jdbc-ra.jdbc40</groupId>
+          <artifactId>jdbc40</artifactId>
+          <version>${glassfish.jdbc.version}</version>
+          <scope>test</scope>
+          <exclusions>
+            <exclusion>
+              <!-- conflicts with glowroot's asm version -->
+              <groupId>org.glassfish.external</groupId>
+              <artifactId>asm-all</artifactId>
+            </exclusion>
+            <exclusion>
+              <!-- need to use Java 6 compatible JTA (above) -->
+              <groupId>javax.transaction</groupId>
+              <artifactId>javax.transaction-api</artifactId>
             </exclusion>
           </exclusions>
         </dependency>

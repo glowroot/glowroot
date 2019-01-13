@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,8 @@ public class PreCheckLoadedClasses {
                 ImportantClassNames.FELIX3_OSGI_HACK_CLASS_NAME.replace('/', '.'),
                 ImportantClassNames.ECLIPSE_OSGI_HACK_CLASS_NAME.replace('/', '.'),
                 ImportantClassNames.OPENEJB_HACK_CLASS_NAME.replace('/', '.'),
-                ImportantClassNames.HIKARI_CP_PROXY_HACK_CLASS_NAME.replace('/', '.'));
+                ImportantClassNames.HIKARI_CP_PROXY_HACK_CLASS_NAME.replace('/', '.'),
+                ImportantClassNames.BITRONIX_PROXY_HACK_CLASS_NAME.replace('/', '.'));
         IMPORTANT_CLASS_NAMES = new HashSet<String>(importantClassNames);
     }
 

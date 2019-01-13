@@ -24,6 +24,7 @@ import java.util.Properties;
 
 import javax.sql.DataSource;
 
+import bitronix.tm.resource.jdbc.PoolingDataSource;
 import com.sun.gjc.spi.DMManagedConnectionFactory;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -32,12 +33,15 @@ import org.glassfish.api.jdbc.SQLTraceListener;
 import org.glassfish.api.jdbc.SQLTraceRecord;
 import org.h2.jdbc.JdbcConnection;
 import org.hsqldb.jdbc.JDBCDriver;
+import org.hsqldb.jdbc.pool.JDBCXADataSource;
 
 import org.glowroot.agent.weaving.IsolatedWeavingClassLoader;
 
 public class Connections {
 
     private static final ConnectionType connectionType;
+
+    private static volatile int nextUniqueNum;
 
     static {
         String jdbcConnectionType = System.getProperty("glowroot.test.jdbcConnectionType");
@@ -50,7 +54,7 @@ public class Connections {
 
     enum ConnectionType {
         HSQLDB, H2, COMMONS_DBCP_WRAPPED, COMMONS_DBCP2_WRAPPED, TOMCAT_JDBC_POOL_WRAPPED,
-        GLASSFISH_JDBC_POOL_WRAPPED, HIKARI_CP_WRAPPED, POSTGRES, ORACLE, MSSQL
+        GLASSFISH_JDBC_POOL_WRAPPED, HIKARI_CP_WRAPPED, BITRONIX_WRAPPED, POSTGRES, ORACLE, MSSQL
     }
 
     static Connection createConnection() throws Exception {
@@ -69,6 +73,8 @@ public class Connections {
                 return createGlassfishJdbcPoolWrappedConnection();
             case HIKARI_CP_WRAPPED:
                 return createHikariCpWrappedConnection();
+            case BITRONIX_WRAPPED:
+                return createBitronixWrappedConnection();
             case POSTGRES:
                 return createPostgresConnection();
             case ORACLE:
@@ -179,6 +185,27 @@ public class Connections {
         @SuppressWarnings("resource")
         HikariDataSource ds = new HikariDataSource(config);
         Connection connection = ds.getConnection();
+        insertRecords(connection);
+        return connection;
+    }
+
+    private static Connection createBitronixWrappedConnection() throws Exception {
+        if (Connections.class.getClassLoader() instanceof IsolatedWeavingClassLoader) {
+            throw new AssertionError("Bitronix loads JdbcProxyFactory implementation using a"
+                    + " parent-first class loader, which bypasses IsolatedWeavingClassLoader, must"
+                    + " use JavaagentContainer");
+        }
+        PoolingDataSource ds2 = new PoolingDataSource();
+        ds2.setClassName(JDBCXADataSource.class.getName());
+        Properties props = new Properties();
+        props.setProperty("url", "jdbc:hsqldb:mem:test");
+        ds2.setDriverProperties(props);
+        ds2.setMaxPoolSize(1);
+        ds2.setUniqueName("unique-name-" + nextUniqueNum++);
+        ds2.setAllowLocalTransactions(true);
+
+        Connection connection = ds2.getConnection();
+
         insertRecords(connection);
         return connection;
     }

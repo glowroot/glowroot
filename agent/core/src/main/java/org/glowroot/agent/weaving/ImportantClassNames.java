@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,9 @@ public class ImportantClassNames {
     // https://github.com/brettwooldridge/HikariCP/commit/33a4bbe54a99de14a704c1a26e3f953cfa7888ad
     public static final String HIKARI_CP_PROXY_HACK_CLASS_NAME =
             "com/zaxxer/hikari/proxy/JavassistProxyFactory";
+    // this is needed for Bitronix 3.0+
+    public static final String BITRONIX_PROXY_HACK_CLASS_NAME =
+            "bitronix/tm/resource/jdbc/proxy/JdbcJavassistProxyFactory";
 
     private ImportantClassNames() {}
 }
