@@ -1,16 +1,26 @@
 {
   "name": "Mail Plugin",
   "id": "mail",
-  "properties": [
+  "instrumentation": [
     {
-      "name": "stackTraceThresholdMillis",
-      "type": "double",
-      "default": 60000.0,
-      "label": "Stack trace threshold (millis)",
-      "description": "Any call that exceeds this threshold will have a stack trace captured and attached to it. An empty value will not collect any stack traces, a zero value will collect a stack trace for every query."
+      "className": "javax.mail.Service",
+      "methodName": "connect",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "mail connect {{this.uRLName}}",
+      "timerName": "mail"
+    },
+    {
+      "className": "javax.mail.Transport",
+      "methodName": "sendMessage",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "mail send message",
+      "timerName": "mail"
     }
-  ],
-  "aspects": [
-    "org.glowroot.agent.plugin.mail.MailAspect"
   ]
 }

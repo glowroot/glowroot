@@ -59,32 +59,32 @@ public class MailPluginIT {
         Trace trace = container.execute(ExecuteSend.class);
 
         // then
-        checkTimers(trace, "mail connect", "mail send");
+        checkTimers(trace);
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
 
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("mail connect: SMTPTransport");
+        assertThat(entry.getMessage()).isEqualTo("mail connect smtp://ionutursuleanu@127.0.0.1");
 
         assertThat(i.hasNext()).isTrue();
 
         entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
-        assertThat(entry.getMessage()).isEqualTo("mail send: message");
+        assertThat(entry.getMessage()).isEqualTo("mail send message");
 
         assertThat(i.hasNext()).isFalse();
 
     }
 
-    private static void checkTimers(Trace trace, String... expectedTimers) {
+    private static void checkTimers(Trace trace) {
         Trace.Timer rootTimer = trace.getHeader().getMainThreadRootTimer();
         List<String> timerNames = Lists.newArrayList();
         for (Trace.Timer timer : rootTimer.getChildTimerList()) {
             timerNames.add(timer.getName());
         }
         Collections.sort(timerNames);
-        assertThat(timerNames).containsExactly(expectedTimers);
+        assertThat(timerNames).containsExactly("mail");
         for (Trace.Timer timer : rootTimer.getChildTimerList()) {
             assertThat(timer.getChildTimerList()).isEmpty();
         }
