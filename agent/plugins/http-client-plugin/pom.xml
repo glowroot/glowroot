@@ -24,13 +24,13 @@
     <apache.httpcore.version>4.4.10</apache.httpcore.version>
     <asynchttpclient1x.version>1.9.40</asynchttpclient1x.version>
     <asynchttpclient2x.version>2.6.0</asynchttpclient2x.version>
-    <wiremock.version>2.19.0</wiremock.version>
-    <okhttpclient.version>3.12.0</okhttpclient.version>
+    <wiremock.version>2.20.0</wiremock.version>
+    <okhttpclient.version>3.12.1</okhttpclient.version>
     <okhttpclient2x.version>2.7.5</okhttpclient2x.version>
     <!-- CXF 3.2.0+ requires Java 8+ -->
     <cxf.version>3.1.15</cxf.version>
     <!-- Spring 5+ requires Java 8+ -->
-    <spring.version>4.3.20.RELEASE</spring.version>
+    <spring.version>4.3.22.RELEASE</spring.version>
     <axis.version>1.4</axis.version>
   </properties>
 

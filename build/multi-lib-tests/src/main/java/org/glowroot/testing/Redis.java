@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,10 +48,20 @@ public class Redis {
         run("2.8.1");
         run("2.8.2");
         run("2.9.0");
+        runJava7("2.9.1");
+        runJava7("2.10.0");
+        runJava7("2.10.1");
+        runJava7("3.0.0");
+        runJava7("3.0.1");
     }
 
     private static void run(String version) throws Exception {
         Util.updateLibVersion(MODULE_PATH, "jedis.version", version);
         Util.runTests(MODULE_PATH, JAVA8, JAVA7, JAVA6);
+    }
+
+    private static void runJava7(String version) throws Exception {
+        Util.updateLibVersion(MODULE_PATH, "jedis.version", version);
+        Util.runTests(MODULE_PATH, JAVA8, JAVA7);
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,10 +50,10 @@ public class JSF {
         for (int i = 0; i <= 18; i++) {
             run("2.2." + i);
         }
-        for (int i = 1; i <= 30; i++) {
+        for (int i = 1; i <= 31; i++) {
             run("2.2.8-" + String.format("%02d", i));
         }
-        for (int i = 0; i <= 7; i++) {
+        for (int i = 0; i <= 8; i++) {
             runJava8("2.3." + i);
         }
         runJava8("2.3.3.99");

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,6 +102,9 @@ public class Netty {
         runVertxJava8("3.5.2", "4.1.19.Final", "vertx-3.x");
         runVertxJava8("3.5.3", "4.1.19.Final", "vertx-3.x");
         runVertxJava8("3.5.4", "4.1.19.Final", "vertx-3.x");
+        runVertxJava8("3.6.0", "4.1.30.Final", "vertx-3.x");
+        runVertxJava8("3.6.1", "4.1.30.Final", "vertx-3.x");
+        runVertxJava8("3.6.2", "4.1.30.Final", "vertx-3.x");
     }
 
     private static void runNetty(String version, String... profile) throws Exception {

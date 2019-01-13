@@ -104,7 +104,7 @@ module.exports = function (grunt) {
             serveStatic('.tmp'),
             connect().use('/bower_components', serveStatic('bower_components')),
             serveStatic(appConfig.app),
-            connect().use('/fonts', serveStatic('bower_components/fontawesome/web-fonts-with-css/webfonts')),
+            connect().use('/fonts', serveStatic('bower_components/fontawesome/webfonts')),
             connect().use('/uib/template', serveStatic('bower_components/angular-ui-bootstrap4/template'))
           ];
         }
@@ -315,7 +315,7 @@ module.exports = function (grunt) {
           },
           {
             expand: true,
-            cwd: 'bower_components/fontawesome/web-fonts-with-css/webfonts',
+            cwd: 'bower_components/fontawesome/webfonts',
             dest: '<%= yeoman.dist %>/fonts',
             src: [
               'fa-regular-400.woff{,2}',

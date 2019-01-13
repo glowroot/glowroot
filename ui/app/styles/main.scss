@@ -21,10 +21,10 @@ $success: darken(#28a745, 5%); // #28a745 is bootstrap $green
 $form-group-margin-bottom: 1.5rem; // a little more spacing between form elements
 
 // fontawesome is used for gear and sign out icons in top right of navbar and also for help icon
-@import "../../bower_components/fontawesome/web-fonts-with-css/scss/variables";
-@import "../../bower_components/fontawesome/web-fonts-with-css/scss/mixins";
-@import "../../bower_components/fontawesome/web-fonts-with-css/scss/core";
-@import "../../bower_components/fontawesome/web-fonts-with-css/scss/icons";
+@import "../../bower_components/fontawesome/scss/variables";
+@import "../../bower_components/fontawesome/scss/mixins";
+@import "../../bower_components/fontawesome/scss/core";
+@import "../../bower_components/fontawesome/scss/icons";
 @import "../../bower_components/bootstrap/scss/functions";
 @import "../../bower_components/bootstrap/scss/variables";
 @import "../../bower_components/bootstrap/scss/mixins";
@@ -122,24 +122,18 @@ $state-danger-text: $gt-red;
   url(../fonts/cousine-regular.woff) format('woff');
 }
 
-// explicitly specifiying font-face for font-awesome since only supporting IE9+ and so only need
-// woff/woff2 this also helps by removing ?v=... versioning url which causes some issue keeping the
-// font preloading url (see index.html) in sync when new font-awesome versions are released, and the
-// urls are revved during grunt build already so the versioned url is not needed
 @font-face {
   font-family: 'Font Awesome Free';
-  src: url('../fonts/fa-regular-400.woff2') format('woff2'),
-  url('../fonts/fa-regular-400.woff') format('woff');
   font-weight: 400;
-  font-style: normal;
+  src: url(../fonts/fa-regular-400.woff2) format('woff2'),
+  url(../fonts/fa-regular-400.woff) format('woff');
 }
 
 @font-face {
   font-family: 'Font Awesome Free';
-  src: url('../fonts/fa-solid-900.woff2') format('woff2'),
-  url('../fonts/fa-solid-900.woff') format('woff');
   font-weight: 900;
-  font-style: normal;
+  src: url(../fonts/fa-solid-900.woff2) format('woff2'),
+  url(../fonts/fa-solid-900.woff) format('woff');
 }
 
 .far {

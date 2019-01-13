@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ public class Grails {
         for (int i = 0; i <= 13; i++) {
             run("3.2." + i);
         }
-        for (int i = 0; i <= 8; i++) {
+        for (int i = 0; i <= 9; i++) {
             run("3.3." + i);
         }
     }

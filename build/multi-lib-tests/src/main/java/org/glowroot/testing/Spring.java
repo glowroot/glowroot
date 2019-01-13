@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ public class Spring {
         for (int i = 0; i <= 9; i++) {
             run("4.2." + i + ".RELEASE", "spring-4.x");
         }
-        for (int i = 0; i <= 20; i++) {
+        for (int i = 0; i <= 22; i++) {
             run("4.3." + i + ".RELEASE", "spring-4.x");
         }
         runJava8("5.0.0.RELEASE", "0.7.0.RELEASE", "4.1.15.Final", "spring-4.x", "spring-5.0.x");
@@ -63,10 +63,14 @@ public class Spring {
         runJava8("5.0.8.RELEASE", "0.7.8.RELEASE", "4.1.25.Final", "spring-4.x", "spring-5.0.x");
         runJava8("5.0.9.RELEASE", "0.7.9.RELEASE", "4.1.29.Final", "spring-4.x", "spring-5.0.x");
         runJava8("5.0.10.RELEASE", "0.7.9.RELEASE", "4.1.29.Final", "spring-4.x", "spring-5.0.x");
+        runJava8("5.0.11.RELEASE", "0.7.12.RELEASE", "4.1.31.Final", "spring-4.x", "spring-5.0.x");
+        runJava8("5.0.12.RELEASE", "0.7.14.RELEASE", "4.1.32.Final", "spring-4.x", "spring-5.0.x");
 
         runJava8("5.1.0.RELEASE", "0.8.0.RELEASE", "4.1.29.Final", "spring-4.x", "spring-5.1.x");
         runJava8("5.1.1.RELEASE", "0.8.1.RELEASE", "4.1.29.Final", "spring-4.x", "spring-5.1.x");
         runJava8("5.1.2.RELEASE", "0.8.2.RELEASE", "4.1.29.Final", "spring-4.x", "spring-5.1.x");
+        runJava8("5.1.3.RELEASE", "0.8.3.RELEASE", "4.1.31.Final", "spring-4.x", "spring-5.1.x");
+        runJava8("5.1.4.RELEASE", "0.8.4.RELEASE", "4.1.32.Final", "spring-4.x", "spring-5.1.x");
     }
 
     private static void run(String version, String... profiles) throws Exception {

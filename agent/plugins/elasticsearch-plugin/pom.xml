@@ -122,9 +122,9 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <properties>
-        <elasticsearch.version>6.4.3</elasticsearch.version>
+        <elasticsearch.version>6.5.4</elasticsearch.version>
         <!-- need to use netty version that is used by elasticsearch.version version above -->
-        <netty.version>4.1.16.Final</netty.version>
+        <netty.version>4.1.30.Final</netty.version>
         <log4j.version>2.11.1</log4j.version>
       </properties>
       <dependencies>

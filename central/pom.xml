@@ -72,7 +72,7 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
-      <version>9.4.1.Final</version>
+      <version>9.4.5.Final</version>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -148,7 +148,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>net.bytebuddy</groupId>
       <artifactId>byte-buddy</artifactId>
-      <version>1.9.5</version>
+      <version>1.9.7</version>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->

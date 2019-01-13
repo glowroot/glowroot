@@ -19,7 +19,7 @@
   <properties>
     <!-- instrumented libraries -->
     <!-- Spring 5+ requires Java 8+ -->
-    <spring.version>4.3.20.RELEASE</spring.version>
+    <spring.version>4.3.22.RELEASE</spring.version>
   </properties>
 
   <dependencies>
@@ -264,10 +264,10 @@
       <!-- this profile is cumulative on top of spring-4.x -->
       <id>spring-5.0.x</id>
       <properties>
-        <spring.version>5.0.10.RELEASE</spring.version>
-        <reactor.version>0.7.9.RELEASE</reactor.version>
+        <spring.version>5.0.12.RELEASE</spring.version>
+        <reactor.version>0.7.14.RELEASE</reactor.version>
         <!-- netty version used by above reactor version -->
-        <netty.version>4.1.29.Final</netty.version>
+        <netty.version>4.1.32.Final</netty.version>
       </properties>
       <dependencies>
         <dependency>
@@ -329,10 +329,10 @@
       <!-- this profile is cumulative on top of spring-4.x -->
       <id>spring-5.1.x</id>
       <properties>
-        <spring.version>5.1.2.RELEASE</spring.version>
-        <reactor.version>0.8.2.RELEASE</reactor.version>
+        <spring.version>5.1.4.RELEASE</spring.version>
+        <reactor.version>0.8.4.RELEASE</reactor.version>
         <!-- netty version used by above reactor version -->
-        <netty.version>4.1.29.Final</netty.version>
+        <netty.version>4.1.32.Final</netty.version>
       </properties>
       <dependencies>
         <dependency>
@@ -478,6 +478,7 @@
               <testExcludes>
                 <!-- @RestController is new in spring 4.0 -->
                 <exclude>org/glowroot/agent/plugin/spring/RestControllerIT.java</exclude>
+                <exclude>org/glowroot/agent/plugin/spring/AsyncRestControllerIT.java</exclude>
               </testExcludes>
             </configuration>
           </plugin>
@@ -496,6 +497,7 @@
                 <exclude>org/glowroot/agent/plugin/spring/AsyncControllerIT.java</exclude>
                 <!-- @RestController is new in spring 4.0 -->
                 <exclude>org/glowroot/agent/plugin/spring/RestControllerIT.java</exclude>
+                <exclude>org/glowroot/agent/plugin/spring/AsyncRestControllerIT.java</exclude>
               </testExcludes>
             </configuration>
           </plugin>

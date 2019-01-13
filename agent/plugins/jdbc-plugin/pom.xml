@@ -29,8 +29,8 @@
       https://github.com/brettwooldridge/HikariCP/commit/33a4bbe54a99de14a704c1a26e3f953cfa7888ad
       in order to exercise HikariProxyHackClassVisitor)
     -->
-    <hikari.cp.version>2.3.9</hikari.cp.version>
-    <tomcat.version>7.0.91</tomcat.version>
+    <hikari.cp.version>2.3.13</hikari.cp.version>
+    <tomcat.version>7.0.92</tomcat.version>
     <glassfish.jdbc.version>4.1.2</glassfish.jdbc.version>
   </properties>
 

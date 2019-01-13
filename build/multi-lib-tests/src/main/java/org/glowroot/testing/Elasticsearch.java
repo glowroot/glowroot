@@ -1,5 +1,5 @@
 /**
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,7 @@ public class Elasticsearch {
         run5x("5.6.11", "4.1.13.Final", "2.11.1");
         run5x("5.6.12", "4.1.13.Final", "2.11.1");
         run5x("5.6.13", "4.1.13.Final", "2.11.1");
+        run5x("5.6.14", "4.1.13.Final", "2.11.1");
         run5x("6.0.0", "4.1.13.Final", "2.9.1");
         run5x("6.0.1", "4.1.13.Final", "2.9.1");
         run5x("6.1.0", "4.1.13.Final", "2.9.1");
@@ -94,6 +95,11 @@ public class Elasticsearch {
         run5x("6.4.1", "4.1.16.Final", "2.11.1");
         run5x("6.4.2", "4.1.16.Final", "2.11.1");
         run5x("6.4.3", "4.1.16.Final", "2.11.1");
+        run5x("6.5.0", "4.1.30.Final", "2.11.1");
+        run5x("6.5.1", "4.1.30.Final", "2.11.1");
+        run5x("6.5.2", "4.1.30.Final", "2.11.1");
+        run5x("6.5.3", "4.1.30.Final", "2.11.1");
+        run5x("6.5.4", "4.1.30.Final", "2.11.1");
     }
 
     private static void run2x(String version) throws Exception {
