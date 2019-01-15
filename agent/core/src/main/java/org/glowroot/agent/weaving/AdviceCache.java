@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,7 +90,7 @@ public class AdviceCache {
                 instrumentationConfig.logValidationErrorsIfAny();
             }
             lazyAdvisors.putAll(AdviceGenerator.createAdvisors(instrumentationConfigs,
-                    pluginDescriptor.id(), false));
+                    pluginDescriptor.id(), pluginDescriptor.pluginJar() != null, false));
         }
         for (Map.Entry<Advice, LazyDefinedClass> entry : lazyAdvisors.entrySet()) {
             pluginAdvisors.add(entry.getKey());
@@ -214,7 +214,7 @@ public class AdviceCache {
             @Nullable Instrumentation instrumentation, File tmpDir, boolean cleanTmpDir)
             throws Exception {
         ImmutableMap<Advice, LazyDefinedClass> advisors =
-                AdviceGenerator.createAdvisors(reweavableConfigs, null, true);
+                AdviceGenerator.createAdvisors(reweavableConfigs, null, false, true);
         if (instrumentation == null) {
             // instrumentation is null when debugging with LocalContainer
             ClassLoader isolatedWeavingClassLoader =

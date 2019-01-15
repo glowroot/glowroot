@@ -74,19 +74,22 @@ class AdviceGenerator {
 
     private final InstrumentationConfig config;
     private final @Nullable String pluginId;
+    private final int priorityForSetters;
     private final String adviceInternalName;
     private final @Nullable String methodMetaInternalName;
     private final int uniqueNum;
 
     static ImmutableMap<Advice, LazyDefinedClass> createAdvisors(
-            List<InstrumentationConfig> configs, @Nullable String pluginId, boolean reweavable) {
+            List<InstrumentationConfig> configs, @Nullable String pluginId, boolean userPlugin,
+            boolean reweavable) {
         Map<Advice, LazyDefinedClass> advisors = Maps.newHashMap();
         for (InstrumentationConfig config : configs) {
             if (!config.validationErrors().isEmpty()) {
                 continue;
             }
             try {
-                LazyDefinedClass lazyAdviceClass = new AdviceGenerator(config, pluginId).generate();
+                LazyDefinedClass lazyAdviceClass =
+                        new AdviceGenerator(config, pluginId, userPlugin).generate();
                 Advice advice = new AdviceBuilder(lazyAdviceClass, reweavable).build();
                 advisors.put(advice, lazyAdviceClass);
             } catch (Exception e) {
@@ -96,9 +99,17 @@ class AdviceGenerator {
         return ImmutableMap.copyOf(advisors);
     }
 
-    private AdviceGenerator(InstrumentationConfig config, @Nullable String pluginId) {
+    private AdviceGenerator(InstrumentationConfig config, @Nullable String pluginId,
+            boolean userPlugin) {
         this.config = config;
         this.pluginId = pluginId;
+        if (pluginId == null) {
+            priorityForSetters = Priority.USER_CONFIG;
+        } else if (userPlugin) {
+            priorityForSetters = Priority.USER_PLUGIN;
+        } else {
+            priorityForSetters = Priority.CORE_PLUGIN;
+        }
         uniqueNum = counter.incrementAndGet();
         adviceInternalName = "org/glowroot/agent/weaving/GeneratedAdvice" + uniqueNum;
         if (config.isTraceEntryOrGreater() || !config.transactionNameTemplate().isEmpty()
@@ -467,7 +478,7 @@ class AdviceGenerator {
         if (!config.transactionType().isEmpty() && !config.isTransaction()) {
             mv.visitVarInsn(ALOAD, 0);
             mv.visitLdcInsn(config.transactionType());
-            mv.visitLdcInsn(Priority.USER_CONFIG);
+            mv.visitLdcInsn(priorityForSetters);
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
                     "setTransactionType", "(Ljava/lang/String;I)V", true);
         }
@@ -506,7 +517,7 @@ class AdviceGenerator {
             mv.visitLdcInsn(slowThresholdMillis.longValue());
             mv.visitFieldInsn(GETSTATIC, "java/util/concurrent/TimeUnit", "MILLISECONDS",
                     "Ljava/util/concurrent/TimeUnit;");
-            mv.visitLdcInsn(Priority.USER_CONFIG);
+            mv.visitLdcInsn(priorityForSetters);
             mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
                     "setTransactionSlowThreshold", "(JLjava/util/concurrent/TimeUnit;I)V", true);
         }
@@ -660,7 +671,7 @@ class AdviceGenerator {
                         + "Ljava/lang/String;[Ljava/lang/Object;)"
                         + "Ljava/lang/String;",
                 false);
-        mv.visitLdcInsn(Priority.USER_CONFIG);
+        mv.visitLdcInsn(priorityForSetters);
         mv.visitMethodInsn(INVOKEINTERFACE, "org/glowroot/agent/plugin/api/ThreadContext",
                 threadContextSetterName, "(Ljava/lang/String;I)V", true);
     }

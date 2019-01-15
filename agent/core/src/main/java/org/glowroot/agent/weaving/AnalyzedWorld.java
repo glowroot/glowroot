@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -160,7 +160,7 @@ public class AnalyzedWorld {
             instrumentationConfig.logValidationErrorsIfAny();
         }
         ImmutableMap<Advice, LazyDefinedClass> newAdvisors =
-                AdviceGenerator.createAdvisors(instrumentationConfigs, null, false);
+                AdviceGenerator.createAdvisors(instrumentationConfigs, null, false, false);
         try {
             ClassLoaders.defineClasses(newAdvisors.values(), loader);
         } catch (Exception e) {
