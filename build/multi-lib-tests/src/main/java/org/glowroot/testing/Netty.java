@@ -69,42 +69,42 @@ public class Netty {
     }
 
     private static void vertx() throws Exception {
-        runVertx("1.2.1.final", "3.5.0.Final", "vertx-1.x");
-        runVertx("1.2.3.final", "3.5.0.Final", "vertx-1.x");
-        runVertx("1.3.0.final", "3.5.8.Final", "vertx-1.x");
-        runVertx("1.3.1.final", "3.5.9.Final", "vertx-1.x");
+        runVertx("1.2.1.final", "vertx-1.x");
+        runVertx("1.2.3.final", "vertx-1.x");
+        runVertx("1.3.0.final", "vertx-1.x");
+        runVertx("1.3.1.final", "vertx-1.x");
 
-        runVertx("2.0.0-final", "4.0.2.Final", "vertx-2.x");
-        runVertx("2.0.1-final", "4.0.7.Final", "vertx-2.x");
-        runVertx("2.0.2-final", "4.0.10.Final", "vertx-2.x");
+        runVertx("2.0.0-final", "vertx-2.x");
+        runVertx("2.0.1-final", "vertx-2.x");
+        runVertx("2.0.2-final", "vertx-2.x");
 
-        runVertx("2.1", "4.0.19.Final", "vertx-2.x");
-        runVertx("2.1.1", "4.0.20.Final", "vertx-2.x");
-        runVertx("2.1.2", "4.0.20.Final", "vertx-2.x");
-        runVertx("2.1.3", "4.0.21.Final", "vertx-2.x");
-        runVertx("2.1.4", "4.0.21.Final", "vertx-2.x");
-        runVertx("2.1.5", "4.0.21.Final", "vertx-2.x");
-        runVertx("2.1.6", "4.0.21.Final", "vertx-2.x");
+        runVertx("2.1", "vertx-2.x");
+        runVertx("2.1.1", "vertx-2.x");
+        runVertx("2.1.2", "vertx-2.x");
+        runVertx("2.1.3", "vertx-2.x");
+        runVertx("2.1.4", "vertx-2.x");
+        runVertx("2.1.5", "vertx-2.x");
+        runVertx("2.1.6", "vertx-2.x");
 
-        runVertxJava8("3.0.0", "4.0.28.Final", "vertx-3.x");
-        runVertxJava8("3.1.0", "4.0.31.Final", "vertx-3.x");
-        runVertxJava8("3.2.0", "4.0.33.Final", "vertx-3.x");
-        runVertxJava8("3.2.1", "4.0.33.Final", "vertx-3.x");
-        runVertxJava8("3.3.0", "4.1.1.Final", "vertx-3.x");
-        runVertxJava8("3.3.1", "4.1.1.Final", "vertx-3.x");
-        runVertxJava8("3.3.2", "4.1.1.Final", "vertx-3.x");
-        runVertxJava8("3.3.3", "4.1.5.Final", "vertx-3.x");
-        runVertxJava8("3.4.0", "4.1.8.Final", "vertx-3.x");
-        runVertxJava8("3.4.1", "4.1.8.Final", "vertx-3.x");
-        runVertxJava8("3.4.2", "4.1.8.Final", "vertx-3.x");
-        runVertxJava8("3.5.0", "4.1.15.Final", "vertx-3.x");
-        runVertxJava8("3.5.1", "4.1.19.Final", "vertx-3.x");
-        runVertxJava8("3.5.2", "4.1.19.Final", "vertx-3.x");
-        runVertxJava8("3.5.3", "4.1.19.Final", "vertx-3.x");
-        runVertxJava8("3.5.4", "4.1.19.Final", "vertx-3.x");
-        runVertxJava8("3.6.0", "4.1.30.Final", "vertx-3.x");
-        runVertxJava8("3.6.1", "4.1.30.Final", "vertx-3.x");
-        runVertxJava8("3.6.2", "4.1.30.Final", "vertx-3.x");
+        runVertxJava8("3.0.0", "vertx-3.x");
+        runVertxJava8("3.1.0", "vertx-3.x");
+        runVertxJava8("3.2.0", "vertx-3.x");
+        runVertxJava8("3.2.1", "vertx-3.x");
+        runVertxJava8("3.3.0", "vertx-3.x");
+        runVertxJava8("3.3.1", "vertx-3.x");
+        runVertxJava8("3.3.2", "vertx-3.x");
+        runVertxJava8("3.3.3", "vertx-3.x");
+        runVertxJava8("3.4.0", "vertx-3.x");
+        runVertxJava8("3.4.1", "vertx-3.x");
+        runVertxJava8("3.4.2", "vertx-3.x");
+        runVertxJava8("3.5.0", "vertx-3.x");
+        runVertxJava8("3.5.1", "vertx-3.x");
+        runVertxJava8("3.5.2", "vertx-3.x");
+        runVertxJava8("3.5.3", "vertx-3.x");
+        runVertxJava8("3.5.4", "vertx-3.x");
+        runVertxJava8("3.6.0", "vertx-3.x");
+        runVertxJava8("3.6.1", "vertx-3.x");
+        runVertxJava8("3.6.2", "vertx-3.x");
     }
 
     private static void runNetty(String version, String... profile) throws Exception {
@@ -117,17 +117,15 @@ public class Netty {
         Util.runTests(MODULE_PATH, profile, JAVA8, JAVA7);
     }
 
-    private static void runVertx(String vertxVersion, String nettyVersion, String profile)
+    private static void runVertx(String vertxVersion, String profile)
             throws Exception {
         Util.updateLibVersion(MODULE_PATH, "vertx.version", vertxVersion);
-        Util.updateLibVersion(MODULE_PATH, "netty.version", nettyVersion);
         Util.runTests(MODULE_PATH, profile, JAVA8, JAVA7);
     }
 
-    private static void runVertxJava8(String vertxVersion, String nettyVersion, String profile)
+    private static void runVertxJava8(String vertxVersion, String profile)
             throws Exception {
         Util.updateLibVersion(MODULE_PATH, "vertx.version", vertxVersion);
-        Util.updateLibVersion(MODULE_PATH, "netty.version", nettyVersion);
         Util.runTests(MODULE_PATH, profile, JAVA8);
     }
 }

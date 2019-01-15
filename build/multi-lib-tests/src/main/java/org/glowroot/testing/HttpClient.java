@@ -157,73 +157,73 @@ public class HttpClient {
         for (int i = 0; i <= 40; i++) {
             runAsyncHttpClient1x("1.9." + i);
         }
-        runAsyncHttpClient2x("2.0.0", "4.0.36.Final");
-        runAsyncHttpClient2x("2.0.1", "4.0.36.Final");
-        runAsyncHttpClient2x("2.0.2", "4.0.36.Final");
-        runAsyncHttpClient2x("2.0.3", "4.0.36.Final");
-        runAsyncHttpClient2x("2.0.4", "4.0.36.Final");
-        runAsyncHttpClient2x("2.0.5", "4.0.36.Final");
-        runAsyncHttpClient2x("2.0.6", "4.0.37.Final");
-        runAsyncHttpClient2x("2.0.7", "4.0.37.Final");
-        runAsyncHttpClient2x("2.0.8", "4.0.37.Final");
-        runAsyncHttpClient2x("2.0.9", "4.0.38.Final");
-        runAsyncHttpClient2x("2.0.10", "4.0.38.Final");
-        runAsyncHttpClient2x("2.0.11", "4.0.39.Final");
-        runAsyncHttpClient2x("2.0.12", "4.0.40.Final");
-        runAsyncHttpClient2x("2.0.13", "4.0.40.Final");
-        runAsyncHttpClient2x("2.0.14", "4.0.40.Final");
-        runAsyncHttpClient2x("2.0.15", "4.0.41.Final");
-        runAsyncHttpClient2x("2.0.16", "4.0.41.Final");
-        runAsyncHttpClient2x("2.0.17", "4.0.42.Final");
-        runAsyncHttpClient2x("2.0.18", "4.0.42.Final");
-        runAsyncHttpClient2x("2.0.19", "4.0.42.Final");
-        runAsyncHttpClient2x("2.0.20", "4.0.42.Final");
-        runAsyncHttpClient2x("2.0.21", "4.0.42.Final");
-        runAsyncHttpClient2x("2.0.22", "4.0.42.Final");
-        runAsyncHttpClient2x("2.0.23", "4.0.42.Final");
-        runAsyncHttpClient2x("2.0.24", "4.0.42.Final");
-        runAsyncHttpClient2x("2.0.25", "4.0.43.Final");
-        runAsyncHttpClient2x("2.0.26", "4.0.43.Final");
-        runAsyncHttpClient2x("2.0.27", "4.0.43.Final");
-        runAsyncHttpClient2x("2.0.28", "4.0.44.Final");
-        runAsyncHttpClient2x("2.0.29", "4.0.44.Final");
-        runAsyncHttpClient2x("2.0.30", "4.0.44.Final");
-        runAsyncHttpClient2x("2.0.31", "4.0.45.Final");
-        runAsyncHttpClient2x("2.0.32", "4.0.46.Final");
-        runAsyncHttpClient2x("2.0.33", "4.0.48.Final");
-        runAsyncHttpClient2x("2.0.34", "4.0.50.Final");
-        runAsyncHttpClient2x("2.0.35", "4.0.51.Final");
-        runAsyncHttpClient2x("2.0.36", "4.0.51.Final");
-        runAsyncHttpClient2x("2.0.37", "4.0.52.Final");
-        runAsyncHttpClient2x("2.0.38", "4.0.54.Final");
-        runAsyncHttpClient2x("2.0.39", "4.0.56.Final");
+        runAsyncHttpClient2x("2.0.0");
+        runAsyncHttpClient2x("2.0.1");
+        runAsyncHttpClient2x("2.0.2");
+        runAsyncHttpClient2x("2.0.3");
+        runAsyncHttpClient2x("2.0.4");
+        runAsyncHttpClient2x("2.0.5");
+        runAsyncHttpClient2x("2.0.6");
+        runAsyncHttpClient2x("2.0.7");
+        runAsyncHttpClient2x("2.0.8");
+        runAsyncHttpClient2x("2.0.9");
+        runAsyncHttpClient2x("2.0.10");
+        runAsyncHttpClient2x("2.0.11");
+        runAsyncHttpClient2x("2.0.12");
+        runAsyncHttpClient2x("2.0.13");
+        runAsyncHttpClient2x("2.0.14");
+        runAsyncHttpClient2x("2.0.15");
+        runAsyncHttpClient2x("2.0.16");
+        runAsyncHttpClient2x("2.0.17");
+        runAsyncHttpClient2x("2.0.18");
+        runAsyncHttpClient2x("2.0.19");
+        runAsyncHttpClient2x("2.0.20");
+        runAsyncHttpClient2x("2.0.21");
+        runAsyncHttpClient2x("2.0.22");
+        runAsyncHttpClient2x("2.0.23");
+        runAsyncHttpClient2x("2.0.24");
+        runAsyncHttpClient2x("2.0.25");
+        runAsyncHttpClient2x("2.0.26");
+        runAsyncHttpClient2x("2.0.27");
+        runAsyncHttpClient2x("2.0.28");
+        runAsyncHttpClient2x("2.0.29");
+        runAsyncHttpClient2x("2.0.30");
+        runAsyncHttpClient2x("2.0.31");
+        runAsyncHttpClient2x("2.0.32");
+        runAsyncHttpClient2x("2.0.33");
+        runAsyncHttpClient2x("2.0.34");
+        runAsyncHttpClient2x("2.0.35");
+        runAsyncHttpClient2x("2.0.36");
+        runAsyncHttpClient2x("2.0.37");
+        runAsyncHttpClient2x("2.0.38");
+        runAsyncHttpClient2x("2.0.39");
 
-        runAsyncHttpClient2x("2.1.0", "4.1.19.Final");
-        runAsyncHttpClient2x("2.1.1", "4.1.19.Final");
-        runAsyncHttpClient2x("2.1.2", "4.1.19.Final");
+        runAsyncHttpClient2x("2.1.0");
+        runAsyncHttpClient2x("2.1.1");
+        runAsyncHttpClient2x("2.1.2");
 
-        runAsyncHttpClient2x("2.2.0", "4.1.20.Final");
-        runAsyncHttpClient2x("2.2.1", "4.1.20.Final");
+        runAsyncHttpClient2x("2.2.0");
+        runAsyncHttpClient2x("2.2.1");
 
-        runAsyncHttpClient2x("2.3.0", "4.1.21.Final");
+        runAsyncHttpClient2x("2.3.0");
 
-        runAsyncHttpClient2x("2.4.0", "4.1.21.Final");
-        runAsyncHttpClient2x("2.4.1", "4.1.21.Final");
-        runAsyncHttpClient2x("2.4.2", "4.1.22.Final");
-        runAsyncHttpClient2x("2.4.3", "4.1.22.Final");
-        runAsyncHttpClient2x("2.4.4", "4.1.22.Final");
-        runAsyncHttpClient2x("2.4.5", "4.1.23.Final");
-        runAsyncHttpClient2x("2.4.6", "4.1.24.Final");
-        runAsyncHttpClient2x("2.4.7", "4.1.24.Final");
-        runAsyncHttpClient2x("2.4.8", "4.1.25.Final");
-        runAsyncHttpClient2x("2.4.9", "4.1.25.Final");
+        runAsyncHttpClient2x("2.4.0");
+        runAsyncHttpClient2x("2.4.1");
+        runAsyncHttpClient2x("2.4.2");
+        runAsyncHttpClient2x("2.4.3");
+        runAsyncHttpClient2x("2.4.4");
+        runAsyncHttpClient2x("2.4.5");
+        runAsyncHttpClient2x("2.4.6");
+        runAsyncHttpClient2x("2.4.7");
+        runAsyncHttpClient2x("2.4.8");
+        runAsyncHttpClient2x("2.4.9");
 
-        runAsyncHttpClient2x("2.5.0", "4.1.25.Final");
-        runAsyncHttpClient2x("2.5.1", "4.1.26.Final");
-        runAsyncHttpClient2x("2.5.2", "4.1.27.Final");
-        runAsyncHttpClient2x("2.5.3", "4.1.29.Final");
-        runAsyncHttpClient2x("2.5.4", "4.1.30.Final");
-        runAsyncHttpClient2x("2.6.0", "4.1.30.Final");
+        runAsyncHttpClient2x("2.5.0");
+        runAsyncHttpClient2x("2.5.1");
+        runAsyncHttpClient2x("2.5.2");
+        runAsyncHttpClient2x("2.5.3");
+        runAsyncHttpClient2x("2.5.4");
+        runAsyncHttpClient2x("2.6.0");
     }
 
     private static void cxfClient() throws Exception {
@@ -407,11 +407,9 @@ public class HttpClient {
         }
     }
 
-    private static void runAsyncHttpClient2x(String asyncHttpClientVersion, String nettyVersion)
-            throws Exception {
+    private static void runAsyncHttpClient2x(String asyncHttpClientVersion) throws Exception {
         final String test = "AsyncHttpClientPluginIT";
         updateLibVersion("asynchttpclient2x.version", asyncHttpClientVersion);
-        updateLibVersion("netty.version", nettyVersion);
         runJava8(test, "async-http-client-2.x");
     }
 

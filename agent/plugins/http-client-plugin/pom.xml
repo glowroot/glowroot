@@ -408,8 +408,6 @@
       <id>async-http-client-2.x</id>
       <properties>
         <asynchttpclient2x.version>2.5.4</asynchttpclient2x.version>
-        <!-- this is needed because netty version is dependency managed in the parent pom -->
-        <netty.version>4.1.30.Final</netty.version>
       </properties>
       <dependencies>
         <dependency>
