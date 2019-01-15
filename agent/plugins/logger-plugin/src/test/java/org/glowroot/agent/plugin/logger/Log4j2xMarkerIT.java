@@ -91,7 +91,8 @@ public class Log4j2xMarkerIT {
         Trace trace = container.execute(ShouldLogWithThrowable.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg_t");
+        assertThat(trace.getHeader().getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 567");
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
 
@@ -172,7 +173,8 @@ public class Log4j2xMarkerIT {
         Trace trace = container.execute(ShouldLogWithOneParameterAndThrowable.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg_1_t e");
+        assertThat(trace.getHeader().getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 567");
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
 

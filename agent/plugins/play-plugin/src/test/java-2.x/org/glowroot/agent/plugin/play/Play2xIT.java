@@ -227,13 +227,8 @@ public class Play2xIT {
         } else {
             assertThat(trace.getHeader().getTransactionName()).isEqualTo("/bad");
         }
-        assertThat(trace.getHeader().getError().getMessage()).contains("Internal server error");
-        Proto.Throwable throwable = trace.getHeader().getError().getException();
-        while (throwable.hasCause()) {
-            throwable = throwable.getCause();
-        }
-        assertThat(throwable.getClassName()).isEqualTo("java.lang.RuntimeException");
-        assertThat(throwable.getMessage()).isEqualTo("Bad");
+        assertThat(trace.getHeader().getError().getMessage())
+                .isEqualTo("java.lang.RuntimeException: Bad");
     }
 
     public static class GetIndex implements AppUnderTest {

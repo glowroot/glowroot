@@ -105,7 +105,8 @@ public class LogbackMarkerIT {
         Trace trace = container.execute(ShouldLogWithThrowable.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg_t");
+        assertThat(trace.getHeader().getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 567");
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
 
@@ -191,7 +192,8 @@ public class LogbackMarkerIT {
 
         // then
         if (!OLD_LOGBACK) {
-            assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg_1_t e");
+            assertThat(trace.getHeader().getError().getMessage())
+                    .isEqualTo("java.lang.IllegalStateException: 567");
         }
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();

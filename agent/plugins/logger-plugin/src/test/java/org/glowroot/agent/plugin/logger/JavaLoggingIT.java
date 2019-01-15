@@ -128,7 +128,8 @@ public class JavaLoggingIT {
         Trace trace = container.execute(ShouldLogWithThrowable.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg_");
+        assertThat(trace.getHeader().getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 567");
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
 
@@ -272,7 +273,8 @@ public class JavaLoggingIT {
         Trace trace = container.execute(ShouldLogWithPriorityAndThrowable.class);
 
         // then
-        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("efg___");
+        assertThat(trace.getHeader().getError().getMessage())
+                .isEqualTo("java.lang.IllegalStateException: 567_");
 
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
 

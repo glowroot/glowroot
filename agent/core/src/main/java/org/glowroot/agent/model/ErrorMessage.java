@@ -51,18 +51,11 @@ public abstract class ErrorMessage {
         if (t == null) {
             return ImmutableErrorMessage.of(Strings.nullToEmpty(message), null);
         } else {
-            return fromThrowable(message, t, transactionThrowableFrameCount);
+            // "root cause" exception message is generally much more useful than generic wrapper
+            // message from log statement
+            return ImmutableErrorMessage.of(Throwables.getBestMessage(t),
+                    buildThrowableInfo(t, null, transactionThrowableFrameCount, 0));
         }
-    }
-
-    private static ErrorMessage fromThrowable(@Nullable String message, java.lang.Throwable t,
-            AtomicInteger transactionThrowableFrameCount) {
-        String msg = Strings.nullToEmpty(message);
-        if (msg.isEmpty()) {
-            msg = Strings.nullToEmpty(Throwables.getBestMessage(t));
-        }
-        return ImmutableErrorMessage.of(msg,
-                buildThrowableInfo(t, null, transactionThrowableFrameCount, 0));
     }
 
     private static Proto.Throwable buildThrowableInfo(java.lang.Throwable t,
