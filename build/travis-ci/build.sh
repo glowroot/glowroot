@@ -257,9 +257,8 @@ case "$1" in
                                  -Djacoco.append=true \
                                  -Dglowroot.it.harness=javaagent"
                  # run integration tests
-                 # spring-5.1.x profile is cumulative on top of spring-4.x (tests new spring 5 features, e.g. webflux)
-                 mvn $common_mvn_args -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -P netty-4.x,spring-4.x,spring-5.1.x,mongodb-3.7.x \
+                 mvn $common_mvn_args -P netty-4.x,spring-4.x,mongodb-3.7.x \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
                  # install to run additional tests
                  mvn clean install -DskipTests \
@@ -270,97 +269,83 @@ case "$1" in
                                       -Dglowroot.internal.webdriver.useCentral=true \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
-                 # enforcer.skip is needed for remaining tests
                  common_mvn_args="$common_mvn_args \
+                                  -Dglowroot.test.shaded \
                                   -Denforcer.skip"
                  # elasticsearch 5.x
                  mvn $common_mvn_args -pl agent/plugins/elasticsearch-plugin \
                                       -P elasticsearch-5.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -Dglowroot.test.shaded \
                                       -B
                  # elasticsearch 2.x
                  mvn $common_mvn_args -pl agent/plugins/elasticsearch-plugin \
                                       -P elasticsearch-2.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -Dglowroot.test.shaded \
                                       -B
                  # async-http-client 2.x (AsyncHttpClientPluginIT)
                  mvn $common_mvn_args -pl agent/plugins/http-client-plugin \
                                       -P async-http-client-2.x \
                                       -Dit.test=AsyncHttpClientPluginIT \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -Dglowroot.test.shaded \
                                       -B
                  # async-http-client 1.x (AsyncHttpClientPluginIT)
                  mvn $common_mvn_args -pl agent/plugins/http-client-plugin \
                                       -P async-http-client-1.x \
                                       -Dit.test=AsyncHttpClientPluginIT \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -Dglowroot.test.shaded \
                                       -B
                  # okhttp prior to 2.2.0 (OkHttpClientPluginIT)
                  mvn $common_mvn_args -pl agent/plugins/http-client-plugin \
-                                      -Dokhttpclient.version=2.1.0 \
+                                      -Dokhttpclient2x.version=2.1.0 \
                                       -Dit.test=OkHttpClientPluginIT \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -Dglowroot.test.shaded \
-                                      -B
-                 # LogbackIT (only runs against shaded agent)
-                 mvn $common_mvn_args -pl agent/plugins/logger-plugin \
-                                      -Dit.test=LogbackIT \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -Dglowroot.test.shaded \
                                       -B
                  # LogbackIT prior to 0.9.16
                  mvn $common_mvn_args -pl agent/plugins/logger-plugin \
                                       -P logback-old \
                                       -Dit.test=LogbackIT \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -Dglowroot.test.shaded \
                                       -B
                  # netty 3.x
                  mvn $common_mvn_args -pl agent/plugins/netty-plugin \
                                       -P netty-3.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -Dglowroot.test.shaded \
                                       -B
                  # play 2.4.x
                  mvn $common_mvn_args -pl agent/plugins/play-plugin \
                                       -P play-2.4.x,play-2.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -Dglowroot.test.shaded \
                                       -B
                  # play 2.2.x
                  mvn $common_mvn_args -pl agent/plugins/play-plugin \
                                       -P play-2.2.x,play-2.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -Dglowroot.test.shaded \
                                       -B
                  # TODO Play 2.0.x and 2.1.x require Java 7
                  # play 1.x
                  mvn $common_mvn_args -pl agent/plugins/play-plugin \
                                       -P play-1.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -Dglowroot.test.shaded \
+                                      -B
+                 # spring 5.1.x
+                 mvn $common_mvn_args -pl agent/plugins/spring-plugin \
+                                      -P spring-5.1.x,spring-4.x \
+                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
                                       -B
                  # spring 3.2.x
                  mvn $common_mvn_args -pl agent/plugins/spring-plugin \
                                       -P spring-3.2.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -Dglowroot.test.shaded \
                                       -B
                  # spring 3.x
                  mvn $common_mvn_args -pl agent/plugins/spring-plugin \
                                       -P spring-3.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -Dglowroot.test.shaded \
                                       -B
                  # mongodb pre-3.7.x
                  mvn $common_mvn_args -pl agent/plugins/mongodb-plugin \
                                       -P mongodb-pre-3.7.x \
                                       -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
-                                      -Dglowroot.test.shaded \
                                       -B
                  # the sonar.login system property is set in the pom.xml using the
                  # environment variable SONAR_LOGIN (instead of setting the system
