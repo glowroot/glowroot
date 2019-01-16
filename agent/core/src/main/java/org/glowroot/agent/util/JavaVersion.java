@@ -26,6 +26,7 @@ public class JavaVersion {
     private static final boolean IS_JAVA_6;
     private static final boolean IS_GREATER_THAN_OR_EQUAL_TO_JAVA_8;
     private static final boolean IS_GREATER_THAN_OR_EQUAL_TO_JAVA_9;
+    private static final boolean IS_GREATER_THAN_OR_EQUAL_TO_JAVA_10;
 
     private static final boolean IBM_JVM;
     private static final boolean JROCKIT_JVM;
@@ -37,6 +38,7 @@ public class JavaVersion {
         IS_JAVA_6 = parseIsJava6(javaVersion);
         IS_GREATER_THAN_OR_EQUAL_TO_JAVA_8 = parseIsGreaterThanOrEqualToJava8(javaVersion);
         IS_GREATER_THAN_OR_EQUAL_TO_JAVA_9 = parseIsGreaterThanOrEqualToJava9(javaVersion);
+        IS_GREATER_THAN_OR_EQUAL_TO_JAVA_10 = parseIsGreaterThanOrEqualToJava10(javaVersion);
 
         String javaVmName = System.getProperty("java.vm.name");
         IBM_JVM = "IBM J9 VM".equals(javaVmName);
@@ -67,6 +69,10 @@ public class JavaVersion {
         return IS_GREATER_THAN_OR_EQUAL_TO_JAVA_9;
     }
 
+    public static boolean isGreaterThanOrEqualToJava10() {
+        return IS_GREATER_THAN_OR_EQUAL_TO_JAVA_10;
+    }
+
     public static boolean isIbmJvm() {
         return IBM_JVM;
     }
@@ -93,5 +99,11 @@ public class JavaVersion {
     @VisibleForTesting
     static boolean parseIsGreaterThanOrEqualToJava9(@Nullable String javaVersion) {
         return javaVersion != null && !javaVersion.startsWith("1.");
+    }
+
+    @VisibleForTesting
+    static boolean parseIsGreaterThanOrEqualToJava10(@Nullable String javaVersion) {
+        return javaVersion != null && !javaVersion.startsWith("1.")
+                && !javaVersion.startsWith("9.");
     }
 }

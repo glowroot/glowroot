@@ -170,6 +170,11 @@ public class LiveJvmServiceImpl implements LiveJvmService {
 
     @Override
     public boolean isExplicitGcDisabled(String agentId) throws Exception {
+        if (JavaVersion.isGreaterThanOrEqualToJava10()) {
+            // in Java 10+, no longer restricted by DisableExplicitGC due to
+            // https://bugs.openjdk.java.net/browse/JDK-8186902
+            return false;
+        }
         boolean disabled = false;
         for (String jvmArg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
             if (jvmArg.equals("-XX:+DisableExplicitGC")) {
@@ -183,10 +188,18 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     }
 
     @Override
-    public void forceGC(String agentId) {
-        // MemoryMXBean.gc() also checks -XX:+DisableExplicitGC, so may as well call System.gc()
-        // (see https://bugs.openjdk.java.net/browse/JDK-6396411)
-        System.gc();
+    public void forceGC(String agentId) throws Exception {
+        if (JavaVersion.isGreaterThanOrEqualToJava8()) {
+            // this is a new way to force GC in Java 8+, which has benefit that in Java 10+, this is
+            // longer restricted by DisableExplicitGC due to
+            // https://bugs.openjdk.java.net/browse/JDK-8186902
+            ObjectName objectName =
+                    ObjectName.getInstance("com.sun.management:type=DiagnosticCommand");
+            lazyPlatformMBeanServer.invoke(objectName, "gcRun", new Object[] {null},
+                    new String[] {"[Ljava.lang.String;"});
+        } else {
+            System.gc();
+        }
     }
 
     @Override
