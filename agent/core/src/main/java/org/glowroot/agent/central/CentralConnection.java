@@ -71,11 +71,9 @@ class CentralConnection {
     private final ScheduledExecutorService retryExecutor;
 
     private final AtomicBoolean inConnectionFailure;
+    private final AtomicBoolean loggedInitFailure = new AtomicBoolean();
 
     private final Random random = new Random();
-
-    private final RateLimitedLogger initConnectionErrorLogger =
-            new RateLimitedLogger(CentralConnection.class, true);
 
     private final RateLimitedLogger connectionErrorLogger =
             new RateLimitedLogger(CentralConnection.class);
@@ -368,13 +366,13 @@ class CentralConnection {
                 latch.countDown();
                 return;
             }
-            if (init) {
+            if (init && !loggedInitFailure.getAndSet(true)) {
                 suppressLogCollector(new Runnable() {
                     @Override
                     public void run() {
-                        initConnectionErrorLogger.warn("unable to establish connection with the"
-                                + " central collector {} (will keep trying...): {}",
-                                collectorAddress, Throwables.getBestMessage(t));
+                        logger.warn("unable to establish connection with the central collector {}"
+                                + " (will keep trying...): {}", collectorAddress,
+                                Throwables.getBestMessage(t));
                         logger.debug(t.getMessage(), t);
                     }
                 });

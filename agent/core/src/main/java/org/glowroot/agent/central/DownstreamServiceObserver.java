@@ -31,7 +31,6 @@ import org.glowroot.agent.collector.Collector.AgentConfigUpdater;
 import org.glowroot.agent.live.LiveJvmServiceImpl;
 import org.glowroot.agent.live.LiveTraceRepositoryImpl;
 import org.glowroot.agent.live.LiveWeavingServiceImpl;
-import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
@@ -120,9 +119,6 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
 
     private final ScheduledExecutorService scheduledRetryExecutor;
 
-    private final RateLimitedLogger lostConnectionLogger =
-            new RateLimitedLogger(DownstreamServiceObserver.class, true);
-
     DownstreamServiceObserver(CentralConnection centralConnection,
             AgentConfigUpdater agentConfigUpdater, boolean configReadOnly,
             LiveJvmServiceImpl liveJvmService, LiveWeavingServiceImpl liveWeavingService,
@@ -184,7 +180,7 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
             centralConnection.suppressLogCollector(new Runnable() {
                 @Override
                 public void run() {
-                    lostConnectionLogger.warn("lost connection to the central collector (will keep"
+                    logger.warn("lost connection to the central collector (will keep"
                             + " trying to re-establish...): {}", Throwables.getBestMessage(t));
                     logger.debug(t.getMessage(), t);
                 }
