@@ -118,9 +118,9 @@ class CentralConnection {
                 .eventLoopGroup(eventLoopGroup)
                 .executor(channelExecutor)
                 // aggressive keep alive, shouldn't even be used since gauge data is sent every
-                // 5 seconds and keep alive will only kick in after 30 seconds of not hearing back
+                // 5 seconds and keep alive will only kick in after 10 seconds of not hearing back
                 // from the server
-                .keepAliveTime(30, SECONDS);
+                .keepAliveTime(10, SECONDS);
         if (parsedCollectorAddress.https()) {
             SslContextBuilder sslContext = GrpcSslContexts.forClient();
             File trustCertCollectionFile = getTrustCertCollectionFile(confDirs);
