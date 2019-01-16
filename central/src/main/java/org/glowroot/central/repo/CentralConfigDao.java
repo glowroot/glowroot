@@ -50,6 +50,7 @@ class CentralConfigDao {
     private final PreparedStatement insertIfNotExistsPS;
     private final PreparedStatement updatePS;
     private final PreparedStatement insertPS;
+    private final PreparedStatement deletePS;
     private final PreparedStatement readPS;
 
     private final Cache<String, Optional<Object>> centralConfigCache;
@@ -67,6 +68,7 @@ class CentralConfigDao {
         updatePS =
                 session.prepare("update central_config set value = ? where key = ? if value = ?");
         insertPS = session.prepare("insert into central_config (key, value) values (?, ?)");
+        deletePS = session.prepare("delete from central_config where key = ?");
         readPS = session.prepare("select value from central_config where key = ?");
 
         centralConfigCache = clusterManager.createSelfBoundedCache("centralConfigCache",
@@ -108,11 +110,17 @@ class CentralConfigDao {
     }
 
     void writeWithoutOptimisticLocking(String key, Object config) throws Exception {
-        BoundStatement boundStatement = insertPS.bind();
-        int i = 0;
-        boundStatement.setString(i++, key);
-        boundStatement.setString(i++, mapper.writeValueAsString(config));
-        session.write(boundStatement);
+        String json = mapper.writeValueAsString(config);
+        if (json.equals("{}")) {
+            BoundStatement boundStatement = deletePS.bind();
+            boundStatement.setString(0, key);
+            session.write(boundStatement);
+        } else {
+            BoundStatement boundStatement = insertPS.bind();
+            boundStatement.setString(0, key);
+            boundStatement.setString(1, json);
+            session.write(boundStatement);
+        }
         centralConfigCache.invalidate(key);
     }
 

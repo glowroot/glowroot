@@ -66,6 +66,7 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import org.glowroot.central.repo.CentralRepoModule;
 import org.glowroot.central.repo.ConfigRepositoryImpl.AgentConfigListener;
+import org.glowroot.central.repo.ConfigRepositoryImpl.LazySecretKeyImpl;
 import org.glowroot.central.repo.RepoAdminImpl;
 import org.glowroot.central.repo.SchemaUpgrade;
 import org.glowroot.central.repo.Tools;
@@ -78,11 +79,14 @@ import org.glowroot.common.util.PropertiesFiles;
 import org.glowroot.common.util.Version;
 import org.glowroot.common2.repo.util.AlertingService;
 import org.glowroot.common2.repo.util.AlertingService.IncidentKey;
+import org.glowroot.common2.repo.util.Encryption;
 import org.glowroot.common2.repo.util.HttpClient;
+import org.glowroot.common2.repo.util.LazySecretKey;
 import org.glowroot.common2.repo.util.LockSet;
 import org.glowroot.common2.repo.util.MailService;
 import org.glowroot.ui.CommonHandler;
 import org.glowroot.ui.CreateUiModuleBuilder;
+import org.glowroot.ui.PasswordHash;
 import org.glowroot.ui.SessionMapFactory;
 import org.glowroot.ui.UiModule;
 
@@ -175,7 +179,7 @@ public class CentralModule {
                 centralConfig = getCentralConfiguration(directories.getConfDir());
             }
             repoAsyncExecutor = MoreExecutors2.newCachedThreadPool("Repo-Async-Worker-%d");
-            repos = new CentralRepoModule(clusterManager, session,
+            repos = new CentralRepoModule(clusterManager, session, directories.getConfDir(),
                     centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor,
                     TARGET_MAX_ACTIVE_AGENTS_IN_PAST_7_DAYS, TARGET_MAX_CENTRAL_UI_USERS, clock);
 
@@ -382,7 +386,8 @@ public class CentralModule {
     }
 
     static void createSchema() throws Exception {
-        Directories directories = new Directories(getCentralDir());
+        File centralDir = getCentralDir();
+        Directories directories = new Directories(centralDir);
         initLogging(directories.getConfDir(), directories.getLogDir());
         String version = Version.getVersion(CentralModule.class);
         startupLogger.info("running create-schema command");
@@ -404,7 +409,7 @@ public class CentralModule {
             }
             startupLogger.info("creating glowroot central schema...");
             repoAsyncExecutor = MoreExecutors2.newCachedThreadPool("Repo-Async-Worker-%d");
-            repos = new CentralRepoModule(ClusterManager.create(), session,
+            repos = new CentralRepoModule(ClusterManager.create(), session, centralDir,
                     centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor, 10, 10,
                     Clock.systemClock());
             schemaUpgrade.updateSchemaVersionToCurent();
@@ -426,27 +431,52 @@ public class CentralModule {
     }
 
     static void runCommand(String commandName, List<String> args) throws Exception {
-        Directories directories = new Directories(getCentralDir());
-        initLogging(directories.getConfDir(), directories.getLogDir());
+        File centralDir = getCentralDir();
+        Directories directories = new Directories(centralDir);
+
         Command command;
         if (commandName.equals("setup-admin-user")) {
             if (args.size() != 2) {
-                startupLogger.error(
+                System.err.println(
                         "setup-admin-user requires two args (username and password), exiting");
                 return;
             }
             command = Tools::setupAdminUser;
+        } else if (commandName.equals("hash-password")) {
+            if (args.size() != 1) {
+                System.err.println("hash-password requires one arg (plain password), exiting");
+                return;
+            }
+            String plainPassword = args.get(0);
+            System.out.println(PasswordHash.createHash(plainPassword));
+            return;
+        } else if (commandName.equals("encrypt-password")) {
+            if (args.size() != 1) {
+                System.err.println("encrypt-password requires one args (plain password), exiting");
+                return;
+            }
+            String plainPassword = args.get(0);
+            CentralConfiguration centralConfig = getCentralConfiguration(directories.getConfDir());
+            String symmetricEncryptionKey = centralConfig.cassandraSymmetricEncryptionKey();
+            if (symmetricEncryptionKey.isEmpty()) {
+                System.err.println("cassandra.symmetricEncryptionKey must be configured in the"
+                        + " glowroot-central.properties file before passwords can be encrypted");
+                return;
+            }
+            LazySecretKey lazySecretKey = new LazySecretKeyImpl(symmetricEncryptionKey);
+            System.out.println(Encryption.encrypt(plainPassword, lazySecretKey));
+            return;
         } else if (commandName.equals("truncate-all-data")) {
             if (!args.isEmpty()) {
-                startupLogger.error("truncate-all-data does not accept any args, exiting");
+                System.err.println("truncate-all-data does not accept any args, exiting");
                 return;
             }
             command = Tools::truncateAllData;
         } else if (commandName.equals("delete-old-data")
                 || commandName.equals("delete-bad-future-data")) {
             if (args.size() != 2) {
-                startupLogger.error(
-                        "{} requires two args (partial table name and rollup level), exiting",
+                System.err.format(
+                        "%s requires two args (partial table name and rollup level), exiting%n",
                         commandName);
                 return;
             }
@@ -460,7 +490,7 @@ public class CentralModule {
                     && !partialTableName.equals("summary")
                     && !partialTableName.equals("error_summary")
                     && !partialTableName.equals("gauge_value")) {
-                startupLogger.error("partial table name must be one of \"query\", \"service_call\","
+                System.err.println("partial table name must be one of \"query\", \"service_call\","
                         + " \"profile\", \"overview\", \"histogram\", \"throughput\", \"summary\","
                         + " \"error_summary\" or \"gauge_value\", exiting");
                 return;
@@ -470,13 +500,15 @@ public class CentralModule {
             } else if (commandName.equals("delete-bad-future-data")) {
                 command = Tools::deleteBadFutureData;
             } else {
-                startupLogger.error("unexpected command '{}', exiting", commandName);
+                System.err.format("unexpected command '%s', exiting%n", commandName);
                 return;
             }
         } else {
-            startupLogger.error("unexpected command '{}', exiting", commandName);
+            System.err.format("unexpected command '%s', exiting%n", commandName);
             return;
         }
+
+        initLogging(directories.getConfDir(), directories.getLogDir());
 
         String version = Version.getVersion(CentralModule.class);
         startupLogger.info("Glowroot version: {}", version);
@@ -503,7 +535,7 @@ public class CentralModule {
                 return;
             }
             repoAsyncExecutor = MoreExecutors2.newCachedThreadPool("Repo-Async-Worker-%d");
-            repos = new CentralRepoModule(ClusterManager.create(), session,
+            repos = new CentralRepoModule(ClusterManager.create(), session, centralDir,
                     centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor, 10, 10,
                     Clock.systemClock());
             if (initialSchemaVersion == null) {

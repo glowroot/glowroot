@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,16 +25,48 @@ import org.glowroot.common.util.Versions;
 @Value.Immutable
 public abstract class AllCentralAdminConfig {
 
-    public abstract CentralAdminGeneralConfig general();
-    public abstract List<UserConfig> users();
-    public abstract List<RoleConfig> roles();
-    public abstract CentralWebConfig web();
-    public abstract CentralStorageConfig storage();
-    public abstract SmtpConfig smtp();
-    public abstract HttpProxyConfig httpProxy();
-    public abstract LdapConfig ldap();
-    public abstract PagerDutyConfig pagerDuty();
-    public abstract SlackConfig slack();
+    @Value.Default
+    public ImmutableCentralAdminGeneralConfig general() {
+        return ImmutableCentralAdminGeneralConfig.builder().build();
+    }
+
+    public abstract List<ImmutableUserConfig> users();
+    public abstract List<ImmutableRoleConfig> roles();
+
+    @Value.Default
+    public ImmutableCentralWebConfig web() {
+        return ImmutableCentralWebConfig.builder().build();
+    }
+
+    @Value.Default
+    public ImmutableCentralStorageConfig storage() {
+        return ImmutableCentralStorageConfig.builder().build();
+    }
+
+    @Value.Default
+    public ImmutableSmtpConfig smtp() {
+        return ImmutableSmtpConfig.builder().build();
+    }
+
+    @Value.Default
+    public ImmutableHttpProxyConfig httpProxy() {
+        return ImmutableHttpProxyConfig.builder().build();
+    }
+
+    @Value.Default
+    public ImmutableLdapConfig ldap() {
+        return ImmutableLdapConfig.builder().build();
+    }
+
+    @Value.Default
+    public ImmutablePagerDutyConfig pagerDuty() {
+        return ImmutablePagerDutyConfig.builder().build();
+    }
+
+    @Value.Default
+    public ImmutableSlackConfig slack() {
+        return ImmutableSlackConfig.builder().build();
+    }
 
     @Value.Derived
     @JsonIgnore

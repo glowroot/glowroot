@@ -54,6 +54,7 @@ import org.glowroot.common2.config.ImmutableCentralWebConfig;
 import org.glowroot.common2.config.ImmutableHttpProxyConfig;
 import org.glowroot.common2.config.ImmutableLdapConfig;
 import org.glowroot.common2.config.ImmutablePagerDutyConfig;
+import org.glowroot.common2.config.ImmutableRoleConfig;
 import org.glowroot.common2.config.ImmutableSlackConfig;
 import org.glowroot.common2.config.ImmutableSmtpConfig;
 import org.glowroot.common2.config.ImmutableUserConfig;
@@ -303,9 +304,9 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public CentralAdminGeneralConfig getCentralAdminGeneralConfig() throws Exception {
-        CentralAdminGeneralConfig config =
-                (CentralAdminGeneralConfig) centralConfigDao.read(GENERAL_KEY);
+    public ImmutableCentralAdminGeneralConfig getCentralAdminGeneralConfig() throws Exception {
+        ImmutableCentralAdminGeneralConfig config =
+                (ImmutableCentralAdminGeneralConfig) centralConfigDao.read(GENERAL_KEY);
         if (config == null) {
             return ImmutableCentralAdminGeneralConfig.builder().build();
         }
@@ -444,17 +445,21 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public AllCentralAdminConfig getAllCentralAdminConfig() throws Exception {
-        return ImmutableAllCentralAdminConfig.builder()
-                .general(getCentralAdminGeneralConfig())
-                .users(getUserConfigs())
-                .roles(getRoleConfigs())
-                .web(getCentralWebConfig())
-                .storage(getCentralStorageConfig())
-                .smtp(getSmtpConfig())
-                .httpProxy(getHttpProxyConfig())
-                .ldap(getLdapConfig())
-                .pagerDuty(getPagerDutyConfig())
-                .slack(getSlackConfig())
+        ImmutableAllCentralAdminConfig.Builder builder = ImmutableAllCentralAdminConfig.builder()
+                .general(getCentralAdminGeneralConfig());
+        for (UserConfig userConfig : getUserConfigs()) {
+            builder.addUsers(ImmutableUserConfig.copyOf(userConfig));
+        }
+        for (RoleConfig roleConfig : getRoleConfigs()) {
+            builder.addRoles(ImmutableRoleConfig.copyOf(roleConfig));
+        }
+        return builder.web(ImmutableCentralWebConfig.copyOf(getCentralWebConfig()))
+                .storage(ImmutableCentralStorageConfig.copyOf(getCentralStorageConfig()))
+                .smtp(ImmutableSmtpConfig.copyOf(getSmtpConfig()))
+                .httpProxy(ImmutableHttpProxyConfig.copyOf(getHttpProxyConfig()))
+                .ldap(ImmutableLdapConfig.copyOf(getLdapConfig()))
+                .pagerDuty(ImmutablePagerDutyConfig.copyOf(getPagerDutyConfig()))
+                .slack(ImmutableSlackConfig.copyOf(getSlackConfig()))
                 .build();
     }
 
@@ -1184,7 +1189,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         agentConfigListeners.add(listener);
     }
 
-    private void writeUsersWithoutOptimisticLocking(List<UserConfig> userConfigs) throws Exception {
+    private void writeUsersWithoutOptimisticLocking(List<ImmutableUserConfig> userConfigs)
+            throws Exception {
         Map<String, UserConfig> remainingUserConfigs = new HashMap<>();
         for (UserConfig userConfig : getUserConfigs()) {
             remainingUserConfigs.put(userConfig.username(), userConfig);
@@ -1207,7 +1213,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         }
     }
 
-    private void writeRolesWithoutOptimisticLocking(List<RoleConfig> roleConfigs) throws Exception {
+    private void writeRolesWithoutOptimisticLocking(List<ImmutableRoleConfig> roleConfigs)
+            throws Exception {
         Map<String, RoleConfig> remainingRoleConfigs = new HashMap<>();
         for (RoleConfig roleConfig : getRoleConfigs()) {
             remainingRoleConfigs.put(roleConfig.name(), roleConfig);
@@ -1388,11 +1395,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         void onChange(String agentRollupId) throws Exception;
     }
 
-    private static class LazySecretKeyImpl implements LazySecretKey {
+    public static class LazySecretKeyImpl implements LazySecretKey {
 
         private final @Nullable SecretKey secretKey;
 
-        private LazySecretKeyImpl(String symmetricEncryptionKey) {
+        public LazySecretKeyImpl(String symmetricEncryptionKey) {
             if (symmetricEncryptionKey.isEmpty()) {
                 secretKey = null;
             } else {

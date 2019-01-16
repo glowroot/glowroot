@@ -1,5 +1,5 @@
 <!--
-  Copyright 2018 the original author or authors.
+  Copyright 2018-2019 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -40,12 +40,18 @@
             This is required.
           </div>
           <div class="help-block">
-            User passwords can be set by adding "password" attribute (which takes plain password) or by adding
-            "hashedPassword" attribute (which takes hashed password).
+            User passwords can be set by adding a "password" attribute (which takes a plain password) or by adding a
+            "hashedPassword" attribute (which takes a hashed password).
+            If needed, user passwords can be hashed manually by running
+            <code class="px-1" style="background-color: #eee;">java -jar glowroot-central.jar hash-password
+              &lt;plain password&gt;</code>.
           </div>
           <div class="help-block">
-            SMTP, HTTP Proxy and LDAP passwords can be set by adding "password" attribute (which takes plain password)
-            or by adding "encryptedPassword" attribute (which takes encrypted password).
+            SMTP, HTTP Proxy and LDAP passwords can be set by adding a "password" attribute (which takes a plain
+            password) or by adding an "encryptedPassword" attribute (which takes an encrypted password).
+            If needed, SMTP, HTTP Proxy and LDAP passwords can be encrypted manually by running
+            <code class="px-1" style="background-color: #eee;">java -jar glowroot-central.jar encrypt-password
+              &lt;plain password&gt;</code>.
           </div>
         </div>
         <div class="form-group"

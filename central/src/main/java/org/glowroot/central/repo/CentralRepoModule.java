@@ -15,13 +15,17 @@
  */
 package org.glowroot.central.repo;
 
+import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.Files;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
@@ -30,8 +34,12 @@ import org.glowroot.central.v09support.GaugeValueDaoWithV09Support;
 import org.glowroot.central.v09support.SyntheticResultDaoWithV09Support;
 import org.glowroot.central.v09support.TraceDaoWithV09Support;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common2.config.AllCentralAdminConfig;
+import org.glowroot.common2.config.ImmutableAllCentralAdminConfig;
 import org.glowroot.common2.repo.util.RollupLevelService;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CentralRepoModule {
@@ -56,10 +64,13 @@ public class CentralRepoModule {
     private final SyntheticResultDao syntheticResultDao;
     private final V09AgentRollupDao v09AgentRollupDao;
 
-    public CentralRepoModule(ClusterManager clusterManager, Session session,
+    public CentralRepoModule(ClusterManager clusterManager, Session session, File confDir,
             String cassandraSymmetricEncryptionKey, ExecutorService asyncExecutor,
             int targetMaxActiveAgentsInPast7Days, int targetMaxCentralUiUsers, Clock clock)
             throws Exception {
+
+        boolean populateFromAdminDefault = session.getTable("central_config") == null;
+
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         agentDisplayDao = new AgentDisplayDao(session, clusterManager, asyncExecutor,
                 targetMaxActiveAgentsInPast7Days);
@@ -80,6 +91,19 @@ public class CentralRepoModule {
                 targetMaxCentralUiUsers);
         traceAttributeNameDao = new TraceAttributeNameDao(session, configRepository, clusterManager,
                 targetMaxCentralUiUsers);
+
+        if (populateFromAdminDefault) {
+            File adminDefaultFile = new File(confDir, "admin-default.json");
+            if (adminDefaultFile.exists()) {
+                try {
+                    populateFromAdminDefault(adminDefaultFile, configRepository);
+                } catch (Exception e) {
+                    // drop the table so that after fixing admin-default.json re-import will occur
+                    session.updateSchemaWithRetry("drop table central_config");
+                    throw e;
+                }
+            }
+        }
 
         Set<String> agentRollupIdsWithV09Data;
         long v09LastCaptureTime;
@@ -216,5 +240,15 @@ public class CentralRepoModule {
 
     public void close() throws Exception {
         fullQueryTextDao.close();
+    }
+
+    private static void populateFromAdminDefault(File file, ConfigRepositoryImpl configRepository)
+            throws Exception {
+        ObjectMapper mapper = ObjectMappers.create();
+        String content = Files.asCharSource(file, UTF_8).read();
+        JsonNode rootNode = mapper.readTree(content);
+        AllCentralAdminConfig config =
+                mapper.treeToValue(rootNode, ImmutableAllCentralAdminConfig.class);
+        configRepository.updateAllCentralAdminConfig(config, null);
     }
 }
