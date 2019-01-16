@@ -142,10 +142,10 @@ public class LazyPlatformMBeanServer {
         }
     }
 
-    public void invoke(ObjectName name, String operationName, Object[] params, String[] signature)
-            throws Exception {
+    public Object invoke(ObjectName name, String operationName, @Nullable Object[] params,
+            String[] signature) throws Exception {
         ensureInit();
-        platformMBeanServer.invoke(name, operationName, params, signature);
+        return platformMBeanServer.invoke(name, operationName, params, signature);
     }
 
     public Set<ObjectName> queryNames(@Nullable ObjectName name, @Nullable QueryExp query,

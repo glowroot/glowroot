@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public class JavaVersion {
 
     private static final boolean IS_JAVA_6;
+    private static final boolean IS_GREATER_THAN_OR_EQUAL_TO_JAVA_8;
     private static final boolean IS_GREATER_THAN_OR_EQUAL_TO_JAVA_9;
 
     private static final boolean IBM_JVM;
@@ -34,6 +35,7 @@ public class JavaVersion {
     static {
         String javaVersion = System.getProperty("java.version");
         IS_JAVA_6 = parseIsJava6(javaVersion);
+        IS_GREATER_THAN_OR_EQUAL_TO_JAVA_8 = parseIsGreaterThanOrEqualToJava8(javaVersion);
         IS_GREATER_THAN_OR_EQUAL_TO_JAVA_9 = parseIsGreaterThanOrEqualToJava9(javaVersion);
 
         String javaVmName = System.getProperty("java.vm.name");
@@ -57,6 +59,10 @@ public class JavaVersion {
         return IS_JAVA_6;
     }
 
+    public static boolean isGreaterThanOrEqualToJava8() {
+        return IS_GREATER_THAN_OR_EQUAL_TO_JAVA_8;
+    }
+
     public static boolean isGreaterThanOrEqualToJava9() {
         return IS_GREATER_THAN_OR_EQUAL_TO_JAVA_9;
     }
@@ -76,6 +82,12 @@ public class JavaVersion {
     @VisibleForTesting
     static boolean parseIsJava6(@Nullable String javaVersion) {
         return javaVersion != null && javaVersion.startsWith("1.6");
+    }
+
+    @VisibleForTesting
+    static boolean parseIsGreaterThanOrEqualToJava8(@Nullable String javaVersion) {
+        return javaVersion != null && !javaVersion.startsWith("1.6")
+                && !javaVersion.startsWith("1.7");
     }
 
     @VisibleForTesting

@@ -119,8 +119,12 @@ public class LiveJvmServiceImpl implements LiveJvmService {
         if (JavaVersion.isIbmJvm()) {
             throw new UnavailableDueToRunningInIbmJvmException();
         }
-        long pid = checkNotNull(LiveJvmServiceImpl.getProcessId());
-        return JStackTool.run(pid, allowAttachSelf(), glowrootJarFile);
+        if (JavaVersion.isGreaterThanOrEqualToJava8()) {
+            return JStackTool.run(lazyPlatformMBeanServer);
+        } else {
+            long pid = checkNotNull(LiveJvmServiceImpl.getProcessId());
+            return JStackTool.runPriorToJava8(pid, allowAttachSelf(), glowrootJarFile);
+        }
     }
 
     @Override
@@ -156,8 +160,12 @@ public class LiveJvmServiceImpl implements LiveJvmService {
         if (JavaVersion.isIbmJvm()) {
             throw new UnavailableDueToRunningInIbmJvmException();
         }
-        long pid = checkNotNull(LiveJvmServiceImpl.getProcessId());
-        return HeapHistogramTool.run(pid, allowAttachSelf(), glowrootJarFile);
+        if (JavaVersion.isGreaterThanOrEqualToJava8()) {
+            return HeapHistogramTool.run(lazyPlatformMBeanServer);
+        } else {
+            long pid = checkNotNull(LiveJvmServiceImpl.getProcessId());
+            return HeapHistogramTool.runPriorToJava8(pid, allowAttachSelf(), glowrootJarFile);
+        }
     }
 
     @Override

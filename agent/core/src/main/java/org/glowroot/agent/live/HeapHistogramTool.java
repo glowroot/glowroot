@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.util.Iterator;
 import java.util.Map;
+
+import javax.management.ObjectName;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
@@ -32,14 +35,23 @@ import org.objectweb.asm.Type;
 
 import org.glowroot.agent.live.JvmTool.InputStreamProcessor;
 import org.glowroot.agent.util.JavaVersion;
+import org.glowroot.agent.util.LazyPlatformMBeanServer;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.HeapHistogram;
 
 class HeapHistogramTool {
 
     private HeapHistogramTool() {}
 
-    static HeapHistogram run(long pid, boolean allowAttachSelf, @Nullable File glowrootJarFile)
-            throws Exception {
+    static HeapHistogram run(LazyPlatformMBeanServer lazyPlatformMBeanServer) throws Exception {
+        ObjectName objectName =
+                ObjectName.getInstance("com.sun.management:type=DiagnosticCommand");
+        String result = (String) lazyPlatformMBeanServer.invoke(objectName, "gcClassHistogram",
+                new Object[] {null}, new String[] {"[Ljava.lang.String;"});
+        return HeapHistogramProcessor.process(new BufferedReader(new StringReader(result)));
+    }
+
+    static HeapHistogram runPriorToJava8(long pid, boolean allowAttachSelf,
+            @Nullable File glowrootJarFile) throws Exception {
         return JvmTool.run(pid, "heapHisto", new HeapHistogramProcessor(), allowAttachSelf,
                 glowrootJarFile);
     }
@@ -48,19 +60,22 @@ class HeapHistogramTool {
 
         @Override
         public HeapHistogram process(InputStream in) throws IOException {
+            return process(new BufferedReader(new InputStreamReader(in)));
+        }
+
+        private static HeapHistogram process(BufferedReader in) throws IOException {
             boolean jrockit = JavaVersion.isJRockitJvm();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
             // skip over header lines
-            String line = reader.readLine();
+            String line = in.readLine();
             while (line != null && !line.contains("--------")) {
-                line = reader.readLine();
+                line = in.readLine();
             }
             if (line == null) {
                 throw new IOException("Unexpected heapHisto output");
             }
             Map<String, ClassInfo> classInfos = Maps.newHashMap();
             Splitter splitter = Splitter.on(' ').omitEmptyStrings();
-            while ((line = reader.readLine()) != null) {
+            while ((line = in.readLine()) != null) {
                 if (line.startsWith("Total ") || line.endsWith(" total ---")) {
                     break;
                 }

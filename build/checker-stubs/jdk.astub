@@ -152,6 +152,11 @@ public class MBeanServerFactory {
     public static ArrayList<MBeanServer> findMBeanServer(@Nullable String agentId);
 }
 
+public class MBeanServer {
+    public Object invoke(ObjectName name, String operationName, @Nullable Object[] params,
+            String[] signature);
+}
+
 /* ========================================================================== */
 package javax.management.openmbean;
 
