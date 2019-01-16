@@ -1053,9 +1053,6 @@ HandlebarsRendering = (function () {
         expanded.addClass('gt-padding-top-override');
       }
       expanded.css('padding-bottom', '10px');
-      var $clip = expanded.find('.gt-clip');
-      $clip.css('top', '10px');
-      $clip.css('right', '10px');
       var $message = expanded.find('.gt-pre-wrap');
       $message.html(html);
       $message.css('min-width', 0.6 * unexpanded.parent().width());
@@ -1144,8 +1141,6 @@ HandlebarsRendering = (function () {
                   }
                   // so other trace entries with same shared query text don't need to go to server
                   queryMessage.sharedQueryText.fullText = data.fullText;
-                  expanded.addClass('gt-with-clip');
-                  expanded.find('.gt-clip').removeClass('d-none');
                 }
               })
               .fail(function (jqXHR) {
@@ -1214,8 +1209,6 @@ HandlebarsRendering = (function () {
                   formatSql(unexpanded, expanded, data.fullText);
                   // so other trace entries with same shared query text don't need to go to server
                   query.sharedQueryText.fullText = data.fullText;
-                  expanded.addClass('gt-with-clip');
-                  expanded.find('.gt-clip').removeClass('d-none');
                 }
               })
               .fail(function (jqXHR) {
