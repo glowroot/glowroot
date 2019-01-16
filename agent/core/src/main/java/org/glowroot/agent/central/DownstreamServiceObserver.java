@@ -869,15 +869,8 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
         public void run() {
             try {
                 connectAsync();
-            } catch (final Throwable t) {
-                // intentionally capturing InterruptedException here as well to ensure reconnect
-                // is attempted no matter what
-                centralConnection.suppressLogCollector(new Runnable() {
-                    @Override
-                    public void run() {
-                        logger.error(t.getMessage(), t);
-                    }
-                });
+            } catch (Throwable t) {
+                logger.error(t.getMessage(), t);
             }
         }
     }
