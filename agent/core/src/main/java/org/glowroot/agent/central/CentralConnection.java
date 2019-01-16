@@ -71,7 +71,6 @@ class CentralConnection {
     private final ScheduledExecutorService retryExecutor;
 
     private final AtomicBoolean inConnectionFailure;
-    private final AtomicBoolean loggedInitFailure = new AtomicBoolean();
 
     private final Random random = new Random();
 
@@ -80,6 +79,7 @@ class CentralConnection {
 
     private final String collectorAddress;
 
+    private volatile boolean inMaybeInitFailure;
     private volatile boolean initCallSucceeded;
     private volatile boolean closed;
 
@@ -339,6 +339,7 @@ class CentralConnection {
         @Override
         public void onCompleted() {
             if (init) {
+                inMaybeInitFailure = false;
                 initCallSucceeded = true;
             }
             latch.countDown();
@@ -366,7 +367,16 @@ class CentralConnection {
                 latch.countDown();
                 return;
             }
-            if (init && !loggedInitFailure.getAndSet(true)) {
+            if (init && !inMaybeInitFailure) {
+                // one free pass
+                // try immediate re-connect once in case this is just node of central collector
+                // cluster going down
+                inMaybeInitFailure = true;
+                grpcCall.call(RetryingStreamObserver.this);
+                return;
+            }
+            if (init && !inConnectionFailure.getAndSet(true)) {
+                // log first time only
                 suppressLogCollector(new Runnable() {
                     @Override
                     public void run() {
@@ -377,7 +387,7 @@ class CentralConnection {
                     }
                 });
             }
-            if (inConnectionFailure.get()) {
+            if (!init && inConnectionFailure.get()) {
                 latch.countDown();
                 return;
             }
@@ -404,22 +414,15 @@ class CentralConnection {
                 latch.countDown();
                 return;
             }
-            // retry delay doubles on average each time, randomized +/- 50%
-            double randomizedDoubling = 0.5 + random.nextDouble();
-            MILLISECONDS.sleep((long) (nextDelayMillis * randomizedDoubling));
-            nextDelayMillis = Math.min(nextDelayMillis * 2, maxSingleDelayMillis);
-            try {
-                grpcCall.call(RetryingStreamObserver.this);
-            } catch (final Throwable u) {
-                // intentionally capturing InterruptedException here as well to ensure
-                // reconnect is attempted no matter what
-                suppressLogCollector(new Runnable() {
-                    @Override
-                    public void run() {
-                        logger.error(u.getMessage(), u);
-                    }
-                });
+            if (init) {
+                MILLISECONDS.sleep(nextDelayMillis);
+            } else {
+                // retry delay doubles on average each time, randomized +/- 50%
+                double randomizedDoubling = 0.5 + random.nextDouble();
+                MILLISECONDS.sleep((long) (nextDelayMillis * randomizedDoubling));
             }
+            nextDelayMillis = Math.min(nextDelayMillis * 2, maxSingleDelayMillis);
+            grpcCall.call(RetryingStreamObserver.this);
         }
 
         private boolean retryOnError(Throwable t) {
