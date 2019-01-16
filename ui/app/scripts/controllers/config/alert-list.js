@@ -80,6 +80,7 @@ glowroot.controller('ConfigAlertListCtrl', [
     $scope.displayDisableAlertingModal = function () {
       $scope.page.disableForNextUnit = 'hours';
       $scope.page.disableForNext = 1;
+      $scope.changeAlertingDisabledTime = false;
       modals.display('#disableAlertingModal', true);
     };
 
@@ -120,6 +121,13 @@ glowroot.controller('ConfigAlertListCtrl', [
           }, function (response) {
             httpErrors.handle(response, $scope, deferred);
           });
+    };
+
+    $scope.changeAlertingDisabledTimeModal = function () {
+      $scope.page.disableForNextUnit = 'hours';
+      $scope.page.disableForNext = 1;
+      $scope.changeAlertingDisabledTime = true;
+      modals.display('#disableAlertingModal', true);
     };
 
     $http.get('backend/config/alerts?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId))

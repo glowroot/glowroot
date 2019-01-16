@@ -60,6 +60,11 @@
                  ng-if="disabledForNextMillis && !layout.offlineViewer"
                  class="d-inline-block">
             </div>
+            <button ng-click="changeAlertingDisabledTimeModal()"
+                    ng-if="disabledForNextMillis && !layout.offlineViewer"
+                    class="btn btn-secondary gt-button-spacing">
+              Change alerting disabled time
+            </button>
           </div>
         </div>
       </div>
@@ -73,14 +78,16 @@
       <div ng-form
            gt-form-with-primary-button>
         <div class="modal-header">
-          <h3>Temporarily disable alerting</h3>
+          <h3 ng-if="changeAlertingDisabledTime">Change alerting disabled time</h3>
+          <h3 ng-if="!changeAlertingDisabledTime">Temporarily disable alerting</h3>
         </div>
         <div class="modal-body">
           <div class="container">
             <div class="form-group">
               <label class="col-form-label pb-3"
                      for="forNext">
-                How long do you want to disable alerts?
+                How long do you want alerting to be disabled
+                {{changeAlertingDisabledTime ? '(starting from now)' : ''}}?
               </label>
               <div class="input-group">
                 <input type="text"
@@ -112,7 +119,12 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-primary" ng-click="disableAlerting()">Temporarily disable alerting</button>
+          <button class="btn btn-primary" ng-click="disableAlerting()" ng-if="changeAlertingDisabledTime">
+            Change alerting disabled time
+          </button>
+          <button class="btn btn-primary" ng-click="disableAlerting()" ng-if="!changeAlertingDisabledTime">
+            Temporarily disable alerting
+          </button>
           <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
         </div>
       </div>
