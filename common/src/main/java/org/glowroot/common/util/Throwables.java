@@ -16,14 +16,25 @@
 package org.glowroot.common.util;
 
 import com.google.common.base.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Throwables {
+
+    private static final Logger logger = LoggerFactory.getLogger(Throwables.class);
 
     private Throwables() {}
 
     public static String getBestMessage(Throwable t) {
-        // this method checks for exception causal loops (since guava 23.0)
-        Throwable rootCause = com.google.common.base.Throwables.getRootCause(t);
+        Throwable rootCause;
+        try {
+            rootCause = com.google.common.base.Throwables.getRootCause(t);
+        } catch (IllegalArgumentException e) {
+            // guava's Throwables throws IllegalArgumentException if there is a loop in the causal
+            // chain (since guava 23.0)
+            logger.warn(e.getMessage(), e);
+            return t.toString();
+        }
         // using Throwable.toString() to include the exception class name
         // because sometimes hard to know what message means without this context
         // e.g. java.net.UnknownHostException: google.com
