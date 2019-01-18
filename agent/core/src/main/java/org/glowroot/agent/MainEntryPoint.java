@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.bytecode.api.BytecodeServiceHolder;
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.init.AgentModule;
 import org.glowroot.agent.init.GlowrootAgentInit;
@@ -107,7 +108,7 @@ public class MainEntryPoint {
             DebuggingClassFileTransformer.initLogger();
             if (directories.logStartupErrorMultiDirWithMissingAgentId()) {
                 startupLogger
-                        .error("Glowroot not started: multi.dir is true, but missing agent.id");
+                        .error("Glowroot failed to start: multi.dir is true, but missing agent.id");
                 return;
             }
             if (directories.getAgentDirLockCloseable() == null) {
@@ -120,7 +121,7 @@ public class MainEntryPoint {
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
             // also, don't use logger since not initialized yet
-            System.err.println("Glowroot not started: " + t.getMessage());
+            System.err.println("Glowroot failed to start: " + t.getMessage());
             t.printStackTrace();
             return;
         }
@@ -171,7 +172,8 @@ public class MainEntryPoint {
             start(directories, properties, instrumentation, preCheckClassFileTransformer);
         } catch (Throwable t) {
             // log error but don't re-throw which would prevent monitored app from starting
-            startupLogger.error("Glowroot not started: {}", t.getMessage(), t);
+            startupLogger.error("Glowroot failed to start: {}", t.getMessage(), t);
+            BytecodeServiceHolder.setGlowrootFailedToStart();
         }
     }
 
@@ -377,8 +379,8 @@ public class MainEntryPoint {
                 extraExplanation += "https://github.com/glowroot/glowroot/wiki/Agent-Installation"
                         + "-(with-Embedded-Collector)#monitoring-multiple-jvm-processes-on-one-box";
             }
-            startupLogger.error("Glowroot not started, directory in use by another jvm process: {}"
-                    + " (unable to obtain lock on {}){}", confDir.getAbsolutePath(),
+            startupLogger.error("Glowroot failed to start, directory in use by another jvm process:"
+                    + " {} (unable to obtain lock on {}){}", confDir.getAbsolutePath(),
                     lockFile.getAbsolutePath(), extraExplanation);
         }
     }
