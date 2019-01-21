@@ -51,12 +51,15 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.concurrent.FutureCallback;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 import org.openqa.selenium.WebDriver;
@@ -155,7 +158,8 @@ class SyntheticMonitorService implements Runnable {
     SyntheticMonitorService(ActiveAgentDao activeAgentDao, ConfigRepositoryImpl configRepository,
             AlertingDisabledDao alertingDisabledDao, IncidentDao incidentDao,
             AlertingService alertingService, SyntheticResultDao syntheticResponseDao,
-            ClusterManager clusterManager, Ticker ticker, Clock clock, String version) {
+            ClusterManager clusterManager, Ticker ticker, Clock clock, String version)
+            throws Exception {
         this.activeAgentDao = activeAgentDao;
         this.configRepository = configRepository;
         this.alertingDisabledDao = alertingDisabledDao;
@@ -177,10 +181,15 @@ class SyntheticMonitorService implements Runnable {
                 shortVersion = "/" + version.substring(0, index);
             }
         }
+        // httpClient is only used for pings, so safe to ignore cert errors
         httpClient = HttpAsyncClients.custom()
                 .setUserAgent("GlowrootCentral" + shortVersion)
                 .setMaxConnPerRoute(10) // increasing from default 2
                 .setMaxConnTotal(1000) // increasing from default 20
+                .setSSLContext(SSLContextBuilder.create()
+                        .loadTrustMaterial(new TrustSelfSignedStrategy())
+                        .build())
+                .setSSLHostnameVerifier(new NoopHostnameVerifier())
                 .build();
         httpClient.start();
         // these parameters are from com.machinepublishers.jbrowserdriver.UserAgent.CHROME
