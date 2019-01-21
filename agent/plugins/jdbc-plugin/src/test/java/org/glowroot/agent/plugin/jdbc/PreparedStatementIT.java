@@ -16,6 +16,8 @@
 package org.glowroot.agent.plugin.jdbc;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.Reader;
 import java.io.StringReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -34,6 +36,7 @@ import org.apache.commons.dbcp.DelegatingConnection;
 import org.apache.commons.dbcp.DelegatingPreparedStatement;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -41,6 +44,7 @@ import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
+import org.glowroot.agent.plugin.jdbc.Connections.ConnectionType;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
@@ -49,6 +53,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class PreparedStatementIT {
 
     private static final String PLUGIN_ID = "jdbc";
+
+    private static final List<String> H2_EXTRA_LOB_QUERIES =
+            ImmutableList.of("SELECT MAX(LOB) FROM INFORMATION_SCHEMA.LOB_MAP",
+                    "SELECT MAX(ID) FROM INFORMATION_SCHEMA.LOBS");
 
     private static Container container;
 
@@ -498,6 +506,18 @@ public class PreparedStatementIT {
 
     @Test
     public void testPreparedStatementWithBinaryStream() throws Exception {
+
+        if (Connections.getConnectionType() == ConnectionType.COMMONS_DBCP_WRAPPED) {
+            NoSuchMethodException exception = null;
+            try {
+                org.apache.commons.dbcp.DelegatingStatement.class.getMethod("setBinaryStream",
+                        InputStream.class);
+            } catch (NoSuchMethodException e) {
+                exception = e;
+            }
+            Assume.assumeNoException(exception);
+        }
+
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
                 ImmutableList.of(".*"));
@@ -506,7 +526,7 @@ public class PreparedStatementIT {
         Trace trace = container.execute(ExecutePreparedStatementWithBinaryStream.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = getTraceEntriesWithoutH2ExtraLobQueries(trace).iterator();
         List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
@@ -521,7 +541,7 @@ public class PreparedStatementIT {
 
         assertThat(i.hasNext()).isFalse();
 
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+        Iterator<Aggregate.Query> j = getQueriesWithoutH2ExtraLobQueries(trace).iterator();
 
         Aggregate.Query query = j.next();
         assertThat(query.getType()).isEqualTo("SQL");
@@ -535,6 +555,18 @@ public class PreparedStatementIT {
 
     @Test
     public void testPreparedStatementWithCharacterStream() throws Exception {
+
+        if (Connections.getConnectionType() == ConnectionType.COMMONS_DBCP_WRAPPED) {
+            NoSuchMethodException exception = null;
+            try {
+                org.apache.commons.dbcp.DelegatingStatement.class.getMethod("setCharacterStream",
+                        Reader.class);
+            } catch (NoSuchMethodException e) {
+                exception = e;
+            }
+            Assume.assumeNoException(exception);
+        }
+
         // given
         container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
                 ImmutableList.of(".*"));
@@ -543,7 +575,7 @@ public class PreparedStatementIT {
         Trace trace = container.execute(ExecutePreparedStatementWithCharacterStream.class);
 
         // then
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Iterator<Trace.Entry> i = getTraceEntriesWithoutH2ExtraLobQueries(trace).iterator();
         List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
 
         Trace.Entry entry = i.next();
@@ -558,7 +590,7 @@ public class PreparedStatementIT {
 
         assertThat(i.hasNext()).isFalse();
 
-        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+        Iterator<Aggregate.Query> j = getQueriesWithoutH2ExtraLobQueries(trace).iterator();
 
         Aggregate.Query query = j.next();
         assertThat(query.getType()).isEqualTo("SQL");
@@ -568,6 +600,28 @@ public class PreparedStatementIT {
         assertThat(query.hasTotalRows()).isFalse();
 
         assertThat(j.hasNext()).isFalse();
+    }
+
+    private List<Trace.Entry> getTraceEntriesWithoutH2ExtraLobQueries(Trace trace) {
+        List<Trace.Entry> filtered = Lists.newArrayList();
+        for (Trace.Entry entry : trace.getEntryList()) {
+            if (!H2_EXTRA_LOB_QUERIES.contains(trace.getSharedQueryTextList()
+                    .get(entry.getQueryEntryMessage().getSharedQueryTextIndex()).getFullText())) {
+                filtered.add(entry);
+            }
+        }
+        return filtered;
+    }
+
+    private List<Aggregate.Query> getQueriesWithoutH2ExtraLobQueries(Trace trace) {
+        List<Aggregate.Query> filtered = Lists.newArrayList();
+        for (Aggregate.Query query : trace.getQueryList()) {
+            if (!H2_EXTRA_LOB_QUERIES.contains(trace.getSharedQueryTextList()
+                    .get(query.getSharedQueryTextIndex()).getFullText())) {
+                filtered.add(query);
+            }
+        }
+        return filtered;
     }
 
     @Test

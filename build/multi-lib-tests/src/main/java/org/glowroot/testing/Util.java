@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,12 +110,20 @@ class Util {
         // need to recompile tests in some cases to align bytecode with test version
         // also need to recompile tests in some cases where default test compilation target is 1.7
         // but there is alternate 1.6 profile triggered above by -Dglowroot.test.java6
-        StringBuilder sb = new StringBuilder("compile-test-classes-only");
+        StringBuilder sb = new StringBuilder("compile-test-classes-only,fail-failsafe-if-no-tests");
+        List<String> propertyArgs = Lists.newArrayList();
         for (String profile : profiles) {
-            sb.append(",");
-            sb.append(profile);
+            if (profile.startsWith("-D")) {
+                propertyArgs.add(profile);
+            } else {
+                sb.append(",");
+                sb.append(profile);
+            }
         }
         command.add(sb.toString());
+        for (String propertyArg : propertyArgs) {
+            command.add(propertyArg);
+        }
         command.add("-pl");
         command.add(modulePath);
         command.add("-Djvm=" + javaVersion.getJavaHome() + File.separator + "bin" + File.separator

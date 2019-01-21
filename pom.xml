@@ -236,12 +236,6 @@
         <version>1.8.17</version>
       </dependency>
       <dependency>
-        <groupId>org.hsqldb</groupId>
-        <artifactId>hsqldb</artifactId>
-        <!-- hsqldb 2.4.0+ requires Java 8+ (2.3.x supports Java 6+) -->
-        <version>2.3.6</version>
-      </dependency>
-      <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-core</artifactId>
         <version>${jmh.version}</version>
@@ -819,33 +813,51 @@
       <!-- this is used by multi-lib-tests to recompile tests classes without recompiling main classes -->
       <id>compile-test-classes-only</id>
       <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-clean-plugin</artifactId>
-            <configuration>
-              <excludeDefaultDirectories>true</excludeDefaultDirectories>
-              <filesets>
-                <fileset>
-                  <directory>${project.build.testOutputDirectory}</directory>
-                </fileset>
-                <fileset>
-                  <!-- this is needed to force scala recompilation (used in glowroot-agent-play-plugin) -->
-                  <directory>${project.build.directory}</directory>
-                  <includes>
-                    <include>test-classes.*.timestamp</include>
-                  </includes>
-                </fileset>
-              </filesets>
-            </configuration>
-          </plugin>
-          <plugin>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <configuration>
-              <skipMain>true</skipMain>
-              <proc>none</proc>
-            </configuration>
-          </plugin>
-        </plugins>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <artifactId>maven-clean-plugin</artifactId>
+              <configuration>
+                <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                <filesets>
+                  <fileset>
+                    <directory>${project.build.testOutputDirectory}</directory>
+                  </fileset>
+                  <fileset>
+                    <!-- this is needed to force scala recompilation (used in glowroot-agent-play-plugin) -->
+                    <directory>${project.build.directory}</directory>
+                    <includes>
+                      <include>test-classes.*.timestamp</include>
+                    </includes>
+                  </fileset>
+                </filesets>
+              </configuration>
+            </plugin>
+            <plugin>
+              <artifactId>maven-compiler-plugin</artifactId>
+              <configuration>
+                <skipMain>true</skipMain>
+                <proc>none</proc>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+    <profile>
+      <!-- this is used by multi-lib-tests to guard against running with wrong (and non-existent) profile -->
+      <id>fail-failsafe-if-no-tests</id>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <artifactId>maven-failsafe-plugin</artifactId>
+              <configuration>
+                <failIfNoTests>true</failIfNoTests>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
       </build>
     </profile>
     <profile>

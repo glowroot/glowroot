@@ -42,7 +42,7 @@ public class Connections {
     static {
         String jdbcConnectionType = System.getProperty("glowroot.test.jdbcConnectionType");
         if (jdbcConnectionType == null) {
-            connectionType = ConnectionType.H2;
+            connectionType = ConnectionType.HSQLDB;
         } else {
             connectionType = ConnectionType.valueOf(jdbcConnectionType);
         }

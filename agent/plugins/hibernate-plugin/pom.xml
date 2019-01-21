@@ -56,6 +56,8 @@
     <dependency>
       <groupId>org.hsqldb</groupId>
       <artifactId>hsqldb</artifactId>
+      <!-- hsqldb 2.4.0+ requires Java 8+ (2.3.x supports Java 6+) -->
+      <version>2.3.6</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
