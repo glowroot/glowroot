@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,6 @@ public abstract class SmtpConfig {
         return "";
     }
 
-    // need to write zero since it is treated different from null
-    // (although in this case zero is not a valid value)
     @JsonInclude(Include.NON_NULL)
     public abstract @Nullable Integer port();
 
