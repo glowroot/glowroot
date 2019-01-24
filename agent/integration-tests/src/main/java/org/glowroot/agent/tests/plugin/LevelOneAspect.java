@@ -110,6 +110,7 @@ public class LevelOneAspect {
             context.addTransactionAttribute("Wee Four", "ww");
             return traceEntry;
         }
+
         @OnReturn
         public static void onReturn(@BindTraveler TraceEntry traceEntry) {
             traceEntry.end();

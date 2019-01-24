@@ -94,7 +94,7 @@ glowroot.controller('ConfigAlertListCtrl', [
         disableForNextMillis = $scope.page.disableForNext * 60 * 1000 * 60 * 24;
       }
       var postData = {
-        disableForNextMillis: disableForNextMillis,
+        disableForNextMillis: disableForNextMillis
       };
       $scope.disablingAlerting = true;
       var url = 'backend/config/disable-alerting?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId);

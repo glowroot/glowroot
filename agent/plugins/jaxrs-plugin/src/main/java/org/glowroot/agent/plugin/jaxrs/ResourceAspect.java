@@ -84,6 +84,7 @@ public class ResourceAspect {
                 return null;
             }
         }
+
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
             if (traceEntry != null) {

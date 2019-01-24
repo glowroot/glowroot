@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -186,8 +186,8 @@ class AdviceBuilder {
                 && advice.hasBindOptionalThreadContext()) {
             // this is because of the way @OnBefore advice is handled on constructors,
             // see WeavingMethodVisitory.invokeOnBefore()
-            throw new IllegalStateException("@BindOptionalThreadContext is not allowed in a "
-                    + "@Pointcut with methodName \"<init>\" that has an @OnBefore method");
+            throw new IllegalStateException("@BindOptionalThreadContext is not allowed in a"
+                    + " @Pointcut with methodName \"<init>\" that has an @OnBefore method");
         }
         if (pointcut.methodName().equals("<init>") && advice.isEnabledAdvice() != null) {
             for (AdviceParameter parameter : advice.isEnabledParameters()) {

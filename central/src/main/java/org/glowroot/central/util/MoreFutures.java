@@ -149,13 +149,13 @@ public class MoreFutures {
                 });
     }
 
-    private static <V> ListenableFuture<?> transformAsync(ListenableFuture<V> future,
-            Executor asyncExecutor, AsyncFunction<V, /*@Nullable*/ Object> function) {
+    private static <V, R> ListenableFuture<R> transformAsync(ListenableFuture<V> future,
+            Executor asyncExecutor, AsyncFunction<V, R> function) {
         boolean inRollupThread = Session.isInRollupThread();
         return Futures.transformAsync(future,
-                new AsyncFunction<V, /*@Nullable*/ Object>() {
+                new AsyncFunction<V, R>() {
                     @Override
-                    public ListenableFuture</*@Nullable*/ Object> apply(V input) throws Exception {
+                    public ListenableFuture<R> apply(V input) throws Exception {
                         boolean priorInRollupThread = Session.isInRollupThread();
                         Session.setInRollupThread(inRollupThread);
                         try {

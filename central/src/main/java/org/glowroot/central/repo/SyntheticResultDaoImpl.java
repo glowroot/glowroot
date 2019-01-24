@@ -370,8 +370,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         boundStatement.setTimestamp(i++, new Date(to));
         boundStatement.setDouble(i++, totalDurationNanos);
         boundStatement.setLong(i++, executionCount);
-        List<ErrorInterval> mergedErrorIntervals =
-                errorIntervalCollector.getMergedErrorIntervals();
+        List<ErrorInterval> mergedErrorIntervals = errorIntervalCollector.getMergedErrorIntervals();
         if (mergedErrorIntervals.isEmpty()) {
             boundStatement.setToNull(i++);
         } else {

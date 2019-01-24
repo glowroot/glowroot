@@ -31,6 +31,7 @@ glowroot.config([
       });
       return deferred.promise;
     }
+
     var waitForLayoutOnly = function () {
       return ['$q', '$rootScope', function ($q, $rootScope) {
         return waitForLayout($q, $rootScope);
