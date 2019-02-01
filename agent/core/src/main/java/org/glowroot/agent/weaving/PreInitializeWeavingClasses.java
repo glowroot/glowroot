@@ -253,6 +253,9 @@ public class PreInitializeWeavingClasses {
     private static List<String> getGlowrootUsedTypes() {
         List<String> types = Lists.newArrayList();
         types.add("org.glowroot.agent.impl.NestedTimerMap");
+        types.add("org.glowroot.agent.impl.PreloadSomeSuperTypesCache");
+        types.add("org.glowroot.agent.impl.PreloadSomeSuperTypesCache$1");
+        types.add("org.glowroot.agent.impl.PreloadSomeSuperTypesCache$CacheValue");
         types.add("org.glowroot.agent.impl.ThreadContextImpl");
         types.add("org.glowroot.agent.impl.TimerImpl");
         types.add("org.glowroot.agent.impl.TransactionRegistry");
@@ -313,6 +316,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.AnalyzedClass");
         types.add("org.glowroot.agent.weaving.AnalyzedMethod");
         types.add("org.glowroot.agent.weaving.AnalyzedWorld");
+        types.add("org.glowroot.agent.weaving.AnalyzedWorld$AnalyzedClassAndLoader");
         types.add("org.glowroot.agent.weaving.AnalyzedWorld$ParseContext");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$ClassMetaHolder");
@@ -332,6 +336,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.Weaver$ActiveWeaving");
         types.add("org.glowroot.agent.weaving.Weaver$BitronixProxyHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$BitronixProxyHackMethodVisitor");
+        types.add("org.glowroot.agent.weaving.Weaver$ClassLoaderHackClassVisitor");
+        types.add("org.glowroot.agent.weaving.Weaver$ClassLoaderHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$HikariCpProxyHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$HikariCpProxyHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$JBossModulesHackClassVisitor");
@@ -347,6 +353,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.ImmutableAdvice");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice$InitShim");
+        types.add("org.glowroot.agent.weaving.ImmutableAnalyzedClassAndLoader");
         types.add("org.glowroot.agent.weaving.ImmutablePointcutClass");
         types.add("org.glowroot.agent.weaving.ImmutablePointcutClass$Builder");
         types.add("org.glowroot.agent.weaving.ImmutablePointcutMethod");
@@ -422,6 +429,12 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.common.config.ImmutableInstrumentationConfig$Builder");
         types.add("org.glowroot.common.config.ImmutableInstrumentationConfig$InitShim");
         types.add("org.glowroot.common.config.InstrumentationConfig");
+        types.add("org.glowroot.common.util.Cancellable");
+        types.add("org.glowroot.common.util.Clock");
+        types.add("org.glowroot.common.util.Clock$1");
+        types.add("org.glowroot.common.util.ScheduledRunnable");
+        types.add("org.glowroot.common.util.ScheduledRunnable"
+                + "$TerminateSubsequentExecutionsException");
         types.add("org.glowroot.wire.api.model.AgentConfigOuterClass$AgentConfig"
                 + "$InstrumentationConfig$CaptureKind");
         types.add("org.glowroot.wire.api.model.AgentConfigOuterClass$AgentConfig"

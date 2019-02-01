@@ -240,6 +240,12 @@ public class Weaver {
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
             maybeProcessedBytes = cw.toByteArray();
+        } else if (className.equals("java/lang/ClassLoader")) {
+            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            ClassVisitor cv = new ClassLoaderHackClassVisitor(cw);
+            ClassReader cr = new ClassReader(classBytes);
+            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
+            maybeProcessedBytes = cw.toByteArray();
         }
         ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
                 mixinTypes, loader, analyzedWorld, codeSource, classBytes, classBeingRedefined,
@@ -748,6 +754,44 @@ public class Weaver {
                 super.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Util",
                         "stripGlowrootClasses", "(Ljava/util/Set;)Ljava/util/Set;", false);
             }
+        }
+    }
+
+    private static class ClassLoaderHackClassVisitor extends ClassVisitor {
+
+        private final ClassWriter cw;
+
+        private ClassLoaderHackClassVisitor(ClassWriter cw) {
+            super(ASM7, cw);
+            this.cw = cw;
+        }
+
+        @Override
+        public MethodVisitor visitMethod(int access, String name, String descriptor,
+                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
+            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
+            if (name.equals("defineClass") && descriptor.equals("(Ljava/lang/String;[BII"
+                    + "Ljava/security/ProtectionDomain;)Ljava/lang/Class;")) {
+                return new ClassLoaderHackMethodVisitor(mv, access, name, descriptor);
+            } else {
+                return mv;
+            }
+        }
+    }
+
+    private static class ClassLoaderHackMethodVisitor extends AdviceAdapter {
+
+        private ClassLoaderHackMethodVisitor(MethodVisitor mv, int access, String name,
+                String descriptor) {
+            super(ASM7, mv, access, name, descriptor);
+        }
+
+        @Override
+        protected void onMethodEnter() {
+            visitVarInsn(ALOAD, 0);
+            visitVarInsn(ALOAD, 1);
+            visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Bytecode",
+                    "preloadSomeSuperTypes", "(Ljava/lang/ClassLoader;Ljava/lang/String;)V", false);
         }
     }
 

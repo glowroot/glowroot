@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,10 +48,15 @@ public class BytecodeServiceImpl implements BytecodeService {
     private volatile @MonotonicNonNull Runnable onExitingGetPlatformMBeanServer;
     private final AtomicBoolean hasRunOnExitingGetPlatformMBeanServer = new AtomicBoolean();
 
+    private final PreloadSomeSuperTypesCache preloadSomeSuperTypesCache;
+
     public BytecodeServiceImpl(TransactionRegistry transactionRegistry,
-            TransactionService transactionService) {
+            TransactionService transactionService,
+            PreloadSomeSuperTypesCache preloadSomeSuperTypesCache) {
         this.transactionRegistry = transactionRegistry;
         this.transactionService = transactionService;
+
+        this.preloadSomeSuperTypesCache = preloadSomeSuperTypesCache;
     }
 
     public void setOnEnteringMain(OnEnteringMain onEnteringMain) {
@@ -140,6 +145,21 @@ public class BytecodeServiceImpl implements BytecodeService {
     @Override
     public void logThrowable(Throwable throwable) {
         logger.error(throwable.getMessage(), throwable);
+    }
+
+    @Override
+    public void preloadSomeSuperTypes(ClassLoader loader, String className) {
+        for (String superClassName : preloadSomeSuperTypesCache.get(className)) {
+            logger.debug("pre-loading super class {} for {}, in loader={}@{}", superClassName,
+                    className, loader.getClass().getName(), loader.hashCode());
+            try {
+                Class.forName(superClassName, false, loader);
+            } catch (ClassNotFoundException e) {
+                logger.debug("super class {} not found (for sub-class {})", superClassName,
+                        className, e);
+                continue;
+            }
+        }
     }
 
     public void enteringMainCommon(String mainClass, @Nullable String /*@Nullable*/ [] mainArgs,

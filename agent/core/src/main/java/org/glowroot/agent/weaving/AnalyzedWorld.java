@@ -42,6 +42,7 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.impl.PreloadSomeSuperTypesCache;
 import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.common.util.Styles;
@@ -89,11 +90,16 @@ public class AnalyzedWorld {
     private final ImmutableList<ShimType> shimTypes;
     private final ImmutableList<MixinType> mixinTypes;
 
+    // only null for tests
+    private final @Nullable PreloadSomeSuperTypesCache preloadSomeSuperTypesCache;
+
     public AnalyzedWorld(Supplier<List<Advice>> advisors, List<ShimType> shimTypes,
-            List<MixinType> mixinTypes) {
+            List<MixinType> mixinTypes,
+            @Nullable PreloadSomeSuperTypesCache preloadSomeSuperTypesCache) {
         this.advisors = advisors;
         this.shimTypes = ImmutableList.copyOf(shimTypes);
         this.mixinTypes = ImmutableList.copyOf(mixinTypes);
+        this.preloadSomeSuperTypesCache = preloadSomeSuperTypesCache;
     }
 
     public List<Class<?>> getClassesWithReweavableAdvice(boolean remove) {
@@ -131,11 +137,11 @@ public class AnalyzedWorld {
     // in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it doesn't
     // seem worth the (minor) performance hit to de-dup every time
     List<AnalyzedClass> getAnalyzedHierarchy(@Nullable String className,
-            @Nullable ClassLoader loader, ParseContext parseContext) {
+            @Nullable ClassLoader loader, String subClassName, ParseContext parseContext) {
         if (className == null || className.equals("java.lang.Object")) {
             return ImmutableList.of();
         }
-        return getSuperClasses(className, loader, parseContext);
+        return getSuperClasses(className, loader, subClassName, parseContext);
     }
 
     static List<Advice> mergeInstrumentationAnnotations(List<Advice> advisors, byte[] classBytes,
@@ -175,10 +181,10 @@ public class AnalyzedWorld {
     // in a type hierarchy), it's rare, dups don't cause an issue for callers, and so it doesn't
     // seem worth the (minor) performance hit to de-dup every time
     private List<AnalyzedClass> getSuperClasses(String className, @Nullable ClassLoader loader,
-            ParseContext parseContext) {
-        AnalyzedClass analyzedClass;
+            String subClassName, ParseContext parseContext) {
+        AnalyzedClassAndLoader analyzedClassAndLoader;
         try {
-            analyzedClass = getOrCreateAnalyzedClass(className, loader);
+            analyzedClassAndLoader = getOrCreateAnalyzedClass(className, loader, subClassName);
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
             return ImmutableList.of();
@@ -189,42 +195,52 @@ public class AnalyzedWorld {
             return ImmutableList.of();
         }
         List<AnalyzedClass> superTypes = Lists.newArrayList();
+        AnalyzedClass analyzedClass = analyzedClassAndLoader.analyzedClass();
+        ClassLoader analyzedClassLoader = analyzedClassAndLoader.analyzedClassLoader();
         superTypes.add(analyzedClass);
         String superName = analyzedClass.superName();
         if (superName != null && !superName.equals("java.lang.Object")) {
-            superTypes.addAll(getSuperClasses(superName, loader, parseContext));
+            superTypes.addAll(
+                    getSuperClasses(superName, analyzedClassLoader, className, parseContext));
         }
         for (String interfaceName : analyzedClass.interfaceNames()) {
-            superTypes.addAll(getSuperClasses(interfaceName, loader, parseContext));
+            superTypes.addAll(
+                    getSuperClasses(interfaceName, analyzedClassLoader, className, parseContext));
         }
         return superTypes;
     }
 
-    private AnalyzedClass getOrCreateAnalyzedClass(String className, @Nullable ClassLoader loader)
+    @Styles.AllParameters
+    @Value.Immutable
+    interface AnalyzedClassAndLoader {
+        AnalyzedClass analyzedClass();
+        @Nullable
+        ClassLoader analyzedClassLoader();
+    }
+
+    private AnalyzedClassAndLoader getOrCreateAnalyzedClass(String className,
+            @Nullable ClassLoader loader, String subClassName)
             throws ClassNotFoundException, IOException {
-        ClassLoader analyzedClassLoader = getAnalyzedLoader(className, loader);
         ConcurrentMap<String, AnalyzedClass> loaderAnalyzedClasses =
-                getAnalyzedClasses(analyzedClassLoader);
+                getAnalyzedClasses(loader);
         AnalyzedClass analyzedClass = loaderAnalyzedClasses.get(className);
+        if (analyzedClass != null) {
+            return ImmutableAnalyzedClassAndLoader.of(analyzedClass, loader);
+        }
+        ClassLoader analyzedClassLoader = getAnalyzedLoader(className, loader, subClassName);
+        loaderAnalyzedClasses = getAnalyzedClasses(analyzedClassLoader);
+        analyzedClass = loaderAnalyzedClasses.get(className);
         if (analyzedClass == null) {
-            if (loader != analyzedClassLoader) {
-                // this class may have been looked up and stored previously in loader's map, and
-                // then subsequently loaded into it's true class loader (analyzedClassLoader)
-                ConcurrentMap<String, AnalyzedClass> currLoaderAnalyzedClasses =
-                        getAnalyzedClasses(loader);
-                analyzedClass = currLoaderAnalyzedClasses.get(className);
-                if (analyzedClass != null) {
-                    analyzedClass = putAnalyzedClass(loaderAnalyzedClasses, analyzedClass);
-                    // remove it from the "incorrect" class loader
-                    currLoaderAnalyzedClasses.remove(className);
-                    // this
-                    return analyzedClass;
-                }
+            if (analyzedClassLoader != null) {
+                // if it was loaded into bootstrap, probably was loaded prior to weaving started
+                logger.debug("super class {} of {} not already analyzed, loader={}@{}", className,
+                        subClassName, analyzedClassLoader.getClass().getName(),
+                        analyzedClassLoader.hashCode());
             }
             analyzedClass = createAnalyzedClass(className, analyzedClassLoader);
             analyzedClass = putAnalyzedClass(loaderAnalyzedClasses, analyzedClass);
         }
-        return analyzedClass;
+        return ImmutableAnalyzedClassAndLoader.of(analyzedClass, analyzedClassLoader);
     }
 
     private List<Class<?>> getClassesWithReweavableAdvice(@Nullable ClassLoader loader,
@@ -377,30 +393,35 @@ public class AnalyzedWorld {
         return analyzedClass;
     }
 
-    private static @Nullable ClassLoader getAnalyzedLoader(String className,
-            @Nullable ClassLoader loader) {
+    private @Nullable ClassLoader getAnalyzedLoader(String className, @Nullable ClassLoader loader,
+            String subClassName) {
         if (loader == null) {
             return null;
         }
         // can't call Class.forName() since that bypasses ClassFileTransformer.transform() if the
         // class hasn't already been loaded, so instead, call the package protected
-        // ClassLoader.findLoadClass()
+        // ClassLoader.findLoadedClass()
         Class<?> clazz = null;
         try {
             clazz = (Class<?>) findLoadedClassMethod.invoke(loader, className);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
-        ClassLoader analyzedLoader = loader;
-        if (clazz != null) {
+        if (clazz == null) {
+            logger.debug("super class {} of {} not found in loader {}@{}", className, subClassName,
+                    loader.getClass().getName(), loader.hashCode());
+            if (preloadSomeSuperTypesCache != null) {
+                preloadSomeSuperTypesCache.put(subClassName, className);
+            }
+            return loader;
+        } else {
             // this class has already been loaded, so the corresponding analyzedClass should already
             // be in the cache under its class loader
             //
             // this helps in cases where the .class files are not available via
             // ClassLoader.getResource(), as well as being a good optimization in other cases
-            analyzedLoader = clazz.getClassLoader();
+            return clazz.getClassLoader();
         }
-        return analyzedLoader;
     }
 
     // now that the type has been loaded anyways, build the analyzed class via reflection

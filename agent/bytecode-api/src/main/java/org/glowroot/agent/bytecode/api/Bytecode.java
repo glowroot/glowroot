@@ -78,4 +78,8 @@ public class Bytecode {
     public static void logThrowable(Throwable throwable) {
         service.logThrowable(throwable);
     }
+
+    public static void preloadSomeSuperTypes(ClassLoader loader, String className) {
+        service.preloadSomeSuperTypes(loader, className);
+    }
 }

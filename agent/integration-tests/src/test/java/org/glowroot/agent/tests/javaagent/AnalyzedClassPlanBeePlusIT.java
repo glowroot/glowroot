@@ -33,7 +33,7 @@ import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 
-public class AnalyzedClassPlanBeeIT {
+public class AnalyzedClassPlanBeePlusIT {
 
     private static Container container;
 
@@ -53,18 +53,21 @@ public class AnalyzedClassPlanBeeIT {
     }
 
     @Test
-    public void shouldNotLogWarningInAnalyzedWorldPlanB() throws Exception {
+    public void shouldLogWarningInAnalyzedWorldPlanB() throws Exception {
         // given
         updateInstrumentationConfigs();
+        container.addExpectedLogMessage("org.glowroot.agent.weaving.AnalyzedWorld",
+                AnalyzedClassPlanBeePlusIT.class.getName()
+                        + "$Y was not woven with requested advice");
         // when
-        container.executeNoExpectedTrace(ShouldNotLogWarningInAnalyzedWorldPlanB.class);
+        container.executeNoExpectedTrace(ShouldLogWarningInAnalyzedWorldPlanB.class);
         // then
         // container close will validate that there were no unexpected warnings or errors
     }
 
     private static void updateInstrumentationConfigs() throws Exception {
         InstrumentationConfig config = InstrumentationConfig.newBuilder()
-                .setClassName(AnalyzedClassPlanBeeIT.class.getName() + "$Y")
+                .setClassName(AnalyzedClassPlanBeePlusIT.class.getName() + "$Y")
                 .setMethodName("y")
                 .setMethodReturnType("")
                 .setCaptureKind(CaptureKind.TIMER)
@@ -73,11 +76,11 @@ public class AnalyzedClassPlanBeeIT {
         container.getConfigService().updateInstrumentationConfigs(ImmutableList.of(config));
     }
 
-    public static class ShouldNotLogWarningInAnalyzedWorldPlanB implements AppUnderTest {
+    public static class ShouldLogWarningInAnalyzedWorldPlanB implements AppUnderTest {
         @Override
         public void executeApp() throws Exception {
-            Class.forName(AnalyzedClassPlanBeeIT.class.getName() + "$Z", true,
-                    new DelegatingClassLoader());
+            Class.forName(AnalyzedClassPlanBeePlusIT.class.getName() + "$Z", true,
+                    new DelegatingClassLoader2());
         }
     }
 
@@ -110,6 +113,24 @@ public class AnalyzedClassPlanBeeIT {
         public Enumeration<URL> getResources(String name) throws IOException {
             // don't load .class files as resources
             return Collections.enumeration(Collections.<URL>emptyList());
+        }
+    }
+
+    public static class DelegatingClassLoader2 extends DelegatingClassLoader {
+        @Override
+        protected synchronized Class<?> loadClass(String name, boolean resolve)
+                throws ClassNotFoundException {
+
+            if (name.equals(AnalyzedClassPlanBeePlusIT.class.getName() + "$Y")
+                    || name.equals(AnalyzedClassPlanBeePlusIT.class.getName() + "$Z")) {
+                try {
+                    return load(name);
+                } catch (IOException e) {
+                    throw new ClassNotFoundException("Error loading class", e);
+                }
+            } else {
+                return Class.forName(name, resolve, DelegatingClassLoader.class.getClassLoader());
+            }
         }
     }
 

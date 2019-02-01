@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,8 @@ public class PreInitializeWeavingClassesTest {
         globalCollector.processMethodFailIfNotFound(
                 ReferencedMethod.create("org/glowroot/agent/weaving/AnalyzedWorld", "<init>",
                         "(L" + getGuavaSupplierInternalName()
-                                + ";Ljava/util/List;Ljava/util/List;)V"));
+                                + ";Ljava/util/List;Ljava/util/List;"
+                                + "Lorg/glowroot/agent/impl/PreloadSomeSuperTypesCache;)V"));
         // "call" WeavingClassFileTransformer constructor
         globalCollector.processMethodFailIfNotFound(
                 ReferencedMethod.create("org/glowroot/agent/weaving/WeavingClassFileTransformer",

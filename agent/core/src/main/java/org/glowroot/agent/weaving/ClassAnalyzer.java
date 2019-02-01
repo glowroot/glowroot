@@ -118,8 +118,8 @@ class ClassAnalyzer {
         // time
         List<AnalyzedClass> superAnalyzedClasses = Lists.newArrayList();
         for (String interfaceName : interfaceNames) {
-            interfaceAnalyzedHierarchy.addAll(
-                    analyzedWorld.getAnalyzedHierarchy(interfaceName, loader, parseContext));
+            interfaceAnalyzedHierarchy.addAll(analyzedWorld.getAnalyzedHierarchy(interfaceName,
+                    loader, className, parseContext));
         }
         superAnalyzedClasses.addAll(interfaceAnalyzedHierarchy);
 
@@ -130,8 +130,8 @@ class ClassAnalyzer {
                     ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
             hasMainMethod = false;
         } else {
-            List<AnalyzedClass> superAnalyzedHierarchy =
-                    analyzedWorld.getAnalyzedHierarchy(superClassName, loader, parseContext);
+            List<AnalyzedClass> superAnalyzedHierarchy = analyzedWorld
+                    .getAnalyzedHierarchy(superClassName, loader, className, parseContext);
             superAnalyzedClasses.addAll(superAnalyzedHierarchy);
             matchedShimTypes = getMatchedShimTypes(shimTypes, className, superAnalyzedHierarchy,
                     interfaceAnalyzedHierarchy);
