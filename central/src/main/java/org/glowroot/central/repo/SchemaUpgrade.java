@@ -106,7 +106,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 85;
+    private static final int CURR_SCHEMA_VERSION = 86;
 
     private final Session session;
     private final Clock clock;
@@ -512,6 +512,11 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 85) {
             populateAgentDisplayTable();
             updateSchemaVersion(85);
+        }
+        // 0.13.0 to 0.13.1
+        if (initialSchemaVersion < 86) {
+            updateTraceSlowCountAndPointPartialTables();
+            updateSchemaVersion(86);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -2751,6 +2756,13 @@ public class SchemaUpgrade {
             }
         }
         MoreFutures.waitForAll(futures);
+    }
+
+    private void updateTraceSlowCountAndPointPartialTables() throws Exception {
+        addColumnIfNotExists("trace_tt_slow_count_partial", "real_capture_time", "timestamp");
+        addColumnIfNotExists("trace_tn_slow_count_partial", "real_capture_time", "timestamp");
+        addColumnIfNotExists("trace_tt_slow_point_partial", "real_capture_time", "timestamp");
+        addColumnIfNotExists("trace_tn_slow_point_partial", "real_capture_time", "timestamp");
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)

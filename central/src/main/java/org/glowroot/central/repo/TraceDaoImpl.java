@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,7 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class TraceDaoImpl implements TraceDao {
 
@@ -87,6 +88,8 @@ public class TraceDaoImpl implements TraceDao {
     private final TraceAttributeNameDao traceAttributeNameDao;
     private final ConfigRepositoryImpl configRepository;
     private final Clock clock;
+
+    private final boolean cassandra2x;
 
     private final PreparedStatement insertOverallSlowCount;
     private final PreparedStatement insertOverallSlowCountPartial;
@@ -162,6 +165,12 @@ public class TraceDaoImpl implements TraceDao {
         this.configRepository = configRepository;
         this.clock = clock;
 
+        ResultSet results =
+                session.read("select release_version from system.local where key = 'local'");
+        Row row = checkNotNull(results.one());
+        String cassandraVersion = checkNotNull(row.getString(0));
+        cassandra2x = cassandraVersion.startsWith("2.");
+
         int expirationHours = configRepository.getCentralStorageConfig().traceExpirationHours();
 
         // agent_rollup/capture_time is not necessarily unique
@@ -173,11 +182,13 @@ public class TraceDaoImpl implements TraceDao {
                 + " trace_id varchar, primary key ((agent_rollup, transaction_type), capture_time,"
                 + " agent_id, trace_id))", expirationHours);
 
+        // "capture_time" column now should be "capture_time_partial_rollup" (since 0.13.1)
+        // (and "real_capture_time" column now should be "capture_time")
         session.createTableWithTWCS("create table if not exists trace_tt_slow_count_partial"
                 + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
-                + " agent_id varchar, trace_id varchar, primary key ((agent_rollup,"
-                + " transaction_type), capture_time, agent_id, trace_id))", expirationHours, false,
-                true);
+                + " agent_id varchar, trace_id varchar, real_capture_time timestamp, primary key"
+                + " ((agent_rollup, transaction_type), capture_time, agent_id, trace_id))",
+                expirationHours, false, true);
 
         session.createTableWithTWCS("create table if not exists trace_tn_slow_count (agent_rollup"
                 + " varchar, transaction_type varchar, transaction_name varchar, capture_time"
@@ -185,11 +196,13 @@ public class TraceDaoImpl implements TraceDao {
                 + " transaction_type, transaction_name), capture_time, agent_id, trace_id))",
                 expirationHours);
 
+        // "capture_time" column now should be "capture_time_partial_rollup" (since 0.13.1)
+        // (and "real_capture_time" column now should be "capture_time")
         session.createTableWithTWCS("create table if not exists trace_tn_slow_count_partial"
                 + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
-                + " capture_time timestamp, agent_id varchar, trace_id varchar, primary key"
-                + " ((agent_rollup, transaction_type, transaction_name), capture_time, agent_id,"
-                + " trace_id))", expirationHours, false, true);
+                + " capture_time timestamp, agent_id varchar, trace_id varchar, real_capture_time"
+                + " timestamp, primary key ((agent_rollup, transaction_type, transaction_name),"
+                + " capture_time, agent_id, trace_id))", expirationHours, false, true);
 
         session.createTableWithTWCS("create table if not exists trace_tt_slow_point (agent_rollup"
                 + " varchar, transaction_type varchar, capture_time timestamp, agent_id varchar,"
@@ -197,12 +210,14 @@ public class TraceDaoImpl implements TraceDao {
                 + " varchar, attributes blob, primary key ((agent_rollup, transaction_type),"
                 + " capture_time, agent_id, trace_id))", expirationHours);
 
+        // "capture_time" column now should be "capture_time_partial_rollup" (since 0.13.1)
+        // (and "real_capture_time" column now should be "capture_time")
         session.createTableWithTWCS("create table if not exists trace_tt_slow_point_partial"
                 + " (agent_rollup varchar, transaction_type varchar, capture_time timestamp,"
-                + " agent_id varchar, trace_id varchar, duration_nanos bigint, error boolean,"
-                + " headline varchar, user varchar, attributes blob, primary key ((agent_rollup,"
-                + " transaction_type), capture_time, agent_id, trace_id))", expirationHours, false,
-                true);
+                + " agent_id varchar, trace_id varchar, real_capture_time timestamp, duration_nanos"
+                + " bigint, error boolean, headline varchar, user varchar, attributes blob, primary"
+                + " key ((agent_rollup, transaction_type), capture_time, agent_id, trace_id))",
+                expirationHours, false, true);
 
         session.createTableWithTWCS("create table if not exists trace_tn_slow_point (agent_rollup"
                 + " varchar, transaction_type varchar, transaction_name varchar, capture_time"
@@ -211,12 +226,15 @@ public class TraceDaoImpl implements TraceDao {
                 + " ((agent_rollup, transaction_type, transaction_name), capture_time, agent_id,"
                 + " trace_id))", expirationHours);
 
+        // "capture_time" column now should be "capture_time_partial_rollup" (since 0.13.1)
+        // (and "real_capture_time" column now should be "capture_time")
         session.createTableWithTWCS("create table if not exists trace_tn_slow_point_partial"
                 + " (agent_rollup varchar, transaction_type varchar, transaction_name varchar,"
-                + " capture_time timestamp, agent_id varchar, trace_id varchar, duration_nanos"
-                + " bigint, error boolean, headline varchar, user varchar, attributes blob, primary"
-                + " key ((agent_rollup, transaction_type, transaction_name), capture_time,"
-                + " agent_id, trace_id))", expirationHours, false, true);
+                + " capture_time timestamp, agent_id varchar, trace_id varchar, real_capture_time"
+                + " timestamp, duration_nanos bigint, error boolean, headline varchar, user"
+                + " varchar, attributes blob, primary key ((agent_rollup, transaction_type,"
+                + " transaction_name), capture_time, agent_id, trace_id))", expirationHours, false,
+                true);
 
         session.createTableWithTWCS("create table if not exists trace_tt_error_count (agent_rollup"
                 + " varchar, transaction_type varchar, capture_time timestamp, agent_id varchar,"
@@ -321,8 +339,8 @@ public class TraceDaoImpl implements TraceDao {
                 + " using ttl ?");
 
         insertOverallSlowCountPartial = session.prepare("insert into trace_tt_slow_count_partial"
-                + " (agent_rollup, transaction_type, capture_time, agent_id, trace_id) values"
-                + " (?, ?, ?, ?, ?) using ttl ?");
+                + " (agent_rollup, transaction_type, capture_time, agent_id, trace_id,"
+                + " real_capture_time) values (?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertTransactionSlowCount = session.prepare("insert into trace_tn_slow_count"
                 + " (agent_rollup, transaction_type, transaction_name, capture_time, agent_id,"
@@ -330,7 +348,8 @@ public class TraceDaoImpl implements TraceDao {
 
         insertTransactionSlowCountPartial = session.prepare("insert into"
                 + " trace_tn_slow_count_partial (agent_rollup, transaction_type, transaction_name,"
-                + " capture_time, agent_id, trace_id) values (?, ?, ?, ?, ?, ?) using ttl ?");
+                + " capture_time, agent_id, trace_id, real_capture_time) values (?, ?, ?, ?, ?, ?,"
+                + " ?) using ttl ?");
 
         insertOverallSlowPoint = session.prepare("insert into trace_tt_slow_point (agent_rollup,"
                 + " transaction_type, capture_time, agent_id, trace_id, duration_nanos, error,"
@@ -338,8 +357,8 @@ public class TraceDaoImpl implements TraceDao {
 
         insertOverallSlowPointPartial = session.prepare("insert into trace_tt_slow_point_partial"
                 + " (agent_rollup, transaction_type, capture_time, agent_id, trace_id,"
-                + " duration_nanos, error, headline, user, attributes) values (?, ?, ?, ?, ?, ?, ?,"
-                + " ?, ?, ?) using ttl ?");
+                + " real_capture_time, duration_nanos, error, headline, user, attributes) values"
+                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
 
         insertTransactionSlowPoint = session.prepare("insert into trace_tn_slow_point"
                 + " (agent_rollup, transaction_type, transaction_name, capture_time, agent_id,"
@@ -348,8 +367,9 @@ public class TraceDaoImpl implements TraceDao {
 
         insertTransactionSlowPointPartial = session.prepare("insert into"
                 + " trace_tn_slow_point_partial (agent_rollup, transaction_type, transaction_name,"
-                + " capture_time, agent_id, trace_id, duration_nanos, error, headline, user,"
-                + " attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using ttl ?");
+                + " capture_time, agent_id, trace_id, real_capture_time, duration_nanos, error,"
+                + " headline, user, attributes) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) using"
+                + " ttl ?");
 
         insertOverallErrorCount = session.prepare("insert into trace_tt_error_count (agent_rollup,"
                 + " transaction_type, capture_time, agent_id, trace_id) values (?, ?, ?, ?, ?)"
@@ -404,37 +424,73 @@ public class TraceDaoImpl implements TraceDao {
                 + " agent_rollup = ? and transaction_type = ? and capture_time > ? and capture_time"
                 + " <= ?");
 
-        readOverallSlowCountPartial = session.prepare("select count(*) from"
-                + " trace_tt_slow_count_partial where agent_rollup = ? and transaction_type = ? and"
-                + " capture_time > ? and capture_time <= ?");
+        if (cassandra2x) {
+            // Cassandra 2.x doesn't support predicates on non-primary-key columns
+            readOverallSlowCountPartial = session.prepare("select count(*) from"
+                    + " trace_tt_slow_count_partial where agent_rollup = ? and transaction_type = ?"
+                    + " and capture_time > ? and capture_time <= ?");
+        } else {
+            readOverallSlowCountPartial = session.prepare("select count(*) from"
+                    + " trace_tt_slow_count_partial where agent_rollup = ? and transaction_type = ?"
+                    + " and capture_time > ? and capture_time <= ? and real_capture_time > ? and"
+                    + " real_capture_time <= ? allow filtering");
+        }
 
         readTransactionSlowCount = session.prepare("select count(*) from trace_tn_slow_count where"
                 + " agent_rollup = ? and transaction_type = ? and transaction_name = ? and"
                 + " capture_time > ? and capture_time <= ?");
 
-        readTransactionSlowCountPartial = session.prepare("select count(*) from"
-                + " trace_tn_slow_count_partial where agent_rollup = ? and transaction_type = ? and"
-                + " transaction_name = ? and capture_time > ? and capture_time <= ?");
+        if (cassandra2x) {
+            // Cassandra 2.x doesn't support predicates on non-primary-key columns
+            readTransactionSlowCountPartial = session.prepare("select count(*) from"
+                    + " trace_tn_slow_count_partial where agent_rollup = ? and transaction_type = ?"
+                    + " and transaction_name = ? and capture_time > ? and capture_time <= ?");
+        } else {
+            readTransactionSlowCountPartial = session.prepare("select count(*) from"
+                    + " trace_tn_slow_count_partial where agent_rollup = ? and transaction_type = ?"
+                    + " and transaction_name = ? and capture_time > ? and capture_time <= ? and"
+                    + " real_capture_time > ? and real_capture_time <= ? allow filtering");
+        }
 
         readOverallSlowPoint = session.prepare("select agent_id, trace_id, capture_time,"
                 + " duration_nanos, error, headline, user, attributes from trace_tt_slow_point"
                 + " where agent_rollup = ? and transaction_type = ? and capture_time > ? and"
                 + " capture_time <= ?");
 
-        readOverallSlowPointPartial = session.prepare("select agent_id, trace_id, capture_time,"
-                + " duration_nanos, error, headline, user, attributes from"
-                + " trace_tt_slow_point_partial where agent_rollup = ? and transaction_type = ? and"
-                + " capture_time > ? and capture_time <= ?");
+        if (cassandra2x) {
+            // Cassandra 2.x doesn't support predicates on non-primary-key columns
+            readOverallSlowPointPartial = session.prepare("select agent_id, trace_id, capture_time,"
+                    + " real_capture_time, duration_nanos, error, headline, user, attributes from"
+                    + " trace_tt_slow_point_partial where agent_rollup = ? and transaction_type = ?"
+                    + " and capture_time > ? and capture_time <= ?");
+        } else {
+            readOverallSlowPointPartial = session.prepare("select agent_id, trace_id, capture_time,"
+                    + " real_capture_time, duration_nanos, error, headline, user, attributes from"
+                    + " trace_tt_slow_point_partial where agent_rollup = ? and transaction_type = ?"
+                    + " and capture_time > ? and capture_time <= ? and real_capture_time > ? and"
+                    + " real_capture_time <= ? allow filtering");
+        }
 
         readTransactionSlowPoint = session.prepare("select agent_id, trace_id, capture_time,"
                 + " duration_nanos, error, headline, user, attributes from trace_tn_slow_point"
                 + " where agent_rollup = ? and transaction_type = ? and transaction_name = ? and"
                 + " capture_time > ? and capture_time <= ?");
 
-        readTransactionSlowPointPartial = session.prepare("select agent_id, trace_id, capture_time,"
-                + " duration_nanos, error, headline, user, attributes from"
-                + " trace_tn_slow_point_partial where agent_rollup = ? and transaction_type = ? and"
-                + " transaction_name = ? and capture_time > ? and capture_time <= ?");
+        if (cassandra2x) {
+            // Cassandra 2.x doesn't support predicates on non-primary-key columns
+            readTransactionSlowPointPartial = session.prepare("select agent_id, trace_id,"
+                    + " capture_time, real_capture_time, duration_nanos, error, headline, user,"
+                    + " attributes from trace_tn_slow_point_partial where agent_rollup = ? and"
+                    + " transaction_type = ? and transaction_name = ? and capture_time > ? and"
+                    + " capture_time <= ?");
+        } else {
+            readTransactionSlowPointPartial = session.prepare("select agent_id, trace_id,"
+                    + " capture_time, real_capture_time, duration_nanos, error, headline, user,"
+                    + " attributes from trace_tn_slow_point_partial where agent_rollup = ? and"
+                    + " transaction_type = ? and transaction_name = ? and capture_time > ? and"
+                    + " capture_time <= ? and real_capture_time > ? and real_capture_time <= ?"
+                    + " allow filtering");
+        }
 
         readOverallErrorCount = session.prepare("select count(*) from trace_tt_error_count where"
                 + " agent_rollup = ? and transaction_type = ? and capture_time > ? and"
@@ -545,6 +601,12 @@ public class TraceDaoImpl implements TraceDao {
         String traceId = trace.getId();
         Trace.Header priorHeader = trace.getUpdate() ? readHeader(agentId, traceId) : null;
         Trace.Header header = trace.getHeader();
+        if (header.getPartial()) {
+            header = header.toBuilder()
+                    .setCaptureTimePartialRollup(
+                            getCaptureTimePartialRollup(header.getCaptureTime()))
+                    .build();
+        }
 
         List<Future<?>> futures = new ArrayList<>();
 
@@ -587,7 +649,7 @@ public class TraceDaoImpl implements TraceDao {
                     boundStatement = insertOverallSlowPoint.bind();
                 }
                 bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        true);
+                        true, header.getPartial(), cassandra2x);
                 futures.add(session.writeAsync(boundStatement));
 
                 if (header.getPartial()) {
@@ -596,7 +658,7 @@ public class TraceDaoImpl implements TraceDao {
                     boundStatement = insertTransactionSlowPoint.bind();
                 }
                 bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        false);
+                        false, header.getPartial(), cassandra2x);
                 futures.add(session.writeAsync(boundStatement));
 
                 if (header.getPartial()) {
@@ -605,7 +667,7 @@ public class TraceDaoImpl implements TraceDao {
                     boundStatement = insertOverallSlowCount.bind();
                 }
                 bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        true);
+                        true, header.getPartial(), cassandra2x);
                 futures.add(session.writeAsync(boundStatement));
 
                 if (header.getPartial()) {
@@ -614,24 +676,33 @@ public class TraceDaoImpl implements TraceDao {
                     boundStatement = insertTransactionSlowCount.bind();
                 }
                 bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        false);
+                        false, header.getPartial(), cassandra2x);
                 futures.add(session.writeAsync(boundStatement));
 
-                if (priorHeader != null) {
+                if (priorHeader != null && priorHeader.getCaptureTimePartialRollup() != header
+                        .getCaptureTimePartialRollup()) {
+
+                    boolean useCaptureTimePartialRollup =
+                            priorHeader.getCaptureTimePartialRollup() != 0;
+
                     boundStatement = deleteOverallSlowPointPartial.bind();
-                    bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true);
+                    bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true,
+                            useCaptureTimePartialRollup);
                     futures.add(session.writeAsync(boundStatement));
 
                     boundStatement = deleteTransactionSlowPointPartial.bind();
-                    bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false);
+                    bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false,
+                            useCaptureTimePartialRollup);
                     futures.add(session.writeAsync(boundStatement));
 
                     boundStatement = deleteOverallSlowCountPartial.bind();
-                    bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true);
+                    bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true,
+                            useCaptureTimePartialRollup);
                     futures.add(session.writeAsync(boundStatement));
 
                     boundStatement = deleteTransactionSlowCountPartial.bind();
-                    bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false);
+                    bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false,
+                            useCaptureTimePartialRollup);
                     futures.add(session.writeAsync(boundStatement));
                 }
             }
@@ -660,12 +731,12 @@ public class TraceDaoImpl implements TraceDao {
 
                 boundStatement = insertOverallErrorCount.bind();
                 bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        true);
+                        true, false, cassandra2x);
                 futures.add(session.writeAsync(boundStatement));
 
                 boundStatement = insertTransactionErrorCount.bind();
                 bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        false);
+                        false, false, cassandra2x);
                 futures.add(session.writeAsync(boundStatement));
             }
         }
@@ -797,12 +868,12 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = readOverallSlowCount.bind();
             boundStatementPartial = readOverallSlowCountPartial.bind();
             bindTraceQuery(boundStatement, agentRollupId, query, true);
-            bindTraceQuery(boundStatementPartial, agentRollupId, query, true);
+            bindTraceQueryPartial(boundStatementPartial, agentRollupId, query, true, cassandra2x);
         } else {
             boundStatement = readTransactionSlowCount.bind();
             boundStatementPartial = readTransactionSlowCountPartial.bind();
             bindTraceQuery(boundStatement, agentRollupId, query, false);
-            bindTraceQuery(boundStatementPartial, agentRollupId, query, false);
+            bindTraceQueryPartial(boundStatementPartial, agentRollupId, query, false, cassandra2x);
         }
         Future<ResultSet> future = session.readAsync(boundStatement);
         Future<ResultSet> futurePartial = session.readAsync(boundStatementPartial);
@@ -819,12 +890,12 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = readOverallSlowPoint.bind();
             boundStatementPartial = readOverallSlowPointPartial.bind();
             bindTraceQuery(boundStatement, agentRollupId, query, true);
-            bindTraceQuery(boundStatementPartial, agentRollupId, query, true);
+            bindTraceQueryPartial(boundStatementPartial, agentRollupId, query, true, cassandra2x);
         } else {
             boundStatement = readTransactionSlowPoint.bind();
             boundStatementPartial = readTransactionSlowPointPartial.bind();
             bindTraceQuery(boundStatement, agentRollupId, query, false);
-            bindTraceQuery(boundStatementPartial, agentRollupId, query, false);
+            bindTraceQueryPartial(boundStatementPartial, agentRollupId, query, false, cassandra2x);
         }
         Future<ResultSet> future = session.readAsync(boundStatement);
         Future<ResultSet> futurePartial = session.readAsync(boundStatementPartial);
@@ -1199,9 +1270,18 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     private static void bindSlowPoint(BoundStatement boundStatement, String agentRollupId,
-            String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall)
-            throws IOException {
-        int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall);
+            String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall,
+            boolean partial, boolean cassandra2x) throws IOException {
+        int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall,
+                partial && !cassandra2x);
+        if (partial) {
+            if (cassandra2x) {
+                // don't set real_capture_time, so this still looks like data prior to 0.13.1
+                boundStatement.setToNull(i++);
+            } else {
+                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
+            }
+        }
         boundStatement.setLong(i++, header.getDurationNanos());
         boundStatement.setBool(i++, header.hasError());
         boundStatement.setString(i++, header.getHeadline());
@@ -1216,14 +1296,24 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     private static void bindCount(BoundStatement boundStatement, String agentRollupId,
-            String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall) {
-        int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall);
+            String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall,
+            boolean partial, boolean cassandra2x) {
+        int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall,
+                partial && !cassandra2x);
+        if (partial) {
+            if (cassandra2x) {
+                // don't set real_capture_time, so this still looks like data prior to 0.13.1
+                boundStatement.setToNull(i++);
+            } else {
+                boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
+            }
+        }
         boundStatement.setInt(i++, adjustedTTL);
     }
 
     private static void bindErrorMessage(BoundStatement boundStatement, String agentRollupId,
             String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall) {
-        int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall);
+        int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall, false);
         boundStatement.setString(i++, header.getError().getMessage());
         boundStatement.setInt(i++, adjustedTTL);
     }
@@ -1231,7 +1321,7 @@ public class TraceDaoImpl implements TraceDao {
     private static void bindErrorPoint(BoundStatement boundStatement, String agentRollupId,
             String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall)
             throws IOException {
-        int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall);
+        int i = bind(boundStatement, agentRollupId, agentId, traceId, header, overall, false);
         boundStatement.setLong(i++, header.getDurationNanos());
         boundStatement.setString(i++, header.getError().getMessage());
         boundStatement.setString(i++, header.getHeadline());
@@ -1246,14 +1336,19 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     private static int bind(BoundStatement boundStatement, String agentRollupId, String agentId,
-            String traceId, Trace.Header header, boolean overall) {
+            String traceId, Trace.Header header, boolean overall,
+            boolean useCaptureTimePartialRollup) {
         int i = 0;
         boundStatement.setString(i++, agentRollupId);
         boundStatement.setString(i++, header.getTransactionType());
         if (!overall) {
             boundStatement.setString(i++, header.getTransactionName());
         }
-        boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
+        if (useCaptureTimePartialRollup) {
+            boundStatement.setTimestamp(i++, new Date(header.getCaptureTimePartialRollup()));
+        } else {
+            boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
+        }
         boundStatement.setString(i++, agentId);
         boundStatement.setString(i++, traceId);
         return i;
@@ -1280,6 +1375,32 @@ public class TraceDaoImpl implements TraceDao {
         boundStatement.setTimestamp(i++, new Date(query.to()));
     }
 
+    private static void bindTraceQueryPartial(BoundStatement boundStatement, String agentRollupId,
+            TraceQuery query, boolean overall, boolean cassandra2x) {
+        int i = 0;
+        boundStatement.setString(i++, agentRollupId);
+        boundStatement.setString(i++, query.transactionType());
+        if (!overall) {
+            boundStatement.setString(i++, query.transactionName());
+        }
+        if (cassandra2x) {
+            boundStatement.setTimestamp(i++, new Date(query.from()));
+            boundStatement.setTimestamp(i++, new Date(query.to()));
+        } else {
+            // not using getCaptureTimePartialRollup() on "from", to support data prior to 0.13.1
+            boundStatement.setTimestamp(i++, new Date(query.from()));
+            boundStatement.setTimestamp(i++, new Date(getCaptureTimePartialRollup(query.to())));
+            boundStatement.setTimestamp(i++, new Date(query.from()));
+            boundStatement.setTimestamp(i++, new Date(query.to()));
+        }
+    }
+
+    private static long getCaptureTimePartialRollup(long captureTime) {
+        // it's not really relevant that the 30-min interval matches any of the aggregate rollups,
+        // this is just to help reduce proliferation of Cassandra tombstones
+        return CaptureTimes.getRollup(captureTime, MINUTES.toMillis(30));
+    }
+
     private static List<TracePoint> processPoints(ResultSet results, TracePointFilter filter,
             boolean partial, boolean errorPoints) throws IOException {
         List<TracePoint> tracePoints = new ArrayList<>();
@@ -1288,6 +1409,13 @@ public class TraceDaoImpl implements TraceDao {
             String agentId = checkNotNull(row.getString(i++));
             String traceId = checkNotNull(row.getString(i++));
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            if (partial) {
+                // real_capture_time is only present for data written starting with 0.13.1
+                Date realCaptureTime = row.getTimestamp(i++);
+                if (realCaptureTime != null) {
+                    captureTime = realCaptureTime.getTime();
+                }
+            }
             long durationNanos = row.getLong(i++);
             boolean error = errorPoints || row.getBool(i++);
             // error points are defined by having an error message, so safe to checkNotNull

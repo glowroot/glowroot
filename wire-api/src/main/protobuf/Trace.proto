@@ -54,6 +54,9 @@ message Trace {
     bool main_thread_profile_sample_limit_exceeded = 22;
     int64 aux_thread_profile_sample_count = 23;
     bool aux_thread_profile_sample_limit_exceeded = 24;
+
+    // introduced in 0.13.1, but only populated and used by the central collector
+    int64 capture_time_partial_rollup = 30;
   }
 
   message Attribute {
