@@ -252,7 +252,7 @@ case "$1" in
                                  failsafe:verify \
                                  -Dit.test=!JarFileShadingIT \
                                  -DfailIfNoTests=false \
-                                 -Djacoco.destFile=$PWD/jacoco-combined-it.exec \
+                                 -Djacoco.destFile=$PWD/jacoco-combined.exec \
                                  -Djacoco.propertyName=jacocoArgLine \
                                  -Djacoco.append=true \
                                  -Dglowroot.it.harness=javaagent"
