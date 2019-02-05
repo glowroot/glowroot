@@ -128,8 +128,8 @@ class GaugeCollector extends ScheduledRunnable {
                             .getDeclaredMethod("registerInternalMBeans", MBeanServer.class);
                     registerInternalMBeansMethod.setAccessible(true);
                     registerInternalMBeansMethod.invoke(null, mbeanServer);
-                } catch (Exception e) {
-                    logger.debug(e.getMessage(), e);
+                } catch (Throwable t) {
+                    logger.debug(t.getMessage(), t);
                 }
             }
         });

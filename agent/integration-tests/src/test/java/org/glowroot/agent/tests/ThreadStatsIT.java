@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.agent.tests.app.LevelOne;
+import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -61,8 +62,10 @@ public class ThreadStatsIT {
         assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isNotEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isNotEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isNotEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
-                .isNotEqualTo(-1);
+        if (!JavaVersion.isJ9Jvm()) {
+            assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
+                    .isNotEqualTo(-1);
+        }
     }
 
     @Test
@@ -87,8 +90,10 @@ public class ThreadStatsIT {
         assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isNotEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isNotEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
-                .isNotEqualTo(-1);
+        if (!JavaVersion.isJ9Jvm()) {
+            assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
+                    .isNotEqualTo(-1);
+        }
     }
 
     @Test
@@ -100,8 +105,10 @@ public class ThreadStatsIT {
         assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isNotEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isNotEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
-                .isNotEqualTo(-1);
+        if (!JavaVersion.isJ9Jvm()) {
+            assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
+                    .isNotEqualTo(-1);
+        }
     }
 
     @Test
@@ -113,8 +120,10 @@ public class ThreadStatsIT {
         assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isNotEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isNotEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
-                .isNotEqualTo(-1);
+        if (!JavaVersion.isJ9Jvm()) {
+            assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
+                    .isNotEqualTo(-1);
+        }
     }
 
     @Test
@@ -126,8 +135,10 @@ public class ThreadStatsIT {
         assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isNotEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
-                .isNotEqualTo(-1);
+        if (!JavaVersion.isJ9Jvm()) {
+            assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
+                    .isNotEqualTo(-1);
+        }
     }
 
     @Test
@@ -139,8 +150,10 @@ public class ThreadStatsIT {
         assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isNotEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
-                .isNotEqualTo(-1);
+        if (!JavaVersion.isJ9Jvm()) {
+            assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
+                    .isNotEqualTo(-1);
+        }
     }
 
     @Test
@@ -152,8 +165,10 @@ public class ThreadStatsIT {
         assertThat(trace.getHeader().getMainThreadStats().getCpuNanos()).isNotEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getBlockedNanos()).isEqualTo(-1);
         assertThat(trace.getHeader().getMainThreadStats().getWaitedNanos()).isEqualTo(-1);
-        assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
-                .isNotEqualTo(-1);
+        if (!JavaVersion.isJ9Jvm()) {
+            assertThat(trace.getHeader().getMainThreadStats().getAllocatedBytes())
+                    .isNotEqualTo(-1);
+        }
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,8 @@
  */
 package org.glowroot.agent.util;
 
-import com.google.common.base.StandardSystemProperty;
 import org.junit.Assume;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -28,10 +27,10 @@ public class MissingOptionalDependenciesReflectionTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    @Before
-    public void beforeEach() {
-        // IBM JVM loads classes with missing optional dependencies just fine
-        Assume.assumeFalse(StandardSystemProperty.JAVA_VM_NAME.value().startsWith("IBM"));
+    @BeforeClass
+    public static void setUp() {
+        // IBM J9 VM and Eclipse OpenJ9 JM load classes with missing optional dependencies just fine
+        Assume.assumeFalse(JavaVersion.isJ9Jvm());
     }
 
     @Test

@@ -33,7 +33,7 @@ import org.glowroot.agent.live.LiveTraceRepositoryImpl;
 import org.glowroot.agent.live.LiveWeavingServiceImpl;
 import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
-import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
+import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJ9JvmException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.common.live.LiveTraceRepository.Queries;
@@ -348,12 +348,13 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                             .setUnavailableDueToRunningInJre(true))
                     .build());
             return;
-        } catch (UnavailableDueToRunningInIbmJvmException e) {
+        } catch (UnavailableDueToRunningInJ9JvmException e) {
+            // Eclipse OpenJ9 VM or IBM J9 VM
             logger.debug(e.getMessage(), e);
             responseObserver.onNext(AgentResponse.newBuilder()
                     .setRequestId(request.getRequestId())
                     .setJstackResponse(JstackResponse.newBuilder()
-                            .setUnavailableDueToRunningInIbmJvm(true))
+                            .setUnavailableDueToRunningInJ9Jvm(true))
                     .build());
             return;
         } catch (Exception e) {
@@ -433,12 +434,13 @@ class DownstreamServiceObserver implements StreamObserver<CentralRequest> {
                             .setUnavailableDueToRunningInJre(true))
                     .build());
             return;
-        } catch (UnavailableDueToRunningInIbmJvmException e) {
+        } catch (UnavailableDueToRunningInJ9JvmException e) {
+            // Eclipse OpenJ9 VM or IBM J9 VM
             logger.debug(e.getMessage(), e);
             responseObserver.onNext(AgentResponse.newBuilder()
                     .setRequestId(request.getRequestId())
                     .setHeapHistogramResponse(HeapHistogramResponse.newBuilder()
-                            .setUnavailableDueToRunningInIbmJvm(true))
+                            .setUnavailableDueToRunningInJ9Jvm(true))
                     .build());
             return;
         } catch (Exception e) {

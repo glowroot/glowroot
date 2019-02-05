@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ public class BytecodeEarly {
 
     private BytecodeEarly() {}
 
-    // this is used by IbmJava6HackClassFileTransformer2
+    // this is used by IbmJ9Java6HackClassFileTransformer2
     public static Set</*@Nullable*/ Object> removeDuplicates(Set</*@Nullable*/ Object> urls) {
         if (urls.size() == 2) {
             // only a very specialized implementation is needed for this hack

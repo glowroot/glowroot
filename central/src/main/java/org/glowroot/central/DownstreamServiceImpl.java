@@ -44,7 +44,7 @@ import org.glowroot.common.live.ImmutableQueries;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.common.live.LiveJvmService.AgentUnsupportedOperationException;
 import org.glowroot.common.live.LiveJvmService.DirectoryDoesNotExistException;
-import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInIbmJvmException;
+import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJ9JvmException;
 import org.glowroot.common.live.LiveJvmService.UnavailableDueToRunningInJreException;
 import org.glowroot.common.live.LiveTraceRepository.Entries;
 import org.glowroot.common.live.LiveTraceRepository.Queries;
@@ -180,8 +180,9 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         if (response.getUnavailableDueToRunningInJre()) {
             throw new UnavailableDueToRunningInJreException();
         }
-        if (response.getUnavailableDueToRunningInIbmJvm()) {
-            throw new UnavailableDueToRunningInIbmJvmException();
+        if (response.getUnavailableDueToRunningInJ9Jvm()) {
+            // Eclipse OpenJ9 VM or IBM J9 VM
+            throw new UnavailableDueToRunningInJ9JvmException();
         }
         return response.getJstack();
     }
@@ -218,8 +219,9 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
         if (response.getUnavailableDueToRunningInJre()) {
             throw new UnavailableDueToRunningInJreException();
         }
-        if (response.getUnavailableDueToRunningInIbmJvm()) {
-            throw new UnavailableDueToRunningInIbmJvmException();
+        if (response.getUnavailableDueToRunningInJ9Jvm()) {
+            // Eclipse OpenJ9 VM or IBM J9 VM
+            throw new UnavailableDueToRunningInJ9JvmException();
         }
         return response.getHeapHistogram();
     }

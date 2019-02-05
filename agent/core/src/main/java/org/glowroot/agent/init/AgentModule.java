@@ -410,15 +410,15 @@ public class AgentModule {
             if (jvmArg.startsWith("-javaagent:") && jvmArg.endsWith(glowrootJarFile.getName())) {
                 break;
             }
-            if (jvmArg.startsWith("-javaagent:") || isIbmHealthcenterArg(jvmArg)) {
+            if (jvmArg.startsWith("-javaagent:") || isIbmJ9HealthcenterArg(jvmArg)) {
                 javaAgentArgsBeforeGlowroot.add(jvmArg);
             }
         }
         return javaAgentArgsBeforeGlowroot;
     }
 
-    private static boolean isIbmHealthcenterArg(String jvmArg) {
-        return JavaVersion.isIbmJvm()
+    private static boolean isIbmJ9HealthcenterArg(String jvmArg) {
+        return JavaVersion.isJ9Jvm()
                 && (jvmArg.equals("-Xhealthcenter") || jvmArg.startsWith("-Xhealthcenter:"));
     }
 

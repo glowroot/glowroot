@@ -183,7 +183,7 @@ public class BytecodeServiceImpl implements BytecodeService {
             return;
         }
         if (mainClass.equals("com.ibm.java.diagnostics.healthcenter.agent.mbean.HCLaunchMBean")) {
-            // IBM JVM -Xhealthcenter
+            // IBM J9 VM -Xhealthcenter
             return;
         }
         if (hasRunOnEnteringMain.getAndSet(true)) {

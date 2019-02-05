@@ -55,7 +55,7 @@ public class LocalContainer implements Container {
         return new LocalContainer(null, false, ImmutableMap.<String, String>of());
     }
 
-    public static LocalContainer create(File testDir) throws Exception {
+    public static LocalContainer create(@Nullable File testDir) throws Exception {
         return new LocalContainer(testDir, false, ImmutableMap.<String, String>of());
     }
 

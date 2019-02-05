@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,9 @@ import org.junit.Test;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
+import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TempDirs;
 import org.glowroot.agent.it.harness.TransactionMarker;
-import org.glowroot.agent.it.harness.impl.LocalContainer;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.MethodModifier;
@@ -48,7 +48,7 @@ public class ConfiguredInstrumentationIT {
     public static void setUp() throws Exception {
         testDir = TempDirs.createTempDir("glowroot-test-dir");
         // see subclass (ReweavePointcutsTest) for JavaagentContainer test
-        container = LocalContainer.create(testDir);
+        container = Containers.create(testDir);
         List<InstrumentationConfig> instrumentationConfigs = Lists.newArrayList();
         instrumentationConfigs.add(buildInstrumentationForExecute1());
         instrumentationConfigs.add(buildInstrumentationForExecute1TimerOnly());
@@ -61,7 +61,7 @@ public class ConfiguredInstrumentationIT {
         // re-start now with pointcut configs
         container.close();
         // see subclass (ReweavePointcutsTest) for JavaagentContainer test
-        container = LocalContainer.create(testDir);
+        container = Containers.create(testDir);
     }
 
     @AfterClass

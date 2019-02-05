@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.glowroot.agent.util;
 
 import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Method;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -49,9 +50,14 @@ public class ThreadAllocatedBytes {
             return OptionalService.unavailable("Cannot find class com.sun.management.ThreadMXBean"
                     + " (introduced in Oracle Java SE 6u25)");
         }
+        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        if (!sunThreadMXBeanClass.isInstance(threadMXBean)) {
+            return OptionalService.unavailable(
+                    "ThreadMXBean is not an instance of com.sun.management.ThreadMXBean");
+        }
         Method isSupportedMethod =
                 sunThreadMXBeanClass.getMethod("isThreadAllocatedMemorySupported");
-        Boolean supported = (Boolean) isSupportedMethod.invoke(ManagementFactory.getThreadMXBean());
+        Boolean supported = (Boolean) isSupportedMethod.invoke(threadMXBean);
         return createInternal(supported, sunThreadMXBeanClass);
     }
 

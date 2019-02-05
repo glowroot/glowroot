@@ -28,7 +28,7 @@ public class JavaVersion {
     private static final boolean IS_GREATER_THAN_OR_EQUAL_TO_JAVA_9;
     private static final boolean IS_GREATER_THAN_OR_EQUAL_TO_JAVA_10;
 
-    private static final boolean IBM_JVM;
+    private static final boolean J9_JVM;
     private static final boolean JROCKIT_JVM;
 
     private static final boolean OSX;
@@ -41,7 +41,7 @@ public class JavaVersion {
         IS_GREATER_THAN_OR_EQUAL_TO_JAVA_10 = parseIsGreaterThanOrEqualToJava10(javaVersion);
 
         String javaVmName = System.getProperty("java.vm.name");
-        IBM_JVM = "IBM J9 VM".equals(javaVmName);
+        J9_JVM = "IBM J9 VM".equals(javaVmName) || "Eclipse OpenJ9 VM".equals(javaVmName);
         JROCKIT_JVM = "Oracle JRockit(R)".equals(javaVmName);
 
         String osName = System.getProperty("os.name");
@@ -73,8 +73,8 @@ public class JavaVersion {
         return IS_GREATER_THAN_OR_EQUAL_TO_JAVA_10;
     }
 
-    public static boolean isIbmJvm() {
-        return IBM_JVM;
+    public static boolean isJ9Jvm() {
+        return J9_JVM;
     }
 
     public static boolean isJRockitJvm() {

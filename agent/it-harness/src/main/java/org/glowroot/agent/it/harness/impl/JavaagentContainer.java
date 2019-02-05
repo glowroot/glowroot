@@ -92,7 +92,7 @@ public class JavaagentContainer implements Container {
         return new JavaagentContainer(null, false, ImmutableList.<String>of());
     }
 
-    public static JavaagentContainer create(File testDir) throws Exception {
+    public static JavaagentContainer create(@Nullable File testDir) throws Exception {
         return new JavaagentContainer(testDir, false, ImmutableList.<String>of());
     }
 

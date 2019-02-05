@@ -261,7 +261,7 @@ public class LiveWeavingServiceImpl implements LiveWeavingService {
             try {
                 instrumentation.retransformClasses(clazz);
             } catch (UnmodifiableClassException e) {
-                // IBM JDK 6 throws UnmodifiableClassException even though call to
+                // IBM J9 VM Java 6 throws UnmodifiableClassException even though call to
                 // isModifiableClass() in getExistingModifiableSubClasses() returns true
                 logger.debug(e.getMessage(), e);
             }

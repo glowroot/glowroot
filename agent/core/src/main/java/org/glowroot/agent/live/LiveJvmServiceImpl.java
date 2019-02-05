@@ -116,8 +116,8 @@ public class LiveJvmServiceImpl implements LiveJvmService {
 
     @Override
     public String getJstack(String agentId) throws Exception {
-        if (JavaVersion.isIbmJvm()) {
-            throw new UnavailableDueToRunningInIbmJvmException();
+        if (JavaVersion.isJ9Jvm()) {
+            throw new UnavailableDueToRunningInJ9JvmException();
         }
         if (JavaVersion.isGreaterThanOrEqualToJava8()) {
             return JStackTool.run(lazyPlatformMBeanServer);
@@ -144,8 +144,8 @@ public class LiveJvmServiceImpl implements LiveJvmService {
             throw new DirectoryDoesNotExistException();
         }
         File file;
-        if (JavaVersion.isIbmJvm()) {
-            file = ibmHeapDump(dir);
+        if (JavaVersion.isJ9Jvm()) {
+            file = j9HeapDump(dir);
         } else {
             file = heapDump(dir);
         }
@@ -157,8 +157,8 @@ public class LiveJvmServiceImpl implements LiveJvmService {
 
     @Override
     public HeapHistogram heapHistogram(String agentId) throws Exception {
-        if (JavaVersion.isIbmJvm()) {
-            throw new UnavailableDueToRunningInIbmJvmException();
+        if (JavaVersion.isJ9Jvm()) {
+            throw new UnavailableDueToRunningInJ9JvmException();
         }
         if (JavaVersion.isGreaterThanOrEqualToJava8()) {
             return HeapHistogramTool.run(lazyPlatformMBeanServer);
@@ -387,7 +387,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
                 || Boolean.getBoolean("jdk.attach.allowAttachSelf");
     }
 
-    private static File ibmHeapDump(File directory) throws Exception {
+    private static File j9HeapDump(File directory) throws Exception {
         File file = generateHeapDumpFileName(directory, ".phd");
         Class<?> clazz = Class.forName("com.ibm.jvm.Dump");
         Method method = clazz.getMethod("heapDumpToFile", String.class);

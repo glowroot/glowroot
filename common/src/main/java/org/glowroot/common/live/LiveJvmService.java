@@ -67,8 +67,9 @@ public interface LiveJvmService {
     @SuppressWarnings("serial")
     public class UnavailableDueToRunningInJreException extends Exception {}
 
+    // Eclipse OpenJ9 VM or IBM J9 VM
     @SuppressWarnings("serial")
-    public class UnavailableDueToRunningInIbmJvmException extends Exception {}
+    public class UnavailableDueToRunningInJ9JvmException extends Exception {}
 
     @SuppressWarnings("serial")
     public class UnavailableDueToDockerAlpinePidOneException extends Exception {}

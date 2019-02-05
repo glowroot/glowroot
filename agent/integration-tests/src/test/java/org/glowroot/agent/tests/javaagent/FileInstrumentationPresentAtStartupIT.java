@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.glowroot.agent.it.harness.Container;
+import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TempDirs;
-import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.impl.LocalContainer;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
@@ -39,7 +38,7 @@ public class FileInstrumentationPresentAtStartupIT {
     @BeforeClass
     public static void setUp() throws Exception {
         testDir = TempDirs.createTempDir("glowroot-test-dir");
-        container = LocalContainer.create(testDir);
+        container = Containers.create(testDir);
         container.getConfigService().updateInstrumentationConfigs(ImmutableList.of(
                 InstrumentationConfig.newBuilder()
                         .setClassName("java.io.File")
@@ -55,7 +54,7 @@ public class FileInstrumentationPresentAtStartupIT {
                         .build()));
         // re-start now with instrumentation configs
         container.close();
-        container = JavaagentContainer.create(testDir);
+        container = Containers.create(testDir);
     }
 
     @AfterClass

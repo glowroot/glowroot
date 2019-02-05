@@ -162,8 +162,8 @@ public class MainEntryPoint {
                 Class.forName("org.glowroot.agent.weaving.WeavingClassFileTransformer");
                 // don't remove transformer in case the class is retransformed later
             }
-            if (JavaVersion.isIbmJvm() && JavaVersion.isJava6()) {
-                instrumentation.addTransformer(new IbmJava6HackClassFileTransformer());
+            if (JavaVersion.isJ9Jvm() && JavaVersion.isJava6()) {
+                instrumentation.addTransformer(new IbmJ9Java6HackClassFileTransformer());
                 Class.forName("com.google.protobuf.UnsafeUtil");
                 // don't remove transformer in case the class is retransformed later
             }
@@ -203,7 +203,7 @@ public class MainEntryPoint {
             @Nullable Instrumentation instrumentation) {
         if (JavaVersion.isJava6() && "IBM J9 VM".equals(System.getProperty("java.vm.name"))
                 && instrumentation != null) {
-            instrumentation.addTransformer(new IbmJava6HackClassFileTransformer2());
+            instrumentation.addTransformer(new IbmJ9Java6HackClassFileTransformer2());
         }
         for (File confDir : confDirs) {
             File logbackXmlOverride = new File(confDir, "glowroot.logback.xml");

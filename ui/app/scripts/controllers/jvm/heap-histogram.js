@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,10 +171,10 @@ glowroot.controller('JvmHeapHistogramCtrl', [
             $scope.agentNotConnected = data.agentNotConnected;
             $scope.agentUnsupportedOperation = data.agentUnsupportedOperation;
             $scope.unavailableDueToRunningInJre = data.unavailableDueToRunningInJre;
-            $scope.unavailableDueToRunningInIbmJvm = data.unavailableDueToRunningInIbmJvm;
+            $scope.unavailableDueToRunningInJ9Jvm = data.unavailableDueToRunningInJ9Jvm;
             $scope.unavailableDueToDockerAlpinePidOne = data.unavailableDueToDockerAlpinePidOne;
             if ($scope.agentNotConnected || $scope.agentUnsupportedOperation || $scope.unavailableDueToRunningInJre
-                || $scope.unavailableDueToRunningInIbmJvm || $scope.unavailableDueToDockerAlpinePidOne) {
+                || $scope.unavailableDueToRunningInJ9Jvm || $scope.unavailableDueToDockerAlpinePidOne) {
               return;
             }
             $scope.histogram = data;

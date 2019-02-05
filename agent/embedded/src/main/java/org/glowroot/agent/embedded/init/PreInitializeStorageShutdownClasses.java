@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -145,7 +145,7 @@ class PreInitializeStorageShutdownClasses {
         types.add("org.glowroot.core.weaving.AdviceMatcher$1");
         // used by Java 6-8, but not Java 9
         types.add("java.sql.Driver");
-        // cannot rely on java anonymous inner class (e.g. when running on IBM JVM)
+        // cannot rely on java anonymous inner class (e.g. when running on IBM J9 JVM)
         types.add("java.sql.DriverManager$1");
         types.add("java.sql.DriverManager$2");
         types.add("java.sql.SQLException$1");

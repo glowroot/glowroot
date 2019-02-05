@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 package org.glowroot.agent.it.harness;
+
+import java.io.File;
+
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,16 +51,20 @@ public class Containers {
     private Containers() {}
 
     public static Container create() throws Exception {
+        return create(null);
+    }
+
+    public static Container create(@Nullable File testDir) throws Exception {
         switch (harness) {
             case JAVAAGENT:
                 // this is the most realistic way to run tests because it launches an external JVM
                 // process using -javaagent:glowroot.jar
                 logger.debug("create(): using javaagent container");
-                return JavaagentContainer.create();
+                return JavaagentContainer.create(testDir);
             case LOCAL:
                 // this is the easiest way to run/debug tests inside of Eclipse
                 logger.debug("create(): using local container");
-                return LocalContainer.create();
+                return LocalContainer.create(testDir);
             default:
                 throw new IllegalStateException("Unexpected harness enum value: " + harness);
         }

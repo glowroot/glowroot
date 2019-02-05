@@ -123,7 +123,7 @@ message JstackRequest {
 message JstackResponse {
   string jstack = 1;
   bool unavailable_due_to_running_in_jre = 2;
-  bool unavailable_due_to_running_in_ibm_jvm = 3;
+  bool unavailable_due_to_running_in_j9_jvm = 3; // Eclipse OpenJ9 VM or IBM J9 VM
 }
 
 message AvailableDiskSpaceRequest {
@@ -150,7 +150,7 @@ message HeapHistogramRequest {
 message HeapHistogramResponse {
   HeapHistogram heap_histogram = 1;
   bool unavailable_due_to_running_in_jre = 2;
-  bool unavailable_due_to_running_in_ibm_jvm = 3;
+  bool unavailable_due_to_running_in_j9_jvm = 3; // Eclipse OpenJ9 VM or IBM J9 VM
 }
 
 message ExplicitGcDisabledRequest {
