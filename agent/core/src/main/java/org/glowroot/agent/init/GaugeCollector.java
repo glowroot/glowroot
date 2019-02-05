@@ -154,7 +154,7 @@ class GaugeCollector extends ScheduledRunnable {
     }
 
     void scheduleWithFixedDelay(long period, TimeUnit unit) {
-        scheduleWithFixedDelay(collectionExecutor, period, unit);
+        scheduleWithFixedDelay(collectionExecutor, 0, period, unit);
     }
 
     void close() throws InterruptedException {

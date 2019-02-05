@@ -287,7 +287,8 @@ public class AgentModule {
         immedateTraceStoreWatcher = new ImmediateTraceStoreWatcher(backgroundExecutor,
                 transactionRegistry, traceCollector, configService, ticker);
         immedateTraceStoreWatcher.scheduleWithFixedDelay(backgroundExecutor,
-                ImmediateTraceStoreWatcher.PERIOD_MILLIS, MILLISECONDS);
+                ImmediateTraceStoreWatcher.PERIOD_MILLIS, ImmediateTraceStoreWatcher.PERIOD_MILLIS,
+                MILLISECONDS);
 
         liveTraceRepository = new LiveTraceRepositoryImpl(transactionRegistry, traceCollector,
                 clock, ticker);

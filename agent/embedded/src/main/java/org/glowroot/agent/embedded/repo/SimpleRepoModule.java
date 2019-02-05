@@ -134,7 +134,7 @@ public class SimpleRepoModule {
             reaperRunnable = new ReaperRunnable(configRepository, aggregateDao, traceDao,
                     gaugeIdDao, gaugeNameDao, gaugeValueDao, transactionTypeDao, fullQueryTextDao,
                     incidentDao, clock);
-            reaperRunnable.scheduleWithFixedDelay(backgroundExecutor,
+            reaperRunnable.scheduleWithFixedDelay(backgroundExecutor, 0,
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         }
     }
