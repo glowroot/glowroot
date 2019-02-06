@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,8 @@ import org.glowroot.ui.CommonHandler.CommonResponse;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-@WebServlet("/*")
+// loadOnStartup is needed so that gRPC listener starts right away
+@WebServlet(value = "/*", loadOnStartup = 0)
 @SuppressWarnings("serial")
 public class GlowrootServlet extends HttpServlet {
 
