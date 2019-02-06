@@ -108,6 +108,7 @@ public class CentralModule {
     // need to wait to init logger until after establishing centralDir
     private static volatile @MonotonicNonNull Logger startupLogger;
 
+    private final boolean servlet;
     private final ClusterManager clusterManager;
     private final Cluster cluster;
     private final Session session;
@@ -137,6 +138,7 @@ public class CentralModule {
 
     private CentralModule(File centralDir, @Nullable ServletContext servletContext)
             throws Exception {
+        servlet = servletContext != null;
         ClusterManager clusterManager = null;
         Cluster cluster = null;
         Session session = null;
@@ -163,7 +165,7 @@ public class CentralModule {
             }
             startupLogger.info("Glowroot version: {}", version);
             startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
-            if (servletContext != null) {
+            if (servlet) {
                 String extra = "";
                 if (Strings.isNullOrEmpty(System.getProperty("glowroot.central.dir"))) {
                     extra = ", this can be changed by adding the JVM arg -Dglowroot.central.dir=..."
@@ -178,7 +180,7 @@ public class CentralModule {
             session = connect(centralConfig);
             cluster = session.getCluster();
 
-            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, clock, servletContext != null);
+            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, clock, servlet);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
                 startupLogger.info("creating glowroot central schema...");
@@ -248,7 +250,7 @@ public class CentralModule {
             ClusterManager clusterManagerEffectivelyFinal = clusterManager;
             uiModule = new CreateUiModuleBuilder()
                     .central(true)
-                    .servlet(servletContext != null)
+                    .servlet(servlet)
                     .offlineViewer(false)
                     .webPortReadOnly(false) // this only applies to embedded ui
                     .bindAddress(centralConfig.uiBindAddress())
@@ -375,14 +377,16 @@ public class CentralModule {
             clusterManager.close();
             if (startupLogger != null) {
                 startupLogger.info("shutdown complete");
-                for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces()
-                        .entrySet()) {
-                    Thread thread = entry.getKey();
-                    StackTraceElement[] stackTrace = entry.getValue();
-                    if (!thread.isDaemon() && thread != Thread.currentThread()
-                            && stackTrace.length != 0) {
-                        startupLogger.info("Found non-daemon thread after shutdown: {}\n    {}",
-                                thread.getName(), Joiner.on("\n    ").join(stackTrace));
+                if (!servlet) {
+                    for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces()
+                            .entrySet()) {
+                        Thread thread = entry.getKey();
+                        StackTraceElement[] stackTrace = entry.getValue();
+                        if (!thread.isDaemon() && thread != Thread.currentThread()
+                                && stackTrace.length != 0) {
+                            startupLogger.info("Found non-daemon thread after shutdown: {}\n    {}",
+                                    thread.getName(), Joiner.on("\n    ").join(stackTrace));
+                        }
                     }
                 }
             }
