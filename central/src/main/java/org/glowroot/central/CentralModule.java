@@ -31,6 +31,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Pattern;
 
+import javax.servlet.ServletContext;
+
+import ch.qos.logback.classic.servlet.LogbackServletContextListener;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.HostDistance;
@@ -124,14 +127,16 @@ public class CentralModule {
 
     @VisibleForTesting
     public static CentralModule create(File centralDir) throws Exception {
-        return new CentralModule(centralDir, false);
+        return new CentralModule(centralDir, null);
     }
 
-    static CentralModule createForServletContainer(File centralDir) throws Exception {
-        return new CentralModule(centralDir, true);
+    static CentralModule createForServletContainer(File centralDir, ServletContext servletContext)
+            throws Exception {
+        return new CentralModule(centralDir, servletContext);
     }
 
-    private CentralModule(File centralDir, boolean servlet) throws Exception {
+    private CentralModule(File centralDir, @Nullable ServletContext servletContext)
+            throws Exception {
         ClusterManager clusterManager = null;
         Cluster cluster = null;
         Session session = null;
@@ -147,13 +152,13 @@ public class CentralModule {
         try {
             Directories directories = new Directories(centralDir);
             // init logger as early as possible
-            initLogging(directories.getConfDir(), directories.getLogDir());
+            initLogging(directories.getConfDir(), directories.getLogDir(), servletContext);
             Clock clock = Clock.systemClock();
             Ticker ticker = Ticker.systemTicker();
             String version = Version.getVersion(CentralModule.class);
             startupLogger.info("Glowroot version: {}", version);
             startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
-            if (servlet) {
+            if (servletContext != null) {
                 String extra = "";
                 if (Strings.isNullOrEmpty(System.getProperty("glowroot.central.dir"))) {
                     extra = ", this can be changed by adding the JVM arg -Dglowroot.central.dir=..."
@@ -168,7 +173,7 @@ public class CentralModule {
             session = connect(centralConfig);
             cluster = session.getCluster();
 
-            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, clock, servlet);
+            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, clock, servletContext != null);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
                 startupLogger.info("creating glowroot central schema...");
@@ -238,7 +243,7 @@ public class CentralModule {
             ClusterManager clusterManagerEffectivelyFinal = clusterManager;
             uiModule = new CreateUiModuleBuilder()
                     .central(true)
-                    .servlet(servlet)
+                    .servlet(servletContext != null)
                     .offlineViewer(false)
                     .webPortReadOnly(false) // this only applies to embedded ui
                     .bindAddress(centralConfig.uiBindAddress())
@@ -388,7 +393,7 @@ public class CentralModule {
     static void createSchema() throws Exception {
         File centralDir = getCentralDir();
         Directories directories = new Directories(centralDir);
-        initLogging(directories.getConfDir(), directories.getLogDir());
+        initLogging(directories.getConfDir(), directories.getLogDir(), null);
         String version = Version.getVersion(CentralModule.class);
         startupLogger.info("running create-schema command");
         startupLogger.info("Glowroot version: {}", version);
@@ -508,7 +513,7 @@ public class CentralModule {
             return;
         }
 
-        initLogging(directories.getConfDir(), directories.getLogDir());
+        initLogging(directories.getConfDir(), directories.getLogDir(), null);
 
         String version = Version.getVersion(CentralModule.class);
         startupLogger.info("Glowroot version: {}", version);
@@ -916,7 +921,8 @@ public class CentralModule {
     // TODO report checker framework issue that occurs without this suppression
     @EnsuresNonNull("startupLogger")
     @SuppressWarnings("contracts.postcondition.not.satisfied")
-    private static void initLogging(File confDir, File logDir) {
+    private static void initLogging(File confDir, File logDir,
+            @Nullable ServletContext servletContext) {
         File logbackXmlOverride = new File(confDir, "logback.xml");
         if (logbackXmlOverride.exists()) {
             System.setProperty("logback.configurationFile", logbackXmlOverride.getAbsolutePath());
@@ -925,6 +931,11 @@ public class CentralModule {
         System.setProperty("glowroot.log.dir", logDir.getPath());
         try {
             startupLogger = LoggerFactory.getLogger("org.glowroot");
+            if (servletContext != null) {
+                // add logback shutdown listener (because disabling normal registration in
+                // LogbackServletContainerInitializer via web.xml context-param)
+                servletContext.addListener(new LogbackServletContextListener());
+            }
         } finally {
             System.clearProperty("logback.configurationFile");
             if (prior == null) {

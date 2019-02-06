@@ -1,0 +1,12 @@
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+                      http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+  version="3.1">
+  <absolute-ordering>
+    <!-- empty absolute-ordering is needed to disable LogbackServletContainerInitializer so that it
+      doesn't initialize logback before CentralModule.initLogging() is able to set glowroot.log.dir
+      (instead, LogbackServletContextListener is registered manually in CentralModule.initLogging()
+      after setting up logging) -->
+  </absolute-ordering>
+</web-app>

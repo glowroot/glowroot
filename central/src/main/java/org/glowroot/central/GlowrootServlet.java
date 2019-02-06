@@ -70,7 +70,8 @@ public class GlowrootServlet extends HttpServlet {
                 Files.copy(config.getServletContext().getResourceAsStream(
                         "/META-INF/glowroot-central.properties"), propFile.toPath());
             }
-            centralModule = CentralModule.createForServletContainer(centralDir);
+            centralModule =
+                    CentralModule.createForServletContainer(centralDir, config.getServletContext());
             commonHandler = centralModule.getCommonHandler();
         } catch (Exception e) {
             throw new ServletException(e);
