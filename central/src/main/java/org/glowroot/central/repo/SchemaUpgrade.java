@@ -39,6 +39,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
+import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.utils.UUIDs;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -2767,15 +2768,33 @@ public class SchemaUpgrade {
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)
             throws Exception {
-        if (tableExists(tableName) && !columnExists(tableName, columnName)) {
-            session.updateSchemaWithRetry(
-                    "alter table " + tableName + " add " + columnName + " " + cqlType);
+        try {
+            if (tableExists(tableName) && !columnExists(tableName, columnName)) {
+                session.updateSchemaWithRetry(
+                        "alter table " + tableName + " add " + columnName + " " + cqlType);
+            }
+        } catch (InvalidQueryException e) {
+            // since there is not a real "if not exists" variant, if updateSchemaWithRetry times
+            // out, then it will retry and fail (eventually) with "InvalidQueryException: Invalid
+            // column name .. because it conflicts with an existing column"
+            if (!columnExists(tableName, columnName)) {
+                throw e;
+            }
         }
     }
 
     private void dropColumnIfExists(String tableName, String columnName) throws Exception {
-        if (columnExists(tableName, columnName)) {
-            session.updateSchemaWithRetry("alter table " + tableName + " drop " + columnName);
+        try {
+            if (columnExists(tableName, columnName)) {
+                session.updateSchemaWithRetry("alter table " + tableName + " drop " + columnName);
+            }
+        } catch (InvalidQueryException e) {
+            // since there is not a real "if exists" variant, if updateSchemaWithRetry times out,
+            // then it will retry and fail (eventually) with "InvalidQueryException: Column .. was
+            // not found in table"
+            if (columnExists(tableName, columnName)) {
+                throw e;
+            }
         }
     }
 
