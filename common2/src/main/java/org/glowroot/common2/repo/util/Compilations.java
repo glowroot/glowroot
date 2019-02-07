@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,9 +106,11 @@ public class Compilations {
     }
 
     private static List<File> getCompilationClassPath() throws Exception {
-        // selenium-api, selenium-support and guava are needed for compilation
+        // httpclient, httpcore, selenium-api, selenium-support and guava are needed for compilation
         // cannot use default system classpath when running in a servlet container
-        return ImmutableList.of(getJarFile("org.openqa.selenium.WebDriver"),
+        return ImmutableList.of(getJarFile("org.apache.http.client.HttpClient"),
+                getJarFile("org.apache.http.HttpMessage"),
+                getJarFile("org.openqa.selenium.WebDriver"),
                 getJarFile("org.openqa.selenium.support.ui.ExpectedConditions"),
                 getJarFile("com.google.common.base.Function"));
     }

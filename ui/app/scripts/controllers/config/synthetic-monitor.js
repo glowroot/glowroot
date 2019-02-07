@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,10 +75,24 @@ glowroot.controller('ConfigSyntheticMonitorCtrl', [
       delete $scope.config.javaSource;
       if (newValue === 'java') {
         $scope.config.javaSource = 'import org.openqa.selenium.*;\n'
+            + 'import org.apache.http.impl.client.*;\n\n'
+            + 'import org.apache.http.client.methods.*;\n\n'
             + 'import org.openqa.selenium.support.ui.*;\n\n'
             + 'import static org.openqa.selenium.support.ui.ExpectedConditions.*;\n\n'
             + 'public class Example {\n\n'
-            + '    public void test(WebDriver driver) throws Exception {\n\n'
+            + '    public void test(CloseableHttpClient httpClient) throws Exception {\n'
+            + '        // e.g.\n'
+            + '        HttpGet httpGet = new HttpGet("https://www.example.org");\n'
+            + '        try (CloseableHttpResponse response = httpClient.execute(httpGet)) {\n'
+            + '            if (response.getStatusLine().getStatusCode() >= 400) {\n'
+            + '                throw new Exception("Unexpected response status code: "\n'
+            + '                        + response.getStatusLine().getStatusCode());\n'
+            + '            }\n'
+            + '        }\n'
+            + '        // do not close the http client itself (it is re-used)\n'
+            + '    }\n\n'
+            + '    // ---- or ----\n\n'
+            + '    public void test(WebDriver driver) throws Exception {\n'
             + '        // e.g.\n'
             + '        driver.get("https://www.example.org");\n'
             + '        new WebDriverWait(driver, 30).until(\n'

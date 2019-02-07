@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -167,12 +167,20 @@ class SyntheticMonitorConfigJsonService {
                         ImmutableList.of("Class must have a public default constructor"));
             }
             // since synthetic monitors are only used in central, this class is present
-            Class<?> webDriverClass = Class.forName("org.openqa.selenium.WebDriver");
+            Class<?> httpClientClass =
+                    Class.forName("org.apache.http.impl.client.CloseableHttpClient");
             try {
-                javaSource.getMethod("test", webDriverClass);
+                javaSource.getMethod("test", httpClientClass);
             } catch (NoSuchMethodException e) {
-                return buildCompilationErrorResponse(ImmutableList.of("Class must have a"
-                        + " \"public void test(WebDriver driver) { ... }\" method"));
+                // since synthetic monitors are only used in central, this class is present
+                Class<?> webDriverClass = Class.forName("org.openqa.selenium.WebDriver");
+                try {
+                    javaSource.getMethod("test", webDriverClass);
+                } catch (NoSuchMethodException f) {
+                    return buildCompilationErrorResponse(ImmutableList.of("Class must have a"
+                            + " \"public void test(HttpClient httpClient) { ... }\" or"
+                            + " \"public void test(WebDriver driver) { ... }\" method"));
+                }
             }
         }
         return null;

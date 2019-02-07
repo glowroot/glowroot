@@ -18,6 +18,7 @@ package org.glowroot.central;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
@@ -29,6 +30,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Ticker;
@@ -56,6 +59,9 @@ import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.apache.http.message.BasicHeader;
@@ -142,7 +148,13 @@ class SyntheticMonitorService implements Runnable {
 
     private final ConcurrentMap<String, Boolean> executionRateLimiter;
 
-    private final CloseableHttpAsyncClient httpClient;
+    private final CloseableHttpAsyncClient asyncHttpClient;
+
+    @GuardedBy("syncHttpClientHolder")
+    private volatile SyncHttpClientHolder syncHttpClientHolder;
+    private final Object syncHttpClientHolderLock = new Object();
+
+    private final String shortVersion;
 
     private final UserAgent userAgent;
 
@@ -170,7 +182,6 @@ class SyntheticMonitorService implements Runnable {
         this.clock = clock;
         executionRateLimiter = clusterManager
                 .createReplicatedMap("syntheticMonitorExecutionRateLimiter", 30, SECONDS);
-        String shortVersion;
         if (version.equals(Version.UNKNOWN_VERSION)) {
             shortVersion = "";
         } else {
@@ -181,9 +192,11 @@ class SyntheticMonitorService implements Runnable {
                 shortVersion = "/" + version.substring(0, index);
             }
         }
-        // httpClient is only used for pings, so safe to ignore cert errors
-        httpClient = HttpAsyncClients.custom()
+        // asyncHttpClient is only used for pings, so safe to ignore cert errors
+        asyncHttpClient = HttpAsyncClients.custom()
                 .setUserAgent("GlowrootCentral" + shortVersion)
+                .setDefaultHeaders(
+                        Arrays.asList(new BasicHeader("Glowroot-Transaction-Type", "Synthetic")))
                 .setMaxConnPerRoute(10) // increasing from default 2
                 .setMaxConnTotal(1000) // increasing from default 20
                 .setSSLContext(SSLContextBuilder.create()
@@ -191,7 +204,9 @@ class SyntheticMonitorService implements Runnable {
                         .build())
                 .setSSLHostnameVerifier(new NoopHostnameVerifier())
                 .build();
-        httpClient.start();
+        asyncHttpClient.start();
+        syncHttpClientHolder =
+                createSyncHttpClientHolder(shortVersion, configRepository.getHttpProxyConfig());
         // these parameters are from com.machinepublishers.jbrowserdriver.UserAgent.CHROME
         // with added GlowrootCentral/<version> for identification purposes
         userAgent = new UserAgent(Family.WEBKIT, "Google Inc.", "Win32", "Windows NT 6.1",
@@ -246,7 +261,8 @@ class SyntheticMonitorService implements Runnable {
             throw new IllegalStateException(
                     "Timed out waiting for synthetic monitor loop thread to terminate");
         }
-        httpClient.close();
+        syncHttpClientHolder.syncHttpClient().close();
+        asyncHttpClient.close();
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
@@ -354,7 +370,30 @@ class SyntheticMonitorService implements Runnable {
         Class<?> syntheticUserTestClass = Compilations.compile(javaSource);
         // validation for default constructor and test method occurs on save
         Constructor<?> defaultConstructor = syntheticUserTestClass.getConstructor();
-        Method method = syntheticUserTestClass.getMethod("test", WebDriver.class);
+        Method testMethod;
+        try {
+            testMethod = syntheticUserTestClass.getMethod("test", CloseableHttpClient.class);
+        } catch (NoSuchMethodException e) {
+            testMethod = syntheticUserTestClass.getMethod("test", WebDriver.class);
+        }
+        if (testMethod.getParameterTypes()[0] == CloseableHttpClient.class) {
+            synchronized (syncHttpClientHolderLock) {
+                HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig();
+                if (!syncHttpClientHolder.httpProxyConfig().equals(httpProxyConfig)) {
+                    syncHttpClientHolder =
+                            createSyncHttpClientHolder(shortVersion, httpProxyConfig);
+                    // don't close the old http client since other threads may still be using it
+                    // (it will be garbage collected when no longer in use)
+                }
+            }
+            return runJava(defaultConstructor, testMethod, syncHttpClientHolder.syncHttpClient());
+        } else {
+            return runWebDriverJava(defaultConstructor, testMethod);
+        }
+    }
+
+    private FutureWithStartTick runWebDriverJava(Constructor<?> defaultConstructor,
+            Method testMethod) throws Exception {
         Settings.Builder settings = Settings.builder()
                 .requestHeaders(REQUEST_HEADERS)
                 .userAgent(userAgent);
@@ -366,11 +405,16 @@ class SyntheticMonitorService implements Runnable {
                     httpProxyConfig.encryptedPassword()));
         }
         JBrowserDriver driver = new JBrowserDriver(settings.build());
+        return runJava(defaultConstructor, testMethod, driver);
+    }
+
+    private FutureWithStartTick runJava(Constructor<?> defaultConstructor, Method testMethod,
+            Object testArg) {
         long startTick = ticker.read();
         FutureWithStartTick future = new FutureWithStartTick(startTick);
         subWorkerExecutor.execute(() -> {
             try {
-                future.complete(runJava(method, defaultConstructor, driver, startTick));
+                future.complete(runJava(defaultConstructor, testMethod, testArg, startTick));
             } catch (Throwable t) {
                 // unexpected exception
                 future.completeExceptionally(t);
@@ -379,10 +423,10 @@ class SyntheticMonitorService implements Runnable {
         return future;
     }
 
-    public SyntheticRunResult runJava(Method method, Constructor<?> defaultConstructor,
-            JBrowserDriver driver, long startTick) throws Exception {
+    public SyntheticRunResult runJava(Constructor<?> defaultConstructor, Method testMethod,
+            Object testArg, long startTick) throws Exception {
         try {
-            return runJavaInternal(method, defaultConstructor, driver, startTick);
+            return runJavaInternal(defaultConstructor, testMethod, testArg, startTick);
         } catch (InterruptedException e) {
             // probably shutdown requested (see close method above)
             logger.debug(e.getMessage(), e);
@@ -394,12 +438,12 @@ class SyntheticMonitorService implements Runnable {
         }
     }
 
-    private SyntheticRunResult runJavaInternal(Method method, Constructor<?> defaultConstructor,
-            JBrowserDriver driver, long startTick) throws Exception {
+    private SyntheticRunResult runJavaInternal(Constructor<?> defaultConstructor, Method testMethod,
+            Object testArg, long startTick) throws Exception {
         long captureTime;
         long durationNanos;
         try {
-            method.invoke(defaultConstructor.newInstance(), driver);
+            testMethod.invoke(defaultConstructor.newInstance(), testArg);
             // capture time and duration before calling driver.quit()
             captureTime = clock.currentTimeMillis();
             durationNanos = ticker.read() - startTick;
@@ -416,7 +460,10 @@ class SyntheticMonitorService implements Runnable {
                     .throwable(throwable)
                     .build();
         } finally {
-            driver.quit();
+            if (testArg instanceof JBrowserDriver) {
+                // quit() can hang (easily reproducible on test that doesn't use testArg at all)
+                ((JBrowserDriver) testArg).kill();
+            }
         }
         return ImmutableSyntheticRunResult.builder()
                 .captureTime(captureTime)
@@ -426,7 +473,6 @@ class SyntheticMonitorService implements Runnable {
 
     private FutureWithStartTick runPing(String url) throws Exception {
         HttpGet httpGet = new HttpGet(url);
-        httpGet.setHeader("Glowroot-Transaction-Type", "Synthetic");
         RequestConfig.Builder config = RequestConfig.custom()
                 // wait an extra second to make sure no edge case where
                 // SocketTimeoutException occurs with elapsed time < PING_TIMEOUT_MILLIS
@@ -441,7 +487,7 @@ class SyntheticMonitorService implements Runnable {
         FutureWithStartTick future = new FutureWithStartTick(startTick);
         subWorkerExecutor.execute(() -> {
             try {
-                httpClient.execute(httpGet, getHttpClientContext(),
+                asyncHttpClient.execute(httpGet, getHttpClientContext(),
                         new CompletingFutureCallback(future));
             } catch (Throwable t) {
                 logger.debug(t.getMessage(), t);
@@ -492,7 +538,7 @@ class SyntheticMonitorService implements Runnable {
                 errorMessage = null;
             } else {
                 success = false;
-                errorMessage = Throwables.getBestMessage(throwable);
+                errorMessage = getBestMessageForSyntheticFailure(throwable);
             }
         } catch (TimeoutException e) {
             logger.debug(e.getMessage(), e);
@@ -527,6 +573,18 @@ class SyntheticMonitorService implements Runnable {
         return disabledUntilTime != null && disabledUntilTime > clock.currentTimeMillis();
     }
 
+    private static String getBestMessageForSyntheticFailure(Throwable throwable) {
+        String message = throwable.getMessage();
+        if (throwable.getClass() == Exception.class && throwable.getCause() == null
+                && message != null) {
+            // special case so synthetic monitors can display a simple error message without the
+            // exception class name clutter
+            return message;
+        } else {
+            return Throwables.getBestMessage(throwable);
+        }
+    }
+
     private class OnRunComplete implements Consumer<SyntheticRunResult> {
 
         private final AgentRollup agentRollup;
@@ -548,7 +606,7 @@ class SyntheticMonitorService implements Runnable {
                 durationNanos = PING_TIMEOUT_NANOS;
                 errorMessage = "Timeout";
             } else if (t != null) {
-                errorMessage = Throwables.getBestMessage(t);
+                errorMessage = getBestMessageForSyntheticFailure(t);
             }
             try {
                 syntheticResponseDao.store(agentRollup.id(), syntheticMonitorConfig.getId(),
@@ -668,6 +726,22 @@ class SyntheticMonitorService implements Runnable {
         return context;
     }
 
+    private static SyncHttpClientHolder createSyncHttpClientHolder(String shortVersion,
+            HttpProxyConfig httpProxyConfig) {
+        HttpClientBuilder builder = HttpClients.custom()
+                .setUserAgent("GlowrootCentral" + shortVersion)
+                .setDefaultHeaders(
+                        Arrays.asList(new BasicHeader("Glowroot-Transaction-Type", "Synthetic")));
+        if (!httpProxyConfig.host().isEmpty()) {
+            int proxyPort = MoreObjects.firstNonNull(httpProxyConfig.port(), 80);
+            builder.setProxy(new HttpHost(httpProxyConfig.host(), proxyPort));
+        }
+        CloseableHttpClient httpClient = builder.setMaxConnPerRoute(10) // increasing from default 2
+                .setMaxConnTotal(1000) // increasing from default 20
+                .build();
+        return ImmutableSyncHttpClientHolder.of(httpClient, httpProxyConfig);
+    }
+
     private static void consumeAgentRollups(AgentRollup agentRollup,
             AgentRollupConsumer agentRollupConsumer) throws Exception {
         for (AgentRollup childAgentRollup : agentRollup.children()) {
@@ -679,6 +753,13 @@ class SyntheticMonitorService implements Runnable {
     @SuppressWarnings("return.type.incompatible")
     private static <T> /*@Initialized*/ T castInitialized(/*@UnderInitialization*/ T obj) {
         return obj;
+    }
+
+    @Value.Immutable
+    @Styles.AllParameters
+    interface SyncHttpClientHolder {
+        CloseableHttpClient syncHttpClient();
+        HttpProxyConfig httpProxyConfig();
     }
 
     @Value.Immutable
@@ -723,8 +804,7 @@ class SyntheticMonitorService implements Runnable {
                 future.complete(builder.build());
             } else {
                 future.complete(builder
-                        .throwable(new RuntimeException(
-                                "Unexpected response status code: " + statusCode))
+                        .throwable(new Exception("Unexpected response status code: " + statusCode))
                         .build());
             }
         }
