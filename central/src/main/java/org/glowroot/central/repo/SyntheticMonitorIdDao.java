@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
-import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -87,8 +86,12 @@ class SyntheticMonitorIdDao {
     List<Future<?>> insert(String agentRollupId, long captureTime, String syntheticMonitorId,
             String syntheticMonitorDisplay) throws Exception {
         long rollupCaptureTime = CaptureTimes.getRollup(captureTime, DAYS.toMillis(1));
-        SyntheticMonitorKey rateLimiterKey = ImmutableSyntheticMonitorKey.of(agentRollupId,
-                rollupCaptureTime, syntheticMonitorId);
+        SyntheticMonitorKey rateLimiterKey = ImmutableSyntheticMonitorKey.builder()
+                .agentRollupId(agentRollupId)
+                .captureTime(rollupCaptureTime)
+                .syntheticMonitorId(syntheticMonitorId)
+                .syntheticMonitorDisplay(syntheticMonitorDisplay)
+                .build();
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
         }
@@ -104,10 +107,10 @@ class SyntheticMonitorIdDao {
     }
 
     @Value.Immutable
-    @Styles.AllParameters
     interface SyntheticMonitorKey {
         String agentRollupId();
         long captureTime();
         String syntheticMonitorId();
+        String syntheticMonitorDisplay();
     }
 }
