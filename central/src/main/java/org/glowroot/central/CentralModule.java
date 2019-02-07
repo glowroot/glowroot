@@ -155,7 +155,12 @@ public class CentralModule {
             initLogging(directories.getConfDir(), directories.getLogDir(), servletContext);
             Clock clock = Clock.systemClock();
             Ticker ticker = Ticker.systemTicker();
-            String version = Version.getVersion(CentralModule.class);
+            String version;
+            if (servletContext == null) {
+                version = Version.getVersion(CentralModule.class);
+            } else {
+                version = Version.getVersion(servletContext.getResource("/META-INF/MANIFEST.MF"));
+            }
             startupLogger.info("Glowroot version: {}", version);
             startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
             if (servletContext != null) {

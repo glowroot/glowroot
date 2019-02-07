@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,17 @@ public class Version {
         return getVersion(manifest);
     }
 
+    public static String getVersion(@Nullable URL manifestURL) {
+        Manifest manifest;
+        try {
+            manifest = getManifest(manifestURL);
+        } catch (IOException e) {
+            logger.error(e.getMessage(), e);
+            return UNKNOWN_VERSION;
+        }
+        return getVersion(manifest);
+    }
+
     @VisibleForTesting
     static @Nullable Manifest getManifest(Class<?> clazz) throws IOException {
         URL classURL = clazz.getResource(clazz.getSimpleName() + ".class");
@@ -59,10 +70,17 @@ public class Version {
         }
         URL manifestURL = new URL(externalForm.substring(0, externalForm.lastIndexOf('!'))
                 + "!/META-INF/MANIFEST.MF");
+        return getManifest(manifestURL);
+    }
+
+    private static @Nullable Manifest getManifest(@Nullable URL url) throws IOException {
+        if (url == null) {
+            return null;
+        }
         // Closer is used to simulate Java 7 try-with-resources
         Closer closer = Closer.create();
         try {
-            InputStream manifestIn = closer.register(manifestURL.openStream());
+            InputStream manifestIn = closer.register(url.openStream());
             return new Manifest(manifestIn);
         } catch (Throwable t) {
             throw closer.rethrow(t);
