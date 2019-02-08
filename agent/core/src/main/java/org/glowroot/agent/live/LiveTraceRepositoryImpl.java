@@ -17,6 +17,7 @@ package org.glowroot.agent.live;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
@@ -25,6 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.collector.Collector.TraceReader;
@@ -165,7 +167,8 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
         // long running active trace and it would be misleading to display Traces (0) on the tab
         int count = 0;
         for (Transaction transaction : transactionRegistry.getTransactions()) {
-            // don't include partially stored traces since those are already counted above
+            // don't include partially stored traces since no way to de-dup them with the stored
+            // trace count
             if (matchesActive(transaction, transactionType, transactionName)
                     && !transaction.isPartiallyStored()) {
                 count++;
@@ -227,6 +230,18 @@ public class LiveTraceRepositoryImpl implements LiveTraceRepository {
             }
         }
         return points;
+    }
+
+    @Override
+    public Set<String> getTransactionTypes(String agentId) {
+        Set<String> transactionTypes = Sets.newHashSet();
+        for (Transaction transaction : Iterables.concat(transactionRegistry.getTransactions(),
+                traceCollector.getPendingTransactions())) {
+            if (traceCollector.shouldStoreSlow(transaction)) {
+                transactionTypes.add(transaction.getTransactionType());
+            }
+        }
+        return transactionTypes;
     }
 
     @VisibleForTesting

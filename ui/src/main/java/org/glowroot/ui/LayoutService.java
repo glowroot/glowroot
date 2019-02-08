@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.ConfigDefaults;
 import org.glowroot.common.live.LiveAggregateRepository;
+import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Version;
 import org.glowroot.common.util.Versions;
@@ -65,13 +66,15 @@ class LayoutService {
     private final TraceAttributeNameRepository traceAttributeNameRepository;
     private final EnvironmentRepository environmentRepository;
     private final LiveAggregateRepository liveAggregateRepository;
+    private final LiveTraceRepository liveTraceRepository;
 
     LayoutService(boolean central, boolean offlineViewer, String version,
             AgentDisplayRepository agentDisplayRepository, ConfigRepository configRepository,
             TransactionTypeRepository transactionTypeRepository,
             TraceAttributeNameRepository traceAttributeNameRepository,
             EnvironmentRepository environmentRepository,
-            LiveAggregateRepository liveAggregateRepository) {
+            LiveAggregateRepository liveAggregateRepository,
+            LiveTraceRepository liveTraceRepository) {
         this.central = central;
         this.offlineViewer = offlineViewer;
         this.version = version;
@@ -81,6 +84,7 @@ class LayoutService {
         this.traceAttributeNameRepository = traceAttributeNameRepository;
         this.environmentRepository = environmentRepository;
         this.liveAggregateRepository = liveAggregateRepository;
+        this.liveTraceRepository = liveTraceRepository;
     }
 
     String getLayoutJson(Authentication authentication) throws Exception {
@@ -155,6 +159,7 @@ class LayoutService {
         Set<String> transactionTypes = Sets.newTreeSet();
         transactionTypes.addAll(transactionTypeRepository.read(agentRollup.id()));
         transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(agentRollup.id()));
+        transactionTypes.addAll(liveTraceRepository.getTransactionTypes(agentRollup.id()));
         transactionTypes.add(uiConfig.getDefaultTransactionType());
         return ImmutableAgentRollupLayout.builder()
                 .id(agentRollup.id())

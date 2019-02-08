@@ -126,7 +126,8 @@ public class UiModule {
 
         LayoutService layoutService = new LayoutService(central, offlineViewer, version,
                 agentDisplayRepository, configRepository, transactionTypeRepository,
-                traceAttributeNameRepository, environmentRepository, liveAggregateRepository);
+                traceAttributeNameRepository, environmentRepository, liveAggregateRepository,
+                liveTraceRepository);
 
         ExecutorService reportingExecutor;
         if (central) {

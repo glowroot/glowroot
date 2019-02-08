@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,11 @@ package org.glowroot.common.live;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
@@ -69,6 +71,8 @@ public interface LiveTraceRepository {
 
     List<TracePoint> getMatchingPendingPoints(TraceKind traceKind, String transactionType,
             @Nullable String transactionName, TracePointFilter filter, long captureTime);
+
+    Set<String> getTransactionTypes(String agentId);
 
     @Value.Immutable
     public interface Entries {
@@ -181,6 +185,11 @@ public interface LiveTraceRepository {
     }
 
     class LiveTraceRepositoryNop implements LiveTraceRepository {
+
+        @Override
+        public Set<String> getTransactionTypes(String agentId) {
+            return ImmutableSet.of();
+        }
 
         @Override
         public Trace. /*@Nullable*/ Header getHeader(String agentId, String traceId) {
