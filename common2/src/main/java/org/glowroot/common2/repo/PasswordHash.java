@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2017 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.ui;
+package org.glowroot.common2.repo;
 
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
@@ -40,7 +40,7 @@ public class PasswordHash {
         return hash(password, salt, ITERATION_COUNT);
     }
 
-    static boolean validatePassword(String password, String correctHash)
+    public static boolean validatePassword(String password, String correctHash)
             throws GeneralSecurityException {
         String[] correctHashParts = correctHash.split(":");
         if (correctHashParts.length != 3) {

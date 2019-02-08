@@ -80,6 +80,7 @@ import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryN
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.PropertiesFiles;
 import org.glowroot.common.util.Version;
+import org.glowroot.common2.repo.PasswordHash;
 import org.glowroot.common2.repo.util.AlertingService;
 import org.glowroot.common2.repo.util.AlertingService.IncidentKey;
 import org.glowroot.common2.repo.util.Encryption;
@@ -89,7 +90,6 @@ import org.glowroot.common2.repo.util.LockSet;
 import org.glowroot.common2.repo.util.MailService;
 import org.glowroot.ui.CommonHandler;
 import org.glowroot.ui.CreateUiModuleBuilder;
-import org.glowroot.ui.PasswordHash;
 import org.glowroot.ui.SessionMapFactory;
 import org.glowroot.ui.UiModule;
 

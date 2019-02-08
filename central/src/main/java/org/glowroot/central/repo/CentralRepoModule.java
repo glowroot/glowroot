@@ -37,6 +37,7 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common2.config.AllCentralAdminConfig;
 import org.glowroot.common2.config.ImmutableAllCentralAdminConfig;
+import org.glowroot.common2.repo.AllAdminConfigUtil;
 import org.glowroot.common2.repo.util.RollupLevelService;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -247,6 +248,7 @@ public class CentralRepoModule {
         ObjectMapper mapper = ObjectMappers.create();
         String content = Files.asCharSource(file, UTF_8).read();
         JsonNode rootNode = mapper.readTree(content);
+        AllAdminConfigUtil.updatePasswords(rootNode, configRepository);
         AllCentralAdminConfig config =
                 mapper.treeToValue(rootNode, ImmutableAllCentralAdminConfig.class);
         configRepository.updateAllCentralAdminConfig(config, null);

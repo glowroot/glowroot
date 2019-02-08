@@ -74,16 +74,16 @@ glowroot.controller('ConfigSyntheticMonitorCtrl', [
       delete $scope.config.pingUrl;
       delete $scope.config.javaSource;
       if (newValue === 'java') {
-        $scope.config.javaSource = 'import org.openqa.selenium.*;\n'
-            + 'import org.apache.http.impl.client.*;\n\n'
+        $scope.config.javaSource = 'import org.apache.http.impl.client.*;\n'
             + 'import org.apache.http.client.methods.*;\n\n'
+            + 'import org.openqa.selenium.*;\n'
             + 'import org.openqa.selenium.support.ui.*;\n\n'
             + 'import static org.openqa.selenium.support.ui.ExpectedConditions.*;\n\n'
             + 'public class Example {\n\n'
             + '    public void test(CloseableHttpClient httpClient) throws Exception {\n'
             + '        // e.g.\n'
-            + '        HttpGet httpGet = new HttpGet("https://www.example.org");\n'
-            + '        try (CloseableHttpResponse response = httpClient.execute(httpGet)) {\n'
+            + '        HttpGet request = new HttpGet("https://www.example.org");\n'
+            + '        try (CloseableHttpResponse response = httpClient.execute(request)) {\n'
             + '            if (response.getStatusLine().getStatusCode() >= 400) {\n'
             + '                throw new Exception("Unexpected response status code: "\n'
             + '                        + response.getStatusLine().getStatusCode());\n'

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common2.config.AllCentralAdminConfig;
+import org.glowroot.common2.config.AllEmbeddedAdminConfig;
 import org.glowroot.common2.config.CentralAdminGeneralConfig;
 import org.glowroot.common2.config.CentralStorageConfig;
 import org.glowroot.common2.config.CentralWebConfig;
@@ -56,6 +58,8 @@ import org.glowroot.common2.config.EmbeddedStorageConfig;
 import org.glowroot.common2.config.EmbeddedWebConfig;
 import org.glowroot.common2.config.HealthchecksIoConfig;
 import org.glowroot.common2.config.HttpProxyConfig;
+import org.glowroot.common2.config.ImmutableAllCentralAdminConfig;
+import org.glowroot.common2.config.ImmutableAllEmbeddedAdminConfig;
 import org.glowroot.common2.config.ImmutableCentralAdminGeneralConfig;
 import org.glowroot.common2.config.ImmutableCentralStorageConfig;
 import org.glowroot.common2.config.ImmutableCentralWebConfig;
@@ -79,7 +83,9 @@ import org.glowroot.common2.config.SlackConfig.SlackWebhook;
 import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.SmtpConfig.ConnectionSecurity;
 import org.glowroot.common2.config.UserConfig;
+import org.glowroot.common2.repo.AllAdminConfigUtil;
 import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.PasswordHash;
 import org.glowroot.common2.repo.ConfigRepository.DuplicatePagerDutyIntegrationKeyDisplayException;
 import org.glowroot.common2.repo.ConfigRepository.DuplicatePagerDutyIntegrationKeyException;
 import org.glowroot.common2.repo.ConfigRepository.DuplicateSlackWebhookDisplayException;
@@ -247,24 +253,20 @@ class AdminJsonService {
 
     @GET(path = "/backend/admin/json", permission = "admin:view")
     String getAllAdmin() throws Exception {
-        Object configDto;
+        Object config;
         if (central) {
-            configDto =
-                    AllCentralAdminConfigDto.create(configRepository.getAllCentralAdminConfig());
+            config = configRepository.getAllCentralAdminConfig();
         } else {
-            configDto =
-                    AllEmbeddedAdminConfigDto.create(configRepository.getAllEmbeddedAdminConfig());
+            config = configRepository.getAllEmbeddedAdminConfig();
         }
-        ObjectNode configRootNode = mapper.valueToTree(configDto);
-        ((ObjectNode) checkNotNull(configRootNode.get("smtp"))).remove("encryptedPassword");
-        ((ObjectNode) checkNotNull(configRootNode.get("httpProxy"))).remove("encryptedPassword");
-        ((ObjectNode) checkNotNull(configRootNode.get("ldap"))).remove("encryptedPassword");
-        ObjectMappers.stripEmptyContainerNodes(configRootNode);
+        ObjectNode rootNode = mapper.valueToTree(config);
+        AllAdminConfigUtil.removePasswords(rootNode);
+        ObjectMappers.stripEmptyContainerNodes(rootNode);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
             jg.setPrettyPrinter(ObjectMappers.getPrettyPrinter());
-            jg.writeObject(configRootNode);
+            jg.writeObject(rootNode);
         } finally {
             jg.close();
         }
@@ -461,20 +463,15 @@ class AdminJsonService {
     @POST(path = "/backend/admin/json", permission = "admin:edit")
     String updateAllAdmin(@BindRequest String content) throws Exception {
         JsonNode rootNode = mapper.readTree(content);
-        updatePassword((ObjectNode) rootNode.get("smtp"),
-                configRepository.getSmtpConfig().encryptedPassword());
-        updatePassword((ObjectNode) rootNode.get("httpProxy"),
-                configRepository.getHttpProxyConfig().encryptedPassword());
-        updatePassword((ObjectNode) rootNode.get("ldap"),
-                configRepository.getLdapConfig().encryptedPassword());
+        AllAdminConfigUtil.updatePasswords(rootNode, configRepository);
         if (central) {
-            AllCentralAdminConfigDto config =
-                    mapper.treeToValue(rootNode, ImmutableAllCentralAdminConfigDto.class);
-            configRepository.updateAllCentralAdminConfig(config.toConfig(), config.version());
+            AllCentralAdminConfig config =
+                    mapper.treeToValue(rootNode, ImmutableAllCentralAdminConfig.class);
+            configRepository.updateAllCentralAdminConfig(config, config.version());
         } else {
-            AllEmbeddedAdminConfigDto config =
-                    mapper.treeToValue(rootNode, ImmutableAllEmbeddedAdminConfigDto.class);
-            configRepository.updateAllEmbeddedAdminConfig(config.toConfig(), config.version());
+            AllEmbeddedAdminConfig config =
+                    mapper.treeToValue(rootNode, ImmutableAllEmbeddedAdminConfig.class);
+            configRepository.updateAllEmbeddedAdminConfig(config, config.version());
         }
         return getAllAdmin();
     }
@@ -775,23 +772,6 @@ class AdminJsonService {
         return mapper.writeValueAsString(ImmutableCentralWebConfigResponse.builder()
                 .config(CentralWebConfigDto.create(configRepository.getCentralWebConfig()))
                 .build());
-    }
-
-    private void updatePassword(@Nullable ObjectNode objectNode, String existingEncryptedPassword)
-            throws Exception {
-        if (objectNode == null) {
-            return;
-        }
-        JsonNode passwordNode = objectNode.get("password");
-        if (passwordNode == null) {
-            JsonNode encryptedPasswordNode = objectNode.get("encryptedPassword");
-            if (encryptedPasswordNode == null) {
-                objectNode.put("encryptedPassword", existingEncryptedPassword);
-            }
-        } else {
-            objectNode.put("encryptedPassword", Encryption.encrypt(passwordNode.asText(),
-                    configRepository.getLazySecretKey()));
-        }
     }
 
     private static String createErrorResponse(Exception exception) throws IOException {
