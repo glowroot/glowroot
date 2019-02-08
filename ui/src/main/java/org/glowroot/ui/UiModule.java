@@ -18,6 +18,10 @@ package org.glowroot.ui;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Supplier;
@@ -25,6 +29,8 @@ import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.builder.Builder;
 import org.slf4j.Logger;
@@ -54,6 +60,7 @@ import org.glowroot.common2.repo.util.MailService;
 import org.glowroot.common2.repo.util.RollupLevelService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class UiModule {
 
@@ -64,6 +71,8 @@ public class UiModule {
 
     // CommonHandler is non-null when using servlet container (applies to central only)
     private final @Nullable CommonHandler commonHandler;
+
+    private final ExecutorService reportingExecutor;
 
     @Builder.Factory
     public static UiModule createUiModule(
@@ -119,6 +128,17 @@ public class UiModule {
                 agentDisplayRepository, configRepository, transactionTypeRepository,
                 traceAttributeNameRepository, environmentRepository, liveAggregateRepository);
 
+        ExecutorService reportingExecutor;
+        if (central) {
+            ThreadFactory threadFactory = new ThreadFactoryBuilder()
+                    .setNameFormat("Glowroot-UI-Report-Worker")
+                    .build();
+            reportingExecutor = new ThreadPoolExecutor(0, 10, 60, SECONDS,
+                    new LinkedBlockingQueue<Runnable>(), threadFactory);
+        } else {
+            reportingExecutor = MoreExecutors.newDirectExecutorService();
+        }
+
         List<Object> jsonServices = Lists.newArrayList();
         jsonServices.add(new LayoutJsonService(activeAgentRepository, layoutService));
         jsonServices.add(new TransactionJsonService(transactionCommonService, aggregateRepository,
@@ -136,7 +156,8 @@ public class UiModule {
                 agentDisplayRepository, configRepository, syntheticResultRepository, clock));
         jsonServices.add(new ReportJsonService(agentDisplayRepository, configRepository,
                 activeAgentRepository, transactionTypeRepository, aggregateRepository,
-                gaugeValueRepository, liveAggregateRepository, rollupLevelService));
+                gaugeValueRepository, liveAggregateRepository, rollupLevelService,
+                reportingExecutor));
         jsonServices.add(new ConfigJsonService(transactionTypeRepository, gaugeValueRepository,
                 liveAggregateRepository, configRepository));
         jsonServices.add(new AlertConfigJsonService(configRepository, alertingDisabledRepository,
@@ -199,7 +220,7 @@ public class UiModule {
                 httpSessionManager, jsonServices, clock);
 
         if (servlet) {
-            return new UiModule(commonHandler);
+            return new UiModule(commonHandler, reportingExecutor);
         } else {
             HttpServer httpServer;
             int initialPort;
@@ -228,18 +249,20 @@ public class UiModule {
             }
             adminJsonService.setHttpServer(httpServer);
             httpServer.bindEventually(initialPort);
-            return new UiModule(httpServer);
+            return new UiModule(httpServer, reportingExecutor);
         }
     }
 
-    private UiModule(HttpServer httpServer) {
+    private UiModule(HttpServer httpServer, ExecutorService reportingExecutor) {
         this.httpServer = httpServer;
         commonHandler = null;
+        this.reportingExecutor = reportingExecutor;
     }
 
-    private UiModule(CommonHandler commonHandler) {
+    private UiModule(CommonHandler commonHandler, ExecutorService reportingExecutor) {
         this.commonHandler = commonHandler;
         httpServer = null;
+        this.reportingExecutor = reportingExecutor;
     }
 
     public CommonHandler getCommonHandler() {
@@ -252,5 +275,6 @@ public class UiModule {
         if (httpServer != null) {
             httpServer.close();
         }
+        reportingExecutor.shutdown();
     }
 }
