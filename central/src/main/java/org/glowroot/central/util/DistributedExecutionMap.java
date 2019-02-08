@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,6 @@ public interface DistributedExecutionMap<K extends /*@NonNull*/ Serializable, V 
 
     void remove(K key, V value);
 
-    <R extends Serializable> Optional<R> execute(String key, SerializableFunction<V, R> task)
-            throws Exception;
+    <R extends Serializable> Optional<R> execute(String key, int timeoutSeconds,
+            SerializableFunction<V, R> task) throws Exception;
 }

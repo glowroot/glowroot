@@ -469,13 +469,13 @@ public abstract class ClusterManager {
 
         @Override
         public <R extends Serializable> Optional<R> execute(String key,
-                SerializableFunction<V, R> task) throws Exception {
+                int timeoutSeconds, SerializableFunction<V, R> task) throws Exception {
             CollectingConsumer<R> consumer = new CollectingConsumer<R>();
             CompletableFuture<Void> future = cache.getCacheManager().executor().submitConsumer(
                     new AdapterFunction<K, V, R>(cache.getName(), key, task), consumer);
             // TODO short-circuit after receiving one (non-empty and non-shutting-down) response,
             // instead of waiting for all responses
-            future.get(60, SECONDS);
+            future.get(timeoutSeconds, SECONDS);
             if (consumer.logStackTrace) {
                 logger.warn("context for remote error(s) logged above",
                         new Exception("location stack trace"));
@@ -513,7 +513,7 @@ public abstract class ClusterManager {
 
         @Override
         public <R extends Serializable> Optional<R> execute(String key,
-                SerializableFunction<V, R> task) throws Exception {
+                int timeoutSeconds, SerializableFunction<V, R> task) throws Exception {
             V value = cache.get(key);
             if (value == null) {
                 return Optional.empty();
