@@ -328,6 +328,25 @@ public class ResourceIT {
         assertThat(i.hasNext()).isFalse();
     }
 
+    @Test
+    public void shouldCaptureSubResource() throws Exception {
+        // when
+        Trace trace = container.execute(WithSubResource.class, "Web");
+
+        // then
+        assertThat(trace.getHeader().getTransactionName())
+                .isEqualTo("GET /parent/child/grandchild/*");
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo("jaxrs resource:"
+                + " org.glowroot.agent.plugin.jaxrs.ResourceIT$GrandchildResourceImpl.echo()");
+
+        assertThat(i.hasNext()).isFalse();
+    }
+
     public static class WithSimpleServletMapping extends InvokeJaxrsResourceInTomcat {
         @Override
         public void executeApp() throws Exception {
@@ -441,6 +460,13 @@ public class ResourceIT {
         }
     }
 
+    public static class WithSubResource extends InvokeJaxrsResourceInTomcat {
+        @Override
+        public void executeApp() throws Exception {
+            executeApp("webapp1", "", "/parent/child/grandchild/1");
+        }
+    }
+
     @Path("simple")
     public static class SimpleResource {
         @GET
@@ -468,14 +494,44 @@ public class ResourceIT {
 
     @Path("another")
     public static class AnotherResourceImpl implements AnotherResource {
+        private final AnotherResource delegate = new DelegateAnotherResource();
         @Override
         public Response echo(String msg) {
-            return new YetAnotherResource().echo(msg);
+            return delegate.echo(msg);
         }
     }
 
-    public static class YetAnotherResource implements AnotherResource {
+    @Path("parent")
+    public static class ParentResourceImpl implements ParentResource {
+        private final ParentResource delegate = new DelegateParentResource();
+        @Override
+        public ChildResource getChildResource() {
+            return delegate.getChildResource();
+        }
+    }
 
+    public static class DelegateAnotherResource implements AnotherResource {
+        @Override
+        public Response echo(String msg) {
+            return Response.status(200).entity(msg).build();
+        }
+    }
+
+    public static class DelegateParentResource implements ParentResource {
+        @Override
+        public ChildResource getChildResource() {
+            return new ChildResourceImpl();
+        }
+    }
+
+    public static class ChildResourceImpl implements ChildResource {
+        @Override
+        public GrandchildResource getGrandchildResource() {
+            return new GrandchildResourceImpl();
+        }
+    }
+
+    public static class GrandchildResourceImpl implements GrandchildResource {
         @Override
         public Response echo(String msg) {
             return Response.status(200).entity(msg).build();
@@ -483,6 +539,22 @@ public class ResourceIT {
     }
 
     public interface AnotherResource {
+        @GET
+        @Path("{param}")
+        Response echo(@PathParam("param") String msg);
+    }
+
+    public interface ParentResource {
+        @Path("child")
+        ChildResource getChildResource();
+    }
+
+    public interface ChildResource {
+        @Path("grandchild")
+        GrandchildResource getGrandchildResource();
+    }
+
+    public interface GrandchildResource {
         @GET
         @Path("{param}")
         Response echo(@PathParam("param") String msg);

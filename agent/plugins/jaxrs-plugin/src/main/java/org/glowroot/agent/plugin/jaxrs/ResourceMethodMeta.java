@@ -16,7 +16,6 @@
 package org.glowroot.agent.plugin.jaxrs;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 
 import org.glowroot.agent.plugin.api.Logger;
@@ -24,12 +23,15 @@ import org.glowroot.agent.plugin.api.MethodInfo;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.Reflection;
 
+// TODO, from JAX-RS spec "If a subclass or implementation method has any JAX-RS annotations then
+// all of the annotations on the superclass or interface method are ignored"
 public class ResourceMethodMeta {
 
     private static final Logger logger = Logger.getLogger(ResourceMethodMeta.class);
 
     private final String resourceClassName;
     private final String methodName;
+    private final boolean hasHttpMethodAnnotation;
 
     private final String path;
 
@@ -42,9 +44,15 @@ public class ResourceMethodMeta {
         methodName = methodInfo.getName();
         Class<?> clazz = getClass(methodInfo);
         String classPath = getPath(clazz);
-        String methodPath = getMethodPath(methodInfo, clazz);
+        MethodAnnotations methodAnnotations = getMethodAnnotations(methodInfo, clazz);
 
-        path = combine(classPath, methodPath);
+        if (methodAnnotations == null) {
+            hasHttpMethodAnnotation = false;
+            path = combine(classPath, null);
+        } else {
+            hasHttpMethodAnnotation = methodAnnotations.hasHttpMethodAnnotation;
+            path = combine(classPath, methodAnnotations.pathAnnotation);
+        }
         altTransactionName = getSimpleName(resourceClassName) + "#" + methodName;
 
         hasClassPathAnnotation = classPath != null;
@@ -56,6 +64,10 @@ public class ResourceMethodMeta {
 
     String getMethodName() {
         return methodName;
+    }
+
+    boolean hasHttpMethodAnnotation() {
+        return hasHttpMethodAnnotation;
     }
 
     String getPath() {
@@ -70,12 +82,12 @@ public class ResourceMethodMeta {
         return hasClassPathAnnotation;
     }
 
-    private static @Nullable String getPath(@Nullable AnnotatedElement annotatedElement) {
-        if (annotatedElement == null) {
+    private static @Nullable String getPath(@Nullable Class<?> clazz) {
+        if (clazz == null) {
             return null;
         }
         try {
-            for (Annotation annotation : annotatedElement.getDeclaredAnnotations()) {
+            for (Annotation annotation : clazz.getDeclaredAnnotations()) {
                 Class<?> annotationClass = annotation.annotationType();
                 if (annotationClass.getName().equals("javax.ws.rs.Path")) {
                     return getPathAttribute(annotationClass, annotation, "value");
@@ -87,28 +99,63 @@ public class ResourceMethodMeta {
         return null;
     }
 
-    private static @Nullable String getMethodPath(MethodInfo methodInfo, @Nullable Class<?> clazz) {
+    private static @Nullable MethodAnnotations getMethodAnnotations(MethodInfo methodInfo,
+            @Nullable Class<?> clazz) {
         if (clazz == null) {
             return null;
         }
-        String methodPath = getPath(getMethod(methodInfo, clazz));
-        if (methodPath != null) {
-            return methodPath;
+        MethodAnnotations methodAnnotations = getMethodAnnotations(getMethod(methodInfo, clazz));
+        if (methodAnnotations != null) {
+            return methodAnnotations;
         }
         Class<?> superclass = clazz.getSuperclass();
         if (superclass != null) {
-            methodPath = getMethodPath(methodInfo, superclass);
-            if (methodPath != null) {
-                return methodPath;
+            methodAnnotations = getMethodAnnotations(methodInfo, superclass);
+            if (methodAnnotations != null) {
+                return methodAnnotations;
             }
         }
         for (Class<?> iface : clazz.getInterfaces()) {
-            methodPath = getMethodPath(methodInfo, iface);
-            if (methodPath != null) {
-                return methodPath;
+            methodAnnotations = getMethodAnnotations(methodInfo, iface);
+            if (methodAnnotations != null) {
+                return methodAnnotations;
             }
         }
         return null;
+    }
+
+    private static @Nullable MethodAnnotations getMethodAnnotations(@Nullable Method method) {
+        if (method == null) {
+            return null;
+        }
+        try {
+            String pathAnnotation = null;
+            boolean hasHttpMethodAnnotation = false;
+            for (Annotation annotation : method.getDeclaredAnnotations()) {
+                Class<?> annotationClass = annotation.annotationType();
+                if (annotationClass.getName().equals("javax.ws.rs.Path")) {
+                    pathAnnotation = getPathAttribute(annotationClass, annotation, "value");
+                } else if (isHttpMethodAnnotation(annotationClass)) {
+                    hasHttpMethodAnnotation = true;
+                }
+            }
+            if (pathAnnotation != null || hasHttpMethodAnnotation) {
+                return new MethodAnnotations(pathAnnotation, hasHttpMethodAnnotation);
+            }
+        } catch (Throwable t) {
+            logger.error(t.getMessage(), t);
+        }
+        return null;
+    }
+
+    private static boolean isHttpMethodAnnotation(Class<?> annotationClass) {
+        for (Annotation annotation : annotationClass.getDeclaredAnnotations()) {
+            Class<?> metaClass = annotation.annotationType();
+            if (metaClass.getName().equals("javax.ws.rs.HttpMethod")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static @Nullable String getPathAttribute(Class<?> pathClass, Object path,
@@ -174,6 +221,18 @@ public class ResourceMethodMeta {
             return str;
         } else {
             return str.substring(index + 1);
+        }
+    }
+
+    private static class MethodAnnotations {
+
+        private final @Nullable String pathAnnotation;
+        private final boolean hasHttpMethodAnnotation;
+
+        private MethodAnnotations(@Nullable String pathAnnotation,
+                boolean hasHttpMethodAnnotation) {
+            this.pathAnnotation = pathAnnotation;
+            this.hasHttpMethodAnnotation = hasHttpMethodAnnotation;
         }
     }
 }

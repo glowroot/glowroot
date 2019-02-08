@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.plugin.servlet;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -65,6 +67,8 @@ class ServletMessageSupplier extends MessageSupplier implements ServletRequestIn
 
     // ConcurrentHashMap does not allow null values, so need to use Optional values
     private volatile @MonotonicNonNull ConcurrentMap<String, Optional<String>> sessionAttributeUpdatedValueMap;
+
+    private @Nullable List<String> jaxRsParts;
 
     ServletMessageSupplier(String requestMethod, String requestContextPath,
             String requestServletPath, @Nullable String requestPathInfo, String requestUri,
@@ -160,6 +164,19 @@ class ServletMessageSupplier extends MessageSupplier implements ServletRequestIn
     @Override
     public String getUri() {
         return requestUri;
+    }
+
+    @Override
+    public void addJaxRsPart(String part) {
+        if (jaxRsParts == null) {
+            jaxRsParts = new ArrayList<String>();
+        }
+        jaxRsParts.add(part);
+    }
+
+    @Override
+    public List<String> getJaxRsParts() {
+        return jaxRsParts == null ? Collections.<String>emptyList() : jaxRsParts;
     }
 
     boolean isRequestParametersCaptured() {

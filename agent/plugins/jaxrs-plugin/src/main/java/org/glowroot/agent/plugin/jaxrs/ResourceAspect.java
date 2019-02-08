@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.plugin.jaxrs;
 
+import java.util.List;
+
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.MessageSupplier;
 import org.glowroot.agent.plugin.api.ThreadContext;
@@ -27,7 +29,6 @@ import org.glowroot.agent.plugin.api.config.BooleanProperty;
 import org.glowroot.agent.plugin.api.weaving.BindMethodMeta;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
-import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
@@ -40,54 +41,75 @@ public class ResourceAspect {
 
     @Pointcut(methodAnnotation = "javax.ws.rs.Path|javax.ws.rs.DELETE|javax.ws.rs.GET"
             + "|javax.ws.rs.HEAD|javax.ws.rs.OPTIONS|javax.ws.rs.POST|javax.ws.rs.PUT",
-            methodParameterTypes = {".."}, timerName = "jaxrs resource")
+            methodParameterTypes = {".."}, timerName = "jaxrs resource", nestingGroup = "jaxrs")
     public static class ResourceAdvice {
 
         private static final TimerName timerName = Agent.getTimerName(ResourceAdvice.class);
 
-        @IsEnabled
-        public static boolean isEnabled(@BindMethodMeta ResourceMethodMeta resourceMethodMeta) {
-            return resourceMethodMeta.hasClassPathAnnotation();
-        }
-
         @OnBefore
-        public static TraceEntry onBefore(ThreadContext context,
+        public static @Nullable TraceEntry onBefore(ThreadContext context,
                 @BindMethodMeta ResourceMethodMeta resourceMethodMeta) {
 
-            if (useAltTransactionNaming.value()) {
-                context.setTransactionName(resourceMethodMeta.getAltTransactionName(),
-                        Priority.CORE_PLUGIN);
+            if (resourceMethodMeta.hasHttpMethodAnnotation()) {
+                if (useAltTransactionNaming.value()) {
+                    context.setTransactionName(resourceMethodMeta.getAltTransactionName(),
+                            Priority.CORE_PLUGIN);
+                } else {
+                    ServletRequestInfo servletRequestInfo = context.getServletRequestInfo();
+                    if (servletRequestInfo != null) {
+                        List<String> jaxRsParts = servletRequestInfo.getJaxRsParts();
+                        String path = resourceMethodMeta.getPath();
+                        if (!jaxRsParts.isEmpty()) {
+                            StringBuilder sb = new StringBuilder();
+                            for (String jaxRsPart : jaxRsParts) {
+                                sb.append(jaxRsPart);
+                            }
+                            sb.append(path);
+                            path = sb.toString();
+                        }
+                        String transactionName = getTransactionName(path, servletRequestInfo);
+                        context.setTransactionName(transactionName, Priority.CORE_PLUGIN);
+                    }
+                }
+                return context.startTraceEntry(MessageSupplier.create("jaxrs resource: {}.{}()",
+                        resourceMethodMeta.getResourceClassName(),
+                        resourceMethodMeta.getMethodName()), timerName);
             } else {
-                ServletRequestInfo servletRequestInfo = context.getServletRequestInfo();
-                String transactionName = getTransactionName(resourceMethodMeta, servletRequestInfo);
-                context.setTransactionName(transactionName, Priority.CORE_PLUGIN);
+                if (!useAltTransactionNaming.value()) {
+                    ServletRequestInfo servletRequestInfo = context.getServletRequestInfo();
+                    if (servletRequestInfo != null) {
+                        servletRequestInfo.addJaxRsPart(resourceMethodMeta.getPath());
+                    }
+                }
+                return null;
             }
-            return context.startTraceEntry(MessageSupplier.create("jaxrs resource: {}.{}()",
-                    resourceMethodMeta.getResourceClassName(), resourceMethodMeta.getMethodName()),
-                    timerName);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler TraceEntry traceEntry) {
-            traceEntry.end();
+        public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.end();
+            }
         }
 
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
-                @BindTraveler TraceEntry traceEntry) {
-            traceEntry.endWithError(t);
+                @BindTraveler @Nullable TraceEntry traceEntry) {
+            if (traceEntry != null) {
+                traceEntry.endWithError(t);
+            }
         }
 
-        private static String getTransactionName(ResourceMethodMeta resourceMethodMeta,
+        private static String getTransactionName(String path,
                 @Nullable ServletRequestInfo servletRequestInfo) {
             if (servletRequestInfo == null) {
-                return resourceMethodMeta.getPath();
+                return path;
             }
             String method = servletRequestInfo.getMethod();
             String servletPath = getServletPath(servletRequestInfo);
             if (method.isEmpty()) {
-                return servletPath + resourceMethodMeta.getPath();
+                return servletPath + path;
             } else {
-                return method + " " + servletPath + resourceMethodMeta.getPath();
+                return method + " " + servletPath + path;
             }
         }
 
