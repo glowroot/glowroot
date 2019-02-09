@@ -13,11 +13,14 @@ RUN unzip -d /usr/share /tmp/glowroot-central.zip \
 EXPOSE 4000 8181
 
 COPY docker-entrypoint.sh /usr/local/bin/
+COPY glowroot-central.sh /usr/local/bin/
 
 WORKDIR /usr/share/glowroot-central
 
 USER glowroot:glowroot
 
+ENV GLOWROOT_OPTS -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap
+
 ENTRYPOINT ["docker-entrypoint.sh"]
 
-CMD ["java", "-jar", "glowroot-central.jar"]
+CMD ["glowroot-central.sh"]
