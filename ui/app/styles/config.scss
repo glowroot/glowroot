@@ -138,16 +138,11 @@
 
 .CodeMirror {
   border: 1px solid #ddd;
+  height: auto !important;
 }
 
 .has-error .CodeMirror {
   border: 1px solid $gt-red;
-}
-
-#gtSyntheticJavaSource .CodeMirror {
-  // tall enough for Example synthetic user test
-  // even when narrow and horizontal scrollbar appears at bottom
-  height: 650px !important;
 }
 
 .codemirror-disabled .CodeMirror {

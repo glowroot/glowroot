@@ -188,6 +188,7 @@ glowroot.directive('gtFormGroup', [
             indentUnit: 4,
             lineNumbers: true,
             matchBrackets: true,
+            viewportMargin: Infinity,
             mode: 'text/x-java'
           };
           if (scope.gtDisabled()) {
