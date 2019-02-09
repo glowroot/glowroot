@@ -1,0 +1,20 @@
+{
+  "name": "Camel Plugin",
+  "id": "camel",
+  "instrumentation": [
+    {
+      "className": "org.apache.camel.processor.Pipeline",
+      "methodName": "process",
+      "methodParameterTypes": [
+        "org.apache.camel.Exchange",
+        ".."
+      ],
+      "nestingGroup": "camel-process",
+      "captureKind": "transaction",
+      "transactionType": "Background",
+      "transactionNameTemplate": "Camel pipeline",
+      "timerName": "camel pipeline",
+      "traceEntryMessageTemplate": "camel pipeline => {{_}}"
+    }
+  ]
+}
