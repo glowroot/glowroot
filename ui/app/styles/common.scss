@@ -255,3 +255,12 @@ table thead th {
 .multiselect-native-select select.ng-touched.ng-invalid + .dropdown button {
   @extend .form-control:invalid;
 }
+
+.help-block code {
+  background-color: #f4f4f4;
+  padding: 1px 2px;
+}
+
+.help-block a {
+  text-decoration: underline;
+}

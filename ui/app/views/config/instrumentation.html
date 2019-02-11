@@ -1,5 +1,5 @@
 <!--
-  Copyright 2012-2018 the original author or authors.
+  Copyright 2012-2019 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -107,10 +107,9 @@
               (including all implementations of the method if the class above is an interface).
             </div>
             <div class="help-block">
-              The wildcard&nbsp;<code style="font-size: 120%;">*</code>&nbsp;is supported anywhere in the method name.
-              Multiple method names (including multiple method names with the
-              wildcard&nbsp;<code style="font-size: 120%;">*</code>&nbsp;in them)
-              can be listed with the&nbsp;<code style="font-size: 120%;">|</code>&nbsp;separator between them.
+              The wildcard <code>*</code> is supported anywhere in the method name.
+              Multiple method names (including multiple method names with the wildcard <code>*</code> in them) can be
+              listed with the <code>|</code> separator between them.
             </div>
           </div>
         </div>
@@ -241,8 +240,8 @@
           <div ng-non-bindable
                class="help-block">
             This is a template which can be populated with values from the method invocation.
-            The same rules apply as for the trace headline (see below), except that the return value {{_}} cannot be
-            used.
+            The same rules apply as for the trace headline (see below), except that the return value <code>{{_}}</code>
+            cannot be used.
           </div>
         </div>
         <div gt-form-group
@@ -262,31 +261,31 @@
             This is a template which can be populated with values from the method invocation:
             <ul>
               <li>
-                {{0}}, {{1}}, ... resolve to the method parameters
+                <code>{{0}}</code>, <code>{{1}}</code>, ... resolve to the method parameters
               </li>
               <li>
-                {{this}} resolves to the object that the method is invoked on (except for static methods)
+                <code>{{this}}</code> resolves to the object that the method is invoked on (except for static methods)
               </li>
               <li>
-                {{_}} resolves to the return value (if not void)
+                <code>{{_}}</code> resolves to the return value (if not void)
               </li>
               <li>
-                {{methodName}} resolves to the method name, which can be useful
-                if&nbsp;<code style="font-size: 120%;">*</code>&nbsp;or&nbsp;<code
-                  style="font-size: 120%;">|</code>&nbsp;are
-                used to define the method name above
+                <code>{{methodName}}</code> resolves to the method name, which can be useful if <code>*</code> or
+                <code>|</code> are used to define the method name above
               </li>
             </ul>
           </div>
           <div class="help-block"
                ng-non-bindable>
-            Nested paths are resolved as well, e.g. {{0.size}} and {{this.class.name}}.
-            If a path resolves to <code>null</code> at any point,
-            then the entire path will resolve to <code>null</code>.
-            The final resolved value is rendered into the template using <code>String.valueOf()</code>.
+            Nested paths are resolved as well, e.g. <code>{{0.size}}</code> and <code>{{this.class.name}}</code>.
+            If a path resolves to null at any point, then the entire path will resolve to null.
+            The final resolved value is rendered into the template using
+            <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html#valueOf-java.lang.Object-">
+              String.valueOf()
+            </a>.
             If the final resolved value is a byte array, it will be rendered as hex, or you can specify a charset to
-            decode it, e.g. {{0.someBytes|charset:UTF-8}} or {{0.someBytes|charset:default}} to use the default
-            (platform) charset.
+            decode it, e.g. <code>{{0.someBytes|charset:UTF-8}}</code> or <code>{{0.someBytes|charset:default}}</code>
+            to use the default (platform) charset.
           </div>
         </div>
         <div gt-form-group
@@ -414,28 +413,28 @@
             This is a template which can be populated with values from the method invocation:
             <ul>
               <li>
-                {{0}}, {{1}}, ... resolve to the method parameters
+                <code>{{0}}</code>, <code>{{1}}</code>, ... resolve to the method parameters
               </li>
               <li>
-                {{this}} resolves to the object that the method is invoked on (except for static methods)
+                <code>{{this}}</code> resolves to the object that the method is invoked on (except for static methods)
               </li>
               <li>
-                {{methodName}} resolves to the method name, which can be useful
-                if&nbsp;<code style="font-size: 120%;">*</code>&nbsp;or&nbsp;<code
-                  style="font-size: 120%;">|</code>&nbsp;are
-                used to define the method name above
+                <code>{{methodName}}</code> resolves to the method name, which can be useful if <code>*</code> or
+                <code>|</code> are used to define the method name above
               </li>
             </ul>
           </div>
           <div ng-non-bindable
                class="help-block">
-            Nested paths are resolved as well, e.g. {{0.size}} and {{this.class.name}}.
-            If a path resolves to <code>null</code> at any point,
-            then the entire path will resolve to <code>null</code>.
-            The final resolved value is rendered into the template using <code>String.valueOf()</code>.
+            Nested paths are resolved as well, e.g. <code>{{0.size}}</code> and <code>{{this.class.name}}</code>.
+            If a path resolves to null at any point, then the entire path will resolve to null.
+            The final resolved value is rendered into the template using
+            <a href="https://docs.oracle.com/javase/8/docs/api/java/lang/String.html#valueOf-java.lang.Object-">
+              String.valueOf()
+            </a>.
             If the final resolved value is a byte array, it will be rendered as hex, or you can specify a charset to
-            decode it, e.g. {{0.someBytes|charset:UTF-8}} or {{0.someBytes|charset:default}} to use the default
-            (platform) charset.
+            decode it, e.g. <code>{{0.someBytes|charset:UTF-8}}</code> or <code>{{0.someBytes|charset:default}}</code>
+            to use the default (platform) charset.
           </div>
         </div>
         <div gt-form-group
