@@ -19,7 +19,8 @@
 glowroot.factory('modals', [
   '$timeout',
   '$location',
-  function ($timeout, $location) {
+  '$window',
+  function ($timeout, $location, $window) {
     function display(selector) {
       var $selector = $(selector);
       if (!$selector.parents('#modalContent').length) {
@@ -37,12 +38,20 @@ glowroot.factory('modals', [
         // using $timeout as this may be reached inside angular digest or not
         $timeout(function () {
           var query = $selector.data('location-query');
+          var goBack = false;
           if (angular.isArray(query)) {
             angular.forEach(query, function (q) {
-              $location.search(q, null);
+              if ($location.search()[q]) {
+                goBack = true;
+              }
             });
           } else if (query) {
-            $location.search(query, null);
+            if ($location.search()[query]) {
+              goBack = true;
+            }
+          }
+          if (goBack) {
+            $window.history.back();
           }
         });
         $('#chart canvas').show();
