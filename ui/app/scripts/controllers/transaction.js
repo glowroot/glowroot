@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -215,19 +215,25 @@ glowroot.controller('TransactionCtrl', [
           // need to refresh selectpicker in order to update hrefs of the items
           $timeout(function () {
             // timeout is needed so this runs after dom is updated
-            $('#agentRollupDropdown').selectpicker('refresh');
+            $('#topLevelAgentRollupDropdown').selectpicker('refresh');
+            $('#childAgentRollupDropdown').selectpicker('refresh');
           });
         }
       });
 
-      var refreshAgentRollups = function () {
-        $scope.refreshAgentRollups($scope.range.chartFrom, $scope.range.chartTo, $scope);
+      var refreshTopLevelAgentRollups = function () {
+        $scope.refreshTopLevelAgentRollups($scope.range.chartFrom, $scope.range.chartTo, $scope);
+      };
+      var refreshChildAgentRollups = function () {
+        $scope.refreshChildAgentRollups($scope.range.chartFrom, $scope.range.chartTo, $scope);
       };
 
-      $('#agentRollupDropdown').on('show.bs.select', refreshAgentRollups);
+      $('#topLevelAgentRollupDropdown').on('show.bs.select', refreshTopLevelAgentRollups);
+      $('#childAgentRollupDropdown').on('show.bs.select', refreshChildAgentRollups);
 
-      if ($scope.agentRollups === undefined) {
-        refreshAgentRollups();
+      if ($scope.topLevelAgentRollups === undefined) {
+        refreshTopLevelAgentRollups();
+        refreshChildAgentRollups();
       }
     }
   }

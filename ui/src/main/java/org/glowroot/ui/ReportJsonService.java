@@ -30,10 +30,10 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -55,6 +55,7 @@ import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common2.repo.ActiveAgentRepository;
+import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
 import org.glowroot.common2.repo.AgentDisplayRepository;
 import org.glowroot.common2.repo.AggregateRepository;
 import org.glowroot.common2.repo.ConfigRepository;
@@ -67,7 +68,6 @@ import org.glowroot.common2.repo.util.RollupLevelService.DataKind;
 import org.glowroot.ui.GaugeValueJsonService.GaugeOrdering;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.ui.LayoutJsonService.AgentRollupSmall;
-import org.glowroot.ui.LayoutService.FilteredAgentRollup;
 import org.glowroot.ui.LayoutService.Permissions;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 
@@ -119,18 +119,12 @@ class ReportJsonService {
         FromToPair fromToPair = parseDates(request.fromDate(), request.toDate(), timeZone);
         Date from = fromToPair.from();
         Date to = fromToPair.to();
-        List<FilteredAgentRollup> agentRollups = LayoutJsonService.filter(
+        List<FilteredAgentRollup> agentRollups = filterAndSort(
                 activeAgentRepository.readActiveAgentRollups(from.getTime(), to.getTime()),
-                authentication, new Predicate<Permissions>() {
-                    @Override
-                    public boolean apply(@Nullable Permissions permissions) {
-                        return permissions != null && permissions.transaction().overview()
-                                && permissions.error().overview() && permissions.jvm().gauges();
-                    }
-                });
+                authentication);
         List<AgentRollupSmall> dropdown = Lists.newArrayList();
         for (FilteredAgentRollup agentRollup : agentRollups) {
-            LayoutJsonService.process(agentRollup, 0, dropdown);
+            process(agentRollup, 0, dropdown);
         }
         return mapper.writeValueAsString(dropdown);
     }
@@ -512,6 +506,42 @@ class ReportJsonService {
         return dataSeries;
     }
 
+    // need to filter out agent rollups with no access rights
+    private static List<FilteredAgentRollup> filterAndSort(List<AgentRollup> agentRollups,
+            Authentication authentication) throws Exception {
+        List<FilteredAgentRollup> filtered = Lists.newArrayList();
+        for (AgentRollup agentRollup : agentRollups) {
+            // passing configReadOnly=false since it's irrelevant here (and saves config lookup)
+            Permissions permissions =
+                    LayoutService.getPermissions(authentication, agentRollup.id(), false);
+            if (permissions.transaction().overview() && permissions.error().overview()
+                    && permissions.jvm().gauges()) {
+                filtered.add(ImmutableFilteredAgentRollup.builder()
+                        .id(agentRollup.id())
+                        .display(agentRollup.display())
+                        .lastDisplayPart(agentRollup.lastDisplayPart())
+                        .addAllChildren(filterAndSort(agentRollup.children(), authentication))
+                        .build());
+            }
+        }
+        return new FilteredAgentRollupOrdering().sortedCopy(filtered);
+    }
+
+    private static void process(FilteredAgentRollup agentRollup, int depth,
+            List<AgentRollupSmall> dropdown) throws Exception {
+        AgentRollupSmall agentRollupLayout = ImmutableAgentRollupSmall.builder()
+                .id(agentRollup.id())
+                .display(agentRollup.display())
+                .lastDisplayPart(agentRollup.lastDisplayPart())
+                .disabled(false)
+                .depth(depth)
+                .build();
+        dropdown.add(agentRollupLayout);
+        for (FilteredAgentRollup childAgentRollup : agentRollup.children()) {
+            process(childAgentRollup, depth + 1, dropdown);
+        }
+    }
+
     private static void checkPermissions(List<String> agentRollupIds, String permission,
             Authentication authentication) throws Exception {
         for (String agentRollupId : agentRollupIds) {
@@ -559,6 +589,14 @@ class ReportJsonService {
             default:
                 throw new IllegalStateException("Unexpected rollup: " + rollup);
         }
+    }
+
+    @Value.Immutable
+    interface FilteredAgentRollup {
+        String id();
+        String display();
+        String lastDisplayPart();
+        List<FilteredAgentRollup> children();
     }
 
     @Value.Immutable
@@ -756,6 +794,13 @@ class ReportJsonService {
         @Override
         public @Nullable Double getOverall() {
             return hasErrorCount ? (double) errorCount : null;
+        }
+    }
+
+    private static class FilteredAgentRollupOrdering extends Ordering<FilteredAgentRollup> {
+        @Override
+        public int compare(FilteredAgentRollup left, FilteredAgentRollup right) {
+            return left.display().compareToIgnoreCase(right.display());
         }
     }
 }

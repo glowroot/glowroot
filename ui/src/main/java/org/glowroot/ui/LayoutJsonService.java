@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,18 @@ package org.glowroot.ui;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.ObjectMappers;
+import org.glowroot.common2.config.RoleConfig.HasAnyPermission;
 import org.glowroot.common2.repo.ActiveAgentRepository;
 import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
+import org.glowroot.common2.repo.ActiveAgentRepository.TopLevelAgentRollup;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.ui.LayoutService.AgentRollupLayout;
-import org.glowroot.ui.LayoutService.FilteredAgentRollup;
-import org.glowroot.ui.LayoutService.Permissions;
+import org.glowroot.ui.LayoutService.FilteredChildAgentRollup;
+import org.glowroot.ui.LayoutService.FilteredTopLevelAgentRollup;
 
 class LayoutJsonService {
 
@@ -44,29 +43,46 @@ class LayoutJsonService {
         this.layoutService = layoutService;
     }
 
-    @GET(path = "/backend/agent-rollups", permission = "")
-    String getAgentRollups(@BindRequest AgentRollupsRequest agentRollupsRequest,
+    @GET(path = "/backend/top-level-agent-rollups", permission = "")
+    String getTopLevelAgentRollups(@BindRequest TopLevelAgentRollupsRequest request,
             @BindAuthentication Authentication authentication) throws Exception {
-        List<FilteredAgentRollup> agentRollups =
-                filter(activeAgentRepository.readActiveAgentRollups(agentRollupsRequest.from(),
-                        agentRollupsRequest.to()), authentication, new Predicate<Permissions>() {
-                            @Override
-                            public boolean apply(@Nullable Permissions permissions) {
-                                return permissions != null && permissions.hasSomeAccess();
-                            }
-                        });
+        List<TopLevelAgentRollup> topLevelAgentRollups =
+                activeAgentRepository.readActiveTopLevelAgentRollups(request.from(), request.to());
+        List<FilteredTopLevelAgentRollup> filtered = Lists.newArrayList();
+        for (TopLevelAgentRollup topLevelAgentRollup : topLevelAgentRollups) {
+            HasAnyPermission hasAnyPermission =
+                    authentication.hasAnyPermissionForAgentRollup(topLevelAgentRollup.id());
+            if (hasAnyPermission != HasAnyPermission.NO) {
+                filtered.add(ImmutableFilteredTopLevelAgentRollup.builder()
+                        .id(topLevelAgentRollup.id())
+                        .display(topLevelAgentRollup.display())
+                        .disabled(hasAnyPermission == HasAnyPermission.ONLY_IN_CHILD)
+                        .build());
+            }
+        }
+        return mapper.writeValueAsString(filtered);
+    }
+
+    @GET(path = "/backend/child-agent-rollups", permission = "")
+    String getChildAgentRollups(@BindRequest ChildAgentRollupsRequest request,
+            @BindAuthentication Authentication authentication) throws Exception {
+        List<FilteredChildAgentRollup> childAgentRollups =
+                filterChildAgentRollups(
+                        activeAgentRepository.readActiveChildAgentRollups(
+                                request.topLevelId(), request.from(), request.to()),
+                        authentication);
         List<AgentRollupSmall> dropdown = Lists.newArrayList();
-        for (FilteredAgentRollup agentRollup : agentRollups) {
-            process(agentRollup, 0, dropdown);
+        for (FilteredChildAgentRollup childAgentRollup : childAgentRollups) {
+            flatten(childAgentRollup, 0, dropdown);
         }
         return mapper.writeValueAsString(dropdown);
     }
 
     @GET(path = "/backend/agent-rollup", permission = "")
-    String getAgentRollup(@BindRequest AgentRollupRequest agentRollupRequest,
+    String getAgentRollup(@BindRequest AgentRollupRequest request,
             @BindAuthentication Authentication authentication) throws Exception {
         AgentRollupLayout agentRollupLayout =
-                layoutService.buildAgentRollupLayout(authentication, agentRollupRequest.id());
+                layoutService.buildAgentRollupLayout(authentication, request.id());
         if (agentRollupLayout == null) {
             // FIXME let user know that UI configuration not found
             return "{}";
@@ -78,57 +94,61 @@ class LayoutJsonService {
         return mapper.writeValueAsString(agentRollupLayout);
     }
 
-    // need to filter out agent rollups with no access rights, and move children up if needed
-    static List<FilteredAgentRollup> filter(List<AgentRollup> agentRollups,
-            Authentication authentication, Predicate<Permissions> filterFn) throws Exception {
-        List<FilteredAgentRollup> filtered = Lists.newArrayList();
+    // need to filter out agent child rollups with no access rights
+    private static List<FilteredChildAgentRollup> filterChildAgentRollups(
+            List<AgentRollup> agentRollups, Authentication authentication) throws Exception {
+        List<FilteredChildAgentRollup> filtered = Lists.newArrayList();
         for (AgentRollup agentRollup : agentRollups) {
-            // passing configReadOnly=false since it's irrelevant here (and saves config lookup)
-            Permissions permissions =
-                    LayoutService.getPermissions(authentication, agentRollup.id(), false);
-            List<FilteredAgentRollup> children =
-                    filter(agentRollup.children(), authentication, filterFn);
-            boolean visible = filterFn.apply(permissions);
-            if (visible || !children.isEmpty()) {
-                filtered.add(ImmutableFilteredAgentRollup.builder()
+            HasAnyPermission hasAnyPermission =
+                    authentication.hasAnyPermissionForAgentRollup(agentRollup.id());
+            if (hasAnyPermission != HasAnyPermission.NO) {
+                filtered.add(ImmutableFilteredChildAgentRollup.builder()
                         .id(agentRollup.id())
                         .display(agentRollup.display())
                         .lastDisplayPart(agentRollup.lastDisplayPart())
-                        .addAllChildren(children)
-                        .permissions(permissions)
+                        .disabled(hasAnyPermission == HasAnyPermission.ONLY_IN_CHILD)
+                        .addAllChildren(filterChildAgentRollups(agentRollup.children(),
+                                authentication))
                         .build());
             }
         }
-        // re-sort in case any children were moved up to this level
-        return new FilteredAgentRollupOrdering().sortedCopy(filtered);
+        return filtered;
     }
 
-    static void process(FilteredAgentRollup agentRollup, int depth,
+    private static void flatten(FilteredChildAgentRollup filteredChildAgentRollup, int depth,
             List<AgentRollupSmall> dropdown) throws Exception {
         AgentRollupSmall agentRollupLayout = ImmutableAgentRollupSmall.builder()
-                .id(agentRollup.id())
-                .display(agentRollup.display())
-                .lastDisplayPart(agentRollup.lastDisplayPart())
-                .disabled(!agentRollup.permissions().hasSomeAccess())
+                .id(filteredChildAgentRollup.id())
+                .display(filteredChildAgentRollup.display())
+                .lastDisplayPart(filteredChildAgentRollup.lastDisplayPart())
+                .disabled(filteredChildAgentRollup.disabled())
                 .depth(depth)
                 .build();
         dropdown.add(agentRollupLayout);
-        for (FilteredAgentRollup childAgentRollup : agentRollup.children()) {
-            process(childAgentRollup, depth + 1, dropdown);
+        for (FilteredChildAgentRollup child : filteredChildAgentRollup.children()) {
+            flatten(child, depth + 1, dropdown);
         }
     }
 
     @Value.Immutable
     interface AgentRollupSmall {
         String id();
-        String display();
+        String display(); // when this is used for child dropdown, this is the child display (not
+                          // including the top level display)
         String lastDisplayPart();
         boolean disabled();
         int depth();
     }
 
     @Value.Immutable
-    interface AgentRollupsRequest {
+    interface TopLevelAgentRollupsRequest {
+        long from();
+        long to();
+    }
+
+    @Value.Immutable
+    interface ChildAgentRollupsRequest {
+        String topLevelId();
         long from();
         long to();
     }
@@ -136,12 +156,5 @@ class LayoutJsonService {
     @Value.Immutable
     interface AgentRollupRequest {
         String id();
-    }
-
-    private static class FilteredAgentRollupOrdering extends Ordering<FilteredAgentRollup> {
-        @Override
-        public int compare(FilteredAgentRollup left, FilteredAgentRollup right) {
-            return left.display().compareToIgnoreCase(right.display());
-        }
     }
 }

@@ -75,7 +75,12 @@ glowroot.config([
               .then(function (response) {
                 $rootScope.agentId = agentId;
                 $rootScope.agentRollupId = agentRollupId;
+                var oldAgentRollup = $rootScope.agentRollup;
                 $rootScope.agentRollup = response.data;
+                if (!oldAgentRollup || $rootScope.agentRollup.topLevelId !== oldAgentRollup.topLevelId) {
+                  // TODO preload here, e.g. $rootScope.refreshChildAgentRollups()
+                  $rootScope.setChildAgentRollups([]);
+                }
                 addTransactionType();
               }, function (response) {
                 $rootScope.navbarErrorMessage = 'An error occurred getting agent rollup: ' + agentRollupId;

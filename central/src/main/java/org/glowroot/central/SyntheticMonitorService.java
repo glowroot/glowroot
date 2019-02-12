@@ -644,8 +644,8 @@ class SyntheticMonitorService implements Runnable {
             incidentDao.resolveIncident(openIncident, endTime);
             sendAlert(agentRollup.id(), agentRollup.display(), syntheticMonitorConfig,
                     alertConfig, condition, endTime, true, null);
-        } else if (openIncident == null && currentlyTriggered && consecutiveCountHit(agentRollup,
-                syntheticMonitorConfig, condition)) {
+        } else if (openIncident == null && currentlyTriggered
+                && consecutiveCountHit(agentRollup.id(), syntheticMonitorConfig, condition)) {
             // the start time for the incident is the end time of the interval evaluated above
             incidentDao.insertOpenIncident(agentRollup.id(), alertCondition,
                     alertConfig.getSeverity(), alertConfig.getNotification(), endTime);
@@ -654,7 +654,7 @@ class SyntheticMonitorService implements Runnable {
         }
     }
 
-    private boolean consecutiveCountHit(AgentRollup agentRollup,
+    private boolean consecutiveCountHit(String agentRollupId,
             SyntheticMonitorConfig syntheticMonitorConfig, SyntheticMonitorCondition condition)
             throws Exception {
         int consecutiveCount = condition.getConsecutiveCount();
@@ -662,7 +662,7 @@ class SyntheticMonitorService implements Runnable {
             return true;
         }
         List<SyntheticResultRollup0> syntheticResults = syntheticResponseDao.readLastFromRollup0(
-                agentRollup.id(), syntheticMonitorConfig.getId(), consecutiveCount - 1);
+                agentRollupId, syntheticMonitorConfig.getId(), consecutiveCount - 1);
         if (syntheticResults.size() < consecutiveCount - 1) {
             return false;
         }

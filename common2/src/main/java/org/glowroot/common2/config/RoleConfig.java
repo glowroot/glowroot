@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -61,15 +62,6 @@ public abstract class RoleConfig {
         return false;
     }
 
-    public boolean isPermittedForSomeAgentRollup(List<String> permissionParts) {
-        for (SimplePermission simplePermission : simplePermissions()) {
-            if (SimplePermission.implies(simplePermission.parts(), permissionParts)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public boolean hasAnyPermissionImpliedBy(List<String> permissionParts) {
         for (SimplePermission simplePermission : simplePermissions()) {
             if (SimplePermission.implies(permissionParts, simplePermission.parts())) {
@@ -79,10 +71,37 @@ public abstract class RoleConfig {
         return false;
     }
 
+    public boolean isPermittedForSomeAgentRollup(List<String> permissionParts) {
+        for (SimplePermission simplePermission : simplePermissions()) {
+            if (SimplePermission.implies(simplePermission.parts(), permissionParts)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public HasAnyPermission hasAnyPermissionForAgentRollup(String agentRollupId) {
+        boolean onlyInChild = false;
+        for (SimplePermission permission : simplePermissions()) {
+            HasAnyPermission hasAnyPermission =
+                    permission.hasAnyPermissionForAgentRollup(agentRollupId);
+            if (hasAnyPermission == HasAnyPermission.YES) {
+                return HasAnyPermission.YES;
+            } else if (hasAnyPermission == HasAnyPermission.ONLY_IN_CHILD) {
+                onlyInChild = true;
+            }
+        }
+        return onlyInChild ? HasAnyPermission.ONLY_IN_CHILD : HasAnyPermission.NO;
+    }
+
     @Value.Derived
     @JsonIgnore
     public String version() {
         return Versions.getJsonVersion(this);
+    }
+
+    public static enum HasAnyPermission {
+        YES, NO, ONLY_IN_CHILD // "only in child" means that this rollup needs to be visible in menu
     }
 
     @Value.Immutable
@@ -92,48 +111,62 @@ public abstract class RoleConfig {
             PermissionParser parser = new PermissionParser(permission);
             parser.parse();
             return ImmutableSimplePermission.builder()
-                    .addAllAgentIds(parser.getAgentRollupIds())
+                    .addAllAgentRollupIds(parser.getAgentRollupIds())
                     .addAllParts(Splitter.on(':').splitToList(parser.getPermission()))
                     .build();
         }
 
         public static SimplePermission create(String agentId, String permission) {
             return ImmutableSimplePermission.builder()
-                    .addAgentIds(agentId)
+                    .addAgentRollupIds(agentId)
                     .addAllParts(Splitter.on(':').splitToList(permission))
                     .build();
         }
 
-        public abstract List<String> agentIds();
+        public abstract List<String> agentRollupIds();
         public abstract List<String> parts();
 
+        @VisibleForTesting
         boolean implies(SimplePermission other) {
-            if (!agentIds().contains("*") && !agentListImplies(agentIds(), other.agentIds())) {
+            if (!agentListImplies(other.agentRollupIds())) {
                 return false;
             }
             List<String> otherParts = other.parts();
             return implies(parts(), otherParts);
         }
 
-        private static boolean agentListImplies(List<String> agentIds, List<String> otherAgentIds) {
-            for (String otherAgentId : otherAgentIds) {
-                if (!agentListImplies(agentIds, otherAgentId)) {
+        private boolean agentListImplies(List<String> otherAgentRollupIds) {
+            for (String otherAgentRollupId : otherAgentRollupIds) {
+                if (!agentListImplies(otherAgentRollupId)) {
                     return false;
                 }
             }
             return true;
         }
 
-        private static boolean agentListImplies(List<String> agentIds, String otherAgentId) {
-            for (String agentId : agentIds) {
-                if (agentIds.contains(otherAgentId)) {
+        private boolean agentListImplies(String otherAgentRollupId) {
+            for (String agentRollupId : agentRollupIds()) {
+                if (agentRollupId.equals("*") || agentRollupIds().contains(otherAgentRollupId)) {
                     return true;
                 }
-                if (agentId.endsWith("::") && otherAgentId.startsWith(agentId)) {
+                if (agentRollupId.endsWith("::") && otherAgentRollupId.startsWith(agentRollupId)) {
                     return true;
                 }
             }
             return false;
+        }
+
+        private HasAnyPermission hasAnyPermissionForAgentRollup(String otherAgentRollupId) {
+            boolean onlyInChild = false;
+            for (String agentRollupId : agentRollupIds()) {
+                if (agentRollupId.equals("*") || agentRollupIds().contains(otherAgentRollupId)) {
+                    return HasAnyPermission.YES;
+                }
+                if (agentRollupId.endsWith("::") && otherAgentRollupId.startsWith(agentRollupId)) {
+                    onlyInChild = true;
+                }
+            }
+            return onlyInChild ? HasAnyPermission.ONLY_IN_CHILD : HasAnyPermission.NO;
         }
 
         private static boolean implies(List<String> parts, List<String> otherParts) {

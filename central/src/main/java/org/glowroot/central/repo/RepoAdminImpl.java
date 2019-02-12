@@ -54,7 +54,7 @@ public class RepoAdminImpl implements RepoAdmin {
     @Override
     public void runHealthCheck() throws Exception {
         long now = clock.currentTimeMillis();
-        activeAgentDao.readActiveAgentRollups(now - HOURS.toMillis(4), now);
+        activeAgentDao.readActiveTopLevelAgentRollups(now - HOURS.toMillis(4), now);
     }
 
     @Override

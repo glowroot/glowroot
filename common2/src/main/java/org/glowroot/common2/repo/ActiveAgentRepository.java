@@ -19,18 +19,30 @@ import java.util.List;
 
 import org.immutables.value.Value;
 
-import org.glowroot.common.util.Styles;
-
 public interface ActiveAgentRepository {
+
+    List<TopLevelAgentRollup> readActiveTopLevelAgentRollups(long from, long to) throws Exception;
+
+    List<AgentRollup> readActiveChildAgentRollups(String topLevelId, long from, long to)
+            throws Exception;
 
     List<AgentRollup> readRecentlyActiveAgentRollups(long lastXMillis) throws Exception;
 
     List<AgentRollup> readActiveAgentRollups(long from, long to) throws Exception;
 
     @Value.Immutable
-    @Styles.AllParameters
+    interface TopLevelAgentRollup { // used for dropdown display
+        String id();
+        String display();
+    }
+
+    // used for dropdown display
+    // used for rollup work and for agent dropdown in role config and report
+    @Value.Immutable
     interface AgentRollup {
         String id();
+        // when returned from readActiveChildAgentRollups (for use in child agent dropdown), this is
+        // the child display (not including the top level display)
         String display();
         String lastDisplayPart();
         List<AgentRollup> children();

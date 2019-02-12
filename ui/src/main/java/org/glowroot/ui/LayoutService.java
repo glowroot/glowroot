@@ -23,7 +23,6 @@ import java.util.TimeZone;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -116,30 +115,9 @@ class LayoutService {
     @Nullable
     AgentRollupLayout buildAgentRollupLayout(Authentication authentication, String agentRollupId)
             throws Exception {
-        boolean configReadOnly;
-        try {
-            configReadOnly = configRepository.isConfigReadOnly(agentRollupId);
-        } catch (AgentConfigNotFoundException e) {
-            configReadOnly = false;
-        }
-        Permissions permissions =
-                LayoutService.getPermissions(authentication, agentRollupId, configReadOnly);
-        List<String> displayParts = agentDisplayRepository.readDisplayParts(agentRollupId);
-        FilteredAgentRollup agentRollup = ImmutableFilteredAgentRollup.builder()
-                .id(agentRollupId)
-                .display(Joiner.on(" :: ").join(displayParts))
-                .lastDisplayPart(Iterables.getLast(displayParts))
-                .permissions(permissions)
-                .build();
-        return buildAgentRollupLayout(agentRollup,
-                traceAttributeNameRepository.read(agentRollupId));
-    }
-
-    private @Nullable AgentRollupLayout buildAgentRollupLayout(FilteredAgentRollup agentRollup,
-            Map<String, List<String>> traceAttributeNames) throws Exception {
         UiDefaultsConfig uiConfig;
         try {
-            uiConfig = configRepository.getUiDefaultsConfig(agentRollup.id());
+            uiConfig = configRepository.getUiDefaultsConfig(agentRollupId);
         } catch (AgentConfigNotFoundException e) {
             logger.debug(e.getMessage(), e);
             uiConfig = UiDefaultsConfig.newBuilder()
@@ -149,25 +127,43 @@ class LayoutService {
                     .build();
         }
         String glowrootVersion;
-        if (agentRollup.id().endsWith("::")) {
+        if (agentRollupId.endsWith("::")) {
             glowrootVersion = "";
         } else {
-            Environment environment = environmentRepository.read(agentRollup.id());
+            Environment environment = environmentRepository.read(agentRollupId);
             glowrootVersion = environment == null ? Version.UNKNOWN_VERSION
                     : environment.getJavaInfo().getGlowrootAgentVersion();
         }
+        boolean configReadOnly;
+        try {
+            configReadOnly = configRepository.isConfigReadOnly(agentRollupId);
+        } catch (AgentConfigNotFoundException e) {
+            configReadOnly = false;
+        }
         Set<String> transactionTypes = Sets.newTreeSet();
-        transactionTypes.addAll(transactionTypeRepository.read(agentRollup.id()));
-        transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(agentRollup.id()));
-        transactionTypes.addAll(liveTraceRepository.getTransactionTypes(agentRollup.id()));
+        transactionTypes.addAll(transactionTypeRepository.read(agentRollupId));
+        transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(agentRollupId));
+        transactionTypes.addAll(liveTraceRepository.getTransactionTypes(agentRollupId));
         transactionTypes.add(uiConfig.getDefaultTransactionType());
+        List<String> displayParts = agentDisplayRepository.readDisplayParts(agentRollupId);
+        String topLevelId = getTopLevelId(agentRollupId);
+        String childDisplay;
+        if (topLevelId.equals(agentRollupId)) {
+            childDisplay = "Rollup";
+        } else {
+            childDisplay = Joiner.on(" :: ").join(displayParts.subList(1, displayParts.size()));
+        }
         return ImmutableAgentRollupLayout.builder()
-                .id(agentRollup.id())
-                .display(agentRollup.display())
+                .id(agentRollupId)
+                .topLevelId(topLevelId)
+                .topLevelDisplay(displayParts.get(0))
+                .childDisplay(childDisplay)
+                .lastDisplayPart(displayParts.get(displayParts.size() - 1))
                 .glowrootVersion(glowrootVersion)
-                .permissions(agentRollup.permissions())
+                .permissions(
+                        LayoutService.getPermissions(authentication, agentRollupId, configReadOnly))
                 .addAllTransactionTypes(transactionTypes)
-                .putAllTraceAttributeNames(traceAttributeNames)
+                .putAllTraceAttributeNames(traceAttributeNameRepository.read(agentRollupId))
                 .defaultTransactionType(uiConfig.getDefaultTransactionType())
                 .defaultPercentiles(uiConfig.getDefaultPercentileList())
                 .defaultGaugeNames(uiConfig.getDefaultGaugeNameList())
@@ -205,9 +201,13 @@ class LayoutService {
         transactionTypes.addAll(transactionTypeRepository.read(AGENT_ID));
         transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(AGENT_ID));
         transactionTypes.add(uiConfig.getDefaultTransactionType());
+        String agentDisplay = getEmbeddedAgentDisplayName();
         AgentRollupLayout embeddedAgentRollup = ImmutableAgentRollupLayout.builder()
                 .id(AGENT_ID)
-                .display(getEmbeddedAgentDisplayName())
+                .topLevelId(AGENT_ID)
+                .topLevelDisplay(agentDisplay)
+                .childDisplay(agentDisplay)
+                .lastDisplayPart(agentDisplay)
                 .glowrootVersion(version)
                 .permissions(permissions)
                 .addAllTransactionTypes(transactionTypes)
@@ -416,13 +416,29 @@ class LayoutService {
         return allTimeZoneIds;
     }
 
+    private static String getTopLevelId(String agentRollupId) {
+        int index = agentRollupId.indexOf("::");
+        if (index == -1) {
+            return agentRollupId;
+        } else {
+            return agentRollupId.substring(0, index + 2);
+        }
+    }
+
     @Value.Immutable
-    interface FilteredAgentRollup {
+    interface FilteredTopLevelAgentRollup {
         String id();
         String display();
+        boolean disabled(); // user has permission to a child rollup, but not to top rollup
+    }
+
+    @Value.Immutable
+    interface FilteredChildAgentRollup {
+        String id();
+        String display(); // this is the child display (not including the top level display)
         String lastDisplayPart();
-        Permissions permissions();
-        List<FilteredAgentRollup> children();
+        boolean disabled(); // user has permission to a grandchild rollup, but not to child rollup
+        List<FilteredChildAgentRollup> children();
     }
 
     @Value.Immutable
@@ -462,7 +478,10 @@ class LayoutService {
     @Value.Immutable
     abstract static class AgentRollupLayout {
         abstract String id();
-        abstract String display();
+        abstract String topLevelId();
+        abstract String topLevelDisplay();
+        abstract String childDisplay();
+        abstract String lastDisplayPart();
         abstract String glowrootVersion();
         abstract Permissions permissions();
         abstract List<String> transactionTypes();

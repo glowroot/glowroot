@@ -63,6 +63,7 @@ import org.glowroot.common2.config.RoleConfig;
 import org.glowroot.common2.config.RoleConfig.SimplePermission;
 import org.glowroot.common2.repo.ActiveAgentRepository;
 import org.glowroot.common2.repo.ImmutableAgentRollup;
+import org.glowroot.common2.repo.ImmutableTopLevelAgentRollup;
 import org.glowroot.ui.CreateUiModuleBuilder;
 import org.glowroot.ui.SessionMapFactory;
 import org.glowroot.ui.UiModule;
@@ -408,6 +409,24 @@ class EmbeddedAgentModule {
     }
 
     private static class ActiveAgentRepositoryImpl implements ActiveAgentRepository {
+
+        @Override
+        public List<TopLevelAgentRollup> readActiveTopLevelAgentRollups(long from, long to) {
+            return ImmutableList.<TopLevelAgentRollup>of(ImmutableTopLevelAgentRollup.builder()
+                    .id("")
+                    .display("")
+                    .build());
+        }
+
+        @Override
+        public List<AgentRollup> readActiveChildAgentRollups(String topLevelId, long from,
+                long to) {
+            return ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder()
+                    .id("")
+                    .display("")
+                    .lastDisplayPart("")
+                    .build());
+        }
 
         @Override
         public List<AgentRollup> readRecentlyActiveAgentRollups(long lastXMillis) {

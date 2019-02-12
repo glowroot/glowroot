@@ -24,8 +24,8 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.ActiveAgentDao;
-import org.glowroot.central.repo.ActiveAgentDao.AgentConfigAndUpdateToken;
 import org.glowroot.central.repo.AgentConfigDao;
+import org.glowroot.central.repo.AgentConfigDao.AgentConfigAndUpdateToken;
 import org.glowroot.central.util.MoreExecutors2;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;

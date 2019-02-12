@@ -1,5 +1,5 @@
 <!--
-  Copyright 2013-2018 the original author or authors.
+  Copyright 2013-2019 the original author or authors.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -19,36 +19,77 @@
         ng-if="!layout.central">
       {{headerDisplay}}
     </h1>
-    <!-- ng-show needed here instead of ng-if because transaction.js binds directly to #agentRollupDropdown -->
+    <!-- ng-show needed here instead of ng-if because transaction.js binds directly to #topLevelAgentRollupDropdown -->
     <div ng-show="layout.central">
       <select gt-selectpicker
-              gt-title="agentRollup.display || '&amp;lt;select&amp;gt;'"
+              gt-title="agentRollup.topLevelDisplay || '&amp;lt;select&amp;gt;'"
               data-width="fit"
               data-live-search="true"
               data-style="btn-secondary"
-              id="agentRollupDropdown"
+              id="topLevelAgentRollupDropdown"
               aria-label="Agent">
-        <option ng-repeat="item in agentRollups track by item.id"
+        <option ng-repeat="item in topLevelAgentRollups track by item.id"
                 data-href="{{currentTabUrl()}}{{headerQueryString(item.id, transactionType)}}"
                 data-tokens="{{item.display}}"
                 value="{{item.id}}"
-                title="{{agentRollup.display}}"
                 ng-disabled="item.disabled"
-                ng-selected="item.id == agentRollup.id">
-          {{item.indentedDisplay}}
+                ng-selected="item.id == agentRollup.topLevelId">
+          {{item.display}}
         </option>
         <option disabled
-                class="gt-agent-rollup-dropdown-message d-none"
+                class="gt-top-level-agent-rollup-dropdown-message d-none"
                 style="font-style: italic; font-size: 1rem; cursor: inherit;"
-                ng-if="agentRollups.length === 0">
+                ng-if="topLevelAgentRollups.length === 0">
           No active agents in this time period
         </option>
         <!-- can't use gt-spinner due to selectpicker behavior -->
         <option disabled
-                class="gt-agent-rollup-dropdown-spinner d-none"
+                class="gt-top-level-agent-rollup-dropdown-spinner d-none"
                 style="position: relative; height: 30px; cursor: inherit;">
         </option>
       </select>
+      <!-- ng-show needed here instead of ng-if because transaction.js binds directly to #childAgentRollupDropdown -->
+      <!-- also important, ng-show is not on select directly, so that it will apply right away to the selectpicker which
+           is added as a sibling of select, instead of having to wait for selectpicker('refresh') which can cause a
+           slight jitter -->
+      <span ng-show="showChildAgentRollupDropdown()">
+        <select gt-selectpicker
+                gt-title="agentRollup.childDisplay"
+                data-width="fit"
+                data-live-search="true"
+                data-style="btn-secondary"
+                id="childAgentRollupDropdown"
+                aria-label="Child agent">
+          <option data-href="{{currentTabUrl()}}{{headerQueryString(agentRollup.topLevelId, transactionType)}}"
+                  data-tokens="Rollup"
+                  value="{{agentRollup.topLevelId}}"
+                  ng-selected="agentRollup.topLevelId == agentRollup.id">
+            Rollup
+          </option>
+          <option data-divider="true">
+          </option>
+          <option ng-repeat="item in childAgentRollups track by item.id"
+                  data-href="{{currentTabUrl()}}{{headerQueryString(item.id, transactionType)}}"
+                  data-tokens="{{item.display}}"
+                  value="{{item.id}}"
+                  title="{{item.display}}"
+                  ng-disabled="item.disabled"
+                  ng-selected="item.id == agentRollup.id">
+            {{item.indentedDisplay}}
+          </option>
+          <option disabled
+                  class="gt-child-agent-rollup-dropdown-message d-none"
+                  style="font-style: italic; font-size: 1rem; cursor: inherit;"
+                  ng-if="childAgentRollups.length === 0">
+            No active agents in this time period
+          </option>
+          <!-- can't use gt-spinner due to selectpicker behavior -->
+          <option disabled
+                  class="gt-child-agent-rollup-dropdown-spinner d-none"
+                  style="position: relative; height: 30px; cursor: inherit;">
+          </option>
+        </select>
+      </span>
     </div>
     <!-- don't use border to simulate vertical bar since this will jitter on reload (at least in Chrome)
          while chrome guesses the placement of the border based on default font and then it moves slightly

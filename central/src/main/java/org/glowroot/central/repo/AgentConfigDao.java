@@ -30,8 +30,8 @@ import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
 import com.google.protobuf.ByteString;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.immutables.value.Value;
 
-import org.glowroot.central.repo.ActiveAgentDao.AgentConfigAndUpdateToken;
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
@@ -305,5 +305,12 @@ public class AgentConfigDao {
 
     interface AgentConfigUpdater {
         AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception;
+    }
+
+    @Value.Immutable
+    public interface AgentConfigAndUpdateToken {
+        AgentConfig config();
+        @Nullable
+        UUID updateToken();
     }
 }

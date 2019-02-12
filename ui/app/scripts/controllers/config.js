@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,23 +98,40 @@ glowroot.controller('ConfigCtrl', [
           // need to refresh selectpicker in order to update hrefs of the items
           $timeout(function () {
             // timeout is needed so this runs after dom is updated
-            $('#agentRollupDropdown').selectpicker('refresh');
+            $('#topLevelAgentRollupDropdown').selectpicker('refresh');
+            $('#childAgentRollupDropdown').selectpicker('refresh');
           });
         }
       }, true);
 
-      var refreshAgentRollups = function () {
+      var getRefreshArgs = function () {
         var now = new Date().getTime();
-        var from = now - 7 * 24 * 60 * 60 * 1000;
-        // looking to the future just to be safe
-        var to = now + 7 * 24 * 60 * 60 * 1000;
-        $scope.refreshAgentRollups(from, to, $scope);
+        return {
+          from: now - 7 * 24 * 60 * 60 * 1000,
+          // looking to the future just to be safe
+          to: now + 7 * 24 * 60 * 60 * 1000
+        };
       };
 
-      $('#agentRollupDropdown').on('show.bs.select', refreshAgentRollups);
+      var refreshTopLevelAgentRollups = function () {
+        var args = getRefreshArgs();
+        $scope.refreshTopLevelAgentRollups(args.from, args.to, $scope);
+      };
 
-      if ($scope.agentRollups === undefined) {
-        refreshAgentRollups();
+      var refreshChildAgentRollups = function () {
+        var args = getRefreshArgs();
+        $scope.refreshChildAgentRollups(args.from, args.to, $scope);
+      };
+
+      $('#topLevelAgentRollupDropdown').on('show.bs.select', refreshTopLevelAgentRollups);
+      $('#childAgentRollupDropdown').on('show.bs.select', refreshChildAgentRollups);
+
+      if ($scope.topLevelAgentRollups === undefined) {
+        // timeout is needed to give gauge controller a chance to set chartFrom/chartTo
+        $timeout(function () {
+          refreshTopLevelAgentRollups();
+          refreshChildAgentRollups();
+        });
       }
     }
   }

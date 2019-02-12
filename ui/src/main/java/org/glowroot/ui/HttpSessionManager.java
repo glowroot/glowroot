@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.config.LdapConfig;
 import org.glowroot.common2.config.RoleConfig;
+import org.glowroot.common2.config.RoleConfig.HasAnyPermission;
 import org.glowroot.common2.config.RoleConfig.SimplePermission;
 import org.glowroot.common2.config.UserConfig;
 import org.glowroot.common2.repo.ConfigRepository;
@@ -380,6 +381,26 @@ class HttpSessionManager {
                 }
             }
             return false;
+        }
+
+        HasAnyPermission hasAnyPermissionForAgentRollup(String agentRollupId) throws Exception {
+            if (offlineViewer()) {
+                return HasAnyPermission.YES;
+            }
+            boolean onlyInChild = false;
+            for (RoleConfig roleConfig : configRepository().getRoleConfigs()) {
+                if (!roles().contains(roleConfig.name())) {
+                    continue;
+                }
+                HasAnyPermission hasAnyPermission =
+                        roleConfig.hasAnyPermissionForAgentRollup(agentRollupId);
+                if (hasAnyPermission == HasAnyPermission.YES) {
+                    return HasAnyPermission.YES;
+                } else if (hasAnyPermission == HasAnyPermission.ONLY_IN_CHILD) {
+                    onlyInChild = true;
+                }
+            }
+            return onlyInChild ? HasAnyPermission.ONLY_IN_CHILD : HasAnyPermission.NO;
         }
 
         private boolean isPermitted(SimplePermission permission) throws Exception {
