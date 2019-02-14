@@ -105,7 +105,7 @@ glowroot.controller('ConfigAlertListCtrl', [
             $('#disableAlertingModal').modal('hide');
           }, function (response) {
             $scope.disablingAlerting = false;
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     };
 
@@ -119,7 +119,7 @@ glowroot.controller('ConfigAlertListCtrl', [
             onNewData(response.data);
             deferred.resolve('Alerting enabled');
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
 
@@ -135,7 +135,7 @@ glowroot.controller('ConfigAlertListCtrl', [
           $scope.loaded = true;
           onNewData(response.data);
         }, function (response) {
-          httpErrors.handle(response, $scope);
+          httpErrors.handle(response);
         });
 
     var promise = $interval(function () {

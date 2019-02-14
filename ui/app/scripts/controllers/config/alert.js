@@ -256,7 +256,7 @@ glowroot.controller('ConfigAlertCtrl', [
             onNewData(response.data);
             $scope.loaded = true;
           }, function (response) {
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     } else {
       var url = 'backend/config/alert-dropdowns?agent-rollup-id=' + encodeURIComponent($scope.agentRollupId)
@@ -277,7 +277,7 @@ glowroot.controller('ConfigAlertCtrl', [
             });
             $scope.loaded = true;
           }, function (response) {
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     }
 
@@ -420,7 +420,7 @@ glowroot.controller('ConfigAlertCtrl', [
               $location.search({v: version}).replace();
             }
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
 
@@ -441,7 +441,7 @@ glowroot.controller('ConfigAlertCtrl', [
               $location.url('config/alert-list').replace();
             }
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
   }

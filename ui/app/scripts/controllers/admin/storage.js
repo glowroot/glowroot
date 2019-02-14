@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,7 +112,7 @@ glowroot.controller('AdminStorageCtrl', [
             onNewData(response.data);
             deferred.resolve('Saved');
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
 
@@ -122,7 +122,7 @@ glowroot.controller('AdminStorageCtrl', [
             var updatedTableCount = response.data;
             deferred.resolve('Updated ' + updatedTableCount + ' table' + (updatedTableCount === 1 ? '' : 's'));
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
 
@@ -133,7 +133,7 @@ glowroot.controller('AdminStorageCtrl', [
           .then(function () {
             deferred.resolve('Deleted');
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
 
@@ -144,7 +144,7 @@ glowroot.controller('AdminStorageCtrl', [
           .then(function () {
             deferred.resolve('Defragmented');
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
 
@@ -155,7 +155,7 @@ glowroot.controller('AdminStorageCtrl', [
           .then(function () {
             deferred.resolve('Compacted');
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
 
@@ -169,7 +169,7 @@ glowroot.controller('AdminStorageCtrl', [
             $scope.showH2DiskSpaceAnalysis = true;
             deferred.resolve('Analyzed');
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
 
@@ -183,7 +183,7 @@ glowroot.controller('AdminStorageCtrl', [
             $scope.showTraceCountAnalysis = true;
             deferred.resolve('Analyzed');
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
 
@@ -191,7 +191,7 @@ glowroot.controller('AdminStorageCtrl', [
         .then(function (response) {
           onNewData(response.data);
         }, function (response) {
-          httpErrors.handle(response, $scope);
+          httpErrors.handle(response);
         });
 
     // not using gt-form-autofocus-on-first-input in order to handle special case #rollup-capped-database-size and

@@ -68,7 +68,7 @@ glowroot.controller('JvmEnvironmentCtrl', [
             delete $scope.uptime;
           }
         }, function (response) {
-          httpErrors.handle(response, $scope);
+          httpErrors.handle(response);
         });
   }
 ]);

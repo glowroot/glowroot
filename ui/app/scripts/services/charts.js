@@ -364,7 +364,7 @@ glowroot.factory('charts', [
             if (showChartSpinner) {
               $scope.showChartSpinner--;
             }
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     }
 

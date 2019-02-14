@@ -51,7 +51,7 @@ glowroot.controller('ConfigSyntheticMonitorCtrl', [
             $scope.loaded = true;
             onNewData(response.data);
           }, function (response) {
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     } else {
       $scope.loaded = true;
@@ -150,7 +150,7 @@ glowroot.controller('ConfigSyntheticMonitorCtrl', [
               }
             }
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
 
@@ -173,7 +173,7 @@ glowroot.controller('ConfigSyntheticMonitorCtrl', [
               $location.url('config/synthetic-monitor-list').replace();
             }
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
   }

@@ -79,7 +79,7 @@ glowroot.controller('TransactionTraceFlameGraphCtrl', [
                   .call(flameGraph);
             }
           }, function (response) {
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     }
 

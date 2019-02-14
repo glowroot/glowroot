@@ -78,8 +78,10 @@ glowroot.config([
                 var oldAgentRollup = $rootScope.agentRollup;
                 $rootScope.agentRollup = response.data;
                 if (!oldAgentRollup || $rootScope.agentRollup.topLevelId !== oldAgentRollup.topLevelId) {
-                  // TODO preload here, e.g. $rootScope.refreshChildAgentRollups()
-                  $rootScope.setChildAgentRollups([]);
+                  if ($rootScope.topLevelAgentRollups !== undefined) {
+                    $rootScope.setChildAgentRollups([]);
+                    $rootScope.refreshChildAgentRollups();
+                  }
                 }
                 addTransactionType();
               }, function (response) {

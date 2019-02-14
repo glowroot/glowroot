@@ -89,12 +89,12 @@ glowroot.controller('JvmCtrl', [
 
       var refreshTopLevelAgentRollups = function () {
         var args = getRefreshArgs();
-        $scope.refreshTopLevelAgentRollups(args.from, args.to, $scope, args.message);
+        $scope.refreshTopLevelAgentRollups(args.from, args.to, args.message);
       };
 
       var refreshChildAgentRollups = function () {
         var args = getRefreshArgs();
-        $scope.refreshChildAgentRollups(args.from, args.to, $scope, args.message);
+        $scope.refreshChildAgentRollups(args.from, args.to, args.message);
       };
 
       $('#topLevelAgentRollupDropdown').on('show.bs.select', refreshTopLevelAgentRollups);

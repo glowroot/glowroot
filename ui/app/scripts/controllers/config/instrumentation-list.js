@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
               $http.get('backend/config/preload-classpath-cache?agent-id=' + encodeURIComponent($scope.agentId));
             }
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     }
 
@@ -126,7 +126,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
             refresh(deferred);
           }, function (response) {
             $scope.deletingAll = false;
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     };
 
@@ -200,7 +200,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
             refresh(deferred);
           }, function (response) {
             $scope.importing = false;
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     };
 
@@ -216,7 +216,7 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
               deferred.resolve('Success (no classes needed re-transforming)');
             }
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
 

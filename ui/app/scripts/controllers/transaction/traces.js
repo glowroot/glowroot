@@ -167,7 +167,7 @@ glowroot.controller('TracesCtrl', [
             if (showChartSpinner) {
               $scope.showChartSpinner--;
             }
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     }
 

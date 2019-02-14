@@ -90,7 +90,7 @@ glowroot.controller('JvmThreadDumpCtrl', [
               deferred.resolve('Refreshed');
             }
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
 

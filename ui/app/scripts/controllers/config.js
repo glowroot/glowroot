@@ -115,12 +115,12 @@ glowroot.controller('ConfigCtrl', [
 
       var refreshTopLevelAgentRollups = function () {
         var args = getRefreshArgs();
-        $scope.refreshTopLevelAgentRollups(args.from, args.to, $scope);
+        $scope.refreshTopLevelAgentRollups(args.from, args.to);
       };
 
       var refreshChildAgentRollups = function () {
         var args = getRefreshArgs();
-        $scope.refreshChildAgentRollups(args.from, args.to, $scope);
+        $scope.refreshChildAgentRollups(args.from, args.to);
       };
 
       $('#topLevelAgentRollupDropdown').on('show.bs.select', refreshTopLevelAgentRollups);

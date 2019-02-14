@@ -79,7 +79,7 @@ glowroot.controller('ConfigJsonCtrl', [
         onNewData(response.data);
         deferred.resolve('Saved');
       }, function (response) {
-        httpErrors.handle(response, $scope, deferred);
+        httpErrors.handle(response, deferred);
       });
     };
 
@@ -91,7 +91,7 @@ glowroot.controller('ConfigJsonCtrl', [
     }).then(function (response) {
       onNewData(response.data);
     }, function (response) {
-      httpErrors.handle(response, $scope);
+      httpErrors.handle(response);
     });
   }
 ]);

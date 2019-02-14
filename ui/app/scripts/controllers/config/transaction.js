@@ -91,7 +91,7 @@ glowroot.controller('ConfigTransactionCtrl', [
             onNewData(response.data);
             deferred.resolve('Saved');
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
 
@@ -99,7 +99,7 @@ glowroot.controller('ConfigTransactionCtrl', [
         .then(function (response) {
           onNewData(response.data);
         }, function (response) {
-          httpErrors.handle(response, $scope);
+          httpErrors.handle(response);
         });
   }
 ]);

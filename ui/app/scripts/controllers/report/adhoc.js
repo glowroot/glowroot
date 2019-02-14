@@ -108,7 +108,7 @@ glowroot.controller('ReportAdhocCtrl', [
               });
             }, function (response) {
               // TODO equivalent of $scope.showChartSpinner--;
-              httpErrors.handle(response, $scope);
+              httpErrors.handle(response);
             });
       });
     }
@@ -143,7 +143,7 @@ glowroot.controller('ReportAdhocCtrl', [
               });
             }, function (response) {
               // TODO equivalent of $scope.showChartSpinner--;
-              httpErrors.handle(response, $scope);
+              httpErrors.handle(response);
             });
       } else {
         $scope.metrics = angular.copy($scope.METRICS);
@@ -607,7 +607,7 @@ glowroot.controller('ReportAdhocCtrl', [
             if (!alreadyShowingChart) {
               deferred.resolve();
             }
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     }
 

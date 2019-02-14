@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +113,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
             $scope.agentNotConnected = response.data.agentNotConnected;
             onNewData(response.data);
           }, function (response) {
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     } else if ($scope.layout.central) {
       $http.get('backend/config/new-instrumentation-check-agent-connected?agent-id=' + encodeURIComponent($scope.agentId))
@@ -125,7 +125,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
               config: NEW_CONFIG
             });
           }, function (response) {
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     } else {
       $scope.loaded = true;
@@ -162,7 +162,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
             return response.data;
           }, function (response) {
             $scope.showClassNameSpinner--;
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     };
 
@@ -202,7 +202,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
             return response.data;
           }, function (response) {
             $scope.showMethodNameSpinner--;
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     };
 
@@ -306,7 +306,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
               $location.search({v: version}).replace();
             }
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
 
@@ -326,7 +326,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
               $location.url('config/instrumentation-list').replace();
             }
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
 
@@ -369,7 +369,7 @@ glowroot.controller('ConfigInstrumentationCtrl', [
             });
             $scope.selectedMethodSignature = $scope.methodSignatures[0];
           }, function (response) {
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     }
 

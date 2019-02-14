@@ -186,7 +186,7 @@ glowroot.controller('JvmHeapHistogramCtrl', [
               deferred.resolve('Complete');
             }
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
 

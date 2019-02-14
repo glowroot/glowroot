@@ -334,10 +334,10 @@ glowroot.controller('SyntheticMonitorsCtrl', [
     });
 
     var refreshTopLevelAgentRollups = function () {
-      $scope.refreshTopLevelAgentRollups($scope.range.chartFrom, $scope.range.chartTo, $scope);
+      $scope.refreshTopLevelAgentRollups($scope.range.chartFrom, $scope.range.chartTo);
     };
     var refreshChildAgentRollups = function () {
-      $scope.refreshChildAgentRollups($scope.range.chartFrom, $scope.range.chartTo, $scope);
+      $scope.refreshChildAgentRollups($scope.range.chartFrom, $scope.range.chartTo);
     };
 
     $('#topLevelAgentRollupDropdown').on('show.bs.select', refreshTopLevelAgentRollups);

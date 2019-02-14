@@ -54,7 +54,7 @@ glowroot.controller('JvmJstackCtrl', [
               deferred.resolve('Refreshed');
             }
           }, function (response) {
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     };
 

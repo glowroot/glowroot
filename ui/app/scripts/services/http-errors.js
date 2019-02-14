@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2017 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ glowroot.factory('httpErrors', [
     }
 
     return {
-      handle: function (response, $scope, deferred) {
+      handle: function (response, deferred) {
         if (deferred) {
           // all actions that need to handle HTTP Precondition Failed pass a deferred object
           if (response.status === 403) {

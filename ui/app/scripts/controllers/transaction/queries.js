@@ -341,7 +341,7 @@ glowroot.controller('TransactionQueriesCtrl', [
             }
           }, function (response) {
             $scope.showSpinner--;
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     }
   }

@@ -86,7 +86,7 @@ glowroot.controller('AdminUserCtrl', [
             $scope.loaded = true;
             onNewData(response.data);
           }, function (response) {
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     } else {
       $http.get('backend/admin/all-role-names')
@@ -101,7 +101,7 @@ glowroot.controller('AdminUserCtrl', [
               ldapAvailable: response.data.ldapAvailable
             });
           }, function (response) {
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     }
 
@@ -158,7 +158,7 @@ glowroot.controller('AdminUserCtrl', [
               deferred.reject('There is already a user with this username');
               return;
             }
-            httpErrors.handle(response, $scope, deferred);
+            httpErrors.handle(response, deferred);
           });
     }
 
@@ -211,7 +211,7 @@ glowroot.controller('AdminUserCtrl', [
             $location.url('admin/user-list').replace();
           }, function (response) {
             $scope.deleting = false;
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     };
   }

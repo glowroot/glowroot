@@ -374,7 +374,11 @@ glowroot.run([
     $rootScope.showRefreshTopLevelAgentRollupSpinner = 0;
     var refreshTopLevelAgentRollupSpinner;
 
-    $rootScope.refreshTopLevelAgentRollups = function (from, to, $scope, message) {
+    var mostRecentRefreshFrom;
+    var mostRecentRefreshTo;
+    var mostRecentRefreshMessage;
+
+    $rootScope.refreshTopLevelAgentRollups = function (from, to, message) {
       $rootScope.showRefreshTopLevelAgentRollupSpinner++;
       var $selector = $('a.gt-top-level-agent-rollup-dropdown-spinner');
       if ($rootScope.showRefreshTopLevelAgentRollupSpinner && !refreshTopLevelAgentRollupSpinner && $selector.length) {
@@ -389,6 +393,10 @@ glowroot.run([
               refreshTopLevelAgentRollupSpinner = undefined;
             }
             $rootScope.setTopLevelAgentRollups(response.data);
+
+            mostRecentRefreshFrom = from;
+            mostRecentRefreshTo = to;
+            mostRecentRefreshMessage = message;
 
             $timeout(function () {
               // timeout is needed so this runs after dom is updated
@@ -412,16 +420,21 @@ glowroot.run([
               refreshTopLevelAgentRollupSpinner.stop();
               refreshTopLevelAgentRollupSpinner = undefined;
             }
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     };
 
     $rootScope.showRefreshChildAgentRollupSpinner = 0;
     var refreshChildAgentRollupSpinner;
 
-    $rootScope.refreshChildAgentRollups = function (from, to, $scope, message) {
-      if (!$scope.showChildAgentRollupDropdown()) {
+    $rootScope.refreshChildAgentRollups = function (from, to, message) {
+      if (!$rootScope.showChildAgentRollupDropdown()) {
         return;
+      }
+      if (from === undefined && to === undefined) {
+        from = mostRecentRefreshFrom;
+        to = mostRecentRefreshTo;
+        message = mostRecentRefreshMessage;
       }
       $rootScope.showRefreshChildAgentRollupSpinner++;
       var $selector = $('a.gt-child-agent-rollup-dropdown-spinner');
@@ -429,7 +442,7 @@ glowroot.run([
         refreshChildAgentRollupSpinner = Glowroot.showSpinner($selector, null, 0.4);
         $('a.gt-child-agent-rollup-dropdown-message').addClass('d-none');
       }
-      $http.get('backend/child-agent-rollups?top-level-id=' + encodeURIComponent($scope.agentRollup.topLevelId) + '&from=' + from + '&to=' + to)
+      $http.get('backend/child-agent-rollups?top-level-id=' + encodeURIComponent($rootScope.agentRollup.topLevelId) + '&from=' + from + '&to=' + to)
           .then(function (response) {
             $rootScope.showRefreshChildAgentRollupSpinner--;
             if (!$rootScope.showRefreshChildAgentRollupSpinner && refreshChildAgentRollupSpinner) {
@@ -460,7 +473,7 @@ glowroot.run([
               refreshChildAgentRollupSpinner.stop();
               refreshChildAgentRollupSpinner = undefined;
             }
-            httpErrors.handle(response, $scope);
+            httpErrors.handle(response);
           });
     };
 
