@@ -382,7 +382,7 @@ glowroot.run([
       $rootScope.showRefreshTopLevelAgentRollupSpinner++;
       var $selector = $('a.gt-top-level-agent-rollup-dropdown-spinner');
       if ($rootScope.showRefreshTopLevelAgentRollupSpinner && !refreshTopLevelAgentRollupSpinner && $selector.length) {
-        refreshTopLevelAgentRollupSpinner = Glowroot.showSpinner($selector, null, 0.4);
+        refreshTopLevelAgentRollupSpinner = Glowroot.showSpinner($selector, null, 0.4, 300);
         $('a.gt-top-level-agent-rollup-dropdown-message').addClass('d-none');
       }
       $http.get('backend/top-level-agent-rollups?from=' + from + '&to=' + to)
@@ -406,7 +406,7 @@ glowroot.run([
                   refreshTopLevelAgentRollupSpinner.stop();
                 }
                 var $selector = $('a.gt-top-level-agent-rollup-dropdown-spinner');
-                refreshTopLevelAgentRollupSpinner = Glowroot.showSpinner($selector, null, 0.4, true);
+                refreshTopLevelAgentRollupSpinner = Glowroot.showSpinner($selector, null, 0.4, 0);
               } else {
                 $('a.gt-top-level-agent-rollup-dropdown-message').removeClass('d-none');
                 if (message) {
@@ -439,7 +439,7 @@ glowroot.run([
       $rootScope.showRefreshChildAgentRollupSpinner++;
       var $selector = $('a.gt-child-agent-rollup-dropdown-spinner');
       if ($rootScope.showRefreshChildAgentRollupSpinner && !refreshChildAgentRollupSpinner && $selector.length) {
-        refreshChildAgentRollupSpinner = Glowroot.showSpinner($selector, null, 0.4);
+        refreshChildAgentRollupSpinner = Glowroot.showSpinner($selector, null, 0.4, 300);
         $('a.gt-child-agent-rollup-dropdown-message').addClass('d-none');
       }
       $http.get('backend/child-agent-rollups?top-level-id=' + encodeURIComponent($rootScope.agentRollup.topLevelId) + '&from=' + from + '&to=' + to)
@@ -459,7 +459,7 @@ glowroot.run([
                   refreshChildAgentRollupSpinner.stop();
                 }
                 var $selector = $('a.gt-child-agent-rollup-dropdown-spinner');
-                refreshChildAgentRollupSpinner = Glowroot.showSpinner($selector, null, 0.4, true);
+                refreshChildAgentRollupSpinner = Glowroot.showSpinner($selector, null, 0.4, 0);
               } else {
                 $('a.gt-child-agent-rollup-dropdown-message').removeClass('d-none');
                 if (message) {
@@ -641,7 +641,7 @@ Glowroot = (function () {
     });
   }
 
-  function showSpinner(selector, callbackOnStart, scale, noDelay) {
+  function showSpinner(selector, callbackOnStart, scale, delay) {
     var element = $(selector)[0];
     var options = {
       lines: 9,
@@ -654,7 +654,7 @@ Glowroot = (function () {
     }
     var spinner = new Spinner(options);
 
-    if (noDelay) {
+    if (delay === 0) {
       $(element).removeClass('d-none');
       spinner.spin(element);
       if (callbackOnStart) {
@@ -668,7 +668,7 @@ Glowroot = (function () {
         if (callbackOnStart) {
           callbackOnStart();
         }
-      }, 100);
+      }, delay === undefined ? 100 : delay);
     }
 
     return {
