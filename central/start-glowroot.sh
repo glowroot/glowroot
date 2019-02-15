@@ -1,5 +1,5 @@
 #!/bin/sh
 # 
 
-java $GLOWROOT_OPTS -jar glowroot-central.jar
+exec java $GLOWROOT_OPTS -jar glowroot-central.jar
 
