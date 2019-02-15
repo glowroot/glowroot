@@ -1,6 +1,6 @@
 FROM openjdk:8
 
-ENV GLOWROOT_OPTS="-XX:+PrintFlagsFinal -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
+ENV GLOWROOT_OPTS="-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap"
 
 COPY target/glowroot-central-*.zip /tmp/glowroot-central.zip
 
