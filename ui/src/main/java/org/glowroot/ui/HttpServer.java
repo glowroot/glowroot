@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.ServerBootstrap;
@@ -37,6 +38,7 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.util.concurrent.Future;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -47,6 +49,7 @@ import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 class HttpServer {
 
@@ -212,8 +215,12 @@ class HttpServer {
     // used by tests and by central ui
     void close() throws Exception {
         logger.debug("close(): stopping http server");
-        workerGroup.shutdownGracefully().get();
-        bossGroup.shutdownGracefully().get();
+        Future<?> workerShutdownFuture = workerGroup.shutdownGracefully(1, 5, SECONDS);
+        Future<?> bossShutdownFuture = bossGroup.shutdownGracefully(1, 5, SECONDS);
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        workerShutdownFuture.get(10, SECONDS);
+        long remainingMillis = Math.max(0, 10000 - stopwatch.elapsed(MILLISECONDS));
+        bossShutdownFuture.get(remainingMillis, MILLISECONDS);
         logger.debug("close(): http server stopped");
     }
 

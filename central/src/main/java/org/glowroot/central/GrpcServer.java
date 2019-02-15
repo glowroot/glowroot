@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutorService;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSessionContext;
 
+import com.google.common.base.Stopwatch;
 import io.grpc.Server;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
@@ -55,6 +56,7 @@ import org.glowroot.common.util.Clock;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -137,8 +139,8 @@ class GrpcServer {
         return downstreamService;
     }
 
-    void close() throws InterruptedException {
-        if (confDirWatchExecutor != null) {
+    void close(boolean jvmTermination) throws InterruptedException {
+        if (confDirWatchExecutor != null && !jvmTermination) {
             // shutdownNow() is needed here to send interrupt to conf dir watching thread
             confDirWatchExecutor.shutdownNow();
             if (!confDirWatchExecutor.awaitTermination(10, SECONDS)) {
@@ -156,7 +158,6 @@ class GrpcServer {
         // time for agents to reconnect to a new central cluster node, and for the UI to retry
         // for a few seconds if it receives a "shutting-down" response
 
-        // shutdown to prevent new grpc requests
         if (httpsServer != null) {
             // stop accepting new requests
             httpsServer.shutdown();
@@ -165,20 +166,39 @@ class GrpcServer {
             // stop accepting new requests
             httpServer.shutdown();
         }
-        // wait for existing requests to complete
-        SECONDS.sleep(5);
+        Stopwatch stopwatch = Stopwatch.createStarted();
         if (httpsServer != null) {
-            shutdownNow(httpsServer);
+            // wait for existing requests to complete
+            while (stopwatch.elapsed(SECONDS) < 5) {
+                if (httpsServer.isTerminated()) {
+                    break;
+                }
+                Thread.sleep(10);
+            }
         }
         if (httpServer != null) {
-            shutdownNow(httpServer);
+            // wait for existing requests to complete
+            while (stopwatch.elapsed(SECONDS) < 5) {
+                if (httpServer.isTerminated()) {
+                    break;
+                }
+                Thread.sleep(10);
+            }
         }
-    }
-
-    private static void shutdownNow(Server server) throws InterruptedException {
-        // TODO shutdownNow() has been needed to interrupt grpc threads since grpc-java 1.7.0
-        server.shutdownNow();
-        if (!server.awaitTermination(10, SECONDS)) {
+        if (httpsServer != null && !httpsServer.isTerminated()) {
+            httpsServer.shutdownNow();
+        }
+        if (httpServer != null && !httpServer.isTerminated()) {
+            httpServer.shutdownNow();
+        }
+        stopwatch = Stopwatch.createStarted();
+        if (httpsServer != null && !httpsServer.isTerminated()
+                && !httpsServer.awaitTermination(5, SECONDS)) {
+            throw new IllegalStateException("Timed out waiting for grpc server to terminate");
+        }
+        long remainingMillis = Math.max(0, 5000 - stopwatch.elapsed(MILLISECONDS));
+        if (httpServer != null && !httpServer.isTerminated()
+                && !httpServer.awaitTermination(remainingMillis, MILLISECONDS)) {
             throw new IllegalStateException("Timed out waiting for grpc server to terminate");
         }
     }

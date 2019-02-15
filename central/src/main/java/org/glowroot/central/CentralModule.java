@@ -22,13 +22,17 @@ import java.io.Writer;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.security.CodeSource;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
 import javax.servlet.ServletContext;
@@ -75,6 +79,7 @@ import org.glowroot.central.repo.SchemaUpgrade;
 import org.glowroot.central.repo.Tools;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.MoreExecutors2;
+import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.util.Clock;
@@ -300,7 +305,7 @@ public class CentralModule {
             // try to shut down cleanly, otherwise apache commons daemon (via Procrun) doesn't
             // know service failed to start up
             if (uiModule != null) {
-                uiModule.close();
+                uiModule.close(false);
             }
             if (syntheticMonitorService != null) {
                 syntheticMonitorService.close();
@@ -312,7 +317,7 @@ public class CentralModule {
                 updateAgentConfigIfNeededService.close();
             }
             if (grpcServer != null) {
-                grpcServer.close();
+                grpcServer.close(false);
             }
             if (centralAlertingService != null) {
                 centralAlertingService.close();
@@ -355,22 +360,38 @@ public class CentralModule {
         return uiModule.getCommonHandler();
     }
 
-    public void shutdown() {
+    public void shutdown(boolean jvmTermination) {
         if (startupLogger != null) {
             startupLogger.info("shutting down...");
         }
         try {
-            // close down external inputs first (ui and grpc)
-            uiModule.close();
-            syntheticMonitorService.close();
-            rollupService.close();
+            ExecutorService executor = Executors.newCachedThreadPool();
+            List<Future<?>> futures = new ArrayList<>();
+            // gracefully close down external inputs first (ui and grpc)
+            futures.add(submit(executor, () -> uiModule.close(jvmTermination)));
             // updateAgentConfigIfNeededService depends on grpc downstream, so must be shutdown
             // before grpc
-            updateAgentConfigIfNeededService.close();
-            grpcServer.close();
-            centralAlertingService.close();
-            alertingService.close();
-            repos.close();
+            futures.add(submit(executor, updateAgentConfigIfNeededService::close));
+            futures.add(submit(executor, () -> grpcServer.close(jvmTermination)));
+
+            if (jvmTermination) {
+                // nothing else needs orderly shutdown when JVM is being terminated
+                MoreFutures.waitForAll(futures);
+                if (startupLogger != null) {
+                    startupLogger.info("shutdown complete");
+                }
+                return;
+            }
+
+            // forcefully close down background tasks
+            submit(executor, syntheticMonitorService::close);
+            submit(executor, rollupService::close);
+            submit(executor, centralAlertingService::close);
+            submit(executor, alertingService::close);
+            submit(executor, repos::close);
+
+            MoreFutures.waitForAll(futures);
+
             repoAsyncExecutor.shutdown();
             session.close();
             cluster.close();
@@ -956,6 +977,20 @@ public class CentralModule {
         // install jul-to-slf4j bridge for guava/grpc/protobuf which log to jul
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
+    }
+
+    private static Future<?> submit(ExecutorService executor, ShutdownFunction fn) {
+        return executor.submit(new Callable</*@Nullable*/ Void>() {
+            @Override
+            public @Nullable Void call() throws Exception {
+                fn.run();
+                return null;
+            }
+        });
+    }
+
+    private interface ShutdownFunction {
+        void run() throws Exception;
     }
 
     @Value.Immutable

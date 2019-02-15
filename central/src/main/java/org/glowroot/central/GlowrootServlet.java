@@ -81,7 +81,7 @@ public class GlowrootServlet extends HttpServlet {
     @Override
     public void destroy() {
         if (centralModule != null) {
-            centralModule.shutdown();
+            centralModule.shutdown(false);
         }
     }
 

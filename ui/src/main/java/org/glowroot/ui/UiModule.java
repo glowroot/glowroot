@@ -272,10 +272,12 @@ public class UiModule {
     }
 
     // used by tests and by central ui
-    public void close() throws Exception {
+    public void close(boolean jvmTermination) throws Exception {
         if (httpServer != null) {
             httpServer.close();
         }
-        reportingExecutor.shutdown();
+        if (!jvmTermination) {
+            reportingExecutor.shutdown();
+        }
     }
 }

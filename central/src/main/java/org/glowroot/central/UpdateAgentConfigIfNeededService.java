@@ -84,7 +84,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
             throw new IllegalStateException(
                     "Timed out waiting for update agent config main loop thread to terminate");
         }
-        // shutdownNow() is needed here to send interrupt to thread
+        // shutdownNow() is needed here to send interrupt to threads
         workerExecutor.shutdownNow();
         if (!workerExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException(
