@@ -131,6 +131,7 @@ message AgentConfig {
         string transaction_type = 2;
         string transaction_name = 3;
         OptionalDouble percentile = 4;
+        string error_message_filter = 5;
 
         double threshold = 100;
         bool lower_bound_threshold = 101;

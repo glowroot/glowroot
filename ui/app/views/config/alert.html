@@ -159,6 +159,20 @@
               The transaction response time percentile to use for alerting.
             </div>
           </div>
+          <div gt-form-group
+               gt-label="Error message filter"
+               gt-model="config.condition.errorMessageFilter"
+               gt-disabled="!agentRollup.permissions.config.edit.alerts"
+               gt-width="30em"
+               ng-if="config.condition.metric === 'error:count'">
+            <div class="help-block">
+              (Optional) Count errors that contain this text in the error message. The comparison is case-sensitive.
+              Enclose the text in forward slashes to use a
+              <a href="https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html">regular expression</a>,
+              e.g. <code>/Read timed out|Connection reset/</code> will count errors that contains either
+              "Read timed out" or "Connection reset" in the error message.
+            </div>
+          </div>
           <div class="form-group row">
             <label class="col-xl-3 gt-form-label-xl"
                    for="conditionThreshold">

@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.google.common.collect.ImmutableList;
+import com.google.common.base.Strings;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
@@ -160,17 +160,12 @@ public abstract class AlertConfig {
             AgentConfig.AlertConfig.AlertCondition.MetricCondition condition) {
         ImmutableMetricCondition.Builder builder = ImmutableMetricCondition.builder()
                 .metric(condition.getMetric());
-        String transactionType = condition.getTransactionType();
-        if (transactionType != null) {
-            builder.transactionType(transactionType);
-        }
-        String transactionName = condition.getTransactionName();
-        if (transactionName != null) {
-            builder.transactionName(transactionName);
-        }
+        builder.transactionType(Strings.emptyToNull(condition.getTransactionType()));
+        builder.transactionName(Strings.emptyToNull(condition.getTransactionName()));
         if (condition.hasPercentile()) {
             builder.percentile(condition.getPercentile().getValue());
         }
+        builder.errorMessageFilter(Strings.emptyToNull(condition.getErrorMessageFilter()));
         return builder.threshold(condition.getThreshold())
                 .lowerBoundThreshold(condition.getLowerBoundThreshold())
                 .timePeriodSeconds(condition.getTimePeriodSeconds())
@@ -206,19 +201,14 @@ public abstract class AlertConfig {
         AgentConfig.AlertConfig.AlertCondition.MetricCondition.Builder builder =
                 AgentConfig.AlertConfig.AlertCondition.MetricCondition.newBuilder()
                         .setMetric(condition.metric());
-        String transactionType = condition.transactionType();
-        if (transactionType != null) {
-            builder.setTransactionType(transactionType);
-        }
-        String transactionName = condition.transactionName();
-        if (transactionName != null) {
-            builder.setTransactionName(transactionName);
-        }
+        builder.setTransactionType(Strings.nullToEmpty(condition.transactionType()))
+                .setTransactionName(Strings.nullToEmpty(condition.transactionName()));
         Double percentile = condition.percentile();
         if (percentile != null) {
             builder.setPercentile(OptionalDouble.newBuilder().setValue(percentile));
         }
-        return builder.setThreshold(condition.threshold())
+        return builder.setErrorMessageFilter(Strings.nullToEmpty(condition.errorMessageFilter()))
+                .setThreshold(condition.threshold())
                 .setLowerBoundThreshold(condition.lowerBoundThreshold())
                 .setTimePeriodSeconds(condition.timePeriodSeconds())
                 .setMinTransactionCount(condition.minTransactionCount())
@@ -255,6 +245,7 @@ public abstract class AlertConfig {
         abstract @Nullable String transactionType();
         abstract @Nullable String transactionName();
         abstract @Nullable Double percentile();
+        abstract @Nullable String errorMessageFilter();
         abstract double threshold();
         @Value.Default
         @JsonInclude(value = Include.NON_EMPTY)
@@ -283,7 +274,7 @@ public abstract class AlertConfig {
 
     @Value.Immutable
     interface EmailNotification {
-        ImmutableList<String> emailAddresses();
+        List<String> emailAddresses();
     }
 
     @Value.Immutable

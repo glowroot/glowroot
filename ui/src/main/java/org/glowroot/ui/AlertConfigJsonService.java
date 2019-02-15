@@ -16,6 +16,7 @@
 package org.glowroot.ui;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -48,6 +49,8 @@ import org.glowroot.common2.repo.Utils;
 import org.glowroot.common2.repo.util.AlertingService;
 import org.glowroot.common2.repo.util.Formatting;
 import org.glowroot.common2.repo.util.Gauges;
+import org.glowroot.ui.AlertConfigJsonService.AlertConfigDto.AlertConditionDto;
+import org.glowroot.ui.AlertConfigJsonService.AlertConfigDto.MetricConditionDto;
 import org.glowroot.ui.GaugeValueJsonService.GaugeOrdering;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
@@ -122,6 +125,7 @@ class AlertConfigJsonService {
     @POST(path = "/backend/config/alerts/add", permission = "agent:config:edit:alerts")
     String addAlert(@BindAgentRollupId String agentRollupId, @BindRequest AlertConfigDto configDto)
             throws Exception {
+        validate(configDto);
         AlertConfig alertConfig = configDto.toProto();
         configRepository.insertAlertConfig(agentRollupId, alertConfig);
         return getAlertResponse(agentRollupId, alertConfig);
@@ -131,6 +135,7 @@ class AlertConfigJsonService {
     @POST(path = "/backend/config/alerts/update", permission = "agent:config:edit:alerts")
     String updateAlert(@BindAgentRollupId String agentRollupId,
             @BindRequest AlertConfigDto configDto) throws Exception {
+        validate(configDto);
         AlertConfig alertConfig = configDto.toProto();
         configRepository.updateAlertConfig(agentRollupId, alertConfig, configDto.version().get());
         return getAlertResponse(agentRollupId, alertConfig);
@@ -246,6 +251,19 @@ class AlertConfigJsonService {
         }
     }
 
+    private static void validate(AlertConfigDto configDto) {
+        AlertConditionDto condition = configDto.condition();
+        if (condition instanceof MetricConditionDto) {
+            MetricConditionDto metricCondition = (MetricConditionDto) condition;
+            String errorMessageFilter = metricCondition.errorMessageFilter();
+            if (errorMessageFilter != null && errorMessageFilter.startsWith("/")
+                    && errorMessageFilter.endsWith("/")) {
+                // this will throw PatternSyntaxException if invalid regex
+                Pattern.compile(errorMessageFilter.substring(1, errorMessageFilter.length() - 1));
+            }
+        }
+    }
+
     private static String getConditionDisplay(MetricCondition metricCondition) {
         StringBuilder sb = new StringBuilder();
         String metric = metricCondition.getMetric();
@@ -279,7 +297,17 @@ class AlertConfigJsonService {
         } else if (metric.equals("error:rate")) {
             sb.append("error rate");
         } else if (metric.equals("error:count")) {
-            sb.append("error count");
+            String errorMessageFilter = metricCondition.getErrorMessageFilter();
+            if (errorMessageFilter.isEmpty()) {
+                sb.append("error count");
+            } else if (errorMessageFilter.startsWith("/") && errorMessageFilter.endsWith("/")) {
+                sb.append("error count matching ");
+                sb.append(errorMessageFilter);
+            } else {
+                sb.append("error count containing \"");
+                sb.append(errorMessageFilter);
+                sb.append("\"");
+            }
         } else if (metric.startsWith("gauge:")) {
             sb.append("average");
         } else {
@@ -547,6 +575,7 @@ class AlertConfigJsonService {
             if (condition.hasPercentile()) {
                 builder.percentile(condition.getPercentile().getValue());
             }
+            builder.errorMessageFilter(condition.getErrorMessageFilter());
             if (AlertingService.hasMinTransactionCount(condition.getMetric())) {
                 builder.minTransactionCount(condition.getMinTransactionCount());
             }
@@ -592,6 +621,9 @@ class AlertConfigJsonService {
             if (percentile != null) {
                 builder.setPercentile(OptionalDouble.newBuilder().setValue(percentile));
             }
+            if (AlertingService.hasErrorMessageFilter(condition.metric())) {
+                builder.setErrorMessageFilter(checkNotNull(condition.errorMessageFilter()));
+            }
             if (AlertingService.hasMinTransactionCount(condition.metric())) {
                 builder.setMinTransactionCount(checkNotNull(condition.minTransactionCount()));
             }
@@ -631,6 +663,7 @@ class AlertConfigJsonService {
             abstract @Nullable String transactionType();
             abstract @Nullable String transactionName();
             abstract @Nullable Double percentile();
+            abstract @Nullable String errorMessageFilter();
             abstract double threshold();
             @Value.Default
             @JsonInclude(value = Include.NON_EMPTY)
@@ -655,7 +688,7 @@ class AlertConfigJsonService {
 
         @Value.Immutable
         public interface EmailNotificationDto {
-            ImmutableList<String> emailAddresses();
+            List<String> emailAddresses();
         }
 
         @Value.Immutable

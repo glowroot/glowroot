@@ -60,6 +60,7 @@ import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common2.repo.IncidentRepository;
 import org.glowroot.common2.repo.IncidentRepository.OpenIncident;
+import org.glowroot.common2.repo.TraceRepository;
 import org.glowroot.common2.repo.Utils;
 import org.glowroot.common2.repo.util.HttpClient.TooManyRequestsHttpResponseException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
@@ -99,7 +100,8 @@ public class AlertingService {
 
     public AlertingService(ConfigRepository configRepository, IncidentRepository incidentRepository,
             AggregateRepository aggregateRepository, GaugeValueRepository gaugeValueRepository,
-            RollupLevelService rollupLevelService, MailService mailService, HttpClient httpClient,
+            TraceRepository traceRepository, RollupLevelService rollupLevelService,
+            MailService mailService, HttpClient httpClient,
             LockSet<IncidentKey> openingIncidentLockSet,
             LockSet<IncidentKey> resolvingIncidentLockSet, Clock clock) {
         this.configRepository = configRepository;
@@ -109,8 +111,8 @@ public class AlertingService {
         this.openingIncidentLockSet = openingIncidentLockSet;
         this.resolvingIncidentLockSet = resolvingIncidentLockSet;
         this.clock = clock;
-        this.metricService =
-                new MetricService(aggregateRepository, gaugeValueRepository, rollupLevelService);
+        this.metricService = new MetricService(aggregateRepository, gaugeValueRepository,
+                traceRepository, rollupLevelService);
         pagerDutyRetryExecutor = Executors.newSingleThreadScheduledExecutor();
     }
 
@@ -281,7 +283,17 @@ public class AlertingService {
         } else if (metric.equals("error:rate")) {
             message.append("Error rate");
         } else if (metric.equals("error:count")) {
-            message.append("Error count");
+            String errorMessageFilter = metricCondition.getErrorMessageFilter();
+            if (errorMessageFilter.isEmpty()) {
+                message.append("Error count");
+            } else if (errorMessageFilter.startsWith("/") && errorMessageFilter.endsWith("/")) {
+                message.append("error count matching ");
+                message.append(errorMessageFilter);
+            } else {
+                message.append("error count containing \"");
+                message.append(errorMessageFilter);
+                message.append("\"");
+            }
         } else if (metric.startsWith("gauge:")) {
             String gaugeName = metric.substring("gauge:".length());
             gauge = Gauges.getGauge(gaugeName);
@@ -480,6 +492,10 @@ public class AlertingService {
     public static boolean hasMinTransactionCount(String metric) {
         return hasTransactionTypeAndName(metric) && !metric.equals("transaction:count")
                 && !metric.equals("error:count");
+    }
+
+    public static boolean hasErrorMessageFilter(String metric) {
+        return metric.equals("error:count");
     }
 
     private static String getPreLowerBoundText(boolean ok) {

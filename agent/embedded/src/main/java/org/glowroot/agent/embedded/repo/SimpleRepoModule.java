@@ -126,8 +126,8 @@ public class SimpleRepoModule {
         httpClient = new HttpClient(configRepository);
 
         alertingService = new AlertingService(configRepository, incidentDao, aggregateDao,
-                gaugeValueDao, rollupLevelService, new MailService(), httpClient, newLockSet(),
-                newLockSet(), clock);
+                gaugeValueDao, traceDao, rollupLevelService, new MailService(), httpClient,
+                newLockSet(), newLockSet(), clock);
         if (backgroundExecutor == null) {
             reaperRunnable = null;
         } else {

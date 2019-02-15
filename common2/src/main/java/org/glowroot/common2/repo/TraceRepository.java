@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package org.glowroot.common2.repo;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
@@ -46,6 +45,9 @@ public interface TraceRepository {
 
     ErrorMessageResult readErrorMessages(String agentRollupId, TraceQuery query,
             ErrorMessageFilter filter, long resolutionMillis, int limit) throws Exception;
+
+    long readErrorMessageCount(String agentRollupId, TraceQuery query, String errorMessageFilter)
+            throws Exception;
 
     // null return value means trace not found
     @Nullable
@@ -92,8 +94,8 @@ public interface TraceRepository {
 
     @Value.Immutable
     interface ErrorMessageFilter {
-        ImmutableList<String> includes();
-        ImmutableList<String> excludes();
+        List<String> includes();
+        List<String> excludes();
     }
 
     @Value.Immutable

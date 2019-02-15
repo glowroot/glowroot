@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.datastax.driver.core.BoundStatement;
@@ -986,6 +987,40 @@ public class TraceDaoImpl implements TraceDao {
                     .counts(new Result<>(counts, false))
                     .build();
         }
+    }
+
+    @Override
+    public long readErrorMessageCount(String agentRollupId, TraceQuery query,
+            String errorMessageFilter) throws Exception {
+        BoundStatement boundStatement;
+        String transactionName = query.transactionName();
+        if (transactionName == null) {
+            boundStatement = readOverallErrorMessage.bind();
+            bindTraceQuery(boundStatement, agentRollupId, query, true);
+        } else {
+            boundStatement = readTransactionErrorMessage.bind();
+            bindTraceQuery(boundStatement, agentRollupId, query, false);
+        }
+        Pattern errorMessagePattern;
+        if (errorMessageFilter.startsWith("/") && errorMessageFilter.endsWith("/")) {
+            // case insensitive search must be explicit via (?i) at beginning of pattern
+            errorMessagePattern = Pattern.compile(
+                    errorMessageFilter.substring(1, errorMessageFilter.length() - 1),
+                    Pattern.DOTALL);
+        } else {
+            errorMessagePattern = null;
+        }
+        ResultSet results = session.read(boundStatement);
+        long count = 0;
+        for (Row row : results) {
+            String errorMessage = checkNotNull(row.getString(1));
+            if (errorMessagePattern == null && errorMessage.contains(errorMessageFilter)
+                    || errorMessagePattern != null
+                            && errorMessagePattern.matcher(errorMessage).find()) {
+                count++;
+            }
+        }
+        return count;
     }
 
     @Override

@@ -210,8 +210,8 @@ public class CentralModule {
                     clusterManager.createReplicatedLockSet("resolvingIncidentLockSet", 60, SECONDS);
             alertingService = new AlertingService(repos.getConfigRepository(),
                     repos.getIncidentDao(), repos.getAggregateDao(), repos.getGaugeValueDao(),
-                    repos.getRollupLevelService(), new MailService(), httpClient,
-                    openingIncidentLockSet, resolvingIncidentLockSet, clock);
+                    repos.getTraceDao(), repos.getRollupLevelService(), new MailService(),
+                    httpClient, openingIncidentLockSet, resolvingIncidentLockSet, clock);
             HeartbeatAlertingService heartbeatAlertingService = new HeartbeatAlertingService(
                     repos.getHeartbeatDao(), repos.getIncidentDao(), alertingService,
                     repos.getConfigRepository());

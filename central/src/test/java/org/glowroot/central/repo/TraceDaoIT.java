@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -311,5 +311,53 @@ public class TraceDaoIT {
 
         // then
         assertThat(queryResult.records()).isEmpty();
+    }
+
+    @Test
+    public void shouldReadTraceError() throws Exception {
+        // given
+        Trace trace = TraceTestData.createTrace(false); // partial records are not inserted into
+                                                        // error tables
+        trace = trace.toBuilder()
+                .setHeader(trace.getHeader().toBuilder()
+                        .setError(Trace.Error.newBuilder()
+                                .setMessage("this is A test")))
+                .build();
+        traceDao.store(AGENT_ID, trace);
+        TraceQuery query = ImmutableTraceQuery.builder()
+                .transactionType("unit test")
+                .from(0)
+                .to(100)
+                .build();
+
+        // when
+        long count = traceDao.readErrorMessageCount(AGENT_ID, query, "is A");
+
+        // then
+        assertThat(count).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldReadTraceErrorCaseInsensitive() throws Exception {
+        // given
+        Trace trace = TraceTestData.createTrace(false); // partial records are not inserted into
+                                                        // error tables
+        trace = trace.toBuilder()
+                .setHeader(trace.getHeader().toBuilder()
+                        .setError(Trace.Error.newBuilder()
+                                .setMessage("this is A test")))
+                .build();
+        traceDao.store(AGENT_ID, trace);
+        TraceQuery query = ImmutableTraceQuery.builder()
+                .transactionType("unit test")
+                .from(0)
+                .to(100)
+                .build();
+
+        // when
+        long count = traceDao.readErrorMessageCount(AGENT_ID, query, "/(?i)is a/");
+
+        // then
+        assertThat(count).isEqualTo(1);
     }
 }

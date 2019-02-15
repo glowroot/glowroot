@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import org.glowroot.common2.repo.AggregateRepository;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.IncidentRepository;
+import org.glowroot.common2.repo.TraceRepository;
 import org.glowroot.common2.repo.Utils;
 import org.glowroot.common2.repo.util.AlertingService.IncidentKey;
 import org.glowroot.common2.repo.util.LockSet.LockSetImpl;
@@ -130,6 +131,7 @@ public class AlertingServiceTest {
     private IncidentRepository incidentRepository;
     private AggregateRepository aggregateRepository;
     private GaugeValueRepository gaugeValueRepository;
+    private TraceRepository traceRepository;
     private RollupLevelService rollupLevelService;
     private MockMailService mailService;
     private HttpClient httpClient;
@@ -140,6 +142,7 @@ public class AlertingServiceTest {
         incidentRepository = mock(IncidentRepository.class);
         aggregateRepository = mock(AggregateRepository.class);
         gaugeValueRepository = mock(GaugeValueRepository.class);
+        traceRepository = mock(TraceRepository.class);
         rollupLevelService = mock(RollupLevelService.class);
         mailService = new MockMailService();
         httpClient = new HttpClient(configRepository);
@@ -153,7 +156,7 @@ public class AlertingServiceTest {
         // given
         setupForTransaction(1000000);
         AlertingService alertingService = new AlertingService(configRepository,
-                incidentRepository, aggregateRepository, gaugeValueRepository,
+                incidentRepository, aggregateRepository, gaugeValueRepository, traceRepository,
                 rollupLevelService, mailService, httpClient, newLockSet(),
                 newLockSet(),
                 Clock.systemClock());
@@ -172,7 +175,7 @@ public class AlertingServiceTest {
         // given
         setupForTransaction(999999);
         AlertingService alertingService = new AlertingService(configRepository,
-                incidentRepository, aggregateRepository, gaugeValueRepository,
+                incidentRepository, aggregateRepository, gaugeValueRepository, traceRepository,
                 rollupLevelService, mailService, httpClient, newLockSet(),
                 newLockSet(),
                 Clock.systemClock());
@@ -188,7 +191,7 @@ public class AlertingServiceTest {
         // given
         setupForGauge(500);
         AlertingService alertingService = new AlertingService(configRepository,
-                incidentRepository, aggregateRepository, gaugeValueRepository,
+                incidentRepository, aggregateRepository, gaugeValueRepository, traceRepository,
                 rollupLevelService, mailService, httpClient, newLockSet(),
                 newLockSet(),
                 Clock.systemClock());
@@ -207,7 +210,7 @@ public class AlertingServiceTest {
         // given
         setupForGauge(499);
         AlertingService alertingService = new AlertingService(configRepository,
-                incidentRepository, aggregateRepository, gaugeValueRepository,
+                incidentRepository, aggregateRepository, gaugeValueRepository, traceRepository,
                 rollupLevelService, mailService, httpClient, newLockSet(),
                 newLockSet(),
                 Clock.systemClock());
@@ -223,7 +226,7 @@ public class AlertingServiceTest {
         // given
         setupForGauge(500);
         AlertingService alertingService = new AlertingService(configRepository,
-                incidentRepository, aggregateRepository, gaugeValueRepository,
+                incidentRepository, aggregateRepository, gaugeValueRepository, traceRepository,
                 rollupLevelService, mailService, httpClient, newLockSet(),
                 newLockSet(),
                 Clock.systemClock());
@@ -242,7 +245,7 @@ public class AlertingServiceTest {
         // given
         setupForGauge(501);
         AlertingService alertingService = new AlertingService(configRepository,
-                incidentRepository, aggregateRepository, gaugeValueRepository,
+                incidentRepository, aggregateRepository, gaugeValueRepository, traceRepository,
                 rollupLevelService, mailService, httpClient, newLockSet(),
                 newLockSet(),
                 Clock.systemClock());

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,6 +115,13 @@ public class TraceDaoWithV09Support implements TraceDao {
             ErrorMessageFilter filter, long resolutionMillis, int limit) throws Exception {
         return splitErrorMessageResultIfNeeded(agentRollupId, query, limit,
                 (id, q) -> delegate.readErrorMessages(id, q, filter, resolutionMillis, limit));
+    }
+
+    @Override
+    public long readErrorMessageCount(String agentRollupId, TraceQuery query,
+            String errorMessageFilter) throws Exception {
+        return splitCountIfNeeded(agentRollupId, query,
+                (id, q) -> delegate.readErrorMessageCount(id, q, errorMessageFilter));
     }
 
     @Override

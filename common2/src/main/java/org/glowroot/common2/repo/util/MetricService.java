@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.model.LazyHistogram;
 import org.glowroot.common2.repo.AggregateRepository;
 import org.glowroot.common2.repo.GaugeValueRepository;
+import org.glowroot.common2.repo.ImmutableTraceQuery;
+import org.glowroot.common2.repo.TraceRepository;
 import org.glowroot.common2.repo.util.RollupLevelService.DataKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
@@ -40,12 +42,15 @@ class MetricService {
 
     private final AggregateRepository aggregateRepository;
     private final GaugeValueRepository gaugeValueRepository;
+    private final TraceRepository traceRepository;
     private final RollupLevelService rollupLevelService;
 
     public MetricService(AggregateRepository aggregateRepository,
-            GaugeValueRepository gaugeValueRepository, RollupLevelService rollupLevelService) {
+            GaugeValueRepository gaugeValueRepository, TraceRepository traceRepository,
+            RollupLevelService rollupLevelService) {
         this.aggregateRepository = aggregateRepository;
         this.gaugeValueRepository = gaugeValueRepository;
+        this.traceRepository = traceRepository;
         this.rollupLevelService = rollupLevelService;
     }
 
@@ -69,7 +74,8 @@ class MetricService {
                     Strings.emptyToNull(metricCondition.getTransactionName()), startTime, endTime);
         } else if (metric.equals("error:count")) {
             return getErrorCount(agentRollupId, metricCondition.getTransactionType(),
-                    Strings.emptyToNull(metricCondition.getTransactionName()), startTime, endTime);
+                    Strings.emptyToNull(metricCondition.getTransactionName()),
+                    metricCondition.getErrorMessageFilter(), startTime, endTime);
         } else if (metric.startsWith("gauge:")) {
             return getGaugeValue(agentRollupId, metric.substring("gauge:".length()), startTime,
                     endTime);
@@ -154,14 +160,27 @@ class MetricService {
     }
 
     private long getErrorCount(String agentRollupId, String transactionType,
-            @Nullable String transactionName, long startTime, long endTime) throws Exception {
-        List<ThroughputAggregate> aggregates = getThroughputAggregates(agentRollupId,
-                transactionType, transactionName, startTime, endTime);
-        long totalErrorCount = 0;
-        for (ThroughputAggregate aggregate : aggregates) {
-            totalErrorCount += MoreObjects.firstNonNull(aggregate.errorCount(), 0L);
+            @Nullable String transactionName, @Nullable String errorMessageFilter, long startTime,
+            long endTime) throws Exception {
+        if (errorMessageFilter == null) {
+            List<ThroughputAggregate> aggregates = getThroughputAggregates(agentRollupId,
+                    transactionType, transactionName, startTime, endTime);
+            long totalErrorCount = 0;
+            for (ThroughputAggregate aggregate : aggregates) {
+                totalErrorCount += MoreObjects.firstNonNull(aggregate.errorCount(), 0L);
+            }
+            return totalErrorCount;
+        } else {
+            ImmutableTraceQuery traceQuery = ImmutableTraceQuery.builder()
+                    .transactionType(transactionType)
+                    .transactionName(transactionName)
+                    .from(startTime)
+                    .to(endTime)
+                    .build();
+            return traceRepository.readErrorMessageCount(agentRollupId, traceQuery,
+                    errorMessageFilter);
+
         }
-        return totalErrorCount;
     }
 
     private @Nullable Double getGaugeValue(String agentRollupId, String gaugeName,

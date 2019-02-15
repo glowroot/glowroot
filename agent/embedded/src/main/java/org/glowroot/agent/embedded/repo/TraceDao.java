@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -254,6 +255,18 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
+    public long readErrorMessageCount(String agentRollupId, TraceQuery query,
+            String errorMessageFilter) throws Exception {
+        if (errorMessageFilter.startsWith("/") && errorMessageFilter.endsWith("/")) {
+            Pattern errorMessagePattern = Pattern
+                    .compile(errorMessageFilter.substring(1, errorMessageFilter.length() - 1));
+            return dataSource.query(new ErrorCountQueryForPattern(query, errorMessagePattern));
+        } else {
+            return dataSource.query(new ErrorCountQuery(query, errorMessageFilter));
+        }
+    }
+
+    @Override
     public @Nullable HeaderPlus readHeaderPlus(String agentId, String traceId) throws Exception {
         return dataSource.queryAtMostOne(new TraceHeaderQuery(traceId));
     }
@@ -347,14 +360,16 @@ public class TraceDao implements TraceRepository {
         return sharedQueryTextsForExport;
     }
 
-    private static void appendQueryAndFilter(StringBuilder sql, TraceQuery query,
-            ErrorMessageFilter filter) {
+    private static void appendQuery(StringBuilder sql, TraceQuery query) {
         sql.append(" and transaction_type = ?");
         String transactionName = query.transactionName();
         if (transactionName != null) {
             sql.append(" and transaction_name = ?");
         }
         sql.append(" and capture_time > ? and capture_time <= ?");
+    }
+
+    private static void appendFilter(StringBuilder sql, ErrorMessageFilter filter) {
         for (int i = 0; i < filter.includes().size(); i++) {
             sql.append(" and upper(error_message) like ?");
         }
@@ -363,8 +378,8 @@ public class TraceDao implements TraceRepository {
         }
     }
 
-    private static int bindQueryAndFilter(PreparedStatement preparedStatement, int startIndex,
-            TraceQuery query, ErrorMessageFilter filter) throws SQLException {
+    private static int bindQuery(PreparedStatement preparedStatement, int startIndex,
+            TraceQuery query) throws SQLException {
         int i = startIndex;
         preparedStatement.setString(i++, query.transactionType());
         String transactionName = query.transactionName();
@@ -373,6 +388,12 @@ public class TraceDao implements TraceRepository {
         }
         preparedStatement.setLong(i++, query.from());
         preparedStatement.setLong(i++, query.to());
+        return i;
+    }
+
+    private static int bindFilter(PreparedStatement preparedStatement, int startIndex,
+            ErrorMessageFilter filter) throws SQLException {
+        int i = startIndex;
         for (String include : filter.includes()) {
             preparedStatement.setString(i++, '%' + include.toUpperCase(Locale.ENGLISH) + '%');
         }
@@ -834,7 +855,8 @@ public class TraceDao implements TraceRepository {
                     "ceil(capture_time / " + resolutionMillis + ".0) * " + resolutionMillis);
             StringBuilder sql = new StringBuilder();
             sql.append("select " + captureTimeSql + ", count(*) from trace where error = ?");
-            appendQueryAndFilter(sql, query, filter);
+            appendQuery(sql, query);
+            appendFilter(sql, filter);
             sql.append(" group by " + captureTimeSql + " order by " + captureTimeSql);
             return castUntainted(sql.toString());
         }
@@ -843,7 +865,8 @@ public class TraceDao implements TraceRepository {
         public void bind(PreparedStatement preparedStatement) throws SQLException {
             int i = 1;
             preparedStatement.setBoolean(i++, true);
-            bindQueryAndFilter(preparedStatement, i, query, filter);
+            i = bindQuery(preparedStatement, i, query);
+            bindFilter(preparedStatement, i, filter);
         }
 
         @Override
@@ -870,7 +893,8 @@ public class TraceDao implements TraceRepository {
         public @Untainted String getSql() {
             StringBuilder sql = new StringBuilder();
             sql.append("select error_message, count(*) from trace where error = ?");
-            appendQueryAndFilter(sql, query, filter);
+            appendQuery(sql, query);
+            appendFilter(sql, filter);
             sql.append(" group by error_message order by count(*) desc limit ?");
             return castUntainted(sql.toString());
         }
@@ -879,7 +903,8 @@ public class TraceDao implements TraceRepository {
         public void bind(PreparedStatement preparedStatement) throws SQLException {
             int i = 1;
             preparedStatement.setBoolean(i++, true);
-            i = bindQueryAndFilter(preparedStatement, i, query, filter);
+            i = bindQuery(preparedStatement, i, query);
+            i = bindFilter(preparedStatement, i, filter);
             preparedStatement.setInt(i++, limit);
         }
 
@@ -889,6 +914,89 @@ public class TraceDao implements TraceRepository {
                     .message(Strings.nullToEmpty(resultSet.getString(1)))
                     .count(resultSet.getLong(2))
                     .build();
+        }
+    }
+
+    private static class ErrorCountQuery implements JdbcQuery<Long> {
+
+        private final TraceQuery query;
+        private final String errorMessageFilter;
+
+        private ErrorCountQuery(TraceQuery query, String errorMessageFilter) {
+            this.query = query;
+            this.errorMessageFilter = errorMessageFilter;
+        }
+
+        @Override
+        public @Untainted String getSql() {
+            StringBuilder sql = new StringBuilder();
+            sql.append("select count(*) from trace where error = ?");
+            appendQuery(sql, query);
+            sql.append(" and error_message like ?");
+            return castUntainted(sql.toString());
+        }
+
+        @Override
+        public void bind(PreparedStatement preparedStatement) throws SQLException {
+            int i = 1;
+            preparedStatement.setBoolean(i++, true);
+            i = bindQuery(preparedStatement, i, query);
+            preparedStatement.setString(i++, '%' + errorMessageFilter + '%');
+        }
+
+        @Override
+        public Long processResultSet(ResultSet resultSet) throws Exception {
+            resultSet.next();
+            return resultSet.getLong(1);
+        }
+
+        @Override
+        public Long valueIfDataSourceClosed() {
+            return 0L;
+        }
+    }
+
+    // regexp_like not added to H2 until version 1.4.193
+    private static class ErrorCountQueryForPattern implements JdbcQuery<Long> {
+
+        private final TraceQuery query;
+        private final Pattern errorMessagePattern;
+
+        private ErrorCountQueryForPattern(TraceQuery query, Pattern errorMessagePattern) {
+            this.query = query;
+            this.errorMessagePattern = errorMessagePattern;
+        }
+
+        @Override
+        public @Untainted String getSql() {
+            StringBuilder sql = new StringBuilder();
+            sql.append("select error_message from trace where error = ?");
+            appendQuery(sql, query);
+            return castUntainted(sql.toString());
+        }
+
+        @Override
+        public void bind(PreparedStatement preparedStatement) throws SQLException {
+            int i = 1;
+            preparedStatement.setBoolean(i++, true);
+            bindQuery(preparedStatement, i, query);
+        }
+
+        @Override
+        public Long processResultSet(ResultSet resultSet) throws Exception {
+            long count = 0;
+            while (resultSet.next()) {
+                String errorMessage = checkNotNull(resultSet.getString(1));
+                if (errorMessagePattern.matcher(errorMessage).find()) {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        @Override
+        public Long valueIfDataSourceClosed() {
+            return 0L;
         }
     }
 }
