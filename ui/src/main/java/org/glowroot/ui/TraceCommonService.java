@@ -88,9 +88,6 @@ class TraceCommonService {
         return toJsonRepoHeader(agentId, header);
     }
 
-    // TODO this comment is no longer valid?
-    // overwritten entries will return {"overwritten":true}
-    // expired (not found) trace will return {"expired":true}
     @Nullable
     String getEntriesJson(String agentId, String traceId, boolean checkLiveTraces)
             throws Exception {
@@ -112,9 +109,6 @@ class TraceCommonService {
         return toJson(getStoredEntries(agentId, traceId, new RetryCountdown(checkLiveTraces)));
     }
 
-    // TODO this comment is no longer valid?
-    // overwritten entries will return {"overwritten":true}
-    // expired (not found) trace will return {"expired":true}
     @Nullable
     String getQueriesJson(String agentId, String traceId, boolean checkLiveTraces)
             throws Exception {
@@ -136,10 +130,20 @@ class TraceCommonService {
         return toJson(getStoredQueries(agentId, traceId, new RetryCountdown(checkLiveTraces)));
     }
 
-    // overwritten profile will return {"overwritten":true}
-    // expired (not found) trace will return {"expired":true}
     @Nullable
     String getMainThreadProfileJson(String agentId, String traceId, boolean checkLiveTraces)
+            throws Exception {
+        return toJson(getMainThreadProfile(agentId, traceId, checkLiveTraces));
+    }
+
+    @Nullable
+    String getAuxThreadProfileJson(String agentId, String traceId, boolean checkLiveTraces)
+            throws Exception {
+        return toJson(getAuxThreadProfile(agentId, traceId, checkLiveTraces));
+    }
+
+    @Nullable
+    Profile getMainThreadProfile(String agentId, String traceId, boolean checkLiveTraces)
             throws Exception {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
@@ -153,17 +157,14 @@ class TraceCommonService {
                 profile = null;
             }
             if (profile != null) {
-                return toJson(profile);
+                return profile;
             }
         }
-        return toJson(
-                getStoredMainThreadProfile(agentId, traceId, new RetryCountdown(checkLiveTraces)));
+        return getStoredMainThreadProfile(agentId, traceId, new RetryCountdown(checkLiveTraces));
     }
 
-    // overwritten profile will return {"overwritten":true}
-    // expired (not found) trace will return {"expired":true}
     @Nullable
-    String getAuxThreadProfileJson(String agentId, String traceId, boolean checkLiveTraces)
+    Profile getAuxThreadProfile(String agentId, String traceId, boolean checkLiveTraces)
             throws Exception {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
@@ -177,11 +178,10 @@ class TraceCommonService {
                 profile = null;
             }
             if (profile != null) {
-                return toJson(profile);
+                return profile;
             }
         }
-        return toJson(
-                getStoredAuxThreadProfile(agentId, traceId, new RetryCountdown(checkLiveTraces)));
+        return getStoredAuxThreadProfile(agentId, traceId, new RetryCountdown(checkLiveTraces));
     }
 
     @Nullable

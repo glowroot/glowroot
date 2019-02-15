@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,7 @@ import org.glowroot.common2.repo.util.RollupLevelService.DataKind;
 import org.glowroot.ui.AggregateMerging.MergedAggregate;
 import org.glowroot.ui.AggregateMerging.PercentileValue;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -77,15 +78,17 @@ class TransactionJsonService {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final TransactionCommonService transactionCommonService;
+    private final TraceCommonService traceCommonService;
     private final AggregateRepository aggregateRepository;
     private final ConfigRepository configRepository;
     private final RollupLevelService rollupLevelService;
     private final Clock clock;
 
     TransactionJsonService(TransactionCommonService transactionCommonService,
-            AggregateRepository aggregateRepository, ConfigRepository configRepository,
-            RollupLevelService rollupLevelService, Clock clock) {
+            TraceCommonService traceCommonService, AggregateRepository aggregateRepository,
+            ConfigRepository configRepository, RollupLevelService rollupLevelService, Clock clock) {
         this.transactionCommonService = transactionCommonService;
+        this.traceCommonService = traceCommonService;
         this.aggregateRepository = aggregateRepository;
         this.configRepository = configRepository;
         this.rollupLevelService = rollupLevelService;
@@ -481,6 +484,24 @@ class TransactionJsonService {
             }
         }
         return profile.toFlameGraphJson();
+    }
+
+    @GET(path = "/backend/transaction/traces/flame-graph", permission = "agent:trace")
+    String getTraceFlameGraph(@BindAgentId String agentId,
+            @BindRequest TraceFlameGraphRequest request) throws Exception {
+        Profile profile;
+        if (request.auxiliary()) {
+            profile = traceCommonService.getAuxThreadProfile(agentId, request.traceId(),
+                    request.checkLiveTraces());
+        } else {
+            profile = traceCommonService.getMainThreadProfile(agentId, request.traceId(),
+                    request.checkLiveTraces());
+        }
+        MutableProfile mutableProfile = new MutableProfile();
+        if (profile != null) {
+            mutableProfile.merge(profile);
+        }
+        return mutableProfile.toFlameGraphJson();
     }
 
     private AggregateQuery toChartQuery(RequestBase request, DataKind dataKind) throws Exception {
@@ -909,6 +930,21 @@ class TransactionJsonService {
         // intentionally not plural since maps from query string
         ImmutableList<String> exclude();
         double truncateBranchPercentage();
+    }
+
+    @Value.Immutable
+    abstract static class TraceFlameGraphRequest {
+        abstract String traceId();
+        abstract boolean auxiliary();
+        // intentionally not plural since maps from query string
+        abstract ImmutableList<String> include();
+        // intentionally not plural since maps from query string
+        abstract ImmutableList<String> exclude();
+        abstract double truncateBranchPercentage();
+        @Value.Default
+        boolean checkLiveTraces() {
+            return false;
+        }
     }
 
     @Value.Immutable

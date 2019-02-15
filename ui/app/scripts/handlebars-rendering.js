@@ -626,22 +626,16 @@ HandlebarsRendering = (function () {
         }
         $.get(url)
             .done(function (data) {
-              if (data.overwritten) {
-                $selector.append('<div style="padding: 1em;">The trace entries have expired</div>');
-              } else if (data.expired) {
-                $selector.append('<div style="padding: 1em;">This trace has expired</div>');
-              } else {
-                // first time opening
-                initTraceEntryMessageLength();
-                mergeSharedQueryTextsIntoEntries(data.entries, data.sharedQueryTexts);
-                var last = data.entries[data.entries.length - 1];
-                // updating traceDurationNanos is needed for live traces
-                traceDurationNanos = Math.max(traceDurationNanos, last.startOffsetNanos + last.durationNanos);
-                flattenedTraceEntries = flattenTraceEntries(data.entries);
-                // un-hide before building in case there are lots of trace entries, at least can see first few quickly
-                $selector.removeClass('d-none');
-                renderNextEntries(flattenedTraceEntries, 0);
-              }
+              // first time opening
+              initTraceEntryMessageLength();
+              mergeSharedQueryTextsIntoEntries(data.entries, data.sharedQueryTexts);
+              var last = data.entries[data.entries.length - 1];
+              // updating traceDurationNanos is needed for live traces
+              traceDurationNanos = Math.max(traceDurationNanos, last.startOffsetNanos + last.durationNanos);
+              flattenedTraceEntries = flattenTraceEntries(data.entries);
+              // un-hide before building in case there are lots of trace entries, at least can see first few quickly
+              $selector.removeClass('d-none');
+              renderNextEntries(flattenedTraceEntries, 0);
             })
             .fail(function (jqXHR) {
               if (jqXHR.status === 401) {
@@ -727,19 +721,13 @@ HandlebarsRendering = (function () {
         }
         $.get(url)
             .done(function (data) {
-              if (data.overwritten) {
-                $selector.append('<div style="padding: 1em;">The trace query stats have expired</div>');
-              } else if (data.expired) {
-                $selector.append('<div style="padding: 1em;">This trace has expired</div>');
-              } else {
-                // first time opening
-                initQueryTextLength();
-                prepareQueries(data.queries, data.sharedQueryTexts);
-                queries = data.queries;
-                // un-hide before building in case there are lots of trace entries, at least can see first few quickly
-                $selector.removeClass('d-none');
-                renderNextQueries(queries, 0);
-              }
+              // first time opening
+              initQueryTextLength();
+              prepareQueries(data.queries, data.sharedQueryTexts);
+              queries = data.queries;
+              // un-hide before building in case there are lots of trace entries, at least can see first few quickly
+              $selector.removeClass('d-none');
+              renderNextQueries(queries, 0);
             })
             .fail(function (jqXHR) {
               if (jqXHR.status === 401) {
@@ -850,13 +838,7 @@ HandlebarsRendering = (function () {
         var spinner = Glowroot.showSpinner($button.parent().find('.gt-trace-detail-spinner'));
         $.get(url)
             .done(function (data) {
-              if (data.overwritten) {
-                $selector.find('.gt-profile').html('<div style="padding: 1em;">The thread profile has expired</div>');
-              } else if (data.expired) {
-                $selector.find('.gt-profile').html.append('<div style="padding: 1em;">This trace has expired</div>');
-              } else {
-                buildMergedStackTree(data, $selector);
-              }
+              buildMergedStackTree(data, $selector);
               $selector.removeClass('d-none');
             })
             .fail(function (jqXHR) {
@@ -1720,6 +1702,15 @@ HandlebarsRendering = (function () {
         initFlattenedTimers(traceHeader.auxBreakdown);
         initTotalNanosList(traceHeader.auxBreakdown);
         initLimit(traceHeader.auxBreakdown);
+      }
+
+      traceHeader.flameGraphLink = 'transaction/trace-thread-flame-graph?';
+      if (agentId) {
+        traceHeader.flameGraphLink += 'agent-id=' + encodeURIComponent(agentId) + '&';
+      }
+      traceHeader.flameGraphLink += 'trace-id=' + traceId;
+      if (checkLiveTraces) {
+        traceHeader.flameGraphLink += '&check-live-traces=true';
       }
 
       var html = JST.trace(traceHeader);

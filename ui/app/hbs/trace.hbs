@@ -504,8 +504,14 @@
   {{#if mainThreadProfileSampleCount}}
     <div style="margin-top: 10px;">
       <button class="gt-flat-btn gt-flat-btn-big-pad1aligned gt-main-thread-profile-toggle">
-        <span class="gt-link-color">Profile ({{mainThreadProfileSampleCount}})</span>
+        <span class="gt-link-color">{{#if auxThreadProfileSampleCount}}
+          Main Thread {{/if}}Profile ({{mainThreadProfileSampleCount}})</span>
       </button>
+      {{#if showExport}}
+        <a href="{{flameGraphLink}}" style="padding-left: 2rem;" target="_blank">
+          View flame graph <i class="fas fa-external-link-alt"></i>
+        </a>
+      {{/if}}
       {{! spinner is not used in export file }}
       <div>
         <div class="d-none gt-trace-detail-spinner"></div>
@@ -527,8 +533,13 @@
   {{#if auxThreadProfileSampleCount}}
     <div style="margin-top: 10px;">
       <button class="gt-flat-btn gt-flat-btn-big-pad1aligned gt-aux-thread-profile-toggle">
-        <span class="gt-link-color">Auxiliary Thread Profile ({{auxThreadProfileSampleCount}})</span>
+        <span class="gt-link-color">Auxiliary Threads Profile ({{auxThreadProfileSampleCount}})</span>
       </button>
+      {{#if showExport}}
+        <a href="{{flameGraphLink}}&auxiliary=true" style="padding-left: 2rem;" target="_blank">
+          View flame graph <i class="fas fa-external-link-alt"></i>
+        </a>
+      {{/if}}
       {{! spinner is not used in export file }}
       <div>
         <div class="d-none gt-trace-detail-spinner"></div>

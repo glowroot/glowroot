@@ -285,6 +285,15 @@ glowroot.config([
         waitForAgentRollup: onTransitionWithAgentRollup(true)
       }
     });
+    $stateProvider.state('transaction-trace-thread-flame-graph', {
+      url: '/transaction/trace-thread-flame-graph',
+      templateUrl: 'views/transaction/flame-graph.html',
+      controller: 'TransactionTraceFlameGraphCtrl',
+      resolve: {
+        waitForD3: waitForD3,
+        waitForAgentRollup: onTransitionWithAgentRollup()
+      }
+    });
     $stateProvider.state('error', {
       abstract: true,
       url: '/error?agent-id&agent-rollup-id&transaction-type',
