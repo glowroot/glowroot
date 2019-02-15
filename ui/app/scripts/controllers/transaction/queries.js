@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, HandlebarsRendering, SqlPrettyPrinter, angular, $, gtClipboard, console */
+/* global glowroot, HandlebarsRendering, angular, $, gtClipboard, console */
 
 glowroot.controller('TransactionQueriesCtrl', [
   '$scope',
@@ -200,32 +200,14 @@ glowroot.controller('TransactionQueriesCtrl', [
           return;
         }
 
-        var comment = '';
-        if (fullText.lastIndexOf('/*', 0) === 0) {
-          var endOfComment = fullText.indexOf('*/') + 2;
-          comment = fullText.substring(0, endOfComment) + '\n';
-          fullText = fullText.substring(endOfComment).trim();
-        }
-        var formatted = SqlPrettyPrinter.format(fullText);
+        var formatted = HandlebarsRendering.sqlPrettyPrint(fullText);
         if (typeof formatted === 'object') {
           console.log(formatted.message);
           console.log(fullText);
           applyCss();
           return;
         }
-        if (comment.length) {
-          var spaces = '';
-          for (var i = 0; i < formatted.length; i++) {
-            if (formatted[i] === ' ') {
-              spaces += ' ';
-            } else {
-              break;
-            }
-          }
-          $scope.formattedQuery = spaces + comment + formatted;
-        } else {
-          $scope.formattedQuery = formatted;
-        }
+        $scope.formattedQuery = formatted;
         $scope.showFormatted = true;
         $formattedQuery.html($scope.formattedQuery);
         $unformattedQuery.hide();
