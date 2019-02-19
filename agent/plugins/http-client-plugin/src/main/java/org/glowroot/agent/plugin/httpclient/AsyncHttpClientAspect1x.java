@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.httpclient;
 
-import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 
 import com.ning.http.client.ListenableFuture;
 import com.ning.http.client.Request;
@@ -40,6 +40,9 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
+import org.glowroot.agent.plugin.httpclient._.AsyncHttpClientRequestInvoker;
+import org.glowroot.agent.plugin.httpclient._.DirectExecutor;
+import org.glowroot.agent.plugin.httpclient._.Uris;
 
 public class AsyncHttpClientAspect1x {
 
@@ -128,20 +131,8 @@ public class AsyncHttpClientAspect1x {
                 return;
             }
             future.glowroot$setAsyncTraceEntry(asyncTraceEntry);
-            future.addListener(new Runnable() {
-                // suppress warnings is needed because checker framework doesn't see that
-                // asyncTraceEntry must be non-null here
-                @Override
-                @SuppressWarnings("dereference.of.nullable")
-                public void run() {
-                    Throwable t = getException(future);
-                    if (t == null) {
-                        asyncTraceEntry.end();
-                    } else {
-                        asyncTraceEntry.endWithError(t);
-                    }
-                }
-            }, DirectExecutor.INSTANCE);
+            future.addListener(new ExecuteRequestListener<T>(asyncTraceEntry, future),
+                    DirectExecutor.INSTANCE);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
@@ -150,20 +141,6 @@ public class AsyncHttpClientAspect1x {
                 asyncTraceEntry.stopSyncTimer();
                 asyncTraceEntry.endWithError(t);
             }
-        }
-        // this is hacky way to find out if future ended with exception or not
-        @Nullable
-        private static <T extends ListenableFutureMixin & ListenableFuture<?>> Throwable getException(
-                T future) {
-            future.glowroot$setIgnoreGet(true);
-            try {
-                future.get();
-            } catch (Throwable t) {
-                return t;
-            } finally {
-                future.glowroot$setIgnoreGet(false);
-            }
-            return null;
         }
     }
 
@@ -192,13 +169,38 @@ public class AsyncHttpClientAspect1x {
         }
     }
 
-    private static class DirectExecutor implements Executor {
+    private static class ExecuteRequestListener<T extends ListenableFutureMixin & Future<?>>
+            implements Runnable {
 
-        private static final DirectExecutor INSTANCE = new DirectExecutor();
+        private final AsyncTraceEntry asyncTraceEntry;
+        private final T future;
+
+        private ExecuteRequestListener(AsyncTraceEntry asyncTraceEntry, T future) {
+            this.asyncTraceEntry = asyncTraceEntry;
+            this.future = future;
+        }
 
         @Override
-        public void execute(Runnable command) {
-            command.run();
+        public void run() {
+            Throwable t = getException();
+            if (t == null) {
+                asyncTraceEntry.end();
+            } else {
+                asyncTraceEntry.endWithError(t);
+            }
+        }
+
+        // this is hacky way to find out if future ended with exception or not
+        private @Nullable Throwable getException() {
+            future.glowroot$setIgnoreGet(true);
+            try {
+                future.get();
+            } catch (Throwable t) {
+                return t;
+            } finally {
+                future.glowroot$setIgnoreGet(false);
+            }
+            return null;
         }
     }
 }

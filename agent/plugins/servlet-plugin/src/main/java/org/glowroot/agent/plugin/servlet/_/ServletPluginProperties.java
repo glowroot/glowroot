@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.servlet;
+package org.glowroot.agent.plugin.servlet._;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,10 +29,11 @@ import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.util.ImmutableList;
 import org.glowroot.agent.plugin.api.util.ImmutableSet;
+import org.glowroot.agent.plugin.servlet.DetailCapture;
 
-class ServletPluginProperties {
+public class ServletPluginProperties {
 
-    static final String HTTP_SESSION_ID_ATTR = "::id";
+    public static final String HTTP_SESSION_ID_ATTR = "::id";
 
     private static final ConfigService configService = Agent.getConfigService("servlet");
 
@@ -71,101 +72,101 @@ class ServletPluginProperties {
 
     private ServletPluginProperties() {}
 
-    static List<Pattern> captureRequestParameters() {
+    public static List<Pattern> captureRequestParameters() {
         return captureRequestParameters;
     }
 
-    static List<Pattern> maskRequestParameters() {
+    public static List<Pattern> maskRequestParameters() {
         return maskRequestParameters;
     }
 
-    static List<Pattern> captureRequestHeaders() {
+    public static List<Pattern> captureRequestHeaders() {
         return captureRequestHeaders;
     }
 
-    static boolean captureSomeRequestHostAndPortDetail() {
+    public static boolean captureSomeRequestHostAndPortDetail() {
         return someRequestHostAndPortDetail;
     }
 
-    static boolean captureRequestRemoteAddress() {
+    public static boolean captureRequestRemoteAddress() {
         return captureRequestRemoteAddress;
     }
 
-    static boolean captureRequestRemoteHostname() {
+    public static boolean captureRequestRemoteHostname() {
         return captureRequestRemoteHostname;
     }
 
-    static boolean captureRequestRemotePort() {
+    public static boolean captureRequestRemotePort() {
         return captureRequestRemotePort;
     }
 
-    static boolean captureRequestLocalAddress() {
+    public static boolean captureRequestLocalAddress() {
         return captureRequestLocalAddress;
     }
 
-    static boolean captureRequestLocalHostname() {
+    public static boolean captureRequestLocalHostname() {
         return captureRequestLocalHostname;
     }
 
-    static boolean captureRequestLocalPort() {
+    public static boolean captureRequestLocalPort() {
         return captureRequestLocalPort;
     }
 
-    static boolean captureRequestServerHostname() {
+    public static boolean captureRequestServerHostname() {
         return captureRequestServerHostname;
     }
 
-    static boolean captureRequestServerPort() {
+    public static boolean captureRequestServerPort() {
         return captureRequestServerPort;
     }
 
-    static List<Pattern> captureResponseHeaders() {
+    public static List<Pattern> captureResponseHeaders() {
         return captureResponseHeaders;
     }
 
-    static boolean captureResponseHeadersNonEmpty() {
+    public static boolean captureResponseHeadersNonEmpty() {
         return captureResponseHeadersNonEmpty;
     }
 
-    static boolean captureContentLengthResponseHeader() {
+    public static boolean captureContentLengthResponseHeader() {
         return captureContentLengthResponseHeader;
     }
 
-    static boolean captureContentTypeResponseHeader() {
+    public static boolean captureContentTypeResponseHeader() {
         return captureContentTypeResponseHeader;
     }
 
-    static boolean captureContentLanguageResponseHeader() {
+    public static boolean captureContentLanguageResponseHeader() {
         return captureContentLanguageResponseHeader;
     }
 
-    static @Nullable SessionAttributePath userAttributePath() {
+    public static @Nullable SessionAttributePath userAttributePath() {
         return userAttributePath;
     }
 
-    static boolean sessionUserAttributeIsId() {
+    public static boolean sessionUserAttributeIsId() {
         return userAttributePath != null && userAttributePath.isSessionId();
     }
 
-    static List<SessionAttributePath> captureSessionAttributePaths() {
+    public static List<SessionAttributePath> captureSessionAttributePaths() {
         return captureSessionAttributePaths;
     }
 
     // only the first-level attribute names (e.g. "one", "abc") as opposed to full paths (e.g.
     // "one.two", "abc.def") returned by captureSessionAttributePaths()
-    static Set<String> captureSessionAttributeNames() {
+    public static Set<String> captureSessionAttributeNames() {
         return captureSessionAttributeNames;
     }
 
-    static boolean captureSessionAttributeNamesContainsId() {
+    public static boolean captureSessionAttributeNamesContainsId() {
         return captureSessionAttributeNamesContainsId;
     }
 
-    static boolean traceErrorOn4xxResponseCode() {
+    public static boolean traceErrorOn4xxResponseCode() {
         return traceErrorOn4xxResponseCode;
     }
 
-    static class SessionAttributePath {
+    public static class SessionAttributePath {
 
         private final String attributeName;
         private final List<String> nestedPath;
@@ -181,27 +182,27 @@ class ServletPluginProperties {
             this.fullPath = fullPath;
         }
 
-        String getAttributeName() {
+        public String getAttributeName() {
             return attributeName;
         }
 
-        List<String> getNestedPath() {
+        public List<String> getNestedPath() {
             return nestedPath;
         }
 
-        boolean isWildcard() {
+        public boolean isWildcard() {
             return wildcard;
         }
 
-        String getFullPath() {
+        public String getFullPath() {
             return fullPath;
         }
 
-        boolean isAttributeNameWildcard() {
+        public boolean isAttributeNameWildcard() {
             return attributeName.equals("*") && nestedPath.isEmpty() && !wildcard;
         }
 
-        boolean isSessionId() {
+        public boolean isSessionId() {
             return attributeName.equals(ServletPluginProperties.HTTP_SESSION_ID_ATTR)
                     && nestedPath.isEmpty() && !wildcard;
         }

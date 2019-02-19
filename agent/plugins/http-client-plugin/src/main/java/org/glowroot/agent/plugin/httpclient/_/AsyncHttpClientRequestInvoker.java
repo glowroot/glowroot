@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.httpclient;
+package org.glowroot.agent.plugin.httpclient._;
 
 import java.lang.reflect.Method;
 import java.net.URI;
@@ -51,7 +51,7 @@ public class AsyncHttpClientRequestInvoker {
 
     // TODO report checker framework issue that occurs without this suppression
     @SuppressWarnings("assignment.type.incompatible")
-    String getUrl(Object request) {
+    public String getUrl(Object request) {
         if (getURIMethod == null) {
             return Reflection.invokeWithDefault(getUrlMethod, request, "");
         }

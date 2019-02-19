@@ -17,8 +17,13 @@ package org.glowroot.agent.plugin.servlet;
 
 import java.security.Principal;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.Map;
+
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.glowroot.agent.plugin.api.Agent;
 import org.glowroot.agent.plugin.api.AuxThreadContext;
@@ -40,92 +45,17 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.api.weaving.Shim;
-import org.glowroot.agent.plugin.servlet.DetailCapture.RequestHostAndPortDetail;
-import org.glowroot.agent.plugin.servlet.ServletPluginProperties.SessionAttributePath;
+import org.glowroot.agent.plugin.servlet._.RequestHostAndPortDetail;
+import org.glowroot.agent.plugin.servlet._.RequestInvoker;
+import org.glowroot.agent.plugin.servlet._.ResponseInvoker;
+import org.glowroot.agent.plugin.servlet._.SendError;
+import org.glowroot.agent.plugin.servlet._.ServletMessageSupplier;
+import org.glowroot.agent.plugin.servlet._.ServletPluginProperties;
+import org.glowroot.agent.plugin.servlet._.ServletPluginProperties.SessionAttributePath;
+import org.glowroot.agent.plugin.servlet._.Strings;
 
 // this plugin is careful not to rely on request or session objects being thread-safe
 public class ServletAspect {
-
-    private static final FastThreadLocal</*@Nullable*/ String> sendError =
-            new FastThreadLocal</*@Nullable*/ String>();
-
-    @Shim("javax.servlet.http.HttpServletRequest")
-    public interface HttpServletRequest {
-
-        @Shim("javax.servlet.http.HttpSession getSession(boolean)")
-        @Nullable
-        HttpSession glowroot$getSession(boolean create);
-
-        @Nullable
-        String getMethod();
-
-        @Nullable
-        String getContextPath();
-
-        @Nullable
-        String getServletPath();
-
-        @Nullable
-        String getPathInfo();
-
-        @Nullable
-        String getRequestURI();
-
-        @Nullable
-        String getQueryString();
-
-        @Nullable
-        Enumeration</*@Nullable*/ String> getHeaderNames();
-
-        @Nullable
-        Enumeration</*@Nullable*/ String> getHeaders(String name);
-
-        @Nullable
-        String getHeader(String name);
-
-        // the map values should be String[], but typing as Object to be safe
-        @Nullable
-        Map</*@Nullable*/ String, /*@Nullable*/ Object> getParameterMap();
-
-        @Nullable
-        Enumeration<? extends /*@Nullable*/ Object> getParameterNames();
-
-        @Nullable
-        String /*@Nullable*/ [] getParameterValues(String name);
-
-        @Nullable
-        Object getAttribute(String name);
-
-        void removeAttribute(String name);
-
-        @Nullable
-        String getRemoteAddr();
-
-        @Nullable
-        String getRemoteHost();
-
-        @Nullable
-        String getServerName();
-
-        int getServerPort();
-    }
-
-    @Shim("javax.servlet.http.HttpServletResponse")
-    public interface HttpServletResponse {}
-
-    @Shim("javax.servlet.http.HttpSession")
-    public interface HttpSession {
-
-        @Nullable
-        Object getAttribute(String name);
-
-        @Nullable
-        Enumeration<? extends /*@Nullable*/ Object> getAttributeNames();
-
-        @Nullable
-        String getId();
-    }
 
     @Pointcut(className = "javax.servlet.Servlet", methodName = "service",
             methodParameterTypes = {"javax.servlet.ServletRequest",
@@ -135,14 +65,15 @@ public class ServletAspect {
         private static final TimerName timerName = Agent.getTimerName(ServiceAdvice.class);
         @OnBefore
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
-                @BindParameter @Nullable Object req, @BindClassMeta RequestInvoker requestInvoker) {
+                @BindParameter @Nullable ServletRequest req,
+                @BindClassMeta RequestInvoker requestInvoker) {
             return onBeforeCommon(context, req, null, requestInvoker);
         }
         @OnReturn
         public static void onReturn(OptionalThreadContext context,
                 @BindTraveler @Nullable TraceEntry traceEntry,
-                @SuppressWarnings("unused") @BindParameter @Nullable Object req,
-                @BindParameter @Nullable Object res,
+                @SuppressWarnings("unused") @BindParameter @Nullable ServletRequest req,
+                @BindParameter @Nullable ServletResponse res,
                 @BindClassMeta ResponseInvoker responseInvoker) {
             if (traceEntry == null) {
                 return;
@@ -156,7 +87,8 @@ public class ServletAspect {
             if (messageSupplier != null && responseInvoker.hasGetStatusMethod()) {
                 messageSupplier.setResponseCode(responseInvoker.getStatus(res));
             }
-            FastThreadLocal.Holder</*@Nullable*/ String> errorMessageHolder = sendError.getHolder();
+            FastThreadLocal.Holder</*@Nullable*/ String> errorMessageHolder =
+                    SendError.getErrorMessageHolder();
             String errorMessage = errorMessageHolder.get();
             if (errorMessage != null) {
                 traceEntry.endWithError(errorMessage);
@@ -169,8 +101,8 @@ public class ServletAspect {
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t, OptionalThreadContext context,
                 @BindTraveler @Nullable TraceEntry traceEntry,
-                @SuppressWarnings("unused") @BindParameter @Nullable Object req,
-                @BindParameter @Nullable Object res) {
+                @SuppressWarnings("unused") @BindParameter @Nullable ServletRequest req,
+                @BindParameter @Nullable ServletResponse res) {
             if (traceEntry == null) {
                 return;
             }
@@ -185,12 +117,12 @@ public class ServletAspect {
                 messageSupplier.setResponseCode(500);
             }
             // ignoring potential sendError since this seems worse
-            sendError.set(null);
+            SendError.clearErrorMessage();
             traceEntry.endWithError(t);
             context.setServletRequestInfo(null);
         }
         private static @Nullable TraceEntry onBeforeCommon(OptionalThreadContext context,
-                @Nullable Object req, @Nullable String transactionTypeOverride,
+                @Nullable ServletRequest req, @Nullable String transactionTypeOverride,
                 RequestInvoker requestInvoker) {
             if (context.getServletRequestInfo() != null) {
                 return null;
@@ -210,7 +142,7 @@ public class ServletAspect {
             // request parameter map is collected in GetParameterAdvice
             // session info is collected here if the request already has a session
             ServletMessageSupplier messageSupplier;
-            HttpSession session = request.glowroot$getSession(false);
+            HttpSession session = request.getSession(false);
             String requestUri = Strings.nullToEmpty(request.getRequestURI());
             // don't convert null to empty, since null means no query string, while empty means
             // url ended with ? but nothing after that
@@ -282,22 +214,23 @@ public class ServletAspect {
     public static class DoFilterAdvice {
         @OnBefore
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
-                @BindParameter @Nullable Object req, @BindClassMeta RequestInvoker requestInvoker) {
+                @BindParameter @Nullable ServletRequest req,
+                @BindClassMeta RequestInvoker requestInvoker) {
             return ServiceAdvice.onBeforeCommon(context, req, null, requestInvoker);
         }
         @OnReturn
         public static void onReturn(OptionalThreadContext context,
                 @BindTraveler @Nullable TraceEntry traceEntry,
-                @BindParameter @Nullable Object req,
-                @BindParameter @Nullable Object res,
+                @BindParameter @Nullable ServletRequest req,
+                @BindParameter @Nullable ServletResponse res,
                 @BindClassMeta ResponseInvoker responseInvoker) {
             ServiceAdvice.onReturn(context, traceEntry, req, res, responseInvoker);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t, OptionalThreadContext context,
                 @BindTraveler @Nullable TraceEntry traceEntry,
-                @BindParameter @Nullable Object req,
-                @BindParameter @Nullable Object res) {
+                @BindParameter @Nullable ServletRequest req,
+                @BindParameter @Nullable ServletResponse res) {
             ServiceAdvice.onThrow(t, context, traceEntry, req, res);
         }
     }
@@ -317,7 +250,8 @@ public class ServletAspect {
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
                 @SuppressWarnings("unused") @BindParameter @Nullable String target,
                 @SuppressWarnings("unused") @BindParameter @Nullable Object baseRequest,
-                @BindParameter @Nullable Object req, @BindClassMeta RequestInvoker requestInvoker) {
+                @BindParameter @Nullable ServletRequest req,
+                @BindClassMeta RequestInvoker requestInvoker) {
             return ServiceAdvice.onBeforeCommon(context, req, null, requestInvoker);
         }
         @OnReturn
@@ -325,8 +259,8 @@ public class ServletAspect {
                 @BindTraveler @Nullable TraceEntry traceEntry,
                 @SuppressWarnings("unused") @BindParameter @Nullable String target,
                 @SuppressWarnings("unused") @BindParameter @Nullable Object baseRequest,
-                @BindParameter @Nullable Object req,
-                @BindParameter @Nullable Object res,
+                @BindParameter @Nullable ServletRequest req,
+                @BindParameter @Nullable ServletResponse res,
                 @BindClassMeta ResponseInvoker responseInvoker) {
             ServiceAdvice.onReturn(context, traceEntry, req, res, responseInvoker);
         }
@@ -335,8 +269,8 @@ public class ServletAspect {
                 @BindTraveler @Nullable TraceEntry traceEntry,
                 @SuppressWarnings("unused") @BindParameter @Nullable String target,
                 @SuppressWarnings("unused") @BindParameter @Nullable Object baseRequest,
-                @BindParameter @Nullable Object req,
-                @BindParameter @Nullable Object res) {
+                @BindParameter @Nullable ServletRequest req,
+                @BindParameter @Nullable ServletResponse res) {
             ServiceAdvice.onThrow(t, context, traceEntry, req, res);
         }
     }
@@ -353,22 +287,23 @@ public class ServletAspect {
     public static class WireMockAdvice {
         @OnBefore
         public static @Nullable TraceEntry onBefore(OptionalThreadContext context,
-                @BindParameter @Nullable Object req, @BindClassMeta RequestInvoker requestInvoker) {
+                @BindParameter @Nullable ServletRequest req,
+                @BindClassMeta RequestInvoker requestInvoker) {
             return ServiceAdvice.onBeforeCommon(context, req, "WireMock", requestInvoker);
         }
         @OnReturn
         public static void onReturn(OptionalThreadContext context,
                 @BindTraveler @Nullable TraceEntry traceEntry,
-                @BindParameter @Nullable Object req,
-                @BindParameter @Nullable Object res,
+                @BindParameter @Nullable ServletRequest req,
+                @BindParameter @Nullable ServletResponse res,
                 @BindClassMeta ResponseInvoker responseInvoker) {
             ServiceAdvice.onReturn(context, traceEntry, req, res, responseInvoker);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t, OptionalThreadContext context,
                 @BindTraveler @Nullable TraceEntry traceEntry,
-                @BindParameter @Nullable Object req,
-                @BindParameter @Nullable Object res) {
+                @BindParameter @Nullable ServletRequest req,
+                @BindParameter @Nullable ServletResponse res) {
             ServiceAdvice.onThrow(t, context, traceEntry, req, res);
         }
     }
@@ -387,7 +322,7 @@ public class ServletAspect {
             }
             if (captureAsError(statusCode)) {
                 FastThreadLocal.Holder</*@Nullable*/ String> errorMessageHolder =
-                        sendError.getHolder();
+                        SendError.getErrorMessageHolder();
                 if (errorMessageHolder.get() == null) {
                     context.addErrorEntry("sendError, HTTP status code " + statusCode);
                     errorMessageHolder.set("sendError, HTTP status code " + statusCode);
@@ -407,7 +342,8 @@ public class ServletAspect {
         // wait until after because sendError throws IllegalStateException if the response has
         // already been committed
         @OnAfter
-        public static void onAfter(ThreadContext context, @BindReceiver Object response,
+        public static void onAfter(ThreadContext context,
+                @BindReceiver HttpServletResponse response,
                 @BindParameter @Nullable String location,
                 @BindClassMeta ResponseInvoker responseInvoker) {
             ServletMessageSupplier messageSupplier =
@@ -440,7 +376,7 @@ public class ServletAspect {
             }
             if (SendErrorAdvice.captureAsError(statusCode)) {
                 FastThreadLocal.Holder</*@Nullable*/ String> errorMessageHolder =
-                        sendError.getHolder();
+                        SendError.getErrorMessageHolder();
                 if (errorMessageHolder.get() == null) {
                     context.addErrorEntry("setStatus, HTTP status code " + statusCode);
                     errorMessageHolder.set("setStatus, HTTP status code " + statusCode);

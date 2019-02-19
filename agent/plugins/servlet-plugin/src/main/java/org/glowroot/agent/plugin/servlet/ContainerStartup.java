@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,12 @@ import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.TimerName;
 import org.glowroot.agent.plugin.api.TraceEntry;
 import org.glowroot.agent.plugin.api.checker.Nullable;
-import org.glowroot.agent.plugin.api.util.Beans;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class ContainerStartup {
 
-    private static final Logger logger = Logger.getLogger(Beans.class);
+    private static final Logger logger = Logger.getLogger(ContainerStartup.class);
 
     private ContainerStartup() {}
 

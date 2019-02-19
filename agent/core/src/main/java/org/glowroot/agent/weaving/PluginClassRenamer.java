@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,12 +40,14 @@ import org.glowroot.agent.weaving.PluginDetail.PointcutClass;
 
 class PluginClassRenamer {
 
+    static final String SHIM_SUFFIX = "Shim";
     static final String MIXIN_SUFFIX = "Mixin";
 
     private static final Logger logger = LoggerFactory.getLogger(PluginClassRenamer.class);
 
     private final PointcutClass adviceClass;
     private final String rootPackageName;
+    private final String bootstrapSafePackageName;
 
     private final Set<String> processed = Sets.newHashSet();
 
@@ -54,15 +56,16 @@ class PluginClassRenamer {
         String internalName = adviceClass.type().getInternalName();
         int index = internalName.lastIndexOf('/');
         if (index == -1) {
-            rootPackageName = "/";
+            rootPackageName = "";
         } else {
             rootPackageName = internalName.substring(0, index);
         }
+        bootstrapSafePackageName = rootPackageName + "/_/";
     }
 
     @Nullable
     Advice buildNonBootstrapLoaderAdvice(Advice advice) {
-        if (rootPackageName.equals("/")) {
+        if (rootPackageName.isEmpty()) {
             logger.warn("advice needs to be in a named package in order to collocate the advice in"
                     + " the class loader that it is used from (as opposed to located in the"
                     + " bootstrap class loader)");
@@ -88,7 +91,7 @@ class PluginClassRenamer {
 
     @Nullable
     LazyDefinedClass buildNonBootstrapLoaderAdviceClass() throws IOException {
-        if (rootPackageName.equals("/")) {
+        if (rootPackageName.isEmpty()) {
             logger.warn("advice needs to be in a named package in order to co-locate the advice in"
                     + " the class loader that it is used from (as opposed to located in the"
                     + " bootstrap class loader)");
@@ -147,11 +150,17 @@ class PluginClassRenamer {
             return null;
         }
         String internalName = type.getInternalName();
-        if (internalName.startsWith(rootPackageName) && !internalName.endsWith(MIXIN_SUFFIX)) {
+        if (collocate(internalName)) {
             return Type.getObjectType(internalName + "_");
         } else {
             return type;
         }
+    }
+
+    private boolean collocate(String internalName) {
+        return internalName.startsWith(rootPackageName) && !internalName.endsWith(MIXIN_SUFFIX)
+                && !internalName.endsWith(SHIM_SUFFIX)
+                && !internalName.startsWith(bootstrapSafePackageName);
     }
 
     private class PluginClassRemapper extends Remapper {
@@ -160,7 +169,7 @@ class PluginClassRenamer {
 
         @Override
         public String map(String internalName) {
-            if (internalName.startsWith(rootPackageName) && !internalName.endsWith(MIXIN_SUFFIX)) {
+            if (collocate(internalName)) {
                 if (!processed.contains(internalName)) {
                     unprocessed.add(internalName);
                 }

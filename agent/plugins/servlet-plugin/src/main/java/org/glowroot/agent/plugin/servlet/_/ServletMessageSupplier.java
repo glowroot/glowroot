@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.servlet;
+package org.glowroot.agent.plugin.servlet._;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,11 +33,11 @@ import org.glowroot.agent.plugin.api.checker.MonotonicNonNull;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.checker.RequiresNonNull;
 import org.glowroot.agent.plugin.api.util.Optional;
-import org.glowroot.agent.plugin.servlet.DetailCapture.RequestHostAndPortDetail;
+import org.glowroot.agent.plugin.servlet.DetailCapture;
 
 // this class is thread-safe (unlike other MessageSuppliers) since it gets passed around to
 // auxiliary thread contexts for handling async servlets
-class ServletMessageSupplier extends MessageSupplier implements ServletRequestInfo {
+public class ServletMessageSupplier extends MessageSupplier implements ServletRequestInfo {
 
     private static final String MASK_TEXT = "****";
 
@@ -70,7 +70,7 @@ class ServletMessageSupplier extends MessageSupplier implements ServletRequestIn
 
     private @Nullable List<String> jaxRsParts;
 
-    ServletMessageSupplier(String requestMethod, String requestContextPath,
+    public ServletMessageSupplier(String requestMethod, String requestContextPath,
             String requestServletPath, @Nullable String requestPathInfo, String requestUri,
             @Nullable String requestQueryString, Map<String, Object> requestHeaders,
             @Nullable RequestHostAndPortDetail requestHostAndPortDetail,
@@ -179,47 +179,48 @@ class ServletMessageSupplier extends MessageSupplier implements ServletRequestIn
         return jaxRsParts == null ? Collections.<String>emptyList() : jaxRsParts;
     }
 
-    boolean isRequestParametersCaptured() {
+    public boolean isRequestParametersCaptured() {
         return requestParameters != null;
     }
 
-    void setCaptureRequestParameters(Map<String, Object> requestParameters) {
+    public void setCaptureRequestParameters(Map<String, Object> requestParameters) {
         this.requestParameters = requestParameters;
     }
 
-    void setResponseCode(int responseCode) {
+    public void setResponseCode(int responseCode) {
         this.responseCode = responseCode;
     }
 
-    void setResponseHeader(String name, String value) {
+    public void setResponseHeader(String name, String value) {
         responseHeaderComponent.setHeader(name, value);
     }
 
-    void setResponseDateHeader(String name, long date) {
+    public void setResponseDateHeader(String name, long date) {
         responseHeaderComponent.setHeader(name, date);
     }
 
-    void setResponseIntHeader(String name, int value) {
+    public void setResponseIntHeader(String name, int value) {
         responseHeaderComponent.setHeader(name, value);
     }
 
-    void setResponseLongHeader(String name, long value) {
+    public void setResponseLongHeader(String name, long value) {
         responseHeaderComponent.setHeader(name, value);
     }
 
-    void addResponseHeader(String name, String value) {
+    public void addResponseHeader(String name, String value) {
         responseHeaderComponent.addHeader(name, value);
     }
 
-    void addResponseDateHeader(String name, long date) {
+    public void addResponseDateHeader(String name, long date) {
         responseHeaderComponent.addHeader(name, date);
     }
 
-    void addResponseIntHeader(String name, int value) {
+    public void addResponseIntHeader(String name, int value) {
         responseHeaderComponent.addHeader(name, value);
     }
 
-    void putSessionAttributeChangedValue(String attributeName, @Nullable String attributeValue) {
+    public void putSessionAttributeChangedValue(String attributeName,
+            @Nullable String attributeValue) {
         if (sessionAttributeUpdatedValueMap == null) {
             sessionAttributeUpdatedValueMap = new ConcurrentHashMap<String, Optional<String>>();
         }

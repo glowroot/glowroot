@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.servlet;
 
-import org.glowroot.agent.plugin.api.ClassInfo;
-
-public class RequestClassMeta {
-
-    private boolean badParameterMapImplementation;
-
-    public RequestClassMeta(@SuppressWarnings("unused") ClassInfo classInfo) {}
-
-    boolean isBadParameterMapImplementation() {
-        return badParameterMapImplementation;
-    }
-
-    void setBadParameterMapImplementation() {
-        this.badParameterMapImplementation = true;
-    }
-}
+// classes in the "_" package are left in the bootstrap class loader (this is just an optimization)
+package org.glowroot.agent.plugin.httpclient._;

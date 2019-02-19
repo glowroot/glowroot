@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.ImmutableList;
 import org.glowroot.agent.plugin.api.util.ImmutableMap;
-import org.glowroot.agent.plugin.servlet.ServletAspect.HttpServletRequest;
+import org.glowroot.agent.plugin.servlet._.RequestHostAndPortDetail;
+import org.glowroot.agent.plugin.servlet._.RequestInvoker;
+import org.glowroot.agent.plugin.servlet._.ServletPluginProperties;
+import org.glowroot.agent.plugin.servlet._.Strings;
 
 // shallow copies are necessary because request may not be thread safe, which may affect ability
 // to see detail from active traces
@@ -36,16 +41,15 @@ import org.glowroot.agent.plugin.servlet.ServletAspect.HttpServletRequest;
 // request is complete (e.g. tomcat does this) in order to reuse them, in which case this detail
 // would need to be captured synchronously at end of request anyways (although then it could be
 // captured only if trace met threshold for storage...)
-class DetailCapture {
+public class DetailCapture {
 
     private DetailCapture() {}
 
-    static Map<String, Object> captureRequestParameters(
-            Map</*@Nullable*/ String, /*@Nullable*/ Object> requestParameters) {
+    public static Map<String, Object> captureRequestParameters(
+            Map</*@Nullable*/ String, ?> requestParameters) {
         List<Pattern> capturePatterns = ServletPluginProperties.captureRequestParameters();
         Map<String, Object> map = new HashMap<String, Object>();
-        for (Map.Entry</*@Nullable*/ String, /*@Nullable*/ Object> entry : requestParameters
-                .entrySet()) {
+        for (Map.Entry</*@Nullable*/ String, ?> entry : requestParameters.entrySet()) {
             String name = entry.getKey();
             if (name == null) {
                 continue;
@@ -55,16 +59,15 @@ class DetailCapture {
             if (!matchesOneOf(keyLowerCase, capturePatterns)) {
                 continue;
             }
-            @Nullable
-            Object values = entry.getValue();
-            if (values instanceof String[]) {
-                set(map, name, (String[]) values);
+            Object value = entry.getValue();
+            if (value instanceof String[]) {
+                set(map, name, (String[]) value);
             }
         }
         return ImmutableMap.copyOf(map);
     }
 
-    static Map<String, Object> captureRequestParameters(HttpServletRequest request) {
+    public static Map<String, Object> captureRequestParameters(HttpServletRequest request) {
         Enumeration<? extends /*@Nullable*/ Object> e = request.getParameterNames();
         if (e == null) {
             return Collections.emptyMap();
@@ -99,10 +102,7 @@ class DetailCapture {
         return ImmutableMap.copyOf(map);
     }
 
-    private static void set(Map<String, Object> map, String name, @Nullable String[] values) {
-        if (values == null) {
-            return;
-        }
+    private static void set(Map<String, Object> map, String name, /*@Nullable*/ String[] values) {
         if (values.length == 1) {
             String value = values[0];
             if (value != null) {
@@ -116,7 +116,7 @@ class DetailCapture {
         }
     }
 
-    static Map<String, Object> captureRequestHeaders(HttpServletRequest request) {
+    public static Map<String, Object> captureRequestHeaders(HttpServletRequest request) {
         List<Pattern> capturePatterns = ServletPluginProperties.captureRequestHeaders();
         if (capturePatterns.isEmpty()) {
             return Collections.emptyMap();
@@ -144,7 +144,7 @@ class DetailCapture {
         return ImmutableMap.copyOf(requestHeaders);
     }
 
-    static @Nullable RequestHostAndPortDetail captureRequestHostAndPortDetail(
+    public static @Nullable RequestHostAndPortDetail captureRequestHostAndPortDetail(
             HttpServletRequest request, RequestInvoker requestInvoker) {
         if (ServletPluginProperties.captureSomeRequestHostAndPortDetail()) {
             RequestHostAndPortDetail requestHostAndPortDetail = new RequestHostAndPortDetail();
@@ -179,7 +179,7 @@ class DetailCapture {
         }
     }
 
-    static boolean matchesOneOf(String key, List<Pattern> patterns) {
+    public static boolean matchesOneOf(String key, List<Pattern> patterns) {
         for (Pattern pattern : patterns) {
             if (pattern.matcher(key).matches()) {
                 return true;
@@ -205,23 +205,5 @@ class DetailCapture {
                 requestHeaders.put(name, ImmutableList.copyOf(list));
             }
         }
-    }
-
-    static class RequestHostAndPortDetail {
-        // -1 is used as error return value by RequestInvoker.getRemotePort()
-        static final int UNSET = -2;
-        @Nullable
-        String remoteAddress;
-        @Nullable
-        String remoteHostname;
-        int remotePort = UNSET;
-        @Nullable
-        String localAddress;
-        @Nullable
-        String localHostname;
-        int localPort = UNSET;
-        @Nullable
-        String serverHostname;
-        int serverPort = UNSET;
     }
 }

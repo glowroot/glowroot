@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.servlet;
+package org.glowroot.agent.plugin.servlet._;
 
 import java.util.List;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
 import org.junit.Test;
+
+import org.glowroot.agent.plugin.servlet._.ServletMessageSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

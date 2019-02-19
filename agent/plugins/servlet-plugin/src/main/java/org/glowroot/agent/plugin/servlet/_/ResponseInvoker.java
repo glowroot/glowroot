@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 the original author or authors.
+ * Copyright 2014-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.servlet;
+package org.glowroot.agent.plugin.servlet._;
 
 import java.lang.reflect.Method;
 
@@ -40,27 +40,27 @@ public class ResponseInvoker {
         getStatusMethod = Reflection.getMethod(httpServletResponseClass, "getStatus");
     }
 
-    boolean hasGetContentTypeMethod() {
+    public boolean hasGetContentTypeMethod() {
         return getContentTypeMethod != null;
     }
 
-    String getContentType(Object response) {
+    public String getContentType(Object response) {
         return Reflection.invokeWithDefault(getContentTypeMethod, response, "");
     }
 
-    boolean hasGetHeaderMethod() {
+    public boolean hasGetHeaderMethod() {
         return getHeaderMethod != null;
     }
 
-    String getHeader(Object response, String name) {
+    public String getHeader(Object response, String name) {
         return Reflection.invokeWithDefault(getHeaderMethod, response, "", name);
     }
 
-    boolean hasGetStatusMethod() {
+    public boolean hasGetStatusMethod() {
         return getStatusMethod != null;
     }
 
-    int getStatus(Object response) {
+    public int getStatus(Object response) {
         return Reflection.invokeWithDefault(getStatusMethod, response, -1);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import org.glowroot.agent.plugin.api.weaving.Shim;
 public class WebLogicAppStartupAspect {
 
     @Shim("weblogic.servlet.internal.WebAppServletContext")
-    public interface WebAppServletContext {
+    public interface WebAppServletContextShim {
         @Nullable
         String getContextPath();
     }
@@ -43,7 +43,7 @@ public class WebLogicAppStartupAspect {
         private static final TimerName timerName = Agent.getTimerName(StartAdvice.class);
         @OnBefore
         public static TraceEntry onBefore(OptionalThreadContext context,
-                @BindReceiver WebAppServletContext webAppServletContext) {
+                @BindReceiver WebAppServletContextShim webAppServletContext) {
             String path = webAppServletContext.getContextPath();
             return ContainerStartup.onBeforeCommon(context, path, timerName);
         }

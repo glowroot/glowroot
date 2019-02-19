@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.glowroot.agent.plugin.servlet;
+package org.glowroot.agent.plugin.servlet._;
 
 import java.lang.reflect.Method;
 
@@ -38,35 +38,19 @@ public class RequestInvoker {
         getLocalPortMethod = Reflection.getMethod(servletRequestClass, "getLocalPort");
     }
 
-    boolean hasGetRemotePortMethod() {
-        return getRemotePortMethod != null;
-    }
-
-    int getRemotePort(Object request) {
+    public int getRemotePort(Object request) {
         return Reflection.invokeWithDefault(getRemotePortMethod, request, -1);
     }
 
-    boolean hasGetLocalAddrMethod() {
-        return getLocalAddrMethod != null;
-    }
-
-    String getLocalAddr(Object request) {
+    public String getLocalAddr(Object request) {
         return Reflection.invokeWithDefault(getLocalAddrMethod, request, "");
     }
 
-    boolean hasGetLocalNameMethod() {
-        return getLocalNameMethod != null;
-    }
-
-    String getLocalName(Object request) {
+    public String getLocalName(Object request) {
         return Reflection.invokeWithDefault(getLocalNameMethod, request, "");
     }
 
-    boolean hasGetLocalPortMethod() {
-        return getLocalPortMethod != null;
-    }
-
-    int getLocalPort(Object request) {
+    public int getLocalPort(Object request) {
         return Reflection.invokeWithDefault(getLocalPortMethod, request, -1);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,16 @@ package org.glowroot.agent.plugin.servlet;
 
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.servlet.ServletAspect.HttpServletRequest;
+import org.glowroot.agent.plugin.servlet._.RequestClassMeta;
+import org.glowroot.agent.plugin.servlet._.ServletMessageSupplier;
 
 public class RequestParameterAspect {
 
@@ -58,7 +61,7 @@ public class RequestParameterAspect {
                         DetailCapture.captureRequestParameters(request));
                 return;
             }
-            Map</*@Nullable*/ String, /*@Nullable*/ Object> parameterMap;
+            Map</*@Nullable*/ String, ?> parameterMap;
             try {
                 parameterMap = request.getParameterMap();
             } catch (Exception e) {
