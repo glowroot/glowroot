@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,12 @@ package org.glowroot.common2.repo.util;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common2.repo.ImmutableGauge;
@@ -30,6 +31,8 @@ import org.glowroot.common2.repo.ImmutableGauge;
 public class Gauges {
 
     public static final String DISPLAY_PARTS_SEPARATOR = " / ";
+
+    private static final Logger logger = LoggerFactory.getLogger(Gauges.class);
 
     private static final ImmutableList<UnitPattern> unitPatterns;
 
@@ -120,22 +123,69 @@ public class Gauges {
 
     public static List<String> getDisplayParts(String mbeanObjectName) {
         // e.g. java.lang:name=PS Eden Space,type=MemoryPool
-        List<String> parts = Splitter.on(CharMatcher.anyOf(":,")).splitToList(mbeanObjectName);
         List<String> displayParts = Lists.newArrayList();
-        displayParts.add(parts.get(0));
-        for (int i = 1; i < parts.size(); i++) {
-            String part = parts.get(i).split("=")[1];
-            if (part.startsWith("\"") && part.endsWith("\"")) {
-                part = part.substring(1, part.length() - 1);
-            }
-            if (part.contains("/")) {
-                // special case since this is also the display path separator
-                displayParts.add("\"" + part + "\"");
-            } else {
-                displayParts.add(part);
+        int index = mbeanObjectName.indexOf(':');
+        String domain = mbeanObjectName.substring(0, index);
+        displayParts.add(domain);
+        index++;
+        while (index < mbeanObjectName.length()) {
+            index = processNextKeyValue(mbeanObjectName, index, displayParts);
+            if (index == -1) {
+                logger.warn("unexpected mbean object name: {}", mbeanObjectName);
+                displayParts.clear();
+                displayParts.add(mbeanObjectName);
+                return displayParts;
             }
         }
         return displayParts;
+    }
+
+    private static int processNextKeyValue(String mbeanObjectName, int fromIndex,
+            List<String> displayParts) {
+        int index = mbeanObjectName.indexOf('=', fromIndex);
+        if (index == -1) {
+            // this is unexpected
+            return -1;
+        }
+        index++;
+        char c = mbeanObjectName.charAt(index);
+        if (c == '"') {
+            // in quoted value
+            index++;
+            StringBuilder sb = new StringBuilder();
+            boolean quoteTerminated = false;
+            while (index < mbeanObjectName.length()) {
+                c = mbeanObjectName.charAt(index++);
+                if (c == '\\') {
+                    c = mbeanObjectName.charAt(index++);
+                    if (c == 'n') {
+                        sb.append('\n');
+                    } else {
+                        sb.append(c);
+                    }
+                } else if (c == '"') {
+                    quoteTerminated = true;
+                    break;
+                } else {
+                    sb.append(c);
+                }
+            }
+            if (!quoteTerminated) {
+                // this is unexpected
+                return -1;
+            }
+            displayParts.add(sb.toString());
+            return index;
+        } else {
+            int next = mbeanObjectName.indexOf(',', index);
+            if (next == -1) {
+                displayParts.add(mbeanObjectName.substring(index));
+                return mbeanObjectName.length();
+            } else {
+                displayParts.add(mbeanObjectName.substring(index, next));
+                return next + 1;
+            }
+        }
     }
 
     private static String unit(String gaugeName) {
