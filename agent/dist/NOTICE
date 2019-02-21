@@ -8,9 +8,9 @@ Copyright 2010-2015 Google, Inc
 https://github.com/angular/angular.js
 MIT License
 
-AngularUI Bootstrap
-Copyright 2012-2015 The AngularUI Team
-https://github.com/angular-ui/bootstrap
+AngularUI Bootstrap4
+Copyright 2012-2017 The AngularUI Team
+https://github.com/Morgul/ui-bootstrap4
 MIT License
 
 AngularUI UI.CodeMirror
@@ -23,11 +23,6 @@ Copyright 2013-2015 The AngularUI Team, Karsten Sperling
 https://github.com/angular-ui/ui-router
 MIT License
 
-AngularUI Select
-Copyright 2013-2014 AngularUI
-https://github.com/angular-ui/ui-select
-MIT License
-
 ASM
 Copyright 2000-2011 INRIA, France Telecom
 http://asm.ow2.org
@@ -38,10 +33,10 @@ Copyright 2011-2015 Twitter, Inc
 https://github.com/twbs/bootstrap
 MIT License
 
-bootstrap-datetimepicker
-Copyright 2015 Jonathan Peterson (@Eonasdan)
-https://github.com/Eonasdan/bootstrap-datetimepicker
-MIT License
+Bootstrap Multiselect
+Copyright 2012-2018 David Stutz
+https://github.com/davidstutz/bootstrap-multiselect
+Apache License, Version 2.0
 
 bootstrap-select
 Copyright 2013-2015 bootstrap-select
@@ -82,6 +77,11 @@ Flot Tooltip
 Copyright 2011-2014 Krzysztof Urbas (@krzysu) & Evan Steinkerchner (@Roundaround)
 https://github.com/krzysu/flot.tooltip
 MIT License
+
+WICG Focus-Visible Polyfill
+Copyright World Wide Web Consortium
+https://github.com/WICG/focus-visible
+W3C Software and Document Notice and License
 
 Font Awesome
 Copyright @davegandy
@@ -176,6 +176,11 @@ Copyright 2010-2011 Google Corporation
 https://www.google.com/fonts/specimen/Open+Sans
 Apache License, Version 2.0
 
+Popper.js
+Copyright 2016 Federico Zivolo and contributors
+https://github.com/FezVrasta/popper.js
+MIT License
+
 Protocol Buffers
 Copyright 2014 Google Inc.
 https://github.com/google/protobuf
@@ -194,6 +199,11 @@ MIT License
 spin.js
 Copyright 2011-2014 Felix Gnass [fgnass at neteye dot de]
 https://github.com/fgnass/spin.js
+MIT License
+
+Tempus Dominus
+Copyright 2016 Tempus Dominus
+https://github.com/tempusdominus/bootstrap-4
 MIT License
 
 ZeroClipboard
