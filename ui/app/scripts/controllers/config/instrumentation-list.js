@@ -33,6 +33,11 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
       return;
     }
 
+    // these are needed for handling opening a direct link to import/export modal
+    var firstLocation = true;
+    var firstLocationImport;
+    var firstLocationExport;
+
     $scope.display = function (config) {
       return config.className + '::' + config.methodName;
     };
@@ -244,6 +249,29 @@ glowroot.controller('ConfigInstrumentationListCtrl', [
     }
 
     locationChanges.on($scope, function () {
+      if (firstLocation) {
+        firstLocation = false;
+        if ($location.search().import) {
+          $location.search('import', null);
+          $location.replace();
+          firstLocationImport = true;
+          return;
+        }
+        if ($location.search().export) {
+          $location.search('export', null);
+          $location.replace();
+          firstLocationExport = true;
+          return;
+        }
+      } else if (firstLocationImport) {
+        $location.search('import');
+        firstLocationImport = undefined;
+        return;
+      } else if (firstLocationExport) {
+        $location.search('export');
+        firstLocationExport = undefined;
+        return;
+      }
       if (!$scope.loaded) {
         refresh();
         return;

@@ -34,6 +34,11 @@ glowroot.controller('JvmThreadDumpCtrl', [
 
     var threadDumpHtml;
 
+    // these are needed for handling opening a direct link to a modal trace
+    var firstLocation = true;
+    var firstLocationModalTraceId;
+    var firstLocationModalCheckLiveTraces;
+
     Handlebars.registerHelper('ifBlocked', function (state, options) {
       if (state === 'BLOCKED') {
         return options.fn(this);
@@ -67,12 +72,26 @@ glowroot.controller('JvmThreadDumpCtrl', [
     locationChanges.on($scope, function() {
       var modalTraceId = $location.search()['modal-trace-id'];
       var modalCheckLiveTraces = $location.search()['modal-check-live-traces'];
-      if (modalTraceId) {
-        $('#traceModal').data('location-query', 'modal-trace-id');
-        traceModal.displayModal($scope.agentId, modalTraceId, modalCheckLiveTraces);
+      if (firstLocationModalTraceId) {
+        $location.search('modal-trace-id', firstLocationModalTraceId);
+        $location.search('modal-check-live-traces', firstLocationModalCheckLiveTraces);
+        firstLocationModalTraceId = undefined;
+        firstLocationModalCheckLiveTraces = undefined;
+      } else if (modalTraceId) {
+        if (firstLocation) {
+          $location.search('modal-trace-id', null);
+          $location.search('modal-check-live-traces', null);
+          $location.replace();
+          firstLocationModalTraceId = modalTraceId;
+          firstLocationModalCheckLiveTraces = modalCheckLiveTraces;
+        } else {
+          $('#traceModal').data('location-query', 'modal-trace-id');
+          traceModal.displayModal($scope.agentId, modalTraceId, modalCheckLiveTraces);
+        }
       } else {
         $('#traceModal').modal('hide');
       }
+      firstLocation = false;
     });
 
     $scope.refresh = function (deferred) {

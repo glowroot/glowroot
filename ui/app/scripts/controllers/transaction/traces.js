@@ -45,6 +45,12 @@ glowroot.controller('TracesCtrl', [
 
     var highlightedTraceId;
 
+    // these are needed for handling opening a direct link to a modal trace
+    var firstLocation = true;
+    var firstLocationModalAgentId;
+    var firstLocationModalTraceId;
+    var firstLocationModalCheckLiveTraces;
+
     $scope.showChartSpinner = 0;
     $scope.showErrorMessageFilter = traceKind === 'error';
 
@@ -431,13 +437,31 @@ glowroot.controller('TracesCtrl', [
       var modalAgentId = $location.search()['modal-agent-id'] || '';
       var modalTraceId = $location.search()['modal-trace-id'];
       var modalCheckLiveTraces = $location.search()['modal-check-live-traces'];
-      if (modalTraceId) {
-        highlightedTraceId = modalTraceId;
-        $('#traceModal').data('location-query', 'modal-trace-id');
-        traceModal.displayModal(modalAgentId, modalTraceId, modalCheckLiveTraces);
+      if (firstLocationModalTraceId) {
+        $location.search('modal-agent-id', firstLocationModalAgentId);
+        $location.search('modal-trace-id', firstLocationModalTraceId);
+        $location.search('modal-check-live-traces', firstLocationModalCheckLiveTraces);
+        firstLocationModalAgentId = undefined;
+        firstLocationModalTraceId = undefined;
+        firstLocationModalCheckLiveTraces = undefined;
+      } else if (modalTraceId) {
+        if (firstLocation) {
+          $location.search('modal-agent-id', null);
+          $location.search('modal-trace-id', null);
+          $location.search('modal-check-live-traces', null);
+          $location.replace();
+          firstLocationModalAgentId = modalAgentId;
+          firstLocationModalTraceId = modalTraceId;
+          firstLocationModalCheckLiveTraces = modalCheckLiveTraces;
+        } else {
+          highlightedTraceId = modalTraceId;
+          $('#traceModal').data('location-query', 'modal-trace-id');
+          traceModal.displayModal(modalAgentId, modalTraceId, modalCheckLiveTraces);
+        }
       } else {
         $('#traceModal').modal('hide');
       }
+      firstLocation = false;
     });
 
     $scope.$watch('filterDurationComparator', function (value) {
