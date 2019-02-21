@@ -365,12 +365,7 @@ class TransactionCommonService {
         if (!includes.isEmpty() || !excludes.isEmpty()) {
             profile.filter(includes, excludes);
         }
-        if (truncateBranchPercentage != 0) {
-            int minSamples =
-                    (int) Math.ceil(profile.getSampleCount() * truncateBranchPercentage / 100);
-            // don't truncate any root nodes
-            profile.truncateBranches(minSamples);
-        }
+        profile.truncateBranches(truncateBranchPercentage);
         return profileCollector;
     }
 

@@ -501,6 +501,7 @@ class TransactionJsonService {
         if (profile != null) {
             mutableProfile.merge(profile);
         }
+        mutableProfile.truncateBranches(request.truncateBranchPercentage());
         return mutableProfile.toFlameGraphJson();
     }
 
