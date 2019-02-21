@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2018 the original author or authors.
+ * Copyright 2011-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,7 @@ public interface ConfigService {
 
     /**
      * Registers a listener that will receive a callback when the plugin's property values are
-     * changed, the plugin is enabled/disabled.
-     * 
-     * This allows the useful plugin optimization of caching the results of
-     * {@link #getStringProperty(String)}, {@link #getBooleanProperty(String)}, and
-     * {@link #getDoubleProperty(String)} as {@code volatile} fields, and updating the cached values
-     * anytime {@link ConfigListener#onChange()} is called.
+     * changed.
      */
     void registerConfigListener(ConfigListener listener);
 
