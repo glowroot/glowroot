@@ -99,7 +99,11 @@ glowroot.controller('ConfigAlertCtrl', [
       if (newValue !== 'transaction:x-percentile') {
         delete $scope.config.condition.percentile;
       }
-      if (newValue !== 'error:count') {
+      if (newValue === 'error:count') {
+        if ($scope.config.condition.errorMessageFilter === undefined) {
+          $scope.config.condition.errorMessageFilter = '';
+        }
+      } else {
         delete $scope.config.condition.errorMessageFilter;
       }
       // update unit

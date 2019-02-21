@@ -575,7 +575,9 @@ class AlertConfigJsonService {
             if (condition.hasPercentile()) {
                 builder.percentile(condition.getPercentile().getValue());
             }
-            builder.errorMessageFilter(condition.getErrorMessageFilter());
+            if (AlertingService.hasErrorMessageFilter(condition.getMetric())) {
+                builder.errorMessageFilter(condition.getErrorMessageFilter());
+            }
             if (AlertingService.hasMinTransactionCount(condition.getMetric())) {
                 builder.minTransactionCount(condition.getMinTransactionCount());
             }
