@@ -6,9 +6,9 @@
     "angular-ui-bootstrap4": "Morgul/ui-bootstrap4#3.0.5",
     "angular-ui-codemirror": "0.3.0",
     "angular-ui-router": "1.0.20",
-    "bootstrap": "trask/bootstrap#d7f06f66839fe16ac1ef550d5a34a75f698870cd",
+    "bootstrap": "trask/bootstrap#glowroot-0.13.1",
     "bootstrap-multiselect": "trask/bootstrap-multiselect#glowroot-0.11.0",
-    "bootstrap-select": "trask/bootstrap-select#d055c006f7b9fde488a7821d5faa47490341ebca",
+    "bootstrap-select": "trask/bootstrap-select#glowroot-0.13.1",
     "clipboard": "trask/clipboard.js#glowroot-0.10.11",
     "codemirror": "5.42.2",
     "d3-flame-graph": "trask/d3-flame-graph#glowroot-0.11.1",
@@ -27,6 +27,6 @@
     "spinjs": "2.3.2"
   },
   "resolutions": {
-    "bootstrap": "d7f06f66839fe16ac1ef550d5a34a75f698870cd"
+    "bootstrap": "glowroot-0.13.1"
   }
 }
