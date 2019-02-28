@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
 
 import javax.servlet.ServletContext;
 
-import ch.qos.logback.classic.servlet.LogbackServletContextListener;
+import ch.qos.logback.classic.LoggerContext;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.HostDistance;
@@ -67,6 +67,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.immutables.value.Value;
+import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -159,7 +160,7 @@ public class CentralModule {
         try {
             Directories directories = new Directories(centralDir);
             // init logger as early as possible
-            initLogging(directories.getConfDir(), directories.getLogDir(), servletContext);
+            initLogging(directories.getConfDir(), directories.getLogDir());
             Clock clock = Clock.systemClock();
             Ticker ticker = Ticker.systemTicker();
             String version;
@@ -417,13 +418,23 @@ public class CentralModule {
             } else {
                 startupLogger.error("error during shutdown: {}", t.getMessage(), t);
             }
+        } finally {
+            // need to explicitly stop because disabling normal registration in
+            // LogbackServletContainerInitializer via web.xml context-param
+            //
+            // there is some precedent to stopping even if jvmTermination, see
+            // org.springframework.boot.logging.logback.LogbackLoggingSystem.ShutdownHandler
+            ILoggerFactory loggerFactory = LoggerFactory.getILoggerFactory();
+            if (loggerFactory instanceof LoggerContext) {
+                ((LoggerContext) loggerFactory).stop();
+            }
         }
     }
 
     static void createSchema() throws Exception {
         File centralDir = getCentralDir();
         Directories directories = new Directories(centralDir);
-        initLogging(directories.getConfDir(), directories.getLogDir(), null);
+        initLogging(directories.getConfDir(), directories.getLogDir());
         String version = Version.getVersion(CentralModule.class);
         startupLogger.info("running create-schema command");
         startupLogger.info("Glowroot version: {}", version);
@@ -543,7 +554,7 @@ public class CentralModule {
             return;
         }
 
-        initLogging(directories.getConfDir(), directories.getLogDir(), null);
+        initLogging(directories.getConfDir(), directories.getLogDir());
 
         String version = Version.getVersion(CentralModule.class);
         startupLogger.info("Glowroot version: {}", version);
@@ -951,8 +962,7 @@ public class CentralModule {
     // TODO report checker framework issue that occurs without this suppression
     @EnsuresNonNull("startupLogger")
     @SuppressWarnings("contracts.postcondition.not.satisfied")
-    private static void initLogging(File confDir, File logDir,
-            @Nullable ServletContext servletContext) {
+    private static void initLogging(File confDir, File logDir) {
         File logbackXmlOverride = new File(confDir, "logback.xml");
         if (logbackXmlOverride.exists()) {
             System.setProperty("logback.configurationFile", logbackXmlOverride.getAbsolutePath());
@@ -961,11 +971,6 @@ public class CentralModule {
         System.setProperty("glowroot.log.dir", logDir.getPath());
         try {
             startupLogger = LoggerFactory.getLogger("org.glowroot");
-            if (servletContext != null) {
-                // add logback shutdown listener (because disabling normal registration in
-                // LogbackServletContainerInitializer via web.xml context-param)
-                servletContext.addListener(new LogbackServletContextListener());
-            }
         } finally {
             System.clearProperty("logback.configurationFile");
             if (prior == null) {
