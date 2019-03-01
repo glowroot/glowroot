@@ -101,7 +101,10 @@ public class GlowrootServlet extends HttpServlet {
             response.addHeader(entry.getKey(), entry.getValue());
         }
         Object content = commonResponse.getContent();
-        if (content instanceof ByteBuf) {
+        if (content instanceof String) {
+            response.getWriter().write((String) content);
+            response.flushBuffer();
+        } else if (content instanceof ByteBuf) {
             ByteBuf buf = (ByteBuf) content;
             byte[] bytes = new byte[buf.readableBytes()];
             buf.readBytes(bytes);

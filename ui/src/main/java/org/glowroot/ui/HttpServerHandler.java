@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.MediaType;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -144,7 +145,12 @@ class HttpServerHandler extends ChannelInboundHandlerAdapter {
     private static void sendResponse(ChannelHandlerContext ctx, FullHttpRequest request,
             CommonResponse response, boolean keepAlive) throws IOException {
         Object content = response.getContent();
-        if (content instanceof ByteBuf) {
+        if (content instanceof String) {
+            FullHttpResponse resp = new DefaultFullHttpResponse(HTTP_1_1, response.getStatus(),
+                    Unpooled.copiedBuffer((String) content, UTF_8), response.getHeaders(),
+                    EmptyHttpHeaders.INSTANCE);
+            sendFullResponse(ctx, request, resp, keepAlive);
+        } else if (content instanceof ByteBuf) {
             FullHttpResponse resp = new DefaultFullHttpResponse(HTTP_1_1, response.getStatus(),
                     (ByteBuf) content, response.getHeaders(), EmptyHttpHeaders.INSTANCE);
             sendFullResponse(ctx, request, resp, keepAlive);

@@ -23,7 +23,6 @@ import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.Test;
 
@@ -32,7 +31,6 @@ import org.glowroot.ui.CommonHandler.CommonRequest;
 import org.glowroot.ui.CommonHandler.CommonResponse;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 
-import static com.google.common.base.Charsets.ISO_8859_1;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -55,7 +53,7 @@ public class CommonHandlerTest {
         CommonResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
                 mock(CommonRequest.class), mock(Authentication.class), e);
         // then
-        String content = ((ByteBuf) httpResponse.getContent()).toString(ISO_8859_1);
+        String content = (String) httpResponse.getContent();
         assertThat(content).isEqualTo("{\"message\":\"\"}");
         assertThat(httpResponse.getStatus()).isEqualTo(HttpResponseStatus.PRECONDITION_FAILED);
     }
@@ -68,7 +66,7 @@ public class CommonHandlerTest {
         CommonResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
                 mock(CommonRequest.class), mock(Authentication.class), e);
         // then
-        String content = ((ByteBuf) httpResponse.getContent()).toString(ISO_8859_1);
+        String content = (String) httpResponse.getContent();
         assertThat(content).isEqualTo("{\"message\":\"A message\"}");
         assertThat(httpResponse.getStatus()).isEqualTo(HttpResponseStatus.PRECONDITION_FAILED);
     }
@@ -84,7 +82,7 @@ public class CommonHandlerTest {
         CommonResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
                 mock(CommonRequest.class), mock(Authentication.class), e);
         // then
-        String content = ((ByteBuf) httpResponse.getContent()).toString(ISO_8859_1);
+        String content = (String) httpResponse.getContent();
         assertThat(content).isEqualTo("{\"message\":\"\"}");
         assertThat(httpResponse.getStatus()).isEqualTo(HttpResponseStatus.PRECONDITION_FAILED);
     }
@@ -99,7 +97,7 @@ public class CommonHandlerTest {
         CommonResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
                 mock(CommonRequest.class), mock(Authentication.class), e);
         // then
-        String content = ((ByteBuf) httpResponse.getContent()).toString(ISO_8859_1);
+        String content = (String) httpResponse.getContent();
         assertThat(content).isEqualTo("{\"message\":\"A message\"}");
         assertThat(httpResponse.getStatus()).isEqualTo(HttpResponseStatus.PRECONDITION_FAILED);
     }
@@ -112,7 +110,7 @@ public class CommonHandlerTest {
         CommonResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
                 mock(CommonRequest.class), mock(Authentication.class), e);
         // then
-        String content = ((ByteBuf) httpResponse.getContent()).toString(ISO_8859_1);
+        String content = (String) httpResponse.getContent();
         assertThat(content).isEqualTo("{\"message\":"
                 + "\"Query timed out (timeout is configurable under Configuration > Advanced)\"}");
         assertThat(httpResponse.getStatus()).isEqualTo(HttpResponseStatus.REQUEST_TIMEOUT);
@@ -126,7 +124,7 @@ public class CommonHandlerTest {
         CommonResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
                 mock(CommonRequest.class), mock(Authentication.class), e);
         // then
-        String content = ((ByteBuf) httpResponse.getContent()).toString(ISO_8859_1);
+        String content = (String) httpResponse.getContent();
         ObjectNode node = (ObjectNode) new ObjectMapper().readTree(content);
         assertThat(node.get("message").asText())
                 .isEqualTo("java.sql.SQLException: Another message");
@@ -142,7 +140,7 @@ public class CommonHandlerTest {
         CommonResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
                 mock(CommonRequest.class), mock(Authentication.class), e);
         // then
-        String content = ((ByteBuf) httpResponse.getContent()).toString(ISO_8859_1);
+        String content = (String) httpResponse.getContent();
         ObjectNode node = (ObjectNode) new ObjectMapper().readTree(content);
         assertThat(node.get("message").asText()).isEqualTo("java.lang.Exception: Banother message");
         assertThat(node.get("stackTrace")).isNotNull();
@@ -157,7 +155,7 @@ public class CommonHandlerTest {
         CommonResponse httpResponse = HTTP_SERVER_HANDLER.newHttpResponseFromException(
                 mock(CommonRequest.class), mock(Authentication.class), e);
         // then
-        String content = ((ByteBuf) httpResponse.getContent()).toString(ISO_8859_1);
+        String content = (String) httpResponse.getContent();
         ObjectNode node = (ObjectNode) new ObjectMapper().readTree(content);
         assertThat(node.get("message").asText()).isEqualTo("java.lang.Exception: Wrapped message");
         assertThat(node.get("stackTrace")).isNotNull();

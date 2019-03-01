@@ -53,7 +53,6 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Throwables;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 
-import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
@@ -649,7 +648,7 @@ public class CommonHandler {
         private boolean closeConnectionAfterPortChange;
 
         CommonResponse(HttpResponseStatus status, MediaType mediaType, String content) {
-            this(status, mediaType, Unpooled.copiedBuffer(content, UTF_8), true);
+            this(status, mediaType, content, true);
         }
 
         CommonResponse(HttpResponseStatus status, MediaType mediaType, ChunkSource content) {
@@ -657,7 +656,7 @@ public class CommonHandler {
         }
 
         CommonResponse(HttpResponseStatus status) {
-            this(status, null, Unpooled.buffer(0), true);
+            this(status, null, "", true);
         }
 
         private CommonResponse(HttpResponseStatus status, MediaType mediaType, URL url)
@@ -700,7 +699,7 @@ public class CommonHandler {
             return headers;
         }
 
-        // returns ByteBuf or ChunkSource
+        // returns String, ByteBuf or ChunkSource
         public Object getContent() {
             return content;
         }
