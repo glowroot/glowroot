@@ -662,7 +662,7 @@ class ClassAnalyzer {
                     .methodName("*")
                     .addMethodParameterTypes("..")
                     .captureKind(CaptureKind.TRANSACTION)
-                    .transactionType("Background")
+                    .transactionType("Web")
                     .transactionNameTemplate("EJB remote: " + shortClassName + "#{{methodName}}")
                     .traceEntryMessageTemplate(
                             "EJB remote: " + entry.getValue() + ".{{methodName}}()")
