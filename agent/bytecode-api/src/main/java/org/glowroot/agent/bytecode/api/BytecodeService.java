@@ -52,5 +52,5 @@ public interface BytecodeService {
 
     void logThrowable(Throwable throwable);
 
-    void preloadSomeSuperTypes(ClassLoader loader, String className);
+    void preloadSomeSuperTypes(ClassLoader loader, @Nullable String className);
 }

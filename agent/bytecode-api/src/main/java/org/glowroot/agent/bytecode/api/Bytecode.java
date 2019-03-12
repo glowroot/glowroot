@@ -79,7 +79,7 @@ public class Bytecode {
         service.logThrowable(throwable);
     }
 
-    public static void preloadSomeSuperTypes(ClassLoader loader, String className) {
+    public static void preloadSomeSuperTypes(ClassLoader loader, @Nullable String className) {
         service.preloadSomeSuperTypes(loader, className);
     }
 }

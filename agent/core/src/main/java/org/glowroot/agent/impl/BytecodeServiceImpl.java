@@ -148,7 +148,10 @@ public class BytecodeServiceImpl implements BytecodeService {
     }
 
     @Override
-    public void preloadSomeSuperTypes(ClassLoader loader, String className) {
+    public void preloadSomeSuperTypes(ClassLoader loader, @Nullable String className) {
+        if (className == null) {
+            return;
+        }
         for (String superClassName : preloadSomeSuperTypesCache.get(className)) {
             logger.debug("pre-loading super class {} for {}, in loader={}@{}", superClassName,
                     className, loader.getClass().getName(), loader.hashCode());
