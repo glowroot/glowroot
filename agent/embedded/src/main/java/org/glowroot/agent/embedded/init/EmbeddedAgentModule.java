@@ -187,7 +187,8 @@ class EmbeddedAgentModule {
                                 simpleRepoModule.getAggregateDao(), simpleRepoModule.getTraceDao(),
                                 simpleRepoModule.getGaugeValueDao(), configRepository,
                                 simpleRepoModule.getAlertingService(),
-                                simpleRepoModule.getHttpClient());
+                                simpleRepoModule.getAlertingDisabledDao(),
+                                simpleRepoModule.getHttpClient(), clock);
                         if (collectorProxyClass != null) {
                             startupLogger.info("using collector proxy: {}",
                                     collectorProxyClass.getName());

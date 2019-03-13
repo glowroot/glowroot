@@ -24,10 +24,12 @@ import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.embedded.repo.AggregateDao;
+import org.glowroot.agent.embedded.repo.AlertingDisabledDao;
 import org.glowroot.agent.embedded.repo.ConfigRepositoryImpl;
 import org.glowroot.agent.embedded.repo.EnvironmentDao;
 import org.glowroot.agent.embedded.repo.GaugeValueDao;
 import org.glowroot.agent.embedded.repo.TraceDao;
+import org.glowroot.common.util.Clock;
 import org.glowroot.common2.config.HealthchecksIoConfig;
 import org.glowroot.common2.repo.util.AlertingService;
 import org.glowroot.common2.repo.util.HttpClient;
@@ -50,18 +52,23 @@ class EmbeddedCollector implements Collector {
     private final GaugeValueDao gaugeValueDao;
     private final ConfigRepositoryImpl configRepository;
     private final AlertingService alertingService;
+    private final AlertingDisabledDao alertingDisabledDao;
     private final HttpClient httpClient;
+    private final Clock clock;
 
     EmbeddedCollector(EnvironmentDao environmentDao, AggregateDao aggregateDao, TraceDao traceDao,
             GaugeValueDao gaugeValueDao, ConfigRepositoryImpl configRepository,
-            AlertingService alertingService, HttpClient httpClient) {
+            AlertingService alertingService, AlertingDisabledDao alertingDisabledDao,
+            HttpClient httpClient, Clock clock) {
         this.environmentDao = environmentDao;
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
         this.gaugeValueDao = gaugeValueDao;
         this.configRepository = configRepository;
         this.alertingService = alertingService;
+        this.alertingDisabledDao = alertingDisabledDao;
         this.httpClient = httpClient;
+        this.clock = clock;
     }
 
     @Override
@@ -74,20 +81,22 @@ class EmbeddedCollector implements Collector {
     public void collectAggregates(AggregateReader aggregateReader) throws Exception {
         aggregateDao.store(aggregateReader);
         alertingService.checkForDeletedAlerts(AGENT_ID);
-        for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID)) {
-            AlertCondition alertCondition = alertConfig.getCondition();
-            if (isAggregateMetricCondition(alertCondition)) {
-                try {
-                    alertingService.checkMetricAlert("", AGENT_ID,
-                            configRepository.getEmbeddedAdminGeneralConfig()
-                                    .agentDisplayNameOrDefault(),
-                            alertConfig, alertCondition.getMetricCondition(),
-                            aggregateReader.captureTime());
-                } catch (InterruptedException e) {
-                    // probably shutdown requested
-                    throw e;
-                } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
+        if (!isCurrentlyDisabled()) {
+            for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID)) {
+                AlertCondition alertCondition = alertConfig.getCondition();
+                if (isAggregateMetricCondition(alertCondition)) {
+                    try {
+                        alertingService.checkMetricAlert("", AGENT_ID,
+                                configRepository.getEmbeddedAdminGeneralConfig()
+                                        .agentDisplayNameOrDefault(),
+                                alertConfig, alertCondition.getMetricCondition(),
+                                aggregateReader.captureTime());
+                    } catch (InterruptedException e) {
+                        // probably shutdown requested
+                        throw e;
+                    } catch (Exception e) {
+                        logger.error(e.getMessage(), e);
+                    }
                 }
             }
         }
@@ -110,19 +119,21 @@ class EmbeddedCollector implements Collector {
             maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
         }
         alertingService.checkForDeletedAlerts(AGENT_ID);
-        for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID)) {
-            AlertCondition alertCondition = alertConfig.getCondition();
-            if (isGaugeMetricCondition(alertCondition)) {
-                try {
-                    alertingService.checkMetricAlert("", AGENT_ID,
-                            configRepository.getEmbeddedAdminGeneralConfig()
-                                    .agentDisplayNameOrDefault(),
-                            alertConfig, alertCondition.getMetricCondition(), maxCaptureTime);
-                } catch (InterruptedException e) {
-                    // probably shutdown requested
-                    throw e;
-                } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
+        if (!isCurrentlyDisabled()) {
+            for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID)) {
+                AlertCondition alertCondition = alertConfig.getCondition();
+                if (isGaugeMetricCondition(alertCondition)) {
+                    try {
+                        alertingService.checkMetricAlert("", AGENT_ID,
+                                configRepository.getEmbeddedAdminGeneralConfig()
+                                        .agentDisplayNameOrDefault(),
+                                alertConfig, alertCondition.getMetricCondition(), maxCaptureTime);
+                    } catch (InterruptedException e) {
+                        // probably shutdown requested
+                        throw e;
+                    } catch (Exception e) {
+                        logger.error(e.getMessage(), e);
+                    }
                 }
             }
         }
@@ -136,6 +147,11 @@ class EmbeddedCollector implements Collector {
     @Override
     public void log(LogEvent logEvent) {
         // do nothing, already logging locally through ConsoleAppender and RollingFileAppender
+    }
+
+    private boolean isCurrentlyDisabled() throws Exception {
+        Long disabledUntilTime = alertingDisabledDao.getAlertingDisabledUntilTime(AGENT_ID);
+        return disabledUntilTime != null && disabledUntilTime > clock.currentTimeMillis();
     }
 
     private static boolean isAggregateMetricCondition(AlertCondition alertCondition) {
