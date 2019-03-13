@@ -17,6 +17,7 @@
         <excludes>
           <exclude>org/glowroot/agent/embedded/**</exclude>
           <exclude>org/glowroot/agent/shaded/io/netty/internal/tcnative/**</exclude>
+          <exclude>org/glowroot/agent/shaded/net/logstash/logback/**</exclude>
         </excludes>
       </unpackOptions>
     </dependencySet>

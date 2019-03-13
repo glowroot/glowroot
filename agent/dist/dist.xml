@@ -58,6 +58,14 @@
       <outputFileNameMapping>glowroot-central-collector-https-osx.jar</outputFileNameMapping>
       <scope>provided</scope>
     </dependencySet>
+    <dependencySet>
+      <includes>
+        <include>org.glowroot:glowroot-agent-logging-logstash</include>
+      </includes>
+      <outputDirectory>lib</outputDirectory>
+      <outputFileNameMapping>glowroot-logging-logstash.jar</outputFileNameMapping>
+      <scope>provided</scope>
+    </dependencySet>
   </dependencySets>
   <fileSets>
     <fileSet>

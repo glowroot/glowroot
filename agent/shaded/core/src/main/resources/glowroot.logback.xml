@@ -10,6 +10,10 @@
     <encoder>
       <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
     </encoder>
+    <!-- to use logstash encoder, comment out the encoder above, and uncomment the encoder below -->
+    <!--
+    <encoder class="org.glowroot.agent.shaded.net.logstash.logback.encoder.LogstashEncoder" />
+    -->
   </appender>
   <appender name="FILE" class="org.glowroot.agent.shaded.ch.qos.logback.core.rolling.RollingFileAppender">
     <rollingPolicy class="org.glowroot.agent.shaded.ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -43,7 +47,8 @@
 
   <!-- to enable auditing (step 2 of 2): uncomment the lines below -->
 
-  <!--appender name="AUDIT" class="org.glowroot.agent.shaded.ch.qos.logback.core.rolling.RollingFileAppender">
+  <!--
+  <appender name="AUDIT" class="org.glowroot.agent.shaded.ch.qos.logback.core.rolling.RollingFileAppender">
     <rollingPolicy class="org.glowroot.agent.shaded.ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
       <fileNamePattern>${glowroot.log.dir}/glowroot-audit.%d{yyyy-MM-dd}.log</fileNamePattern>
       <maxHistory>30</maxHistory>
@@ -54,6 +59,7 @@
   </appender>
   <logger name="audit" level="info" additivity="false">
     <appender-ref ref="AUDIT" />
-  </logger-->
+  </logger>
+  -->
 
 </configuration>

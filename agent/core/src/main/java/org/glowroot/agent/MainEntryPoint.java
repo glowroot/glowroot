@@ -103,7 +103,8 @@ public class MainEntryPoint {
             }
             directories = new Directories(glowrootJarFile);
             // init logger as early as possible
-            initLogging(directories.getConfDirs(), directories.getLogDir(), instrumentation);
+            initLogging(directories.getConfDirs(), directories.getLogDir(),
+                    directories.getLoggingLogstashJarFile(), instrumentation);
             PreCheckClassFileTransformer.initLogger();
             DebuggingClassFileTransformer.initLogger();
             if (directories.logStartupErrorMultiDirWithMissingAgentId()) {
@@ -200,7 +201,12 @@ public class MainEntryPoint {
 
     @EnsuresNonNull("startupLogger")
     public static void initLogging(List<File> confDirs, File logDir,
-            @Nullable Instrumentation instrumentation) {
+            @Nullable File loggingLogstashJarFile, @Nullable Instrumentation instrumentation)
+            throws IOException {
+        if (loggingLogstashJarFile != null && instrumentation != null) {
+            instrumentation
+                    .appendToBootstrapClassLoaderSearch(new JarFile(loggingLogstashJarFile));
+        }
         if (JavaVersion.isJava6() && "IBM J9 VM".equals(System.getProperty("java.vm.name"))
                 && instrumentation != null) {
             instrumentation.addTransformer(new IbmJ9Java6HackClassFileTransformer2());
@@ -517,7 +523,7 @@ public class MainEntryPoint {
         String testDirPath = checkNotNull(properties.get("glowroot.test.dir"));
         File testDir = new File(testDirPath);
         // init logger as early as possible
-        initLogging(Arrays.asList(testDir), testDir, null);
+        initLogging(Arrays.asList(testDir), testDir, null, null);
         Directories directories = new Directories(testDir, false);
         start(directories, properties, null, null);
     }

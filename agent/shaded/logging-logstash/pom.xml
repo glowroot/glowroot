@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.glowroot</groupId>
+    <artifactId>glowroot-parent</artifactId>
+    <version>0.13.2-SNAPSHOT</version>
+    <relativePath>../../..</relativePath>
+  </parent>
+
+  <artifactId>glowroot-agent-logging-logstash</artifactId>
+
+  <name>Glowroot Agent Logging Logstash</name>
+  <description>Glowroot Agent Logging Logstash</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>net.logstash.logback</groupId>
+      <artifactId>logstash-logback-encoder</artifactId>
+      <version>5.3</version>
+      <exclusions>
+        <exclusion>
+          <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <!-- don't include glowroot LICENSE and NOTICE since this is just wrapped 3rd party lib -->
+        <artifactId>maven-remote-resources-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <configuration>
+          <dependencyReducedPomLocation>
+            ${project.build.directory}/dependency-reduced-pom.xml
+          </dependencyReducedPomLocation>
+          <createSourcesJar>true</createSourcesJar>
+          <shadeSourcesContent>true</shadeSourcesContent>
+          <artifactSet>
+            <includes>
+              <include>net.logstash.logback:logstash-logback-encoder</include>
+            </includes>
+          </artifactSet>
+          <filters>
+            <filter>
+              <artifact>net.logstash.logback:logstash-logback-encoder</artifact>
+              <excludes>
+                <exclude>META-INF/maven/**</exclude>
+              </excludes>
+            </filter>
+          </filters>
+          <relocations>
+            <relocation>
+              <pattern>net.logstash.logback</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.net.logstash.logback</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>ch.qos.logback</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.ch.qos.logback</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.slf4j</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.slf4j</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>com.fasterxml.jackson</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.com.fasterxml.jackson</shadedPattern>
+            </relocation>
+          </relocations>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

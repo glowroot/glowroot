@@ -51,6 +51,19 @@
       <version>2.0.12.Final</version>
     </dependency>
     <dependency>
+      <!-- need to include logstash support for proguard step, but then it is stripped out after -->
+      <groupId>net.logstash.logback</groupId>
+      <artifactId>logstash-logback-encoder</artifactId>
+      <version>5.3</version>
+      <exclusions>
+        <exclusion>
+          <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -151,6 +164,13 @@
               <artifact>ch.qos.logback:logback-classic</artifact>
               <excludes>
                 <exclude>META-INF/services/javax.servlet.ServletContainerInitializer</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>net.logstash.logback:logstash-logback-encoder</artifact>
+              <excludes>
+                <exclude>META-INF/LICENSE.txt</exclude>
+                <exclude>META-INF/NOTICE.txt</exclude>
               </excludes>
             </filter>
             <filter>
@@ -280,6 +300,13 @@
               <shadedPattern>java:comp/env/glowroot.logback/context-name</shadedPattern>
             </relocation>
             <relocation>
+              <!-- relocating is not totally necessary here, since it is stripped out during the
+                assembly step, so could strip out the non-shaded classes, this is just for
+                consistency -->
+              <pattern>net.logstash.logback</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.net.logstash.logback</shadedPattern>
+            </relocation>
+            <relocation>
               <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due to
                 http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
               <pattern>org.checkerframework.checker</pattern>
@@ -349,6 +376,11 @@
               retain the netty classes that they depend on -->
             <option>
               -keep class org.glowroot.agent.shaded.io.netty.internal.tcnative.** { *; }
+            </option>
+            <!-- even though these classes will be stripped out in assembly plugin below, this will
+              retain the jackson classes that they depend on -->
+            <option>
+              -keep class org.glowroot.agent.shaded.net.logstash.logback.** { *; }
             </option>
             <!-- keep all logback appenders -->
             <option>

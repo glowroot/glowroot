@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,8 @@ public abstract class ToolMain {
         @SuppressWarnings("argument.type.incompatible")
         File glowrootJarFile = AgentPremain.getGlowrootJarFile(codeSource);
         Directories directories = new Directories(glowrootJarFile);
-        MainEntryPoint.initLogging(directories.getConfDirs(), directories.getLogDir(), null);
+        MainEntryPoint.initLogging(directories.getConfDirs(), directories.getLogDir(),
+                directories.getLoggingLogstashJarFile(), null);
         if (args.length == 1 && args[0].equals("version")) {
             System.out.println(Version.getVersion(MainEntryPoint.class));
             return;

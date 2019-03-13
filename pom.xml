@@ -52,6 +52,7 @@
     <module>agent/shaded/central-https-linux</module>
     <module>agent/shaded/central-https-windows</module>
     <module>agent/shaded/central-https-osx</module>
+    <module>agent/shaded/logging-logstash</module>
     <module>agent/integration-tests</module>
     <module>agent/plugins/camel-plugin</module>
     <module>agent/plugins/cassandra-plugin</module>
