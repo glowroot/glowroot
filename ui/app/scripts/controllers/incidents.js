@@ -74,21 +74,21 @@ glowroot.controller('IncidentsCtrl', [
           }
           angular.extend(query, fromTo);
           query.percentile = incident.percentile;
-          incident.href = '/transaction/percentiles' + queryStrings.encodeObject(query);
+          incident.href = 'transaction/percentiles' + queryStrings.encodeObject(query);
         } else if (metric === 'transaction:average') {
           query.transactionType = incident.transactionType;
           if (incident.transactionName) {
             query.transactionName = incident.transactionName;
           }
           angular.extend(query, fromTo);
-          incident.href = '/transaction/average' + queryStrings.encodeObject(query);
+          incident.href = 'transaction/average' + queryStrings.encodeObject(query);
         } else if (metric === 'transaction:count') {
           query.transactionType = incident.transactionType;
           if (incident.transactionName) {
             query.transactionName = incident.transactionName;
           }
           angular.extend(query, fromTo);
-          incident.href = '/transaction/throughput' + queryStrings.encodeObject(query);
+          incident.href = 'transaction/throughput' + queryStrings.encodeObject(query);
         } else if (metric === 'error:rate') {
           query.transactionType = incident.transactionType;
           if (incident.transactionName) {
@@ -96,26 +96,26 @@ glowroot.controller('IncidentsCtrl', [
           }
           angular.extend(query, fromTo);
           query['summary-sort-order'] = 'error-rate';
-          incident.href = '/error/messages' + queryStrings.encodeObject(query);
+          incident.href = 'error/messages' + queryStrings.encodeObject(query);
         } else if (metric === 'error:count') {
           query.transactionType = incident.transactionType;
           if (incident.transactionName) {
             query.transactionName = incident.transactionName;
           }
           angular.extend(query, fromTo);
-          incident.href = '/error/messages' + queryStrings.encodeObject(query);
+          incident.href = 'error/messages' + queryStrings.encodeObject(query);
         } else if (metric.lastIndexOf('gauge:', 0) === 0) {
           query.gaugeName = metric.substring('gauge:'.length);
           angular.extend(query, fromTo);
-          incident.href = '/jvm/gauges' + queryStrings.encodeObject(query);
+          incident.href = 'jvm/gauges' + queryStrings.encodeObject(query);
         }
       } else if (incident.conditionType === 'synthetic-monitor') {
         query.syntheticMonitorId = incident.syntheticMonitorId;
         angular.extend(query, fromTo);
-        incident.href = '/synthetic-monitors' + queryStrings.encodeObject(query);
+        incident.href = 'synthetic-monitors' + queryStrings.encodeObject(query);
       } else if (incident.conditionType === 'heartbeat') {
         angular.extend(query, fromTo);
-        incident.href = '/jvm/gauges'  + queryStrings.encodeObject(query);
+        incident.href = 'jvm/gauges'  + queryStrings.encodeObject(query);
       }
     }
 
