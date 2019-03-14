@@ -15,8 +15,10 @@
  */
 package org.glowroot.agent.impl;
 
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -49,6 +51,9 @@ public class BytecodeServiceImpl implements BytecodeService {
     private final AtomicBoolean hasRunOnExitingGetPlatformMBeanServer = new AtomicBoolean();
 
     private final PreloadSomeSuperTypesCache preloadSomeSuperTypesCache;
+
+    private final ThreadLocal</*@Nullable*/ Set<String>> currentlyLoadingTypesHolder =
+            new ThreadLocal</*@Nullable*/ Set<String>>();
 
     public BytecodeServiceImpl(TransactionRegistry transactionRegistry,
             TransactionService transactionService,
@@ -152,15 +157,52 @@ public class BytecodeServiceImpl implements BytecodeService {
         if (className == null) {
             return;
         }
-        for (String superClassName : preloadSomeSuperTypesCache.get(className)) {
-            logger.debug("pre-loading super class {} for {}, in loader={}@{}", superClassName,
-                    className, loader.getClass().getName(), loader.hashCode());
-            try {
-                Class.forName(superClassName, false, loader);
-            } catch (ClassNotFoundException e) {
-                logger.debug("super class {} not found (for sub-class {})", superClassName,
-                        className, e);
-                continue;
+        Set<String> preloadSomeSuperTypes = preloadSomeSuperTypesCache.get(className);
+        if (preloadSomeSuperTypes.isEmpty()) {
+            return;
+        }
+        Set<String> currentlyLoadingTypes = currentlyLoadingTypesHolder.get();
+        boolean topLevel;
+        if (currentlyLoadingTypes == null) {
+            // using linked hash set so that top level class can be found as first element
+            currentlyLoadingTypes = Sets.newLinkedHashSet();
+            currentlyLoadingTypesHolder.set(currentlyLoadingTypes);
+            topLevel = true;
+        } else if (currentlyLoadingTypes.iterator().next().equals(className)) {
+            // not top level, and need to abort the (nested) defineClass() that this is inside of,
+            // otherwise the defineClass() that this is inside of will succeed, but then the top
+            // level defineClass() will fail with "attempted duplicate class definition for name"
+            throw new AbortPreload();
+        } else {
+            topLevel = false;
+        }
+        if (!currentlyLoadingTypes.add(className)) {
+            // already loading className, prevent infinite loop / StackOverflowError, see
+            // AnalyzedClassPlanBeeWithBadPreloadCacheIT
+            return;
+        }
+        try {
+            for (String superClassName : preloadSomeSuperTypes) {
+                logger.debug("pre-loading super class {} for {}, in loader={}@{}", superClassName,
+                        className, loader.getClass().getName(), loader.hashCode());
+                try {
+                    Class.forName(superClassName, false, loader);
+                } catch (ClassNotFoundException e) {
+                    logger.debug("super class {} not found (for sub-class {})", superClassName,
+                            className, e);
+                } catch (LinkageError e) {
+                    // this can happen, e.g. ClassCircularityError, under strange circumstances,
+                    // see AnalyzedClassPlanBeeWithMoreBadPreloadCacheIT
+                    logger.debug("linkage error occurred while loading super class {} (for"
+                            + " sub-class {})", superClassName, className, e);
+                } catch (AbortPreload e) {
+                }
+            }
+        } finally {
+            if (topLevel) {
+                currentlyLoadingTypesHolder.remove();
+            } else {
+                currentlyLoadingTypes.remove(className);
             }
         }
     }
@@ -223,4 +265,7 @@ public class BytecodeServiceImpl implements BytecodeService {
     public interface OnEnteringMain {
         void run(@Nullable String mainClass) throws Exception;
     }
+
+    @SuppressWarnings("serial")
+    private static class AbortPreload extends RuntimeException {}
 }

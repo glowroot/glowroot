@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 the original author or authors.
+ * Copyright 2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,14 @@
  */
 package org.glowroot.agent.tests.javaagent;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Enumeration;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -29,22 +31,39 @@ import org.junit.Test;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
+import org.glowroot.agent.it.harness.TempDirs;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 
-public class AnalyzedClassPlanBeeIT {
+import static com.google.common.base.Charsets.UTF_8;
+
+public class AnalyzedClassPlanBeeWithBadPreloadCacheIT {
 
     private static Container container;
+    private static File testDir;
 
     @BeforeClass
     public static void setUp() throws Exception {
-        container = JavaagentContainer.create();
+        testDir = TempDirs.createTempDir("glowroot-test-dir");
+        File tmpDir = new File(testDir, "tmp");
+        tmpDir.mkdir();
+        File cacheFile = new File(tmpDir, "preload-some-super-types-cache");
+        // put circular reference into preload-some-super-types-cache to ensure that
+        // StackOverflowError is not thrown
+        Files.write(
+                AnalyzedClassPlanBeeWithBadPreloadCacheIT.class.getName() + "$Y,"
+                        + AnalyzedClassPlanBeeWithBadPreloadCacheIT.class.getName() + "$Z\n"
+                        + AnalyzedClassPlanBeeWithBadPreloadCacheIT.class.getName() + "$Z,"
+                        + AnalyzedClassPlanBeeWithBadPreloadCacheIT.class.getName() + "$Y",
+                cacheFile, UTF_8);
+        container = JavaagentContainer.create(testDir);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         container.close();
+        TempDirs.deleteRecursively(testDir);
     }
 
     @After
@@ -53,7 +72,7 @@ public class AnalyzedClassPlanBeeIT {
     }
 
     @Test
-    public void shouldNotLogWarningInAnalyzedWorldPlanB() throws Exception {
+    public void shouldNotLogWarningInAnalyzedWorldPlanBWithBadPreloadCache() throws Exception {
         // given
         updateInstrumentationConfigs();
         // when
@@ -64,7 +83,7 @@ public class AnalyzedClassPlanBeeIT {
 
     private static void updateInstrumentationConfigs() throws Exception {
         InstrumentationConfig config = InstrumentationConfig.newBuilder()
-                .setClassName(AnalyzedClassPlanBeeIT.class.getName() + "$Y")
+                .setClassName(AnalyzedClassPlanBeeWithBadPreloadCacheIT.class.getName() + "$Y")
                 .setMethodName("y")
                 .setMethodReturnType("")
                 .setCaptureKind(CaptureKind.TIMER)
@@ -76,7 +95,8 @@ public class AnalyzedClassPlanBeeIT {
     public static class ShouldNotLogWarningInAnalyzedWorldPlanB implements AppUnderTest {
         @Override
         public void executeApp() throws Exception {
-            Class.forName(AnalyzedClassPlanBeeIT.class.getName() + "$Z", true,
+            Class.forName(AnalyzedClassPlanBeeWithBadPreloadCacheIT.class.getName() + "$Z",
+                    true,
                     new DelegatingClassLoader());
         }
     }
