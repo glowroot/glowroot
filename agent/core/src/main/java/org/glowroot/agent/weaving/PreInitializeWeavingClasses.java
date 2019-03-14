@@ -322,11 +322,12 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$ClassMetaHolder");
         types.add("org.glowroot.agent.weaving.BootstrapMetaHolders$MethodMetaHolder");
         types.add("org.glowroot.agent.weaving.ClassAnalyzer");
-        types.add("org.glowroot.agent.weaving.ClassAnalyzer$MatchedMixinTypes");
         types.add("org.glowroot.agent.weaving.ClassAnalyzer$AnalyzedMethodKey");
         types.add("org.glowroot.agent.weaving.ClassAnalyzer$BridgeMethodClassVisitor");
         types.add("org.glowroot.agent.weaving.ClassAnalyzer$BridgeMethodClassVisitor"
                 + "$BridgeMethodVisitor");
+        types.add("org.glowroot.agent.weaving.ClassAnalyzer$MatchedMixinTypes");
+        types.add("org.glowroot.agent.weaving.ClassAnalyzer$NonAbstractMethodClassVisitor");
         types.add("org.glowroot.agent.weaving.ClassInfoImpl");
         types.add("org.glowroot.agent.weaving.ClassLoaders");
         types.add("org.glowroot.agent.weaving.ClassLoaders$LazyDefinedClass");

@@ -15,7 +15,10 @@
  */
 package org.glowroot.agent.weaving;
 
+import java.io.IOException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.security.CodeSource;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,6 +36,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.io.Resources;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -64,6 +68,7 @@ class ClassAnalyzer {
     private final ThinClass thinClass;
     private final String className;
     private final boolean intf;
+    private final @Nullable ClassLoader loader;
 
     private final ImmutableAnalyzedClass.Builder analyzedClassBuilder;
     private final ImmutableList<AdviceMatcher> adviceMatchers;
@@ -91,6 +96,7 @@ class ClassAnalyzer {
             @Nullable CodeSource codeSource, byte[] classBytes,
             @Nullable Class<?> classBeingRedefined, boolean noLongerNeedToWeaveMainMethods) {
         this.thinClass = thinClass;
+        this.loader = loader;
         ImmutableList<String> interfaceNames = ClassNames.fromInternalNames(thinClass.interfaces());
         className = ClassNames.fromInternalName(thinClass.name());
         intf = Modifier.isInterface(thinClass.access());
@@ -188,7 +194,7 @@ class ClassAnalyzer {
         this.hackAdvisors = loader != null;
     }
 
-    void analyzeMethods() {
+    void analyzeMethods() throws ClassNotFoundException, IOException {
         methodAdvisors = Maps.newHashMap();
         bridgeTargetAdvisors = Maps.newHashMap();
         for (ThinMethod bridgeMethod : thinClass.bridgeMethods()) {
@@ -381,7 +387,8 @@ class ClassAnalyzer {
         return possibleTargetMethods;
     }
 
-    private List<AnalyzedMethod> getMethodsThatOnlyNowFulfillAdvice(AnalyzedClass analyzedClass) {
+    private List<AnalyzedMethod> getMethodsThatOnlyNowFulfillAdvice(AnalyzedClass analyzedClass)
+            throws ClassNotFoundException, IOException {
         if (analyzedClass.isAbstract()) {
             return ImmutableList.of();
         }
@@ -401,6 +408,7 @@ class ClassAnalyzer {
             return ImmutableList.of();
         }
         removeMethodsThatWouldOverridePublicFinalMethodsFromSuperClass(matchingAdvisorSets);
+        removeMethodsThatAreNotImplementedInSuperClass(matchingAdvisorSets);
         List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice = Lists.newArrayList();
         for (Map.Entry<AnalyzedMethodKey, Set<Advice>> entry : matchingAdvisorSets.entrySet()) {
             Set<Advice> advisors = entry.getValue();
@@ -471,6 +479,23 @@ class ClassAnalyzer {
                 if (value != null && !value.isEmpty()) {
                     logOverridePublicFinalMethodInfo(superAnalyzedClass, publicFinalMethod);
                 }
+            }
+        }
+    }
+
+    private void removeMethodsThatAreNotImplementedInSuperClass(
+            Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets)
+            throws ClassNotFoundException, IOException {
+        Set<AnalyzedMethodKey> superAnalyzedMethodKeys = Sets.newHashSet();
+        for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
+            superAnalyzedMethodKeys
+                    .addAll(getNonAbstractMethods(superAnalyzedClass.name(), loader));
+        }
+        Iterator<AnalyzedMethodKey> i = matchingAdvisorSets.keySet().iterator();
+        while (i.hasNext()) {
+            AnalyzedMethodKey analyzedMethodKey = i.next();
+            if (!superAnalyzedMethodKeys.contains(analyzedMethodKey)) {
+                i.remove();
             }
         }
     }
@@ -706,6 +731,43 @@ class ClassAnalyzer {
         }
     }
 
+    private static List<AnalyzedMethodKey> getNonAbstractMethods(String className,
+            @Nullable ClassLoader loader) throws ClassNotFoundException, IOException {
+        String path = ClassNames.toInternalName(className) + ".class";
+        URL url;
+        if (loader == null) {
+            // null loader means the bootstrap class loader
+            url = ClassLoader.getSystemResource(path);
+        } else {
+            url = loader.getResource(path);
+        }
+        if (url == null) {
+            // what follows is just a best attempt in the sort-of-rare case when a custom class
+            // loader does not expose .class file contents via getResource(), e.g.
+            // org.codehaus.groovy.runtime.callsite.CallSiteClassLoader
+            return getNonAbstractMethodsPlanB(className, loader);
+        }
+        byte[] bytes = Resources.toByteArray(url);
+        NonAbstractMethodClassVisitor accv = new NonAbstractMethodClassVisitor();
+        new ClassReader(bytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
+        return accv.analyzedMethodKeys;
+    }
+
+    private static List<AnalyzedMethodKey> getNonAbstractMethodsPlanB(String className,
+            @Nullable ClassLoader loader) throws ClassNotFoundException {
+        Class<?> clazz = Class.forName(className, false, loader);
+        List<AnalyzedMethodKey> analyzedMethodKeys = Lists.newArrayList();
+        for (Method method : clazz.getDeclaredMethods()) {
+            ImmutableAnalyzedMethodKey.Builder builder = ImmutableAnalyzedMethodKey.builder()
+                    .name(method.getName());
+            for (Class<?> parameterType : method.getParameterTypes()) {
+                builder.addParameterTypes(parameterType.getName());
+            }
+            analyzedMethodKeys.add(builder.build());
+        }
+        return analyzedMethodKeys;
+    }
+
     // AnalyzedMethod equivalence defined only in terms of method name and parameter types
     // so that overridden methods will be equivalent
     @Value.Immutable
@@ -796,6 +858,29 @@ class ClassAnalyzer {
                         name + descriptor);
                 found = true;
             }
+        }
+    }
+
+    private static class NonAbstractMethodClassVisitor extends ClassVisitor {
+
+        private List<AnalyzedMethodKey> analyzedMethodKeys = Lists.newArrayList();
+
+        private NonAbstractMethodClassVisitor() {
+            super(ASM7);
+        }
+
+        @Override
+        public @Nullable MethodVisitor visitMethod(int access, String name, String descriptor,
+                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
+            if (!Modifier.isAbstract(access)) {
+                ImmutableAnalyzedMethodKey.Builder builder = ImmutableAnalyzedMethodKey.builder()
+                        .name(name);
+                for (Type type : Type.getArgumentTypes(descriptor)) {
+                    builder.addParameterTypes(type.getClassName());
+                }
+                analyzedMethodKeys.add(builder.build());
+            }
+            return null;
         }
     }
 }

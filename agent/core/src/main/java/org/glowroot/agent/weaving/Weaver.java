@@ -250,7 +250,15 @@ public class Weaver {
         ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
                 mixinTypes, loader, analyzedWorld, codeSource, classBytes, classBeingRedefined,
                 noLongerNeedToWeaveMainMethods);
-        classAnalyzer.analyzeMethods();
+        try {
+            classAnalyzer.analyzeMethods();
+        } catch (ClassNotFoundException e) {
+            logger.error("error analyzing {}: {}", className, e.getMessage(), e);
+            return null;
+        } catch (IOException e) {
+            logger.error("error analyzing {}: {}", className, e.getMessage(), e);
+            return null;
+        }
         if (!classAnalyzer.isWeavingRequired()) {
             analyzedWorld.add(classAnalyzer.getAnalyzedClass(), loader);
             return maybeProcessedBytes;
