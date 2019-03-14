@@ -257,10 +257,11 @@ class ClassAnalyzer {
 
     @RequiresNonNull("bridgeTargetAdvisors")
     private List<Advice> analyzeMethod(ThinMethod thinMethod) {
-        List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(thinMethod.descriptor()));
         if (Modifier.isFinal(thinMethod.access()) && Modifier.isPublic(thinMethod.access())) {
             ImmutablePublicFinalMethod.Builder builder = ImmutablePublicFinalMethod.builder()
                     .name(thinMethod.name());
+            List<Type> parameterTypes =
+                    Arrays.asList(Type.getArgumentTypes(thinMethod.descriptor()));
             for (Type parameterType : parameterTypes) {
                 builder.addParameterTypes(parameterType.getClassName());
             }
@@ -269,6 +270,7 @@ class ClassAnalyzer {
         if (shortCircuitBeforeAnalyzeMethods) {
             return ImmutableList.of();
         }
+        List<Type> parameterTypes = Arrays.asList(Type.getArgumentTypes(thinMethod.descriptor()));
         Type returnType = Type.getReturnType(thinMethod.descriptor());
         List<String> methodAnnotations = thinMethod.annotations();
         List<Advice> matchingAdvisors = getMatchingAdvisors(thinMethod, methodAnnotations,
@@ -391,13 +393,19 @@ class ClassAnalyzer {
         for (AnalyzedMethod analyzedMethod : analyzedClass.analyzedMethods()) {
             matchingAdvisorSets.remove(AnalyzedMethodKey.wrap(analyzedMethod));
         }
+        if (matchingAdvisorSets.isEmpty()) {
+            return ImmutableList.of();
+        }
         removeAdviceAlreadyWovenIntoSuperClass(matchingAdvisorSets);
+        if (matchingAdvisorSets.isEmpty()) {
+            return ImmutableList.of();
+        }
         removeMethodsThatWouldOverridePublicFinalMethodsFromSuperClass(matchingAdvisorSets);
         List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice = Lists.newArrayList();
         for (Map.Entry<AnalyzedMethodKey, Set<Advice>> entry : matchingAdvisorSets.entrySet()) {
-            AnalyzedMethod inheritedMethod = checkNotNull(entry.getKey().analyzedMethod());
             Set<Advice> advisors = entry.getValue();
             if (!advisors.isEmpty()) {
+                AnalyzedMethod inheritedMethod = checkNotNull(entry.getKey().analyzedMethod());
                 methodsThatOnlyNowFulfillAdvice.add(ImmutableAnalyzedMethod.builder()
                         .copyFrom(inheritedMethod)
                         .advisors(advisors)
@@ -415,13 +423,15 @@ class ClassAnalyzer {
                 Set<Advice> matchingAdvisorSet = matchingAdvisorSets.get(key);
                 if (matchingAdvisorSet == null) {
                     matchingAdvisorSet = Sets.newHashSet();
-                    matchingAdvisorSets.put(key, matchingAdvisorSet);
                 }
                 matchingAdvisorSet.addAll(superAnalyzedMethod.advisors());
                 for (Advice advice : superAnalyzedMethod.subTypeRestrictedAdvisors()) {
                     if (isSubTypeRestrictionMatch(advice, superClassNames)) {
                         matchingAdvisorSet.add(advice);
                     }
+                }
+                if (!matchingAdvisorSet.isEmpty()) {
+                    matchingAdvisorSets.put(key, matchingAdvisorSet);
                 }
             }
         }
@@ -435,12 +445,15 @@ class ClassAnalyzer {
                 if (Modifier.isAbstract(superAnalyzedMethod.modifiers())) {
                     continue;
                 }
-                Set<Advice> matchingAdvisorSet =
-                        matchingAdvisorSets.get(AnalyzedMethodKey.wrap(superAnalyzedMethod));
+                AnalyzedMethodKey key = AnalyzedMethodKey.wrap(superAnalyzedMethod);
+                Set<Advice> matchingAdvisorSet = matchingAdvisorSets.get(key);
                 if (matchingAdvisorSet == null) {
                     continue;
                 }
                 matchingAdvisorSet.removeAll(superAnalyzedMethod.advisors());
+                if (matchingAdvisorSet.isEmpty()) {
+                    matchingAdvisorSets.remove(key);
+                }
             }
         }
     }
