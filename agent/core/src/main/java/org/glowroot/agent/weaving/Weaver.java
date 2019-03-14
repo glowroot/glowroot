@@ -183,68 +183,68 @@ public class Weaver {
         ThinClassVisitor accv = new ThinClassVisitor();
         new ClassReader(classBytes).accept(accv, ClassReader.SKIP_FRAMES + ClassReader.SKIP_CODE);
         boolean frames = accv.getMajorVersion() >= V1_6;
-        int expandFrames = frames ? ClassReader.EXPAND_FRAMES : 0;
+        int parsingOptions = frames ? ClassReader.EXPAND_FRAMES : ClassReader.SKIP_FRAMES;
         byte[] maybeProcessedBytes = null;
         if (accv.isConstructorPointcut()) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new PointcutClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
+            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.JBOSS_WELD_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBossWeldHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
+            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.JBOSS_MODULES_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBossModulesHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
+            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.JBOSS_URL_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBossUrlHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
+            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.FELIX_OSGI_HACK_CLASS_NAME)
                 || className.equals(ImportantClassNames.FELIX3_OSGI_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new OsgiHackClassVisitor(cw, className, "shouldBootDelegate");
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
+            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.ECLIPSE_OSGI_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new OsgiHackClassVisitor(cw, className, "isBootDelegationPackage");
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
+            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.OPENEJB_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new OpenEJBHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
+            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.HIKARI_CP_PROXY_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new HikariCpProxyHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
+            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.BITRONIX_PROXY_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new BitronixProxyHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
+            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
             maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals("java/lang/ClassLoader")) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new ClassLoaderHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
+            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
             maybeProcessedBytes = cw.toByteArray();
         }
         ClassAnalyzer classAnalyzer = new ClassAnalyzer(accv.getThinClass(), advisors, shimTypes,
@@ -303,7 +303,7 @@ public class Weaver {
                 new ClassReader(maybeProcessedBytes == null ? classBytes : maybeProcessedBytes);
         byte[] transformedBytes;
         try {
-            cr.accept(new JSRInlinerClassVisitor(cv), expandFrames);
+            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
             // ClassWriter.toByteArray() can throw exception also, see issue #370
             transformedBytes = cw.toByteArray();
         } catch (RuntimeException e) {
