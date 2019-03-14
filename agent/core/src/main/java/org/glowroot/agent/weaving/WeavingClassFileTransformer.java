@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,13 +127,6 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             // sun/reflect/GeneratedSerializationConstructorAccessor..
             // sun/reflect/GeneratedConstructorAccessor..
             // sun/reflect/GeneratedMethodAccessor..
-            return true;
-        }
-        // proxies under JDK 6 start with $Proxy
-        // proxies under JDK 7+ start with com/sun/proxy/$Proxy
-        if (className.startsWith("com/sun/proxy/$Proxy") || className.startsWith("$Proxy")) {
-            // optimization, especially for jdbc plugin to avoid weaving proxy wrappers when dealing
-            // with connection pools
             return true;
         }
         if (className.equals("load/C4") && loader != null && loader.getClass().getName()
