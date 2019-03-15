@@ -32,7 +32,6 @@
 
   <modules>
     <module>build/license-bundle</module>
-    <module>build/immutables-jdk6</module>
     <module>build/checker-jdk6</module>
     <module>build/error-prone-jdk6</module>
     <module>build/multi-lib-tests</module>
@@ -131,6 +130,11 @@
         <groupId>org.immutables</groupId>
         <artifactId>android-stub</artifactId>
         <version>${immutables.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.trask</groupId>
+        <artifactId>immutables-jdk6-shim</artifactId>
+        <version>1.0.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.protobuf</groupId>

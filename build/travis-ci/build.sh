@@ -350,7 +350,7 @@ case "$1" in
                  # the sonar.login system property is set in the pom.xml using the
                  # environment variable SONAR_LOGIN (instead of setting the system
                  # property on the command line which which would make it visible to ps)
-                 mvn clean verify sonar:sonar -pl !build/license-bundle,!build/immutables-jdk6,!build/checker-jdk6,!build/error-prone-jdk6,!build/multi-lib-tests,!agent/shaded/embedded,!agent/shaded/core,!agent/shaded/it-harness,!agent/shaded/central-https-linux,!agent/shaded/central-https-windows,!agent/shaded/central-https-osx,!agent/benchmarks,!agent/ui-sandbox,!agent/dist-maven-plugin,!agent/dist \
+                 mvn clean verify sonar:sonar -pl !build/license-bundle,!build/checker-jdk6,!build/error-prone-jdk6,!build/multi-lib-tests,!agent/shaded/embedded,!agent/shaded/core,!agent/shaded/it-harness,!agent/shaded/central-https-linux,!agent/shaded/central-https-windows,!agent/shaded/central-https-osx,!agent/benchmarks,!agent/ui-sandbox,!agent/dist-maven-plugin,!agent/dist \
                                    -Dsonar.host.url=https://sonarcloud.io \
                                    -Dsonar.organization=glowroot \
                                    -Dsonar.jacoco.reportPaths=$PWD/jacoco-combined.exec \
