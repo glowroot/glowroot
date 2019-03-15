@@ -203,8 +203,11 @@
       </dependencies>
     </profile>
     <profile>
+      <id>not-test-java6</id>
       <activation>
-        <jdk>[1.7,)</jdk>
+        <property>
+          <name>!glowroot.test.java6</name>
+        </property>
       </activation>
       <build>
         <plugins>
