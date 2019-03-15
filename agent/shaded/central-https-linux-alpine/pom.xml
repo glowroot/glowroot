@@ -18,9 +18,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-tcnative-boringssl-static</artifactId>
-      <classifier>linux-alpine-x86_64</classifier>
+      <groupId>com.github.trask.io.netty</groupId>
+      <artifactId>netty-tcnative-boringssl-static-linux-alpine-x86_64</artifactId>
       <!-- need to stick to version known to work with gRPC 1.14.0,
         see https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
       <version>2.0.12.Final</version>
@@ -46,9 +45,8 @@
             <configuration>
               <artifactItems>
                 <artifactItem>
-                  <groupId>io.netty</groupId>
-                  <artifactId>netty-tcnative-boringssl-static</artifactId>
-                  <classifier>linux-alpine-x86_64</classifier>
+                  <groupId>com.github.trask.io.netty</groupId>
+                  <artifactId>netty-tcnative-boringssl-static-linux-alpine-x86_64</artifactId>
                 </artifactItem>
               </artifactItems>
               <includes>META-INF/native/libnetty_tcnative.so</includes>
@@ -66,7 +64,7 @@
           <shadeSourcesContent>true</shadeSourcesContent>
           <filters>
             <filter>
-              <artifact>io.netty:netty-tcnative-boringssl-static</artifact>
+              <artifact>com.github.trask.io.netty:netty-tcnative-boringssl-static-linux-alpine-x86_64</artifact>
               <excludes>
                 <exclude>META-INF/maven/**</exclude>
                 <exclude>META-INF/io.netty.versions.properties</exclude>

@@ -88,7 +88,7 @@ fi
 
 git add -u
 
-mvn -Pinclude-central-https-linux-alpine versions:set -DgenerateBackupPoms=false -DnewVersion=$release_version
+mvn versions:set -DgenerateBackupPoms=false -DnewVersion=$release_version
 
 git diff
 
@@ -113,13 +113,11 @@ commit=$(git rev-parse HEAD)
 
 # javadoc is needed here since deploy :glowroot-agent attaches the javadoc from :glowroot-agent-core
 mvn clean install -pl :glowroot-agent,:glowroot-central -am \
-                  -Pinclude-central-https-linux-alpine \
                   -Pjavadoc \
                   -DskipTests
 
 # gpg.keyId is needed for the rpm signing maven plugin
 USERNAME=$built_by mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-central \
-                                    -Pinclude-central-https-linux-alpine \
                                     -Pjavadoc \
                                     -Prelease \
                                     -Dglowroot.build.commit=$commit \

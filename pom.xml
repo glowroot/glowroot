@@ -50,6 +50,7 @@
     <module>agent/shaded/core</module>
     <module>agent/shaded/it-harness</module>
     <module>agent/shaded/central-https-linux</module>
+    <module>agent/shaded/central-https-linux-alpine</module>
     <module>agent/shaded/central-https-windows</module>
     <module>agent/shaded/central-https-osx</module>
     <module>agent/shaded/logging-logstash</module>
@@ -603,12 +604,6 @@
           </plugins>
         </pluginManagement>
       </build>
-    </profile>
-    <profile>
-      <id>include-central-https-linux-alpine</id>
-      <modules>
-        <module>agent/shaded/central-https-linux-alpine</module>
-      </modules>
     </profile>
     <profile>
       <activation>
