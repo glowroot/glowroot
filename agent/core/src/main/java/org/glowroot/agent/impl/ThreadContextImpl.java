@@ -469,7 +469,7 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 transaction.mergeLimitExceededAuxThreadContext(this);
             }
             if (!isAuxiliary() || transactionAsyncComplete) {
-                transaction.end(endTick, transactionAsyncComplete);
+                transaction.end(endTick, transactionAsyncComplete, false);
             }
             threadContextHolder.set(outerTransactionThreadContext);
             if (outerTransactionThreadContext != null) {
@@ -852,7 +852,9 @@ public class ThreadContextImpl implements ThreadContextPlus {
             }
             transactionAsyncComplete = true;
             if (isCompleted()) {
-                transaction.end(ticker.read(), true);
+                transaction.end(ticker.read(), true, true);
+            } else {
+                transaction.setWaitingToEndAsync();
             }
         } else {
             innerTransactionThreadContext.setTransactionAsyncComplete();

@@ -190,6 +190,7 @@ public class Transaction {
     @GuardedBy("sharedQueryTextCollectionLock")
     private @MonotonicNonNull SharedQueryTextCollectionImpl sharedQueryTextCollection;
 
+    private volatile boolean waitingToEndAsync;
     private volatile boolean completed;
     private volatile long endTick;
 
@@ -215,8 +216,7 @@ public class Transaction {
             CompletionCallback completionCallback, Ticker ticker,
             TransactionRegistry transactionRegistry, TransactionService transactionService,
             ConfigService configService, ThreadContextThreadLocal.Holder threadContextHolder,
-            int rootNestingGroupId,
-            int rootSuppressionKeyId) {
+            int rootNestingGroupId, int rootSuppressionKeyId) {
         this.startTime = startTime;
         this.startTick = startTick;
         this.transactionType = transactionType;
@@ -808,13 +808,25 @@ public class Transaction {
         profile.addStackTrace(threadInfo);
     }
 
-    void end(long endTick, boolean completeAsyncTransaction) {
-        if (async && !completeAsyncTransaction) {
+    void setWaitingToEndAsync() {
+        waitingToEndAsync = true;
+    }
+
+    void end(long endTick, boolean completeAsyncTransaction,
+            boolean isSetTransactionAsyncComplete) {
+        if (async && (!completeAsyncTransaction
+                || waitingToEndAsync && isSetTransactionAsyncComplete)) {
             return;
         }
-        // set endTick first before completed, to avoid race condition in getDurationNanos()
-        this.endTick = endTick;
         synchronized (mainThreadContext) {
+            if (completed) {
+                // protect against plugin calling setTransactionAsyncComplete() multiple times,
+                // potentially from different threads (e.g. netty plugin ending transaction by
+                // sending LastHttpContent at the same time client disconnects)
+                return;
+            }
+            // set endTick first before completed, to avoid race condition in getDurationNanos()
+            this.endTick = endTick;
             // set completed and detach incomplete aux thread contexts inside synchronized block
             // to avoid race condition with adding new aux thread contexts, see synchronized block
             // in startAuxThreadContext()
