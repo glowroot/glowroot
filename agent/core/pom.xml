@@ -237,6 +237,7 @@
       </dependencies>
     </profile>
     <profile>
+      <id>auto-activated-java-8</id>
       <activation>
         <jdk>[1.8,)</jdk>
       </activation>
