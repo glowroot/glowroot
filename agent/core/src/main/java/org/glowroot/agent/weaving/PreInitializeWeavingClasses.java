@@ -341,16 +341,12 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.Weaver$ClassLoaderHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$HikariCpProxyHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$HikariCpProxyHackMethodVisitor");
-        types.add("org.glowroot.agent.weaving.Weaver$JBossModulesHackClassVisitor");
-        types.add("org.glowroot.agent.weaving.Weaver$JBossModulesHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$JBossUrlHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$JBossUrlHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$JBossWeldHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$JBossWeldHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$OpenEJBHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$OpenEJBHackMethodVisitor");
-        types.add("org.glowroot.agent.weaving.Weaver$OsgiHackClassVisitor");
-        types.add("org.glowroot.agent.weaving.Weaver$OsgiHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice$InitShim");

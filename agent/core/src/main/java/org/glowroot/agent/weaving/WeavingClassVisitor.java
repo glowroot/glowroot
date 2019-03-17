@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,15 +61,20 @@ import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
 import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
+import static org.objectweb.asm.Opcodes.ACONST_NULL;
 import static org.objectweb.asm.Opcodes.ALOAD;
+import static org.objectweb.asm.Opcodes.ARETURN;
 import static org.objectweb.asm.Opcodes.ASM7;
 import static org.objectweb.asm.Opcodes.ASTORE;
 import static org.objectweb.asm.Opcodes.ATHROW;
 import static org.objectweb.asm.Opcodes.DUP;
+import static org.objectweb.asm.Opcodes.F_NEW;
 import static org.objectweb.asm.Opcodes.GETSTATIC;
 import static org.objectweb.asm.Opcodes.GOTO;
 import static org.objectweb.asm.Opcodes.ICONST_0;
+import static org.objectweb.asm.Opcodes.IFEQ;
 import static org.objectweb.asm.Opcodes.ILOAD;
+import static org.objectweb.asm.Opcodes.INTEGER;
 import static org.objectweb.asm.Opcodes.INVOKEINTERFACE;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
@@ -99,6 +104,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
     private final boolean frames;
     private final boolean noLongerNeedToWeaveMainMethods;
+    private final boolean isClassLoader;
     private final AnalyzedClass analyzedClass;
     private final List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice;
 
@@ -123,14 +129,15 @@ class WeavingClassVisitor extends ClassVisitor {
 
     public WeavingClassVisitor(ClassWriter cw, @Nullable ClassLoader loader, boolean frames,
             boolean noLongerNeedToWeaveMainMethods, AnalyzedClass analyzedClass,
-            List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice, List<ShimType> shimTypes,
-            List<MixinType> mixinTypes, Map<String, List<Advice>> methodAdvisors,
-            AnalyzedWorld analyzedWorld) {
+            boolean isClassLoader, List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice,
+            List<ShimType> shimTypes, List<MixinType> mixinTypes,
+            Map<String, List<Advice>> methodAdvisors, AnalyzedWorld analyzedWorld) {
         super(ASM7, cw);
         this.cw = cw;
         this.loader = loader;
         this.frames = frames;
         this.noLongerNeedToWeaveMainMethods = noLongerNeedToWeaveMainMethods;
+        this.isClassLoader = isClassLoader;
         this.analyzedClass = analyzedClass;
         this.methodsThatOnlyNowFulfillAdvice = methodsThatOnlyNowFulfillAdvice;
         this.shimTypes = shimTypes;
@@ -202,7 +209,7 @@ class WeavingClassVisitor extends ClassVisitor {
         }
         MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
         if (!noLongerNeedToWeaveMainMethods) {
-            if (Modifier.isPublic(access) && Modifier.isStatic(access) && name.equals("main")
+            if (name.equals("main") && Modifier.isPublic(access) && Modifier.isStatic(access)
                     && descriptor.equals("([Ljava/lang/String;)V")) {
                 mv.visitLdcInsn(type.getClassName());
                 mv.visitVarInsn(ALOAD, 0);
@@ -217,6 +224,17 @@ class WeavingClassVisitor extends ClassVisitor {
                 mv.visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(),
                         "enteringApacheCommonsDaemonLoadMethod",
                         "(Ljava/lang/String;[Ljava/lang/String;)V", false);
+            }
+        }
+        if (isClassLoader && name.equals("loadClass")
+                && (Modifier.isPublic(access) || Modifier.isProtected(access))
+                && !Modifier.isStatic(access)) {
+            if (descriptor.equals("(Ljava/lang/String;)Ljava/lang/Class;")) {
+                addLoadClassConditional(mv,
+                        new Object[] {type.getInternalName(), "java/lang/String"});
+            } else if (descriptor.equals("(Ljava/lang/String;Z)Ljava/lang/Class;")) {
+                addLoadClassConditional(mv,
+                        new Object[] {type.getInternalName(), "java/lang/String", INTEGER});
             }
         }
         if (matchingAdvisors.isEmpty()) {
@@ -645,6 +663,33 @@ class WeavingClassVisitor extends ClassVisitor {
     private static boolean isAbstractOrNativeOrSynthetic(int access) {
         return Modifier.isAbstract(access) || Modifier.isNative(access)
                 || (access & ACC_SYNTHETIC) != 0;
+    }
+
+    private static void addLoadClassConditional(MethodVisitor mv, Object[] locals) {
+        Label label0 = new Label();
+        Label label1 = new Label();
+        Label label2 = new Label();
+        mv.visitTryCatchBlock(label0, label1, label2, "java/lang/ClassNotFoundException");
+        mv.visitVarInsn(ALOAD, 1);
+        mv.visitLdcInsn("org.glowroot.agent");
+        mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "startsWith", "(Ljava/lang/String;)Z",
+                false);
+        Label label3 = new Label();
+        mv.visitJumpInsn(IFEQ, label3);
+        mv.visitLabel(label0);
+        mv.visitVarInsn(ALOAD, 1);
+        mv.visitInsn(ICONST_0);
+        mv.visitInsn(ACONST_NULL);
+        mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
+                "(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;", false);
+        mv.visitLabel(label1);
+        mv.visitInsn(ARETURN);
+        mv.visitLabel(label2);
+        mv.visitFrame(F_NEW, locals.length, locals, 1,
+                new Object[] {"java/lang/ClassNotFoundException"});
+        mv.visitInsn(POP);
+        mv.visitLabel(label3);
+        mv.visitFrame(F_NEW, locals.length, locals, 0, new Object[0]);
     }
 
     private static class InitMixins extends AdviceAdapter {

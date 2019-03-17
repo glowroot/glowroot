@@ -197,28 +197,9 @@ public class Weaver {
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
             maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals(ImportantClassNames.JBOSS_MODULES_HACK_CLASS_NAME)) {
-            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            ClassVisitor cv = new JBossModulesHackClassVisitor(cw);
-            ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
-            maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.JBOSS_URL_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBossUrlHackClassVisitor(cw);
-            ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
-            maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals(ImportantClassNames.FELIX_OSGI_HACK_CLASS_NAME)
-                || className.equals(ImportantClassNames.FELIX3_OSGI_HACK_CLASS_NAME)) {
-            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            ClassVisitor cv = new OsgiHackClassVisitor(cw, className, "shouldBootDelegate");
-            ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
-            maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals(ImportantClassNames.ECLIPSE_OSGI_HACK_CLASS_NAME)) {
-            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            ClassVisitor cv = new OsgiHackClassVisitor(cw, className, "isBootDelegationPackage");
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
             maybeProcessedBytes = cw.toByteArray();
@@ -297,8 +278,9 @@ public class Weaver {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
         WeavingClassVisitor cv = new WeavingClassVisitor(cw, loader, frames,
                 noLongerNeedToWeaveMainMethods, classAnalyzer.getAnalyzedClass(),
-                classAnalyzer.getMethodsThatOnlyNowFulfillAdvice(), matchedShimTypes,
-                reweavableMatchedMixinTypes, classAnalyzer.getMethodAdvisors(), analyzedWorld);
+                classAnalyzer.isClassLoader(), classAnalyzer.getMethodsThatOnlyNowFulfillAdvice(),
+                matchedShimTypes, reweavableMatchedMixinTypes, classAnalyzer.getMethodAdvisors(),
+                analyzedWorld);
         ClassReader cr =
                 new ClassReader(maybeProcessedBytes == null ? classBytes : maybeProcessedBytes);
         byte[] transformedBytes;
@@ -484,44 +466,6 @@ public class Weaver {
         }
     }
 
-    private static class JBossModulesHackClassVisitor extends ClassVisitor {
-
-        private final ClassWriter cw;
-
-        private JBossModulesHackClassVisitor(ClassWriter cw) {
-            super(ASM7, cw);
-            this.cw = cw;
-        }
-
-        @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor,
-                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
-            if (name.equals("<clinit>")) {
-                return new JBossModulesHackMethodVisitor(mv);
-            } else {
-                return mv;
-            }
-        }
-    }
-
-    private static class JBossModulesHackMethodVisitor extends MethodVisitor {
-
-        private JBossModulesHackMethodVisitor(MethodVisitor mv) {
-            super(ASM7, mv);
-        }
-
-        @Override
-        public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
-            if (name.equals("systemPackages") && descriptor.equals("[Ljava/lang/String;")) {
-                visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Util",
-                        "appendToJBossModulesSystemPkgs",
-                        "([Ljava/lang/String;)[Ljava/lang/String;", false);
-            }
-            super.visitFieldInsn(opcode, owner, name, descriptor);
-        }
-    }
-
     private static class JBossUrlHackClassVisitor extends ClassVisitor {
 
         private final ClassWriter cw;
@@ -586,61 +530,6 @@ public class Weaver {
             mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
                     "(Ljava/lang/String;)Ljava/lang/Class;", false);
             mv.visitInsn(POP);
-        }
-    }
-
-    private static class OsgiHackClassVisitor extends ClassVisitor {
-
-        private final ClassWriter cw;
-        // this hack is used for
-        // org.apache.felix.framework.BundleWiringImpl.shouldBootDelegate() (felix 4.0.0+)
-        // org.apache.felix.framework.ModuleImpl.shouldBootDelegate() (prior to felix 4.0.0)
-        // org.eclipse.osgi.internal.framework.EquinoxContainer.isBootDelegationPackage()
-        private final String className;
-        private final String methodName;
-
-        private OsgiHackClassVisitor(ClassWriter cw, String className, String methodName) {
-            super(ASM7, cw);
-            this.cw = cw;
-            this.className = className;
-            this.methodName = methodName;
-        }
-
-        @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor,
-                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
-            if (name.equals(methodName) && descriptor.equals("(Ljava/lang/String;)Z")) {
-                return new OsgiHackMethodVisitor(className, mv, access, name, descriptor);
-            } else {
-                return mv;
-            }
-        }
-    }
-
-    private static class OsgiHackMethodVisitor extends AdviceAdapter {
-
-        private final String ownerName;
-
-        private OsgiHackMethodVisitor(String ownerName, MethodVisitor mv, int access,
-                String name, String descriptor) {
-            super(ASM7, mv, access, name, descriptor);
-            this.ownerName = ownerName;
-        }
-
-        @Override
-        protected void onMethodEnter() {
-            visitVarInsn(ALOAD, 1);
-            visitLdcInsn("org.glowroot.");
-            visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "startsWith",
-                    "(Ljava/lang/String;)Z", false);
-            Label label = new Label();
-            visitJumpInsn(IFEQ, label);
-            visitInsn(ICONST_1);
-            visitInsn(IRETURN);
-            visitLabel(label);
-            Object[] locals = new Object[] {ownerName, "java/lang/String"};
-            visitFrame(F_NEW, locals.length, locals, 0, new Object[0]);
         }
     }
 

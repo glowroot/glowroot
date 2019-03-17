@@ -76,6 +76,7 @@ class ClassAnalyzer {
     private final ImmutableList<ShimType> matchedShimTypes;
     private final MatchedMixinTypes matchedMixinTypes;
     private final boolean hasMainMethod;
+    private final boolean isClassLoader;
 
     private final ImmutableSet<String> superClassNames;
 
@@ -135,6 +136,7 @@ class ClassAnalyzer {
             matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className, classBeingRedefined,
                     ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
             hasMainMethod = false;
+            isClassLoader = false;
         } else {
             List<AnalyzedClass> superAnalyzedHierarchy = analyzedWorld
                     .getAnalyzedHierarchy(superClassName, loader, className, parseContext);
@@ -148,6 +150,19 @@ class ClassAnalyzer {
             } else {
                 hasMainMethod = hasMainMethod(thinClass.nonBridgeMethods())
                         || className.equals("org.apache.commons.daemon.support.DaemonLoader");
+            }
+            if (className.startsWith("org.glowroot.agent.tests.")) {
+                // e.g. see AnalyzedClassPlanBeeWithMoreBadPreloadCacheIT
+                isClassLoader = false;
+            } else {
+                boolean isClassLoader = false;
+                for (AnalyzedClass superAnalyzedClass : superAnalyzedHierarchy) {
+                    if (superAnalyzedClass.name().equals(ClassLoader.class.getName())) {
+                        isClassLoader = true;
+                        break;
+                    }
+                }
+                this.isClassLoader = isClassLoader;
             }
         }
         analyzedClassBuilder.addAllShimTypes(matchedShimTypes);
@@ -238,7 +253,7 @@ class ClassAnalyzer {
         }
         return !methodAdvisors.isEmpty() || !methodsThatOnlyNowFulfillAdvice.isEmpty()
                 || !matchedShimTypes.isEmpty() || !matchedMixinTypes.reweavable().isEmpty()
-                || hasMainMethod;
+                || hasMainMethod || isClassLoader;
     }
 
     ImmutableList<ShimType> getMatchedShimTypes() {
@@ -255,6 +270,10 @@ class ClassAnalyzer {
 
     AnalyzedClass getAnalyzedClass() {
         return analyzedClassBuilder.build();
+    }
+
+    boolean isClassLoader() {
+        return isClassLoader;
     }
 
     List<AnalyzedMethod> getMethodsThatOnlyNowFulfillAdvice() {
