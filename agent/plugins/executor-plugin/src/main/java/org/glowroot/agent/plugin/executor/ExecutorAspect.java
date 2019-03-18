@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -437,7 +437,8 @@ public class ExecutorAspect {
     }
 
     private static boolean isEnabledCommon(Object runnableEtc) {
-        // this class may have been loaded before class file transformer was added to jvm
+        // this class may have been loaded before class file transformer was added to jvm, also this
+        // may be a lambda class, which are no longer being passed to ClassFileTransformer :-(
         return runnableEtc instanceof RunnableEtcMixin
                 && !(runnableEtc instanceof SuppressedRunnableEtcMixin);
     }

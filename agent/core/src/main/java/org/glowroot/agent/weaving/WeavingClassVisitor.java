@@ -173,10 +173,16 @@ class WeavingClassVisitor extends ClassVisitor {
             String /*@Nullable*/ [] interfaceInternalNamesNullable) {
 
         type = Type.getObjectType(internalName);
-        String[] interfacesIncludingMixins = getInterfacesIncludingShimsAndMixins(
-                interfaceInternalNamesNullable, shimTypes, mixinTypes);
-        cw.visit(version, access, internalName, signature, superInternalName,
-                interfacesIncludingMixins);
+        String[] interfacesPlus = interfaceInternalNamesNullable;
+        if (!analyzedClass.isInterface()) {
+            // do not add Shim/Mixin interfaces to an interface, otherwise if a lambda implements
+            // the interface, it will pick up the inherited Shim/Mixin interfaces, but the
+            // Shim/Mixin methods will not be implemented on Java 9+ since lambda classes are not
+            // passed to ClassFileTransformer in Java 9+
+            interfacesPlus = getInterfacesIncludingShimsAndMixins(interfaceInternalNamesNullable,
+                    shimTypes, mixinTypes);
+        }
+        cw.visit(version, access, internalName, signature, superInternalName, interfacesPlus);
     }
 
     @Override
