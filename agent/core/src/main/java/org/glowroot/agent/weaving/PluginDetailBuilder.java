@@ -55,7 +55,7 @@ class PluginDetailBuilder {
     private static final Logger logger = LoggerFactory.getLogger(PluginDetailBuilder.class);
 
     private static final Set<String> collocateInClassLoaderPluginIds =
-            ImmutableSet.of("servlet", "http-client", "kafka");
+            ImmutableSet.of("servlet", "netty", "http-client", "kafka");
 
     private PluginDescriptor pluginDescriptor;
     private boolean collocateInClassLoader;

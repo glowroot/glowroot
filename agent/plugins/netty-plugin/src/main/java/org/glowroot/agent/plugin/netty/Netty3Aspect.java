@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
+import org.glowroot.agent.plugin.netty._.Util;
 
 public class Netty3Aspect {
 
@@ -89,7 +90,7 @@ public class Netty3Aspect {
     }
 
     @Shim("org.jboss.netty.channel.ChannelHandlerContext")
-    public interface ChannelHandlerContext {
+    public interface ChannelHandlerContextShim {
 
         @Shim("org.jboss.netty.channel.Channel getChannel()")
         @Nullable
@@ -97,34 +98,34 @@ public class Netty3Aspect {
     }
 
     @Shim("org.jboss.netty.handler.codec.http.HttpRequest")
-    public interface HttpRequest {
+    public interface HttpRequestShim {
 
         @Shim("org.jboss.netty.handler.codec.http.HttpMethod getMethod()")
-        HttpMethod glowroot$getMethod();
+        HttpMethodShim glowroot$getMethod();
 
         @Nullable
         String getUri();
     }
 
     @Shim("org.jboss.netty.handler.codec.http.HttpMethod")
-    public interface HttpMethod {
+    public interface HttpMethodShim {
         @Nullable
         String getName();
     }
 
     @Shim("org.jboss.netty.channel.MessageEvent")
-    public interface MessageEvent {
+    public interface MessageEventShim {
         @Nullable
         Object getMessage();
     }
 
     @Shim("org.jboss.netty.handler.codec.http.HttpMessage")
-    public interface HttpMessage {
+    public interface HttpMessageShim {
         boolean isChunked();
     }
 
     @Shim("org.jboss.netty.handler.codec.http.HttpChunk")
-    public interface HttpChunk {
+    public interface HttpChunkShim {
         boolean isLast();
     }
 
@@ -137,16 +138,17 @@ public class Netty3Aspect {
         private static final TimerName timerName = Agent.getTimerName(InboundAdvice.class);
 
         @IsEnabled
-        public static boolean isEnabled(@BindReceiver ChannelHandlerContext channelHandlerContext,
+        public static boolean isEnabled(
+                @BindReceiver ChannelHandlerContextShim channelHandlerContext,
                 @BindParameter @Nullable Object channelEvent) {
             return channelHandlerContext.glowroot$getChannel() != null && channelEvent != null
-                    && channelEvent instanceof MessageEvent
-                    && ((MessageEvent) channelEvent).getMessage() instanceof HttpRequest;
+                    && channelEvent instanceof MessageEventShim
+                    && ((MessageEventShim) channelEvent).getMessage() instanceof HttpRequestShim;
         }
 
         @OnBefore
         public static TraceEntry onBefore(OptionalThreadContext context,
-                @BindReceiver ChannelHandlerContext channelHandlerContext,
+                @BindReceiver ChannelHandlerContextShim channelHandlerContext,
                 // not null, just checked above in isEnabled()
                 @BindParameter Object channelEvent) {
             @SuppressWarnings("nullness") // just checked above in isEnabled()
@@ -155,14 +157,13 @@ public class Netty3Aspect {
             // just checked valid cast above in isEnabled()
             @SuppressWarnings("nullness") // just checked above in isEnabled()
             @NonNull
-            Object msg = ((MessageEvent) channelEvent).getMessage();
+            Object msg = ((MessageEventShim) channelEvent).getMessage();
             // just checked valid cast above in isEnabled()
-            HttpRequest request = (HttpRequest) msg;
-            HttpMethod method = request.glowroot$getMethod();
+            HttpRequestShim request = (HttpRequestShim) msg;
+            HttpMethodShim method = request.glowroot$getMethod();
             String methodName = method == null ? null : method.getName();
             channel.glowroot$setCompleteAsyncTransaction(true);
-            return NettyAspect.startAsyncTransaction(context, methodName, request.getUri(),
-                    timerName);
+            return Util.startAsyncTransaction(context, methodName, request.getUri(), timerName);
         }
 
         @OnReturn
@@ -178,7 +179,7 @@ public class Netty3Aspect {
     }
 
     @Shim("com.typesafe.netty.http.pipelining.OrderedDownstreamChannelEvent")
-    public interface OrderedDownstreamChannelEvent {
+    public interface OrderedDownstreamChannelEventShim {
         boolean isLast();
     }
 
@@ -190,7 +191,7 @@ public class Netty3Aspect {
 
         @IsEnabled
         public static boolean isEnabled(
-                @BindParameter @Nullable ChannelHandlerContext channelHandlerContext) {
+                @BindParameter @Nullable ChannelHandlerContextShim channelHandlerContext) {
             if (channelHandlerContext == null) {
                 return false;
             }
@@ -200,31 +201,31 @@ public class Netty3Aspect {
 
         @OnBefore
         public static void onBefore(ThreadContext context,
-                @BindParameter @Nullable ChannelHandlerContext channelHandlerContext,
+                @BindParameter @Nullable ChannelHandlerContextShim channelHandlerContext,
                 @BindParameter @Nullable Object channelEvent) {
             if (channelHandlerContext == null) {
                 return;
             }
-            if (channelEvent instanceof OrderedDownstreamChannelEvent) {
+            if (channelEvent instanceof OrderedDownstreamChannelEventShim) {
                 // play 2.2.x and later implements its own chunked transfer, not using netty's
                 // MessageEvent/HttpMessage/HttpChunk
-                if (((OrderedDownstreamChannelEvent) channelEvent).isLast()) {
+                if (((OrderedDownstreamChannelEventShim) channelEvent).isLast()) {
                     completeAsyncTransaction(context, channelHandlerContext);
                 }
                 return;
             }
-            if (!(channelEvent instanceof MessageEvent)) {
+            if (!(channelEvent instanceof MessageEventShim)) {
                 return;
             }
-            Object messageEvent = ((MessageEvent) channelEvent).getMessage();
-            if (messageEvent instanceof HttpMessage) {
-                if (!((HttpMessage) messageEvent).isChunked()) {
+            Object messageEvent = ((MessageEventShim) channelEvent).getMessage();
+            if (messageEvent instanceof HttpMessageShim) {
+                if (!((HttpMessageShim) messageEvent).isChunked()) {
                     completeAsyncTransaction(context, channelHandlerContext);
                 }
                 return;
             }
-            if (messageEvent instanceof HttpChunk) {
-                if (((HttpChunk) messageEvent).isLast()) {
+            if (messageEvent instanceof HttpChunkShim) {
+                if (((HttpChunkShim) messageEvent).isLast()) {
                     completeAsyncTransaction(context, channelHandlerContext);
                 }
                 return;
@@ -232,7 +233,7 @@ public class Netty3Aspect {
         }
 
         private static void completeAsyncTransaction(ThreadContext context,
-                ChannelHandlerContext channelHandlerContext) {
+                ChannelHandlerContextShim channelHandlerContext) {
             context.setTransactionAsyncComplete();
             ChannelMixin channel = channelHandlerContext.glowroot$getChannel();
             if (channel != null) {
