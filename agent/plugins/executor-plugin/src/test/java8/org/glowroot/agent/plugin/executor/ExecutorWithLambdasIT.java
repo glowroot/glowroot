@@ -15,9 +15,6 @@
  */
 package org.glowroot.agent.plugin.executor;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -39,7 +36,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ExecutorWithProxiesIT {
+public class ExecutorWithLambdasIT {
 
     private static Container container;
 
@@ -93,6 +90,8 @@ public class ExecutorWithProxiesIT {
 
     public static class DoExecuteRunnableWithProxy implements AppUnderTest, TransactionMarker {
 
+        private CountDownLatch latch;
+
         @Override
         public void executeApp() throws Exception {
             transactionMarker();
@@ -101,37 +100,16 @@ public class ExecutorWithProxiesIT {
         @Override
         public void transactionMarker() throws Exception {
             ExecutorService executor = createExecutorService();
-            final CountDownLatch latch = new CountDownLatch(1);
-            executor.execute(wrap(new Runnable() {
-                @Override
-                public void run() {
-                    new CreateTraceEntry().traceEntryMarker();
-                    latch.countDown();
-                }
-            }));
+            latch = new CountDownLatch(1);
+            executor.execute(this::run);
             latch.await();
             executor.shutdown();
             executor.awaitTermination(10, SECONDS);
         }
 
-        private static Runnable wrap(Runnable runnable) {
-            return (Runnable) Proxy.newProxyInstance(
-                    DoExecuteRunnableWithProxy.class.getClassLoader(), new Class[] {Runnable.class},
-                    new DelegatingInvocationHandler(runnable));
-        }
-    }
-
-    private static class DelegatingInvocationHandler implements InvocationHandler {
-
-        private final Runnable delegate;
-
-        private DelegatingInvocationHandler(Runnable delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            return method.invoke(delegate, args);
+        private void run() {
+            new CreateTraceEntry().traceEntryMarker();
+            latch.countDown();
         }
     }
 

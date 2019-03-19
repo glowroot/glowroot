@@ -21,10 +21,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -218,6 +217,14 @@ public class ExecutorIT {
     }
 
     @Test
+    public void shouldCaptureNestedSubmit() throws Exception {
+        // when
+        Trace trace = container.execute(DoNestedSubmitCallable.class);
+        // then
+        checkTrace(trace, false, false);
+    }
+
+    @Test
     public void shouldCaptureDelegatingExecutor() throws Exception {
         // when
         Trace trace = container.execute(DoDelegatingExecutor.class);
@@ -279,31 +286,20 @@ public class ExecutorIT {
         }
     }
 
-    private static ExecutorService createExecutorService() throws Exception {
-        ThreadPoolExecutor executor = newFixedThreadPool(10);
-        executor.prestartAllCoreThreads();
-        return executor;
-    }
-
-    private static ThreadPoolExecutor newFixedThreadPool(int nThreads) {
-        return new ThreadPoolExecutor(nThreads, nThreads, 0L, MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>());
+    private static ExecutorService createExecutorService() {
+        return Executors.newCachedThreadPool();
     }
 
     public static class DoExecuteRunnable implements AppUnderTest, TransactionMarker {
 
-        private ExecutorService executor;
-
         @Override
         public void executeApp() throws Exception {
-            executor = createExecutorService();
             transactionMarker();
-            executor.shutdown();
-            executor.awaitTermination(10, SECONDS);
         }
 
         @Override
         public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
             final CountDownLatch latch = new CountDownLatch(3);
             executor.execute(new Runnable() {
                 @Override
@@ -327,23 +323,21 @@ public class ExecutorIT {
                 }
             });
             latch.await();
+            executor.shutdown();
+            executor.awaitTermination(10, SECONDS);
         }
     }
 
     public static class DoExecuteFutureTask implements AppUnderTest, TransactionMarker {
 
-        private ExecutorService executor;
-
         @Override
         public void executeApp() throws Exception {
-            executor = createExecutorService();
             transactionMarker();
-            executor.shutdown();
-            executor.awaitTermination(10, SECONDS);
         }
 
         @Override
         public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
             final CountDownLatch latch = new CountDownLatch(3);
             executor.execute(new FutureTask<Void>(new Callable<Void>() {
                 @Override
@@ -370,23 +364,21 @@ public class ExecutorIT {
                 }
             }));
             latch.await();
+            executor.shutdown();
+            executor.awaitTermination(10, SECONDS);
         }
     }
 
     public static class DoSubmitCallable implements AppUnderTest, TransactionMarker {
 
-        private ExecutorService executor;
-
         @Override
         public void executeApp() throws Exception {
-            executor = createExecutorService();
             transactionMarker();
-            executor.shutdown();
-            executor.awaitTermination(10, SECONDS);
         }
 
         @Override
         public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
             Future<Void> future1 = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() {
@@ -416,18 +408,14 @@ public class ExecutorIT {
 
     public static class DoSubmitRunnableAndCallable implements AppUnderTest, TransactionMarker {
 
-        private ExecutorService executor;
-
         @Override
         public void executeApp() throws Exception {
-            executor = createExecutorService();
             transactionMarker();
-            executor.shutdown();
-            executor.awaitTermination(10, SECONDS);
         }
 
         @Override
         public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
             Future<Void> future1 = executor.submit((Callable<Void>) new RunnableAndCallableWork());
             Future<Void> future2 = executor.submit((Callable<Void>) new RunnableAndCallableWork());
             Future<Void> future3 = executor.submit((Callable<Void>) new RunnableAndCallableWork());
@@ -439,18 +427,14 @@ public class ExecutorIT {
 
     public static class DoSimpleSubmitRunnableWork implements AppUnderTest, TransactionMarker {
 
-        private ExecutorService executor;
-
         @Override
         public void executeApp() throws Exception {
-            executor = createExecutorService();
             transactionMarker();
-            executor.shutdown();
-            executor.awaitTermination(10, SECONDS);
         }
 
         @Override
         public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
             Future<?> future1 = executor.submit(new Runnable() {
                 @Override
                 public void run() {
@@ -487,18 +471,14 @@ public class ExecutorIT {
     public static class CallFutureGetOnAlreadyCompletedFuture
             implements AppUnderTest, TransactionMarker {
 
-        private ExecutorService executor;
-
         @Override
         public void executeApp() throws Exception {
-            executor = createExecutorService();
             transactionMarker();
-            executor.shutdown();
-            executor.awaitTermination(10, SECONDS);
         }
 
         @Override
         public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
             Future<Void> future = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
@@ -514,18 +494,14 @@ public class ExecutorIT {
 
     public static class CallFutureGetOnNestedFuture implements AppUnderTest, TransactionMarker {
 
-        private ExecutorService executor;
-
         @Override
         public void executeApp() throws Exception {
-            executor = createExecutorService();
             transactionMarker();
-            executor.shutdown();
-            executor.awaitTermination(10, SECONDS);
         }
 
         @Override
         public void transactionMarker() throws Exception {
+            final ExecutorService executor = createExecutorService();
             Future<Void> future = executor.submit(new Callable<Void>() {
                 @Override
                 public Void call() throws Exception {
@@ -547,18 +523,14 @@ public class ExecutorIT {
 
     public static class DoInvokeAll implements AppUnderTest, TransactionMarker {
 
-        private ExecutorService executor;
-
         @Override
         public void executeApp() throws Exception {
-            executor = createExecutorService();
             transactionMarker();
-            executor.shutdown();
-            executor.awaitTermination(10, SECONDS);
         }
 
         @Override
         public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
             List<Callable<Void>> callables = Lists.newArrayList();
             callables.add(new Callable<Void>() {
                 @Override
@@ -589,18 +561,14 @@ public class ExecutorIT {
 
     public static class DoInvokeAllWithTimeout implements AppUnderTest, TransactionMarker {
 
-        private ExecutorService executor;
-
         @Override
         public void executeApp() throws Exception {
-            executor = createExecutorService();
             transactionMarker();
-            executor.shutdown();
-            executor.awaitTermination(10, SECONDS);
         }
 
         @Override
         public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
             List<Callable<Void>> callables = Lists.newArrayList();
             callables.add(new Callable<Void>() {
                 @Override
@@ -631,18 +599,14 @@ public class ExecutorIT {
 
     public static class DoInvokeAny implements AppUnderTest, TransactionMarker {
 
-        private ExecutorService executor;
-
         @Override
         public void executeApp() throws Exception {
-            executor = createExecutorService();
             transactionMarker();
-            executor.shutdown();
-            executor.awaitTermination(10, SECONDS);
         }
 
         @Override
         public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
             List<Callable<Void>> callables = Lists.newArrayList();
             callables.add(new Callable<Void>() {
                 @Override
@@ -671,18 +635,14 @@ public class ExecutorIT {
 
     public static class DoInvokeAnyWithTimeout implements AppUnderTest, TransactionMarker {
 
-        private ExecutorService executor;
-
         @Override
         public void executeApp() throws Exception {
-            executor = createExecutorService();
             transactionMarker();
-            executor.shutdown();
-            executor.awaitTermination(10, SECONDS);
         }
 
         @Override
         public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
             List<Callable<Void>> callables = Lists.newArrayList();
             callables.add(new Callable<Void>() {
                 @Override
@@ -711,14 +671,9 @@ public class ExecutorIT {
 
     public static class DoNestedExecuteRunnable implements AppUnderTest, TransactionMarker {
 
-        private ExecutorService executor;
-
         @Override
         public void executeApp() throws Exception {
-            executor = createExecutorService();
             transactionMarker();
-            executor.shutdown();
-            executor.awaitTermination(10, SECONDS);
         }
 
         @Override
@@ -726,6 +681,7 @@ public class ExecutorIT {
             MoreExecutors.directExecutor().execute(new Runnable() {
                 @Override
                 public void run() {
+                    ExecutorService executor = createExecutorService();
                     final CountDownLatch latch = new CountDownLatch(3);
                     executor.execute(new Runnable() {
                         @Override
@@ -753,6 +709,59 @@ public class ExecutorIT {
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
+                    executor.shutdown();
+                    try {
+                        executor.awaitTermination(10, SECONDS);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+        }
+    }
+
+    public static class DoNestedSubmitCallable implements AppUnderTest, TransactionMarker {
+
+        @Override
+        public void executeApp() throws Exception {
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            MoreExecutors.newDirectExecutorService().submit(new Callable<Void>() {
+                @Override
+                public Void call() throws InterruptedException {
+                    ExecutorService executor = createExecutorService();
+                    final CountDownLatch latch = new CountDownLatch(3);
+                    executor.submit(new Callable<Void>() {
+                        @Override
+                        public Void call() {
+                            new CreateTraceEntry().traceEntryMarker();
+                            latch.countDown();
+                            return null;
+                        }
+                    });
+                    executor.submit(new Callable<Void>() {
+                        @Override
+                        public Void call() {
+                            new CreateTraceEntry().traceEntryMarker();
+                            latch.countDown();
+                            return null;
+                        }
+                    });
+                    executor.submit(new Callable<Void>() {
+                        @Override
+                        public Void call() {
+                            new CreateTraceEntry().traceEntryMarker();
+                            latch.countDown();
+                            return null;
+                        }
+                    });
+                    latch.await();
+                    executor.shutdown();
+                    executor.awaitTermination(10, SECONDS);
+                    return null;
                 }
             });
         }
@@ -760,18 +769,14 @@ public class ExecutorIT {
 
     public static class DoDelegatingExecutor implements AppUnderTest, TransactionMarker {
 
-        private ExecutorService executor;
-
         @Override
         public void executeApp() throws Exception {
-            executor = createExecutorService();
             transactionMarker();
-            executor.shutdown();
-            executor.awaitTermination(10, SECONDS);
         }
 
         @Override
         public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
             DelegatingExecutor delegatingExecutor = new DelegatingExecutor(executor);
             final CountDownLatch latch = new CountDownLatch(3);
             delegatingExecutor.execute(new Runnable() {
@@ -796,6 +801,8 @@ public class ExecutorIT {
                 }
             });
             latch.await();
+            executor.shutdown();
+            executor.awaitTermination(10, SECONDS);
         }
     }
 

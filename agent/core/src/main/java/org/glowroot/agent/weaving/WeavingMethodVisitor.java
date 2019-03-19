@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -322,6 +322,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             // see WeaverTest.shouldExecuteSingleJumpAdviceOnHackedConstructorBytecode()
             for (Advice advice : advisors) {
                 evaluateLocalVars(advice);
+                invokeOnBefore(advice, travelerLocals.get(advice));
             }
         }
         saveArgsForMethodExit();
@@ -333,8 +334,8 @@ class WeavingMethodVisitor extends AdviceAdapter {
             if (!name.equals("<init>")) {
                 // see comment above in onMethodPreEnterInternal() why this is skipped for <init>
                 evaluateLocalVars(advice);
+                invokeOnBefore(advice, travelerLocals.get(advice));
             }
-            invokeOnBefore(advice, travelerLocals.get(advice));
             if (advice.onAfterAdvice() != null || advice.onThrowAdvice() != null) {
                 Label catchStartLabel = new Label();
                 visitLabel(catchStartLabel);
