@@ -61,7 +61,6 @@ import org.glowroot.common.util.ScheduledRunnable.TerminateSubsequentExecutionsE
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.objectweb.asm.Opcodes.ASM7;
-import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.V1_6;
 
 public class Weaver {
@@ -191,27 +190,9 @@ public class Weaver {
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
             maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals(ImportantClassNames.JBOSS_WELD_HACK_CLASS_NAME)) {
-            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            ClassVisitor cv = new JBossWeldHackClassVisitor(cw);
-            ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
-            maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.JBOSS_URL_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new JBossUrlHackClassVisitor(cw);
-            ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
-            maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals(ImportantClassNames.HIKARI_CP_PROXY_HACK_CLASS_NAME)) {
-            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            ClassVisitor cv = new HikariCpProxyHackClassVisitor(cw);
-            ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
-            maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals(ImportantClassNames.BITRONIX_PROXY_HACK_CLASS_NAME)) {
-            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            ClassVisitor cv = new BitronixProxyHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
             maybeProcessedBytes = cw.toByteArray();
@@ -421,45 +402,6 @@ public class Weaver {
         }
     }
 
-    private static class JBossWeldHackClassVisitor extends ClassVisitor {
-
-        private final ClassWriter cw;
-
-        private JBossWeldHackClassVisitor(ClassWriter cw) {
-            super(ASM7, cw);
-            this.cw = cw;
-        }
-
-        @Override
-        public @Nullable MethodVisitor visitMethod(int access, String name, String descriptor,
-                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
-            if (name.equals("checkDelegateType")
-                    && descriptor.equals("(Ljavax/enterprise/inject/spi/Decorator;)V")) {
-                return new JBossWeldHackMethodVisitor(mv);
-            } else {
-                return mv;
-            }
-        }
-    }
-
-    private static class JBossWeldHackMethodVisitor extends MethodVisitor {
-
-        private JBossWeldHackMethodVisitor(MethodVisitor mv) {
-            super(ASM7, mv);
-        }
-
-        @Override
-        public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
-                boolean itf) {
-            super.visitMethodInsn(opcode, owner, name, descriptor, itf);
-            if (name.equals("getDecoratedTypes") && descriptor.equals("()Ljava/util/Set;")) {
-                super.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Util",
-                        "stripGlowrootTypes", "(Ljava/util/Set;)Ljava/util/Set;", false);
-            }
-        }
-    }
-
     private static class JBossUrlHackClassVisitor extends ClassVisitor {
 
         private final ClassWriter cw;
@@ -524,86 +466,6 @@ public class Weaver {
             mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
                     "(Ljava/lang/String;)Ljava/lang/Class;", false);
             mv.visitInsn(POP);
-        }
-    }
-
-    private static class HikariCpProxyHackClassVisitor extends ClassVisitor {
-
-        private final ClassWriter cw;
-
-        private HikariCpProxyHackClassVisitor(ClassWriter cw) {
-            super(ASM7, cw);
-            this.cw = cw;
-        }
-
-        @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor,
-                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
-            if (name.equals("generateProxyClass")) {
-                return new HikariCpProxyHackMethodVisitor(mv);
-            } else {
-                return mv;
-            }
-        }
-    }
-
-    private static class HikariCpProxyHackMethodVisitor extends MethodVisitor {
-
-        private HikariCpProxyHackMethodVisitor(MethodVisitor mv) {
-            super(ASM7, mv);
-        }
-
-        @Override
-        public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
-                boolean itf) {
-            super.visitMethodInsn(opcode, owner, name, descriptor, itf);
-            if (owner.equals("com/zaxxer/hikari/util/ClassLoaderUtils")
-                    && name.equals("getAllInterfaces")
-                    && descriptor.equals("(Ljava/lang/Class;)Ljava/util/Set;")) {
-                super.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Util",
-                        "stripGlowrootClasses", "(Ljava/util/Set;)Ljava/util/Set;", false);
-            }
-        }
-    }
-
-    private static class BitronixProxyHackClassVisitor extends ClassVisitor {
-
-        private final ClassWriter cw;
-
-        private BitronixProxyHackClassVisitor(ClassWriter cw) {
-            super(ASM7, cw);
-            this.cw = cw;
-        }
-
-        @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor,
-                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
-            if (name.equals("generateProxyClass")) {
-                return new BitronixProxyHackMethodVisitor(mv);
-            } else {
-                return mv;
-            }
-        }
-    }
-
-    private static class BitronixProxyHackMethodVisitor extends MethodVisitor {
-
-        private BitronixProxyHackMethodVisitor(MethodVisitor mv) {
-            super(ASM7, mv);
-        }
-
-        @Override
-        public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
-                boolean itf) {
-            super.visitMethodInsn(opcode, owner, name, descriptor, itf);
-            if (owner.equals("bitronix/tm/utils/ClassLoaderUtils")
-                    && name.equals("getAllInterfaces")
-                    && descriptor.equals("(Ljava/lang/Class;)Ljava/util/Set;")) {
-                super.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Util",
-                        "stripGlowrootClasses", "(Ljava/util/Set;)Ljava/util/Set;", false);
-            }
         }
     }
 

@@ -18,16 +18,8 @@ package org.glowroot.agent.weaving;
 // LIMIT DEPENDENCY USAGE IN THIS CLASS SO IT DOESN'T TRIGGER ANY CLASS LOADING ON ITS OWN
 public class ImportantClassNames {
 
-    public static final String JBOSS_WELD_HACK_CLASS_NAME = "org/jboss/weld/util/Decorators";
     public static final String JBOSS_URL_HACK_CLASS_NAME =
             "org/jboss/net/protocol/URLStreamHandlerFactory";
-    // this is needed for HikariCP prior to 2.3.10, specifically, prior to
-    // https://github.com/brettwooldridge/HikariCP/commit/33a4bbe54a99de14a704c1a26e3f953cfa7888ad
-    public static final String HIKARI_CP_PROXY_HACK_CLASS_NAME =
-            "com/zaxxer/hikari/proxy/JavassistProxyFactory";
-    // this is needed for Bitronix 3.0+
-    public static final String BITRONIX_PROXY_HACK_CLASS_NAME =
-            "bitronix/tm/resource/jdbc/proxy/JdbcJavassistProxyFactory";
 
     private ImportantClassNames() {}
 }
