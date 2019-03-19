@@ -17,9 +17,6 @@ package org.glowroot.agent.plugin.netty;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -40,6 +37,7 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
+import org.glowroot.agent.plugin.api.weaving.Shim;
 import org.glowroot.agent.plugin.netty._.Util;
 
 public class NettyAspect {
@@ -87,6 +85,31 @@ public class NettyAspect {
         void glowroot$setAuxContext(@Nullable AuxThreadContext auxThreadContext);
     }
 
+    // need shims for netty-http-codec classes, since the pointcuts below are applied to
+    // netty-transport classes, whether or not netty-codec-http is included on the classpath
+    @Shim("io.netty.handler.codec.http.HttpRequest")
+    public interface HttpRequestShim {
+
+        @Shim("io.netty.handler.codec.http.HttpMethod getMethod()")
+        HttpMethodShim glowroot$getMethod();
+
+        @Nullable
+        String getUri();
+    }
+
+    // need shims for netty-http-codec classes, since the pointcuts below are applied to
+    // netty-transport classes, whether or not netty-codec-http is included on the classpath
+    @Shim("io.netty.handler.codec.http.HttpMethod")
+    public interface HttpMethodShim {
+        @Nullable
+        String name();
+    }
+
+    // need shims for netty-http-codec classes, since the pointcuts below are applied to
+    // netty-transport classes, whether or not netty-codec-http is included on the classpath
+    @Shim("io.netty.handler.codec.http.LastHttpContent")
+    public interface LastHttpContentShim {}
+
     @Pointcut(className = "io.netty.channel.ChannelHandlerContext", methodName = "fireChannelRead",
             methodParameterTypes = {"java.lang.Object"}, nestingGroup = "netty-inbound",
             timerName = "http request")
@@ -107,14 +130,12 @@ public class NettyAspect {
             if (auxContext != null) {
                 return auxContext.start();
             }
-            if (!(msg instanceof HttpRequest)) {
+            if (!(msg instanceof HttpRequestShim)) {
                 return null;
             }
-            HttpRequest request = (HttpRequest) msg;
-            @SuppressWarnings("deprecation")
-            HttpMethod method = request.getMethod();
+            HttpRequestShim request = (HttpRequestShim) msg;
+            HttpMethodShim method = request.glowroot$getMethod();
             String methodName = method == null ? null : method.name();
-            @SuppressWarnings("deprecation")
             TraceEntry traceEntry =
                     Util.startAsyncTransaction(context, methodName, request.getUri(), timerName);
             channelMixin.glowroot$setThreadContextToComplete(context);
@@ -127,7 +148,7 @@ public class NettyAspect {
                     endTransaction(channelMixin);
                 }
             });
-            if (!(msg instanceof LastHttpContent)) {
+            if (!(msg instanceof LastHttpContentShim)) {
                 channelMixin.glowroot$setAuxContext(context.createAuxThreadContext());
             }
             return traceEntry;
@@ -196,7 +217,7 @@ public class NettyAspect {
         public static void onAfter(
                 @BindParameter @Nullable ChannelHandlerContext channelHandlerContext,
                 @BindParameter @Nullable Object msg) {
-            if (!(msg instanceof LastHttpContent)) {
+            if (!(msg instanceof LastHttpContentShim)) {
                 return;
             }
             if (channelHandlerContext == null) {
