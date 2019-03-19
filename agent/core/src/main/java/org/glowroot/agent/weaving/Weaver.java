@@ -203,12 +203,6 @@ public class Weaver {
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
             maybeProcessedBytes = cw.toByteArray();
-        } else if (className.equals(ImportantClassNames.OPENEJB_HACK_CLASS_NAME)) {
-            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            ClassVisitor cv = new OpenEJBHackClassVisitor(cw);
-            ClassReader cr = new ClassReader(classBytes);
-            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
-            maybeProcessedBytes = cw.toByteArray();
         } else if (className.equals(ImportantClassNames.HIKARI_CP_PROXY_HACK_CLASS_NAME)) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new HikariCpProxyHackClassVisitor(cw);
@@ -530,47 +524,6 @@ public class Weaver {
             mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName",
                     "(Ljava/lang/String;)Ljava/lang/Class;", false);
             mv.visitInsn(POP);
-        }
-    }
-
-    private static class OpenEJBHackClassVisitor extends ClassVisitor {
-
-        private final ClassWriter cw;
-
-        private OpenEJBHackClassVisitor(ClassWriter cw) {
-            super(ASM7, cw);
-            this.cw = cw;
-        }
-
-        @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor,
-                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
-            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
-            if (name.equals("reloadConfig") && descriptor.equals("()V")) {
-                return new OpenEJBHackMethodVisitor(mv, access, name, descriptor);
-            } else {
-                return mv;
-            }
-        }
-    }
-
-    private static class OpenEJBHackMethodVisitor extends AdviceAdapter {
-
-        private OpenEJBHackMethodVisitor(MethodVisitor mv, int access, String name,
-                String descriptor) {
-            super(ASM7, mv, access, name, descriptor);
-        }
-
-        @Override
-        protected void onMethodExit(int opcode) {
-            if (opcode == RETURN) {
-                visitFieldInsn(GETSTATIC, ImportantClassNames.OPENEJB_HACK_CLASS_NAME,
-                        "FORCED_SKIP", "Ljava/util/Collection;");
-                visitLdcInsn("org.glowroot.");
-                visitMethodInsn(INVOKEINTERFACE, "java/util/Collection", "add",
-                        "(Ljava/lang/Object;)Z", true);
-                pop();
-            }
         }
     }
 

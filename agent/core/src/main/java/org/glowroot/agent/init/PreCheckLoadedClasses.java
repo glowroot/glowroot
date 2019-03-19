@@ -52,7 +52,6 @@ public class PreCheckLoadedClasses {
         List<String> importantClassNames = Arrays.asList(
                 ImportantClassNames.JBOSS_WELD_HACK_CLASS_NAME.replace('/', '.'),
                 ImportantClassNames.JBOSS_URL_HACK_CLASS_NAME.replace('/', '.'),
-                ImportantClassNames.OPENEJB_HACK_CLASS_NAME.replace('/', '.'),
                 ImportantClassNames.HIKARI_CP_PROXY_HACK_CLASS_NAME.replace('/', '.'),
                 ImportantClassNames.BITRONIX_PROXY_HACK_CLASS_NAME.replace('/', '.'));
         IMPORTANT_CLASS_NAMES = new HashSet<String>(importantClassNames);
