@@ -11,6 +11,8 @@
     }
   ],
   "aspects": [
-    "org.glowroot.agent.plugin.mongodb.CollectionAspect"
+    "org.glowroot.agent.plugin.mongodb.CollectionAspect",
+    "org.glowroot.agent.plugin.mongodb.MongoIterableAspect",
+    "org.glowroot.agent.plugin.mongodb.MongoCursorAspect"
   ]
 }

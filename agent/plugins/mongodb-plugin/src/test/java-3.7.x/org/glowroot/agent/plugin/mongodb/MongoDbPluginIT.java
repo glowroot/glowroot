@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.google.common.collect.Lists;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 import org.junit.After;
@@ -128,9 +129,9 @@ public class MongoDbPluginIT {
     }
 
     @Test
-    public void shouldCaptureFind() throws Exception {
+    public void shouldCaptureFindZeroRecords() throws Exception {
         // when
-        Trace trace = container.execute(ExecuteFind.class);
+        Trace trace = container.execute(ExecuteFindZeroRecords.class);
 
         // then
         checkTimers(trace);
@@ -144,7 +145,7 @@ public class MongoDbPluginIT {
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("find testdb.test");
         assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("mongodb query: ");
-        assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 0 rows");
 
         assertThat(i.hasNext()).isFalse();
 
@@ -155,7 +156,42 @@ public class MongoDbPluginIT {
         assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
                 .isEqualTo("find testdb.test");
         assertThat(query.getExecutionCount()).isEqualTo(1);
-        assertThat(query.hasTotalRows()).isFalse();
+        assertThat(query.hasTotalRows()).isTrue();
+        assertThat(query.getTotalRows().getValue()).isEqualTo(0);
+
+        assertThat(j.hasNext()).isFalse();
+    }
+
+    @Test
+    public void shouldCaptureFindOneRecord() throws Exception {
+        // when
+        Trace trace = container.execute(ExecuteFindOneRecord.class);
+
+        // then
+        checkTimers(trace);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo("find testdb.test");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("mongodb query: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix()).isEqualTo(" => 1 row");
+
+        assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("MongoDB");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("find testdb.test");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.hasTotalRows()).isTrue();
+        assertThat(query.getTotalRows().getValue()).isEqualTo(1);
 
         assertThat(j.hasNext()).isFalse();
     }
@@ -227,12 +263,36 @@ public class MongoDbPluginIT {
         }
     }
 
-    public static class ExecuteFind extends DoMongoDB {
+    public static class ExecuteFindZeroRecords extends DoMongoDB {
         @Override
-        public void transactionMarker() {
+        public void transactionMarker() throws InterruptedException {
             MongoDatabase database = mongoClient.getDatabase("testdb");
             MongoCollection<Document> collection = database.getCollection("test");
-            collection.find();
+            MongoCursor<Document> i = collection.find().iterator();
+            while (i.hasNext()) {
+            }
+        }
+    }
+
+    public static class ExecuteFindOneRecord extends DoMongoDB {
+
+        @Override
+        protected void beforeTransactionMarker() {
+            MongoDatabase database = mongoClient.getDatabase("testdb");
+            MongoCollection<Document> collection = database.getCollection("test");
+            Document document = new Document("test1", "test2")
+                    .append("test3", "test4");
+            collection.insertOne(document);
+        }
+
+        @Override
+        public void transactionMarker() throws InterruptedException {
+            MongoDatabase database = mongoClient.getDatabase("testdb");
+            MongoCollection<Document> collection = database.getCollection("test");
+            MongoCursor<Document> i = collection.find().iterator();
+            while (i.hasNext()) {
+                i.next();
+            }
         }
     }
 
@@ -268,10 +328,13 @@ public class MongoDbPluginIT {
             try {
                 mongoClient = MongoClients.create("mongodb://" + mongo.getContainerIpAddress() + ":"
                         + mongo.getMappedPort(27017));
+                beforeTransactionMarker();
                 transactionMarker();
             } finally {
                 mongo.close();
             }
         }
+
+        protected void beforeTransactionMarker() {}
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.glowroot.agent.plugin.api.config.ConfigListener;
 import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.weaving.BindMethodName;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
+import org.glowroot.agent.plugin.api.weaving.BindReturn;
 import org.glowroot.agent.plugin.api.weaving.BindThrowable;
 import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
@@ -32,6 +33,7 @@ import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
+import org.glowroot.agent.plugin.mongodb.MongoIterableAspect.MongoIterableMixin;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -71,7 +73,7 @@ public class CollectionAspect {
 
     // TODO add MongoCollection.watch()
     @Pointcut(className = "com.mongodb.client.MongoCollection",
-            methodName = "count*|distinct|find*|aggregate|mapReduce|bulkWrite|insert*|delete*"
+            methodName = "count*|distinct|findOneAnd*|mapReduce|bulkWrite|insert*|delete*"
                     + "|replace|update*|drop*|create*|list*|rename*",
             methodParameterTypes = {".."}, nestingGroup = "mongodb", timerName = "mongodb query")
     public static class MongoCollectionAdvice {
@@ -93,6 +95,44 @@ public class CollectionAspect {
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable QueryEntry queryEntry) {
             if (queryEntry != null) {
+                queryEntry.endWithLocationStackTrace(stackTraceThresholdMillis, MILLISECONDS);
+            }
+        }
+
+        @OnThrow
+        public static void onThrow(@BindThrowable Throwable t,
+                @BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
+                queryEntry.endWithError(t);
+            }
+        }
+    }
+
+    @Pointcut(className = "com.mongodb.client.MongoCollection", methodName = "find|aggregate",
+            methodParameterTypes = {".."}, nestingGroup = "mongodb", timerName = "mongodb query")
+    public static class MongoFindAdvice {
+
+        private static final TimerName timerName = Agent.getTimerName(MongoCollectionAdvice.class);
+
+        @OnBefore
+        public static @Nullable QueryEntry onBefore(ThreadContext context,
+                @BindReceiver MongoCollection collection, @BindMethodName String methodName) {
+            Object namespace = collection.getNamespace();
+            if (namespace == null) {
+                return null;
+            }
+            String queryText = methodName + " " + namespace.toString();
+            return context.startQueryEntry(QUERY_TYPE, queryText,
+                    QueryMessageSupplier.create("mongodb query: "), timerName);
+        }
+
+        @OnReturn
+        public static void onReturn(@BindReturn MongoIterableMixin mongoIterable,
+                @BindTraveler @Nullable QueryEntry queryEntry) {
+            if (queryEntry != null) {
+                if (mongoIterable != null) {
+                    mongoIterable.glowroot$setQueryEntry(queryEntry);
+                }
                 queryEntry.endWithLocationStackTrace(stackTraceThresholdMillis, MILLISECONDS);
             }
         }
