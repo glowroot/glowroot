@@ -191,7 +191,7 @@ HandlebarsRendering = (function () {
         flattenedTimer = {
           name: timer.name,
           totalNanos: timer.totalNanos,
-          count: timer.count,
+          count: timer.extended ? 0 : timer.count,
           active: timer.active,
           id: nextId++
         };
@@ -202,7 +202,9 @@ HandlebarsRendering = (function () {
         // (this is possible when they are separated by another timer)
         flattenedTimer.totalNanos += timer.totalNanos;
         flattenedTimer.active = flattenedTimer.active || timer.active;
-        flattenedTimer.count += timer.count;
+        if (!timer.extended) {
+          flattenedTimer.count += timer.count;
+        }
       }
       if (timer.childTimers) {
         $.each(timer.childTimers, function (index, nestedTimer) {

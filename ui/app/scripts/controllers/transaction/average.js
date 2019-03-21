@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,7 +138,7 @@ glowroot.controller('TransactionAverageCtrl', [
           flattenedTimer = {
             name: timer.name,
             totalNanos: timer.totalNanos,
-            count: timer.count
+            count: timer.extended ? 0 : timer.count
           };
           flattenedTimerMap[timer.name] = flattenedTimer;
           flattenedTimers.push(flattenedTimer);
@@ -146,7 +146,9 @@ glowroot.controller('TransactionAverageCtrl', [
           // only add to existing flattened timer if the aggregate timer isn't appearing under itself
           // (this is possible when they are separated by another aggregate timer)
           flattenedTimer.totalNanos += timer.totalNanos;
-          flattenedTimer.count += timer.count;
+          if (!timer.extended) {
+            flattenedTimer.count += timer.count;
+          }
         }
         if (timer.childTimers) {
           $.each(timer.childTimers, function (index, nestedTimer) {
