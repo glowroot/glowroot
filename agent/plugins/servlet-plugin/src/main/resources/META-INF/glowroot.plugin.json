@@ -181,5 +181,6 @@
     "org.glowroot.agent.plugin.servlet.CatalinaAppStartupAspect",
     "org.glowroot.agent.plugin.servlet.WebLogicAppStartupAspect",
     "org.glowroot.agent.plugin.servlet.WebSphereAppStartupAspect"
-  ]
+  ],
+  "collocate": true
 }

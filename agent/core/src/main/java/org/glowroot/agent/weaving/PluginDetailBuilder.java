@@ -21,11 +21,9 @@ import java.lang.annotation.Annotation;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -54,15 +52,10 @@ class PluginDetailBuilder {
 
     private static final Logger logger = LoggerFactory.getLogger(PluginDetailBuilder.class);
 
-    private static final Set<String> collocateInClassLoaderPluginIds =
-            ImmutableSet.of("servlet", "netty", "http-client", "kafka");
-
     private PluginDescriptor pluginDescriptor;
-    private boolean collocateInClassLoader;
 
     PluginDetailBuilder(PluginDescriptor pluginDescriptor) {
         this.pluginDescriptor = pluginDescriptor;
-        collocateInClassLoader = collocateInClassLoaderPluginIds.contains(pluginDescriptor.id());
     }
 
     PluginDetail build() throws IOException {
@@ -77,12 +70,13 @@ class PluginDetailBuilder {
                 MemberClassVisitor mcv = new MemberClassVisitor();
                 new ClassReader(bytes).accept(mcv, ClassReader.SKIP_CODE);
                 if (mcv.pointcutAnnotationVisitor != null) {
-                    builder.addPointcutClasses(mcv.buildPointcutClass(bytes, collocateInClassLoader,
-                            pluginDescriptor.pluginJar()));
+                    builder.addPointcutClasses(mcv.buildPointcutClass(bytes,
+                            pluginDescriptor.collocate(), pluginDescriptor.pluginJar()));
                 } else if (mcv.mixinAnnotationVisitor != null) {
-                    builder.addMixinClasses(mcv.buildMixinClass(collocateInClassLoader, bytes));
+                    builder.addMixinClasses(
+                            mcv.buildMixinClass(pluginDescriptor.collocate(), bytes));
                 } else if (mcv.shim) {
-                    builder.addShimClasses(mcv.buildShimClass(collocateInClassLoader));
+                    builder.addShimClasses(mcv.buildShimClass(pluginDescriptor.collocate()));
                 }
             }
         }

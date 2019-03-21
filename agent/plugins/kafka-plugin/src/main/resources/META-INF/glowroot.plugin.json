@@ -16,5 +16,6 @@
   ],
   "aspects": [
     "org.glowroot.agent.plugin.kafka.ProducerAspect"
-  ]
+  ],
+  "collocate": true
 }
