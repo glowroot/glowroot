@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2018 the original author or authors.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,8 @@ import org.slf4j.LoggerFactory;
 class ClassLoaders {
 
     private static final Logger logger = LoggerFactory.getLogger(ClassLoaders.class);
+
+    private static final Object lock = new Object();
 
     private ClassLoaders() {}
 
@@ -101,8 +103,23 @@ class ClassLoaders {
         for (LazyDefinedClass dependency : lazyDefinedClass.dependencies()) {
             defineClass(dependency, loader, ifNotExists);
         }
-        if (!ifNotExists || !classExists(lazyDefinedClass.type().getClassName(), loader)) {
-            defineClass(lazyDefinedClass.type().getClassName(), lazyDefinedClass.bytes(), loader);
+        String className = lazyDefinedClass.type().getClassName();
+        if (ifNotExists) {
+            // synchronized block is needed to guard against race condition (for class loaders that
+            // support concurrent class loading), otherwise can have two threads evaluate
+            // !classExists, and both try to defineClass, leading to one of them getting
+            // java.lang.LinkageError: "attempted duplicate class definition for name"
+            //
+            // deadlock should not be possible here since ifNotExists is only called from Weaver,
+            // and ClassFileTransformers are not re-entrant, so defineClass() should be self
+            // contained
+            synchronized (lock) {
+                if (!classExists(className, loader)) {
+                    defineClass(className, lazyDefinedClass.bytes(), loader);
+                }
+            }
+        } else {
+            defineClass(className, lazyDefinedClass.bytes(), loader);
         }
     }
 
