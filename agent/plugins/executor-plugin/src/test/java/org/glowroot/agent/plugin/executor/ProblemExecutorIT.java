@@ -17,10 +17,12 @@ package org.glowroot.agent.plugin.executor;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import com.google.common.collect.Queues;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -37,7 +39,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ExecutorWithLambdasIT {
+// see https://github.com/glowroot/glowroot/issues/564
+public class ProblemExecutorIT {
 
     private static Container container;
 
@@ -59,22 +62,11 @@ public class ExecutorWithLambdasIT {
     }
 
     @Test
-    public void shouldCaptureExecute() throws Exception {
+    public void shouldCaptureSubmit() throws Exception {
         // when
-        Trace trace = container.execute(DoExecuteRunnableWithLambda.class);
-        // then
-        checkTrace(trace);
-    }
+        Trace trace = container.execute(DoSubmitRunnable.class);
 
-    @Test
-    public void shouldCaptureNestedExecute() throws Exception {
-        // when
-        Trace trace = container.execute(DoNestedExecuteRunnableWithLambda.class);
         // then
-        checkTrace(trace);
-    }
-
-    private static void checkTrace(Trace trace) {
         Trace.Header header = trace.getHeader();
         assertThat(header.hasAuxThreadRootTimer()).isTrue();
         assertThat(header.getAsyncTimerCount()).isZero();
@@ -88,7 +80,7 @@ public class ExecutorWithLambdasIT {
                 .isEqualTo("mock trace entry marker");
         List<Trace.Entry> entries = trace.getEntryList();
 
-        assertThat(entries.size()).isBetween(2, 6);
+        assertThat(entries).hasSize(6);
         for (int i = 0; i < entries.size(); i += 2) {
             assertThat(entries.get(i).getDepth()).isEqualTo(0);
             assertThat(entries.get(i).getMessage()).isEqualTo("auxiliary thread");
@@ -99,80 +91,64 @@ public class ExecutorWithLambdasIT {
         }
     }
 
-    public static class DoExecuteRunnableWithLambda implements AppUnderTest, TransactionMarker {
+    private static ExecutorService createExecutorService() {
+        return new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60, SECONDS,
+                new SynchronousQueue<Runnable>()) {
+            @Override
+            protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
+                return new ProblemFutureTask<T>((ProblemRunnable) runnable, value);
+            }
+        };
+    }
 
-        private ThreadPoolExecutor executor;
-        private CountDownLatch latch;
+    public static class DoSubmitRunnable implements AppUnderTest, TransactionMarker {
 
         @Override
         public void executeApp() throws Exception {
-            executor =
-                    new ThreadPoolExecutor(1, 1, 60, MILLISECONDS, Queues.newLinkedBlockingQueue());
-            // need to pre-create threads, otherwise lambda execution will be captured by the
-            // initial thread run, and won't really test lambda execution capture
-            executor.prestartAllCoreThreads();
             transactionMarker();
         }
 
         @Override
         public void transactionMarker() throws Exception {
-            latch = new CountDownLatch(3);
-            executor.execute(this::run);
-            executor.execute(this::run);
-            executor.execute(this::run);
+            ExecutorService executor = createExecutorService();
+            final CountDownLatch latch = new CountDownLatch(3);
+            executor.submit(new ProblemRunnable() {
+                @Override
+                public void run() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    latch.countDown();
+                }
+            });
+            executor.submit(new ProblemRunnable() {
+                @Override
+                public void run() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    latch.countDown();
+                }
+            });
+            executor.submit(new ProblemRunnable() {
+                @Override
+                public void run() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    latch.countDown();
+                }
+            });
             latch.await();
             executor.shutdown();
             executor.awaitTermination(10, SECONDS);
         }
-
-        private void run() {
-            new CreateTraceEntry().traceEntryMarker();
-            latch.countDown();
-        }
     }
 
-    public static class DoNestedExecuteRunnableWithLambda
-            implements AppUnderTest, TransactionMarker {
-
-        private ThreadPoolExecutor executor;
-        private CountDownLatch latch;
+    private static class ProblemRunnable implements Runnable {
 
         @Override
-        public void executeApp() throws Exception {
-            executor =
-                    new ThreadPoolExecutor(1, 1, 60, MILLISECONDS, Queues.newLinkedBlockingQueue());
-            // need to pre-create threads, otherwise lambda execution will be captured by the
-            // initial thread run, and won't really test lambda execution capture
-            executor.prestartAllCoreThreads();
-            transactionMarker();
-        }
+        public void run() {}
+    }
 
-        @Override
-        public void transactionMarker() throws Exception {
-            MoreExecutors.directExecutor().execute(this::outerRun);
-        }
+    private static class ProblemFutureTask<V> extends FutureTask<V> {
 
-        private void outerRun() {
-            latch = new CountDownLatch(3);
-            executor.execute(this::innerRun);
-            executor.execute(this::innerRun);
-            executor.execute(this::innerRun);
-            try {
-                latch.await();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            executor.shutdown();
-            try {
-                executor.awaitTermination(10, SECONDS);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        private void innerRun() {
-            new CreateTraceEntry().traceEntryMarker();
-            latch.countDown();
+        public ProblemFutureTask(ProblemRunnable runnable, V result) {
+            super(runnable, result);
         }
     }
 
