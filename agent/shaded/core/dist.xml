@@ -15,6 +15,10 @@
       <unpack>true</unpack>
       <unpackOptions>
         <excludes>
+          <exclude>META-INF/glowroot.javamail.charset.map</exclude>
+          <exclude>META-INF/glowroot.javamail.default.address.map</exclude>
+          <exclude>META-INF/glowroot.javamail.default.providers</exclude>
+          <exclude>META-INF/glowroot.mailcap.default</exclude>
           <exclude>org/glowroot/agent/embedded/**</exclude>
           <exclude>org/glowroot/agent/shaded/io/netty/internal/tcnative/**</exclude>
           <exclude>org/glowroot/agent/shaded/net/logstash/logback/**</exclude>
