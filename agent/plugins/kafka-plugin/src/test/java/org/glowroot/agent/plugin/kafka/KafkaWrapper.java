@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +100,7 @@ class KafkaWrapper {
     private static void downloadAndExtract(File baseDir, File kafkaDir) throws IOException {
         // using System.out to make sure user sees why there is a big delay here
         System.out.print("Downloading Kafka " + KAFKA_VERSION + "...");
-        URL url = new URL("https://www-us.apache.org/dist/kafka/" + KAFKA_VERSION + "/kafka_"
+        URL url = new URL("https://archive.apache.org/dist/kafka/" + KAFKA_VERSION + "/kafka_"
                 + SCALA_VERSION + "-" + KAFKA_VERSION + ".tgz");
         InputStream in = url.openStream();
         File archiveFile = File.createTempFile("kafka_" + SCALA_VERSION + "-" + KAFKA_VERSION + "-",
