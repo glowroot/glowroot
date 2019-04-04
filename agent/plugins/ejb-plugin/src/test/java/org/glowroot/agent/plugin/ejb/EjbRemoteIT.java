@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 the original author or authors.
+ * Copyright 2018-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -163,7 +163,7 @@ public class EjbRemoteIT {
 
     @Test
     public void shouldCaptureB3RemoteBeanTwo() throws Exception {
-        Trace trace = container.execute(ExecuteB3RemoteBeanTwo. class);
+        Trace trace = container.execute(ExecuteB3RemoteBeanTwo.class);
         Trace.Header header = trace.getHeader();
         assertThat(header.getTransactionType()).isEqualTo("Web");
         assertThat(header.getTransactionName()).isEqualTo("EJB remote: BRemoteTwo#two");
