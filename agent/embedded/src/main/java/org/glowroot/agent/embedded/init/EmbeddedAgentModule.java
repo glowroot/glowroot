@@ -129,7 +129,6 @@ class EmbeddedAgentModule {
             agentModule = new AgentModule(clock, null, pluginCache, configService, instrumentation,
                     glowrootJarFile, tmpDir, preCheckClassFileTransformer);
             offlineViewerAgentModule = null;
-            PreInitializeStorageShutdownClasses.preInitializeClasses();
         }
         this.confDirs = confDirs;
         this.logDir = logDir;
@@ -147,6 +146,7 @@ class EmbeddedAgentModule {
             final @Nullable Class<? extends Collector> collectorProxyClass,
             final String glowrootVersion, @Nullable String mainClass) throws Exception {
 
+        PreInitializeStorageShutdownClasses.preInitializeClasses();
         // mem db is only used for testing (by glowroot-agent-it-harness)
         final boolean h2MemDb = Boolean.parseBoolean(properties.get("glowroot.internal.h2.memdb"));
         if (agentModule == null) {
