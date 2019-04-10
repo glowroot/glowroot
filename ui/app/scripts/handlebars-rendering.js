@@ -1026,7 +1026,7 @@ HandlebarsRendering = (function () {
     var commentRegex = /[/][*](.|\n)*?[*][/]/g;
 
     function numNonWhitespaceChars(str) {
-      return str.replace(/\s+/, '').length;
+      return str.replace(/\s+/g, '').length;
     }
 
     var numNonWhitespaceCharsBeforeComment = [];
@@ -1038,6 +1038,7 @@ HandlebarsRendering = (function () {
       matchTo = commentRegex.lastIndex;
       numNonWhitespaceCharsBeforeComment.push(numNonWhitespaceChars(queryText.substring(lastMatchTo, matchFrom)));
       comments.push(queryText.substring(matchFrom, matchTo));
+      lastMatchTo = matchTo;
     }
 
     var formatted = SqlPrettyPrinter.format(queryText);
@@ -1062,14 +1063,24 @@ HandlebarsRendering = (function () {
     while (true) {
       if (nonWhitespaceCharCount === nextCommentAtNonWhitespaceCharCount) {
         if (nonWhitespaceCharCount === 0) {
-          formatted = formatted.substring(0, i) + initialSpaces + comments[currCommentIndex++] + '\n'
+          formatted = formatted.substring(0, i) + initialSpaces + comments[currCommentIndex] + '\n'
               + formatted.substring(i);
+          i += initialSpaces.length + comments[currCommentIndex].length + 1;
+          currCommentIndex++;
         } else {
-          formatted = formatted.substring(0, i) + ' ' + comments[currCommentIndex++] + formatted.substring(i);
+          // trim is to absorb whitespace that was meant for alignment which is now destroyed by the comment anyways
+          formatted = formatted.substring(0, i) + comments[currCommentIndex] + formatted.substring(i).trim();
+          i += comments[currCommentIndex].length;
+          currCommentIndex++;
         }
-        nextCommentAtNonWhitespaceCharCount = numNonWhitespaceCharsBeforeComment[currCommentIndex];
+        nextCommentAtNonWhitespaceCharCount =
+            nonWhitespaceCharCount + numNonWhitespaceCharsBeforeComment[currCommentIndex];
       }
       if (currCommentIndex === comments.length) {
+        break;
+      }
+      if (i > formatted.length) {
+        console.log('unable to match up all comments all');
         break;
       }
       if (!/\s/.test(formatted[i++])) {
