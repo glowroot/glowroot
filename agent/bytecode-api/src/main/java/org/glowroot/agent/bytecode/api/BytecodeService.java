@@ -23,10 +23,13 @@ import org.glowroot.agent.plugin.api.TraceEntry;
 
 public interface BytecodeService {
 
-    void enteringMain(String mainClass, @Nullable String /*@Nullable*/ [] mainArgs);
+    void enteringMainMethod(String mainClass, @Nullable String /*@Nullable*/ [] mainArgs);
 
-    void enteringApacheCommonsDaemonLoad(String mainClass,
+    void enteringApacheCommonsDaemonLoadMethod(String mainClass,
             @Nullable String /*@Nullable*/ [] mainArgs);
+
+    void enteringPossibleProcrunStartMethod(String className, String methodName,
+            @Nullable String /*@Nullable*/ [] methodArgs);
 
     void exitingGetPlatformMBeanServer();
 

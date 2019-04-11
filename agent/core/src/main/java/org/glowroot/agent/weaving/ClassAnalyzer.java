@@ -148,7 +148,7 @@ class ClassAnalyzer {
             if (noLongerNeedToWeaveMainMethods) {
                 hasMainMethod = false;
             } else {
-                hasMainMethod = hasMainMethod(thinClass.nonBridgeMethods())
+                hasMainMethod = hasMainOrPossibleProcrunStartMethod(thinClass.nonBridgeMethods())
                         || className.equals("org.apache.commons.daemon.support.DaemonLoader");
             }
             if (className.startsWith("org.glowroot.agent.tests.")) {
@@ -608,9 +608,11 @@ class ClassAnalyzer {
                 .build();
     }
 
-    private static boolean hasMainMethod(List<ThinMethod> methods) {
+    private static boolean hasMainOrPossibleProcrunStartMethod(List<ThinMethod> methods) {
         for (ThinMethod method : methods) {
-            if (method.name().equals("main")
+            // checking for start* methods since those seem to be common for procrun users
+            if (Modifier.isPublic(method.access()) && Modifier.isStatic(method.access())
+                    && (method.name().equals("main") || method.name().startsWith("start"))
                     && method.descriptor().equals("([Ljava/lang/String;)V")) {
                 return true;
             }

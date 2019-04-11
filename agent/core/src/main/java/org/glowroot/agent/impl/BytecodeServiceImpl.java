@@ -73,15 +73,21 @@ public class BytecodeServiceImpl implements BytecodeService {
     }
 
     @Override
-    public void enteringMain(String mainClass, @Nullable String /*@Nullable*/ [] mainArgs) {
-        enteringMainCommon(mainClass, mainArgs, mainClass, "main");
+    public void enteringMainMethod(String mainClass, @Nullable String /*@Nullable*/ [] mainArgs) {
+        enteringMainMethod(mainClass, mainArgs, mainClass, "main");
     }
 
     @Override
-    public void enteringApacheCommonsDaemonLoad(String mainClass,
+    public void enteringApacheCommonsDaemonLoadMethod(String mainClass,
             @Nullable String /*@Nullable*/ [] mainArgs) {
-        enteringMainCommon(mainClass, mainArgs, "org.apache.commons.daemon.support.DaemonLoader",
+        enteringMainMethod(mainClass, mainArgs, "org.apache.commons.daemon.support.DaemonLoader",
                 "load");
+    }
+
+    @Override
+    public void enteringPossibleProcrunStartMethod(String className, String methodName,
+            @Nullable String /*@Nullable*/ [] methodArgs) {
+        enteringMainMethod(className, methodArgs, className, methodName);
     }
 
     @Override
@@ -207,11 +213,11 @@ public class BytecodeServiceImpl implements BytecodeService {
         }
     }
 
-    public void enteringMainCommon(String mainClass, @Nullable String /*@Nullable*/ [] mainArgs,
-            String expectedTopLevelClass, String expectedTopLevelMethodName) {
+    public void enteringMainMethod(String className, @Nullable String /*@Nullable*/ [] methodArgs,
+            String expectedTopLevelClassName, String expectedTopLevelMethodName) {
         if (onEnteringMain == null) {
             if (DEBUG_MAIN_CLASS) {
-                logger.info("entering {}.main(), but callback not set yet", mainClass,
+                logger.info("entering {}.main(), but callback not set yet", className,
                         new Exception("location stack trace"));
             }
             return;
@@ -221,13 +227,13 @@ public class BytecodeServiceImpl implements BytecodeService {
             return;
         }
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        if (ignoreMainClass(expectedTopLevelClass, expectedTopLevelMethodName, stackTrace)) {
+        if (ignoreMainClass(expectedTopLevelClassName, expectedTopLevelMethodName, stackTrace)) {
             if (DEBUG_MAIN_CLASS) {
-                logger.info("ignoring {}.main()", mainClass, new Exception("location stack trace"));
+                logger.info("ignoring {}.main()", className, new Exception("location stack trace"));
             }
             return;
         }
-        if (mainClass.equals("com.ibm.java.diagnostics.healthcenter.agent.mbean.HCLaunchMBean")) {
+        if (className.equals("com.ibm.java.diagnostics.healthcenter.agent.mbean.HCLaunchMBean")) {
             // IBM J9 VM -Xhealthcenter
             return;
         }
@@ -236,14 +242,14 @@ public class BytecodeServiceImpl implements BytecodeService {
             return;
         }
         String unwrappedMainClass;
-        if (mainClass.startsWith("org.tanukisoftware.wrapper.")
-                && mainArgs != null && mainArgs.length > 0) {
-            unwrappedMainClass = mainArgs[0];
+        if (className.startsWith("org.tanukisoftware.wrapper.")
+                && methodArgs != null && methodArgs.length > 0) {
+            unwrappedMainClass = methodArgs[0];
         } else {
-            unwrappedMainClass = mainClass;
+            unwrappedMainClass = className;
         }
         if (DEBUG_MAIN_CLASS) {
-            logger.info("entering {}.main()", mainClass, new Exception("location stack trace"));
+            logger.info("entering {}.main()", className, new Exception("location stack trace"));
         }
         try {
             onEnteringMain.run(unwrappedMainClass);

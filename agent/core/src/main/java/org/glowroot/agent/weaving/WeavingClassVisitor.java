@@ -215,12 +215,22 @@ class WeavingClassVisitor extends ClassVisitor {
         }
         MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
         if (!noLongerNeedToWeaveMainMethods) {
-            if (name.equals("main") && Modifier.isPublic(access) && Modifier.isStatic(access)
+            if (Modifier.isPublic(access) && Modifier.isStatic(access)
                     && descriptor.equals("([Ljava/lang/String;)V")) {
-                mv.visitLdcInsn(type.getClassName());
-                mv.visitVarInsn(ALOAD, 0);
-                mv.visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(),
-                        "enteringMainMethod", "(Ljava/lang/String;[Ljava/lang/String;)V", false);
+                if (name.equals("main")) {
+                    mv.visitLdcInsn(type.getClassName());
+                    mv.visitVarInsn(ALOAD, 0);
+                    mv.visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(),
+                            "enteringMainMethod", "(Ljava/lang/String;[Ljava/lang/String;)V",
+                            false);
+                } else if (name.startsWith("start")) {
+                    mv.visitLdcInsn(type.getClassName());
+                    mv.visitLdcInsn(name);
+                    mv.visitVarInsn(ALOAD, 0);
+                    mv.visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(),
+                            "enteringPossibleProcrunStartMethod",
+                            "(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)V", false);
+                }
             } else if (type.getInternalName()
                     .equals("org/apache/commons/daemon/support/DaemonLoader")
                     && Modifier.isPublic(access) && Modifier.isStatic(access) && name.equals("load")
