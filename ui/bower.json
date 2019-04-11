@@ -23,7 +23,7 @@
     "moment": "2.23.0",
     "moment-timezone": "0.5.23",
     "popper.js": "1.14.6",
-    "sequeljs": "trask/sequeljs#glowroot-0.9.8",
+    "sequeljs": "trask/sequeljs#6e2943c0e96c7c78371829f245a31fbb20b18801",
     "spinjs": "2.3.2"
   },
   "resolutions": {
