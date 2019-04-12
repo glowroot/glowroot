@@ -51,36 +51,30 @@ public class Gauges {
         patterns.add(new UnitPattern("java.lang:type=Runtime:Uptime", "milliseconds"));
         patterns.add(new UnitPattern("java.lang:type=Threading:CurrentThread(Cpu|User)Time",
                 "nanoseconds"));
-        patterns.add(new UnitPattern("java.lang:type=MemoryPool,name=[^:]+:(Peak)?Usage"
+        patterns.add(new UnitPattern("java.lang:type=MemoryPool,name=.*:(Peak)?Usage"
                 + "\\.(init|used|committed|max)", "bytes"));
-        patterns.add(new UnitPattern(
-                "java.lang:type=GarbageCollector,name=[^:]+:LastGcInfo\\.duration",
+        patterns.add(new UnitPattern("java.lang:type=GarbageCollector,name=.*:LastGcInfo"
+                + "\\.duration", "milliseconds"));
+        patterns.add(new UnitPattern("java.lang:type=GarbageCollector,name=.*:CollectionTime",
                 "milliseconds"));
-        patterns.add(new UnitPattern("java.lang:type=GarbageCollector,name=[^:]+:CollectionTime",
-                "milliseconds"));
-        patterns.add(new UnitPattern("java.lang:type=GarbageCollector,name=[^:]+:CollectionCount",
+        patterns.add(new UnitPattern("java.lang:type=GarbageCollector,name=.*:CollectionCount",
                 GROUPING_PREFIX + "collection-count"));
         patterns.add(
                 new UnitPattern("java.lang:type=Compilation:TotalCompilationTime", "milliseconds"));
-        patterns.add(new UnitPattern(
-                "java.lang:type=ClassLoading:(Loaded|TotalLoaded|Unloaded)ClassCount",
-                GROUPING_PREFIX + "class-count"));
-        patterns.add(
-                new UnitPattern("sun.management:type=HotspotClassLoading:InitializedClassCount",
-                        GROUPING_PREFIX + "class-count"));
+        patterns.add(new UnitPattern("java.lang:type=ClassLoading:(Loaded|TotalLoaded|Unloaded)"
+                + "ClassCount", GROUPING_PREFIX + "class-count"));
+        patterns.add(new UnitPattern("sun.management:type=HotspotClassLoading"
+                + ":InitializedClassCount", GROUPING_PREFIX + "class-count"));
         patterns.add(new UnitPattern("sun.management:type=HotspotClassLoading:(LoadedClassSize"
                 + "|MethodDataSize|UnloadedClassSize)", "bytes"));
-        patterns.add(new UnitPattern("sun.management:type=HotspotClassLoading:"
-                + "(ClassInitializationTime|ClassLoadingTime|ClassVerificationTime)",
-                "milliseconds"));
-        patterns.add(new UnitPattern("sun.management:type=HotspotRuntime:SafepointSyncTime",
-                "milliseconds"));
-        patterns.add(new UnitPattern("sun.management:type=HotspotRuntime:TotalSafepointTime",
-                "milliseconds"));
-        patterns.add(new UnitPattern("org.glowroot:type=FileSystem,name=[^:]+:(Total|Free)Space",
+        patterns.add(new UnitPattern("sun.management:type=HotspotClassLoading:Class"
+                + "(InitializationTime|LoadingTime|VerificationTime)", "milliseconds"));
+        patterns.add(new UnitPattern("sun.management:type=HotspotRuntime:"
+                + "(SafepointSync|TotalSafepoint)Time", "milliseconds"));
+        patterns.add(new UnitPattern("org.glowroot:type=FileSystem,name=.*:(Total|Free)Space",
                 "bytes"));
         patterns.add(
-                new UnitPattern("org.glowroot:type=FileSystem,name=[^:]+:PercentFull", "percent"));
+                new UnitPattern("org.glowroot:type=FileSystem,name=.*:PercentFull", "percent"));
         patterns.add(new UnitPattern("org.apache.cassandra.metrics:type=ColumnFamily,"
                 + "keyspace=[^,]+,scope=[^,]+,name=LiveDiskSpaceUsed:Count", "bytes"));
         patterns.add(new UnitPattern("org.apache.cassandra.metrics:type=ColumnFamily,"
