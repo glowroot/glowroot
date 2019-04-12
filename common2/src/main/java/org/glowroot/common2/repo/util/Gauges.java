@@ -85,6 +85,12 @@ public class Gauges {
                 + "keyspace=[^,]+,scope=[^,]+,name=LiveDiskSpaceUsed:Count", "bytes"));
         patterns.add(new UnitPattern("org.apache.cassandra.metrics:type=ColumnFamily,"
                 + "keyspace=[^,]+,scope=[^,]+,name=TotalDiskSpaceUsed:Count", "bytes"));
+        patterns.add(new UnitPattern("Catalina:type=ThreadPool,name=.*:(currentThreadCount"
+                + "|currentThreadsBusy|maxThreads)", GROUPING_PREFIX + "thread-count"));
+        patterns.add(new UnitPattern("Catalina:type=Executor,name=.*:(activeCount|poolSize"
+                + "|maxThreads)", GROUPING_PREFIX + "thread-count"));
+        patterns.add(new UnitPattern("com.mchange.v2.c3p0:type=PooledDataSource,"
+                + "(identityToken|name)=.*:threadPoolSize", GROUPING_PREFIX + "thread-count"));
         unitPatterns = ImmutableList.copyOf(patterns);
     }
 
