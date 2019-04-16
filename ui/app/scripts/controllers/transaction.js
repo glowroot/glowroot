@@ -32,8 +32,8 @@ glowroot.controller('TransactionCtrl', [
     document.title = headerDisplay + ' \u00b7 Glowroot';
     $scope.$parent.activeNavbarItem = shortName;
 
-    if (!$scope.layout.central && $scope.layout.embeddedAgentRollup.display) {
-      $scope.headerDisplay = $scope.layout.embeddedAgentRollup.display;
+    if (!$scope.layout.central && $scope.layout.embeddedAgentRollup.topLevelDisplay) {
+      $scope.headerDisplay = $scope.layout.embeddedAgentRollup.topLevelDisplay;
     } else {
       $scope.headerDisplay = headerDisplay;
     }
