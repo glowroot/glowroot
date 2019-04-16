@@ -25,7 +25,7 @@ import java.util.Properties;
 import javax.sql.DataSource;
 
 import bitronix.tm.resource.jdbc.PoolingDataSource;
-import com.sun.gjc.spi.DMManagedConnectionFactory;
+import com.sun.gjc.spi.CPManagedConnectionFactory;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.dbcp.BasicDataSource;
@@ -66,15 +66,15 @@ public class Connections {
             case COMMONS_DBCP_WRAPPED:
                 return createCommonsDbcpWrappedConnection();
             case COMMONS_DBCP2_WRAPPED:
-                return createCommonsDbcp2WrappedConnection();
+                return initConnection(createCommonsDbcp2DataSource());
             case TOMCAT_JDBC_POOL_WRAPPED:
-                return createTomcatJdbcPoolWrappedConnection();
+                return initConnection(createTomcatJdbcPoolWrappedDataSource());
             case GLASSFISH_JDBC_POOL_WRAPPED:
-                return createGlassfishJdbcPoolWrappedConnection();
+                return initConnection(createGlassfishJdbcPoolWrappedDataSource());
             case HIKARI_CP_WRAPPED:
-                return createHikariCpWrappedConnection();
+                return initConnection(createHikariCpDataSource());
             case BITRONIX_WRAPPED:
-                return createBitronixWrappedConnection();
+                return initConnection(createBitronixWrappedDataSource());
             case POSTGRES:
                 return createPostgresConnection();
             case ORACLE:
@@ -93,10 +93,7 @@ public class Connections {
         } finally {
             statement.close();
         }
-        if (connectionType != ConnectionType.GLASSFISH_JDBC_POOL_WRAPPED) {
-            // TODO figure out why glassfish connection throws NullPointerException here
-            connection.close();
-        }
+        connection.close();
     }
 
     static ConnectionType getConnectionType() {
@@ -104,69 +101,60 @@ public class Connections {
     }
 
     private static Connection createHsqldbConnection() throws SQLException {
-        // set up database
         Connection connection = JDBCDriver.getConnection("jdbc:hsqldb:mem:test", null);
         insertRecords(connection);
         return connection;
     }
 
     private static Connection createH2Connection() throws SQLException {
-        // set up database
         Connection connection =
                 new JdbcConnection("jdbc:h2:mem:;db_close_on_exit=false", new Properties());
         insertRecords(connection);
         return connection;
     }
 
-    static Connection createCommonsDbcpWrappedConnection() throws SQLException {
-        // set up database
+    static Connection createCommonsDbcpWrappedConnection() throws Exception {
+        DataSource ds = createCommonsDbcpWrappedDataSource();
+        return initConnection(ds);
+    }
+
+    static BasicDataSource createCommonsDbcpWrappedDataSource() {
         BasicDataSource ds = new BasicDataSource();
         ds.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
         ds.setUrl("jdbc:hsqldb:mem:test");
-        Connection connection = ds.getConnection();
-        insertRecords(connection);
-        return connection;
+        return ds;
     }
 
-    private static Connection createCommonsDbcp2WrappedConnection() throws SQLException {
-        // set up database
-        @SuppressWarnings("resource")
+    static org.apache.commons.dbcp2.BasicDataSource createCommonsDbcp2DataSource() {
         org.apache.commons.dbcp2.BasicDataSource ds =
                 new org.apache.commons.dbcp2.BasicDataSource();
         ds.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
         ds.setUrl("jdbc:hsqldb:mem:test");
-        Connection connection = ds.getConnection();
-        insertRecords(connection);
-        return connection;
+        return ds;
     }
 
-    private static Connection createTomcatJdbcPoolWrappedConnection() throws SQLException {
-        // set up database
+    static org.apache.tomcat.jdbc.pool.DataSource createTomcatJdbcPoolWrappedDataSource() {
         org.apache.tomcat.jdbc.pool.DataSource ds = new org.apache.tomcat.jdbc.pool.DataSource();
         ds.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
         ds.setUrl("jdbc:hsqldb:mem:test");
         ds.setJdbcInterceptors(
                 "org.apache.tomcat.jdbc.pool.interceptor.StatementDecoratorInterceptor");
-        Connection connection = ds.getConnection();
-        insertRecords(connection);
-        return connection;
+        return ds;
     }
 
-    private static Connection createGlassfishJdbcPoolWrappedConnection() throws SQLException {
-        // set up database
-        DMManagedConnectionFactory connectionFactory = new DMManagedConnectionFactory();
-        connectionFactory.setClassName("org.hsqldb.jdbc.JDBCDriver");
-        connectionFactory.setURL("jdbc:hsqldb:mem:test");
+    static DataSource createGlassfishJdbcPoolWrappedDataSource() {
+        CPManagedConnectionFactory connectionFactory = new CPManagedConnectionFactory();
+        connectionFactory.setClassName("org.hsqldb.jdbc.pool.JDBCPooledDataSource");
+        connectionFactory.setDriverProperties("setUrl=jdbc:hsqldb:mem:test==");
+        connectionFactory.setDelimiter("=");
+        connectionFactory.setEscapeCharacter("\\");
         connectionFactory.setStatementWrapping("true");
         connectionFactory.setSqlTraceListeners(
                 "org.glowroot.agent.plugin.jdbc.Connections$GlassfishSQLTraceListener");
-        DataSource ds = (DataSource) connectionFactory.createConnectionFactory();
-        Connection connection = ds.getConnection();
-        insertRecords(connection);
-        return connection;
+        return (DataSource) connectionFactory.createConnectionFactory();
     }
 
-    private static Connection createHikariCpWrappedConnection() throws SQLException {
+    static HikariDataSource createHikariCpDataSource() throws AssertionError {
         if (Connections.class.getClassLoader() instanceof IsolatedWeavingClassLoader) {
             try {
                 Class.forName("com.zaxxer.hikari.proxy.JavassistProxyFactory");
@@ -182,36 +170,42 @@ public class Connections {
         config.addDataSourceProperty("cachePrepStmts", "true");
         config.addDataSourceProperty("prepStmtCacheSize", "250");
         config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        @SuppressWarnings("resource")
-        HikariDataSource ds = new HikariDataSource(config);
-        Connection connection = ds.getConnection();
-        insertRecords(connection);
-        return connection;
+        return new HikariDataSource(config);
     }
 
-    private static Connection createBitronixWrappedConnection() throws Exception {
+    static PoolingDataSource createBitronixWrappedDataSource() throws AssertionError {
         if (Connections.class.getClassLoader() instanceof IsolatedWeavingClassLoader) {
             throw new AssertionError("Bitronix loads JdbcProxyFactory implementation using a"
                     + " parent-first class loader, which bypasses IsolatedWeavingClassLoader, must"
                     + " use JavaagentContainer");
         }
-        PoolingDataSource ds2 = new PoolingDataSource();
-        ds2.setClassName(JDBCXADataSource.class.getName());
+        PoolingDataSource ds = new PoolingDataSource();
+        ds.setClassName(JDBCXADataSource.class.getName());
         Properties props = new Properties();
         props.setProperty("url", "jdbc:hsqldb:mem:test");
-        ds2.setDriverProperties(props);
-        ds2.setMaxPoolSize(1);
-        ds2.setUniqueName("unique-name-" + nextUniqueNum++);
-        ds2.setAllowLocalTransactions(true);
+        ds.setDriverProperties(props);
+        ds.setMaxPoolSize(1);
+        ds.setUniqueName("unique-name-" + nextUniqueNum++);
+        ds.setAllowLocalTransactions(true);
+        return ds;
+    }
 
-        Connection connection = ds2.getConnection();
+    static void hackGlassfishConnection(Connection connection) throws Exception {
+        Class<?> hackClass =
+                Class.forName("org.glowroot.agent.plugin.jdbc.GlassfishConnectionHack");
+        hackClass.getMethod("hack", Connection.class).invoke(null, connection);
+    }
 
+    private static Connection initConnection(DataSource ds) throws Exception {
+        Connection connection = ds.getConnection();
         insertRecords(connection);
+        if (connection.getClass().getName().startsWith("com.sun.gjc.spi.")) {
+            hackGlassfishConnection(connection);
+        }
         return connection;
     }
 
     private static Connection createPostgresConnection() throws SQLException {
-        // set up database
         Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost/glowroot",
                 "glowroot", "glowroot");
         insertRecords(connection, "bytea", "text");
@@ -232,7 +226,6 @@ public class Connections {
     // <scope>test</scope>
     // </dependency>
     private static Connection createOracleConnection() throws SQLException {
-        // set up database
         Connection connection =
                 DriverManager.getConnection("jdbc:oracle:thin:@localhost", "glowroot", "glowroot");
         insertRecords(connection);
@@ -240,7 +233,6 @@ public class Connections {
     }
 
     private static Connection createMssqlConnection() throws Exception {
-        // set up database
         Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
         Connection connection =
                 DriverManager.getConnection("jdbc:sqlserver://localhost", "sa", "password");

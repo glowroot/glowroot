@@ -310,6 +310,11 @@ public interface ThreadContext {
      */
     void addErrorEntry(@Nullable String message, Throwable t);
 
+    // this is for tracking down resource leaks
+    void trackResourceAcquired(Object resource, boolean withLocationStackTrace);
+
+    void trackResourceReleased(Object resource);
+
     @Nullable
     ServletRequestInfo getServletRequestInfo();
 

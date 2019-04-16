@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -288,6 +288,20 @@ class OptionalThreadContextImpl implements ThreadContextPlus {
     public void addErrorEntry(@Nullable String message, Throwable t) {
         if (threadContext != null) {
             threadContext.addErrorEntry(message, t);
+        }
+    }
+
+    @Override
+    public void trackResourceAcquired(Object resource, boolean withLocationStackTrace) {
+        if (threadContext != null) {
+            threadContext.trackResourceAcquired(resource, withLocationStackTrace);
+        }
+    }
+
+    @Override
+    public void trackResourceReleased(Object resource) {
+        if (threadContext != null) {
+            threadContext.trackResourceReleased(resource);
         }
     }
 

@@ -379,9 +379,8 @@ public class ThreadContextImpl implements ThreadContextPlus {
                 || bypassLimit;
     }
 
-    private TraceEntryImpl addErrorEntry(long startTick, long endTick,
-            @Nullable Object messageSupplier, @Nullable QueryData queryData,
-            ErrorMessage errorMessage) {
+    TraceEntryImpl addErrorEntry(long startTick, long endTick, @Nullable Object messageSupplier,
+            @Nullable QueryData queryData, ErrorMessage errorMessage) {
         TraceEntryImpl entry = traceEntryComponent.addErrorEntry(startTick, endTick,
                 messageSupplier, queryData, errorMessage);
         // memory barrier write ensures partial trace capture will see data collected up to now
@@ -984,6 +983,16 @@ public class ThreadContextImpl implements ThreadContextPlus {
     }
 
     @Override
+    public void trackResourceAcquired(Object resource, boolean withLocationStackTrace) {
+        transaction.trackResourceAcquired(resource, withLocationStackTrace);
+    }
+
+    @Override
+    public void trackResourceReleased(Object resource) {
+        transaction.trackResourceReleased(resource);
+    }
+
+    @Override
     public @Nullable ServletRequestInfo getServletRequestInfo() {
         return servletRequestInfo;
     }
@@ -1076,6 +1085,13 @@ public class ThreadContextImpl implements ThreadContextPlus {
             int additionalMethodsToSkip) {
         for (int i = 0; i < locationStackTrace.length; i++) {
             if (methodName.equals(locationStackTrace[i].getMethodName())) {
+                if (methodName.equals(locationStackTrace[i + 1].getMethodName())
+                        && OptionalThreadContextImpl.class.getName()
+                                .equals(locationStackTrace[i + 1].getClassName())) {
+                    // e.g. OptionalThreadContextImpl.createAuxThreadContext()
+                    // -> ThreadContextImpl.createAuxThreadContext()
+                    i++;
+                }
                 return i + 1 + additionalMethodsToSkip;
             }
         }

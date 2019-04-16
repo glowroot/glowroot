@@ -33,6 +33,13 @@
       "description": "Capture timings for executions of ResultSet.get*() to read the individual column values out of a result set record. This defaults to false since the number of calls can be excessive and generally ResultSet.next() captures more interesting info with less overhead."
     },
     {
+      "name": "captureConnectionPoolLeakDetails",
+      "type": "boolean",
+      "label": "Connection pool leak details",
+      "checkboxLabel": "Capture stack trace location of connection pool leaks",
+      "description": "Capture the stack trace location for any connection borrowed from a connection pool that is not returned back to the pool. This defaults to false since it requires capturing a stack trace every time a connection is borrowed, which has non-negligible overhead."
+    },
+    {
       "name": "captureGetConnection",
       "type": "boolean",
       "default": true,
@@ -87,6 +94,7 @@
     "org.glowroot.agent.plugin.jdbc.StatementAspect",
     "org.glowroot.agent.plugin.jdbc.ResultSetAspect",
     "org.glowroot.agent.plugin.jdbc.ConnectionAspect",
-    "org.glowroot.agent.plugin.jdbc.DataSourceAspect"
+    "org.glowroot.agent.plugin.jdbc.DataSourceAspect",
+    "org.glowroot.agent.plugin.jdbc.ObjectPoolAspect"
   ]
 }

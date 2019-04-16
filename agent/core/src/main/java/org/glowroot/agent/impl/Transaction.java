@@ -103,6 +103,8 @@ public class Transaction {
     private static final int TRANSACTION_AUX_THREAD_CONTEXT_LIMIT =
             Integer.getInteger("glowroot.transaction.aux.thread.context.limit", 1000);
 
+    private static final StackTraceElement[] EMPTY_STACK_TRACE = new StackTraceElement[0];
+
     private static final Random random = new Random();
 
     private volatile @Nullable String traceId;
@@ -189,6 +191,8 @@ public class Transaction {
     private final Object sharedQueryTextCollectionLock = new Object();
     @GuardedBy("sharedQueryTextCollectionLock")
     private @MonotonicNonNull SharedQueryTextCollectionImpl sharedQueryTextCollection;
+
+    private Map<Object, StackTraceElement[]> unreleasedResources = Maps.newConcurrentMap();
 
     private volatile boolean waitingToEndAsync;
     private volatile boolean completed;
@@ -808,6 +812,20 @@ public class Transaction {
         profile.addStackTrace(threadInfo);
     }
 
+    void trackResourceAcquired(Object resource, boolean withLocationStackTrace) {
+        if (withLocationStackTrace) {
+            unreleasedResources.put(resource, Thread.currentThread().getStackTrace());
+        } else {
+            unreleasedResources.put(resource, EMPTY_STACK_TRACE);
+        }
+    }
+
+    void trackResourceReleased(Object resource) {
+        // not checking if resource was really in map, because it's _possible_ that it's intentional
+        // for one transaction to release a resource that was acquired by another transaction
+        unreleasedResources.remove(resource);
+    }
+
     void setWaitingToEndAsync() {
         waitingToEndAsync = true;
     }
@@ -832,6 +850,30 @@ public class Transaction {
             // in startAuxThreadContext()
             completed = true;
             detachIncompleteAuxThreadContexts();
+        }
+        if (!unreleasedResources.isEmpty()) {
+            boolean first = true;
+            for (Map.Entry<Object, StackTraceElement[]> entry : unreleasedResources.entrySet()) {
+                ErrorMessage errorMessage = ErrorMessage.create("Resource leaked", null,
+                        getThrowableFrameLimitCounter());
+                if (first) {
+                    this.errorMessage = errorMessage;
+                }
+                StackTraceElement[] locationStackTrace = entry.getValue();
+                TraceEntryImpl traceEntry = mainThreadContext.addErrorEntry(endTick, endTick,
+                        MessageSupplier.create("Resource leaked (acquired during the transaction"
+                                + " and not released): " + entry.getKey().getClass().getName()),
+                        null, errorMessage);
+                if (locationStackTrace.length != 0) {
+                    // strip up through this method, plus 1 additional method (the plugin advice
+                    // method)
+                    int index = ThreadContextImpl.getNormalizedStartIndex(locationStackTrace,
+                            "trackResourceAcquired", 2);
+                    traceEntry.setLocationStackTrace(ImmutableList.copyOf(locationStackTrace)
+                            .subList(index, locationStackTrace.length));
+                }
+                first = false;
+            }
         }
         if (immedateTraceStoreRunnable != null) {
             immedateTraceStoreRunnable.cancel();
