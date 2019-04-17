@@ -163,8 +163,8 @@ public class ExecutorAspect {
     @Pointcut(className = "java.lang.Thread", methodName = "<init>", methodParameterTypes = {},
             nestingGroup = "executor-execute")
     public static class ThreadInitAdvice {
-        @OnBefore
-        public static void onBefore(ThreadContext context, @BindReceiver Thread thread) {
+        @OnReturn
+        public static void onReturn(ThreadContext context, @BindReceiver Thread thread) {
             onThreadInitCommon(context, thread);
         }
     }
@@ -172,8 +172,8 @@ public class ExecutorAspect {
     @Pointcut(className = "java.lang.Thread", methodName = "<init>",
             methodParameterTypes = {"java.lang.String"}, nestingGroup = "executor-execute")
     public static class ThreadInitWithStringAdvice {
-        @OnBefore
-        public static void onBefore(ThreadContext context, @BindReceiver Thread thread) {
+        @OnReturn
+        public static void onReturn(ThreadContext context, @BindReceiver Thread thread) {
             onThreadInitCommon(context, thread);
         }
     }
@@ -182,8 +182,8 @@ public class ExecutorAspect {
             methodParameterTypes = {"java.lang.ThreadGroup", "java.lang.String"},
             nestingGroup = "executor-execute")
     public static class ThreadInitWithStringAndThreadGroupAdvice {
-        @OnBefore
-        public static void onBefore(ThreadContext context, @BindReceiver Thread thread) {
+        @OnReturn
+        public static void onReturn(ThreadContext context, @BindReceiver Thread thread) {
             onThreadInitCommon(context, thread);
         }
     }
@@ -191,10 +191,19 @@ public class ExecutorAspect {
     @Pointcut(className = "java.lang.Thread", methodName = "<init>",
             methodParameterTypes = {"java.lang.Runnable", ".."}, nestingGroup = "executor-execute")
     public static class ThreadInitWithRunnableAdvice {
+        // cannot use @BindReceiver in @OnBefore of a constructor (at least not in OpenJ9, and for
+        // good reason since receiver is not initialized before call to super)
         @OnBefore
-        public static void onBefore(ThreadContext context, @BindReceiver Thread thread,
+        public static boolean onBefore(ThreadContext context,
                 @BindParameter ParameterHolder<Runnable> runnableHolder) {
-            onThreadInitCommon(context, thread, runnableHolder);
+            return onThreadInitCommon(context, runnableHolder);
+        }
+        @OnReturn
+        public static void onReturn(ThreadContext context, @BindTraveler boolean alreadyHandled,
+                @BindReceiver Thread thread) {
+            if (!alreadyHandled && thread instanceof RunnableEtcMixin) {
+                onBeforeCommon(context, (RunnableEtcMixin) thread);
+            }
         }
     }
 
@@ -202,11 +211,20 @@ public class ExecutorAspect {
             methodParameterTypes = {"java.lang.ThreadGroup", "java.lang.Runnable", ".."},
             nestingGroup = "executor-execute")
     public static class ThreadInitWithThreadGroupAdvice {
+        // cannot use @BindReceiver in @OnBefore of a constructor (at least not in OpenJ9, and for
+        // good reason since receiver is not initialized before call to super)
         @OnBefore
-        public static void onBefore(ThreadContext context, @BindReceiver Thread thread,
+        public static boolean onBefore(ThreadContext context,
                 @SuppressWarnings("unused") @BindParameter ThreadGroup threadGroup,
                 @BindParameter ParameterHolder<Runnable> runnableHolder) {
-            onThreadInitCommon(context, thread, runnableHolder);
+            return onThreadInitCommon(context, runnableHolder);
+        }
+        @OnReturn
+        public static void onReturn(ThreadContext context, @BindTraveler boolean alreadyHandled,
+                @BindReceiver Thread thread) {
+            if (!alreadyHandled && thread instanceof RunnableEtcMixin) {
+                onBeforeCommon(context, (RunnableEtcMixin) thread);
+            }
         }
     }
 
@@ -515,21 +533,19 @@ public class ExecutorAspect {
         }
     }
 
-    private static void onThreadInitCommon(ThreadContext context, Thread thread,
+    private static boolean onThreadInitCommon(ThreadContext context,
             ParameterHolder<Runnable> runnableHolder) {
         Runnable runnable = runnableHolder.get();
         if (!(runnable instanceof SuppressedRunnableMixin)) {
             if (runnable instanceof RunnableEtcMixin) {
                 onBeforeCommon(context, (RunnableEtcMixin) runnable);
-                return;
+                return true;
             } else if (runnable != null && runnable.getClass().getName().contains("$$Lambda$")) {
                 wrapRunnable(runnableHolder, context);
-                return;
+                return true;
             }
         }
-        if (thread instanceof RunnableEtcMixin) {
-            onBeforeCommon(context, (RunnableEtcMixin) thread);
-        }
+        return false;
     }
 
     private static void onBeforeCommon(ThreadContext context, RunnableEtcMixin runnableEtc) {
