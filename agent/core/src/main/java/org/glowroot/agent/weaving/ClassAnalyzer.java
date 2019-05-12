@@ -57,6 +57,7 @@ import org.glowroot.common.config.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.AlreadyInTransactionBehavior;
 import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
 import static org.objectweb.asm.Opcodes.ASM7;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
@@ -669,6 +670,7 @@ class ClassAnalyzer {
                     .traceEntryMessageTemplate(
                             "EJB remote: " + entry.getValue() + ".{{methodName}}()")
                     .timerName("ejb remote")
+                    .alreadyInTransactionBehavior(AlreadyInTransactionBehavior.CAPTURE_TRACE_ENTRY)
                     .build());
         }
         ImmutableMap<Advice, LazyDefinedClass> newAdvisors =
