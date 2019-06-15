@@ -984,7 +984,9 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     @Override
     public void trackResourceAcquired(Object resource, boolean withLocationStackTrace) {
-        transaction.trackResourceAcquired(resource, withLocationStackTrace);
+        if (!isAuxiliary()) {
+            transaction.trackResourceAcquired(resource, withLocationStackTrace);
+        }
     }
 
     @Override
