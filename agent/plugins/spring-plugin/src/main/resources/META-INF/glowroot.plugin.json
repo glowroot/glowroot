@@ -47,6 +47,18 @@
       "transactionNameTemplate": "Spring scheduled: {{this.class.simpleName}}#{{methodName}}",
       "traceEntryMessageTemplate": "Spring scheduled: {{this.class.name}}.{{methodName}}()",
       "timerName": "spring scheduled"
+    },
+    {
+      "classAnnotation": "org.springframework.stereotype.Component|org.springframework.stereotype.Service",
+      "methodAnnotation": "org.springframework.amqp.rabbit.annotation.RabbitListener",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "captureKind": "transaction",
+      "transactionType": "Background",
+      "transactionNameTemplate": "Spring amqp: {{this.class.simpleName}}#{{methodName}}",
+      "traceEntryMessageTemplate": "Spring amqp: {{this.class.name}}.{{methodName}}()",
+      "timerName": "spring amqp"
     }
   ],
   "aspects": [
