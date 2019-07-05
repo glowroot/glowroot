@@ -15,6 +15,9 @@ EXPOSE 4000 8181
 COPY docker-entrypoint.sh /usr/local/bin/
 COPY glowroot-central.sh /usr/local/bin/
 
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
+             /usr/local/bin/glowroot-central.sh
+
 WORKDIR /usr/share/glowroot-central
 
 USER glowroot:glowroot
