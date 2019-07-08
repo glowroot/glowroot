@@ -57,10 +57,6 @@ matrix:
       env: TARGET=test3 TEST_SHADED=true GLOWROOT_HARNESS=javaagent
     - jdk: openjdk9
       env: TARGET=test4 TEST_SHADED=true GLOWROOT_HARNESS=javaagent
-    - jdk: openjdk7
-      env: TARGET=test1 TEST_SHADED=true GLOWROOT_HARNESS=javaagent
-    - jdk: openjdk7
-      env: TARGET=test2 TEST_SHADED=true GLOWROOT_HARNESS=javaagent
     - jdk: openjdk8
       env: TARGET=test1 TEST_SHADED=false GLOWROOT_HARNESS=javaagent
     - jdk: openjdk8
