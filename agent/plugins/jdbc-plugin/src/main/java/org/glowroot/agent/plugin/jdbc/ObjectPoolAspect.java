@@ -23,12 +23,16 @@ import org.glowroot.agent.plugin.api.config.ConfigService;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.BindReturn;
+import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class ObjectPoolAspect {
 
     private static final ConfigService configService = Agent.getConfigService("jdbc");
+
+    private static final BooleanProperty captureConnectionPoolLeaks =
+            configService.getBooleanProperty("captureConnectionPoolLeaks");
 
     private static final BooleanProperty captureConnectionPoolLeakDetails =
             configService.getBooleanProperty("captureConnectionPoolLeakDetails");
@@ -38,6 +42,10 @@ public class ObjectPoolAspect {
                     + "|org.apache.commons.pool2.impl.GenericObjectPool",
             methodName = "borrowObject", methodParameterTypes = {".."})
     public static class DbcpBorrowAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return captureConnectionPoolLeaks.value();
+        }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable Object resource, ThreadContext context) {
             if (resource != null) {
@@ -52,6 +60,10 @@ public class ObjectPoolAspect {
             methodName = "returnObject|invalidateObject",
             methodParameterTypes = {"java.lang.Object"})
     public static class DbcpReturnAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return captureConnectionPoolLeaks.value();
+        }
         @OnReturn
         public static void onReturn(ThreadContext context,
                 @BindParameter @Nullable Object resource) {
@@ -65,6 +77,10 @@ public class ObjectPoolAspect {
             className = "org.apache.tomcat.jdbc.pool.ConnectionPool",
             methodName = "borrowConnection", methodParameterTypes = {".."})
     public static class TomcatBorrowAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return captureConnectionPoolLeaks.value();
+        }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable Object resource, ThreadContext context) {
             if (resource != null) {
@@ -78,6 +94,10 @@ public class ObjectPoolAspect {
             methodName = "returnConnection",
             methodParameterTypes = {"org.apache.tomcat.jdbc.pool.PooledConnection"})
     public static class TomcatReturnAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return captureConnectionPoolLeaks.value();
+        }
         @OnReturn
         public static void onReturn(ThreadContext context,
                 @BindParameter @Nullable Object resource) {
@@ -92,6 +112,10 @@ public class ObjectPoolAspect {
             methodParameterTypes = {"javax.security.auth.Subject",
                     "javax.resource.spi.ConnectionRequestInfo"})
     public static class GlassfishBorrowAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return captureConnectionPoolLeaks.value();
+        }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable Object resource, ThreadContext context) {
             if (resource != null) {
@@ -104,6 +128,10 @@ public class ObjectPoolAspect {
             className = "com.sun.gjc.spi.ManagedConnectionImpl", methodName = "connectionClosed",
             methodParameterTypes = {"java.lang.Exception", "com.sun.gjc.spi.base.ConnectionHolder"})
     public static class GlassfishReturnAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return captureConnectionPoolLeaks.value();
+        }
         @OnReturn
         public static void onReturn(ThreadContext context,
                 @SuppressWarnings("unused") @BindParameter @Nullable Exception e,
@@ -118,6 +146,10 @@ public class ObjectPoolAspect {
             className = "com.zaxxer.hikari.pool.BaseHikariPool", methodName = "getConnection",
             methodParameterTypes = {"long"})
     public static class HikariBorrowAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return captureConnectionPoolLeaks.value();
+        }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable Object resource, ThreadContext context) {
             if (resource != null) {
@@ -130,6 +162,10 @@ public class ObjectPoolAspect {
             className = "com.zaxxer.hikari.proxy.ConnectionProxy", methodName = "close",
             methodParameterTypes = {})
     public static class HikariReturnAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return captureConnectionPoolLeaks.value();
+        }
         @OnReturn
         public static void onReturn(ThreadContext context, @BindReceiver Object connectionProxy) {
             context.trackResourceReleased(connectionProxy);
@@ -140,6 +176,10 @@ public class ObjectPoolAspect {
             className = "bitronix.tm.resource.jdbc.PoolingDataSource", methodName = "getConnection",
             methodParameterTypes = {})
     public static class BitronixBorrowAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return captureConnectionPoolLeaks.value();
+        }
         @OnReturn
         public static void onReturn(@BindReturn @Nullable Object resource, ThreadContext context) {
             if (resource != null) {
@@ -152,6 +192,10 @@ public class ObjectPoolAspect {
             className = "bitronix.tm.resource.jdbc.proxy.ConnectionJavaProxy", methodName = "close",
             methodParameterTypes = {})
     public static class BitronixReturnAdvice {
+        @IsEnabled
+        public static boolean isEnabled() {
+            return captureConnectionPoolLeaks.value();
+        }
         @OnReturn
         public static void onReturn(ThreadContext context, @BindReceiver Object connectionProxy) {
             context.trackResourceReleased(connectionProxy);

@@ -33,6 +33,13 @@
       "description": "Capture timings for executions of ResultSet.get*() to read the individual column values out of a result set record. This defaults to false since the number of calls can be excessive and generally ResultSet.next() captures more interesting info with less overhead."
     },
     {
+      "name": "captureConnectionPoolLeaks",
+      "type": "boolean",
+      "label": "Connection pool leaks",
+      "checkboxLabel": "Capture connection pool leaks",
+      "description": "Mark transactions as errors if they fail to return a connection back to a connection pool. This feature is experimental (currently generates false positives in some environments)."
+    },
+    {
       "name": "captureConnectionPoolLeakDetails",
       "type": "boolean",
       "label": "Connection pool leak details",

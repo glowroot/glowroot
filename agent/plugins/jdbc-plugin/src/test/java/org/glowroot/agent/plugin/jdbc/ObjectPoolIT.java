@@ -62,6 +62,10 @@ public class ObjectPoolIT {
         // this is needed for multi-lib-tests, to isolate changing one version at a time
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.COMMONS_DBCP_WRAPPED));
 
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionPoolLeaks",
+                true);
+
         // when
         Trace trace = container.execute(ReturnCommonsDbcpConnection.class);
 
@@ -78,6 +82,10 @@ public class ObjectPoolIT {
 
         // this is needed for multi-lib-tests, to isolate changing one version at a time
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.COMMONS_DBCP_WRAPPED));
+
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionPoolLeaks",
+                true);
 
         // when
         Trace trace = container.execute(LeakCommonsDbcpConnection.class);
@@ -100,6 +108,10 @@ public class ObjectPoolIT {
         // this is needed for multi-lib-tests, to isolate changing one version at a time
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.COMMONS_DBCP2_WRAPPED));
 
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionPoolLeaks",
+                true);
+
         // when
         Trace trace = container.execute(ReturnCommonsDbcp2Connection.class);
 
@@ -116,6 +128,10 @@ public class ObjectPoolIT {
 
         // this is needed for multi-lib-tests, to isolate changing one version at a time
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.COMMONS_DBCP2_WRAPPED));
+
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionPoolLeaks",
+                true);
 
         // when
         Trace trace = container.execute(LeakCommonsDbcp2Connection.class);
@@ -138,6 +154,10 @@ public class ObjectPoolIT {
         // this is needed for multi-lib-tests, to isolate changing one version at a time
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.TOMCAT_JDBC_POOL_WRAPPED));
 
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionPoolLeaks",
+                true);
+
         // when
         Trace trace = container.execute(ReturnTomcatConnection.class);
 
@@ -154,6 +174,10 @@ public class ObjectPoolIT {
 
         // this is needed for multi-lib-tests, to isolate changing one version at a time
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.TOMCAT_JDBC_POOL_WRAPPED));
+
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionPoolLeaks",
+                true);
 
         // when
         Trace trace = container.execute(LeakTomcatConnection.class);
@@ -176,6 +200,10 @@ public class ObjectPoolIT {
         // this is needed for multi-lib-tests, to isolate changing one version at a time
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.TOMCAT_JDBC_POOL_WRAPPED));
 
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionPoolLeaks",
+                true);
+
         // when
         Trace trace = container.execute(ReturnTomcatAsyncConnection.class);
 
@@ -192,6 +220,10 @@ public class ObjectPoolIT {
 
         // this is needed for multi-lib-tests, to isolate changing one version at a time
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.TOMCAT_JDBC_POOL_WRAPPED));
+
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionPoolLeaks",
+                true);
 
         // when
         Trace trace = container.execute(LeakTomcatAsyncConnection.class);
@@ -215,6 +247,10 @@ public class ObjectPoolIT {
         assumeTrue(
                 Connections.getConnectionType().equals(ConnectionType.GLASSFISH_JDBC_POOL_WRAPPED));
 
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionPoolLeaks",
+                true);
+
         // when
         Trace trace = container.execute(ReturnGlassfishConnection.class);
 
@@ -232,6 +268,10 @@ public class ObjectPoolIT {
         // this is needed for multi-lib-tests, to isolate changing one version at a time
         assumeTrue(
                 Connections.getConnectionType().equals(ConnectionType.GLASSFISH_JDBC_POOL_WRAPPED));
+
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionPoolLeaks",
+                true);
 
         // when
         Trace trace = container.execute(LeakGlassfishConnection.class);
@@ -254,6 +294,10 @@ public class ObjectPoolIT {
         // this is needed for multi-lib-tests, to isolate changing one version at a time
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.HIKARI_CP_WRAPPED));
 
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionPoolLeaks",
+                true);
+
         // when
         Trace trace = container.execute(ReturnHikariConnection.class);
 
@@ -270,6 +314,10 @@ public class ObjectPoolIT {
 
         // this is needed for multi-lib-tests, to isolate changing one version at a time
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.HIKARI_CP_WRAPPED));
+
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionPoolLeaks",
+                true);
 
         // when
         Trace trace = container.execute(LeakHikariConnection.class);
@@ -292,6 +340,10 @@ public class ObjectPoolIT {
         // this is needed for multi-lib-tests, to isolate changing one version at a time
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.BITRONIX_WRAPPED));
 
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionPoolLeaks",
+                true);
+
         // when
         Trace trace = container.execute(ReturnBitronixConnection.class);
 
@@ -308,6 +360,10 @@ public class ObjectPoolIT {
 
         // this is needed for multi-lib-tests, to isolate changing one version at a time
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.BITRONIX_WRAPPED));
+
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionPoolLeaks",
+                true);
 
         // when
         Trace trace = container.execute(LeakBitronixConnection.class);
@@ -329,6 +385,10 @@ public class ObjectPoolIT {
 
         // this is needed for multi-lib-tests, to isolate changing one version at a time
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.COMMONS_DBCP_WRAPPED));
+
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionPoolLeaks",
+                true);
 
         // when
         Trace trace = container.execute(LeakMultipleDbcpConnections.class);
@@ -356,6 +416,8 @@ public class ObjectPoolIT {
         assumeTrue(Connections.getConnectionType().equals(ConnectionType.COMMONS_DBCP_WRAPPED));
 
         // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureConnectionPoolLeaks",
+                true);
         container.getConfigService().setPluginProperty(PLUGIN_ID,
                 "captureConnectionPoolLeakDetails", true);
 

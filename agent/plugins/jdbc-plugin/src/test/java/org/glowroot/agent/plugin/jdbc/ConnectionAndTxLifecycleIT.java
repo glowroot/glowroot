@@ -190,9 +190,6 @@ public class ConnectionAndTxLifecycleIT {
         assertThat(entry.getError().getMessage())
                 .isEqualTo("java.sql.SQLException: A close failure");
 
-        entry = i.next();
-        assertThat(entry.getMessage()).startsWith("Resource leak");
-
         assertThat(i.hasNext()).isFalse();
     }
 
@@ -209,13 +206,7 @@ public class ConnectionAndTxLifecycleIT {
         Trace.Header header = trace.getHeader();
         Trace.Timer rootTimer = header.getMainThreadRootTimer();
         assertThat(rootTimer.getChildTimerList()).isEmpty();
-
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.getMessage()).startsWith("Resource leak");
-
-        assertThat(i.hasNext()).isFalse();
+        assertThat(header.getEntryCount()).isZero();
     }
 
     @Test
@@ -235,13 +226,7 @@ public class ConnectionAndTxLifecycleIT {
         childTimerNames.add(rootTimer.getChildTimerList().get(0).getName());
         childTimerNames.add(rootTimer.getChildTimerList().get(1).getName());
         assertThat(childTimerNames).containsOnly("jdbc get connection", "jdbc connection close");
-
-        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
-
-        Trace.Entry entry = i.next();
-        assertThat(entry.getMessage()).startsWith("Resource leak");
-
-        assertThat(i.hasNext()).isFalse();
+        assertThat(header.getEntryCount()).isZero();
     }
 
     @Test
