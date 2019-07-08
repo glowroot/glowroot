@@ -111,7 +111,8 @@ public class LazyPlatformMBeanServer {
         boolean jbossModules = "org.jboss.modules.Main".equals(mainClass);
         boolean wildflySwarm = "org.wildfly.swarm.bootstrap.Main".equals(mainClass);
         boolean oldJBoss = "org.jboss.Main".equals(mainClass);
-        boolean glassfish = "com.sun.enterprise.glassfish.bootstrap.ASMain".equals(mainClass);
+        boolean glassfish = "com.sun.enterprise.glassfish.bootstrap.ASMain".equals(mainClass)
+                || "com.sun.enterprise.server.PELaunch".equals(mainClass);
         boolean weblogic = "weblogic.Server".equals(mainClass);
         boolean websphere = "com.ibm.wsspi.bootstrap.WSPreLauncher".equals(mainClass);
         waitForContainerToCreatePlatformMBeanServer =
