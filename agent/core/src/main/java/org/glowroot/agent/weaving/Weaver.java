@@ -61,6 +61,7 @@ import org.glowroot.common.util.ScheduledRunnable.TerminateSubsequentExecutionsE
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.objectweb.asm.Opcodes.ASM7;
+import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.V1_6;
 
 public class Weaver {
@@ -187,6 +188,12 @@ public class Weaver {
         if (accv.isConstructorPointcut()) {
             ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
             ClassVisitor cv = new PointcutClassVisitor(cw);
+            ClassReader cr = new ClassReader(classBytes);
+            cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
+            maybeProcessedBytes = cw.toByteArray();
+        } else if (className.equals(ImportantClassNames.JBOSS_WELD_HACK_CLASS_NAME)) {
+            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            ClassVisitor cv = new JBossWeldHackClassVisitor(cw);
             ClassReader cr = new ClassReader(classBytes);
             cr.accept(new JSRInlinerClassVisitor(cv), parsingOptions);
             maybeProcessedBytes = cw.toByteArray();
@@ -399,6 +406,45 @@ public class Weaver {
         private ActiveWeaving(long threadId, long startTick) {
             this.threadId = threadId;
             this.startTick = startTick;
+        }
+    }
+
+    private static class JBossWeldHackClassVisitor extends ClassVisitor {
+
+        private final ClassWriter cw;
+
+        private JBossWeldHackClassVisitor(ClassWriter cw) {
+            super(ASM7, cw);
+            this.cw = cw;
+        }
+
+        @Override
+        public @Nullable MethodVisitor visitMethod(int access, String name, String descriptor,
+                @Nullable String signature, String /*@Nullable*/ [] exceptions) {
+            MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
+            if (name.equals("checkDelegateType")
+                    && descriptor.equals("(Ljavax/enterprise/inject/spi/Decorator;)V")) {
+                return new JBossWeldHackMethodVisitor(mv);
+            } else {
+                return mv;
+            }
+        }
+    }
+
+    private static class JBossWeldHackMethodVisitor extends MethodVisitor {
+
+        private JBossWeldHackMethodVisitor(MethodVisitor mv) {
+            super(ASM7, mv);
+        }
+
+        @Override
+        public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
+                boolean itf) {
+            super.visitMethodInsn(opcode, owner, name, descriptor, itf);
+            if (name.equals("getDecoratedTypes") && descriptor.equals("()Ljava/util/Set;")) {
+                super.visitMethodInsn(INVOKESTATIC, "org/glowroot/agent/bytecode/api/Util",
+                        "stripGlowrootTypes", "(Ljava/util/Set;)Ljava/util/Set;", false);
+            }
         }
     }
 

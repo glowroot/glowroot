@@ -339,6 +339,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.glowroot.agent.weaving.Weaver$ClassLoaderHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$JBossUrlHackClassVisitor");
         types.add("org.glowroot.agent.weaving.Weaver$JBossUrlHackMethodVisitor");
+        types.add("org.glowroot.agent.weaving.Weaver$JBossWeldHackClassVisitor");
+        types.add("org.glowroot.agent.weaving.Weaver$JBossWeldHackMethodVisitor");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice$Builder");
         types.add("org.glowroot.agent.weaving.ImmutableAdvice$InitShim");

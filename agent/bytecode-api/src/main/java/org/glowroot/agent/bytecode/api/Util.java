@@ -16,6 +16,9 @@
 package org.glowroot.agent.bytecode.api;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Type;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class Util {
 
@@ -26,5 +29,31 @@ public class Util {
             return type;
         }
         return getArrayClass(Array.newInstance(type, 0).getClass(), nDimensions - 1);
+    }
+
+    public static Set<Type> stripGlowrootTypes(Set<Type> decoratedTypes) {
+        boolean found = false;
+        for (Type decoratedType : decoratedTypes) {
+            if (isGlowrootType(decoratedType)) {
+                found = true;
+            }
+        }
+        if (!found) {
+            // optimization of common case
+            return decoratedTypes;
+        }
+        // linked hash set to preserve ordering
+        Set<Type> stripped = new LinkedHashSet<Type>();
+        for (Type decoratedType : decoratedTypes) {
+            if (!isGlowrootType(decoratedType)) {
+                stripped.add(decoratedType);
+            }
+        }
+        return stripped;
+    }
+
+    private static boolean isGlowrootType(Type decoratedType) {
+        return decoratedType instanceof Class
+                && ((Class<?>) decoratedType).getName().startsWith("org.glowroot.agent.");
     }
 }

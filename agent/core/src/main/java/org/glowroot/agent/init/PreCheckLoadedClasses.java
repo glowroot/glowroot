@@ -49,8 +49,9 @@ public class PreCheckLoadedClasses {
             System.getProperty("glowroot.test.dir") != null && isShaded();
 
     static {
-        List<String> importantClassNames =
-                Arrays.asList(ImportantClassNames.JBOSS_URL_HACK_CLASS_NAME.replace('/', '.'));
+        List<String> importantClassNames = Arrays.asList(
+                ImportantClassNames.JBOSS_WELD_HACK_CLASS_NAME.replace('/', '.'),
+                ImportantClassNames.JBOSS_URL_HACK_CLASS_NAME.replace('/', '.'));
         IMPORTANT_CLASS_NAMES = new HashSet<String>(importantClassNames);
     }
 
