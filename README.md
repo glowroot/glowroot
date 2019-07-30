@@ -62,7 +62,7 @@ Browser-based integration tests are run using WebDriver.  By default they run ag
 Microbenchmarks are written using the excellent [JMH](http://openjdk.java.net/projects/code-tools/jmh/) benchmark harness. The microbenchmarks can be built and run under [agent/benchmarks](agent/benchmarks):
 
     mvn clean package
-    java -jar target/benchmarks.jar -jvmArgs -javaagent:path/to/glowroot.jar
+    java -jvmArgs -javaagent:path/to/glowroot.jar -jar target/benchmarks.jar 
 
 ## Code quality
 
