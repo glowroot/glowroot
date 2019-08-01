@@ -1,6 +1,8 @@
 FROM openjdk:8
 
 COPY target/glowroot-central-*.zip /tmp/glowroot-central.zip
+COPY docker-entrypoint.sh /usr/local/bin/
+COPY glowroot-central.sh /usr/local/bin/
 
 RUN unzip -d /usr/share /tmp/glowroot-central.zip \
     && rm /tmp/glowroot-central.zip \
@@ -8,12 +10,11 @@ RUN unzip -d /usr/share /tmp/glowroot-central.zip \
     && echo '\ncassandra.symmetricEncryptionKey=' >> /usr/share/glowroot-central/glowroot-central.properties \
     && groupadd -r glowroot \
     && useradd --no-log-init -r -g glowroot glowroot \
-    && chown -R glowroot:glowroot /usr/share/glowroot-central
+    && chown -R glowroot:glowroot /usr/share/glowroot-central \
+    && chmod a+x /usr/local/bin/docker-entrypoint.sh \
+    && chmod a+x /usr/local/bin/glowroot-central.sh
 
 EXPOSE 4000 8181
-
-COPY docker-entrypoint.sh /usr/local/bin/
-COPY glowroot-central.sh /usr/local/bin/
 
 WORKDIR /usr/share/glowroot-central
 
