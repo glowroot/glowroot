@@ -304,7 +304,12 @@
                 <requireMavenVersion>
                   <version>[3.3.1,)</version>
                 </requireMavenVersion>
-                <requireUpperBoundDeps />
+                <requireUpperBoundDeps>
+                  <excludes>
+                    <!-- Exclude until infinispan-core 10.0 is released -->
+                    <exclude>org.jgroups:jgroups</exclude>
+                  </excludes>
+                </requireUpperBoundDeps>
               </rules>
             </configuration>
           </execution>

@@ -72,7 +72,19 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
-      <version>9.4.5.Final</version>
+      <version>9.4.16.Final</version>
+    </dependency>
+    <!-- jgroups-kubernetes specifies that it requires 4.1.x but it works fine with 4.0.x. On the other
+      hand infinispan-core does not work with 4.1.x -->
+    <dependency>
+      <groupId>org.jgroups</groupId>
+      <artifactId>jgroups</artifactId>
+      <version>4.0.21.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jgroups.kubernetes</groupId>
+      <artifactId>jgroups-kubernetes</artifactId>
+      <version>1.0.12.Final</version>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
