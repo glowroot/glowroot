@@ -287,6 +287,10 @@ HandlebarsRendering = (function () {
     return formatMillis(value);
   });
 
+  Handlebars.registerHelper('nanosToReadable', function (value) {
+    return nanosToReadable(value);
+  });
+
   Handlebars.registerHelper('formatInteger', function (value) {
     return value.toLocaleString();
   });
@@ -1634,6 +1638,30 @@ HandlebarsRendering = (function () {
     }
   }
 
+  function nanosToReadable(nanos) {
+    var millis = nanos ? Math.floor(nanos / 1000000) : 0;
+    var hours;
+    var minutes;
+    var seconds;
+    // more than 1 hour
+    if (millis > 3600000) {
+      hours = Math.floor(millis / 3600000);
+      minutes = (millis - hours * 3600000) / 60000;
+      return formatWithExactlyZeroFractionalDigit(hours) + ' '
+          + (hours > 1 ? 'hours' : 'hour') + ' '
+          + formatWithExactlyOneFractionalDigit(minutes) + ' minutes';
+    }
+    // more than 1 minute
+    if (millis > 60000) {
+      minutes = Math.floor(millis / 60000);
+      seconds = (millis - minutes * 60000) / 1000;
+      return formatWithExactlyZeroFractionalDigit(minutes) + ' '
+          + (minutes > 1 ? 'minutes' : 'minute') + ' '
+          + formatWithExactlyOneFractionalDigit(seconds) + ' seconds';
+    }
+    return formatMillis(millis) + ' milliseconds';
+  }
+
   function formatMillis(millis) {
     if (Math.abs(millis) < 0.0000005) {
       // less than 0.5 nanoseconds
@@ -1683,6 +1711,10 @@ HandlebarsRendering = (function () {
 
   function formatWithExactlyOneFractionalDigit(value) {
     return (Math.round(value * 10) / 10).toLocaleString(undefined, {minimumFractionDigits: 1});
+  }
+
+  function formatWithExactlyZeroFractionalDigit(value) {
+    return Math.round(value).toLocaleString(undefined);
   }
 
   function registerShowMoreHandler(breakdown) {
