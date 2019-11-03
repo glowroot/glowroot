@@ -85,9 +85,9 @@
 </div>
 <div>
   <div class="gt-trace-attr-name">Duration:&nbsp;</div>
-  <div class="gt-trace-attr-value"><!--
+  <div class="gt-trace-attr-value" title="{{nanosToReadable durationNanos}}"><!--
     lack of space here is significant because of gt-pre-wrap (which is mixin to gt-trace-attr-value)
- -->{{nanosToReadable durationNanos}}{{#if active}}..{{^}}{{#if partial}}..{{/if}}{{/if}}<!--
+ -->{{nanosToMillis durationNanos}}{{#if active}}..{{^}}{{#if partial}}..{{/if}}{{/if}}&nbsp;milliseconds<!--
 --></div>
 </div>
 {{#if user}}
@@ -127,7 +127,7 @@
                 {{name}}
               </div>
             </td>
-            <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+            <td title="{{nanosToReadable totalNanos}}">{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
             <td>{{formatInteger count}}</td>
           </tr>
         {{/each}}
@@ -184,7 +184,7 @@
                 </div>
               </div>
             </td>
-            <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+            <td title="{{nanosToReadable totalNanos}}">{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
             <td>{{formatInteger count}}</td>
           </tr>
         {{/each}}
@@ -242,7 +242,7 @@
                 {{name}}
               </div>
             </td>
-            <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+            <td title="{{nanosToReadable totalNanos}}">{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
             <td>{{formatInteger count}}</td>
           </tr>
         {{/each}}
@@ -298,7 +298,7 @@
                 </div>
               </div>
             </td>
-            <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+            <td title="{{nanosToReadable totalNanos}}">{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
             <td>{{formatInteger count}}</td>
           </tr>
         {{/each}}
@@ -356,7 +356,7 @@
                 {{name}}
               </div>
             </td>
-            <td>{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+            <td title="{{nanosToReadable totalNanos}}">{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
             <td>{{formatInteger count}}</td>
           </tr>
         {{/each}}
