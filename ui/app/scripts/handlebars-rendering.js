@@ -287,8 +287,8 @@ HandlebarsRendering = (function () {
     return formatMillis(value);
   });
 
-  Handlebars.registerHelper('nanosToReadable', function (value) {
-    return nanosToReadable(value);
+  Handlebars.registerHelper('formatNanos', function (value) {
+    return formatNanos(value);
   });
 
   Handlebars.registerHelper('formatInteger', function (value) {
@@ -1638,7 +1638,7 @@ HandlebarsRendering = (function () {
     }
   }
 
-  function nanosToReadable(nanos) {
+  function formatNanos(nanos) {
     var millis = nanos ? Math.floor(nanos / 1000000) : 0;
     var hours;
     var minutes;
