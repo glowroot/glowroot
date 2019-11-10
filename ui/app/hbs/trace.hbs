@@ -85,7 +85,7 @@
 </div>
 <div>
   <div class="gt-trace-attr-name">Duration:&nbsp;</div>
-  <div class="gt-trace-attr-value" title="{{nanosToReadable durationNanos}}"><!--
+  <div class="gt-trace-attr-value" title="{{formatNanos durationNanos}}"><!--
     lack of space here is significant because of gt-pre-wrap (which is mixin to gt-trace-attr-value)
  -->{{nanosToMillis durationNanos}}{{#if active}}..{{^}}{{#if partial}}..{{/if}}{{/if}}&nbsp;milliseconds<!--
 --></div>
@@ -127,7 +127,7 @@
                 {{name}}
               </div>
             </td>
-            <td title="{{nanosToReadable totalNanos}}">{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+            <td title="{{formatNanos totalNanos}}">{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
             <td>{{formatInteger count}}</td>
           </tr>
         {{/each}}
@@ -184,7 +184,7 @@
                 </div>
               </div>
             </td>
-            <td title="{{nanosToReadable totalNanos}}">{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+            <td title="{{formatNanos totalNanos}}">{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
             <td>{{formatInteger count}}</td>
           </tr>
         {{/each}}
@@ -242,7 +242,7 @@
                 {{name}}
               </div>
             </td>
-            <td title="{{nanosToReadable totalNanos}}">{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+            <td title="{{formatNanos totalNanos}}">{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
             <td>{{formatInteger count}}</td>
           </tr>
         {{/each}}
@@ -298,7 +298,7 @@
                 </div>
               </div>
             </td>
-            <td title="{{nanosToReadable totalNanos}}">{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+            <td title="{{formatNanos totalNanos}}">{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
             <td>{{formatInteger count}}</td>
           </tr>
         {{/each}}
@@ -356,7 +356,7 @@
                 {{name}}
               </div>
             </td>
-            <td title="{{nanosToReadable totalNanos}}">{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
+            <td title="{{formatNanos totalNanos}}">{{nanosToMillis totalNanos}}{{#if active}}..{{/if}}</td>
             <td>{{formatInteger count}}</td>
           </tr>
         {{/each}}
@@ -372,19 +372,25 @@
   {{#ifNotNA mainThreadStats/totalCpuNanos}}
     <div class="gt-indent2">
       <span>CPU time:</span>
-      {{nanosToMillis mainThreadStats/totalCpuNanos}} milliseconds
+      <span title="{{formatNanos mainThreadStats/totalCpuNanos}}">
+        {{nanosToMillis mainThreadStats/totalCpuNanos}} milliseconds
+      </span>
     </div>
   {{/ifNotNA}}
   {{#ifNotNA mainThreadStats/totalBlockedNanos}}
     <div class="gt-indent2">
       <span>Blocked time:</span>
-      {{nanosToMillis mainThreadStats/totalBlockedNanos}} milliseconds
+      <span title="{{formatNanos mainThreadStats/totalBlockedNanos}}">
+        {{nanosToMillis mainThreadStats/totalBlockedNanos}} milliseconds
+      </span>
     </div>
   {{/ifNotNA}}
   {{#ifNotNA mainThreadStats/totalWaitedNanos}}
     <div class="gt-indent2">
       <span>Waited time:</span>
-      {{nanosToMillis mainThreadStats/totalWaitedNanos}} milliseconds
+      <span title="{{formatNanos mainThreadStats/totalWaitedNanos}}">
+        {{nanosToMillis mainThreadStats/totalWaitedNanos}} milliseconds
+      </span>
     </div>
   {{/ifNotNA}}
   {{#ifNotNA mainThreadStats/totalAllocatedBytes}}
@@ -402,19 +408,25 @@
     {{#ifNotNA auxThreadStats/totalCpuNanos}}
       <div class="gt-indent2">
         <span>CPU time:</span>
-        {{nanosToMillis auxThreadStats/totalCpuNanos}} milliseconds
+        <span title="{{formatNanos auxThreadStats/totalCpuNanos}}">
+          {{nanosToMillis auxThreadStats/totalCpuNanos}} milliseconds
+        </span>
       </div>
     {{/ifNotNA}}
     {{#ifNotNA auxThreadStats/totalBlockedNanos}}
       <div class="gt-indent2">
         <span>Blocked time:</span>
-        {{nanosToMillis auxThreadStats/totalBlockedNanos}} milliseconds
+        <span title="{{formatNanos auxThreadStats/totalBlockedNanos}}">
+          {{nanosToMillis auxThreadStats/totalBlockedNanos}} milliseconds
+        </span>
       </div>
     {{/ifNotNA}}
     {{#ifNotNA auxThreadStats/totalWaitedNanos}}
       <div class="gt-indent2">
         <span>Waited time:</span>
-        {{nanosToMillis auxThreadStats/totalWaitedNanos}} milliseconds
+        <span title="{{formatNanos auxThreadStats/totalWaitedNanos}}">
+          {{nanosToMillis auxThreadStats/totalWaitedNanos}} milliseconds
+        </span>
       </div>
     {{/ifNotNA}}
     {{#ifNotNA auxThreadStats/totalAllocatedBytes}}
