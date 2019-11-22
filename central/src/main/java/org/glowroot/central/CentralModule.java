@@ -618,6 +618,10 @@ public class CentralModule {
             builder.cassandraContactPoint(Splitter.on(',').trimResults().omitEmptyStrings()
                     .splitToList(cassandraContactPoints));
         }
+        String cassandraPortText = properties.get("glowroot.cassandra.port");
+        if (!Strings.isNullOrEmpty(cassandraPortText)) {
+        	builder.cassandraPort(Integer.parseInt(cassandraPortText));
+        }
         String cassandraUsername = properties.get("glowroot.cassandra.username");
         if (!Strings.isNullOrEmpty(cassandraUsername)) {
             builder.cassandraUsername(cassandraUsername);
@@ -625,6 +629,10 @@ public class CentralModule {
         String cassandraPassword = properties.get("glowroot.cassandra.password");
         if (!Strings.isNullOrEmpty(cassandraPassword)) {
             builder.cassandraPassword(cassandraPassword);
+        }
+        String cassandraSSLText = properties.get("glowroot.cassandra.ssl");
+        if (!Strings.isNullOrEmpty(cassandraSSLText)) {
+        	builder.cassandraSSL(Boolean.parseBoolean(cassandraSSLText));
         }
         String cassandraKeyspace = properties.get("glowroot.cassandra.keyspace");
         if (!Strings.isNullOrEmpty(cassandraKeyspace)) {
@@ -899,6 +907,7 @@ public class CentralModule {
         Cluster.Builder builder = Cluster.builder()
                 .addContactPoints(
                         centralConfig.cassandraContactPoint().toArray(new String[0]))
+                .withPort(centralConfig.cassandraPort())
                 // aggressive reconnect policy seems ok since not many clients
                 .withReconnectionPolicy(new ConstantReconnectionPolicy(1000))
                 // let driver know that only idempotent queries are used so it will retry on timeout
@@ -921,6 +930,9 @@ public class CentralModule {
         if (!cassandraUsername.isEmpty()) {
             // empty password is strange but valid
             builder.withCredentials(cassandraUsername, centralConfig.cassandraPassword());
+        }
+        if (centralConfig.cassandraSSL()) {
+        	builder.withSSL();
         }
         return builder.build();
     }
@@ -1005,6 +1017,11 @@ public class CentralModule {
         List<String> cassandraContactPoint() {
             return ImmutableList.of("127.0.0.1");
         }
+        
+        @Value.Default
+        int cassandraPort() {
+        	return 9042;
+        }
 
         @Value.Default
         String cassandraUsername() {
@@ -1014,6 +1031,11 @@ public class CentralModule {
         @Value.Default
         String cassandraPassword() {
             return "";
+        }
+        
+        @Value.Default
+        boolean cassandraSSL() {
+        	return false;
         }
 
         @Value.Default
