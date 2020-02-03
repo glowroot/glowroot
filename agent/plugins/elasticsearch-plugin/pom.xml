@@ -123,7 +123,7 @@
       </activation>
       <properties>
         <elasticsearch.version>6.5.4</elasticsearch.version>
-        <log4j.version>2.11.1</log4j.version>
+        <log4j.version>2.13.0</log4j.version>
       </properties>
       <dependencies>
         <dependency>

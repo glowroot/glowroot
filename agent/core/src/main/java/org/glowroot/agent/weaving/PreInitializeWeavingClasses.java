@@ -449,6 +449,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.ClassVisitor");
         types.add("org.objectweb.asm.ClassWriter");
         types.add("org.objectweb.asm.ConstantDynamic");
+        types.add("org.objectweb.asm.Constants");
         types.add("org.objectweb.asm.Context");
         types.add("org.objectweb.asm.CurrentFrame");
         types.add("org.objectweb.asm.Edge");
@@ -464,6 +465,8 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.ModuleVisitor");
         types.add("org.objectweb.asm.ModuleWriter");
         types.add("org.objectweb.asm.Opcodes");
+        types.add("org.objectweb.asm.RecordComponentWriter");
+        types.add("org.objectweb.asm.RecordComponentVisitor");
         types.add("org.objectweb.asm.Symbol");
         types.add("org.objectweb.asm.SymbolTable");
         types.add("org.objectweb.asm.SymbolTable$Entry");
@@ -475,6 +478,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.commons.ClassRemapper");
         types.add("org.objectweb.asm.commons.FieldRemapper");
         types.add("org.objectweb.asm.commons.GeneratorAdapter");
+        types.add("org.objectweb.asm.commons.InstructionAdapter");
         types.add("org.objectweb.asm.commons.JSRInlinerAdapter");
         types.add("org.objectweb.asm.commons.JSRInlinerAdapter$Instantiation");
         types.add("org.objectweb.asm.commons.LocalVariablesSorter");
@@ -482,6 +486,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.commons.MethodRemapper");
         types.add("org.objectweb.asm.commons.ModuleRemapper");
         types.add("org.objectweb.asm.commons.ModuleHashesAttribute");
+        types.add("org.objectweb.asm.commons.RecordComponentRemapper");
         types.add("org.objectweb.asm.commons.Remapper");
         types.add("org.objectweb.asm.commons.SignatureRemapper");
         types.add("org.objectweb.asm.commons.SimpleRemapper");
@@ -497,6 +502,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.tree.IincInsnNode");
         types.add("org.objectweb.asm.tree.InnerClassNode");
         types.add("org.objectweb.asm.tree.InsnList");
+        types.add("org.objectweb.asm.tree.InsnList$InsnListIterator");
         types.add("org.objectweb.asm.tree.InsnNode");
         types.add("org.objectweb.asm.tree.IntInsnNode");
         types.add("org.objectweb.asm.tree.InvokeDynamicInsnNode");
@@ -517,6 +523,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.tree.ModuleRequireNode");
         types.add("org.objectweb.asm.tree.MultiANewArrayInsnNode");
         types.add("org.objectweb.asm.tree.ParameterNode");
+        types.add("org.objectweb.asm.tree.RecordComponentNode");
         types.add("org.objectweb.asm.tree.TableSwitchInsnNode");
         types.add("org.objectweb.asm.tree.TryCatchBlockNode");
         types.add("org.objectweb.asm.tree.TypeAnnotationNode");

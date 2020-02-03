@@ -18,16 +18,17 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <h2.version>1.4.197</h2.version>
+    <h2.version>1.4.200</h2.version>
     <!-- hsqldb 2.4.0+ requires Java 8+ (2.3.x supports Java 6+) -->
     <hsqldb.version>2.3.6</hsqldb.version>
-    <postgresql.version>42.2.5.jre6</postgresql.version>
+    <postgresql.version>42.2.9.jre6</postgresql.version>
     <!-- mssql-jdbc 6.5.0+ requires Java 8+ (there is no version published on maven central that
       supports Java 6) -->
     <mssql.version>6.4.0.jre7</mssql.version>
     <commons.dbcp.version>1.4</commons.dbcp.version>
-    <commons.dbcp2.version>2.5.0</commons.dbcp2.version>
-    <tomcat.version>7.0.92</tomcat.version>
+    <commons.dbcp2.version>2.7.0</commons.dbcp2.version>
+    <tomcat.version>7.0.99</tomcat.version>
+    <!-- Glassfish JDBC 5+ requires Java 8+ -->
     <glassfish.jdbc.version>4.1.2</glassfish.jdbc.version>
     <hikari.cp.artifactId>HikariCP-java6</hikari.cp.artifactId>
     <hikari.cp.version>2.3.13</hikari.cp.version>
@@ -136,7 +137,7 @@
       <artifactId>javassist</artifactId>
       <!-- this is needed to make bitronix use its JdbcJavassistProxyFactory which needs special
         weaving consideration -->
-      <version>3.18.2-GA</version>
+      <version>3.26.0-GA</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

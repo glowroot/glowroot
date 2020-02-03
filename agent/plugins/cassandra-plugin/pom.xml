@@ -18,7 +18,7 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <datastax.driver.version>3.6.0</datastax.driver.version>
+    <datastax.driver.version>3.7.2</datastax.driver.version>
   </properties>
 
   <dependencies>
@@ -48,6 +48,16 @@
       <artifactId>cassandra-driver-core</artifactId>
       <version>${datastax.driver.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <!--
+            this is to resolve maven enforcer RequireUpperBoundDeps error
+            because need to stick to netty version that is used by grpc version
+          -->
+          <groupId>io.netty</groupId>
+          <artifactId>netty-handler</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.rauschig</groupId>
@@ -66,55 +76,49 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>7.0</version>
+      <version>7.3.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
-      <version>7.0</version>
+      <version>7.3.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-tree</artifactId>
-      <version>7.0</version>
+      <version>7.3.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-util</artifactId>
-      <version>7.0</version>
+      <version>7.3.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-analysis</artifactId>
-      <version>7.0</version>
+      <version>7.3.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
-      <groupId>io.netty</groupId>
-      <artifactId>netty-transport</artifactId>
-      <version>${netty.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
-      <groupId>io.netty</groupId>
-      <artifactId>netty-codec-http</artifactId>
-      <version>${netty.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-handler</artifactId>
       <version>${netty.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>org.hdrhistogram</groupId>
+      <artifactId>HdrHistogram</artifactId>
+      <version>2.1.12</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

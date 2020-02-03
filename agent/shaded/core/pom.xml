@@ -54,7 +54,7 @@
       <!-- need to include logstash support for proguard step, but then it is stripped out after -->
       <groupId>net.logstash.logback</groupId>
       <artifactId>logstash-logback-encoder</artifactId>
-      <version>5.3</version>
+      <version>6.3</version>
       <exclusions>
         <exclusion>
           <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->

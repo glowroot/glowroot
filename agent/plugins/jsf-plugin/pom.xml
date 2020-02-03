@@ -19,7 +19,7 @@
   <properties>
     <!-- instrumented libraries -->
     <!-- JSF 2.3+ requires Java 8+ -->
-    <faces.version>2.2.18</faces.version>
+    <faces.version>2.2.20</faces.version>
   </properties>
 
   <dependencies>

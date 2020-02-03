@@ -101,9 +101,9 @@
     <!-- need to stick to netty version that is used by grpc version above -->
     <netty.version>4.1.27.Final</netty.version>
     <logback.version>1.2.3</logback.version>
-    <slf4j.version>1.7.25</slf4j.version>
-    <immutables.version>2.7.5</immutables.version>
-    <jmh.version>1.21</jmh.version>
+    <slf4j.version>1.7.30</slf4j.version>
+    <immutables.version>2.8.3</immutables.version>
+    <jmh.version>1.23</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
@@ -169,7 +169,7 @@
       <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
-        <version>2.8.5</version>
+        <version>2.8.6</version>
       </dependency>
       <dependency>
         <groupId>com.google.code.findbugs</groupId>
@@ -194,7 +194,7 @@
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
-        <version>4.12</version>
+        <version>4.13</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
@@ -211,7 +211,7 @@
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
         <!-- jackson 2.7.0+ requires Java 7+ -->
-        <version>2.6.7.2</version>
+        <version>2.6.7.3</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
@@ -234,7 +234,7 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>2.23.4</version>
+        <version>3.2.4</version>
       </dependency>
       <dependency>
         <groupId>com.ning</groupId>
@@ -256,24 +256,25 @@
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-core</artifactId>
         <!-- tomcat 8.0.0+ requires Java 7+ -->
-        <version>7.0.91</version>
+        <version>7.0.99</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-jasper</artifactId>
         <!-- tomcat 8.0.0+ requires Java 7+ -->
-        <version>7.0.91</version>
+        <version>7.0.99</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-logging-juli</artifactId>
         <!-- tomcat 8.0.0+ requires Java 7+ -->
-        <version>7.0.91</version>
+        <version>7.0.99</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-websocket</artifactId>
         <!-- tomcat 8.0.0+ requires Java 7+ -->
+        <!-- tomcat-embed-websocket 7.0.92+ is causing spring websocket tests to fail -->
         <version>7.0.91</version>
       </dependency>
     </dependencies>
@@ -366,7 +367,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.2.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
@@ -374,7 +375,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.0</version>
+          <version>3.8.1</version>
           <configuration>
             <source>1.6</source>
             <target>1.6</target>
@@ -389,18 +390,18 @@
         </plugin>
         <plugin>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>2.8.2</version>
+          <version>3.0.0-M1</version>
           <configuration>
             <deployAtEnd>true</deployAtEnd>
           </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.0.0-M2</version>
+          <version>3.0.0-M3</version>
         </plugin>
         <plugin>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>2.22.0</version>
+          <version>3.0.0-M4</version>
           <configuration>
             <systemPropertyVariables>
               <glowroot.test.fileLoggingOnly>true</glowroot.test.fileLoggingOnly>
@@ -412,11 +413,11 @@
         </plugin>
         <plugin>
           <artifactId>maven-install-plugin</artifactId>
-          <version>2.5.2</version>
+          <version>3.0.0-M1</version>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.2.0</version>
           <configuration>
             <archive>
               <manifestEntries>
@@ -430,15 +431,15 @@
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.0.1</version>
+          <version>3.1.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-plugin-plugin</artifactId>
-          <version>3.5.2</version>
+          <version>3.6.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-remote-resources-plugin</artifactId>
-          <version>1.5</version>
+          <version>1.7.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
@@ -446,19 +447,19 @@
         </plugin>
         <plugin>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.2.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-site-plugin</artifactId>
-          <version>3.7.1</version>
+          <version>3.8.2</version>
         </plugin>
         <plugin>
           <artifactId>maven-source-plugin</artifactId>
-          <version>3.0.1</version>
+          <version>3.2.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.22.0</version>
+          <version>3.0.0-M4</version>
           <configuration>
             <systemPropertyVariables>
               <glowroot.test.fileLoggingOnly>true</glowroot.test.fileLoggingOnly>
@@ -471,24 +472,24 @@
         <plugin>
           <groupId>com.github.wvengen</groupId>
           <artifactId>proguard-maven-plugin</artifactId>
-          <version>2.0.14</version>
+          <version>2.2.0</version>
           <dependencies>
             <dependency>
               <groupId>net.sf.proguard</groupId>
               <artifactId>proguard-base</artifactId>
-              <version>6.0.3</version>
+              <version>6.2.2</version>
             </dependency>
           </dependencies>
         </plugin>
         <plugin>
           <groupId>com.github.os72</groupId>
           <artifactId>protoc-jar-maven-plugin</artifactId>
-          <version>3.6.0.2</version>
+          <version>3.11.1</version>
         </plugin>
         <plugin>
           <groupId>org.sonarsource.scanner.maven</groupId>
           <artifactId>sonar-maven-plugin</artifactId>
-          <version>3.6.0.1398</version>
+          <version>3.7.0.1746</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -498,7 +499,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.2</version>
+          <version>0.8.5</version>
         </plugin>
         <plugin>
           <groupId>org.eclipse.m2e</groupId>
@@ -507,32 +508,6 @@
           <configuration>
             <lifecycleMappingMetadata>
               <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-enforcer-plugin</artifactId>
-                    <versionRange>[1.0.0,)</versionRange>
-                    <goals>
-                      <goal>enforce</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-remote-resources-plugin</artifactId>
-                    <versionRange>[1.0.0,)</versionRange>
-                    <goals>
-                      <goal>process</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
                 <pluginExecution>
                   <pluginExecutionFilter>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -549,23 +524,10 @@
                 <pluginExecution>
                   <pluginExecutionFilter>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
+                    <artifactId>maven-plugin-plugin</artifactId>
                     <versionRange>[1.0.0,)</versionRange>
                     <goals>
-                      <goal>copy</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>net.alchim31.maven</groupId>
-                    <artifactId>scala-maven-plugin</artifactId>
-                    <versionRange>[1.0.0,)</versionRange>
-                    <goals>
-                      <goal>testCompile</goal>
+                      <goal>descriptor</goal>
                     </goals>
                   </pluginExecutionFilter>
                   <action>
