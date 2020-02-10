@@ -98,7 +98,13 @@ public class HttpSessions {
                 // request for the same session just removed the attribute
                 continue;
             }
-            captureMap.put(attributeName, Strings.nullToEmpty(value.toString()));
+	    // Buggy implementation of file object can lead to nullpointerexception
+            try {
+            	captureMap.put(attributeName, Strings.nullToEmpty(value.toString()));
+            }
+            catch (NullPointerException npe) {
+            	continue;
+            }
         }
     }
 
