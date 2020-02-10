@@ -23,12 +23,14 @@ import java.util.Map;
 
 import javax.servlet.http.HttpSession;
 
+import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.Beans;
 import org.glowroot.agent.plugin.api.util.ImmutableMap;
+import org.glowroot.agent.plugin.servlet._.ServletMessageSupplier;
 import org.glowroot.agent.plugin.servlet._.ServletPluginProperties;
-import org.glowroot.agent.plugin.servlet._.Strings;
 import org.glowroot.agent.plugin.servlet._.ServletPluginProperties.SessionAttributePath;
+import org.glowroot.agent.plugin.servlet._.Strings;
 
 public class HttpSessions {
 
@@ -72,7 +74,7 @@ public class HttpSessions {
             try {
                 return Beans.value(attributeValue, nestedPath);
             } catch (Exception e) {
-                return "<could not access: " + e + ">";
+                return "<error evaluating: " + e + ">";
             }
         }
     }
@@ -92,13 +94,19 @@ public class HttpSessions {
                 captureMap.put(attributeName, Strings.nullToEmpty(session.getId()));
                 continue;
             }
-            Object value = session.getAttribute(attributeName);
-            if (value == null) {
+            Object valueObj = session.getAttribute(attributeName);
+            if (valueObj == null) {
                 // value shouldn't be null, but its (remotely) possible that a concurrent
                 // request for the same session just removed the attribute
                 continue;
             }
-            captureMap.put(attributeName, Strings.nullToEmpty(value.toString()));
+            String value;
+            try {
+                value = Strings.nullToEmpty(valueObj.toString());
+            } catch (Exception f) {
+                value = "<error evaluating: " + f + ">";
+            }
+            captureMap.put(attributeName, value);
         }
     }
 
