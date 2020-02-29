@@ -49,7 +49,7 @@ class CassandraWrapper {
         if (System.getProperty("os.name").startsWith("Windows")) {
             // Cassandra 2.1 has issues on Windows
             // see https://issues.apache.org/jira/browse/CASSANDRA-10673
-            CASSANDRA_VERSION = "2.2.14";
+            CASSANDRA_VERSION = "2.2.16";
         } else {
             CASSANDRA_VERSION = "2.1.21";
         }
@@ -113,7 +113,7 @@ class CassandraWrapper {
     private static void downloadAndExtract(File baseDir) throws IOException {
         // using System.out to make sure user sees why there is a big delay here
         System.out.print("Downloading Cassandra " + CASSANDRA_VERSION + "...");
-        URL url = new URL("http://www-us.apache.org/dist/cassandra/" + CASSANDRA_VERSION
+        URL url = new URL("https://www-us.apache.org/dist/cassandra/" + CASSANDRA_VERSION
                 + "/apache-cassandra-" + CASSANDRA_VERSION + "-bin.tar.gz");
         InputStream in = url.openStream();
         File archiveFile = File.createTempFile("cassandra-" + CASSANDRA_VERSION + "-", ".tar.gz");
