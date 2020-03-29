@@ -20,6 +20,8 @@ import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -444,7 +446,19 @@ public class Session {
         while (stopwatch.elapsed(SECONDS) < 60) {
             try {
                 wrappedSession.execute(query);
-                return;
+                // see https://github.com/glowroot/glowroot/issues/700
+                while (stopwatch.elapsed(SECONDS) < 60) {
+                    String tableName = getTableName(wrappedSession, query);
+                    if (tableName != null) {
+                        String keyspaceName = wrappedSession.getLoggedKeyspace();
+                        KeyspaceMetadata keyspaceMetadata = wrappedSession.getCluster().getMetadata().getKeyspace(keyspaceName);
+                        if (keyspaceMetadata.getTable(tableName) != null)
+                            return;
+                    } else {
+                        return;
+                    }
+                    SECONDS.sleep(1);
+                }
             } catch (NoHostAvailableException e) {
                 logger.debug(e.getMessage(), e);
             }
@@ -452,6 +466,19 @@ public class Session {
         }
         // try one last time and let exception bubble up
         wrappedSession.execute(query);
+    }
+
+    // get table name from query
+    private static String getTableName(com.datastax.driver.core.Session wrappedSession, String query){
+        String tableName = null;
+        if (query.startsWith("create table if not exists ")) {
+            Pattern pattern = Pattern.compile("\\w+");
+            Matcher matcher = pattern.matcher(query.substring("create table if not exists ".length()));
+            if (matcher.find()) {
+                tableName = matcher.group();
+            }
+        }
+        return tableName;
     }
 
     public static int getCompactionWindowSizeHours(int expirationHours) {
