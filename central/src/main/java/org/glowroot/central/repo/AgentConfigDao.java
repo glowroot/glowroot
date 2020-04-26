@@ -102,7 +102,7 @@ public class AgentConfigDao {
             // agent will not consider collectInit() to be successful until it receives updated
             // agent config
             boundStatement.setBool(i++, false);
-            boundStatement.setToNull(i++);
+            boundStatement.unset(i++);
             session.write(boundStatement);
             agentConfigCache.invalidate(agentId);
         }
@@ -129,7 +129,7 @@ public class AgentConfigDao {
                         .build()
                         .toByteArray()));
                 boundStatement.setBool(i++, false);
-                boundStatement.setToNull(i++);
+                boundStatement.unset(i++);
                 session.write(boundStatement);
                 agentConfigCache.invalidate(loopAgentRollupId);
             }

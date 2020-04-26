@@ -168,7 +168,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         boundStatement.setDouble(i++, durationNanos);
         boundStatement.setLong(i++, 1);
         if (errorMessage == null) {
-            boundStatement.setToNull(i++);
+            boundStatement.unset(i++);
         } else {
             Stored.ErrorInterval errorInterval = Stored.ErrorInterval.newBuilder()
                     .setFrom(captureTime)
@@ -372,7 +372,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         boundStatement.setLong(i++, executionCount);
         List<ErrorInterval> mergedErrorIntervals = errorIntervalCollector.getMergedErrorIntervals();
         if (mergedErrorIntervals.isEmpty()) {
-            boundStatement.setToNull(i++);
+            boundStatement.unset(i++);
         } else {
             boundStatement.setBytes(i++, Messages.toByteBuffer(toProto(mergedErrorIntervals)));
         }

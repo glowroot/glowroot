@@ -768,7 +768,7 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement.setLong(i++, entry.getDurationNanos());
             boundStatement.setBool(i++, entry.getActive());
             if (entry.hasQueryEntryMessage()) {
-                boundStatement.setToNull(i++);
+                boundStatement.unset(i++);
                 boundStatement.setInt(i++, entry.getQueryEntryMessage().getSharedQueryTextIndex());
                 boundStatement.setString(i++,
                         Strings.emptyToNull(entry.getQueryEntryMessage().getPrefix()));
@@ -777,26 +777,26 @@ public class TraceDaoImpl implements TraceDao {
             } else {
                 // message is empty for trace entries added using addErrorEntry()
                 boundStatement.setString(i++, Strings.emptyToNull(entry.getMessage()));
-                boundStatement.setToNull(i++);
-                boundStatement.setToNull(i++);
-                boundStatement.setToNull(i++);
+                boundStatement.unset(i++);
+                boundStatement.unset(i++);
+                boundStatement.unset(i++);
             }
             List<Trace.DetailEntry> detailEntries = entry.getDetailEntryList();
             if (detailEntries.isEmpty()) {
-                boundStatement.setToNull(i++);
+                boundStatement.unset(i++);
             } else {
                 boundStatement.setBytes(i++, Messages.toByteBuffer(detailEntries));
             }
             List<StackTraceElement> location = entry.getLocationStackTraceElementList();
             if (location.isEmpty()) {
-                boundStatement.setToNull(i++);
+                boundStatement.unset(i++);
             } else {
                 boundStatement.setBytes(i++, Messages.toByteBuffer(location));
             }
             if (entry.hasError()) {
                 boundStatement.setBytes(i++, ByteBuffer.wrap(entry.getError().toByteArray()));
             } else {
-                boundStatement.setToNull(i++);
+                boundStatement.unset(i++);
             }
             boundStatement.setInt(i++, adjustedTTL);
             futures.add(session.writeAsync(boundStatement));
@@ -835,8 +835,8 @@ public class TraceDaoImpl implements TraceDao {
                 boundStatement.setString(i++, sharedQueryText.getFullTextSha1());
             } else {
                 boundStatement.setString(i++, fullText);
-                boundStatement.setToNull(i++);
-                boundStatement.setToNull(i++);
+                boundStatement.unset(i++);
+                boundStatement.unset(i++);
             }
             boundStatement.setInt(i++, adjustedTTL);
             futures.add(session.writeAsync(boundStatement));
@@ -1312,7 +1312,7 @@ public class TraceDaoImpl implements TraceDao {
         if (partial) {
             if (cassandra2x) {
                 // don't set real_capture_time, so this still looks like data prior to 0.13.1
-                boundStatement.setToNull(i++);
+                boundStatement.unset(i++);
             } else {
                 boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
             }
@@ -1323,7 +1323,7 @@ public class TraceDaoImpl implements TraceDao {
         boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
         List<Trace.Attribute> attributes = header.getAttributeList();
         if (attributes.isEmpty()) {
-            boundStatement.setToNull(i++);
+            boundStatement.unset(i++);
         } else {
             boundStatement.setBytes(i++, Messages.toByteBuffer(attributes));
         }
@@ -1338,7 +1338,7 @@ public class TraceDaoImpl implements TraceDao {
         if (partial) {
             if (cassandra2x) {
                 // don't set real_capture_time, so this still looks like data prior to 0.13.1
-                boundStatement.setToNull(i++);
+                boundStatement.unset(i++);
             } else {
                 boundStatement.setTimestamp(i++, new Date(header.getCaptureTime()));
             }
@@ -1363,7 +1363,7 @@ public class TraceDaoImpl implements TraceDao {
         boundStatement.setString(i++, Strings.emptyToNull(header.getUser()));
         List<Trace.Attribute> attributes = header.getAttributeList();
         if (attributes.isEmpty()) {
-            boundStatement.setToNull(i++);
+            boundStatement.unset(i++);
         } else {
             boundStatement.setBytes(i++, Messages.toByteBuffer(attributes));
         }

@@ -1313,11 +1313,11 @@ public class AggregateDaoImpl implements AggregateDao {
         boundStatement.setDouble(i++, mainThreadStats.getTotalWaitedNanos());
         boundStatement.setDouble(i++, mainThreadStats.getTotalAllocatedBytes());
         if (auxThreadRootTimer.getCount() == 0) {
-            boundStatement.setToNull(i++);
-            boundStatement.setToNull(i++);
-            boundStatement.setToNull(i++);
-            boundStatement.setToNull(i++);
-            boundStatement.setToNull(i++);
+            boundStatement.unset(i++);
+            boundStatement.unset(i++);
+            boundStatement.unset(i++);
+            boundStatement.unset(i++);
+            boundStatement.unset(i++);
         } else {
             // writing as delimited singleton list for backwards compatibility with data written
             // prior to 0.12.0
@@ -1329,7 +1329,7 @@ public class AggregateDaoImpl implements AggregateDao {
             boundStatement.setDouble(i++, auxThreadStats.getTotalAllocatedBytes());
         }
         if (asyncTimers.isEmpty()) {
-            boundStatement.setToNull(i++);
+            boundStatement.unset(i++);
         } else {
             boundStatement.setBytes(i++,
                     Messages.toByteBuffer(MutableAggregate.toProto(asyncTimers)));
@@ -1449,7 +1449,7 @@ public class AggregateDaoImpl implements AggregateDao {
         boundStatement.setTimestamp(i++, new Date(query.to()));
         boundStatement.setLong(i++, transactionCount);
         if (hasMissingErrorCount) {
-            boundStatement.setToNull(i++);
+            boundStatement.unset(i++);
         } else {
             boundStatement.setLong(i++, errorCount);
         }
@@ -1851,7 +1851,7 @@ public class AggregateDaoImpl implements AggregateDao {
             if (query.hasTotalRows()) {
                 boundStatement.setLong(i++, query.getTotalRows().getValue());
             } else {
-                boundStatement.setToNull(i++);
+                boundStatement.unset(i++);
             }
             boundStatement.setInt(i++, adjustedTTL.queryTTL());
             futures.add(session.writeAsync(boundStatement));
@@ -1887,7 +1887,7 @@ public class AggregateDaoImpl implements AggregateDao {
             if (query.hasTotalRows()) {
                 boundStatement.setLong(i++, query.getTotalRows());
             } else {
-                boundStatement.setToNull(i++);
+                boundStatement.unset(i++);
             }
             boundStatement.setInt(i++, adjustedTTL.queryTTL());
             futures.add(session.writeAsync(boundStatement));
@@ -2122,15 +2122,15 @@ public class AggregateDaoImpl implements AggregateDao {
                 boundStatement.setDouble(i++, auxThreadStats.getTotalAllocatedBytes());
             }
         } else {
-            boundStatement.setToNull(i++);
-            boundStatement.setToNull(i++);
-            boundStatement.setToNull(i++);
-            boundStatement.setToNull(i++);
-            boundStatement.setToNull(i++);
+            boundStatement.unset(i++);
+            boundStatement.unset(i++);
+            boundStatement.unset(i++);
+            boundStatement.unset(i++);
+            boundStatement.unset(i++);
         }
         List<Aggregate.Timer> asyncTimers = aggregate.getAsyncTimerList();
         if (asyncTimers.isEmpty()) {
-            boundStatement.setToNull(i++);
+            boundStatement.unset(i++);
         } else {
             boundStatement.setBytes(i++, Messages.toByteBuffer(asyncTimers));
         }
