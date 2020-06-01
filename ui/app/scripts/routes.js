@@ -177,9 +177,11 @@ glowroot.config([
       resolve: {
         summarySortOrders: function () {
           return {
-            'total-time': 'By percent of total time',
+            'total-time': 'By total time (%)',
             'average-time': 'By average time',
-            'throughput': 'By throughput (per min)'
+            'throughput': 'By throughput (per min)',
+            'total-cpu-time': 'By total CPU time (%)',
+            'total-allocated-memory': 'By total allocated memory (%)'
           };
         },
         summaryValueFn: [
@@ -193,6 +195,10 @@ glowroot.config([
                     + ' ms';
               } else if (sortOrder === 'throughput') {
                 return (60 * 1000 * summary.transactionCount / durationMillis).toFixed(1) + '/min';
+              } else if (sortOrder === 'total-cpu-time') {
+                return (100 * summary.totalCpuNanos / overallSummary.totalCpuNanos).toFixed(1) + ' %';
+              } else if (sortOrder === 'total-allocated-memory') {
+                return (100 * summary.totalAllocatedBytes / overallSummary.totalAllocatedBytes).toFixed(1) + ' %';
               } else {
                 // unexpected sort order
                 return '';

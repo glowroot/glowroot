@@ -181,14 +181,14 @@ class AggregateCollector {
 
     void mergeOverallSummaryInto(OverallSummaryCollector collector) {
         synchronized (lock) {
-            collector.mergeSummary(totalDurationNanos, transactionCount, 0);
+            collector.mergeSummary(totalDurationNanos, transactionCount, 0, 0, 0);
         }
     }
 
     void mergeTransactionNameSummariesInto(TransactionNameSummaryCollector collector) {
         checkNotNull(transactionName);
         synchronized (lock) {
-            collector.collect(transactionName, totalDurationNanos, transactionCount, 0);
+            collector.collect(transactionName, totalDurationNanos, transactionCount, 0, 0, 0);
         }
     }
 

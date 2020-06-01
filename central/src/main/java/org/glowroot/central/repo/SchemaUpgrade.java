@@ -107,7 +107,7 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 90;
+    private static final int CURR_SCHEMA_VERSION = 91;
 
     private final Session session;
     private final Clock clock;
@@ -534,6 +534,10 @@ public class SchemaUpgrade {
         if (initialSchemaVersion < 90) {
             splitActiveAgentRollupTables(3);
             updateSchemaVersion(90);
+        }
+        if (initialSchemaVersion < 91) {
+            addAggregateSummaryColumns();
+            updateSchemaVersion(91);
         }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
@@ -2843,6 +2847,26 @@ public class SchemaUpgrade {
         dropTableIfExists("active_agent_rollup_" + rollupLevel);
         logger.info("populating active_top_level_rollup_{} and active_child_rollup_{} tables"
                 + " - complete", rollupLevel);
+    }
+
+    private void addAggregateSummaryColumns() throws Exception {
+        addColumnIfNotExists("aggregate_tt_summary_rollup_0", "total_cpu_nanos", "double");
+        addColumnIfNotExists("aggregate_tt_summary_rollup_1", "total_cpu_nanos", "double");
+        addColumnIfNotExists("aggregate_tt_summary_rollup_2", "total_cpu_nanos", "double");
+        addColumnIfNotExists("aggregate_tt_summary_rollup_3", "total_cpu_nanos", "double");
+        addColumnIfNotExists("aggregate_tn_summary_rollup_0", "total_cpu_nanos", "double");
+        addColumnIfNotExists("aggregate_tn_summary_rollup_1", "total_cpu_nanos", "double");
+        addColumnIfNotExists("aggregate_tn_summary_rollup_2", "total_cpu_nanos", "double");
+        addColumnIfNotExists("aggregate_tn_summary_rollup_3", "total_cpu_nanos", "double");
+
+        addColumnIfNotExists("aggregate_tt_summary_rollup_0", "total_allocated_bytes", "double");
+        addColumnIfNotExists("aggregate_tt_summary_rollup_1", "total_allocated_bytes", "double");
+        addColumnIfNotExists("aggregate_tt_summary_rollup_2", "total_allocated_bytes", "double");
+        addColumnIfNotExists("aggregate_tt_summary_rollup_3", "total_allocated_bytes", "double");
+        addColumnIfNotExists("aggregate_tn_summary_rollup_0", "total_allocated_bytes", "double");
+        addColumnIfNotExists("aggregate_tn_summary_rollup_1", "total_allocated_bytes", "double");
+        addColumnIfNotExists("aggregate_tn_summary_rollup_2", "total_allocated_bytes", "double");
+        addColumnIfNotExists("aggregate_tn_summary_rollup_3", "total_allocated_bytes", "double");
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)
