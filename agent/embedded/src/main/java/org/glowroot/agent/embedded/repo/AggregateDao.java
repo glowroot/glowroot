@@ -763,9 +763,13 @@ public class AggregateDao implements AggregateRepository {
             case THROUGHPUT:
                 return "sum(transaction_count) desc";
             case TOTAL_CPU_TIME:
-                return "total_cpu_nanos desc";
+                return "sum(main_thread_total_cpu_nanos) + sum(aux_thread_total_cpu_nanos) desc";
+            case AVERAGE_CPU_TIME:
+                return "(sum(main_thread_total_cpu_nanos) + sum(aux_thread_total_cpu_nanos)) / sum(transaction_count) desc";
             case TOTAL_ALLOCATED_MEMORY:
-                return "total_allocated_bytes desc";
+                return "sum(main_thread_total_allocated_bytes) + sum(aux_thread_total_allocated_bytes) desc";
+            case AVERAGE_ALLOCATED_MEMORY:
+                return "(sum(main_thread_total_allocated_bytes) + sum(aux_thread_total_allocated_bytes)) / sum(transaction_count) desc";
             default:
                 throw new AssertionError("Unexpected sort order: " + sortOrder);
             }

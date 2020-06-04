@@ -60,11 +60,29 @@ public class TransactionNameSummaryCollector {
                 }
             };
 
+    private static final Ordering<TransactionNameSummary> orderingByAverageCpuTimeDesc =
+            new Ordering<TransactionNameSummary>() {
+                @Override
+                public int compare(TransactionNameSummary left, TransactionNameSummary right) {
+                    return Doubles.compare(right.totalCpuNanos() / right.transactionCount(),
+                            left.totalCpuNanos() / left.transactionCount());
+                }
+            };
+
     private static final Ordering<TransactionNameSummary> orderingByTotalAllocatedMemoryDesc =
             new Ordering<TransactionNameSummary>() {
                 @Override
                 public int compare(TransactionNameSummary left, TransactionNameSummary right) {
                     return Doubles.compare(right.totalAllocatedBytes(), left.totalAllocatedBytes());
+                }
+            };
+
+    private static final Ordering<TransactionNameSummary> orderingByAverageAllocatedMemoryDesc =
+            new Ordering<TransactionNameSummary>() {
+                @Override
+                public int compare(TransactionNameSummary left, TransactionNameSummary right) {
+                    return Doubles.compare(right.totalAllocatedBytes() / right.transactionCount(),
+                            left.totalAllocatedBytes() / left.transactionCount());
                 }
             };
 
@@ -122,15 +140,19 @@ public class TransactionNameSummaryCollector {
             return orderingByTransactionCountDesc.immutableSortedCopy(transactionNameSummaries);
         case TOTAL_CPU_TIME:
             return orderingByTotalCpuTimeDesc.immutableSortedCopy(transactionNameSummaries);
+        case AVERAGE_CPU_TIME:
+            return orderingByAverageCpuTimeDesc.immutableSortedCopy(transactionNameSummaries);
         case TOTAL_ALLOCATED_MEMORY:
             return orderingByTotalAllocatedMemoryDesc.immutableSortedCopy(transactionNameSummaries);
+        case AVERAGE_ALLOCATED_MEMORY:
+            return orderingByAverageAllocatedMemoryDesc.immutableSortedCopy(transactionNameSummaries);
         default:
             throw new AssertionError("Unexpected sort order: " + sortOrder);
         }
     }
 
     public enum SummarySortOrder {
-        TOTAL_TIME, AVERAGE_TIME, THROUGHPUT, TOTAL_CPU_TIME, TOTAL_ALLOCATED_MEMORY
+        TOTAL_TIME, AVERAGE_TIME, THROUGHPUT, TOTAL_CPU_TIME, AVERAGE_CPU_TIME, TOTAL_ALLOCATED_MEMORY, AVERAGE_ALLOCATED_MEMORY
     }
 
     @Value.Immutable
