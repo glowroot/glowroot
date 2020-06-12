@@ -122,6 +122,10 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             // don't weave glowroot core classes, including shaded classes like h2 jdbc driver
             return true;
         }
+        if (isThirdPartyAgentClass(className)) {
+            // special case to avoid weaving errors with third-party agents
+            return true;
+        }
         if (className.startsWith("sun/reflect/Generated")) {
             // optimization, no need to try to weave the many classes generated for reflection:
             // sun/reflect/GeneratedSerializationConstructorAccessor..
@@ -163,5 +167,9 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
 
     private static boolean isInBootstrapClassLoader() {
         return WeavingClassFileTransformer.class.getClassLoader() == null;
+    }
+
+    private static boolean isThirdPartyAgentClass(String className) {
+        return className.startsWith("com/contrastsecurity/");
     }
 }
