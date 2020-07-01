@@ -73,8 +73,6 @@ public class CentralRepoModule {
             int targetMaxActiveAgentsInPast7Days, int targetMaxCentralUiUsers, Clock clock)
             throws Exception {
 
-        boolean populateFromAdminDefault = session.getTable("central_config") == null;
-
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         agentDisplayDao = new AgentDisplayDao(session, clusterManager, asyncExecutor,
                 targetMaxActiveAgentsInPast7Days);
@@ -96,19 +94,18 @@ public class CentralRepoModule {
         traceAttributeNameDao = new TraceAttributeNameDao(session, configRepository, clusterManager,
                 targetMaxCentralUiUsers);
 
-        if (populateFromAdminDefault) {
-            File adminDefaultFile = new File(confDir, "admin-default.json");
-            if (adminDefaultFile.exists()) {
-                try {
-                    populateFromAdminDefault(adminDefaultFile, configRepository);
-                } catch (Exception e) {
-                    // drop the table so that after fixing admin-default.json re-import will occur
-                    session.updateSchemaWithRetry("drop table central_config");
-                    throw e;
-                }
-            }
-        }
+        File adminDefaultFile = new File(confDir, "admin-default.json");
 
+        if (adminDefaultFile.exists()) {
+            try {
+                populateFromAdminDefault(adminDefaultFile, configRepository);
+            } catch (Exception e) {
+                // drop the table so that after fixing admin-default.json re-import will occur
+                session.updateSchemaWithRetry("drop table central_config");
+                throw e;
+            }
+        }         
+        
         Set<String> agentRollupIdsWithV09Data;
         long v09LastCaptureTime;
         long v09FqtLastExpirationTime;
