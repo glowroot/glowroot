@@ -69,13 +69,15 @@
       <artifactId>cassandra-driver-core</artifactId>
       <version>3.7.2</version>
     </dependency>
+    <!-- Upgrading Infinispan beyond 9.4.x requires that a marshaller be chosen and configured. Do not upgrade until this is done. 
+      See https://stackoverflow.com/questions/58815818/infinispan-10-0-1-final-no-marshaller-registered-for-java-type-java-util-uuid -->
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
-      <version>9.4.16.Final</version>
+      <version>9.4.19.Final</version>
     </dependency>
     <!-- jgroups-kubernetes specifies that it requires 4.1.x but it works fine with 4.0.x. On the other
-      hand infinispan-core does not work with 4.1.x -->
+      hand infinispan-core 9.4.x does not work with 4.1.x -->
     <dependency>
       <groupId>org.jgroups</groupId>
       <artifactId>jgroups</artifactId>
