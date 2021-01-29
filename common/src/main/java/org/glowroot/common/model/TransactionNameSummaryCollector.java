@@ -132,22 +132,22 @@ public class TransactionNameSummaryCollector {
     private static List<TransactionNameSummary> sortTransactionNameSummaries(
             Iterable<TransactionNameSummary> transactionNameSummaries, SummarySortOrder sortOrder) {
         switch (sortOrder) {
-        case TOTAL_TIME:
-            return orderingByTotalTimeDesc.immutableSortedCopy(transactionNameSummaries);
-        case AVERAGE_TIME:
-            return orderingByAverageTimeDesc.immutableSortedCopy(transactionNameSummaries);
-        case THROUGHPUT:
-            return orderingByTransactionCountDesc.immutableSortedCopy(transactionNameSummaries);
-        case TOTAL_CPU_TIME:
-            return orderingByTotalCpuTimeDesc.immutableSortedCopy(transactionNameSummaries);
-        case AVERAGE_CPU_TIME:
-            return orderingByAverageCpuTimeDesc.immutableSortedCopy(transactionNameSummaries);
-        case TOTAL_ALLOCATED_MEMORY:
-            return orderingByTotalAllocatedMemoryDesc.immutableSortedCopy(transactionNameSummaries);
-        case AVERAGE_ALLOCATED_MEMORY:
-            return orderingByAverageAllocatedMemoryDesc.immutableSortedCopy(transactionNameSummaries);
-        default:
-            throw new AssertionError("Unexpected sort order: " + sortOrder);
+            case TOTAL_TIME:
+                return orderingByTotalTimeDesc.immutableSortedCopy(transactionNameSummaries);
+            case AVERAGE_TIME:
+                return orderingByAverageTimeDesc.immutableSortedCopy(transactionNameSummaries);
+            case THROUGHPUT:
+                return orderingByTransactionCountDesc.immutableSortedCopy(transactionNameSummaries);
+            case TOTAL_CPU_TIME:
+                return orderingByTotalCpuTimeDesc.immutableSortedCopy(transactionNameSummaries);
+            case AVERAGE_CPU_TIME:
+                return orderingByAverageCpuTimeDesc.immutableSortedCopy(transactionNameSummaries);
+            case TOTAL_ALLOCATED_MEMORY:
+                return orderingByTotalAllocatedMemoryDesc.immutableSortedCopy(transactionNameSummaries);
+            case AVERAGE_ALLOCATED_MEMORY:
+                return orderingByAverageAllocatedMemoryDesc.immutableSortedCopy(transactionNameSummaries);
+            default:
+                throw new AssertionError("Unexpected sort order: " + sortOrder);
         }
     }
 
