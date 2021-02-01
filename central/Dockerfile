@@ -10,7 +10,7 @@ RUN unzip -d /usr/share /tmp/glowroot-central.zip \
     && chown -R glowroot:root /usr/share/glowroot-central \
     && chmod -R g+rw /usr/share/glowroot-central \
     && chmod a+x /usr/local/bin/docker-entrypoint.sh \
-    && chmod a+x /usr/local/bin/glowroot-central.sh  \
+    && chmod a+x /usr/local/bin/glowroot-central.sh \
     && sed -i 's/^cassandra.contactPoints=$/cassandra.contactPoints=cassandra/' /usr/share/glowroot-central/glowroot-central.properties \
     && echo '\ncassandra.symmetricEncryptionKey=' >> /usr/share/glowroot-central/glowroot-central.properties
 
