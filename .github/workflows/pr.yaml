@@ -1,0 +1,45 @@
+name: PR build
+
+on: pull_request
+
+# TODO cache at least $HOME/.m2 and $HOME/.cache/bower
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ 8 ]
+        #java: [ 8, 11, 16 ]
+        target: [ test1, test2, test3, test4 ]
+        testShaded: [ true, false ]
+        glowrootHarness: [ javaagent, local ]
+      fail-fast: false
+    env:
+      TEST_SHADED: ${{ matrix.testShaded }}
+      GLOWROOT_HARNESS: ${{ matrix.glowrootHarness }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - id: setup-java
+        name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ matrix.java }}
+      # wait and see if this is needed:
+      # echo "MAVEN_OPTS=\"-Xmx768m -XX:NewRatio=20\"" > ~/.mavenrc
+      - name: Build
+        uses: GabrielBB/xvfb-action@v1
+        with:
+          run: .github/scripts/build.sh ${{ matrix.target }}
+
+
+# TODO TARGET=deploy, Java 8
+#      TARGET=checker, Java 8
+
+# TODO TARGET=saucelabs*
+
+# TODO after
+# stop sauce connect if it has been started
+# if [ -f sauce-connect.pid ]; then build/travis-ci/stop-sauce-connect.sh; fi

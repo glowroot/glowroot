@@ -1,8 +1,5 @@
 #!/bin/bash -e
 
-# see https://github.com/travis-ci/travis-ci/issues/8408
-_JAVA_OPTIONS=
-
 # java.security.egd is needed for low-entropy docker containers
 # /dev/./urandom (as opposed to simply /dev/urandom) is needed prior to Java 8
 # (see https://docs.oracle.com/javase/8/docs/technotes/guides/security/enhancements-8.html)
@@ -28,7 +25,7 @@ fi
 # see https://github.com/travis-ci/travis-build/blob/master/lib/travis/build/bash/travis_start_sauce_connect.bash
 start_sauce_connect() {
   curl https://saucelabs.com/downloads/sc-4.5.2-linux.tar.gz | tar -zx
-  sc-4.5.2-linux/bin/sc -i $TRAVIS_JOB_NUMBER -f sauce-connect.ready -d sauce-connect.pid -N &
+  sc-4.5.2-linux/bin/sc -i $GITHUB_RUN_ID -f sauce-connect.ready -d sauce-connect.pid -N &
   SAUCE_CONNECT_PID=$!
   while test ! -f sauce-connect.ready && ps -f $SAUCE_CONNECT_PID &> /dev/null; do
     sleep .5
@@ -205,15 +202,15 @@ case "$1" in
                                  -Pjavadoc \
                                  -B
                # only deploy snapshot versions (release versions need pgp signature)
-               version=`mvn help:evaluate -Dexpression=project.version | grep -v '\['`
-               if [[ "$TRAVIS_REPO_SLUG" == "glowroot/glowroot" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_PULL_REQUEST" == "false" && "$version" == *-SNAPSHOT ]]
+               version=$(mvn help:evaluate -Dexpression=project.version | grep -v '\[')
+               if [[ "$GITHUB_REPOSITORY" == "glowroot/glowroot" && "$GITHUB_REF" == "master" && "$version" == *-SNAPSHOT ]]
                then
                  mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-central \
                                   -Pjavadoc \
                                   -DargLine="$surefire_jvm_args" \
                                   $test_shaded_opt \
                                   $cassandra_java_home_opt \
-                                  -Dglowroot.build.commit=$TRAVIS_COMMIT \
+                                  -Dglowroot.build.commit=$GITHUB_SHA \
                                   --settings build/travis-ci/settings.xml \
                                   -B
                else
@@ -400,7 +397,7 @@ case "$1" in
                exit $mvn_status
                ;;
 
- "saucelabs1") if [[ $SAUCE_USERNAME && "$TRAVIS_PULL_REQUEST" == "false" ]]
+ "saucelabs1") if [[ $SAUCE_USERNAME && "$GITHUB_REF" == "master" ]]
                then
                  start_sauce_connect
                  mvn clean install -DskipTests \
@@ -414,7 +411,7 @@ case "$1" in
                                   -Dsaucelabs.browser.version="$SAUCELABS_BROWSER_VERSION" \
                                   -Dsaucelabs.device.name="$SAUCELABS_DEVICE_NAME" \
                                   -Dsaucelabs.device.orientation="$SAUCELABS_DEVICE_ORIENTATION" \
-                                  -Dsaucelabs.tunnel.identifier="$TRAVIS_JOB_NUMBER" \
+                                  -Dsaucelabs.tunnel.identifier="$GITHUB_RUN_ID" \
                                   -DargLine="$surefire_jvm_args" \
                                   -B
                else
@@ -422,7 +419,7 @@ case "$1" in
                fi
                ;;
 
- "saucelabs2") if [[ $SAUCE_USERNAME && "$TRAVIS_PULL_REQUEST" == "false" ]]
+ "saucelabs2") if [[ $SAUCE_USERNAME && "$GITHUB_REF" == "master" ]]
                then
                  start_sauce_connect
                  mvn clean install -DskipTests \
@@ -436,7 +433,7 @@ case "$1" in
                                   -Dsaucelabs.browser.version="$SAUCELABS_BROWSER_VERSION" \
                                   -Dsaucelabs.device.name="$SAUCELABS_DEVICE_NAME" \
                                   -Dsaucelabs.device.orientation="$SAUCELABS_DEVICE_ORIENTATION" \
-                                  -Dsaucelabs.tunnel.identifier="$TRAVIS_JOB_NUMBER" \
+                                  -Dsaucelabs.tunnel.identifier="$GITHUB_RUN_ID" \
                                   -DargLine="$surefire_jvm_args" \
                                   -B
                else
@@ -444,7 +441,7 @@ case "$1" in
                fi
                ;;
 
- "saucelabs3") if [[ $SAUCE_USERNAME && "$TRAVIS_PULL_REQUEST" == "false" ]]
+ "saucelabs3") if [[ $SAUCE_USERNAME && "$GITHUB_REF" == "master" ]]
                then
                  start_sauce_connect
                  mvn clean install -DskipTests \
@@ -458,7 +455,7 @@ case "$1" in
                                   -Dsaucelabs.browser.version="$SAUCELABS_BROWSER_VERSION" \
                                   -Dsaucelabs.device.name="$SAUCELABS_DEVICE_NAME" \
                                   -Dsaucelabs.device.orientation="$SAUCELABS_DEVICE_ORIENTATION" \
-                                  -Dsaucelabs.tunnel.identifier="$TRAVIS_JOB_NUMBER" \
+                                  -Dsaucelabs.tunnel.identifier="$GITHUB_RUN_ID" \
                                   -DargLine="$surefire_jvm_args" \
                                   -B
                else
