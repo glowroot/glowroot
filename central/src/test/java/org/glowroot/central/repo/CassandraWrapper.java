@@ -50,9 +50,9 @@ class CassandraWrapper {
         if (System.getProperty("os.name").startsWith("Windows")) {
             // Cassandra 2.1 has issues on Windows
             // see https://issues.apache.org/jira/browse/CASSANDRA-10673
-            CASSANDRA_VERSION = "2.2.16";
+            CASSANDRA_VERSION = "2.2.19";
         } else {
-            CASSANDRA_VERSION = "2.1.21";
+            CASSANDRA_VERSION = "2.1.22";
         }
         String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
         if (javaVersion.startsWith("1.7") || javaVersion.startsWith("1.8")) {
