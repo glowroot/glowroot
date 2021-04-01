@@ -22,6 +22,7 @@ import java.util.List;
 import com.google.common.collect.Lists;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.GreenMailUtil;
+import com.icegreen.greenmail.util.ServerSetup;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -103,7 +104,7 @@ public class MailPluginIT {
     private abstract static class DoMail implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            GreenMail greenMail = new GreenMail(); // uses test ports by default
+            GreenMail greenMail = new GreenMail(ServerSetup.SMTP); // uses test ports by default
             greenMail.start();
             try {
                 transactionMarker();
