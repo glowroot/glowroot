@@ -5,21 +5,27 @@
 # (see https://docs.oracle.com/javase/8/docs/technotes/guides/security/enhancements-8.html)
 #
 # NewRatio is to leave as much memory as possible to old gen
-surefire_jvm_args="-Xmx256m -XX:NewRatio=20 -Djava.security.egd=file:/dev/./urandom"
-java_version=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}')
-if [[ $java_version == 1.6* || $java_version == 1.7* ]]
+test_jvm_args="-Xmx256m -XX:NewRatio=20 -Djava.security.egd=file:/dev/./urandom"
+if [[ -n "$TEST_JVM_PATH" ]]
+then
+  test_jvm_version=$("$TEST_JVM_PATH" -version 2>&1 | awk -F '"' '/version/ {print $2}')
+  test_jvm_opt=-Djvm="$TEST_JVM_PATH"
+else
+  test_jvm_version=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}')
+fi
+
+if [[ $test_jvm_version == 1.6* || $test_jvm_version == 1.7* ]]
 then
   # MaxPermSize bump is needed for running grails plugin tests
-  surefire_jvm_args="$surefire_jvm_args -XX:MaxPermSize=128m"
+  test_jvm_args="$test_jvm_args -XX:MaxPermSize=128m"
 fi
 if [[ "$TEST_SHADED" == "true" ]]
 then
   test_shaded_opt=-Dglowroot.test.shaded
 fi
-
-if [[ $java_version == 9* || $java_version == [1-9][0-9]* ]]
+if [[ $test_jvm_version != 1.8* ]]
 then
-  cassandra_java_home_opt=-Dcassandra.java.home=/usr/lib/jvm/java-8-openjdk-amd64
+  cassandra_jvm_opt=-Dcassandra.jvm=$(which java)
 fi
 
 # see https://github.com/travis-ci/travis-build/blob/master/lib/travis/build/bash/travis_start_sauce_connect.bash
@@ -83,7 +89,7 @@ case "$1" in
       "test1") # excluding :glowroot-agent-ui-sandbox and :glowroot-agent since they depend on plugins which are being excluded
                exclude_modules="$test1_excluded_plugin_modules,!:glowroot-agent-ui-sandbox,!:glowroot-agent"
                activate_profiles="netty-4.x,spring-4.x"
-               if [[ $java_version == 1.8* || $java_version == 9* || $java_version == [1-9][0-9]* ]]
+               if [[ $test_jvm_version == 1.8* || $test_jvm_version == 9* || $test_jvm_version == [1-9][0-9]* ]]
                then
                  # these modules are only part of build under Java 8+
                  exclude_modules="$exclude_modules,!:glowroot-central,!:glowroot-webdriver-tests"
@@ -98,21 +104,23 @@ case "$1" in
                fi
                mvn clean install -pl $exclude_modules \
                                  -P $activate_profiles \
-                                 -DargLine="$surefire_jvm_args" \
+                                 $test_jvm_opt \
+                                 -DargLine="$test_jvm_args" \
                                  $test_shaded_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -Dglowroot.ui.skip \
                                  -B
                ;;
 
-      "test2") mvn clean install -DargLine="$surefire_jvm_args" \
+      "test2") mvn clean install $test_jvm_opt \
+                                 -DargLine="$test_jvm_args" \
                                  -DskipTests \
                                  -Dglowroot.ui.skip \
                                  -B
                if [[ "$TEST_SHADED" == "true" ]]
                then
                  # async-http-client, elasticsearch and play tests all require shading since they use netty
-                 if [[ $java_version == 1.6* || $java_version == 1.7* ]]
+                 if [[ $test_jvm_version == 1.6* || $test_jvm_version == 1.7* ]]
                  then
                    activate_profiles_opt="-P async-http-client-1.x,elasticsearch-2.x,play-2.2.x,play-2.x"
                  else
@@ -124,25 +132,29 @@ case "$1" in
                mvn clean install -pl ${test1_excluded_plugin_modules//!:/:} \
                                  $activate_profiles_opt \
                                  -Denforcer.skip \
-                                 -DargLine="$surefire_jvm_args" \
+                                 $test_jvm_opt \
+                                 -DargLine="$test_jvm_args" \
                                  $test_shaded_opt \
-                                 $cassandra_java_home_opt \
+                                 $cassandra_jvm_opt \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
-                                -DargLine="$surefire_jvm_args" \
+                                $test_jvm_opt \
+                                -DargLine="$test_jvm_args" \
                                 $test_shaded_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=H2 \
                                 -B
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
-                                -DargLine="$surefire_jvm_args" \
+                                $test_jvm_opt \
+                                -DargLine="$test_jvm_args" \
                                 $test_shaded_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=COMMONS_DBCP_WRAPPED \
                                 -B
                mvn clean verify -pl :glowroot-agent-jdbc-plugin \
-                                -DargLine="$surefire_jvm_args" \
+                                $test_jvm_opt \
+                                -DargLine="$test_jvm_args" \
                                 $test_shaded_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -Dglowroot.test.jdbcConnectionType=TOMCAT_JDBC_POOL_WRAPPED \
@@ -153,7 +165,8 @@ case "$1" in
                  # in order to test HikariCpProxyHackClassVisitor) only work with javaagent container,
                  # see org.glowroot.agent.plugin.jdbc.Connections#createHikariCpWrappedConnection()
                  mvn clean verify -pl :glowroot-agent-jdbc-plugin \
-                                  -DargLine="$surefire_jvm_args" \
+                                  $test_jvm_opt \
+                                  -DargLine="$test_jvm_args" \
                                   $test_shaded_opt \
                                   -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                   -Dglowroot.test.jdbcConnectionType=HIKARI_CP_WRAPPED \
@@ -161,7 +174,8 @@ case "$1" in
                  # GLASSFISH_JDBC_POOL_WRAPPED tests only work with javaagent container because they
                  # depend on weaving bootstrap classes (e.g. java.sql.Statement)
                  mvn clean verify -pl :glowroot-agent-jdbc-plugin \
-                                  -DargLine="$surefire_jvm_args" \
+                                  $test_jvm_opt \
+                                  -DargLine="$test_jvm_args" \
                                   $test_shaded_opt \
                                   -Dglowroot.it.harness=javaagent \
                                   -Dglowroot.test.jdbcConnectionType=GLASSFISH_JDBC_POOL_WRAPPED \
@@ -169,7 +183,8 @@ case "$1" in
                  if [[ "$TEST_SHADED" == "true" ]]
                  then
                    mvn clean verify -pl :glowroot-agent-logger-plugin \
-                                    -DargLine="$surefire_jvm_args" \
+                                    $test_jvm_opt \
+                                    -DargLine="$test_jvm_args" \
                                     -Dglowroot.test.shaded \
                                     -Dglowroot.it.harness=javaagent \
                                     -Dglowroot.test.julManager=org.jboss.logmanager.LogManager \
@@ -179,38 +194,42 @@ case "$1" in
                fi
                ;;
 
-      "test3") if [[ $java_version == 1.6* || $java_version == 1.7* ]]
+      "test3") if [[ $test_jvm_version == 1.6* || $test_jvm_version == 1.7* ]]
                then
                  echo test3 target requires Java 8+
                  exit 1
                fi
-               mvn clean install -DargLine="$surefire_jvm_args" \
+               mvn clean install $test_jvm_opt \
+                                 -DargLine="$test_jvm_args" \
                                  -DskipTests \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
 
                mvn clean verify -pl :glowroot-central,:glowroot-webdriver-tests \
-                                -DargLine="$surefire_jvm_args" \
+                                $test_jvm_opt \
+                                -DargLine="$test_jvm_args" \
                                 $test_shaded_opt \
-                                $cassandra_java_home_opt \
+                                $cassandra_jvm_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -B
                ;;
 
-      "test4") if [[ $java_version == 1.6* || $java_version == 1.7* ]]
+      "test4") if [[ $test_jvm_version == 1.6* || $test_jvm_version == 1.7* ]]
                then
                  echo test4 target requires Java 8+
                  exit 1
                fi
-               mvn clean install -DargLine="$surefire_jvm_args" \
+               mvn clean install $test_jvm_opt \
+                                 -DargLine="$test_jvm_args" \
                                  -DskipTests \
                                  -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                  -B
                mvn clean verify -pl :glowroot-webdriver-tests \
                                 -Dglowroot.internal.webdriver.useCentral=true \
-                                -DargLine="$surefire_jvm_args" \
+                                $test_jvm_opt \
+                                -DargLine="$test_jvm_args" \
                                 $test_shaded_opt \
-                                $cassandra_java_home_opt \
+                                $cassandra_jvm_opt \
                                 -Dglowroot.it.harness=$GLOWROOT_HARNESS \
                                 -B
                ;;
@@ -218,7 +237,8 @@ case "$1" in
      "deploy") # build other (non-deployed) modules since many are used by deploy :glowroot-agent-it-harness and :glowroot-agent (below)
                # skipping tests to keep build time consistently under the 50 minute limit (and tests are already run in other jobs)
                # javadoc is needed here since deploy :glowroot-agent attaches the javadoc from :glowroot-agent-core
-               mvn clean install -DargLine="$surefire_jvm_args" \
+               mvn clean install $test_jvm_opt \
+                                 -DargLine="$test_jvm_args" \
                                  -DskipTests \
                                  -Pjavadoc \
                                  -B
@@ -228,18 +248,20 @@ case "$1" in
                then
                  mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-central \
                                   -Pjavadoc \
-                                  -DargLine="$surefire_jvm_args" \
+                                  $test_jvm_opt \
+                                  -DargLine="$test_jvm_args" \
                                   $test_shaded_opt \
-                                  $cassandra_java_home_opt \
+                                  $cassandra_jvm_opt \
                                   -Dglowroot.build.commit=$GITHUB_SHA \
                                   --settings build/travis-ci/settings.xml \
                                   -B
                else
                  mvn clean install -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-central \
                                    -Pjavadoc \
-                                   -DargLine="$surefire_jvm_args" \
+                                   $test_jvm_opt \
+                                   -DargLine="$test_jvm_args" \
                                    $test_shaded_opt \
-                                   $cassandra_java_home_opt \
+                                   $cassandra_jvm_opt \
                                    -B
                fi
                ;;
@@ -254,7 +276,8 @@ case "$1" in
                  mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent test \
                                  -Djacoco.destFile=$PWD/jacoco-combined.exec \
                                  -Djacoco.propertyName=jacocoArgLine \
-                                 -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                 $test_jvm_opt \
+                                 -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                  -B
                  # intentionally calling failsafe plugin directly in order to skip surefire (unit test) execution
                  #
@@ -276,7 +299,8 @@ case "$1" in
                                  -Dglowroot.it.harness=javaagent"
                  # run integration tests
                  mvn $common_mvn_args -P netty-4.x,spring-4.x,mongodb-3.7.x \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      $test_jvm_opt \
+                                      -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                       -B
                  # install to run additional tests
                  mvn clean install -DskipTests \
@@ -285,7 +309,8 @@ case "$1" in
                  rm -rf webdriver-tests/cassandra
                  mvn $common_mvn_args -pl :glowroot-webdriver-tests \
                                       -Dglowroot.internal.webdriver.useCentral=true \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      $test_jvm_opt \
+                                      -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                       -B
                  common_mvn_args="$common_mvn_args \
                                   -Dglowroot.test.shaded \
@@ -293,77 +318,91 @@ case "$1" in
                  # elasticsearch 5.x
                  mvn $common_mvn_args -pl agent/plugins/elasticsearch-plugin \
                                       -P elasticsearch-5.x \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      $test_jvm_opt \
+                                      -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                       -B
                  # elasticsearch 2.x
                  mvn $common_mvn_args -pl agent/plugins/elasticsearch-plugin \
                                       -P elasticsearch-2.x \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      $test_jvm_opt \
+                                      -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                       -B
                  # async-http-client 2.x (AsyncHttpClientPluginIT)
                  mvn $common_mvn_args -pl agent/plugins/http-client-plugin \
                                       -P async-http-client-2.x \
                                       -Dit.test=AsyncHttpClientPluginIT \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      $test_jvm_opt \
+                                      -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                       -B
                  # async-http-client 1.x (AsyncHttpClientPluginIT)
                  mvn $common_mvn_args -pl agent/plugins/http-client-plugin \
                                       -P async-http-client-1.x \
                                       -Dit.test=AsyncHttpClientPluginIT \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      $test_jvm_opt \
+                                      -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                       -B
                  # okhttp prior to 2.2.0 (OkHttpClientPluginIT)
                  mvn $common_mvn_args -pl agent/plugins/http-client-plugin \
                                       -Dokhttpclient2x.version=2.1.0 \
                                       -Dit.test=OkHttpClientPluginIT \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      $test_jvm_opt \
+                                      -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                       -B
                  # LogbackIT prior to 0.9.16
                  mvn $common_mvn_args -pl agent/plugins/logger-plugin \
                                       -P logback-old \
                                       -Dit.test=LogbackIT \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      $test_jvm_opt \
+                                      -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                       -B
                  # netty 3.x
                  mvn $common_mvn_args -pl agent/plugins/netty-plugin \
                                       -P netty-3.x \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      $test_jvm_opt \
+                                      -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                       -B
                  # play 2.4.x
                  mvn $common_mvn_args -pl agent/plugins/play-plugin \
                                       -P play-2.4.x,play-2.x \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      $test_jvm_opt \
+                                      -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                       -B
                  # play 2.2.x
                  mvn $common_mvn_args -pl agent/plugins/play-plugin \
                                       -P play-2.2.x,play-2.x \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      $test_jvm_opt \
+                                      -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                       -B
                  # TODO Play 2.0.x and 2.1.x require Java 7
                  # play 1.x
                  mvn $common_mvn_args -pl agent/plugins/play-plugin \
                                       -P play-1.x \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      $test_jvm_opt \
+                                      -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                       -B
                  # spring 5.1.x
                  mvn $common_mvn_args -pl agent/plugins/spring-plugin \
                                       -P spring-5.1.x,spring-4.x \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      $test_jvm_opt \
+                                      -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                       -B
                  # spring 3.2.x
                  mvn $common_mvn_args -pl agent/plugins/spring-plugin \
                                       -P spring-3.2.x \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      $test_jvm_opt \
+                                      -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                       -B
                  # spring 3.x
                  mvn $common_mvn_args -pl agent/plugins/spring-plugin \
                                       -P spring-3.x \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      $test_jvm_opt \
+                                      -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                       -B
                  # mongodb pre-3.7.x
                  mvn $common_mvn_args -pl agent/plugins/mongodb-plugin \
                                       -P mongodb-pre-3.7.x \
-                                      -DargLine="$surefire_jvm_args \${jacocoArgLine}" \
+                                      $test_jvm_opt \
+                                      -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                       -B
                  # the sonar.login system property is set in the pom.xml using the
                  # environment variable SONAR_LOGIN (instead of setting the system
@@ -372,7 +411,8 @@ case "$1" in
                                    -Dsonar.host.url=https://sonarcloud.io \
                                    -Dsonar.organization=glowroot \
                                    -Dsonar.jacoco.reportPaths=$PWD/jacoco-combined.exec \
-                                   -DargLine="$surefire_jvm_args" \
+                                   $test_jvm_opt \
+                                   -DargLine="$test_jvm_args" \
                                    -B
                else
                  echo SONAR_LOGIN token missing
@@ -433,7 +473,8 @@ case "$1" in
                                   -Dsaucelabs.device.name="$SAUCELABS_DEVICE_NAME" \
                                   -Dsaucelabs.device.orientation="$SAUCELABS_DEVICE_ORIENTATION" \
                                   -Dsaucelabs.tunnel.identifier="$GITHUB_RUN_ID" \
-                                  -DargLine="$surefire_jvm_args" \
+                                  $test_jvm_opt \
+                                  -DargLine="$test_jvm_args" \
                                   -B
                  stop_sauce_connect
                else
@@ -456,7 +497,8 @@ case "$1" in
                                   -Dsaucelabs.device.name="$SAUCELABS_DEVICE_NAME" \
                                   -Dsaucelabs.device.orientation="$SAUCELABS_DEVICE_ORIENTATION" \
                                   -Dsaucelabs.tunnel.identifier="$GITHUB_RUN_ID" \
-                                  -DargLine="$surefire_jvm_args" \
+                                  $test_jvm_opt \
+                                  -DargLine="$test_jvm_args" \
                                   -B
                  stop_sauce_connect
                else
@@ -479,7 +521,8 @@ case "$1" in
                                   -Dsaucelabs.device.name="$SAUCELABS_DEVICE_NAME" \
                                   -Dsaucelabs.device.orientation="$SAUCELABS_DEVICE_ORIENTATION" \
                                   -Dsaucelabs.tunnel.identifier="$GITHUB_RUN_ID" \
-                                  -DargLine="$surefire_jvm_args" \
+                                  $test_jvm_opt \
+                                  -DargLine="$test_jvm_args" \
                                   -B
                  stop_sauce_connect
                else

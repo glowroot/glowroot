@@ -43,7 +43,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 class CassandraWrapper {
 
     private static final String CASSANDRA_VERSION;
-    private static final String CASSANDRA_JAVA_HOME;
+    private static final String CASSANDRA_JVM;
 
     static {
         if (System.getProperty("os.name").startsWith("Windows")) {
@@ -54,22 +54,15 @@ class CassandraWrapper {
             CASSANDRA_VERSION = "2.1.22";
         }
         String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
-        if (javaVersion.startsWith("1.6")) {
-            CASSANDRA_JAVA_HOME = System.getProperty("java7.home");
-            if (Strings.isNullOrEmpty(CASSANDRA_JAVA_HOME)) {
-                throw new IllegalStateException("Cassandra itself requires Java 7+, but this test"
-                        + " is running under Java 6, so you must provide -Djava7.home=... (or run"
-                        + " this test under Java 7+)");
-            }
-        } else if (javaVersion.startsWith("1.7") || javaVersion.startsWith("1.8")) {
-            CASSANDRA_JAVA_HOME = System.getProperty("java.home");
+        if (javaVersion.startsWith("1.7") || javaVersion.startsWith("1.8")) {
+            CASSANDRA_JVM =
+                    System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
         } else {
-            CASSANDRA_JAVA_HOME = System.getProperty("cassandra.java.home");
-            if (Strings.isNullOrEmpty(CASSANDRA_JAVA_HOME)) {
+            CASSANDRA_JVM = System.getProperty("cassandra.jvm");
+            if (Strings.isNullOrEmpty(CASSANDRA_JVM)) {
                 throw new IllegalStateException("Cassandra 2.x itself requires Java 7 or Java 8,"
                         + " but this test is running under Java " + javaVersion + ", so you must"
-                        + " provide -Dcassandra.java.home=... (or run this test under Java 7 or"
-                        + " Java 8)");
+                        + " provide -Dcassandra.jvm=... (or run this test under Java 7 or Java 8)");
             }
         }
     }
@@ -144,9 +137,7 @@ class CassandraWrapper {
 
     private static List<String> buildCommandLine(File cassandraDir) {
         List<String> command = Lists.newArrayList();
-        String javaExecutable =
-                CASSANDRA_JAVA_HOME + File.separator + "bin" + File.separator + "java";
-        command.add(javaExecutable);
+        command.add(CASSANDRA_JVM);
         command.add("-cp");
         command.add(buildClasspath(cassandraDir));
         command.add("-javaagent:" + cassandraDir.getAbsolutePath() + "/lib/jamm-0.3.0.jar");
