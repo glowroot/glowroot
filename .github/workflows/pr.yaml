@@ -42,13 +42,19 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: build-test${{ matrix.testGroup }}-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven-
+            build-
       - name: Build
         uses: GabrielBB/xvfb-action@v1
         with:
           run: .github/scripts/build.sh test${{ matrix.testGroup }}
+      - name: Upload webdriver screenshots
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          path: /tmp/glowroot-webdriver-test-*.png
+          if-no-files-found: ignore
 
   deploy:
     runs-on: ubuntu-latest
@@ -65,9 +71,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: deploy-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven-
+            deploy-
       - name: Build
         uses: GabrielBB/xvfb-action@v1
         with:
@@ -88,9 +94,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: checker-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ runner.os }}-maven-
+            checker-
       - name: Build
         uses: GabrielBB/xvfb-action@v1
         with:
@@ -126,9 +132,9 @@ jobs:
 #        uses: actions/cache@v2
 #        with:
 #          path: ~/.m2/repository
-#          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+#          key: saucelabs-${{ hashFiles('**/pom.xml') }}
 #          restore-keys: |
-#            ${{ runner.os }}-maven-
+#            saucelabs-
 #      - name: Connect to Sauce Labs
 #        uses: saucelabs/sauce-connect-action@v1
 #        with:
