@@ -33,6 +33,27 @@ start_sauce_connect() {
   test -f sauce-connect.ready
 }
 
+# see https://github.com/travis-ci/travis-build/blob/master/lib/travis/build/bash/travis_stop_sauce_connect.bash
+stop_sauce_connect() {
+  pkill -F sauce-connect.pid
+
+  for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+    if pkill -0 -F sauce-connect.pid &> /dev/null; then
+      echo waiting for graceful sauce connect shutdown $i/15
+      sleep 1
+    else
+      echo sauce connect shutdown complete
+      exit 0
+    fi
+  done
+
+  if pkill -0 -F sauce-connect.pid &> /dev/null; then
+    echo forcefully terminating sauce connect
+    pkill -9 -F sauce-connect.pid &> /dev/null || true
+  fi
+}
+
+
 test1_excluded_plugin_modules="!:glowroot-agent-cassandra-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-elasticsearch-plugin"
 test1_excluded_plugin_modules="$test1_excluded_plugin_modules,!:glowroot-agent-hibernate-plugin"
@@ -414,6 +435,7 @@ case "$1" in
                                   -Dsaucelabs.tunnel.identifier="$GITHUB_RUN_ID" \
                                   -DargLine="$surefire_jvm_args" \
                                   -B
+                 stop_sauce_connect
                else
                  echo skipping, saucelabs only runs against master repository and master branch
                fi
@@ -436,6 +458,7 @@ case "$1" in
                                   -Dsaucelabs.tunnel.identifier="$GITHUB_RUN_ID" \
                                   -DargLine="$surefire_jvm_args" \
                                   -B
+                 stop_sauce_connect
                else
                  echo skipping, saucelabs only runs against master repository and master branch
                fi
@@ -458,6 +481,7 @@ case "$1" in
                                   -Dsaucelabs.tunnel.identifier="$GITHUB_RUN_ID" \
                                   -DargLine="$surefire_jvm_args" \
                                   -B
+                 stop_sauce_connect
                else
                  echo skipping, saucelabs only runs against master repository and master branch
                fi
