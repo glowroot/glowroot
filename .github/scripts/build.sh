@@ -212,7 +212,7 @@ case "$1" in
                                  -B
                # only deploy snapshot versions (release versions need pgp signature)
                version=$(mvn help:evaluate -Dexpression=project.version | grep -v '\[')
-               if [[ "$GITHUB_REPOSITORY" == "glowroot/glowroot" && "$GITHUB_REF" == "master" && "$version" == *-SNAPSHOT ]]
+               if [[ "$GITHUB_REPOSITORY" == "glowroot/glowroot" && "$GITHUB_REF" == "main" && "$version" == *-SNAPSHOT ]]
                then
                  mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-central \
                                   -Pjavadoc \
@@ -426,7 +426,7 @@ case "$1" in
                exit $mvn_status
                ;;
 
- "saucelabs1") if [[ $SAUCE_USERNAME && "$GITHUB_REF" == "master" ]]
+ "saucelabs1") if [[ $SAUCE_USERNAME && "$GITHUB_REF" == "main" ]]
                then
                  mvn clean install -DskipTests \
                                    -B
@@ -444,11 +444,11 @@ case "$1" in
                                   -DargLine="$test_jvm_args" \
                                   -B
                else
-                 echo skipping, saucelabs only runs against master repository and master branch
+                 echo skipping, saucelabs only runs against main repository and main branch
                fi
                ;;
 
- "saucelabs2") if [[ $SAUCE_USERNAME && "$GITHUB_REF" == "master" ]]
+ "saucelabs2") if [[ $SAUCE_USERNAME && "$GITHUB_REF" == "main" ]]
                then
                  mvn clean install -DskipTests \
                                    -B
@@ -466,11 +466,11 @@ case "$1" in
                                   -DargLine="$test_jvm_args" \
                                   -B
                else
-                 echo skipping, saucelabs only runs against master repository and master branch
+                 echo skipping, saucelabs only runs against main repository and main branch
                fi
                ;;
 
- "saucelabs3") if [[ $SAUCE_USERNAME && "$GITHUB_REF" == "master" ]]
+ "saucelabs3") if [[ $SAUCE_USERNAME && "$GITHUB_REF" == "main" ]]
                then
                  mvn clean install -DskipTests \
                                    -B
@@ -488,7 +488,7 @@ case "$1" in
                                   -DargLine="$test_jvm_args" \
                                   -B
                else
-                 echo skipping, saucelabs only runs against master repository and master branch
+                 echo skipping, saucelabs only runs against main repository and main branch
                fi
                ;;
 
