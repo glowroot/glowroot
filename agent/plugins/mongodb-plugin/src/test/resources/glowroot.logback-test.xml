@@ -10,5 +10,5 @@
     <appender-ref ref="CONSOLE" />
   </root>
   <!-- this is needed to suppress a harmless warning message -->
-  <logger name="org.testcontainers.utility.RegistryAuthLocator" level="error"></logger>
+  <logger name="org.testcontainers.utility.TestcontainersConfiguration" level="error"></logger>
 </configuration>
