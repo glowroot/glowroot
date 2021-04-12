@@ -289,7 +289,7 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
         // wait for save to finish
-        SECONDS.sleep(1);
+        SECONDS.sleep(2);
         clickLink("Return to list");
 
         // then
@@ -316,7 +316,7 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
         // wait for save to finish
-        SECONDS.sleep(1);
+        SECONDS.sleep(2);
         clickLink("Return to list");
 
         // then
@@ -343,7 +343,7 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
         // wait for save to finish
-        SECONDS.sleep(1);
+        SECONDS.sleep(2);
         clickLink("Return to list");
 
         // then
@@ -371,7 +371,7 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
         // wait for save to finish
-        SECONDS.sleep(1);
+        SECONDS.sleep(2);
         clickLink("Return to list");
 
         // then
@@ -399,7 +399,7 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
         // wait for save to finish
-        SECONDS.sleep(1);
+        SECONDS.sleep(2);
         clickLink("Return to list");
 
         // then
@@ -427,7 +427,7 @@ public class AlertConfigIT extends WebDriverIT {
         alertPage.getTimePeriodMinutesTextField().sendKeys("2");
         alertPage.clickSaveButton();
         // wait for save to finish
-        SECONDS.sleep(1);
+        SECONDS.sleep(2);
         clickLink("Return to list");
 
         // then
