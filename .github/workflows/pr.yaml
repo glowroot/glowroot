@@ -2,8 +2,6 @@ name: PR build
 
 on: pull_request
 
-# TODO cache at least $HOME/.m2 and $HOME/.cache/bower
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -41,7 +39,9 @@ jobs:
       - name: Restore cache
         uses: actions/cache@v2
         with:
-          path: ~/.m2/repository
+          path: |
+            ~/.m2/repository
+            ~/.cache/bower
           key: build-test${{ matrix.testGroup }}-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             build-
@@ -70,7 +70,9 @@ jobs:
       - name: Restore cache
         uses: actions/cache@v2
         with:
-          path: ~/.m2/repository
+          path: |
+            ~/.m2/repository
+            ~/.cache/bower
           key: deploy-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             deploy-
@@ -79,28 +81,30 @@ jobs:
         with:
           run: .github/scripts/build.sh deploy
 
-  checker:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Set up JDK 8
-        uses: actions/setup-java@v2
-        with:
-          distribution: adopt
-          java-version: 8
-      - name: Restore cache
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2/repository
-          key: checker-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            checker-
-      - name: Build
-        uses: GabrielBB/xvfb-action@v1
-        with:
-          run: .github/scripts/build.sh checker
+#  checker:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#        with:
+#          fetch-depth: 0
+#      - name: Set up JDK 8
+#        uses: actions/setup-java@v2
+#        with:
+#          distribution: adopt
+#          java-version: 8
+#      - name: Restore cache
+#        uses: actions/cache@v2
+#        with:
+#          path: |
+#            ~/.m2/repository
+#            ~/.cache/bower
+#          key: checker-${{ hashFiles('**/pom.xml') }}
+#          restore-keys: |
+#            checker-
+#      - name: Build
+#        uses: GabrielBB/xvfb-action@v1
+#        with:
+#          run: .github/scripts/build.sh checker
 
 #  saucelabs:
 #    runs-on: ubuntu-latest
@@ -131,7 +135,9 @@ jobs:
 #      - name: Restore cache
 #        uses: actions/cache@v2
 #        with:
-#          path: ~/.m2/repository
+#          path: |
+#            ~/.m2/repository
+#            ~/.cache/bower
 #          key: saucelabs-${{ hashFiles('**/pom.xml') }}
 #          restore-keys: |
 #            saucelabs-
