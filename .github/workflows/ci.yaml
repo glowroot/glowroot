@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [ 8, 11 ]
+        java: [ 8, 11, 16 ]
         testGroup: [ 1, 2, 3, 4 ]
         testShaded: [ true, false ]
         glowrootHarness: [ javaagent, local ]
