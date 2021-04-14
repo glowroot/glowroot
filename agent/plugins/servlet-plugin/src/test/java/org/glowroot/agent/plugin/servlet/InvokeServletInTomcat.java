@@ -48,9 +48,8 @@ abstract class InvokeServletInTomcat implements AppUnderTest {
         context.setLoader(webappLoader);
 
         // this is needed in order for Tomcat to find annotated servlet
-        File additionWebInfClasses = new File("target/test-classes");
         StandardRoot resources = new StandardRoot(context);
-        resources.addPreResources(new DirResourceSet(resources,"/WEB-INF/classes/", additionWebInfClasses.getAbsolutePath(), "/"));
+        resources.addPreResources(new DirResourceSet(resources,"/WEB-INF/classes", "target/test-classes", "/"));
         context.setResources(resources);
 
         tomcat.start();

@@ -5,7 +5,7 @@
 
   <groupId>org.glowroot</groupId>
   <artifactId>glowroot-parent</artifactId>
-  <version>0.13.7-SNAPSHOT</version>
+  <version>0.14.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Glowroot Parent Project</name>
@@ -591,6 +591,26 @@
                   <!-- java.sql.jmod is needed for glowroot-agent-embedded -->
                   <lib>${java.home}/jmods/java.sql.jmod</lib>
                 </libs>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+    <profile>
+      <id>auto-activated-less-java-9</id>
+      <activation>
+        <jdk>(,1.9]</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <version>3.0.0-M5</version>
+              <configuration>
+                <argLine combine.self="override">
+                </argLine>
               </configuration>
             </plugin>
           </plugins>
