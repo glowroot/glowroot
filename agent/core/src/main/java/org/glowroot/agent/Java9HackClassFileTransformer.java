@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.ARETURN;
-import static org.objectweb.asm.Opcodes.ASM7;
+import static org.objectweb.asm.Opcodes.ASM9;
 import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
 
 class Java9HackClassFileTransformer implements ClassFileTransformer {
@@ -60,7 +60,7 @@ class Java9HackClassFileTransformer implements ClassFileTransformer {
         private final ClassWriter cw;
 
         private Java9HackClassVisitor(ClassWriter cw) {
-            super(ASM7, cw);
+            super(ASM9, cw);
             this.cw = cw;
         }
 

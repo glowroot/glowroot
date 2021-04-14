@@ -107,7 +107,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
      * @param api
      *            the ASM API version implemented by this visitor. Must be one of
      *            {@link Opcodes#ASM4}, {@link Opcodes#ASM5}, {@link Opcodes#ASM6} or
-     *            {@link Opcodes#ASM7}.
+     *            {@link Opcodes#ASM9}.
      * @param methodVisitor
      *            the method visitor to which this adapter delegates calls.
      * @param access

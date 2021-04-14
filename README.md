@@ -3,7 +3,7 @@ Glowroot &nbsp;&nbsp; [![Build Status](https://img.shields.io/travis/glowroot/gl
 
 ## Requirements
 
-* Java 6+
+* Java 7+
 
 ## Quick start
 
