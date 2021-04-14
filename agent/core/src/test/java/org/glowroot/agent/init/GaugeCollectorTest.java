@@ -16,6 +16,7 @@
 package org.glowroot.agent.init;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.List;
 
@@ -352,9 +353,32 @@ public class GaugeCollectorTest {
     private static void setLogger(Class<?> clazz, Logger logger) throws Exception {
         Field loggerField = clazz.getDeclaredField("logger");
         loggerField.setAccessible(true);
-        Field modifiersField = Field.class.getDeclaredField("modifiers");
+        Field modifiersField = getModifiersField();
         modifiersField.setAccessible(true);
         modifiersField.setInt(loggerField, loggerField.getModifiers() & ~Modifier.FINAL);
         loggerField.set(null, logger);
+    }
+
+    private static Field getModifiersField() throws NoSuchFieldException
+    {
+        try {
+            return Field.class.getDeclaredField("modifiers");
+        }
+        catch (NoSuchFieldException e) {
+            try {
+                Method getDeclaredFields0 = Class.class.getDeclaredMethod("getDeclaredFields0", boolean.class);
+                getDeclaredFields0.setAccessible(true);
+                Field[] fields = (Field[]) getDeclaredFields0.invoke(Field.class, false);
+                for (Field field : fields) {
+                    if ("modifiers".equals(field.getName())) {
+                        return field;
+                    }
+                }
+            }
+            catch (ReflectiveOperationException ex) {
+                e.addSuppressed(ex);
+            }
+            throw e;
+        }
     }
 }

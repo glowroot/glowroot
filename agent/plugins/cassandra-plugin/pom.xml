@@ -18,7 +18,7 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <datastax.driver.version>3.7.2</datastax.driver.version>
+    <datastax.driver.version>3.11.0</datastax.driver.version>
   </properties>
 
   <dependencies>
@@ -76,35 +76,35 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>9.1</version>
+      <version>${asm.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
-      <version>9.1</version>
+      <version>${asm.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-tree</artifactId>
-      <version>9.1</version>
+      <version>${asm.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-util</artifactId>
-      <version>9.1</version>
+      <version>${asm.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-analysis</artifactId>
-      <version>9.1</version>
+      <version>${asm.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

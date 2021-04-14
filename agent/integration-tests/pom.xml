@@ -36,22 +36,36 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <!-- this dependency is needed for generating Java 6 compatible classes -->
-      <groupId>org.immutables</groupId>
-      <artifactId>android-stub</artifactId>
-      <!-- immutables is only needed at compile time -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <!-- this dependency is needed for generating Java 6 compatible classes -->
-      <groupId>com.github.trask</groupId>
-      <artifactId>immutables-jdk6-shim</artifactId>
-      <!-- immutables is only needed at compile time -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.openjdk.nashorn</groupId>
+      <artifactId>nashorn-core</artifactId>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-commons</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-tree</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-util</artifactId>
+      <version>${asm.version}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

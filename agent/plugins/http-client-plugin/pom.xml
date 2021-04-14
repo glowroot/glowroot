@@ -221,7 +221,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>9.1</version>
+      <version>${asm.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -384,8 +384,8 @@
                 <execution>
                   <id>default-testCompile</id>
                   <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <source>1.7</source>
+                    <target>1.7</target>
                   </configuration>
                 </execution>
               </executions>

@@ -67,7 +67,7 @@
     <dependency>
       <groupId>com.datastax.cassandra</groupId>
       <artifactId>cassandra-driver-core</artifactId>
-      <version>3.7.2</version>
+      <version>3.11.0</version>
     </dependency>
     <!-- Upgrading Infinispan beyond 9.4.x requires that a marshaller be chosen and configured. Do not upgrade until this is done. 
       See https://stackoverflow.com/questions/58815818/infinispan-10-0-1-final-no-marshaller-registered-for-java-type-java-util-uuid -->
@@ -162,7 +162,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>net.bytebuddy</groupId>
       <artifactId>byte-buddy</artifactId>
-      <version>1.10.7</version>
+      <version>1.10.22</version>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->

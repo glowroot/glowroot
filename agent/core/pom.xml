@@ -16,10 +16,6 @@
   <name>Glowroot Agent Core (Unshaded)</name>
   <description>Glowroot Agent Core (Unshaded)</description>
 
-  <properties>
-    <asm.version>9.1</asm.version>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.glowroot</groupId>
@@ -44,20 +40,6 @@
     <dependency>
       <groupId>org.immutables</groupId>
       <artifactId>value</artifactId>
-      <!-- immutables is only needed at compile time -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <!-- this dependency is needed for generating Java 6 compatible classes -->
-      <groupId>org.immutables</groupId>
-      <artifactId>android-stub</artifactId>
-      <!-- immutables is only needed at compile time -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <!-- this dependency is needed for generating Java 6 compatible classes -->
-      <groupId>com.github.trask</groupId>
-      <artifactId>immutables-jdk6-shim</artifactId>
       <!-- immutables is only needed at compile time -->
       <scope>provided</scope>
     </dependency>

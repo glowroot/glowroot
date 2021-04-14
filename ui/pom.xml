@@ -61,20 +61,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <!-- this dependency is needed for generating Java 6 compatible classes -->
-      <groupId>org.immutables</groupId>
-      <artifactId>android-stub</artifactId>
-      <!-- immutables is only needed at compile time -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <!-- this dependency is needed for generating Java 6 compatible classes -->
-      <groupId>com.github.trask</groupId>
-      <artifactId>immutables-jdk6-shim</artifactId>
-      <!-- immutables is only needed at compile time -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-buffer</artifactId>
       <version>${netty.version}</version>
