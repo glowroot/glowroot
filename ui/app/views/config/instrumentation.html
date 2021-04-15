@@ -212,19 +212,30 @@
             </div>
           </div>
         </fieldset>
-        <div gt-form-group
-             gt-label="Transaction type"
-             gt-model="config.transactionType"
-             gt-disabled="!agentRollup.permissions.config.edit.instrumentation"
-             gt-width="40em"
-             gt-required="captureKindTransaction"
+        <div class="form-group row"
              ng-if="captureKindTransaction">
-          <div class="help-block">
-            The transaction type is used for aggregation and filtering.
-          </div>
-          <div class="help-block">
-            This can be one of the current transaction types ({{agentRollup.transactionTypes.join(', ')}})
-            or a new transaction type.
+          <label class="col-xl-3 gt-form-label-xl">
+            Transaction type
+          </label>
+          <div class="col-xl-9">
+            <input type="text"
+                   class="form-control"
+                   ng-model="config.transactionType"
+                   ng-required="captureKindTransaction"
+                   ng-disabled="!agentRollup.permissions.config.edit.instrumentation"
+                   uib-typeahead="suggestion for suggestion in transactionTypes($viewValue)"
+                   typeahead-wait-ms="5"
+                   style="max-width: 40em; display: inline-block">
+            <div class="gt-invalid-required-feedback">
+              This is required.
+            </div>
+            <div class="help-block">
+              The transaction type is used for aggregation and filtering.
+            </div>
+            <div class="help-block">
+              This can be one of the current transaction types ({{agentRollup.transactionTypes.join(', ')}})
+              or a new transaction type.
+            </div>
           </div>
         </div>
         <div gt-form-group

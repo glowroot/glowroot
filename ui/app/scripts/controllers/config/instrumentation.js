@@ -285,6 +285,18 @@ glowroot.controller('ConfigInstrumentationCtrl', [
       return text;
     };
 
+    $scope.transactionTypes = function (suggestion) {
+      if ($scope.agentNotConnected) {
+        return [];
+      }
+      if (!$scope.config.transactionType) {
+        return [];
+      }
+      return $scope.agentRollup.transactionTypes.filter(function (tt) {
+        return tt.toLowerCase().includes(suggestion.toLowerCase());
+      });
+    };
+
     $scope.save = function (deferred) {
       var postData = angular.copy($scope.config);
       var url;
