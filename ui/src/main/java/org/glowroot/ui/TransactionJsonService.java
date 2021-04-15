@@ -443,6 +443,8 @@ class TransactionJsonService {
                 overallSummary = ImmutableOverallSummary.builder()
                         .totalDurationNanos(0)
                         .transactionCount(0)
+                        .totalCpuNanos(0)
+                        .totalAllocatedBytes(0)
                         .build();
             }
         }

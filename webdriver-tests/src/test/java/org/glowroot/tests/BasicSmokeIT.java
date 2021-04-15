@@ -117,14 +117,14 @@ public class BasicSmokeIT extends WebDriverIT {
         Utils.getWithWait(driver, Utils.linkText("Response time")).sendKeys(Keys.F5);
 
         waitFor(xpath("//a[@gt-display='All Web Transactions'][contains(., '%')]"));
-        click(xpath("//button[normalize-space()='By percent of total time']"));
+        click(xpath("//button[normalize-space()='By total time (%)']"));
         clickLink("By average time");
         waitFor(xpath("//a[@gt-display='All Web Transactions'][contains(., 'ms')]"));
         click(xpath("//button[normalize-space()='By average time']"));
         clickLink("By throughput (per min)");
         waitFor(xpath("//a[@gt-display='All Web Transactions'][contains(., '/min')]"));
         click(xpath("//button[normalize-space()='By throughput (per min)']"));
-        clickLink("By percent of total time");
+        clickLink("By total time (%)");
         waitFor(xpath("//a[@gt-display='All Web Transactions'][contains(., '%')]"));
 
         clickAcross();
