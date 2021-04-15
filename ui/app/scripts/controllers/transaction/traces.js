@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular, $ */
+/* global glowroot, angular, moment, $ */
 
 glowroot.controller('TracesCtrl', [
   '$scope',
@@ -550,6 +550,34 @@ glowroot.controller('TracesCtrl', [
           labelPadding: 7,
           tickFormatter: function (val) {
             return val.toLocaleString(undefined, {maximumSignificantDigits: 15});
+          }
+        },
+        tooltip: true,
+        tooltipOpts: {
+          content: function (label, xval, yval) {
+            function formatMillis(millis) {
+              var display = '';
+
+              function append(num, label) {
+                if (num) {
+                  display += ' ' + num + ' ' + label;
+                  if (num !== 1) {
+                    display += 's';
+                  }
+                }
+              }
+
+              var duration = moment.duration(millis);
+              append(Math.floor(duration.asDays()), 'day');
+              append(duration.hours(), 'hour');
+              append(duration.minutes(), 'minute');
+              append(duration.seconds(), 'second');
+              return display;
+            }
+
+            return '<div class="gt-chart-tooltip"><div style="font-weight: 600;">'
+                + moment(xval - yval).format('LTS') + ' to ' + moment(xval).format('LTS')
+                + '</div><div>' +formatMillis(yval) + '</div></div>';
           }
         },
         zoom: {
