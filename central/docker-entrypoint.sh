@@ -49,7 +49,7 @@ if [ "$CASSANDRA_SYMMETRIC_ENCRYPTION_KEY" ]; then
   sed -i "s/^cassandra.symmetricEncryptionKey=.*$/cassandra.symmetricEncryptionKey=$CASSANDRA_SYMMETRIC_ENCRYPTION_KEY/" glowroot-central.properties
 fi
 if [ "$UI_CONTEXT_PATH" ]; then
-  sed -i "s/^ui.contextPath=.*$/ui.contextPath=$UI_CONTEXT_PATH/" glowroot-central.properties
+  sed -i "s,^ui.contextPath=.*$,ui.contextPath=$UI_CONTEXT_PATH," glowroot-central.properties
 fi
 
 exec "$@"
