@@ -134,7 +134,7 @@
       <artifactId>javassist</artifactId>
       <!-- this is needed to make bitronix use its JdbcJavassistProxyFactory which needs special
         weaving consideration -->
-      <version>3.26.0-GA</version>
+      <version>3.28.0-GA</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
