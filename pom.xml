@@ -327,7 +327,7 @@
         </executions>
       </plugin>
       <plugin>
-        <!-- ensure that only methods available in jdk 6 can be used even when compiling with a more
+        <!-- ensure that only methods available in jdk 8 can be used even when compiling with a more
           recent jdk -->
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>animal-sniffer-maven-plugin</artifactId>
@@ -335,8 +335,8 @@
         <configuration>
           <signature>
             <groupId>org.codehaus.mojo.signature</groupId>
-            <artifactId>java16</artifactId>
-            <version>1.1</version>
+            <artifactId>java18</artifactId>
+            <version>1.0</version>
           </signature>
         </configuration>
         <executions>
