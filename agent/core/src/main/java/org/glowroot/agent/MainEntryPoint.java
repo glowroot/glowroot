@@ -468,11 +468,7 @@ public class MainEntryPoint {
         // using logic from https://github.com/trustin/os-maven-plugin#property-osdetectedname
         String lowerOsName = osName.toLowerCase(Locale.ENGLISH).replaceAll("[^a-z0-9]+", "");
         if (lowerOsName.startsWith("linux")) {
-            if (new File("/etc/alpine-release").exists()) {
-                return "linux-alpine";
-            } else {
-                return "linux";
-            }
+            return "linux";
         } else if (lowerOsName.startsWith("windows")) {
             return "windows";
         } else if (lowerOsName.startsWith("macosx") || lowerOsName.startsWith("osx")) {
