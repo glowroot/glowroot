@@ -167,7 +167,8 @@
     <dependency>
       <groupId>org.hsqldb</groupId>
       <artifactId>hsqldb</artifactId>
-      <version>2.5.0</version>
+      <!-- version 2.6+ require Java 11 -->
+      <version>2.5.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
