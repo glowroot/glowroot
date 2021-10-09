@@ -124,17 +124,14 @@
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
-      <!-- cannot set to optional, all annotation classes must be available on IBM Java 1.6 SR8 and
-        earlier due to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
+      <!-- don't need this dependency at runtime since only annotations -->
+      <optional>true</optional>
     </dependency>
     <dependency>
-      <!-- error_prone_annotations is an optional dependency of guava, included here to make it not
-        optional due to IBM Java 1.6 SR8 and earlier, however, error_prone_annotations itself is
-        compiled against Java 1.7, which then causes UnsupportedClassVersionError on some other Java
-        1.6 JVMs (in particular when running glowrot-agent-integration-tests in Eclipse) -->
-      <groupId>org.glowroot.build</groupId>
-      <artifactId>glowroot-build-error-prone-jdk6</artifactId>
-      <version>${project.version}</version>
+      <groupId>org.checkerframework</groupId>
+      <artifactId>checker-qual</artifactId>
+      <!-- don't need this dependency at runtime since only annotations -->
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -214,27 +211,4 @@
       </plugins>
     </pluginManagement>
   </build>
-
-  <profiles>
-    <profile>
-      <!-- use custom-built jdk6 compatible checker framework annotations by default except when
-        actually running checker framework code quality tests, in which case the real checker
-        framework annotations are provided -->
-      <id>not-the-checker-build</id>
-      <activation>
-        <property>
-          <name>!glowroot.checker.build</name>
-        </property>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.glowroot.build</groupId>
-          <artifactId>glowroot-build-checker-jdk6</artifactId>
-          <version>${project.version}</version>
-          <!-- cannot set to optional, all annotation classes must be available on IBM Java 1.6 SR8
-            and earlier due to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
-        </dependency>
-      </dependencies>
-    </profile>
-  </profiles>
 </project>
