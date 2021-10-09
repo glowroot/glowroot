@@ -28,17 +28,15 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <!-- activemq 5.11.0 requires Java 7+ -->
       <groupId>org.apache.activemq</groupId>
       <artifactId>activemq-client</artifactId>
-      <version>5.10.2</version>
+      <version>5.16.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <!-- activemq 5.11.0 requires Java 7+ -->
       <groupId>org.apache.activemq</groupId>
       <artifactId>activemq-broker</artifactId>
-      <version>5.10.2</version>
+      <version>5.16.3</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
