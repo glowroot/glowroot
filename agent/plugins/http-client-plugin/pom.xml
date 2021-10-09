@@ -218,6 +218,48 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <!-- wiremock-standalone is needed in order to compile against wiremock.org.apache.http.HttpRequest -->
+      <groupId>com.github.tomakehurst</groupId>
+      <artifactId>wiremock-standalone</artifactId>
+      <version>${wiremock.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <!-- this is needed for running tests on Java 9+ -->
+      <groupId>javax.xml.bind</groupId>
+      <artifactId>jaxb-api</artifactId>
+      <version>2.3.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is needed for running tests on Java 9+ -->
+      <groupId>javax.xml.ws</groupId>
+      <artifactId>jaxws-api</artifactId>
+      <version>2.3.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is needed for running tests on Java 9+ -->
+      <groupId>javax.jws</groupId>
+      <artifactId>jsr181-api</artifactId>
+      <version>1.0-MR1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is needed for running tests on Java 9+ -->
+      <groupId>org.glassfish.jaxb</groupId>
+      <artifactId>jaxb-runtime</artifactId>
+      <version>2.3.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is needed for running tests on Java 9+ -->
+      <groupId>com.sun.activation</groupId>
+      <artifactId>javax.activation</artifactId>
+      <version>1.2.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
@@ -247,24 +289,6 @@
         </executions>
       </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <!-- this is just so eclipse will use Java 7 for this module, since Java 7 is needed for
-            running the tests against the latest versions of okhttp and cxf -->
-          <artifactId>maven-compiler-plugin</artifactId>
-          <executions>
-            <execution>
-              <id>default-testCompile</id>
-              <configuration>
-                <source>1.7</source>
-                <target>1.7</target>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 
   <profiles>
@@ -311,105 +335,6 @@
           </exclusions>
         </dependency>
       </dependencies>
-    </profile>
-    <profile>
-      <id>not-test-java6</id>
-      <activation>
-        <property>
-          <name>!glowroot.test.java6</name>
-        </property>
-      </activation>
-      <dependencies>
-        <dependency>
-          <!-- wiremock-standalone is needed in order to compile against
-            wiremock.org.apache.http.HttpRequest, but the artifact also causes problems when running
-            tests against Java 6 because it includes (non-shaded) Servlet 3.1 API (which is compiled
-            against Java 7) -->
-          <groupId>com.github.tomakehurst</groupId>
-          <artifactId>wiremock-standalone</artifactId>
-          <version>${wiremock.version}</version>
-          <scope>provided</scope>
-        </dependency>
-        <!-- dependencies below are required on Java 7+ -->
-        <dependency>
-          <!-- this is needed for running tests on Java 9 -->
-          <groupId>javax.xml.bind</groupId>
-          <artifactId>jaxb-api</artifactId>
-          <version>2.3.1</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <!-- this is needed for running tests on Java 9 -->
-          <groupId>javax.xml.ws</groupId>
-          <artifactId>jaxws-api</artifactId>
-          <version>2.3.1</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <!-- this is needed for running tests on Java 9 -->
-          <groupId>javax.jws</groupId>
-          <artifactId>jsr181-api</artifactId>
-          <version>1.0-MR1</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <!-- this is needed for running tests on Java 9 -->
-          <groupId>org.glassfish.jaxb</groupId>
-          <artifactId>jaxb-runtime</artifactId>
-          <version>2.3.1</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <!-- this is needed for running tests on Java 9 -->
-          <groupId>com.sun.activation</groupId>
-          <artifactId>javax.activation</artifactId>
-          <version>1.2.0</version>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-    </profile>
-    <profile>
-      <id>test-java6</id>
-      <activation>
-        <property>
-          <name>glowroot.test.java6</name>
-        </property>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <artifactId>maven-compiler-plugin</artifactId>
-              <executions>
-                <execution>
-                  <id>default-testCompile</id>
-                  <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
-    <profile>
-      <id>java6or7</id>
-      <activation>
-        <jdk>[1.6,1.8)</jdk>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <!-- this is needed when building with Java 6 or 7 -->
-              <argLine>-XX:MaxPermSize=128m</argLine>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
     <profile>
       <id>async-http-client-2.x</id>
