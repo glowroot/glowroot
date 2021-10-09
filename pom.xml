@@ -235,8 +235,7 @@
       <dependency>
         <groupId>com.ning</groupId>
         <artifactId>async-http-client</artifactId>
-        <!-- async-http-client 1.9.0+ requires Java 7+ -->
-        <version>1.8.17</version>
+        <version>1.9.40</version>
       </dependency>
       <dependency>
         <groupId>org.openjdk.jmh</groupId>

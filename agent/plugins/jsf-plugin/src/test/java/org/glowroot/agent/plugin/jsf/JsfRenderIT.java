@@ -168,8 +168,8 @@ public class JsfRenderIT {
                     .preparePost(
                             "http://localhost:" + port + "/hello.xhtml;xyz")
                     .setHeader("Content-Type", "application/x-www-form-urlencoded")
-                    .addCookie(Cookie.newValidCookie("JSESSIONID", jsessionId, "localhost",
-                            jsessionId, null, -1, -1, true, true))
+                    .addCookie(Cookie.newValidCookie("JSESSIONID", jsessionId, false, "localhost",
+                            null, -1, -1, true, true))
                     .setBody(postBody)
                     .execute()
                     .get();
