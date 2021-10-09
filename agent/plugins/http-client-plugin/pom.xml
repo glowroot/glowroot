@@ -67,7 +67,7 @@
     <dependency>
       <groupId>com.ning</groupId>
       <artifactId>async-http-client</artifactId>
-      <version>${asynchttpclient1x.version}</version> <!-- $NO-MVN-MAN-VER$ -->
+      <version>${asynchttpclient1x.version}</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
