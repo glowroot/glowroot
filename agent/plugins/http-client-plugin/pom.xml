@@ -24,7 +24,7 @@
     <apache.httpcore.version>4.4.13</apache.httpcore.version>
     <asynchttpclient1x.version>1.9.40</asynchttpclient1x.version>
     <asynchttpclient2x.version>2.10.4</asynchttpclient2x.version>
-    <wiremock.version>2.26.0</wiremock.version>
+    <wiremock.version>2.27.2</wiremock.version>
     <okhttpclient.version>4.3.1</okhttpclient.version>
     <okhttpclient2x.version>2.7.5</okhttpclient2x.version>
     <cxf.version>3.4.5</cxf.version>
