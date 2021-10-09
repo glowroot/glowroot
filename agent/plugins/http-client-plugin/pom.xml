@@ -18,10 +18,10 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <apache.httpclient.version>4.5.11</apache.httpclient.version>
+    <apache.httpclient.version>4.5.13</apache.httpclient.version>
     <apache.httpasyncclient.version>4.1.4</apache.httpasyncclient.version>
     <apache.httpclient3x.version>3.1</apache.httpclient3x.version>
-    <apache.httpcore.version>4.4.13</apache.httpcore.version>
+    <apache.httpcore.version>4.4.14</apache.httpcore.version>
     <asynchttpclient1x.version>1.9.40</asynchttpclient1x.version>
     <asynchttpclient2x.version>2.10.4</asynchttpclient2x.version>
     <wiremock.version>2.27.2</wiremock.version>
