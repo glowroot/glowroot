@@ -28,8 +28,7 @@
     <okhttpclient.version>4.9.2</okhttpclient.version>
     <okhttpclient2x.version>2.7.5</okhttpclient2x.version>
     <cxf.version>3.4.5</cxf.version>
-    <!-- Spring 5+ requires Java 8+ -->
-    <spring.version>4.3.26.RELEASE</spring.version>
+    <spring.version>5.3.10</spring.version>
     <axis.version>1.4</axis.version>
   </properties>
 
