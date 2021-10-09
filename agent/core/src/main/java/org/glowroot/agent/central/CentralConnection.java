@@ -36,7 +36,6 @@ import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
-import io.grpc.util.RoundRobinLoadBalancerFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.handler.ssl.SslContextBuilder;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -114,7 +113,7 @@ class CentralConnection {
         }
         // single address may resolve to multiple collectors above via DNS, so need to specify round
         // robin here even if only single address (first part of conditional above)
-        builder.loadBalancerFactory(RoundRobinLoadBalancerFactory.getInstance())
+        builder.defaultLoadBalancingPolicy("round_robin")
                 .eventLoopGroup(eventLoopGroup)
                 .executor(channelExecutor)
                 // aggressive keep alive, shouldn't even be used since gauge data is sent every
