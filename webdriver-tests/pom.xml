@@ -151,8 +151,7 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <!-- Spring 5+ requires Java 8+ -->
-      <version>4.3.26.RELEASE</version>
+      <version>5.3.10</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -160,8 +159,7 @@
         org.springframework.mock.web.MockHttpServletRequest -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
-      <!-- Spring 5+ requires Java 8+ -->
-      <version>4.3.26.RELEASE</version>
+      <version>5.3.10</version>
       <scope>test</scope>
     </dependency>
     <dependency>

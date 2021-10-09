@@ -171,8 +171,7 @@
         dependencies -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <!-- Spring 5+ requires Java 8+ -->
-      <version>4.3.26.RELEASE</version>
+      <version>5.3.10</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
