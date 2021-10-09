@@ -20,7 +20,7 @@
     <dependency>
       <groupId>net.logstash.logback</groupId>
       <artifactId>logstash-logback-encoder</artifactId>
-      <version>5.3</version>
+      <version>6.6</version>
       <exclusions>
         <exclusion>
           <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
