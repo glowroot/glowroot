@@ -47,11 +47,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <!-- guava 21.0+ is needed in order for ExpectedConditions in selenium 3.1+ to work smoothly
-        since WebDriverWait.until() now takes java.util.function.Function, but ExpectedConditions
-        methods still return com.google.common.base.Function, which only extends
-        java.util.function.Function in guava 21.0+ (since 21.0+ is built for Java 8) -->
-      <version>28.2-jre</version> <!-- $NO-MVN-MAN-VER$ -->
+      <version>31.0.1-jre</version>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
@@ -181,12 +177,6 @@
       <groupId>javax.annotation</groupId>
       <artifactId>javax.annotation-api</artifactId>
       <version>1.3.2</version>
-    </dependency>
-    <dependency>
-      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
-      <groupId>org.checkerframework</groupId>
-      <artifactId>checker-qual</artifactId>
-      <version>2.10.0</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
