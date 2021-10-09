@@ -25,7 +25,7 @@
     <asynchttpclient1x.version>1.9.40</asynchttpclient1x.version>
     <asynchttpclient2x.version>2.12.3</asynchttpclient2x.version>
     <wiremock.version>2.27.2</wiremock.version>
-    <okhttpclient.version>4.3.1</okhttpclient.version>
+    <okhttpclient.version>4.9.2</okhttpclient.version>
     <okhttpclient2x.version>2.7.5</okhttpclient2x.version>
     <cxf.version>3.4.5</cxf.version>
     <!-- Spring 5+ requires Java 8+ -->
@@ -285,7 +285,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.jetbrains.kotlin</groupId>
       <artifactId>kotlin-stdlib-common</artifactId>
-      <version>1.3.61</version>
+      <version>1.4.10</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
