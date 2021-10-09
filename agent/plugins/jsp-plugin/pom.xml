@@ -56,6 +56,13 @@
       <version>7.0.109</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <!-- required for tomcat jsp compilation -->
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant</artifactId>
+      <version>1.10.11</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
