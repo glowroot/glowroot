@@ -152,7 +152,7 @@ class CassandraWrapper {
         if (sourceOfRandomness != null) {
             command.add("-Djava.security.egd=" + sourceOfRandomness);
         }
-        command.add("-Xmx256m");
+        command.add("-Xmx512m");
         // leave as much memory as possible to old gen
         command.add("-XX:NewRatio=20");
         command.add("org.apache.cassandra.service.CassandraDaemon");
