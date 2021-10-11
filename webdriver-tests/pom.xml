@@ -404,23 +404,6 @@
         </executions>
       </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <executions>
-            <execution>
-              <id>default-testCompile</id>
-              <configuration>
-                <!-- selenium 3.0+ requires Java 8+ -->
-                <source>1.8</source>
-                <target>1.8</target>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 
   <profiles>

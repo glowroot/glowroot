@@ -74,23 +74,6 @@
         </executions>
       </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <!-- testcontainers requires Java 8+ -->
-          <artifactId>maven-compiler-plugin</artifactId>
-          <executions>
-            <execution>
-              <id>default-testCompile</id>
-              <configuration>
-                <source>1.8</source>
-                <target>1.8</target>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 
   <profiles>

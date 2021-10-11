@@ -81,23 +81,6 @@
         </executions>
       </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <!-- kafka-clients 0.9.0.0+ requires Java 7+ -->
-          <artifactId>maven-compiler-plugin</artifactId>
-          <executions>
-            <execution>
-              <id>default-testCompile</id>
-              <configuration>
-                <source>1.7</source>
-                <target>1.7</target>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 
   <profiles>
