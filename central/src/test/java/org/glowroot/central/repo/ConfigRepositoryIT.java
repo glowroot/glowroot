@@ -81,7 +81,7 @@ public class ConfigRepositoryIT {
         clusterManager = ClusterManager.create();
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
-                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE, 0);
         session.updateSchemaWithRetry("drop table if exists agent_config");
         session.updateSchemaWithRetry("drop table if exists user");
         session.updateSchemaWithRetry("drop table if exists role");

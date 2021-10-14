@@ -77,13 +77,14 @@ public class Session {
     private final com.datastax.driver.core.Session wrappedSession;
     private final String keyspaceName;
     private final @Nullable ConsistencyLevel writeConsistencyLevel;
+    private final int gcGraceSeonds;
 
     private final Queue<String> allTableNames = new ConcurrentLinkedQueue<>();
 
     private final CassandraWriteMetrics cassandraWriteMetrics;
 
     public Session(com.datastax.driver.core.Session wrappedSession, String keyspaceName,
-            @Nullable ConsistencyLevel writeConsistencyLevel, int maxConcurrentQueries)
+            @Nullable ConsistencyLevel writeConsistencyLevel, int maxConcurrentQueries, int gcGraceSeconds)
             throws Exception {
         this.wrappedSession = wrappedSession;
         this.keyspaceName = keyspaceName;
@@ -92,6 +93,7 @@ public class Session {
         readQuerySemaphore = new Semaphore(maxConcurrentQueries / 4);
         writeQuerySemaphore = new Semaphore(maxConcurrentQueries / 2);
         rollupQuerySemaphore = new Semaphore(maxConcurrentQueries / 4);
+        this.gcGraceSeonds = gcGraceSeconds;
 
         cassandraWriteMetrics = new CassandraWriteMetrics(wrappedSession, keyspaceName);
 
@@ -285,14 +287,6 @@ public class Session {
 
     public void createTableWithTWCS(String createTableQuery, int expirationHours,
             boolean useAndInsteadOfWith, boolean fallbackToSTCS) throws InterruptedException {
-        // as long as gc_grace_seconds is less than TTL, then tombstones can be collected
-        // immediately (https://issues.apache.org/jira/browse/CASSANDRA-4917)
-        //
-        // not using gc_grace_seconds of 0 since that disables hinted handoff
-        // (http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
-        //
-        // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
-        long gcGraceSeconds = HOURS.toSeconds(4);
 
         // using unchecked_tombstone_compaction=true for better tombstone purging
         // see http://thelastpickle.com/blog/2016/12/08/TWCS-part1.html
@@ -310,17 +304,17 @@ public class Session {
             // sstables, three 40mb sstables, etc
             createTableWithTracking(createTableQuery + " " + term + " "
                     + getTwcsCompactionClause(expirationHours) + " and gc_grace_seconds = "
-                    + gcGraceSeconds);
+                    + this.gcGraceSeonds);
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);
             if (fallbackToSTCS) {
                 createTableWithTracking(createTableQuery + " " + term + " compaction = { 'class' :"
                         + " 'SizeTieredCompactionStrategy', 'unchecked_tombstone_compaction' :"
-                        + " true } and gc_grace_seconds = " + gcGraceSeconds);
+                        + " true } and gc_grace_seconds = " + this.gcGraceSeonds);
             } else {
                 createTableWithTracking(createTableQuery + " " + term + " compaction = { 'class' :"
                         + " 'DateTieredCompactionStrategy', 'unchecked_tombstone_compaction' :"
-                        + " true } and gc_grace_seconds = " + gcGraceSeconds);
+                        + " true } and gc_grace_seconds = " + this.gcGraceSeonds);
             }
         }
     }

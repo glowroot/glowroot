@@ -52,7 +52,7 @@ public class GaugeValueDaoIT {
         clusterManager = ClusterManager.create();
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
-                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE, 0);
         asyncExecutor = Executors.newCachedThreadPool();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         AgentDisplayDao agentDisplayDao =
@@ -63,7 +63,7 @@ public class GaugeValueDaoIT {
         ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(centralConfigDao,
                 agentConfigDao, userDao, roleDao, "");
         gaugeValueDao = new GaugeValueDaoWithV09Support(ImmutableSet.of(), 0, Clock.systemClock(),
-                new GaugeValueDaoImpl(session, configRepository, clusterManager, asyncExecutor,
+                new GaugeValueDaoImpl(session, configRepository, clusterManager, asyncExecutor, 0,
                         Clock.systemClock()));
     }
 

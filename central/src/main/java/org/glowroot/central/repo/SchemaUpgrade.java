@@ -58,6 +58,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.central.CentralModule;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,14 +113,16 @@ public class SchemaUpgrade {
     private final Session session;
     private final Clock clock;
     private final boolean servlet;
+    private final int cassandraGcGraceSeconds;
 
     private final PreparedStatement insertIntoSchemVersionPS;
     private final @Nullable Integer initialSchemaVersion;
 
     private boolean reloadCentralConfiguration;
 
-    public SchemaUpgrade(Session session, Clock clock, boolean servlet) throws Exception {
+    public SchemaUpgrade(Session session, int cassandraGcGraceSeconds, Clock clock, boolean servlet) throws Exception {
         this.session = session;
+        this.cassandraGcGraceSeconds = cassandraGcGraceSeconds;
         this.clock = clock;
         this.servlet = servlet;
 
@@ -736,10 +739,8 @@ public class SchemaUpgrade {
                     .equals("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")
                     || compactionClass.equals(
                             "org.apache.cassandra.db.compaction.DateTieredCompactionStrategy")) {
-                // see gc_grace_seconds related comments in Sessions.createTableWithTWCS()
-                // for reasoning behind the value of 4 hours
                 session.updateSchemaWithRetry("alter table " + table.getName()
-                        + " with gc_grace_seconds = " + HOURS.toSeconds(4));
+                        + " with gc_grace_seconds = " + this.cassandraGcGraceSeconds);
             }
         }
         logger.info("updating gc_grace_seconds on TWCS/DTCS tables - complete");

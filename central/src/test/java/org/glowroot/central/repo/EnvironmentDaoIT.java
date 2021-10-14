@@ -39,7 +39,7 @@ public class EnvironmentDaoIT {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
-                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE, 0);
 
         environmentDao = new EnvironmentDao(session);
     }

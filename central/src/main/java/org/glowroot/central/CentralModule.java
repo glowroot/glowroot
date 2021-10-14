@@ -103,8 +103,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.*;
 
 public class CentralModule {
 
@@ -127,6 +126,7 @@ public class CentralModule {
     private final RollupService rollupService;
     private final SyntheticMonitorService syntheticMonitorService;
     private final UiModule uiModule;
+    public CentralConfiguration centralConfig;
 
     public static CentralModule create() throws Exception {
         return create(getCentralDir());
@@ -186,7 +186,7 @@ public class CentralModule {
             session = connect(centralConfig);
             cluster = session.getCluster();
 
-            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, clock, servlet);
+            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, centralConfig.cassandraGcGraceSeconds(), clock, servlet);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
                 startupLogger.info("creating glowroot central schema...");
@@ -198,7 +198,7 @@ public class CentralModule {
             }
             repoAsyncExecutor = MoreExecutors2.newCachedThreadPool("Repo-Async-Worker-%d");
             repos = new CentralRepoModule(clusterManager, session, directories.getConfDir(),
-                    centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor,
+                    centralConfig.cassandraSymmetricEncryptionKey(), centralConfig.cassandraGcGraceSeconds(), repoAsyncExecutor,
                     TARGET_MAX_ACTIVE_AGENTS_IN_PAST_7_DAYS, TARGET_MAX_CENTRAL_UI_USERS, clock);
 
             if (initialSchemaVersion == null) {
@@ -448,7 +448,7 @@ public class CentralModule {
         try {
             session = connect(centralConfig);
             cluster = session.getCluster();
-            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, Clock.systemClock(), false);
+            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, centralConfig.cassandraGcGraceSeconds(), Clock.systemClock(), false);
             if (schemaUpgrade.getInitialSchemaVersion() != null) {
                 startupLogger.error("glowroot central schema already exists, exiting");
                 return;
@@ -456,7 +456,7 @@ public class CentralModule {
             startupLogger.info("creating glowroot central schema...");
             repoAsyncExecutor = MoreExecutors2.newCachedThreadPool("Repo-Async-Worker-%d");
             repos = new CentralRepoModule(ClusterManager.create(), session, centralDir,
-                    centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor, 10, 10,
+                    centralConfig.cassandraSymmetricEncryptionKey(), centralConfig.cassandraGcGraceSeconds(), repoAsyncExecutor, 10, 10,
                     Clock.systemClock());
             schemaUpgrade.updateSchemaVersionToCurent();
         } finally {
@@ -569,7 +569,7 @@ public class CentralModule {
         try {
             session = connect(centralConfig);
             cluster = session.getCluster();
-            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, Clock.systemClock(), false);
+            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, centralConfig.cassandraGcGraceSeconds(), Clock.systemClock(),false);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
                 startupLogger.info("creating glowroot central schema...");
@@ -582,7 +582,7 @@ public class CentralModule {
             }
             repoAsyncExecutor = MoreExecutors2.newCachedThreadPool("Repo-Async-Worker-%d");
             repos = new CentralRepoModule(ClusterManager.create(), session, centralDir,
-                    centralConfig.cassandraSymmetricEncryptionKey(), repoAsyncExecutor, 10, 10,
+                    centralConfig.cassandraSymmetricEncryptionKey(), centralConfig.cassandraGcGraceSeconds(), repoAsyncExecutor, 10, 10,
                     Clock.systemClock());
             if (initialSchemaVersion == null) {
                 schemaUpgrade.updateSchemaVersionToCurent();
@@ -858,7 +858,8 @@ public class CentralModule {
                             // requests per connection" + "max queue size" (which are set to
                             // cassandraMaxConcurrentQueries and cassandraMaxConcurrentQueries * 2
                             // respectively)
-                            centralConfig.cassandraMaxConcurrentQueries() * 3);
+                            centralConfig.cassandraMaxConcurrentQueries() * 3,
+                            centralConfig.cassandraGcGraceSeconds());
                 }
                 String cassandraVersion = verifyCassandraVersion(session);
                 KeyspaceMetadata keyspaceMetadata =
@@ -1067,6 +1068,18 @@ public class CentralModule {
         @Value.Default
         String cassandraSymmetricEncryptionKey() {
             return "";
+        }
+
+        // since rollup operations are idempotent, any records resurrected after gc_grace_seconds
+        // would just create extra work, but not have any other effect
+        //
+        // not using gc_grace_seconds of 0 since that disables hinted handoff
+        // (http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
+        //
+        // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
+        @Value.Default
+        int cassandraGcGraceSeconds() {
+            return (int) HOURS.toSeconds(4);
         }
 
         @Value.Default

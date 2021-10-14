@@ -76,7 +76,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     private final PreparedStatement readLastFromRollup0;
 
     SyntheticResultDaoImpl(Session session, ConfigRepositoryImpl configRepository,
-            Executor asyncExecutor, Clock clock) throws Exception {
+            Executor asyncExecutor, int cassandraGcGraceSeconds, Clock clock) throws Exception {
         this.session = session;
         this.configRepository = configRepository;
         this.asyncExecutor = asyncExecutor;
@@ -114,15 +114,6 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         this.readResultPS = ImmutableList.copyOf(readResultPS);
         this.readResultForRollupPS = ImmutableList.copyOf(readResultForRollupPS);
 
-        // since rollup operations are idempotent, any records resurrected after gc_grace_seconds
-        // would just create extra work, but not have any other effect
-        //
-        // not using gc_grace_seconds of 0 since that disables hinted handoff
-        // (http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
-        //
-        // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
-        long needsRollupGcGraceSeconds = HOURS.toSeconds(4);
-
         List<PreparedStatement> insertNeedsRollup = new ArrayList<>();
         List<PreparedStatement> readNeedsRollup = new ArrayList<>();
         List<PreparedStatement> deleteNeedsRollup = new ArrayList<>();
@@ -131,7 +122,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
                     + " (agent_rollup_id varchar, capture_time timestamp, uniqueness timeuuid,"
                     + " synthetic_config_ids set<varchar>, primary key (agent_rollup_id,"
                     + " capture_time, uniqueness)) with gc_grace_seconds = "
-                    + needsRollupGcGraceSeconds, true);
+                    + cassandraGcGraceSeconds, true);
             insertNeedsRollup.add(session.prepare("insert into synthetic_needs_rollup_" + i
                     + " (agent_rollup_id, capture_time, uniqueness, synthetic_config_ids) values"
                     + " (?, ?, ?, ?) using TTL ?"));
