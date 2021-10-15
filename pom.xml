@@ -100,7 +100,7 @@
     <netty.version>4.1.27.Final</netty.version>
     <logback.version>1.2.3</logback.version>
     <slf4j.version>1.7.30</slf4j.version>
-    <immutables.version>2.8.3</immutables.version>
+    <immutables.version>2.8.8</immutables.version>
     <checker.version>3.18.1</checker.version>
     <jmh.version>1.23</jmh.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -123,17 +123,6 @@
         <groupId>org.immutables</groupId>
         <artifactId>builder</artifactId>
         <version>${immutables.version}</version>
-      </dependency>
-      <dependency>
-        <!-- the presence of this dependency triggers generation of Java 6 compatible classes -->
-        <groupId>org.immutables</groupId>
-        <artifactId>android-stub</artifactId>
-        <version>${immutables.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.github.trask</groupId>
-        <artifactId>immutables-jdk6-shim</artifactId>
-        <version>1.0.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.protobuf</groupId>
