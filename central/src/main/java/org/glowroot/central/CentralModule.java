@@ -1070,15 +1070,15 @@ public class CentralModule {
             return "";
         }
 
-        // since rollup operations are idempotent, any records resurrected after gc_grace_seconds
-        // would just create extra work, but not have any other effect
-        //
-        // not using gc_grace_seconds of 0 since that disables hinted handoff
-        // (http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
-        //
-        // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
         @Value.Default
         int cassandraGcGraceSeconds() {
+            // since rollup operations are idempotent, any records resurrected after gc_grace_seconds
+            // would just create extra work, but not have any other effect
+            //
+            // not using gc_grace_seconds of 0 since that disables hinted handoff
+            // (http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
+            //
+            // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
             return (int) HOURS.toSeconds(4);
         }
 

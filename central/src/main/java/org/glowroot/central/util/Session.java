@@ -304,17 +304,17 @@ public class Session {
             // sstables, three 40mb sstables, etc
             createTableWithTracking(createTableQuery + " " + term + " "
                     + getTwcsCompactionClause(expirationHours) + " and gc_grace_seconds = "
-                    + this.gcGraceSeonds);
+                    + gcGraceSeonds);
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);
             if (fallbackToSTCS) {
                 createTableWithTracking(createTableQuery + " " + term + " compaction = { 'class' :"
                         + " 'SizeTieredCompactionStrategy', 'unchecked_tombstone_compaction' :"
-                        + " true } and gc_grace_seconds = " + this.gcGraceSeonds);
+                        + " true } and gc_grace_seconds = " + gcGraceSeonds);
             } else {
                 createTableWithTracking(createTableQuery + " " + term + " compaction = { 'class' :"
                         + " 'DateTieredCompactionStrategy', 'unchecked_tombstone_compaction' :"
-                        + " true } and gc_grace_seconds = " + this.gcGraceSeonds);
+                        + " true } and gc_grace_seconds = " + gcGraceSeonds);
             }
         }
     }

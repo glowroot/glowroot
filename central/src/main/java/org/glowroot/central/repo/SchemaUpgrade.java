@@ -111,9 +111,9 @@ public class SchemaUpgrade {
     private static final int CURR_SCHEMA_VERSION = 90;
 
     private final Session session;
+    private final int cassandraGcGraceSeconds;
     private final Clock clock;
     private final boolean servlet;
-    private final int cassandraGcGraceSeconds;
 
     private final PreparedStatement insertIntoSchemVersionPS;
     private final @Nullable Integer initialSchemaVersion;
@@ -189,7 +189,7 @@ public class SchemaUpgrade {
             updateSchemaVersion(11);
         }
         if (initialSchemaVersion < 12) {
-            updateNeedsRollupGcSeconds();
+            updateNeedsRollupGcSeconds(cassandraGcGraceSeconds);
             updateSchemaVersion(12);
         }
         if (initialSchemaVersion < 13) {
@@ -429,7 +429,7 @@ public class SchemaUpgrade {
             updateSchemaVersion(65);
         }
         if (initialSchemaVersion < 66) {
-            updateNeedsRollupGcSeconds();
+            updateNeedsRollupGcSeconds(cassandraGcGraceSeconds);
             updateSchemaVersion(66);
         }
         if (initialSchemaVersion < 67) {
@@ -740,24 +740,14 @@ public class SchemaUpgrade {
                     || compactionClass.equals(
                             "org.apache.cassandra.db.compaction.DateTieredCompactionStrategy")) {
                 session.updateSchemaWithRetry("alter table " + table.getName()
-                        + " with gc_grace_seconds = " + this.cassandraGcGraceSeconds);
+                        + " with gc_grace_seconds = " + cassandraGcGraceSeconds);
             }
         }
         logger.info("updating gc_grace_seconds on TWCS/DTCS tables - complete");
     }
 
-    private void updateNeedsRollupGcSeconds() throws Exception {
+    private void updateNeedsRollupGcSeconds(long gcGraceSeconds) throws Exception {
         logger.info("updating gc_grace_seconds on \"needs rollup\" tables...");
-        // reduce from default 10 days to 4 hours
-        //
-        // since rollup operations are idempotent, any records resurrected after gc_grace_seconds
-        // would just create extra work, but not have any other effect
-        //
-        // not using gc_grace_seconds of 0 since that disables hinted handoff
-        // (http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
-        //
-        // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
-        long gcGraceSeconds = HOURS.toSeconds(4);
 
         if (tableExists("aggregate_needs_rollup_from_child")) {
             session.updateSchemaWithRetry("alter table aggregate_needs_rollup_from_child with"
