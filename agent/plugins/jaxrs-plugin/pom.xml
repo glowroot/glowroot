@@ -105,6 +105,20 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <!-- this is needed for running tests on Java 9+ -->
+      <groupId>javax.xml.bind</groupId>
+      <artifactId>jaxb-api</artifactId>
+      <version>2.3.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is needed for running tests on Java 9+ -->
+      <groupId>com.sun.activation</groupId>
+      <artifactId>javax.activation</artifactId>
+      <version>1.2.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -121,24 +135,6 @@
         </executions>
       </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <!-- this is just so eclipse will use Java 7 for this module, since Java 7 is needed for
-            running the tests against the latest version of jersey -->
-          <artifactId>maven-compiler-plugin</artifactId>
-          <executions>
-            <execution>
-              <id>default-testCompile</id>
-              <configuration>
-                <source>1.7</source>
-                <target>1.7</target>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 
   <profiles>
@@ -185,57 +181,6 @@
           </exclusions>
         </dependency>
       </dependencies>
-    </profile>
-    <profile>
-      <id>not-test-java6</id>
-      <activation>
-        <property>
-          <name>!glowroot.test.java6</name>
-        </property>
-      </activation>
-      <dependencies>
-        <!-- these dependencies require Java 7+ -->
-        <dependency>
-          <!-- this is needed for running tests on Java 9 -->
-          <groupId>javax.xml.bind</groupId>
-          <artifactId>jaxb-api</artifactId>
-          <version>2.3.1</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <!-- this is needed for running tests on Java 9 -->
-          <groupId>com.sun.activation</groupId>
-          <artifactId>javax.activation</artifactId>
-          <version>1.2.0</version>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-    </profile>
-    <profile>
-      <id>test-java6</id>
-      <activation>
-        <property>
-          <name>glowroot.test.java6</name>
-        </property>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <artifactId>maven-compiler-plugin</artifactId>
-              <executions>
-                <execution>
-                  <id>default-testCompile</id>
-                  <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
     </profile>
     <profile>
       <id>jersey-2.26</id>

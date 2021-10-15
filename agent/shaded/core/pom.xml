@@ -179,6 +179,12 @@
                 <exclude>META-INF/LICENSE.txt</exclude>
               </excludes>
             </filter>
+            <filter>
+              <artifact>org.checkerframework:checker-qual</artifact>
+              <excludes>
+                <exclude>META-INF/LICENSE.txt</exclude>
+              </excludes>
+            </filter>
           </filters>
           <relocations>
             <!-- need to shade glowroot modules so they can be used in glowroot-central without
@@ -309,8 +315,8 @@
             <relocation>
               <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due to
                 http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
-              <pattern>org.checkerframework.checker</pattern>
-              <shadedPattern>org.glowroot.agent.shaded.org.checkerframework.checker</shadedPattern>
+              <pattern>org.checkerframework</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.checkerframework</shadedPattern>
             </relocation>
             <relocation>
               <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due to

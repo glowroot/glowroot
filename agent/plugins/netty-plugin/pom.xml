@@ -152,23 +152,6 @@
             </executions>
           </plugin>
         </plugins>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <!-- httpclient5 requires Java 7+ -->
-              <artifactId>maven-compiler-plugin</artifactId>
-              <executions>
-                <execution>
-                  <id>default-testCompile</id>
-                  <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-          </plugins>
-        </pluginManagement>
       </build>
     </profile>
     <profile>
@@ -300,22 +283,6 @@
             </executions>
           </plugin>
         </plugins>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <artifactId>maven-compiler-plugin</artifactId>
-              <executions>
-                <execution>
-                  <id>default-testCompile</id>
-                  <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-          </plugins>
-        </pluginManagement>
       </build>
     </profile>
     <profile>

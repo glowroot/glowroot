@@ -279,24 +279,6 @@
           <scope>test</scope>
         </dependency>
       </dependencies>
-      <build>
-        <plugins>
-          <plugin>
-            <!-- play 2.4+ requires Java 8+, and tests for play 2.4 use lambdas so require
-              source/target 1.8 -->
-            <artifactId>maven-compiler-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>default-testCompile</id>
-                <configuration>
-                  <source>1.8</source>
-                  <target>1.8</target>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
     <profile>
       <id>play-2.2.x</id>
