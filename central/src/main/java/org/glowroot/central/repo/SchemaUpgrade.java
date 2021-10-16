@@ -189,7 +189,7 @@ public class SchemaUpgrade {
             updateSchemaVersion(11);
         }
         if (initialSchemaVersion < 12) {
-            updateNeedsRollupGcSeconds(cassandraGcGraceSeconds);
+            updateNeedsRollupGcSeconds();
             updateSchemaVersion(12);
         }
         if (initialSchemaVersion < 13) {
@@ -429,7 +429,7 @@ public class SchemaUpgrade {
             updateSchemaVersion(65);
         }
         if (initialSchemaVersion < 66) {
-            updateNeedsRollupGcSeconds(cassandraGcGraceSeconds);
+            updateNeedsRollupGcSeconds();
             updateSchemaVersion(66);
         }
         if (initialSchemaVersion < 67) {
@@ -746,31 +746,31 @@ public class SchemaUpgrade {
         logger.info("updating gc_grace_seconds on TWCS/DTCS tables - complete");
     }
 
-    private void updateNeedsRollupGcSeconds(long gcGraceSeconds) throws Exception {
+    private void updateNeedsRollupGcSeconds() throws Exception {
         logger.info("updating gc_grace_seconds on \"needs rollup\" tables...");
 
         if (tableExists("aggregate_needs_rollup_from_child")) {
             session.updateSchemaWithRetry("alter table aggregate_needs_rollup_from_child with"
-                    + " gc_grace_seconds = " + gcGraceSeconds);
+                    + " gc_grace_seconds = " + cassandraGcGraceSeconds);
         }
         session.updateSchemaWithRetry(
-                "alter table aggregate_needs_rollup_1 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table aggregate_needs_rollup_1 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         session.updateSchemaWithRetry(
-                "alter table aggregate_needs_rollup_2 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table aggregate_needs_rollup_2 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         session.updateSchemaWithRetry(
-                "alter table aggregate_needs_rollup_3 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table aggregate_needs_rollup_3 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         if (tableExists("gauge_needs_rollup_from_child")) {
             session.updateSchemaWithRetry("alter table gauge_needs_rollup_from_child with"
-                    + " gc_grace_seconds = " + gcGraceSeconds);
+                    + " gc_grace_seconds = " + cassandraGcGraceSeconds);
         }
         session.updateSchemaWithRetry(
-                "alter table gauge_needs_rollup_1 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table gauge_needs_rollup_1 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         session.updateSchemaWithRetry(
-                "alter table gauge_needs_rollup_2 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table gauge_needs_rollup_2 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         session.updateSchemaWithRetry(
-                "alter table gauge_needs_rollup_3 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table gauge_needs_rollup_3 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         session.updateSchemaWithRetry(
-                "alter table gauge_needs_rollup_4 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table gauge_needs_rollup_4 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         logger.info("updating gc_grace_seconds on \"needs rollup\" tables - complete");
     }
 
