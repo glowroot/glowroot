@@ -72,7 +72,7 @@ public class TraceDaoIT {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
-                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE, 0);
 
         clusterManager = ClusterManager.create();
         ConfigRepositoryImpl configRepository = mock(ConfigRepositoryImpl.class);
