@@ -348,14 +348,15 @@ public class JavaagentContainer implements Container {
             File file = new File(path);
             String name = file.getName();
             String targetClasses = File.separator + "target" + File.separator + "classes";
-            if (name.matches("glowroot-agent-core(-unshaded)?-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-agent-it-harness-[0-9.]+(-SNAPSHOT)?.jar")) {
+            String glowrootJarSuffix = "-[0-9.]+(-beta(\\.[0-9]+)?)?(-SNAPSHOT)?\\.jar";
+            if (name.matches("glowroot-agent-core(-unshaded)?" + glowrootJarSuffix)
+                    || name.matches("glowroot-agent-it-harness" + glowrootJarSuffix)) {
                 javaagentJarFile = file;
-            } else if (name.matches("glowroot-common-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-wire-api-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-agent-plugin-api-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-agent-bytecode-api-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-build-error-prone-jdk6-[0-9.]+(-SNAPSHOT)?.jar")) {
+            } else if (name.matches("glowroot-common" + glowrootJarSuffix)
+                    || name.matches("glowroot-wire-api" + glowrootJarSuffix)
+                    || name.matches("glowroot-agent-plugin-api" + glowrootJarSuffix)
+                    || name.matches("glowroot-agent-bytecode-api" + glowrootJarSuffix)
+                    || name.matches("glowroot-build-error-prone-jdk6" + glowrootJarSuffix)) {
                 // these are glowroot-agent-core-unshaded transitive dependencies
                 maybeBootPaths.add(path);
             } else if (file.getAbsolutePath().endsWith(File.separator + "common" + targetClasses)
@@ -368,7 +369,7 @@ public class JavaagentContainer implements Container {
                             .endsWith(File.separator + "error-prone-jdk6" + targetClasses)) {
                 // these are glowroot-agent-core-unshaded transitive dependencies
                 maybeBootPaths.add(path);
-            } else if (name.matches("glowroot-agent-api-[0-9.]+(-SNAPSHOT)?.jar")) {
+            } else if (name.matches("glowroot-agent-api" + glowrootJarSuffix)) {
                 // agent-api lives with the application
                 paths.add(path);
             } else if (file.getAbsolutePath().endsWith(File.separator + "api" + targetClasses)) {
@@ -407,10 +408,10 @@ public class JavaagentContainer implements Container {
                     || name.matches("jsr305-.*\\.jar")) {
                 // these are glowroot-agent-core-unshaded transitive dependencies
                 maybeBootPaths.add(path);
-            } else if (name.matches("glowroot-common2-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-ui-[0-9.]+(-SNAPSHOT)?.jar")
+            } else if (name.matches("glowroot-common2" + glowrootJarSuffix)
+                    || name.matches("glowroot-ui" + glowrootJarSuffix)
                     || name.matches(
-                            "glowroot-agent-embedded(-unshaded)?-[0-9.]+(-SNAPSHOT)?.jar")) {
+                            "glowroot-agent-embedded(-unshaded)?" + glowrootJarSuffix)) {
                 // these are glowroot-agent-embedded-unshaded transitive dependencies
                 paths.add(path);
             } else if (file.getAbsolutePath().endsWith(File.separator + "common2" + targetClasses)
@@ -425,7 +426,7 @@ public class JavaagentContainer implements Container {
                     || name.matches("smtp-.*\\.jar")) {
                 // these are glowroot-agent-embedded-unshaded transitive dependencies
                 paths.add(path);
-            } else if (name.matches("glowroot-agent-it-harness-unshaded-[0-9.]+(-SNAPSHOT)?.jar")) {
+            } else if (name.matches("glowroot-agent-it-harness-unshaded" + glowrootJarSuffix)) {
                 // this is integration test harness, needs to be in bootstrap class loader when it
                 // it is shaded (because then it contains glowroot-agent-core), and for consistency
                 // putting it in bootstrap class loader at other times as well
@@ -440,7 +441,7 @@ public class JavaagentContainer implements Container {
                     .endsWith(File.separator + "target" + File.separator + name)) {
                 // this is the plugin under test
                 bootPaths.add(path);
-            } else if (name.matches("glowroot-agent-[a-z-]+-plugin-[0-9.]+(-SNAPSHOT)?.jar")) {
+            } else if (name.matches("glowroot-agent-[a-z-]+-plugin" + glowrootJarSuffix)) {
                 // this another (core) plugin that it depends on, e.g. the executor plugin
                 bootPaths.add(path);
             } else if (file.getAbsolutePath().endsWith(targetClasses)) {
