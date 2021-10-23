@@ -33,11 +33,12 @@
       <artifactId>grpc-protobuf</artifactId>
     </dependency>
     <dependency>
-      <!-- this is no longer included in JDK starting with Java 11 -->
+      <!-- this is needed to compile grpc generated sources -->
       <groupId>javax.annotation</groupId>
       <artifactId>javax.annotation-api</artifactId>
-      <!-- javax.annotation-api 1.3+ requires Java 8+ -->
-      <version>1.2</version>
+      <version>1.3.2</version>
+      <!-- don't need this dependency at runtime since only annotations -->
+      <optional>true</optional>
     </dependency>
   </dependencies>
 

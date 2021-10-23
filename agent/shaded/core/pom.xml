@@ -92,6 +92,17 @@
           </dependencyReducedPomLocation>
           <createSourcesJar>true</createSourcesJar>
           <shadeSourcesContent>true</shadeSourcesContent>
+          <artifactSet>
+            <excludes>
+              <!--
+                don't need these dependencies at runtime since only annotations
+                (these are transitive dependencies of guava)
+              -->
+              <exclude>org.checkerframework:checker-qual</exclude>
+              <exclude>com.google.errorprone:error_prone_annotations</exclude>
+              <exclude>com.google.code.findbugs:jsr305</exclude>
+            </excludes>
+          </artifactSet>
           <filters>
             <filter>
               <artifact>*:*</artifact>
@@ -171,18 +182,6 @@
               <excludes>
                 <exclude>META-INF/LICENSE.txt</exclude>
                 <exclude>META-INF/NOTICE.txt</exclude>
-              </excludes>
-            </filter>
-            <filter>
-              <artifact>javax.annotation:javax.annotation-api</artifact>
-              <excludes>
-                <exclude>META-INF/LICENSE.txt</exclude>
-              </excludes>
-            </filter>
-            <filter>
-              <artifact>org.checkerframework:checker-qual</artifact>
-              <excludes>
-                <exclude>META-INF/LICENSE.txt</exclude>
               </excludes>
             </filter>
           </filters>
@@ -312,24 +311,6 @@
               <pattern>net.logstash.logback</pattern>
               <shadedPattern>org.glowroot.agent.shaded.net.logstash.logback</shadedPattern>
             </relocation>
-            <relocation>
-              <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due to
-                http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
-              <pattern>org.checkerframework</pattern>
-              <shadedPattern>org.glowroot.agent.shaded.org.checkerframework</shadedPattern>
-            </relocation>
-            <relocation>
-              <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due to
-                http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
-              <pattern>javax.annotation</pattern>
-              <shadedPattern>org.glowroot.agent.shaded.javax.annotation</shadedPattern>
-            </relocation>
-            <relocation>
-              <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due to
-                http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
-              <pattern>com.google.errorprone</pattern>
-              <shadedPattern>org.glowroot.agent.shaded.com.google.errorprone</shadedPattern>
-            </relocation>
           </relocations>
           <transformers>
             <transformer
@@ -371,13 +352,6 @@
             <option>-keep class org.glowroot.agent.shaded.org.glowroot.common.** { *; }</option>
             <!-- needed by custom collectors -->
             <option>-keep class org.glowroot.agent.shaded.org.glowroot.wire.api.** { *; }</option>
-            <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due to
-              http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
-            <option>
-              -keep class org.glowroot.agent.shaded.org.checkerframework.checker.** { *; }
-            </option>
-            <option>-keep class org.glowroot.agent.shaded.javax.annotation.** { *; }</option>
-            <option>-keep class org.glowroot.agent.shaded.com.google.errorprone.** { *; }</option>
             <!-- even though these classes will be stripped out in assembly plugin below, this will
               retain the netty classes that they depend on -->
             <option>
