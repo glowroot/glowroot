@@ -64,7 +64,7 @@ public class JarFileShadingIT {
 
     private static File getGlowrootAgentJarFile() {
         for (File file : new File(".").listFiles()) {
-            if (file.getName().matches("glowroot-agent-embedded-[0-9.]+(-SNAPSHOT)?.jar")) {
+            if (file.getName().matches("glowroot-agent-embedded-[0-9.]+(-beta(\\.[0-9]+)?)?(-SNAPSHOT)?.jar")) {
                 return file;
             }
         }
