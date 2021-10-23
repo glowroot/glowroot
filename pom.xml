@@ -466,14 +466,7 @@
         <plugin>
           <groupId>com.github.wvengen</groupId>
           <artifactId>proguard-maven-plugin</artifactId>
-          <version>2.2.0</version>
-          <dependencies>
-            <dependency>
-              <groupId>net.sf.proguard</groupId>
-              <artifactId>proguard-base</artifactId>
-              <version>6.2.2</version>
-            </dependency>
-          </dependencies>
+          <version>2.5.1</version>
         </plugin>
         <plugin>
           <groupId>com.github.os72</groupId>
@@ -550,26 +543,6 @@
   </build>
 
   <profiles>
-    <profile>
-      <id>auto-activated-skip-proguard-under-java-11</id>
-      <activation>
-        <!-- proguard doesn't currently work on jdk 11 -->
-        <jdk>[11,)</jdk>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>com.github.wvengen</groupId>
-              <artifactId>proguard-maven-plugin</artifactId>
-              <configuration>
-                <skip>true</skip>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
     <profile>
       <id>auto-activated-java-8</id>
       <activation>
