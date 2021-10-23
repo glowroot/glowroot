@@ -71,6 +71,14 @@
       <!-- don't need this dependency at runtime since only annotations -->
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <!-- this is needed to compile grpc generated sources -->
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+      <version>1.3.2</version>
+      <!-- don't need this dependency at runtime since only annotations -->
+      <optional>true</optional>
+    </dependency>
   </dependencies>
 
   <build>
