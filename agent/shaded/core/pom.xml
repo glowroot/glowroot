@@ -94,15 +94,16 @@
           <shadeSourcesContent>true</shadeSourcesContent>
           <artifactSet>
             <excludes>
-              <!--
-                don't need these dependencies at runtime since only annotations
-                (these are transitive dependencies of guava)
-              -->
+              <!-- don't need these dependencies at runtime since only annotations -->
+              <!-- these are transitive dependencies of guava -->
               <exclude>org.checkerframework:checker-qual</exclude>
               <exclude>com.google.errorprone:error_prone_annotations</exclude>
               <exclude>com.google.code.findbugs:jsr305</exclude>
+              <!-- these are transitive dependencies of grpc-core -->
               <exclude>com.google.android:annotations</exclude>
               <exclude>org.codehaus.mojo:animal-sniffer-annotations</exclude>
+              <!-- these is a transitive dependency of grpc-protobuf -->
+              <exclude>com.google.api.grpc:proto-google-common-protos</exclude>
             </excludes>
           </artifactSet>
           <filters>
@@ -136,12 +137,22 @@
               <artifact>io.netty:netty-*</artifact>
               <excludes>
                 <exclude>META-INF/io.netty.versions.properties</exclude>
+                <exclude>META-INF/native-image/**</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>io.netty:netty-common</artifact>
+              <excludes>
+                <exclude>META-INF/services/reactor.blockhound.integration.BlockHoundIntegration</exclude>
               </excludes>
             </filter>
             <filter>
               <artifact>io.netty:netty-tcnative-boringssl-static</artifact>
               <excludes>
+                <exclude>META-INF/license/*</exclude>
                 <exclude>META-INF/native/*</exclude>
+                <exclude>META-INF/LICENSE.txt</exclude>
+                <exclude>META-INF/NOTICE.txt</exclude>
               </excludes>
             </filter>
             <filter>
@@ -219,6 +230,10 @@
             <relocation>
               <pattern>io.opencensus</pattern>
               <shadedPattern>org.glowroot.agent.shaded.io.opencensus</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>io.perfmark</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.io.perfmark</shadedPattern>
             </relocation>
             <relocation>
               <pattern>org.HdrHistogram</pattern>
