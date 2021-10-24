@@ -116,7 +116,7 @@ class CentralConnection {
                 // aggressive keep alive, shouldn't even be used since gauge data is sent every
                 // 5 seconds and keep alive will only kick in after 10 seconds of not hearing back
                 // from the server
-                .keepAliveTime(10, SECONDS);
+                .keepAliveTime(20, SECONDS);
         if (parsedCollectorAddress.https()) {
             SslContextBuilder sslContext = GrpcSslContexts.forClient();
             File trustCertCollectionFile = getTrustCertCollectionFile(confDirs);
