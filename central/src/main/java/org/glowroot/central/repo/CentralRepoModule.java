@@ -66,7 +66,7 @@ public class CentralRepoModule {
     private final V09AgentRollupDao v09AgentRollupDao;
 
     public CentralRepoModule(ClusterManager clusterManager, Session session, File confDir,
-            String cassandraSymmetricEncryptionKey, ExecutorService asyncExecutor,
+            String cassandraSymmetricEncryptionKey, int cassandraGcGraceSeconds, ExecutorService asyncExecutor,
             int targetMaxActiveAgentsInPast7Days, int targetMaxCentralUiUsers, Clock clock)
             throws Exception {
 
@@ -138,11 +138,11 @@ public class CentralRepoModule {
         }
         fullQueryTextDao = new FullQueryTextDao(session, configRepository, asyncExecutor);
         AggregateDaoImpl aggregateDaoImpl = new AggregateDaoImpl(session, activeAgentDao,
-                transactionTypeDao, fullQueryTextDao, configRepository, asyncExecutor, clock);
+                transactionTypeDao, fullQueryTextDao, configRepository, asyncExecutor, cassandraGcGraceSeconds, clock);
         GaugeValueDaoImpl gaugeValueDaoImpl = new GaugeValueDaoImpl(session, configRepository,
-                clusterManager, asyncExecutor, clock);
+                clusterManager, asyncExecutor, cassandraGcGraceSeconds, clock);
         SyntheticResultDaoImpl syntheticResultDaoImpl = new SyntheticResultDaoImpl(session,
-                configRepository, asyncExecutor, clock);
+                configRepository, asyncExecutor, cassandraGcGraceSeconds, clock);
         if (v09AggregateLastExpirationTime < clock.currentTimeMillis()) {
             aggregateDao = aggregateDaoImpl;
             gaugeValueDao = gaugeValueDaoImpl;

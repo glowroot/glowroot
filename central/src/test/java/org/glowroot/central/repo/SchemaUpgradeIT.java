@@ -48,7 +48,7 @@ public class SchemaUpgradeIT {
         com.datastax.driver.core.Session wrappedSession = cluster.newSession();
         updateSchemaWithRetry(wrappedSession, "drop keyspace if exists glowroot_upgrade_test");
         session = new Session(wrappedSession, "glowroot_upgrade_test", null,
-                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE, 0);
         URL url = Resources.getResource("glowroot-0.9.1-schema.cql");
         StringBuilder cql = new StringBuilder();
         for (String line : Resources.readLines(url, UTF_8)) {
@@ -73,7 +73,7 @@ public class SchemaUpgradeIT {
     @Test
     public void shouldRead() throws Exception {
         // given
-        SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, Clock.systemClock(), false);
+        SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, 0, Clock.systemClock(), false);
         // when
         schemaUpgrade.upgrade();
         // then don't throw exception

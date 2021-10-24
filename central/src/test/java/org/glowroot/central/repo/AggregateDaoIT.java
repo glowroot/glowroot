@@ -89,7 +89,7 @@ public class AggregateDaoIT {
         clusterManager = ClusterManager.create();
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
-                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE, 0);
         asyncExecutor = Executors.newCachedThreadPool();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         AgentDisplayDao agentDisplayDao =
@@ -108,7 +108,7 @@ public class AggregateDaoIT {
                 configRepository, rollupLevelService, Clock.systemClock());
         aggregateDao = new AggregateDaoWithV09Support(ImmutableSet.of(), 0, 0, Clock.systemClock(),
                 new AggregateDaoImpl(session, activeAgentDao, transactionTypeDao, fullQueryTextDao,
-                        configRepository, asyncExecutor, Clock.systemClock()));
+                        configRepository, asyncExecutor, 0, Clock.systemClock()));
     }
 
     @AfterClass

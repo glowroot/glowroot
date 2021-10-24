@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.13.7-SNAPSHOT</version>
+    <version>0.14.0-beta-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -198,81 +198,6 @@
               <!-- exclusion is needed due to https://issues.apache.org/jira/browse/MSHADE-206 -->
               <groupId>org.glowroot</groupId>
               <artifactId>glowroot-agent-core</artifactId>
-            </exclusion>
-          </exclusions>
-        </dependency>
-      </dependencies>
-    </profile>
-    <profile>
-      <id>not-test-java6</id>
-      <activation>
-        <property>
-          <name>!glowroot.test.java6</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>default-testCompile</id>
-                <configuration>
-                  <source>1.7</source>
-                  <target>1.7</target>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>build-helper-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>add-test-source</id>
-                <goals>
-                  <goal>add-test-source</goal>
-                </goals>
-                <configuration>
-                  <sources>
-                    <source>src/test/java7</source>
-                  </sources>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>test-java6</id>
-      <activation>
-        <property>
-          <name>glowroot.test.java6</name>
-        </property>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>javax.transaction</groupId>
-          <artifactId>jta</artifactId>
-          <version>1.1</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.glassfish.main.jdbc.jdbc-ra.jdbc40</groupId>
-          <artifactId>jdbc40</artifactId>
-          <version>${glassfish.jdbc.version}</version>
-          <scope>test</scope>
-          <exclusions>
-            <exclusion>
-              <!-- conflicts with glowroot's asm version -->
-              <groupId>org.glassfish.external</groupId>
-              <artifactId>asm-all</artifactId>
-            </exclusion>
-            <exclusion>
-              <!-- need to use Java 6 compatible JTA (above) -->
-              <groupId>javax.transaction</groupId>
-              <artifactId>javax.transaction-api</artifactId>
             </exclusion>
           </exclusions>
         </dependency>

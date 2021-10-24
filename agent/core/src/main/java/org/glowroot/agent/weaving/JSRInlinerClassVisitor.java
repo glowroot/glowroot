@@ -21,12 +21,12 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.commons.JSRInlinerAdapter;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.objectweb.asm.Opcodes.ASM7;
+import static org.objectweb.asm.Opcodes.ASM9;
 
 class JSRInlinerClassVisitor extends ClassVisitor {
 
     JSRInlinerClassVisitor(ClassVisitor cv) {
-        super(ASM7, cv);
+        super(ASM9, cv);
     }
 
     @Override

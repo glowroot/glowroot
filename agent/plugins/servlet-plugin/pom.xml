@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.13.7-SNAPSHOT</version>
+    <version>0.14.0-beta-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -86,7 +86,6 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
       <!-- jetty 9 uses Servlet API 3.1.0 which conflicts with Tomcat 7 (which uses 3.0) -->
-      <!-- jetty 8.2 requires Java 7+ which causes "force-java6" profile below to fail -->
       <version>8.1.22.v20160922</version>
       <scope>test</scope>
     </dependency>
@@ -113,26 +112,6 @@
         </executions>
       </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <!-- this is just so eclipse will use Java 7 for this module, since Java 7 is needed for
-            running tests in eclipse because some tests depend on the executor plugin which targets
-            Java 7 for default-testCompile just so eclipse will use Java 7 for that module, in order
-            to run that module's own ForkJoinPool tests -->
-          <artifactId>maven-compiler-plugin</artifactId>
-          <executions>
-            <execution>
-              <id>default-testCompile</id>
-              <configuration>
-                <source>1.7</source>
-                <target>1.7</target>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 
   <profiles>
@@ -179,49 +158,6 @@
           </exclusions>
         </dependency>
       </dependencies>
-    </profile>
-    <profile>
-      <id>test-java6</id>
-      <activation>
-        <property>
-          <name>glowroot.test.java6</name>
-        </property>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <artifactId>maven-compiler-plugin</artifactId>
-              <executions>
-                <execution>
-                  <id>default-testCompile</id>
-                  <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
-    <profile>
-      <id>java6or7</id>
-      <activation>
-        <jdk>[1.6,1.8)</jdk>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <!-- this is needed when building with Java 6 or 7 -->
-              <argLine>-XX:MaxPermSize=128m</argLine>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
   </profiles>
 </project>

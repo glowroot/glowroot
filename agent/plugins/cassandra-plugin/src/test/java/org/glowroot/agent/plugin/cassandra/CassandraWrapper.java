@@ -106,7 +106,7 @@ class CassandraWrapper {
     private static void downloadAndExtract(File baseDir) throws IOException {
         // using System.out to make sure user sees why there is a big delay here
         System.out.print("Downloading Cassandra " + CASSANDRA_VERSION + "...");
-        URL url = new URL("https://www-us.apache.org/dist/cassandra/" + CASSANDRA_VERSION
+        URL url = new URL("https://archive.apache.org/dist/cassandra/" + CASSANDRA_VERSION
                 + "/apache-cassandra-" + CASSANDRA_VERSION + "-bin.tar.gz");
         InputStream in = url.openStream();
         File archiveFile = File.createTempFile("cassandra-" + CASSANDRA_VERSION + "-", ".tar.gz");
@@ -152,7 +152,7 @@ class CassandraWrapper {
         if (sourceOfRandomness != null) {
             command.add("-Djava.security.egd=" + sourceOfRandomness);
         }
-        command.add("-Xmx256m");
+        command.add("-Xmx512m");
         // leave as much memory as possible to old gen
         command.add("-XX:NewRatio=20");
         command.add("org.apache.cassandra.service.CassandraDaemon");

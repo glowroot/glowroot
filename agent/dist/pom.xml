@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.13.7-SNAPSHOT</version>
+    <version>0.14.0-beta-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
@@ -25,14 +25,6 @@
     <dependency>
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-agent-central-https-linux</artifactId>
-      <version>${project.version}</version>
-      <!-- need to mark this as provided since it is still present in the dependency reduced pom
-        which is deployed to maven central -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-central-https-linux-alpine</artifactId>
       <version>${project.version}</version>
       <!-- need to mark this as provided since it is still present in the dependency reduced pom
         which is deployed to maven central -->
