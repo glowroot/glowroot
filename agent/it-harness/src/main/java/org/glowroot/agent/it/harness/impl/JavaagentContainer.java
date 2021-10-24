@@ -76,7 +76,6 @@ public class JavaagentContainer implements Container {
     private final ServerSocket heartbeatListenerSocket;
     private final ExecutorService heartbeatListenerExecutor;
     private final @Nullable GrpcServerWrapper server;
-    private final EventLoopGroup eventLoopGroup;
     private final ExecutorService executor;
     private final ManagedChannel channel;
     private final @Nullable TraceCollector traceCollector;
@@ -160,14 +159,12 @@ public class JavaagentContainer implements Container {
         consolePipeFuture = consolePipeExecutor.submit(consoleOutputPipe);
         this.process = process;
 
-        eventLoopGroup = EventLoopGroups.create("Glowroot-IT-Harness*-GRPC-Worker-ELG");
         executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()
                         .setDaemon(true)
                         .setNameFormat("Glowroot-IT-Harness*-GRPC-Executor-%d")
                         .build());
         channel = NettyChannelBuilder.forAddress("localhost", javaagentServicePort)
-                .eventLoopGroup(eventLoopGroup)
                 .executor(executor)
                 .negotiationType(NegotiationType.PLAINTEXT)
                 .build();
@@ -281,9 +278,6 @@ public class JavaagentContainer implements Container {
         if (!executor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
         }
-        if (!eventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate event loop group");
-        }
         if (server != null) {
             server.close();
         }
@@ -377,6 +371,7 @@ public class JavaagentContainer implements Container {
                 paths.add(path);
             } else if (name.matches("asm-.*\\.jar")
                     || name.matches("grpc-.*\\.jar")
+                    || name.matches("perfmark-.*\\.jar")
                     || name.matches("opencensus-.*\\.jar")
                     || name.matches("guava-.*\\.jar")
                     // dependency of guava 27.0+ (which is used by glowroot-webdriver-tests)

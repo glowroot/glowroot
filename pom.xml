@@ -47,7 +47,6 @@
     <module>agent/shaded/core</module>
     <module>agent/shaded/it-harness</module>
     <module>agent/shaded/central-https-linux</module>
-    <module>agent/shaded/central-https-linux-alpine</module>
     <module>agent/shaded/central-https-windows</module>
     <module>agent/shaded/central-https-osx</module>
     <module>agent/shaded/logging-logstash</module>
@@ -91,13 +90,11 @@
   </scm>
 
   <properties>
-    <!-- grpc 1.15.0+ requires Java 7+ -->
-    <grpc.version>1.14.0</grpc.version>
-    <!-- protobuf 3.6.0+ requires Java 7+ -->
-    <protobuf.version>3.5.1</protobuf.version>
-    <protoc.version>3.5.1</protoc.version>
+    <grpc.version>1.41.0</grpc.version>
+    <protobuf.version>3.18.1</protobuf.version>
+    <protoc.version>3.18.1</protoc.version>
     <!-- need to stick to netty version that is used by grpc version above -->
-    <netty.version>4.1.27.Final</netty.version>
+    <netty.version>4.1.52.Final</netty.version>
     <logback.version>1.2.3</logback.version>
     <slf4j.version>1.7.30</slf4j.version>
     <immutables.version>2.8.8</immutables.version>

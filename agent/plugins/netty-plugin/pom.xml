@@ -115,7 +115,7 @@
       <!-- separate profile since can't find any http/2 client libraries that support Java 6 -->
       <id>netty-http2-4.1.x</id>
       <properties>
-        <netty.version>4.1.32.Final</netty.version>
+        <netty.version>4.1.52.Final</netty.version>
       </properties>
       <dependencies>
         <dependency>
@@ -157,7 +157,7 @@
     <profile>
       <id>netty-4.x</id>
       <properties>
-        <netty.version>4.1.32.Final</netty.version>
+        <netty.version>4.1.52.Final</netty.version>
       </properties>
       <dependencies>
         <dependency>
@@ -244,8 +244,8 @@
     <profile>
       <id>vertx-3.x</id>
       <properties>
-        <vertx.version>3.6.2</vertx.version>
-        <netty.version>4.1.30.Final</netty.version>
+        <vertx.version>3.9.7</vertx.version>
+        <netty.version>4.1.49.Final</netty.version>
       </properties>
       <dependencies>
         <dependency>
