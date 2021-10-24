@@ -64,7 +64,7 @@ import static org.objectweb.asm.Opcodes.ACC_SYNTHETIC;
 import static org.objectweb.asm.Opcodes.ACONST_NULL;
 import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.ARETURN;
-import static org.objectweb.asm.Opcodes.ASM7;
+import static org.objectweb.asm.Opcodes.ASM9;
 import static org.objectweb.asm.Opcodes.ASTORE;
 import static org.objectweb.asm.Opcodes.ATHROW;
 import static org.objectweb.asm.Opcodes.DUP;
@@ -132,7 +132,7 @@ class WeavingClassVisitor extends ClassVisitor {
             boolean isClassLoader, List<AnalyzedMethod> methodsThatOnlyNowFulfillAdvice,
             List<ShimType> shimTypes, List<MixinType> mixinTypes,
             Map<String, List<Advice>> methodAdvisors, AnalyzedWorld analyzedWorld) {
-        super(ASM7, cw);
+        super(ASM9, cw);
         this.cw = cw;
         this.loader = loader;
         this.frames = frames;
@@ -716,7 +716,7 @@ class WeavingClassVisitor extends ClassVisitor {
 
         InitMixins(MethodVisitor mv, int access, String name, String descriptor,
                 List<MixinType> matchedMixinTypes, Type type) {
-            super(ASM7, mv, access, name, descriptor);
+            super(ASM9, mv, access, name, descriptor);
             this.matchedMixinTypes = ImmutableList.copyOf(matchedMixinTypes);
             this.type = type;
         }

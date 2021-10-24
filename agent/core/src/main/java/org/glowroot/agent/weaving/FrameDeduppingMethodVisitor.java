@@ -19,7 +19,7 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 
-import static org.objectweb.asm.Opcodes.ASM7;
+import static org.objectweb.asm.Opcodes.ASM9;
 
 // this is needed for weaving the code in DuplicateStackFramesMisc.execute1()
 // and it seems that jacoco project had need for similar method visitor, see
@@ -29,7 +29,7 @@ class FrameDeduppingMethodVisitor extends MethodVisitor {
     private boolean skipNextFrame;
 
     FrameDeduppingMethodVisitor(MethodVisitor mv) {
-        super(ASM7, mv);
+        super(ASM9, mv);
     }
 
     @Override
