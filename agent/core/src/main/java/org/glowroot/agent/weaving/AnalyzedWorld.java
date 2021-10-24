@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
@@ -53,16 +54,19 @@ public class AnalyzedWorld {
 
     private static final Logger logger = LoggerFactory.getLogger(AnalyzedWorld.class);
 
-    private static final Method findLoadedClassMethod;
+    private static final AtomicReference<Exception> findLoadedClassMethodException = new AtomicReference<>();
 
-    static {
+    private static final @Nullable Method findLoadedClassMethod = getFindLoadedClassMethod();
+
+    private static Method getFindLoadedClassMethod() {
         try {
-            findLoadedClassMethod =
-                    ClassLoader.class.getDeclaredMethod("findLoadedClass", String.class);
-            findLoadedClassMethod.setAccessible(true);
+            Method method = ClassLoader.class.getDeclaredMethod("findLoadedClass", String.class);
+            method.setAccessible(true);
+            return method;
         } catch (Exception e) {
-            // unrecoverable error
-            throw new AssertionError(e);
+            // this is expected under local container testing
+            logger.debug(e.getMessage(), e);
+            return null;
         }
     }
 
@@ -402,10 +406,14 @@ public class AnalyzedWorld {
         // class hasn't already been loaded, so instead, call the package protected
         // ClassLoader.findLoadedClass()
         Class<?> clazz = null;
-        try {
-            clazz = (Class<?>) findLoadedClassMethod.invoke(loader, className);
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+        if (loader instanceof IsolatedWeavingClassLoader) {
+            clazz = ((IsolatedWeavingClassLoader) loader).publicFindLoadedClass(className);
+        } else if (findLoadedClassMethod != null) {
+            try {
+                clazz = (Class<?>) findLoadedClassMethod.invoke(loader, className);
+            } catch (Exception e) {
+                logger.error(e.getMessage(), e);
+            }
         }
         if (clazz == null) {
             logger.debug("super class {} of {} not found in loader {}@{}", className, subClassName,

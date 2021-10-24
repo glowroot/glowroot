@@ -18,12 +18,10 @@ package org.glowroot.agent.plugin.hibernate;
 import java.util.Iterator;
 import java.util.List;
 
+import com.google.common.base.StandardSystemProperty;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;

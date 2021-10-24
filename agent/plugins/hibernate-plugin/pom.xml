@@ -18,9 +18,7 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <!-- hibernate 5.2.0+ requires Java 8+, which would prevent any hibernate plugin tests from
-      being able to run when building with Java 7 -->
-    <hibernate.version>5.1.17.Final</hibernate.version>
+    <hibernate.version>5.3.22.Final</hibernate.version>
     <hibernate.annotations.version>3.5.6-Final</hibernate.annotations.version>
   </properties>
 
@@ -162,12 +160,6 @@
           <groupId>org.hibernate</groupId>
           <artifactId>hibernate-annotations</artifactId>
           <version>${hibernate.annotations.version}</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>javassist</groupId>
-          <artifactId>javassist</artifactId>
-          <version>3.12.1.GA</version>
           <scope>test</scope>
         </dependency>
         <dependency>

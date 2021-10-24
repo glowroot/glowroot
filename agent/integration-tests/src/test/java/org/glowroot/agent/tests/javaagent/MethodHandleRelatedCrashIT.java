@@ -49,8 +49,8 @@ public class MethodHandleRelatedCrashIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        // the javascript used in the test fails in jdk 6 javascript engine
-        assumeNotJdk6();
+        // javascript engine was removed in Java 15, but this test is only important for Java 8 anyways
+        assumeJava8();
         // need to run with embedded=true so it starts up the Netty UI
         testDir = Files.createTempDir();
         File adminFile = new File(testDir, "admin.json");
@@ -79,8 +79,8 @@ public class MethodHandleRelatedCrashIT {
         container.executeNoExpectedTrace(ShouldNotCrashJvm.class);
     }
 
-    private static void assumeNotJdk6() {
-        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
+    private static void assumeJava8() {
+        Assume.assumeTrue(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.8"));
     }
 
     private static int getAvailablePort() throws Exception {
