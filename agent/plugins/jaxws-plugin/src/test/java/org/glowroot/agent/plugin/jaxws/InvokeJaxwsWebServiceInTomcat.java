@@ -26,6 +26,7 @@ import org.apache.catalina.Context;
 import org.apache.catalina.loader.WebappClassLoaderBase;
 import org.apache.catalina.loader.WebappLoader;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.catalina.webresources.TomcatURLStreamHandlerFactory;
 import org.apache.cxf.jaxws.JaxWsProxyFactoryBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,9 @@ abstract class InvokeJaxwsWebServiceInTomcat implements AppUnderTest {
             LoggerFactory.getLogger(InvokeJaxwsWebServiceInTomcat.class);
 
     public void executeApp(String webapp, String contextPath, String url) throws Exception {
+        // otherwise tests can fail with "factory already defined"
+        TomcatURLStreamHandlerFactory.disable();
+
         int port = getAvailablePort();
         Tomcat tomcat = new Tomcat();
         tomcat.setBaseDir("target/tomcat");

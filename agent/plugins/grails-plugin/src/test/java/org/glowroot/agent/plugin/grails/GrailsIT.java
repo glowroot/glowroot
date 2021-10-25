@@ -32,6 +32,7 @@ import org.apache.catalina.loader.WebappLoader;
 import org.apache.catalina.startup.Tomcat;
 import org.apache.catalina.webresources.DirResourceSet;
 import org.apache.catalina.webresources.StandardRoot;
+import org.apache.catalina.webresources.TomcatURLStreamHandlerFactory;
 import org.grails.boot.context.web.GrailsAppServletInitializer;
 import org.grails.boot.internal.EnableAutoConfiguration;
 import org.junit.After;
@@ -183,6 +184,9 @@ public class GrailsIT {
 
         @Override
         public void executeApp() throws Exception {
+            // otherwise tests can fail with "factory already defined"
+            TomcatURLStreamHandlerFactory.disable();
+
             int port = getAvailablePort();
             Tomcat tomcat = new Tomcat();
             tomcat.setBaseDir("target/tomcat");
