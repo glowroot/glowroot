@@ -42,6 +42,7 @@ import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assume.assumeFalse;
 
 public class Play2xIT {
 
@@ -51,6 +52,8 @@ public class Play2xIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
+        assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("17"));
+
         // javaagent is required for Executor.execute() weaving
         // -Dlogger.resource is needed to configure play logging (at least on 2.0.8)
         container = JavaagentContainer
@@ -62,7 +65,9 @@ public class Play2xIT {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        container.close();
+        if (container != null) {
+            container.close();
+        }
     }
 
     @After

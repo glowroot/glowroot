@@ -59,7 +59,9 @@ public class UserIT {
         // when
         Trace trace = container.execute(HasExchangePrincipal.class, "Web");
         // then
-        assertThat(trace.getHeader().getUser()).isEqualTo(PRINCIPAL_NAME);
+        // Java 17 captures "my realm:my name is mock",
+        // earlier versions capture "my name is mock"
+        assertThat(trace.getHeader().getUser()).contains(PRINCIPAL_NAME);
     }
 
     @Test
