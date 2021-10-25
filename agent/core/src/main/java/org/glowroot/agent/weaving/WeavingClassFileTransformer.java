@@ -129,6 +129,13 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             // sun/reflect/GeneratedMethodAccessor..
             return true;
         }
+        // proxies under JDK 7+ start with com/sun/proxy/$Proxy
+        if (className.startsWith("jdk/proxy2/$Proxy") || className.startsWith("com/sun/proxy/$Proxy")) {
+            // optimization, especially for jdbc plugin to avoid weaving proxy wrappers when dealing
+            // with connection pools
+            // (but more importantly, weaving Java 17 proxies is failing due to stack map frames)
+            return true;
+        }
         if (className.equals("load/C4") && loader != null && loader.getClass().getName()
                 .equals("oracle.classloader.util.ClassLoadEnvironment$DependencyLoader")) {
             // special case to avoid weaving error when running OC4J
