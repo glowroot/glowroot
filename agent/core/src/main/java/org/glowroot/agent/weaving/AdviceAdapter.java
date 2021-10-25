@@ -316,6 +316,8 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
                     stackFrame.add(stackSize - 2, stackFrame.get(stackSize - 1));
                     stackFrame.remove(stackSize);
                     break;
+                case RET:
+                    break;
                 default:
                     throw new IllegalArgumentException(INVALID_OPCODE + opcode);
             }
