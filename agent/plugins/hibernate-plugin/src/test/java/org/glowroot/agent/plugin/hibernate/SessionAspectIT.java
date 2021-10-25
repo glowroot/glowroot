@@ -18,7 +18,6 @@ package org.glowroot.agent.plugin.hibernate;
 import java.util.Iterator;
 import java.util.List;
 
-import com.google.common.base.StandardSystemProperty;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.junit.*;
