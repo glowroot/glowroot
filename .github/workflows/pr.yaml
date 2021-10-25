@@ -131,29 +131,3 @@ jobs:
 #        uses: GabrielBB/xvfb-action@v1
 #        with:
 #          run: .github/scripts/build.sh saucelabs${{ matrix.Group }}
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Set up JDK 8
-        uses: actions/setup-java@v2
-        with:
-          distribution: adopt
-          java-version: 8
-      - name: Restore cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.m2/repository
-            ~/.cache/bower
-          key: deploy-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            deploy-
-      - name: Build
-        uses: GabrielBB/xvfb-action@v1
-        with:
-          run: .github/scripts/build.sh deploy
