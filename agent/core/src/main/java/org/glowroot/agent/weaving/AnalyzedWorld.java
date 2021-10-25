@@ -414,6 +414,9 @@ public class AnalyzedWorld {
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }
+        } else {
+            // see debug log in static initializer to find out why findLoadedClassMethod is null here
+            return loader;
         }
         if (clazz == null) {
             logger.debug("super class {} of {} not found in loader {}@{}", className, subClassName,
