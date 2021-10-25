@@ -60,11 +60,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.tomcat.embed</groupId>
-      <artifactId>tomcat-embed-logging-juli</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <!-- this is needed because logback classic 1.1.10+ contains
         META-INF/services/javax.servlet.ServletContainerInitializer which causes issues when running
         tests with embedded tomcat inside JavaagentContainer because logback is loaded in the
@@ -80,8 +75,8 @@
       -->
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
-      <!-- Tomcat 7 (above) uses Servlet API 3.0 -->
-      <version>3.0.1</version>
+      <!-- Tomcat 8 (above) uses Servlet API 3.1 -->
+      <version>3.1.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>

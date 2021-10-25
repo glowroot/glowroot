@@ -27,7 +27,7 @@
     <mssql.version>6.4.0.jre7</mssql.version>
     <commons.dbcp.version>1.4</commons.dbcp.version>
     <commons.dbcp2.version>2.7.0</commons.dbcp2.version>
-    <tomcat.version>7.0.99</tomcat.version>
+    <tomcat.version>8.5.72</tomcat.version>
     <!-- Glassfish JDBC 5+ requires Java 8+ -->
     <glassfish.jdbc.version>4.1.2</glassfish.jdbc.version>
     <hikari.cp.artifactId>HikariCP-java6</hikari.cp.artifactId>
@@ -97,7 +97,6 @@
     <dependency>
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-jdbc</artifactId>
-      <!-- tomcat 8 requires Java 7+ -->
       <version>${tomcat.version}</version>
       <scope>test</scope>
     </dependency>

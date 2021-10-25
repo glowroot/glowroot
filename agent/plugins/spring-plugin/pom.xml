@@ -56,11 +56,6 @@
     </dependency>
     <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
-      <artifactId>tomcat-embed-logging-juli</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.tomcat.embed</groupId>
       <artifactId>tomcat-embed-websocket</artifactId>
       <scope>test</scope>
     </dependency>
@@ -80,8 +75,8 @@
       -->
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
-      <!-- Tomcat 7 (above) uses Servlet API 3.0 -->
-      <version>3.0.1</version>
+      <!-- Tomcat 8 (above) uses Servlet API 3.1 -->
+      <version>3.1.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
