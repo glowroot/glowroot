@@ -88,7 +88,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
      * value), or {@link #OTHER} (for any other value). This field is only maintained for
      * constructors, in branches where the super class constructor has not been called yet.
      */
-    protected List<Object> stackFrame = new ArrayList<Object>();
+    protected List<Object> stackFrame = new ArrayList<>();
 
     /**
      * The stack map frames corresponding to the labels of the forward jumps made *before* the super
@@ -97,7 +97,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
      * when we reach a label from this map, {@link #superClassConstructorCalled} must be reset to
      * false. This field is only maintained for constructors.
      */
-    private Map<Label, List<Object>> forwardJumpStackFrames = new HashMap<Label, List<Object>>();
+    private Map<Label, List<Object>> forwardJumpStackFrames = new HashMap<>();
 
     protected boolean stackFrameTracking = true;
 
@@ -554,7 +554,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
             }
             addForwardJump(label);
             if (opcode == GOTO) {
-                stackFrame = new ArrayList<Object>();
+                stackFrame = new ArrayList<>();
             }
         }
     }
@@ -595,7 +595,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
         // wrong
         // 'onMethodEnter').
         if (stackFrameTracking && !forwardJumpStackFrames.containsKey(handler)) {
-            List<Object> handlerStackFrame = new ArrayList<Object>();
+            List<Object> handlerStackFrame = new ArrayList<>();
             handlerStackFrame.add(OTHER);
             forwardJumpStackFrames.put(handler, handlerStackFrame);
         }
@@ -612,7 +612,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
         if (forwardJumpStackFrames.containsKey(label)) {
             return;
         }
-        forwardJumpStackFrames.put(label, new ArrayList<Object>(stackFrame));
+        forwardJumpStackFrames.put(label, new ArrayList<>(stackFrame));
     }
 
     private Object popValue() {
