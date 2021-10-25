@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.base.StandardSystemProperty;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.ning.http.client.AsyncHttpClient;
 import grails.artefact.Artefact;
@@ -46,10 +45,10 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assume.assumeFalse;
 
 public class GrailsIT {
 
@@ -57,20 +56,15 @@ public class GrailsIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
-        if (Containers.useJavaagent()
-                && (javaVersion.startsWith("1.6") || javaVersion.startsWith("1.7"))) {
-            // grails loads lots of classes
-            container = JavaagentContainer
-                    .createWithExtraJvmArgs(ImmutableList.of("-XX:MaxPermSize=128m"));
-        } else {
-            container = Containers.create();
-        }
+        assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("17"));
+        container = Containers.create();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        container.close();
+        if (container != null) {
+            container.close();
+        }
     }
 
     @After
