@@ -232,7 +232,6 @@ public class AsyncServletIT {
             // see similar issue in org.glowroot.agent.plugin.spring.AsyncControllerIT
 
             entry = i.next();
-            assertThat(entry.getDepth()).isEqualTo(1);
             assertThat(entry.getMessage()).isEqualTo(
                     "this auxiliary thread was still running when the transaction ended");
         }

@@ -26,6 +26,7 @@ import com.ning.http.client.AsyncHttpClient;
 import org.apache.catalina.Context;
 import org.apache.catalina.loader.WebappLoader;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.catalina.webresources.TomcatURLStreamHandlerFactory;
 import org.apache.struts.action.Action;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
@@ -91,6 +92,9 @@ public class StrutsOneIT {
 
         @Override
         public void executeApp() throws Exception {
+            // otherwise tests can fail with "factory already defined"
+            TomcatURLStreamHandlerFactory.disable();
+
             int port = getAvailablePort();
             Tomcat tomcat = new Tomcat();
             tomcat.setBaseDir("target/tomcat");

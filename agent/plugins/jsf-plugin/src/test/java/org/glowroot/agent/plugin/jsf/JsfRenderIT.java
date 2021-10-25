@@ -27,6 +27,7 @@ import com.ning.http.client.cookie.Cookie;
 import org.apache.catalina.Context;
 import org.apache.catalina.loader.WebappLoader;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.catalina.webresources.TomcatURLStreamHandlerFactory;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -186,6 +187,9 @@ public class JsfRenderIT {
 
         @Override
         public void executeApp() throws Exception {
+            // otherwise tests can fail with "factory already defined"
+            TomcatURLStreamHandlerFactory.disable();
+
             int port = getAvailablePort();
             Tomcat tomcat = new Tomcat();
             tomcat.setBaseDir("target/tomcat");
