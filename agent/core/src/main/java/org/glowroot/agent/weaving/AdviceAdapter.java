@@ -449,31 +449,17 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
         }
     }
 
-    /**
-     * Deprecated.
-     *
-     * @deprecated use {@link #visitMethodInsn(int, String, String, String, boolean)} instead.
-     */
-    @Deprecated
     @Override
-    public void visitMethodInsn(final int opcode, final String owner, final String name,
-            final String descriptor) {
-        if (api >= Opcodes.ASM5) {
-            super.visitMethodInsn(opcode, owner, name, descriptor);
-            return;
-        }
-        mv.visitMethodInsn(opcode, owner, name, descriptor, opcode == Opcodes.INVOKEINTERFACE);
-        doVisitMethodInsn(opcode, descriptor);
-    }
-
-    @Override
-    public void visitMethodInsn(final int opcode, final String owner, final String name,
+    public void visitMethodInsn(final int opcodeAndSource, final String owner, final String name,
             final String descriptor, final boolean isInterface) {
-        if (api < Opcodes.ASM5) {
-            super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+        if (api < Opcodes.ASM5 && (opcodeAndSource & Opcodes.SOURCE_DEPRECATED) == 0) {
+            // Redirect the call to the deprecated version of this method.
+            super.visitMethodInsn(opcodeAndSource, owner, name, descriptor, isInterface);
             return;
         }
-        mv.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+        super.visitMethodInsn(opcodeAndSource, owner, name, descriptor, isInterface);
+        int opcode = opcodeAndSource & ~Opcodes.SOURCE_MASK;
+
         doVisitMethodInsn(opcode, descriptor);
     }
 
