@@ -27,8 +27,7 @@
     <wiremock.version>2.26.0</wiremock.version>
     <okhttpclient.version>4.3.1</okhttpclient.version>
     <okhttpclient2x.version>2.7.5</okhttpclient2x.version>
-    <!-- CXF 3.2.0+ requires Java 8+ -->
-    <cxf.version>3.1.18</cxf.version>
+    <cxf.version>3.4.5</cxf.version>
     <!-- Spring 5+ requires Java 8+ -->
     <spring.version>4.3.26.RELEASE</spring.version>
     <axis.version>1.4</axis.version>
@@ -265,7 +264,7 @@
       <!-- this is needed for running tests on Java 9+ -->
       <groupId>org.glassfish.jaxb</groupId>
       <artifactId>jaxb-runtime</artifactId>
-      <version>2.3.1</version>
+      <version>2.3.4</version>
       <scope>test</scope>
     </dependency>
     <dependency>

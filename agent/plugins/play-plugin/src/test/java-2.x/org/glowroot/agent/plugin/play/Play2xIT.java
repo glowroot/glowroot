@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
@@ -42,6 +43,7 @@ import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assume.assumeFalse;
 
 public class Play2xIT {
 
@@ -51,6 +53,8 @@ public class Play2xIT {
 
     @BeforeClass
     public static void setUp() throws Exception {
+        assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("17"));
+
         // javaagent is required for Executor.execute() weaving
         // -Dlogger.resource is needed to configure play logging (at least on 2.0.8)
         container = JavaagentContainer
@@ -62,7 +66,9 @@ public class Play2xIT {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        container.close();
+        if (container != null) {
+            container.close();
+        }
     }
 
     @After
@@ -94,7 +100,7 @@ public class Play2xIT {
         assertThat(entry.getMessage()).isEqualTo("play render: index");
 
         if (i.hasNext()) {
-            // TODO investigate why this happens sporadically on travis ci
+            // TODO investigate why this happens sporadically
 
             // see similar issue in org.glowroot.agent.plugin.spring.AsyncControllerIT
 
@@ -130,9 +136,14 @@ public class Play2xIT {
         assertThat(entry.getMessage()).isEqualTo("play render: index");
 
         if (i.hasNext()) {
+            // TODO investigate why this happens sporadically
+
+            // see similar issue in org.glowroot.agent.plugin.spring.AsyncControllerIT
+
             entry = i.next();
-            throw new AssertionError("Unexpected entry: depth=" + entry.getDepth() + ", message="
-                    + entry.getMessage());
+            assertThat(entry.getDepth()).isEqualTo(0);
+            assertThat(entry.getMessage()).isEqualTo(
+                    "this auxiliary thread was still running when the transaction ended");
         }
 
         assertThat(i.hasNext()).isFalse();

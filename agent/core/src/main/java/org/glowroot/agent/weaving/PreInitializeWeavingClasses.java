@@ -218,6 +218,7 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.primitives.Bytes");
         types.add("com.google.common.primitives.Ints");
         types.add("com.google.common.primitives.IntsMethodsForWeb");
+        types.add("com.google.common.reflect.Reflection");
         return types;
     }
 
@@ -352,6 +353,7 @@ public class PreInitializeWeavingClasses {
                 + "$TraceEntryAnnotationVisitor");
         types.add("org.glowroot.agent.weaving.InstrumentationSeekerClassVisitor"
                 + "$TransactionAnnotationVisitor");
+        types.add("org.glowroot.agent.weaving.IsolatedWeavingClassLoader");
         types.add("org.glowroot.agent.weaving.JSRInlinerClassVisitor");
         types.add("org.glowroot.agent.weaving.MixinType");
         types.add("org.glowroot.agent.weaving.PluginClassRenamer");
