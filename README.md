@@ -1,9 +1,9 @@
-Glowroot &nbsp;&nbsp; [![Build Status](https://img.shields.io/travis/glowroot/glowroot.svg)](https://travis-ci.org/glowroot/glowroot) [![Code Coverage](https://sonarcloud.io/api/project_badges/measure?project=org.glowroot:glowroot-parent&metric=coverage)](https://sonarcloud.io/dashboard?id=org.glowroot%3Aglowroot-parent)
+Glowroot
 =========
 
 ## Requirements
 
-* Java 6+
+* Java 8+
 
 ## Quick start
 
@@ -33,7 +33,7 @@ The usual:
 
 Binary distribution is built under agent/dist/target.
 
-Building requires Java 7+ (in order to perform [Immutables](https://immutables.github.io) annotation processing) and Maven 3.1.0+.
+Building requires Java 8+ and Maven 3.1.0+.
 
 ## Contributing
 
