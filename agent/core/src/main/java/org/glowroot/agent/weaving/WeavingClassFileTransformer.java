@@ -130,7 +130,7 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             return true;
         }
         // proxies under JDK 7+ start with com/sun/proxy/$Proxy
-        if (className.startsWith("jdk/proxy2/$Proxy") || className.startsWith("com/sun/proxy/$Proxy")) {
+        if (className.matches("^jdk/proxy\\d+/\\$Proxy.*") || className.startsWith("com/sun/proxy/$Proxy")) {
             // optimization, especially for jdbc plugin to avoid weaving proxy wrappers when dealing
             // with connection pools
             // (but more importantly, weaving Java 17 proxies is failing due to stack map frames)
