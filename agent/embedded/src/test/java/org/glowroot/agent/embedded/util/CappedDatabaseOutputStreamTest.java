@@ -24,9 +24,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Ticker;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,7 +39,7 @@ public class CappedDatabaseOutputStreamTest {
     private CappedDatabaseOutputStream cappedOut;
     private RandomAccessFile in;
 
-    @Before
+    @BeforeEach
     public void onBefore() throws IOException {
         tempFile = File.createTempFile("glowroot-test-", ".capped.txt");
         scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -48,7 +48,7 @@ public class CappedDatabaseOutputStreamTest {
         in = new RandomAccessFile(tempFile, "r");
     }
 
-    @After
+    @AfterEach
     public void onAfter() throws IOException {
         scheduledExecutor.shutdownNow();
         cappedOut.close();

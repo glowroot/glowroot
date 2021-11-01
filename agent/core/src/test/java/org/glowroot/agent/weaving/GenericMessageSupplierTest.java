@@ -18,7 +18,7 @@ package org.glowroot.agent.weaving;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MethodInfo;

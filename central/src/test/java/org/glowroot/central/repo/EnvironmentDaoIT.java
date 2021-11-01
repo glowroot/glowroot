@@ -17,10 +17,10 @@ package org.glowroot.central.repo;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PoolingOptions;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.central.util.Session;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
@@ -34,7 +34,7 @@ public class EnvironmentDaoIT {
     private static Session session;
     private static EnvironmentDao environmentDao;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
@@ -44,14 +44,14 @@ public class EnvironmentDaoIT {
         environmentDao = new EnvironmentDao(session);
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         session.close();
         cluster.close();
         SharedSetupRunListener.stopCassandra();
     }
 
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         session.updateSchemaWithRetry("truncate environment");
     }

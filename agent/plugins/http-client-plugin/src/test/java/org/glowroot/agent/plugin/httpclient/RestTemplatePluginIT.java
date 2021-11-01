@@ -17,10 +17,10 @@ package org.glowroot.agent.plugin.httpclient;
 
 import java.util.Iterator;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestTemplate;
 
 import org.glowroot.agent.it.harness.Container;
@@ -33,19 +33,19 @@ public class RestTemplatePluginIT {
 
     private static Container container;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         // this is just testing HttpURLConnection instrumentation, so need to use javaagent
         // container since HttpURLConnection is in the bootstrap class loader
         container = JavaagentContainer.create();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         container.close();
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }

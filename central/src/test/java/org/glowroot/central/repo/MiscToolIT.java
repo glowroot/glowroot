@@ -16,16 +16,16 @@
 package org.glowroot.central.repo;
 
 import com.datastax.driver.core.Cluster;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.central.Main;
 
 public class MiscToolIT {
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         Cluster cluster = Clusters.newCluster();
@@ -37,7 +37,7 @@ public class MiscToolIT {
         Main.main(new String[] {"create-schema"});
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         System.clearProperty("glowroot.cassandra.keyspace");
         SharedSetupRunListener.stopCassandra();
@@ -53,8 +53,7 @@ public class MiscToolIT {
         Main.main(new String[] {"truncate-all-data"});
     }
 
-    // this requires range deletes which are only supported in Cassandra 3.x
-    @Ignore
+    @Disabled("this requires range deletes which are only supported in Cassandra 3.x")
     @Test
     public void runExecuteRangeDeletes() throws Exception {
 

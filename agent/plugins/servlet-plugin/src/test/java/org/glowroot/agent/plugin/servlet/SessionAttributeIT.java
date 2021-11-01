@@ -29,10 +29,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
 
@@ -48,17 +48,17 @@ public class SessionAttributeIT {
 
     private static Container container;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         container = Containers.create();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         container.close();
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }

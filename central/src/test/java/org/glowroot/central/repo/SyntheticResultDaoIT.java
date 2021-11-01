@@ -22,9 +22,9 @@ import java.util.concurrent.Executors;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PoolingOptions;
 import com.google.common.collect.Lists;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
@@ -43,7 +43,7 @@ public class SyntheticResultDaoIT {
     private static ExecutorService asyncExecutor;
     private static SyntheticResultDaoImpl syntheticResultDao;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         clusterManager = ClusterManager.create();
@@ -64,7 +64,7 @@ public class SyntheticResultDaoIT {
                 Clock.systemClock());
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         asyncExecutor.shutdown();
         session.close();

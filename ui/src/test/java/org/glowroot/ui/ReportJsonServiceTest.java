@@ -21,7 +21,7 @@ import java.util.Date;
 import java.util.TimeZone;
 
 import com.google.common.base.Function;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.ui.ReportJsonService.ROLLUP;
 import org.glowroot.ui.ReportJsonService.RollupCaptureTimeFn;

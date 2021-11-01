@@ -16,17 +16,16 @@
 package org.glowroot.central;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanDumpRequest.MBeanDumpKind;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 public class DownstreamServiceNotConnectedTest {
@@ -36,15 +35,12 @@ public class DownstreamServiceNotConnectedTest {
     private DownstreamServiceImpl downstreamService =
             new DownstreamServiceImpl(mock(GrpcCommon.class), clusterManager);
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         clusterManager = ClusterManager.create();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         clusterManager.close();
     }
@@ -55,123 +51,123 @@ public class DownstreamServiceNotConnectedTest {
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnThreadDump() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.threadDump("a");
+    public void shouldThrowAgentNotConnectExceptionOnThreadDump() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.threadDump("a"));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnAvailableDiskSpaceBytes() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.availableDiskSpaceBytes("a", "dummy");
+    public void shouldThrowAgentNotConnectExceptionOnAvailableDiskSpaceBytes() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.availableDiskSpaceBytes("a", "dummy"));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnHeapDump() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.heapDump("a", "dummy");
+    public void shouldThrowAgentNotConnectExceptionOnHeapDump() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.heapDump("a", "dummy"));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnExplicitGcDisabled() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.isExplicitGcDisabled("a");
+    public void shouldThrowAgentNotConnectExceptionOnExplicitGcDisabled() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.isExplicitGcDisabled("a"));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnGc() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.forceGC("a");
+    public void shouldThrowAgentNotConnectExceptionOnGc() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.forceGC("a"));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnMbeanDump() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.mbeanDump("a", MBeanDumpKind.ALL_MBEANS_INCLUDE_ATTRIBUTES,
-                ImmutableList.of());
+    public void shouldThrowAgentNotConnectExceptionOnMbeanDump() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.mbeanDump("a", MBeanDumpKind.ALL_MBEANS_INCLUDE_ATTRIBUTES,
+                    ImmutableList.of()));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnMatchingMBeanObjectNames() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.matchingMBeanObjectNames("a", "b", 3);
+    public void shouldThrowAgentNotConnectExceptionOnMatchingMBeanObjectNames() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.matchingMBeanObjectNames("a", "b", 3));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnMbeanMeta() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.mbeanMeta("a", "dummy");
+    public void shouldThrowAgentNotConnectExceptionOnMbeanMeta() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.mbeanMeta("a", "dummy"));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnCapabilities() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.capabilities("a");
+    public void shouldThrowAgentNotConnectExceptionOnCapabilities() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.capabilities("a"));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnGlobalMeta() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.globalMeta("a");
+    public void shouldThrowAgentNotConnectExceptionOnGlobalMeta() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.globalMeta("a"));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnPreloadClasspathCache() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.preloadClasspathCache("a");
+    public void shouldThrowAgentNotConnectExceptionOnPreloadClasspathCache() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.preloadClasspathCache("a"));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnMatchingClassNames() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.matchingClassNames("a", "b", 3);
+    public void shouldThrowAgentNotConnectExceptionOnMatchingClassNames() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.matchingClassNames("a", "b", 3));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnMatchingMethodNames() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.matchingMethodNames("a", "b", "c", 4);
+    public void shouldThrowAgentNotConnectExceptionOnMatchingMethodNames() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.matchingMethodNames("a", "b", "c", 4));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnMethodSignatures() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.methodSignatures("a", "b", "c");
+    public void shouldThrowAgentNotConnectExceptionOnMethodSignatures() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.methodSignatures("a", "b", "c"));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnReweave() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.reweave("a");
+    public void shouldThrowAgentNotConnectExceptionOnReweave() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.reweave("a"));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnGetHeader() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.getHeader("a", "dummy");
+    public void shouldThrowAgentNotConnectExceptionOnGetHeader() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.getHeader("a", "dummy"));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnGetEntries() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.getEntries("a", "dummy");
+    public void shouldThrowAgentNotConnectExceptionOnGetEntries() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.getEntries("a", "dummy"));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOngetMainThreadProfile() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.getMainThreadProfile("a", "dummy");
+    public void shouldThrowAgentNotConnectExceptionOngetMainThreadProfile() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.getMainThreadProfile("a", "dummy"));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnGetAuxThreadProfile() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.getAuxThreadProfile("a", "dummy");
+    public void shouldThrowAgentNotConnectExceptionOnGetAuxThreadProfile() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.getAuxThreadProfile("a", "dummy"));
     }
 
     @Test
-    public void shouldThrowAgentNotConnectExceptionOnGetFullTrace() throws Exception {
-        thrown.expect(AgentNotConnectedException.class);
-        downstreamService.getFullTrace("a", "dummy");
+    public void shouldThrowAgentNotConnectExceptionOnGetFullTrace() {
+        assertThrows(AgentNotConnectedException.class, () ->
+            downstreamService.getFullTrace("a", "dummy"));
     }
 }

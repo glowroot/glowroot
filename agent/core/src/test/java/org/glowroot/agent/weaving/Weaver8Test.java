@@ -15,8 +15,8 @@
  */
 package org.glowroot.agent.weaving;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.weaving.SomeAspect.BasicAdvice;
 import org.glowroot.agent.weaving.SomeAspect.IterableAdvice;
@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class Weaver8Test {
 
-    @Before
+    @BeforeEach
     public void before() {
         SomeAspectThreadLocals.resetThreadLocals();
     }

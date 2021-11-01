@@ -17,7 +17,7 @@ package org.glowroot.common.config;
 
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.common.config.ImmutableInstrumentationConfig;
 import org.glowroot.common.config.InstrumentationConfig;

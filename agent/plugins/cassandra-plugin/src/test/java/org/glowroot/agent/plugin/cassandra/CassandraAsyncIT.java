@@ -28,34 +28,31 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SimpleStatement;
 import com.google.common.collect.Lists;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ExtendWith(CassandraExtension.class)
 public class CassandraAsyncIT {
 
     private static Container container;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
-        container = SharedSetupRunListener.getContainer();
+        container = CassandraExtension.getContainer();
     }
 
-    @AfterClass
-    public static void tearDown() throws Exception {
-        SharedSetupRunListener.close(container);
-    }
-
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }

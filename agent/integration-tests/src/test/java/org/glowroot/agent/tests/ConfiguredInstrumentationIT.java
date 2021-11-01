@@ -20,10 +20,10 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
@@ -44,7 +44,7 @@ public class ConfiguredInstrumentationIT {
     protected static Container container;
     private static File testDir;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         testDir = TempDirs.createTempDir("glowroot-test-dir");
         // see subclass (ReweavePointcutsTest) for JavaagentContainer test
@@ -64,13 +64,13 @@ public class ConfiguredInstrumentationIT {
         container = Containers.create(testDir);
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         container.close();
         TempDirs.deleteRecursively(testDir);
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }

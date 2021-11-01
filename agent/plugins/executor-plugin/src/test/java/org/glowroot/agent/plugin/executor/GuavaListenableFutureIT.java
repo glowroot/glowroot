@@ -22,11 +22,7 @@ import java.util.concurrent.Executors;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
@@ -43,15 +39,15 @@ public class GuavaListenableFutureIT {
 
     private static Container container;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         // unshaded doesn't work under javaagent because glowroot loads guava classes before the
         // Weaver is registered, so the guava classes don't have a chance to get woven
-        Assume.assumeTrue(isShaded() || !Containers.useJavaagent());
+        Assumptions.assumeTrue(isShaded() || !Containers.useJavaagent());
         container = Containers.create();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         // need null check in case assumption is false in setUp()
         if (container != null) {
@@ -59,7 +55,7 @@ public class GuavaListenableFutureIT {
         }
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }

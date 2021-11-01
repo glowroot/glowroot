@@ -32,36 +32,33 @@ import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.LongSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.junit.*;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ExtendWith(KafkaExtension.class)
 public class KafkaPluginIT {
 
     private static Container container;
 
-    @BeforeClass
-    public static void setUp() throws Exception {
-        container = SharedSetupRunListener.getContainer();
+    @BeforeAll
+    public static void setUp() {
+        container = KafkaExtension.getContainer();
     }
 
-    @AfterClass
-    public static void tearDown() throws Exception {
-        SharedSetupRunListener.close(container);
-    }
-
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }
 
-    @Ignore("TODO: not passing on CI, not sure why")
+    @Disabled("TODO: not passing on CI, not sure why")
     @Test
     public void shouldSend() throws Exception {
         Trace trace = container.execute(SendRecord.class);
@@ -71,7 +68,7 @@ public class KafkaPluginIT {
         assertThat(nestedTimers.get(0).getName()).isEqualTo("kafka send");
     }
 
-    @Ignore("TODO: not passing on CI, not sure why")
+    @Disabled("TODO: not passing on CI, not sure why")
     @Test
     public void shouldPoll() throws Exception {
         Trace trace = container.execute(PollRecord.class);

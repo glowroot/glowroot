@@ -17,9 +17,9 @@ package org.glowroot.central.repo;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PoolingOptions;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
@@ -35,7 +35,7 @@ public class UserDaoIT {
     private static ClusterManager clusterManager;
     private static UserDao userDao;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
@@ -45,7 +45,7 @@ public class UserDaoIT {
         userDao = new UserDao(session, clusterManager);
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         clusterManager.close();
         session.close();

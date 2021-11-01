@@ -31,10 +31,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 import play.test.TestServer;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
@@ -43,7 +40,6 @@ import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assume.assumeFalse;
 
 public class Play2xIT {
 
@@ -51,9 +47,9 @@ public class Play2xIT {
 
     private static Container container;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
-        assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("17"));
+        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("17"));
 
         // javaagent is required for Executor.execute() weaving
         // -Dlogger.resource is needed to configure play logging (at least on 2.0.8)
@@ -64,14 +60,14 @@ public class Play2xIT {
         container.execute(GetIndex.class);
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         if (container != null) {
             container.close();
         }
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }

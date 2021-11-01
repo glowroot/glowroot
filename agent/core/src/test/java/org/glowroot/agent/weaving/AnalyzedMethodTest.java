@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.weaving;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Type;
 
 import static org.assertj.core.api.Assertions.assertThat;
