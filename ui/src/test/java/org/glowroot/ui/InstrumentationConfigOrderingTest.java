@@ -16,7 +16,7 @@
 package org.glowroot.ui;
 
 import com.google.common.collect.Ordering;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.ui.InstrumentationConfigJsonService.InstrumentationConfigOrdering;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;

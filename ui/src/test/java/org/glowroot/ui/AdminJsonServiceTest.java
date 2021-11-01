@@ -21,8 +21,8 @@ import java.util.Arrays;
 
 import javax.mail.Message;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common2.config.ImmutableEmbeddedAdminGeneralConfig;
@@ -42,7 +42,7 @@ public class AdminJsonServiceTest {
     private HttpClient httpClient;
     private AdminJsonService adminJsonService;
 
-    @Before
+    @BeforeEach
     public void beforeEachTest() {
         mailService = new MockMailService();
         httpClient = mock(HttpClient.class);

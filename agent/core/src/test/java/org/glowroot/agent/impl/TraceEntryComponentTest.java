@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.impl;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.MessageSupplier;

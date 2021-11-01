@@ -24,10 +24,10 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PoolingOptions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
@@ -83,7 +83,7 @@ public class AggregateDaoIT {
     private static FullQueryTextDao fullQueryTextDao;
     private static AggregateDao aggregateDao;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         clusterManager = ClusterManager.create();
@@ -111,7 +111,7 @@ public class AggregateDaoIT {
                         configRepository, asyncExecutor, 0, Clock.systemClock()));
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         fullQueryTextDao.close();
         asyncExecutor.shutdown();
@@ -121,7 +121,7 @@ public class AggregateDaoIT {
         SharedSetupRunListener.stopCassandra();
     }
 
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         session.updateSchemaWithRetry("truncate agent_config");
     }

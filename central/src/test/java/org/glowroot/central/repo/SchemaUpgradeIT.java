@@ -25,9 +25,9 @@ import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.google.common.base.Stopwatch;
 import com.google.common.io.Resources;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.central.repo.CassandraWrapper.ConsoleOutputPipe;
 import org.glowroot.central.util.Session;
@@ -41,7 +41,7 @@ public class SchemaUpgradeIT {
     private static Cluster cluster;
     private static Session session;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
@@ -63,7 +63,7 @@ public class SchemaUpgradeIT {
         restore("glowroot_upgrade_test");
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         session.close();
         cluster.close();

@@ -18,8 +18,8 @@ package org.glowroot.tests;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.openqa.selenium.NoSuchElementException;
 
 import org.glowroot.tests.config.AlertConfigPage;
@@ -34,7 +34,7 @@ import static org.openqa.selenium.By.xpath;
 
 public class AlertConfigIT extends WebDriverIT {
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         // wait for java.lang:type=Memory:HeapMemoryUsage.used gauge to show up in the UI so that
         // alerts can be set up for it

@@ -18,70 +18,73 @@ package org.glowroot.agent.embedded.util;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 public class ResultSetCloserTest {
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
     @Test
-    public void testExecuteException() throws SQLException {
-        // given
-        thrown.expectMessage("AAAA");
-        ResultSet resultSet = mock(ResultSet.class);
-        doThrow(new SQLException("AAAA")).when(resultSet).next();
+    public void testExecuteException() {
+        Exception thrown = assertThrows(SQLException.class, () -> {
+            // given
+            ResultSet resultSet = mock(ResultSet.class);
+            doThrow(new SQLException("AAAA")).when(resultSet).next();
 
-        // when
-        ResultSetCloser closer = new ResultSetCloser(resultSet);
-        try {
-            resultSet.next();
-        } catch (Throwable t) {
-            throw closer.rethrow(t);
-        } finally {
-            closer.close();
-        }
+            // when
+            ResultSetCloser closer = new ResultSetCloser(resultSet);
+            try {
+                resultSet.next();
+            } catch (Throwable t) {
+                throw closer.rethrow(t);
+            } finally {
+                closer.close();
+            }
+        });
+        assertThat(thrown.getMessage()).isEqualTo("AAAA");
     }
 
     @Test
-    public void testCloseException() throws SQLException {
-        // given
-        thrown.expectMessage("BBBB");
-        ResultSet resultSet = mock(ResultSet.class);
-        doThrow(new SQLException("BBBB")).when(resultSet).close();
+    public void testCloseException() {
+        Exception thrown = assertThrows(SQLException.class, () -> {
+            // given
+            ResultSet resultSet = mock(ResultSet.class);
+            doThrow(new SQLException("BBBB")).when(resultSet).close();
 
-        // when
-        ResultSetCloser closer = new ResultSetCloser(resultSet);
-        try {
-            resultSet.next();
-        } catch (Throwable t) {
-            throw closer.rethrow(t);
-        } finally {
-            closer.close();
-        }
+            // when
+            ResultSetCloser closer = new ResultSetCloser(resultSet);
+            try {
+                resultSet.next();
+            } catch (Throwable t) {
+                throw closer.rethrow(t);
+            } finally {
+                closer.close();
+            }
+        });
+        assertThat(thrown.getMessage()).isEqualTo("BBBB");
     }
 
     @Test
-    public void testExecuteAndCloseExceptions() throws SQLException {
-        // given
-        thrown.expectMessage("AAAA");
-        ResultSet resultSet = mock(ResultSet.class);
-        doThrow(new SQLException("AAAA")).when(resultSet).next();
-        doThrow(new SQLException("BBBB")).when(resultSet).close();
+    public void testExecuteAndCloseExceptions() {
+        Exception thrown = assertThrows(SQLException.class, () -> {
+            // given
+            ResultSet resultSet = mock(ResultSet.class);
+            doThrow(new SQLException("AAAA")).when(resultSet).next();
+            doThrow(new SQLException("BBBB")).when(resultSet).close();
 
-        // when
-        ResultSetCloser closer = new ResultSetCloser(resultSet);
-        try {
-            resultSet.next();
-        } catch (Throwable t) {
-            throw closer.rethrow(t);
-        } finally {
-            closer.close();
-        }
+            // when
+            ResultSetCloser closer = new ResultSetCloser(resultSet);
+            try {
+                resultSet.next();
+            } catch (Throwable t) {
+                throw closer.rethrow(t);
+            } finally {
+                closer.close();
+            }
+        });
+        assertThat(thrown.getMessage()).isEqualTo("AAAA");
     }
 }

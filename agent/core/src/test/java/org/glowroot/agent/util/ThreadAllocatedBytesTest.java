@@ -16,17 +16,17 @@
 package org.glowroot.agent.util;
 
 import com.google.common.base.StandardSystemProperty;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ThreadAllocatedBytesTest {
 
-    @Before
+    @BeforeEach
     public void beforeEach() {
-        Assume.assumeFalse(StandardSystemProperty.JAVA_VM_NAME.value().equals("IBM J9 VM"));
+        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VM_NAME.value().equals("IBM J9 VM"));
     }
 
     @Test

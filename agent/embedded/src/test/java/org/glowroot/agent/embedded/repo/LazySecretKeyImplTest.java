@@ -21,7 +21,7 @@ import java.util.Arrays;
 import javax.crypto.SecretKey;
 
 import com.google.common.io.Files;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.common2.repo.util.Encryption;
 import org.glowroot.common2.repo.util.LazySecretKey;

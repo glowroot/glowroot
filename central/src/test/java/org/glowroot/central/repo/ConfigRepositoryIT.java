@@ -24,9 +24,9 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PoolingOptions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
@@ -75,7 +75,7 @@ public class ConfigRepositoryIT {
     private static ConfigRepository configRepository;
     private static AgentConfigDao agentConfigDao;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         clusterManager = ClusterManager.create();
@@ -99,7 +99,7 @@ public class ConfigRepositoryIT {
                 new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao, roleDao, "");
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         asyncExecutor.shutdown();
         // remove bad data so other tests don't have issue

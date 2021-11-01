@@ -18,11 +18,7 @@ package org.glowroot.agent.tests.javaagent;
 import java.util.logging.LogManager;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 
 import org.glowroot.agent.api.Glowroot;
 import org.glowroot.agent.it.harness.AppUnderTest;
@@ -39,18 +35,18 @@ public class LogManagerIT {
 
     private static Container container;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         // this test only passes when glowroot is shaded, since otherwise the unshaded guava library
         // uses and initializes java.util.logging before
-        Assume.assumeTrue(isShaded());
+        Assumptions.assumeTrue(isShaded());
         // this test cannot use shared javaagent container since it needs to be first thing
         // that runs in JVM in order to test that java.util.logging.LogManager is not initialized
         container = JavaagentContainer.createWithExtraJvmArgs(ImmutableList
                 .of("-Djava.util.logging.manager=" + CustomLogManager.class.getName()));
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         // need null check in case assumption is false in setUp()
         if (container != null) {
@@ -58,7 +54,7 @@ public class LogManagerIT {
         }
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }

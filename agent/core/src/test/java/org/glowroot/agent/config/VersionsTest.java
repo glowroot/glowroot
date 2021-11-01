@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.config;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.common.util.Versions;
 

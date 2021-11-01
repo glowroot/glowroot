@@ -19,7 +19,7 @@ import java.net.URISyntaxException;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.live.ClasspathCache.UiAnalyzedMethod;
 import org.glowroot.agent.live.LiveWeavingServiceImpl.UiAnalyzedMethodOrdering;

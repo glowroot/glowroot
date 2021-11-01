@@ -15,9 +15,8 @@
  */
 package org.glowroot.agent.api.internal;
 
-import org.junit.Test;
-
 import org.glowroot.agent.api.Glowroot;
+import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 

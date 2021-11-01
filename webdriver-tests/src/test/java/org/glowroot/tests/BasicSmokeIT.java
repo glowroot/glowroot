@@ -30,10 +30,10 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.Sets;
 import com.machinepublishers.jbrowserdriver.JBrowserDriver;
 import io.netty.handler.codec.http.QueryStringDecoder;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.StaleElementReferenceException;
@@ -53,7 +53,7 @@ import static org.openqa.selenium.By.xpath;
 
 public class BasicSmokeIT extends WebDriverIT {
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         String content = httpGet("http://localhost:" + getUiPort()
                 + "/backend/config/transaction?agent-id=" + agentId);
@@ -101,7 +101,7 @@ public class BasicSmokeIT extends WebDriverIT {
         });
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         container.interruptAppUnderTest();
     }
@@ -430,7 +430,7 @@ public class BasicSmokeIT extends WebDriverIT {
 
     @Test
     public void shouldCheckCassandraWriteTotals() throws Exception {
-        Assume.assumeTrue(WebDriverSetup.useCentral);
+        Assumptions.assumeTrue(WebDriverSetup.useCentral);
         httpGet("http://localhost:" + getUiPort()
                 + "/backend/admin/cassandra-write-totals?limit=10");
     }

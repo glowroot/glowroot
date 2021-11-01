@@ -15,8 +15,8 @@
  */
 package org.glowroot.tests;
 
-import org.junit.Assume;
-import org.junit.Test;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.tests.admin.HealthchecksIoConfigPage;
 import org.glowroot.tests.admin.HttpProxyConfigPage;
@@ -313,7 +313,7 @@ public class AdminIT extends WebDriverIT {
 
         // Healthchecks.io integration not available for central (use embedded agent to monitor
         // central)
-        Assume.assumeFalse(WebDriverSetup.useCentral);
+        Assumptions.assumeFalse(WebDriverSetup.useCentral);
 
         // given
         App app = app();

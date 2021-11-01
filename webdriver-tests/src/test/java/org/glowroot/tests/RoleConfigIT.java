@@ -15,7 +15,7 @@
  */
 package org.glowroot.tests;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.openqa.selenium.NoSuchElementException;
 
 import org.glowroot.tests.admin.RoleConfigPage;

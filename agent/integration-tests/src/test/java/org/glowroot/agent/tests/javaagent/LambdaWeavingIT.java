@@ -17,11 +17,7 @@ package org.glowroot.agent.tests.javaagent;
 
 import java.util.Iterator;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
@@ -35,17 +31,17 @@ public class LambdaWeavingIT {
 
     protected static Container container;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         container = JavaagentContainer.create();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         container.close();
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }
@@ -53,7 +49,7 @@ public class LambdaWeavingIT {
     // works on Java 8, fails on Java 9+ due to lambda classes no longer being passed to
     // ClassFileTransformer :-(
     @Test
-    @Ignore
+    @Disabled
     public void shouldExerciseBootstrapWeaving() throws Exception {
         // when
         Trace trace = container.execute(ShouldExerciseLambdaWeaving.class);

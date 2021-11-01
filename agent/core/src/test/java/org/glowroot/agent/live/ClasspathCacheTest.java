@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.live.ClasspathCache.UiAnalyzedMethod;
 import org.glowroot.agent.weaving.AnalyzedWorld;
@@ -36,7 +36,7 @@ public class ClasspathCacheTest {
 
     private static ClasspathCache classpathCache;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         ClassLoader badUrlsClassLoader =
                 new URLClassLoader(new URL[] {new URL("file://a/b c"), new URL("http://a/b/c")});
