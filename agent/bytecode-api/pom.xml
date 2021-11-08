@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.14.0-beta.2</version>
+    <version>0.14.0-beta.3-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
