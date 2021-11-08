@@ -16,9 +16,9 @@ jobs:
       - uses: lee-dohm/no-response@v0.5.0
         with:
           token: ${{ github.token }}
-          daysUntilClose: 14
+          daysUntilClose: 30
           closeComment: >
-            This issue has been auto-closed as awaiting feedback for 14 days.
+            This issue has been auto-closed as awaiting feedback for 30 days.
             If you would like to continue discussing it, no problem!
             If you are the original author of this issue,
             any comment you make will trigger the bot to automatically re-open it
