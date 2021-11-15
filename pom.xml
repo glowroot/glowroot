@@ -225,8 +225,7 @@
       <dependency>
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>
-        <!-- assertj 2.0.0+ requires Java 7+ -->
-        <version>1.7.1</version>
+        <version>3.21.0</version>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
