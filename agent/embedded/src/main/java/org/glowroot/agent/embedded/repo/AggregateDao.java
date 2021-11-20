@@ -677,7 +677,7 @@ public class AggregateDao implements AggregateRepository {
             double totalCpuNanos = resultSet.getDouble(i++);
             double totalAllocatedBytes = resultSet.getDouble(i++);
             long captureTime = resultSet.getLong(i++);
-            collector.mergeSummary(totalDurationNanos, transactionCount, totalCpuNanos, totalAllocatedBytes,
+            collector.mergeSummary(totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount,
                     captureTime);
             return null;
         }
@@ -743,8 +743,8 @@ public class AggregateDao implements AggregateRepository {
                 double totalCpuNanos = resultSet.getDouble(i++);
                 double totalAllocatedBytes = resultSet.getDouble(i++);
                 long maxCaptureTime = resultSet.getLong(i++);
-                collector.collect(transactionName, totalDurationNanos, transactionCount,
-                        totalCpuNanos, totalAllocatedBytes, maxCaptureTime);
+                collector.collect(transactionName, totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount,
+                        maxCaptureTime);
             }
             return null;
         }

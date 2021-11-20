@@ -39,8 +39,8 @@ public class OverallSummaryCollector {
                 .build();
     }
 
-    public void mergeSummary(double totalDurationNanos, long transactionCount, double totalCpuNanos,
-            double totalAllocatedBytes, long captureTime) {
+    public void mergeSummary(double totalDurationNanos, double totalCpuNanos, double totalAllocatedBytes, long transactionCount,
+                             long captureTime) {
         this.totalDurationNanos += totalDurationNanos;
         this.transactionCount += transactionCount;
         this.totalCpuNanos += totalCpuNanos;

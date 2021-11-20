@@ -57,9 +57,9 @@ class AggregateCollector {
     private final @Nullable String transactionName;
     // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
     private double totalDurationNanos;
-    private long transactionCount;
     private double totalCpuNanos;
     private double totalAllocatedBytes;
+    private long transactionCount;
     private long errorCount;
     private boolean asyncTransactions;
     private final RootTimerCollectorImpl mainThreadRootTimers = new RootTimerCollectorImpl();
@@ -183,14 +183,14 @@ class AggregateCollector {
 
     void mergeOverallSummaryInto(OverallSummaryCollector collector) {
         synchronized (lock) {
-            collector.mergeSummary(totalDurationNanos, transactionCount, totalCpuNanos, totalAllocatedBytes, 0);
+            collector.mergeSummary(totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount, 0);
         }
     }
 
     void mergeTransactionNameSummariesInto(TransactionNameSummaryCollector collector) {
         checkNotNull(transactionName);
         synchronized (lock) {
-            collector.collect(transactionName, totalDurationNanos, transactionCount, totalCpuNanos, totalAllocatedBytes, 0);
+            collector.collect(transactionName, totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount, 0);
         }
     }
 

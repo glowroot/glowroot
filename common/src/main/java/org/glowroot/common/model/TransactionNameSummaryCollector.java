@@ -91,8 +91,8 @@ public class TransactionNameSummaryCollector {
 
     private long lastCaptureTime;
 
-    public void collect(String transactionName, double totalDurationNanos, long transactionCount,
-            double totalCpuNanos, double totalAllocatedBytes, long captureTime) {
+    public void collect(String transactionName, double totalDurationNanos, double totalCpuNanos, double totalAllocatedBytes, long transactionCount,
+                        long captureTime) {
         MutableTransactionNameSummary mts = transactionNameSummaries.get(transactionName);
         if (mts == null) {
             mts = new MutableTransactionNameSummary();

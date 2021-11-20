@@ -522,7 +522,7 @@ public class AggregateDaoImpl implements AggregateDao {
             long transactionCount = row.getLong(i++);
             double totalCpuNanos = row.getDouble(i++);
             double totalAllocatedBytes = row.getDouble(i++);
-            collector.mergeSummary(totalDurationNanos, transactionCount, totalCpuNanos, totalAllocatedBytes,
+            collector.mergeSummary(totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount,
                     captureTime);
         }
     }
@@ -549,7 +549,7 @@ public class AggregateDaoImpl implements AggregateDao {
             long transactionCount = row.getLong(i++);
             double totalCpuNanos = row.getDouble(i++);
             double totalAllocatedBytes = row.getDouble(i++);
-            collector.collect(transactionName, totalDurationNanos, transactionCount, totalCpuNanos, totalAllocatedBytes,
+            collector.collect(transactionName, totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount,
                     captureTime);
         }
     }
