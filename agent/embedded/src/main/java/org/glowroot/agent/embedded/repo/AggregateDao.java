@@ -136,19 +136,19 @@ public class AggregateDao implements AggregateRepository {
     // the result set directly from the index without having to reference the table for each row
     private static final ImmutableList<String> overallAggregateIndexColumns =
             ImmutableList.of("capture_time", "transaction_type", "total_duration_nanos",
+                    "transaction_count", "error_count",
                     "main_thread_total_cpu_nanos", "aux_thread_total_cpu_nanos",
-                    "main_thread_total_allocated_bytes", "aux_thread_total_allocated_bytes",
-                    "transaction_count", "error_count");
+                    "main_thread_total_allocated_bytes", "aux_thread_total_allocated_bytes");
 
     // this index includes all columns needed for the transaction aggregate query so h2 can return
     // the result set directly from the index without having to reference the table for each row
     //
     // capture_time is first so this can also be used for readTransactionErrorCounts()
     private static final ImmutableList<String> transactionAggregateIndexColumns =
-            ImmutableList.of("capture_time", "transaction_type", "transaction_name", "total_duration_nanos",
+            ImmutableList.of("capture_time", "transaction_type", "transaction_name",
+                    "total_duration_nanos", "transaction_count", "error_count",
                     "main_thread_total_cpu_nanos", "aux_thread_total_cpu_nanos",
-                    "main_thread_total_allocated_bytes", "aux_thread_total_allocated_bytes",
-                    "transaction_count", "error_count");
+                    "main_thread_total_allocated_bytes", "aux_thread_total_allocated_bytes");
 
     private final DataSource dataSource;
     private final List<CappedDatabase> rollupCappedDatabases;
