@@ -107,9 +107,9 @@ public class AggregateDaoImpl implements AggregateDao {
     private static final Table summaryTable = ImmutableTable.builder()
             .partialName("summary")
             .addColumns(ImmutableColumn.of("total_duration_nanos", "double"))
-            .addColumns(ImmutableColumn.of("transaction_count", "bigint"))
             .addColumns(ImmutableColumn.of("total_cpu_nanos", "double"))
             .addColumns(ImmutableColumn.of("total_allocated_bytes", "double"))
+            .addColumns(ImmutableColumn.of("transaction_count", "bigint"))
             .summary(true)
             .fromInclusive(false)
             .build();
@@ -519,9 +519,9 @@ public class AggregateDaoImpl implements AggregateDao {
             // results are ordered by capture time so Math.max() is not needed here
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
             double totalDurationNanos = row.getDouble(i++);
-            long transactionCount = row.getLong(i++);
             double totalCpuNanos = row.getDouble(i++);
             double totalAllocatedBytes = row.getDouble(i++);
+            long transactionCount = row.getLong(i++);
             collector.mergeSummary(totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount,
                     captureTime);
         }
@@ -546,9 +546,9 @@ public class AggregateDaoImpl implements AggregateDao {
             long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
             String transactionName = checkNotNull(row.getString(i++));
             double totalDurationNanos = row.getDouble(i++);
-            long transactionCount = row.getLong(i++);
             double totalCpuNanos = row.getDouble(i++);
             double totalAllocatedBytes = row.getDouble(i++);
+            long transactionCount = row.getLong(i++);
             collector.collect(transactionName, totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount,
                     captureTime);
         }
@@ -1045,14 +1045,14 @@ public class AggregateDaoImpl implements AggregateDao {
     private ListenableFuture<?> rollupOverallSummaryFromRows(RollupParams rollup,
             AggregateQuery query, Iterable<Row> rows) throws Exception {
         double totalDurationNanos = 0;
-        long transactionCount = 0;
         double totalCpuNanos = 0;
         double totalAllocatedBytes = 0;
+        long transactionCount = 0;
         for (Row row : rows) {
             totalDurationNanos += row.getDouble(0);
-            transactionCount += row.getLong(1);
-            totalCpuNanos += row.getDouble(2);
-            totalAllocatedBytes += row.getDouble(3);
+            totalCpuNanos += row.getDouble(1);
+            totalAllocatedBytes += row.getDouble(2);
+            transactionCount += row.getLong(3);
         }
         BoundStatement boundStatement =
                 getInsertOverallPS(summaryTable, rollup.rollupLevel()).bind();
@@ -1061,9 +1061,9 @@ public class AggregateDaoImpl implements AggregateDao {
         boundStatement.setString(i++, query.transactionType());
         boundStatement.setTimestamp(i++, new Date(query.to()));
         boundStatement.setDouble(i++, totalDurationNanos);
-        boundStatement.setLong(i++, transactionCount);
         boundStatement.setDouble(i++, totalCpuNanos);
         boundStatement.setDouble(i++, totalAllocatedBytes);
+        boundStatement.setLong(i++, transactionCount);
         boundStatement.setInt(i++, rollup.adjustedTTL().generalTTL());
         return session.writeAsync(boundStatement);
     }
@@ -1161,9 +1161,9 @@ public class AggregateDaoImpl implements AggregateDao {
             boundStatement.setTimestamp(i++, new Date(query.to()));
             boundStatement.setString(i++, entry.getKey());
             boundStatement.setDouble(i++, summary.totalDurationNanos);
-            boundStatement.setLong(i++, summary.transactionCount);
             boundStatement.setDouble(i++, summary.totalCpuNanos);
             boundStatement.setDouble(i++, summary.totalAllocatedBytes);
+            boundStatement.setLong(i++, summary.transactionCount);
             boundStatement.setInt(i++, rollup.adjustedTTL().generalTTL());
             futures.add(session.writeAsync(boundStatement));
         }
@@ -2081,9 +2081,9 @@ public class AggregateDaoImpl implements AggregateDao {
             summaries.put(transactionName, summary);
         }
         summary.totalDurationNanos += row.getDouble(i++);
-        summary.transactionCount += row.getLong(i++);
         summary.totalCpuNanos += row.getDouble(i++);
         summary.totalAllocatedBytes += row.getDouble(i++);
+        summary.transactionCount += row.getLong(i++);
         return transactionName;
     }
 
@@ -2091,7 +2091,6 @@ public class AggregateDaoImpl implements AggregateDao {
             int startIndex, TTL adjustedTTL) throws IOException {
         int i = startIndex;
         boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
-        boundStatement.setLong(i++, aggregate.getTransactionCount());
         double totalCpuNanos = 0;
         double totalAllocatedBytes = 0;
         if (aggregate.hasOldMainThreadStats()) {
@@ -2119,6 +2118,7 @@ public class AggregateDaoImpl implements AggregateDao {
         }
         boundStatement.setDouble(i++, totalCpuNanos);
         boundStatement.setDouble(i++, totalAllocatedBytes);
+        boundStatement.setLong(i++, aggregate.getTransactionCount());
         boundStatement.setInt(i++, adjustedTTL.generalTTL());
     }
 
