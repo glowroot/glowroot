@@ -239,7 +239,7 @@ public class AggregateDaoImpl implements AggregateDao {
 
     AggregateDaoImpl(Session session, ActiveAgentDao activeAgentDao,
             TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
-            ConfigRepositoryImpl configRepository, Executor asyncExecutor, Clock clock)
+            ConfigRepositoryImpl configRepository, Executor asyncExecutor, int cassandraGcGraceSeconds, Clock clock)
             throws Exception {
         this.session = session;
         this.activeAgentDao = activeAgentDao;
@@ -364,15 +364,6 @@ public class AggregateDaoImpl implements AggregateDao {
         this.existsAuxThreadProfileOverallPS = existsAuxThreadProfileOverallPS;
         this.existsAuxThreadProfileTransactionPS = existsAuxThreadProfileTransactionPS;
 
-        // since rollup operations are idempotent, any records resurrected after gc_grace_seconds
-        // would just create extra work, but not have any other effect
-        //
-        // not using gc_grace_seconds of 0 since that disables hinted handoff
-        // (http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
-        //
-        // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
-        long needsRollupGcGraceSeconds = HOURS.toSeconds(4);
-
         List<PreparedStatement> insertNeedsRollup = new ArrayList<>();
         List<PreparedStatement> readNeedsRollup = new ArrayList<>();
         List<PreparedStatement> deleteNeedsRollup = new ArrayList<>();
@@ -380,7 +371,7 @@ public class AggregateDaoImpl implements AggregateDao {
             session.createTableWithLCS("create table if not exists aggregate_needs_rollup_" + i
                     + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
                     + " transaction_types set<varchar>, primary key (agent_rollup, capture_time,"
-                    + " uniqueness)) with gc_grace_seconds = " + needsRollupGcGraceSeconds, true);
+                    + " uniqueness)) with gc_grace_seconds = " + cassandraGcGraceSeconds, true);
             // TTL is used to prevent non-idempotent rolling up of partially expired aggregates
             // (e.g. "needs rollup" record resurrecting due to small gc_grace_seconds)
             insertNeedsRollup.add(session.prepare("insert into aggregate_needs_rollup_" + i
@@ -399,7 +390,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 + " (agent_rollup varchar, capture_time timestamp, uniqueness timeuuid,"
                 + " child_agent_rollup varchar, transaction_types set<varchar>, primary key"
                 + " (agent_rollup, capture_time, uniqueness)) with gc_grace_seconds = "
-                + needsRollupGcGraceSeconds, true);
+                + cassandraGcGraceSeconds, true);
         // TTL is used to prevent non-idempotent rolling up of partially expired aggregates
         // (e.g. "needs rollup" record resurrecting due to small gc_grace_seconds)
         insertNeedsRollupFromChild = session.prepare("insert into aggregate_needs_rollup_from_child"

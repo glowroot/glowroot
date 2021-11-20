@@ -18,7 +18,7 @@ package org.glowroot.agent.impl;
 import java.io.File;
 
 import com.google.common.io.Files;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.common.util.Clock;
 

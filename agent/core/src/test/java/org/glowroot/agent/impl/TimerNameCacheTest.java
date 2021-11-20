@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.impl;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.model.TimerNameImpl;
 import org.glowroot.agent.plugin.api.TimerName;

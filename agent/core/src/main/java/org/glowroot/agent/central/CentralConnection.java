@@ -36,7 +36,6 @@ import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
-import io.grpc.util.RoundRobinLoadBalancerFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.handler.ssl.SslContextBuilder;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -64,7 +63,6 @@ class CentralConnection {
         }
     };
 
-    private final EventLoopGroup eventLoopGroup;
     private final ExecutorService channelExecutor;
     private final ManagedChannel channel;
 
@@ -86,7 +84,6 @@ class CentralConnection {
     CentralConnection(String collectorAddress, @Nullable String collectorAuthority,
             List<File> confDirs, AtomicBoolean inConnectionFailure) throws SSLException {
         ParsedCollectorAddress parsedCollectorAddress = parseCollectorAddress(collectorAddress);
-        eventLoopGroup = EventLoopGroups.create("Glowroot-GRPC-Worker-ELG");
         channelExecutor =
                 Executors.newSingleThreadExecutor(ThreadFactories.create("Glowroot-GRPC-Executor"));
         NettyChannelBuilder builder;
@@ -114,13 +111,12 @@ class CentralConnection {
         }
         // single address may resolve to multiple collectors above via DNS, so need to specify round
         // robin here even if only single address (first part of conditional above)
-        builder.loadBalancerFactory(RoundRobinLoadBalancerFactory.getInstance())
-                .eventLoopGroup(eventLoopGroup)
+        builder.defaultLoadBalancingPolicy("round_robin")
                 .executor(channelExecutor)
                 // aggressive keep alive, shouldn't even be used since gauge data is sent every
                 // 5 seconds and keep alive will only kick in after 10 seconds of not hearing back
                 // from the server
-                .keepAliveTime(10, SECONDS);
+                .keepAliveTime(20, SECONDS);
         if (parsedCollectorAddress.https()) {
             SslContextBuilder sslContext = GrpcSslContexts.forClient();
             File trustCertCollectionFile = getTrustCertCollectionFile(confDirs);
@@ -224,9 +220,6 @@ class CentralConnection {
         channelExecutor.shutdown();
         if (!channelExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
-        }
-        if (!eventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate event loop group");
         }
     }
 

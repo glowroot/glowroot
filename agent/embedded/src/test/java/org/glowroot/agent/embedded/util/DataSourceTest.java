@@ -17,7 +17,7 @@ package org.glowroot.agent.embedded.util;
 
 import java.sql.SQLException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
 import static org.mockito.Mockito.mock;

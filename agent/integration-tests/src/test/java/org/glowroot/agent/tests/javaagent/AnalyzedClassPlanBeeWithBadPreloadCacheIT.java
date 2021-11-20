@@ -24,10 +24,10 @@ import java.util.Enumeration;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
@@ -43,7 +43,7 @@ public class AnalyzedClassPlanBeeWithBadPreloadCacheIT {
     private static Container container;
     private static File testDir;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         testDir = TempDirs.createTempDir("glowroot-test-dir");
         File tmpDir = new File(testDir, "tmp");
@@ -60,13 +60,13 @@ public class AnalyzedClassPlanBeeWithBadPreloadCacheIT {
         container = JavaagentContainer.create(testDir);
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         container.close();
         TempDirs.deleteRecursively(testDir);
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }

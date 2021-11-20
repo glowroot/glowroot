@@ -16,7 +16,7 @@
 package org.glowroot.agent.weaving;
 
 import org.apache.commons.lang.StringUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.weaving.WeavingJDK14BytecodeAspect.BasicAdvice;
 

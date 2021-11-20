@@ -58,6 +58,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.central.CentralModule;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,6 +111,7 @@ public class SchemaUpgrade {
     private static final int CURR_SCHEMA_VERSION = 91;
 
     private final Session session;
+    private final int cassandraGcGraceSeconds;
     private final Clock clock;
     private final boolean servlet;
 
@@ -118,8 +120,9 @@ public class SchemaUpgrade {
 
     private boolean reloadCentralConfiguration;
 
-    public SchemaUpgrade(Session session, Clock clock, boolean servlet) throws Exception {
+    public SchemaUpgrade(Session session, int cassandraGcGraceSeconds, Clock clock, boolean servlet) throws Exception {
         this.session = session;
+        this.cassandraGcGraceSeconds = cassandraGcGraceSeconds;
         this.clock = clock;
         this.servlet = servlet;
 
@@ -740,10 +743,8 @@ public class SchemaUpgrade {
                     .equals("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")
                     || compactionClass.equals(
                             "org.apache.cassandra.db.compaction.DateTieredCompactionStrategy")) {
-                // see gc_grace_seconds related comments in Sessions.createTableWithTWCS()
-                // for reasoning behind the value of 4 hours
                 session.updateSchemaWithRetry("alter table " + table.getName()
-                        + " with gc_grace_seconds = " + HOURS.toSeconds(4));
+                        + " with gc_grace_seconds = " + cassandraGcGraceSeconds);
             }
         }
         logger.info("updating gc_grace_seconds on TWCS/DTCS tables - complete");
@@ -751,39 +752,29 @@ public class SchemaUpgrade {
 
     private void updateNeedsRollupGcSeconds() throws Exception {
         logger.info("updating gc_grace_seconds on \"needs rollup\" tables...");
-        // reduce from default 10 days to 4 hours
-        //
-        // since rollup operations are idempotent, any records resurrected after gc_grace_seconds
-        // would just create extra work, but not have any other effect
-        //
-        // not using gc_grace_seconds of 0 since that disables hinted handoff
-        // (http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
-        //
-        // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
-        long gcGraceSeconds = HOURS.toSeconds(4);
 
         if (tableExists("aggregate_needs_rollup_from_child")) {
             session.updateSchemaWithRetry("alter table aggregate_needs_rollup_from_child with"
-                    + " gc_grace_seconds = " + gcGraceSeconds);
+                    + " gc_grace_seconds = " + cassandraGcGraceSeconds);
         }
         session.updateSchemaWithRetry(
-                "alter table aggregate_needs_rollup_1 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table aggregate_needs_rollup_1 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         session.updateSchemaWithRetry(
-                "alter table aggregate_needs_rollup_2 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table aggregate_needs_rollup_2 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         session.updateSchemaWithRetry(
-                "alter table aggregate_needs_rollup_3 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table aggregate_needs_rollup_3 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         if (tableExists("gauge_needs_rollup_from_child")) {
             session.updateSchemaWithRetry("alter table gauge_needs_rollup_from_child with"
-                    + " gc_grace_seconds = " + gcGraceSeconds);
+                    + " gc_grace_seconds = " + cassandraGcGraceSeconds);
         }
         session.updateSchemaWithRetry(
-                "alter table gauge_needs_rollup_1 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table gauge_needs_rollup_1 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         session.updateSchemaWithRetry(
-                "alter table gauge_needs_rollup_2 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table gauge_needs_rollup_2 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         session.updateSchemaWithRetry(
-                "alter table gauge_needs_rollup_3 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table gauge_needs_rollup_3 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         session.updateSchemaWithRetry(
-                "alter table gauge_needs_rollup_4 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table gauge_needs_rollup_4 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         logger.info("updating gc_grace_seconds on \"needs rollup\" tables - complete");
     }
 

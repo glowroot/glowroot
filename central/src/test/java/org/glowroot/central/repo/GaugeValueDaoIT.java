@@ -24,9 +24,9 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PoolingOptions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
@@ -46,13 +46,13 @@ public class GaugeValueDaoIT {
     private static AgentConfigDao agentConfigDao;
     private static GaugeValueDao gaugeValueDao;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         clusterManager = ClusterManager.create();
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
-                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE, 0);
         asyncExecutor = Executors.newCachedThreadPool();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         AgentDisplayDao agentDisplayDao =
@@ -63,11 +63,11 @@ public class GaugeValueDaoIT {
         ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(centralConfigDao,
                 agentConfigDao, userDao, roleDao, "");
         gaugeValueDao = new GaugeValueDaoWithV09Support(ImmutableSet.of(), 0, Clock.systemClock(),
-                new GaugeValueDaoImpl(session, configRepository, clusterManager, asyncExecutor,
+                new GaugeValueDaoImpl(session, configRepository, clusterManager, asyncExecutor, 0,
                         Clock.systemClock()));
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         asyncExecutor.shutdown();
         session.close();

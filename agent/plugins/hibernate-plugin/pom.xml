@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.13.7-SNAPSHOT</version>
+    <version>0.14.0-beta.3-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -18,16 +18,14 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <!-- hibernate 5.2.0+ requires Java 8+, which would prevent any hibernate plugin tests from
-      being able to run when building with Java 7 -->
-    <hibernate.version>5.1.17.Final</hibernate.version>
+    <hibernate.version>5.3.22.Final</hibernate.version>
     <hibernate.annotations.version>3.5.6-Final</hibernate.annotations.version>
   </properties>
 
   <dependencies>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -58,6 +56,27 @@
       <artifactId>hsqldb</artifactId>
       <!-- hsqldb 2.4.0+ requires Java 8+ (2.3.x supports Java 6+) -->
       <version>2.3.6</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is needed for running tests on Java 9+ -->
+      <groupId>javax.xml.bind</groupId>
+      <artifactId>jaxb-api</artifactId>
+      <version>2.3.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is needed for running tests on Java 9+ -->
+      <groupId>org.glassfish.jaxb</groupId>
+      <artifactId>jaxb-runtime</artifactId>
+      <version>2.3.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- this is needed for running tests on Java 9+ -->
+      <groupId>com.sun.activation</groupId>
+      <artifactId>javax.activation</artifactId>
+      <version>1.2.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -124,64 +143,6 @@
       </dependencies>
     </profile>
     <profile>
-      <id>not-test-java6</id>
-      <activation>
-        <property>
-          <name>!glowroot.test.java6</name>
-        </property>
-      </activation>
-      <dependencies>
-        <!-- these dependencies require Java 7+ -->
-        <dependency>
-          <!-- this is needed for running tests on Java 9 -->
-          <groupId>javax.xml.bind</groupId>
-          <artifactId>jaxb-api</artifactId>
-          <version>2.3.1</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <!-- this is needed for running tests on Java 9 -->
-          <groupId>org.glassfish.jaxb</groupId>
-          <artifactId>jaxb-runtime</artifactId>
-          <version>2.3.1</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <!-- this is needed for running tests on Java 9 -->
-          <groupId>com.sun.activation</groupId>
-          <artifactId>javax.activation</artifactId>
-          <version>1.2.0</version>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-    </profile>
-    <profile>
-      <id>test-java6</id>
-      <activation>
-        <property>
-          <name>glowroot.test.java6</name>
-        </property>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <artifactId>maven-compiler-plugin</artifactId>
-              <executions>
-                <execution>
-                  <id>default-testCompile</id>
-                  <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
-    <profile>
       <id>hibernate-3.3.0.ga</id>
       <dependencies>
         <dependency>
@@ -199,12 +160,6 @@
           <groupId>org.hibernate</groupId>
           <artifactId>hibernate-annotations</artifactId>
           <version>${hibernate.annotations.version}</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>javassist</groupId>
-          <artifactId>javassist</artifactId>
-          <version>3.12.1.GA</version>
           <scope>test</scope>
         </dependency>
         <dependency>

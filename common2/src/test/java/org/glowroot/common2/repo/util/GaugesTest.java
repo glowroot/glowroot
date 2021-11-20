@@ -15,7 +15,7 @@
  */
 package org.glowroot.common2.repo.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
 

@@ -18,11 +18,11 @@ package org.glowroot.agent.tests.javaagent;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.agent.tests.ConfiguredInstrumentationIT;
@@ -30,7 +30,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.Instrumenta
 
 public class ReweavePointcutsIT extends ConfiguredInstrumentationIT {
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         container = JavaagentContainer.create();
         // make sure the classes are loaded once before re-weaving
@@ -39,12 +39,12 @@ public class ReweavePointcutsIT extends ConfiguredInstrumentationIT {
         container.executeNoExpectedTrace(ShouldExecuteWithArgs.class);
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         container.close();
     }
 
-    @Before
+    @BeforeEach
     public void beforeEachTest() throws Exception {
         List<InstrumentationConfig> instrumentationConfigs = Lists.newArrayList();
         instrumentationConfigs.add(buildInstrumentationForExecute1());
@@ -55,7 +55,7 @@ public class ReweavePointcutsIT extends ConfiguredInstrumentationIT {
     }
 
     @Override
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }

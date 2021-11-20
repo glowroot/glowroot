@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.List;
 
 import com.google.common.collect.Sets;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.embedded.preinit.GlobalCollector;
 import org.glowroot.agent.embedded.preinit.ReferencedMethod;

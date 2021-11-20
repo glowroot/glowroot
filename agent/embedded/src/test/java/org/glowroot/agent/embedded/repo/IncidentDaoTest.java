@@ -17,9 +17,9 @@ package org.glowroot.agent.embedded.repo;
 
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.embedded.util.DataSource;
 import org.glowroot.common2.repo.IncidentRepository.OpenIncident;
@@ -45,7 +45,7 @@ public class IncidentDaoTest {
     private DataSource dataSource;
     private IncidentDao incidentDao;
 
-    @Before
+    @BeforeEach
     public void beforeEachTest() throws Exception {
         dataSource = new DataSource();
         if (dataSource.tableExists("incident")) {
@@ -54,7 +54,7 @@ public class IncidentDaoTest {
         incidentDao = new IncidentDao(dataSource);
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         dataSource.close();
     }

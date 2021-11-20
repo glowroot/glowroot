@@ -18,7 +18,7 @@ package org.glowroot.agent.embedded.util;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.common.live.LiveTraceRepository.Existence;
 

@@ -73,7 +73,7 @@ public abstract class PluginCache {
         // when using uber jar, get the (aggregated) plugin list
         URL plugins = PluginCache.class.getResource("/META-INF/glowroot.plugins.json");
         if (plugins != null) {
-            List<PluginDescriptor> pluginDescriptors = mapper.readValue(plugins,
+            List<? extends PluginDescriptor> pluginDescriptors = mapper.readValue(plugins,
                     new TypeReference<List<ImmutablePluginDescriptor>>() {});
             checkNotNull(pluginDescriptors);
             unsortedPluginDescriptors.addAll(pluginDescriptors);

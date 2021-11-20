@@ -25,11 +25,7 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.dbcp.DelegatingConnection;
 import org.apache.commons.dbcp.DelegatingStatement;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
@@ -48,17 +44,17 @@ public class BatchIT {
     private static boolean driverCapturesBatchRows =
             Connections.getConnectionType() != ConnectionType.ORACLE;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         container = Containers.create();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         container.close();
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }
@@ -327,7 +323,7 @@ public class BatchIT {
     @Test
     public void testBatchPreparedStatementWithNoBatches() throws Exception {
         // hsqldb driver (and maybe some others) throw error when executing a batch with no batches
-        Assume.assumeTrue(Connections.getConnectionType() == ConnectionType.H2);
+        Assumptions.assumeTrue(Connections.getConnectionType() == ConnectionType.H2);
 
         // when
         Trace trace = container.execute(ExecuteBatchPreparedStatementWithNoBatches.class);

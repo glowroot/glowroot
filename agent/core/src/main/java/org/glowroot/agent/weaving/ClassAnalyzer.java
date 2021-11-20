@@ -20,13 +20,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.security.CodeSource;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Joiner;
@@ -59,7 +53,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.Instrumenta
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.AlreadyInTransactionBehavior;
 import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
-import static org.objectweb.asm.Opcodes.ASM7;
+import static org.objectweb.asm.Opcodes.ASM9;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 
 class ClassAnalyzer {
@@ -433,6 +427,18 @@ class ClassAnalyzer {
         for (Map.Entry<AnalyzedMethodKey, Set<Advice>> entry : matchingAdvisorSets.entrySet()) {
             Set<Advice> advisors = entry.getValue();
             if (!advisors.isEmpty()) {
+                if (hackAdvisors) {
+                    Set<Advice> updatedAdvice = new HashSet<>();
+                    for (Advice advice : advisors) {
+                        Advice nonBootstrapLoaderAdvice = advice.nonBootstrapLoaderAdvice();
+                        if (nonBootstrapLoaderAdvice != null) {
+                            updatedAdvice.add(nonBootstrapLoaderAdvice);
+                        } else {
+                            updatedAdvice.add(advice);
+                        }
+                    }
+                    advisors = updatedAdvice;
+                }
                 AnalyzedMethod inheritedMethod = checkNotNull(entry.getKey().analyzedMethod());
                 methodsThatOnlyNowFulfillAdvice.add(ImmutableAnalyzedMethod.builder()
                         .copyFrom(inheritedMethod)
@@ -828,7 +834,7 @@ class ClassAnalyzer {
         private final Map<String, String> bridgeTargetMethods = Maps.newHashMap();
 
         private BridgeMethodClassVisitor() {
-            super(ASM7);
+            super(ASM9);
         }
 
         public Map<String, String> getBridgeTargetMethods() {
@@ -853,7 +859,7 @@ class ClassAnalyzer {
             private boolean found;
 
             private BridgeMethodVisitor(String bridgeMethodName, String bridgeMethodDesc) {
-                super(ASM7);
+                super(ASM9);
                 this.bridgeMethodName = bridgeMethodName;
                 this.bridgeMethodDesc = bridgeMethodDesc;
                 bridgeMethodParamCount = Type.getArgumentTypes(bridgeMethodDesc).length;
@@ -889,7 +895,7 @@ class ClassAnalyzer {
         private List<AnalyzedMethodKey> analyzedMethodKeys = Lists.newArrayList();
 
         private NonAbstractMethodClassVisitor() {
-            super(ASM7);
+            super(ASM9);
         }
 
         @Override

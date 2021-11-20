@@ -88,7 +88,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
      * value), or {@link #OTHER} (for any other value). This field is only maintained for
      * constructors, in branches where the super class constructor has not been called yet.
      */
-    protected List<Object> stackFrame = new ArrayList<Object>();
+    protected List<Object> stackFrame = new ArrayList<>();
 
     /**
      * The stack map frames corresponding to the labels of the forward jumps made *before* the super
@@ -97,7 +97,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
      * when we reach a label from this map, {@link #superClassConstructorCalled} must be reset to
      * false. This field is only maintained for constructors.
      */
-    private Map<Label, List<Object>> forwardJumpStackFrames = new HashMap<Label, List<Object>>();
+    private Map<Label, List<Object>> forwardJumpStackFrames = new HashMap<>();
 
     protected boolean stackFrameTracking = true;
 
@@ -107,7 +107,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
      * @param api
      *            the ASM API version implemented by this visitor. Must be one of
      *            {@link Opcodes#ASM4}, {@link Opcodes#ASM5}, {@link Opcodes#ASM6} or
-     *            {@link Opcodes#ASM7}.
+     *            {@link Opcodes#ASM9}.
      * @param methodVisitor
      *            the method visitor to which this adapter delegates calls.
      * @param access
@@ -167,10 +167,12 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
                     break;
                 case RETURN: // empty stack
                     onMethodExit(opcode);
+                    endConstructorBasicBlockWithoutSuccessor();
                     break;
                 case ATHROW: // 1 before n/a after
                     popValue();
                     onMethodExit(opcode);
+                    endConstructorBasicBlockWithoutSuccessor();
                     break;
                 case NOP:
                 case LALOAD: // remove 2 add 2
@@ -316,6 +318,9 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
                     stackFrame.add(stackSize - 2, stackFrame.get(stackSize - 1));
                     stackFrame.remove(stackSize);
                     break;
+                case RET:
+                    endConstructorBasicBlockWithoutSuccessor();
+                    break;
                 default:
                     throw new IllegalArgumentException(INVALID_OPCODE + opcode);
             }
@@ -449,35 +454,21 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
         }
     }
 
-    /**
-     * Deprecated.
-     *
-     * @deprecated use {@link #visitMethodInsn(int, String, String, String, boolean)} instead.
-     */
-    @Deprecated
     @Override
-    public void visitMethodInsn(final int opcode, final String owner, final String name,
-            final String descriptor) {
-        if (api >= Opcodes.ASM5) {
-            super.visitMethodInsn(opcode, owner, name, descriptor);
-            return;
-        }
-        mv.visitMethodInsn(opcode, owner, name, descriptor, opcode == Opcodes.INVOKEINTERFACE);
-        doVisitMethodInsn(opcode, descriptor);
-    }
-
-    @Override
-    public void visitMethodInsn(final int opcode, final String owner, final String name,
+    public void visitMethodInsn(final int opcodeAndSource, final String owner, final String name,
             final String descriptor, final boolean isInterface) {
-        if (api < Opcodes.ASM5) {
-            super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+        if (api < Opcodes.ASM5 && (opcodeAndSource & Opcodes.SOURCE_DEPRECATED) == 0) {
+            // Redirect the call to the deprecated version of this method.
+            super.visitMethodInsn(opcodeAndSource, owner, name, descriptor, isInterface);
             return;
         }
-        mv.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
-        doVisitMethodInsn(opcode, descriptor);
+        super.visitMethodInsn(opcodeAndSource, owner, name, descriptor, isInterface);
+        int opcode = opcodeAndSource & ~Opcodes.SOURCE_MASK;
+
+        doVisitMethodInsn(opcode, name, descriptor);
     }
 
-    private void doVisitMethodInsn(final int opcode, final String descriptor) {
+    private void doVisitMethodInsn(final int opcode, final String name, final String descriptor) {
         if (stackFrameTracking) {
             for (Type argumentType : Type.getArgumentTypes(descriptor)) {
                 popValue();
@@ -492,8 +483,9 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
                     break;
                 case INVOKESPECIAL:
                     Object value = popValue();
-                    if (isConstructor && value == UNINITIALIZED_THIS
-                            && !superClassConstructorCalled) {
+                    if (value == UNINITIALIZED_THIS
+                            && !superClassConstructorCalled
+                            && name.equals("<init>")) {
                         superClassConstructorCalled = true;
                         onMethodEnter();
                     }
@@ -517,7 +509,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
             final Handle bootstrapMethodHandle, final Object... bootstrapMethodArguments) {
         super.visitInvokeDynamicInsn(name, descriptor, bootstrapMethodHandle,
                 bootstrapMethodArguments);
-        doVisitMethodInsn(Opcodes.INVOKEDYNAMIC, descriptor);
+        doVisitMethodInsn(Opcodes.INVOKEDYNAMIC, name, descriptor);
     }
 
     @Override
@@ -549,12 +541,15 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
                 case JSR:
                     pushValue(OTHER);
                     break;
+                case GOTO:
+                    endConstructorBasicBlockWithoutSuccessor();
+                    break;
                 default:
                     break;
             }
             addForwardJump(label);
             if (opcode == GOTO) {
-                stackFrame = new ArrayList<Object>();
+                stackFrame = new ArrayList<>();
             }
         }
     }
@@ -565,6 +560,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
         if (stackFrameTracking) {
             popValue();
             addForwardJumps(dflt, labels);
+            endConstructorBasicBlockWithoutSuccessor();
         }
     }
 
@@ -575,6 +571,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
         if (stackFrameTracking) {
             popValue();
             addForwardJumps(dflt, labels);
+            endConstructorBasicBlockWithoutSuccessor();
         }
     }
 
@@ -595,7 +592,7 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
         // wrong
         // 'onMethodEnter').
         if (stackFrameTracking && !forwardJumpStackFrames.containsKey(handler)) {
-            List<Object> handlerStackFrame = new ArrayList<Object>();
+            List<Object> handlerStackFrame = new ArrayList<>();
             handlerStackFrame.add(OTHER);
             forwardJumpStackFrames.put(handler, handlerStackFrame);
         }
@@ -612,7 +609,20 @@ abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes {
         if (forwardJumpStackFrames.containsKey(label)) {
             return;
         }
-        forwardJumpStackFrames.put(label, new ArrayList<Object>(stackFrame));
+        forwardJumpStackFrames.put(label, new ArrayList<>(stackFrame));
+    }
+
+    private void endConstructorBasicBlockWithoutSuccessor() {
+        // The next instruction is not reachable from this instruction. If it is dead code, we
+        // should not try to simulate stack operations, and there is no need to insert advices
+        // here. If it is reachable with a backward jump, the only possible case is that the super
+        // class constructor has already been called (backward jumps are forbidden before it is
+        // called). If it is reachable with a forward jump, there are two sub-cases. Either the
+        // super class constructor has already been called when reaching the next instruction, or
+        // it has not been called. But in this case there must be a forwardJumpStackFrames entry
+        // for a Label designating the next instruction, and superClassConstructorCalled will be
+        // reset to false there. We can therefore always reset this field to true here.
+        superClassConstructorCalled = true;
     }
 
     private Object popValue() {

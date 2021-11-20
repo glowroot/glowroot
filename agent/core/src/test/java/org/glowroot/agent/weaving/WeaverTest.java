@@ -25,9 +25,9 @@ import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.config.ConfigService;
@@ -155,7 +155,7 @@ import static org.mockito.Mockito.when;
 
 public class WeaverTest {
 
-    @Before
+    @BeforeEach
     public void before() {
         SomeAspectThreadLocals.resetThreadLocals();
     }
@@ -1595,7 +1595,7 @@ public class WeaverTest {
     @Test
     // test weaving against jdk 1.7 bytecode with stack frames
     public void shouldWeaveBytecodeWithStackFrames() throws Exception {
-        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
+        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
         Misc test = newWovenObject(BytecodeWithStackFramesMisc.class, Misc.class,
                 TestBytecodeWithStackFramesAdvice.class);
         test.executeWithReturn();
@@ -1604,7 +1604,7 @@ public class WeaverTest {
     @Test
     // test weaving against jdk 1.7 bytecode with stack frames
     public void shouldWeaveBytecodeWithStackFrames2() throws Exception {
-        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
+        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
         Misc test = newWovenObject(BytecodeWithStackFramesMisc.class, Misc.class,
                 TestBytecodeWithStackFramesAdvice2.class);
         test.executeWithReturn();
@@ -1613,7 +1613,7 @@ public class WeaverTest {
     @Test
     // test weaving against jdk 1.7 bytecode with stack frames
     public void shouldWeaveBytecodeWithStackFrames3() throws Exception {
-        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
+        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
         Misc test = newWovenObject(BytecodeWithStackFramesMisc.class, Misc.class,
                 TestBytecodeWithStackFramesAdvice3.class);
         test.executeWithReturn();
@@ -1622,7 +1622,7 @@ public class WeaverTest {
     @Test
     // test weaving against jdk 1.7 bytecode with stack frames
     public void shouldWeaveBytecodeWithStackFrames4() throws Exception {
-        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
+        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
         Misc test = newWovenObject(BytecodeWithStackFramesMisc.class, Misc.class,
                 TestBytecodeWithStackFramesAdvice4.class);
         test.executeWithReturn();
@@ -1631,7 +1631,7 @@ public class WeaverTest {
     @Test
     // test weaving against jdk 1.7 bytecode with stack frames
     public void shouldWeaveBytecodeWithStackFrames5() throws Exception {
-        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
+        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
         Misc test = newWovenObject(BytecodeWithStackFramesMisc.class, Misc.class,
                 TestBytecodeWithStackFramesAdvice5.class);
         test.executeWithReturn();
@@ -1640,7 +1640,7 @@ public class WeaverTest {
     @Test
     // test weaving against jdk 1.7 bytecode with stack frames
     public void shouldWeaveBytecodeWithStackFrames6() throws Exception {
-        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
+        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
         Misc test = newWovenObject(BytecodeWithStackFramesMisc.class, Misc.class,
                 TestBytecodeWithStackFramesAdvice6.class);
         test.executeWithReturn();
@@ -1914,6 +1914,6 @@ public class WeaverTest {
     }
 
     private static void assumeJdk7() {
-        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
+        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
     }
 }

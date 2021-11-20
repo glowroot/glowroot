@@ -16,8 +16,8 @@
 package org.glowroot.agent.impl;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.config.PluginDescriptor;
@@ -29,7 +29,7 @@ public class ConfigServiceImplDefensiveCheckTest {
 
     private ConfigServiceImpl configService;
 
-    @Before
+    @BeforeEach
     public void beforeEachTest() {
         ConfigService configService = mock(ConfigService.class);
         this.configService = ConfigServiceImpl.create(configService,

@@ -55,7 +55,7 @@ public class ConnectionAspect {
 
     // capture the sql used to create the PreparedStatement
     @Pointcut(className = "java.sql.Connection", methodName = "prepare*",
-            methodParameterTypes = {"java.lang.String", ".."}, nestingGroup = "jdbc",
+            methodParameterTypes = {"java.lang.String", ".."},
             timerName = "jdbc prepare")
     public static class PrepareAdvice {
         private static final TimerName timerName = Agent.getTimerName(PrepareAdvice.class);
@@ -68,13 +68,15 @@ public class ConnectionAspect {
             }
         }
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable HasStatementMirrorMixin preparedStatement,
+        public static void onReturn(@BindReturn @Nullable Object preparedStatement,
                 @BindParameter @Nullable String sql) {
-            if (preparedStatement == null || sql == null) {
+            if (sql == null) {
                 // seems nothing sensible to do here other than ignore
                 return;
             }
-            preparedStatement.glowroot$setStatementMirror(new PreparedStatementMirror(sql));
+            if (preparedStatement instanceof HasStatementMirrorMixin) {
+                ((HasStatementMirrorMixin) preparedStatement).glowroot$setStatementMirror(new PreparedStatementMirror(sql));
+            }
         }
         @OnAfter
         public static void onAfter(@BindTraveler @Nullable Timer timer) {
@@ -88,12 +90,10 @@ public class ConnectionAspect {
             methodParameterTypes = {".."})
     public static class CreateStatementAdvice {
         @OnReturn
-        public static void onReturn(@BindReturn @Nullable HasStatementMirrorMixin statement) {
-            if (statement == null) {
-                // seems nothing sensible to do here other than ignore
-                return;
+        public static void onReturn(@BindReturn @Nullable Object statement) {
+            if (statement instanceof HasStatementMirrorMixin) {
+                ((HasStatementMirrorMixin) statement).glowroot$setStatementMirror(new StatementMirror());
             }
-            statement.glowroot$setStatementMirror(new StatementMirror());
         }
     }
 
