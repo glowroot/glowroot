@@ -99,9 +99,9 @@ public class TransactionNameSummaryCollector {
             transactionNameSummaries.put(transactionName, mts);
         }
         mts.totalDurationNanos += totalDurationNanos;
-        mts.transactionCount += transactionCount;
         mts.totalCpuNanos += totalCpuNanos;
         mts.totalAllocatedBytes += totalAllocatedBytes;
+        mts.transactionCount += transactionCount;
         lastCaptureTime = Math.max(lastCaptureTime, captureTime);
     }
 
@@ -116,9 +116,9 @@ public class TransactionNameSummaryCollector {
             summaries.add(ImmutableTransactionNameSummary.builder()
                     .transactionName(entry.getKey())
                     .totalDurationNanos(entry.getValue().totalDurationNanos)
-                    .transactionCount(entry.getValue().transactionCount)
                     .totalCpuNanos(entry.getValue().totalCpuNanos)
                     .totalAllocatedBytes(entry.getValue().totalAllocatedBytes)
+                    .transactionCount(entry.getValue().transactionCount)
                     .build());
         }
         summaries = sortTransactionNameSummaries(summaries, sortOrder);
@@ -160,15 +160,15 @@ public class TransactionNameSummaryCollector {
         String transactionName();
         // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
         double totalDurationNanos();
-        long transactionCount();
         double totalCpuNanos();
         double totalAllocatedBytes();
+        long transactionCount();
     }
 
     private static class MutableTransactionNameSummary {
         private double totalDurationNanos;
-        private long transactionCount;
         private double totalCpuNanos;
         private double totalAllocatedBytes;
+        private long transactionCount;
     }
 }
