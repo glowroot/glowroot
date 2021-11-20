@@ -43,11 +43,11 @@ To work on the UI, run org.glowroot.ui.sandbox.UiSandboxMain under a debugger in
 
 Also, Glowroot uses [Bower](http://bower.io) and [Grunt](http://gruntjs.com) to build its web assets (dependency management, Javascript concat/minify, LESS compile/uncss/minify, AngularJS template concat/minify, asset revving and more). The first time you run `mvn clean install`, Node, Bower and Grunt are installed locally under the `ui` directory (thanks to the [frontend-maven-plugin](https://github.com/eirslett/frontend-maven-plugin)).
 
-If you are modifying web assets, you either need to run grunt to re-build them after each change, or (better) run `grunt serve` from the `ui` directory and connect your browser to http://localhost:9000.
+If you are modifying web assets, you either need to run grunt to re-build them after each change, or (better) run `./grunt serve` from the `ui` directory and connect your browser to http://localhost:9000.
 
-`grunt serve` serves up the Glowroot web assets to the browser without the concat/minify/rev step, which makes testing/debugging much easier. It reverse proxies non- static resource requests to http://localhost:4000 to be handled by Glowroot. It also watches for changes to the files and performs live-reload of web assets inside the browser.
+`./grunt serve` serves up the Glowroot web assets to the browser without the concat/minify/rev step, which makes testing/debugging much easier. It reverse proxies non- static resource requests to http://localhost:4000 to be handled by Glowroot. It also watches for changes to the files and performs live-reload of web assets inside the browser.
 
-`grunt serve:demo` does the same as above, except that it reverse proxies non- static resource requests to [https://demo.glowroot.org](https://demo.glowroot.org) instead of http://localhost:4000.
+`./grunt serve:demo` does the same as above, except that it reverse proxies non- static resource requests to [https://demo.glowroot.org](https://demo.glowroot.org) instead of http://localhost:4000.
 
 ## Integration tests
 
