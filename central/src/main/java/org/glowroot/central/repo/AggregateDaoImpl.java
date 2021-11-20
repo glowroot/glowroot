@@ -2088,7 +2088,7 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private static void bindAggregateForSummary(BoundStatement boundStatement, Aggregate aggregate,
-            int startIndex, TTL adjustedTTL) throws IOException {
+            int startIndex, TTL adjustedTTL) {
         int i = startIndex;
         boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
         double totalCpuNanos = 0;
@@ -2104,9 +2104,8 @@ public class AggregateDaoImpl implements AggregateDao {
             totalAllocatedBytes += mainThreadStats.getTotalAllocatedBytes();
         }
         if (aggregate.hasAuxThreadRootTimer()) {
-            // writing as delimited singleton list for backwards compatibility with data written
-            // prior to 0.12.0
             if (aggregate.hasOldAuxThreadStats()) {
+                // data from agent prior to 0.10.9
                 Aggregate.OldThreadStats auxThreadStats = aggregate.getOldAuxThreadStats();
                 totalCpuNanos += auxThreadStats.getTotalCpuNanos().getValue();
                 totalAllocatedBytes += auxThreadStats.getTotalAllocatedBytes().getValue();
