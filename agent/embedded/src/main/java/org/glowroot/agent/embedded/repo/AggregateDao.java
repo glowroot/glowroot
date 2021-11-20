@@ -649,9 +649,10 @@ public class AggregateDao implements AggregateRepository {
         public @Untainted String getSql() {
             // it's important that all these columns are in a single index so h2 can return the
             // result set directly from the index without having to reference the table for each row
-            return "select sum(total_duration_nanos), sum(transaction_count),"
-                    + " sum(main_thread_total_cpu_nanos) + sum(aux_thread_total_cpu_nanos) as total_cpu_nanos,"
-                    + " sum(main_thread_total_allocated_bytes) + sum(aux_thread_total_allocated_bytes) as total_allocated_bytes,"
+            return "select sum(total_duration_nanos),"
+                    + " sum(main_thread_total_cpu_nanos) + sum(aux_thread_total_cpu_nanos),"
+                    + " sum(main_thread_total_allocated_bytes) + sum(aux_thread_total_allocated_bytes),"
+                    + " sum(transaction_count),"
                     + " max(capture_time)"
                     + " from aggregate_tt_rollup_" + castUntainted(query.rollupLevel())
                     + " where transaction_type = ? and capture_time > ? and capture_time <= ?";
@@ -673,9 +674,9 @@ public class AggregateDao implements AggregateRepository {
             }
             int i = 1;
             double totalDurationNanos = resultSet.getDouble(i++);
-            long transactionCount = resultSet.getLong(i++);
             double totalCpuNanos = resultSet.getDouble(i++);
             double totalAllocatedBytes = resultSet.getDouble(i++);
+            long transactionCount = resultSet.getLong(i++);
             long captureTime = resultSet.getLong(i++);
             collector.mergeSummary(totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount,
                     captureTime);
@@ -709,10 +710,11 @@ public class AggregateDao implements AggregateRepository {
             // it's important that all these columns are in a single index so h2 can return the
             // result set directly from the index without having to reference the table for each row
             StringBuilder sb = new StringBuilder();
-            sb.append("select transaction_name, sum(total_duration_nanos),"
+            sb.append("select transaction_name,"
+                            + " sum(total_duration_nanos),"
+                            + " sum(main_thread_total_cpu_nanos) + sum(aux_thread_total_cpu_nanos),"
+                            + " sum(main_thread_total_allocated_bytes) + sum(aux_thread_total_allocated_bytes),"
                             + " sum(transaction_count),"
-                            + " sum(main_thread_total_cpu_nanos) + sum(aux_thread_total_cpu_nanos) as total_cpu_nanos,"
-                            + " sum(main_thread_total_allocated_bytes) + sum(aux_thread_total_allocated_bytes) as total_allocated_bytes,"
                             + " max(capture_time)"
                             + " from aggregate_tn_rollup_");
             sb.append(query.rollupLevel());
@@ -739,9 +741,9 @@ public class AggregateDao implements AggregateRepository {
                 int i = 1;
                 String transactionName = checkNotNull(resultSet.getString(i++));
                 double totalDurationNanos = resultSet.getDouble(i++);
-                long transactionCount = resultSet.getLong(i++);
                 double totalCpuNanos = resultSet.getDouble(i++);
                 double totalAllocatedBytes = resultSet.getDouble(i++);
+                long transactionCount = resultSet.getLong(i++);
                 long maxCaptureTime = resultSet.getLong(i++);
                 collector.collect(transactionName, totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount,
                         maxCaptureTime);
