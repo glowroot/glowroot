@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.13.7-SNAPSHOT</version>
+    <version>0.14.0-beta.3-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -94,6 +94,13 @@
                 that they can share same logback and same logback configuration file -->
               <exclude>org.slf4j:slf4j-api</exclude>
               <exclude>ch.qos.logback:logback-classic</exclude>
+              <!--
+                don't need these dependencies at runtime since only annotations
+                (these are transitive dependencies of guava)
+              -->
+              <exclude>org.checkerframework:checker-qual</exclude>
+              <exclude>com.google.errorprone:error_prone_annotations</exclude>
+              <exclude>com.google.code.findbugs:jsr305</exclude>
             </excludes>
           </artifactSet>
           <filters>
@@ -132,25 +139,25 @@
           </filters>
           <relocations>
             <relocation>
-              <!-- can't share same libary already shaded in glowroot-agent-core because of
+              <!-- can't share same library already shaded in glowroot-agent-core because of
                 proguard some classes/methods may not be available -->
               <pattern>com.google</pattern>
               <shadedPattern>org.glowroot.agent.it.harness.shaded.com.google</shadedPattern>
             </relocation>
             <relocation>
-              <!-- can't share same libary already shaded in glowroot-agent-core because of
+              <!-- can't share same library already shaded in glowroot-agent-core because of
                 proguard some classes/methods may not be available -->
               <pattern>io.grpc</pattern>
               <shadedPattern>org.glowroot.agent.it.harness.shaded.io.grpc</shadedPattern>
             </relocation>
             <relocation>
-              <!-- can't share same libary already shaded in glowroot-agent-core because of
+              <!-- can't share same library already shaded in glowroot-agent-core because of
                 proguard some classes/methods may not be available -->
               <pattern>io.opencensus</pattern>
               <shadedPattern>org.glowroot.agent.it.harness.shaded.io.opencensus</shadedPattern>
             </relocation>
             <relocation>
-              <!-- can't share same libary already shaded in glowroot-agent-core because of
+              <!-- can't share same library already shaded in glowroot-agent-core because of
                 proguard some classes/methods may not be available -->
               <pattern>io.netty</pattern>
               <shadedPattern>org.glowroot.agent.it.harness.shaded.io.netty</shadedPattern>
@@ -173,10 +180,6 @@
                 glowroot.logback.xml configuration file -->
               <pattern>ch.qos.logback</pattern>
               <shadedPattern>org.glowroot.agent.shaded.ch.qos.logback</shadedPattern>
-            </relocation>
-            <relocation>
-              <pattern>javax.annotation</pattern>
-              <shadedPattern>org.glowroot.agent.it.harness.shaded.javax.annotation</shadedPattern>
             </relocation>
             <!-- not relocating glowroot-wire-api since it-harness api exposes glowroot-wire-api
               unshaded for use by plugin integration tests -->

@@ -21,8 +21,10 @@ import java.net.ServerSocket;
 import org.apache.catalina.Context;
 import org.apache.catalina.loader.WebappLoader;
 import org.apache.catalina.startup.Tomcat;
-import org.apache.naming.resources.VirtualDirContext;
+import org.apache.catalina.webresources.DirResourceSet;
+import org.apache.catalina.webresources.StandardRoot;
 
+import org.apache.catalina.webresources.TomcatURLStreamHandlerFactory;
 import org.glowroot.agent.it.harness.AppUnderTest;
 
 abstract class InvokeServletInTomcat implements AppUnderTest {
@@ -35,6 +37,9 @@ abstract class InvokeServletInTomcat implements AppUnderTest {
 
     @Override
     public void executeApp() throws Exception {
+        // otherwise tests can fail with "factory already defined"
+        TomcatURLStreamHandlerFactory.disable();
+
         int port = getAvailablePort();
         Tomcat tomcat = new Tomcat();
         tomcat.setBaseDir("target/tomcat");
@@ -47,8 +52,8 @@ abstract class InvokeServletInTomcat implements AppUnderTest {
         context.setLoader(webappLoader);
 
         // this is needed in order for Tomcat to find annotated servlet
-        VirtualDirContext resources = new VirtualDirContext();
-        resources.setExtraResourcePaths("/WEB-INF/classes=target/test-classes");
+        StandardRoot resources = new StandardRoot(context);
+        resources.addPreResources(new DirResourceSet(resources, "/WEB-INF/classes", "target/test-classes", "/"));
         context.setResources(resources);
 
         tomcat.start();

@@ -18,10 +18,10 @@ package org.glowroot.agent.tests.javaagent;
 import java.io.File;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
@@ -35,7 +35,7 @@ public class FileInstrumentationPresentAtStartupIT {
     protected static Container container;
     private static File testDir;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         testDir = TempDirs.createTempDir("glowroot-test-dir");
         container = Containers.create(testDir);
@@ -57,13 +57,13 @@ public class FileInstrumentationPresentAtStartupIT {
         container = Containers.create(testDir);
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         container.close();
         TempDirs.deleteRecursively(testDir);
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }

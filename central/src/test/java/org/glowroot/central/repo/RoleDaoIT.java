@@ -17,9 +17,10 @@ package org.glowroot.central.repo;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PoolingOptions;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
@@ -35,17 +36,17 @@ public class RoleDaoIT {
     private static ClusterManager clusterManager;
     private static RoleDao roleDao;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
-                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE, 0);
         clusterManager = ClusterManager.create();
         roleDao = new RoleDao(session, clusterManager);
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         clusterManager.close();
         session.close();

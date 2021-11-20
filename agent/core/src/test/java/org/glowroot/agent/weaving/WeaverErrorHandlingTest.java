@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.weaving;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.weaving.SomeAspect.BindPrimitiveBooleanTravelerBadAdvice;
 import org.glowroot.agent.weaving.SomeAspect.BindPrimitiveTravelerBadAdvice;

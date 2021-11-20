@@ -17,11 +17,7 @@ package org.glowroot.agent.tests.javaagent;
 
 import com.google.common.base.StandardSystemProperty;
 import org.fest.reflect.core.Reflection;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
@@ -40,13 +36,13 @@ public class MethodHandleWeavingIT {
 
     private static Container container;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         assumeJdk7();
         container = JavaagentContainer.create();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         // need null check in case assumption is false in setUp()
         if (container != null) {
@@ -54,7 +50,7 @@ public class MethodHandleWeavingIT {
         }
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }
@@ -91,6 +87,6 @@ public class MethodHandleWeavingIT {
     }
 
     private static void assumeJdk7() {
-        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
+        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
     }
 }

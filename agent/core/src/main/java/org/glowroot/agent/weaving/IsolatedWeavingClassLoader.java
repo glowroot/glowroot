@@ -222,12 +222,12 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             // package name"
             return true;
         }
-        if (name.equals(Agent.class.getName())
-                || name.equals(Bytecode.class.getName())
-                || name.equals(org.glowroot.agent.plugin.api.util.ImmutableList.class.getName())
-                || name.equals(org.glowroot.agent.plugin.api.util.ImmutableMap.class.getName())
-                || name.equals(org.glowroot.agent.plugin.api.util.ImmutableSet.class.getName())
-                || name.equals(Beans.class.getName())) {
+        if (name.equals("org.glowroot.agent.plugin.api.Agent")
+                || name.equals("org.glowroot.agent.bytecode.api.Bytecode")
+                || name.equals("org.glowroot.agent.plugin.api.util.ImmutableList")
+                || name.equals("org.glowroot.agent.plugin.api.util.ImmutableMap")
+                || name.equals("org.glowroot.agent.plugin.api.util.ImmutableSet")
+                || name.equals("org.glowroot.agent.weaving.Beans")) {
             return false;
         }
         if (name.startsWith("org.glowroot.agent.api.")
@@ -247,5 +247,17 @@ public class IsolatedWeavingClassLoader extends ClassLoader {
             logger.trace(e.getMessage(), e);
             return false;
         }
+    }
+
+    // used by AnalyzedWorld to make tests work without
+    // --add-opens java.base/java.lang=ALL-UNNAMED
+    public Class<?> publicFindLoadedClass(String name) {
+        return super.findLoadedClass(name);
+    }
+
+    // used by AnalyzedWorld to make tests work without
+    // --add-opens java.base/java.lang=ALL-UNNAMED
+    public void publicDefineClass(String name, byte[] bytes, int off, int len) {
+        super.defineClass(name, bytes, off, len);
     }
 }

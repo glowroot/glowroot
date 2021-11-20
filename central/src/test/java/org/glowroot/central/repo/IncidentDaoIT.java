@@ -19,10 +19,10 @@ import java.util.List;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PoolingOptions;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
@@ -47,26 +47,26 @@ public class IncidentDaoIT {
     private static Session session;
     private static IncidentDao incidentDao;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
-                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE, 0);
 
         Clock clock = mock(Clock.class);
         when(clock.currentTimeMillis()).thenReturn(345L);
         incidentDao = new IncidentDao(session, clock);
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         session.close();
         cluster.close();
         SharedSetupRunListener.stopCassandra();
     }
 
-    @Before
+    @BeforeEach
     public void beforeEach() throws Exception {
         session.updateSchemaWithRetry("truncate open_incident");
         session.updateSchemaWithRetry("truncate resolved_incident");

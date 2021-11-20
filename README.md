@@ -1,13 +1,13 @@
-Glowroot &nbsp;&nbsp; [![Build Status](https://img.shields.io/travis/glowroot/glowroot.svg)](https://travis-ci.org/glowroot/glowroot) [![Code Coverage](https://sonarcloud.io/api/project_badges/measure?project=org.glowroot:glowroot-parent&metric=coverage)](https://sonarcloud.io/dashboard?id=org.glowroot%3Aglowroot-parent)
+Glowroot
 =========
 
 ## Requirements
 
-* Java 6+
+* Java 8+
 
 ## Quick start
 
-1. Download and unzip [glowroot-0.13.6-dist.zip](https://github.com/glowroot/glowroot/releases/download/v0.13.6/glowroot-0.13.6-dist.zip)
+1. Download and unzip [glowroot-0.14.0-beta.2-dist.zip](https://github.com/glowroot/glowroot/releases/download/v0.14.0-beta.2/glowroot-0.14.0-beta.2-dist.zip)
 2. Add `-javaagent:path/to/glowroot.jar` to your application's JVM args [[where are my application server's JVM args?](https://github.com/glowroot/glowroot/wiki/Where-are-my-application-server's-JVM-args%3F)]
 3. Check that the user account that runs the JVM has write access to the glowroot folder
 4. Start your application
@@ -33,7 +33,7 @@ The usual:
 
 Binary distribution is built under agent/dist/target.
 
-Building requires Java 7+ (in order to perform [Immutables](https://immutables.github.io) annotation processing) and Maven 3.1.0+.
+Building requires Java 8+ and Maven 3.1.0+.
 
 ## Contributing
 

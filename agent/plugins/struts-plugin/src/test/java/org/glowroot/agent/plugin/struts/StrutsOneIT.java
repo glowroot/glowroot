@@ -26,14 +26,15 @@ import com.ning.http.client.AsyncHttpClient;
 import org.apache.catalina.Context;
 import org.apache.catalina.loader.WebappLoader;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.catalina.webresources.TomcatURLStreamHandlerFactory;
 import org.apache.struts.action.Action;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
@@ -46,17 +47,17 @@ public class StrutsOneIT {
 
     private static Container container;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         container = Containers.create();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         container.close();
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }
@@ -91,6 +92,9 @@ public class StrutsOneIT {
 
         @Override
         public void executeApp() throws Exception {
+            // otherwise tests can fail with "factory already defined"
+            TomcatURLStreamHandlerFactory.disable();
+
             int port = getAvailablePort();
             Tomcat tomcat = new Tomcat();
             tomcat.setBaseDir("target/tomcat");

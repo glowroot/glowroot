@@ -23,9 +23,9 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.collector.Collector.AggregateReader;
 import org.glowroot.agent.collector.Collector.AggregateVisitor;
@@ -64,7 +64,7 @@ public class AggregateDaoTest {
     private CappedDatabase cappedDatabase;
     private AggregateDao aggregateDao;
 
-    @Before
+    @BeforeEach
     public void beforeEachTest() throws Exception {
         dataSource = new DataSource();
         if (dataSource.tableExists("overall_point")) {
@@ -90,7 +90,7 @@ public class AggregateDaoTest {
                 configRepository, mock(TransactionTypeDao.class), mock(FullQueryTextDao.class));
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         scheduledExecutor.shutdownNow();
         dataSource.close();

@@ -20,10 +20,10 @@ import com.google.common.collect.ImmutableList;
 public final class ConfigDefaults {
 
     public static final ImmutableList<String> JVM_MASK_SYSTEM_PROPERTIES =
-            ImmutableList.of("*password*");
+            ImmutableList.of("*password*", "*token*", "*access*", "*secret*");
 
     public static final ImmutableList<String> JVM_MASK_MBEAN_ATTRIBUTES =
-            ImmutableList.of("*password*");
+            ImmutableList.of("*password*", "*token*", "*access*", "*secret*");
 
     public static final String UI_DEFAULTS_TRANSACTION_TYPE = "Web";
     public static final ImmutableList<Double> UI_DEFAULTS_PERCENTILES =

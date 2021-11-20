@@ -27,7 +27,10 @@
       "name": "maskRequestParameters",
       "type": "list",
       "default": [
-        "*password*"
+        "*password*",
+        "*token*",
+        "*access*",
+        "*secret*"
       ],
       "label": "Mask request parameters",
       "description": "List of sensitive request parameters to mask, e.g. passwords. The wildcard '*' is supported anywhere in the parameter name."

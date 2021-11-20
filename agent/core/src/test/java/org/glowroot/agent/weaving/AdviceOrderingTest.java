@@ -16,7 +16,7 @@
 package org.glowroot.agent.weaving;
 
 import com.google.common.collect.Ordering;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Type;
 
 import org.glowroot.agent.plugin.api.weaving.Pointcut;

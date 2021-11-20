@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.base.StandardSystemProperty;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.ning.http.client.AsyncHttpClient;
 import grails.artefact.Artefact;
@@ -30,13 +29,12 @@ import grails.boot.config.GrailsAutoConfiguration;
 import org.apache.catalina.Context;
 import org.apache.catalina.loader.WebappLoader;
 import org.apache.catalina.startup.Tomcat;
-import org.apache.naming.resources.VirtualDirContext;
+import org.apache.catalina.webresources.DirResourceSet;
+import org.apache.catalina.webresources.StandardRoot;
+import org.apache.catalina.webresources.TomcatURLStreamHandlerFactory;
 import org.grails.boot.context.web.GrailsAppServletInitializer;
 import org.grails.boot.internal.EnableAutoConfiguration;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.web.WebApplicationInitializer;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
@@ -44,7 +42,6 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,25 +50,20 @@ public class GrailsIT {
 
     private static Container container;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
-        String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
-        if (Containers.useJavaagent()
-                && (javaVersion.startsWith("1.6") || javaVersion.startsWith("1.7"))) {
-            // grails loads lots of classes
-            container = JavaagentContainer
-                    .createWithExtraJvmArgs(ImmutableList.of("-XX:MaxPermSize=128m"));
-        } else {
-            container = Containers.create();
+        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("17"));
+        container = Containers.create();
+    }
+
+    @AfterAll
+    public static void tearDown() throws Exception {
+        if (container != null) {
+            container.close();
         }
     }
 
-    @AfterClass
-    public static void tearDown() throws Exception {
-        container.close();
-    }
-
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }
@@ -182,6 +174,9 @@ public class GrailsIT {
 
         @Override
         public void executeApp() throws Exception {
+            // otherwise tests can fail with "factory already defined"
+            TomcatURLStreamHandlerFactory.disable();
+
             int port = getAvailablePort();
             Tomcat tomcat = new Tomcat();
             tomcat.setBaseDir("target/tomcat");
@@ -193,8 +188,8 @@ public class GrailsIT {
             context.setLoader(webappLoader);
 
             // this is needed in order for Tomcat to find annotated classes
-            VirtualDirContext resources = new VirtualDirContext();
-            resources.setExtraResourcePaths("/WEB-INF/classes=target/test-classes");
+            StandardRoot resources = new StandardRoot(context);
+            resources.addPreResources(new DirResourceSet(resources, "/WEB-INF/classes", "target/test-classes", "/"));
             context.setResources(resources);
 
             tomcat.start();

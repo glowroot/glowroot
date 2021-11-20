@@ -73,8 +73,8 @@ if [[ $bower_snapshot_dependencies ]]; then
   exit 1
 fi
 
-sed -r -i s/glowroot-[0-9]+.[0-9]+.[0-9]+-dist.zip/glowroot-$release_version-dist.zip/g $base_dir/README.md
-sed -r -i s#https://github.com/glowroot/glowroot/releases/download/v[0-9]+.[0-9]+.[0-9]+/#https://github.com/glowroot/glowroot/releases/download/v$release_version/# $base_dir/README.md
+sed -r -i s/glowroot-[0-9]+.[0-9]+.[0-9]+\(-beta\(\.[0-9]+\)?\)?-dist.zip/glowroot-$release_version-dist.zip/g $base_dir/README.md
+sed -r -i s#https://github.com/glowroot/glowroot/releases/download/v[0-9]+.[0-9]+.[0-9]+\(-beta\(\.[0-9]+\)?\)?/#https://github.com/glowroot/glowroot/releases/download/v$release_version/# $base_dir/README.md
 
 git diff
 
@@ -88,7 +88,8 @@ fi
 
 git add -u
 
-mvn versions:set -DgenerateBackupPoms=false -DnewVersion=$release_version
+# the "|| true" is needed on maven 3.8.3 due to https://issues.apache.org/jira/browse/MNG-7234
+mvn versions:set -DgenerateBackupPoms=false -DnewVersion=$release_version || true
 
 git diff
 

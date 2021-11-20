@@ -15,34 +15,31 @@
  */
 package org.glowroot.agent.util;
 
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.springframework.test.context.cache.DefaultContextCache;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MissingOptionalDependenciesReflectionTest {
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
-    @BeforeClass
+    @BeforeAll
     public static void setUp() {
         // IBM J9 VM and Eclipse OpenJ9 JM load classes with missing optional dependencies just fine
-        Assume.assumeFalse(JavaVersion.isJ9Jvm());
+        Assumptions.assumeFalse(JavaVersion.isJ9Jvm());
     }
 
     @Test
-    public void testGetMethod() throws Exception {
-        thrown.expect(NoClassDefFoundError.class);
-        DefaultContextCache.class.getMethod("size");
+    public void testGetMethod() {
+        assertThrows(NoClassDefFoundError.class, () ->
+                DefaultContextCache.class.getMethod("size"));
     }
 
     @Test
-    public void testGetDeclaredMethod() throws Exception {
-        thrown.expect(NoClassDefFoundError.class);
-        DefaultContextCache.class.getDeclaredMethod("size");
+    public void testGetDeclaredMethod() {
+        assertThrows(NoClassDefFoundError.class, () ->
+                DefaultContextCache.class.getDeclaredMethod("size"));
     }
 
     @Test
@@ -57,8 +54,8 @@ public class MissingOptionalDependenciesReflectionTest {
 
     @Test
     public void testReflectionsGetAnyMethod() throws Exception {
-        thrown.expect(NoSuchMethodException.class);
-        Reflections.getAnyMethod(DefaultContextCache.class, "size");
+        assertThrows(NoSuchMethodException.class, () ->
+                Reflections.getAnyMethod(DefaultContextCache.class, "size"));
     }
 
     @Test

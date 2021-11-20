@@ -16,8 +16,8 @@
 package org.glowroot.agent.impl;
 
 import com.google.common.base.Ticker;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.impl.NopTransactionService.NopTimer;
@@ -37,7 +37,7 @@ public class ThreadContextImplTest {
     private QueryMessageSupplier queryMessageSupplier = mock(QueryMessageSupplier.class);
     private TimerNameImpl timerName = mock(TimerNameImpl.class);
 
-    @Before
+    @BeforeEach
     public void beforeEachTest() {
         Transaction transaction = mock(Transaction.class);
         MessageSupplier messageSupplier = mock(MessageSupplier.class);

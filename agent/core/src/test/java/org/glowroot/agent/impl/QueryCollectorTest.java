@@ -20,7 +20,7 @@ import java.util.Map;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.model.QueryCollector;
 import org.glowroot.agent.model.SharedQueryTextCollection;

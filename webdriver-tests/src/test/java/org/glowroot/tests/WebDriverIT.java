@@ -32,10 +32,10 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.rules.TestWatcher;
@@ -76,27 +76,27 @@ public abstract class WebDriverIT {
     @Rule
     public ScreenshotOnExceptionRule screenshotOnExceptionRule = new ScreenshotOnExceptionRule();
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpBase() throws Exception {
         setup = WebDriverSetup.create();
         container = setup.getContainer();
         httpClient = HttpClients.createDefault();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownBase() throws Exception {
         httpClient.close();
         setup.close();
     }
 
-    @Before
+    @BeforeEach
     public void beforeEachBaseTest() throws Exception {
         setup.beforeEachTest(getClass().getName() + '.' + testName.getMethodName(),
                 screenshotOnExceptionRule);
         driver = setup.getDriver();
     }
 
-    @After
+    @AfterEach
     public void afterEachBaseTest() throws Exception {
         setup.afterEachTest();
         if (WebDriverSetup.useCentral) {
