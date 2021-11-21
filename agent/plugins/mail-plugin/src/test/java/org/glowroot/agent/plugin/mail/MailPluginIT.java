@@ -104,9 +104,9 @@ public class MailPluginIT {
     private abstract static class DoMail implements AppUnderTest, TransactionMarker {
         @Override
         public void executeApp() throws Exception {
-            GreenMail greenMail = new GreenMail(ServerSetupTest.SMTP); // uses test ports by default
-            greenMail.start();
+            GreenMail greenMail = new GreenMail(ServerSetupTest.SMTP);
             try {
+                greenMail.start();
                 transactionMarker();
             } finally {
                 greenMail.stop();
