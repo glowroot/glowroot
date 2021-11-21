@@ -94,6 +94,9 @@ glowroot.controller('TransactionCtrl', [
         query.from = $scope.range.chartFrom;
         query.to = $scope.range.chartTo;
       }
+      if ($location.search()['summary-sort-order']) {
+        query['summary-sort-order'] = $location.search()['summary-sort-order'];
+      }
       return queryStrings.encodeObject(query);
     };
 

@@ -20,10 +20,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Ticker;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.collector.Collector.TraceReader;
 import org.glowroot.agent.embedded.util.CappedDatabase;
@@ -54,7 +54,7 @@ public class TraceDaoTest {
     private static CappedDatabase cappedDatabase;
     private static TraceDao traceDao;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         dataSource = new DataSource();
         if (dataSource.tableExists("trace")) {
@@ -68,7 +68,7 @@ public class TraceDaoTest {
                 mock(FullQueryTextDao.class), mock(TraceAttributeNameDao.class));
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         scheduledExecutor.shutdownNow();
         dataSource.close();
@@ -76,7 +76,7 @@ public class TraceDaoTest {
         cappedFile.delete();
     }
 
-    @Before
+    @BeforeEach
     public void beforeEachTest() throws Exception {
         dataSource.execute("truncate table trace");
         dataSource.execute("truncate table trace_attribute");

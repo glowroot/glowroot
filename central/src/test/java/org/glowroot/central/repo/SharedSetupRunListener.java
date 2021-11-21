@@ -15,11 +15,11 @@
  */
 package org.glowroot.central.repo;
 
-import org.junit.runner.Description;
-import org.junit.runner.Result;
-import org.junit.runner.notification.RunListener;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
-public class SharedSetupRunListener extends RunListener {
+public class SharedSetupRunListener implements BeforeAllCallback, AfterAllCallback {
 
     private static volatile boolean shared;
 
@@ -36,13 +36,13 @@ public class SharedSetupRunListener extends RunListener {
     }
 
     @Override
-    public void testRunStarted(Description description) throws Exception {
-        CassandraWrapper.start();
-        shared = true;
+    public void afterAll(ExtensionContext context) throws Exception {
+        CassandraWrapper.stop();
     }
 
     @Override
-    public void testRunFinished(Result result) throws Exception {
-        CassandraWrapper.stop();
+    public void beforeAll(ExtensionContext context) throws Exception {
+        CassandraWrapper.start();
+        shared = true;
     }
 }

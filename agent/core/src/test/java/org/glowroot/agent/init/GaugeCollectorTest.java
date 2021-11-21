@@ -15,8 +15,6 @@
  */
 package org.glowroot.agent.init;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.List;
 
 import javax.management.AttributeNotFoundException;
@@ -27,9 +25,9 @@ import javax.management.ObjectName;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
 import org.glowroot.agent.collector.Collector;
@@ -64,7 +62,7 @@ public class GaugeCollectorTest {
     private Ticker ticker;
     private Logger logger;
 
-    @Before
+    @BeforeEach
     public void beforeEachTest() throws Exception {
         ConfigService configService = mock(ConfigService.class);
         AdvancedConfig advancedConfig =
@@ -76,12 +74,12 @@ public class GaugeCollectorTest {
         clock = mock(Clock.class);
         ticker = mock(Ticker.class);
         logger = mock(Logger.class);
-        setLogger(GaugeCollector.class, logger);
         gaugeCollector = new GaugeCollector(configService, collector, lazyPlatformMBeanServer,
                 null, clock, ticker);
+        gaugeCollector.setLoggerForTesting(logger);
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() {
         verifyNoMoreInteractions(logger);
     }
@@ -347,14 +345,5 @@ public class GaugeCollectorTest {
     @SuppressWarnings("deprecation")
     private static List<MBeanServer> anyMBeanServerList() {
         return anyListOf(MBeanServer.class);
-    }
-
-    private static void setLogger(Class<?> clazz, Logger logger) throws Exception {
-        Field loggerField = clazz.getDeclaredField("logger");
-        loggerField.setAccessible(true);
-        Field modifiersField = Field.class.getDeclaredField("modifiers");
-        modifiersField.setAccessible(true);
-        modifiersField.setInt(loggerField, loggerField.getModifiers() & ~Modifier.FINAL);
-        loggerField.set(null, logger);
     }
 }

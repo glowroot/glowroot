@@ -20,21 +20,17 @@ import java.io.IOException;
 import java.security.CodeSource;
 import java.security.cert.Certificate;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class AgentPremainTest {
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
     @Test
-    public void testNullCodeSource() throws Exception {
-        thrown.expect(IOException.class);
-        AgentPremain.getGlowrootJarFile(null);
+    public void testNullCodeSource() {
+        assertThrows(IOException.class, () ->
+                AgentPremain.getGlowrootJarFile(null));
     }
 
     @Test
@@ -55,11 +51,12 @@ public class AgentPremainTest {
     }
 
     @Test
-    public void testWithNotGlowrootJar() throws Exception {
-        thrown.expect(IOException.class);
-        File glowrootJar = new File("x/classes");
-        CodeSource codeSource = new CodeSource(glowrootJar.toURI().toURL(), new Certificate[0]);
-        AgentPremain.getGlowrootJarFile(codeSource);
+    public void testWithNotGlowrootJar() {
+        assertThrows(IOException.class, () -> {
+            File glowrootJar = new File("x/classes");
+            CodeSource codeSource = new CodeSource(glowrootJar.toURI().toURL(), new Certificate[0]);
+            AgentPremain.getGlowrootJarFile(codeSource);
+        });
     }
 
     @Test

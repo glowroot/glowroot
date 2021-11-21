@@ -23,9 +23,9 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Ticker;
 import com.google.common.io.ByteSource;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,14 +36,14 @@ public class CappedDatabaseResizeTest {
     private ScheduledExecutorService scheduledExecutor;
     private CappedDatabase cappedDatabase;
 
-    @Before
+    @BeforeEach
     public void onBefore() throws IOException {
         tempFile = File.createTempFile("glowroot-test-", ".capped.db");
         scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         cappedDatabase = new CappedDatabase(tempFile, 2, scheduledExecutor, Ticker.systemTicker());
     }
 
-    @After
+    @AfterEach
     public void onAfter() throws IOException {
         scheduledExecutor.shutdownNow();
         cappedDatabase.close();

@@ -22,7 +22,7 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import org.h2.jdbc.JdbcConnection;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.embedded.util.Schemas.Index;
 

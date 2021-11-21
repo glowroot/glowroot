@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.13.7-SNAPSHOT</version>
+    <version>0.14.0-beta.3-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -24,8 +24,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -279,24 +279,6 @@
           <scope>test</scope>
         </dependency>
       </dependencies>
-      <build>
-        <plugins>
-          <plugin>
-            <!-- play 2.4+ requires Java 8+, and tests for play 2.4 use lambdas so require
-              source/target 1.8 -->
-            <artifactId>maven-compiler-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>default-testCompile</id>
-                <configuration>
-                  <source>1.8</source>
-                  <target>1.8</target>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
     <profile>
       <id>play-2.2.x</id>

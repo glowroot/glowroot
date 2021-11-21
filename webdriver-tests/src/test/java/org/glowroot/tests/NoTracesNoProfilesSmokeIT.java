@@ -17,8 +17,8 @@ package org.glowroot.tests;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Assume;
-import org.junit.Test;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.tests.admin.StorageConfigPage;
 import org.glowroot.tests.config.ConfigSidebar;
@@ -34,7 +34,7 @@ public class NoTracesNoProfilesSmokeIT extends WebDriverIT {
 
         // this test doesn't work against the central ui because delete all button doesn't exist
         // which then means there may be old traces or old profiles found
-        Assume.assumeFalse(WebDriverSetup.useCentral);
+        Assumptions.assumeFalse(WebDriverSetup.useCentral);
 
         // given
         App app = app();

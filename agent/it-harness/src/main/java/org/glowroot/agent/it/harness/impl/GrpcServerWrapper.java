@@ -73,8 +73,6 @@ class GrpcServerWrapper {
 
     private static final Logger logger = LoggerFactory.getLogger(GrpcServerWrapper.class);
 
-    private final EventLoopGroup bossEventLoopGroup;
-    private final EventLoopGroup workerEventLoopGroup;
     private final ExecutorService executor;
     private final Server server;
 
@@ -83,8 +81,6 @@ class GrpcServerWrapper {
     private volatile @MonotonicNonNull AgentConfig agentConfig;
 
     GrpcServerWrapper(TraceCollector collector, int port) throws IOException {
-        bossEventLoopGroup = EventLoopGroups.create("Glowroot-IT-Harness-GRPC-Boss-ELG");
-        workerEventLoopGroup = EventLoopGroups.create("Glowroot-IT-Harness-GRPC-Worker-ELG");
         executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()
                         .setDaemon(true)
@@ -92,12 +88,13 @@ class GrpcServerWrapper {
                         .build());
         downstreamService = new DownstreamServiceImpl();
         server = NettyServerBuilder.forPort(port)
-                .bossEventLoopGroup(bossEventLoopGroup)
-                .workerEventLoopGroup(workerEventLoopGroup)
                 .executor(executor)
                 .addService(new CollectorServiceImpl(collector).bindService())
                 .addService(downstreamService.bindService())
                 .maxInboundMessageSize(1024 * 1024 * 100)
+                // aggressive keep alive is used by agent to detect silently dropped connections
+                // (see org.glowroot.agent.central.CentralConnection)
+                .permitKeepAliveTime(20, SECONDS)
                 .build()
                 .start();
     }
@@ -140,12 +137,6 @@ class GrpcServerWrapper {
         executor.shutdown();
         if (!executor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
-        }
-        if (!bossEventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate event loop group");
-        }
-        if (!workerEventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate event loop group");
         }
     }
 

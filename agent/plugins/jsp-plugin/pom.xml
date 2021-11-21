@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.13.7-SNAPSHOT</version>
+    <version>0.14.0-beta.3-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -24,8 +24,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -41,23 +41,19 @@
     <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
       <artifactId>tomcat-embed-core</artifactId>
+      <version>7.0.109</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
       <artifactId>tomcat-embed-jasper</artifactId>
+      <version>7.0.109</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
       <artifactId>tomcat-embed-logging-juli</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <!-- required for tomcat jsp compilation -->
-      <groupId>org.apache.ant</groupId>
-      <artifactId>ant</artifactId>
-      <version>1.10.7</version>
+      <version>7.0.109</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

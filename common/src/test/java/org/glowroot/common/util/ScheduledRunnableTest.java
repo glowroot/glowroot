@@ -19,8 +19,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,7 +34,7 @@ public class ScheduledRunnableTest {
 
     private ScheduledExecutorService scheduledExecutorService;
 
-    @Before
+    @BeforeEach
     @SuppressWarnings("unchecked")
     public void beforeEachTest() {
         scheduledExecutorService = mock(ScheduledExecutorService.class);

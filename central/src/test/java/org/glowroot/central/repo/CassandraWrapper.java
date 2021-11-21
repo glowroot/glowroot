@@ -43,27 +43,26 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 class CassandraWrapper {
 
     static final String CASSANDRA_VERSION;
-
-    private static final String CASSANDRA_JAVA_HOME;
+    private static final String CASSANDRA_JVM;
 
     static {
         if (System.getProperty("os.name").startsWith("Windows")) {
             // Cassandra 2.1 has issues on Windows
             // see https://issues.apache.org/jira/browse/CASSANDRA-10673
-            CASSANDRA_VERSION = "2.2.16";
+            CASSANDRA_VERSION = "2.2.19";
         } else {
-            CASSANDRA_VERSION = "2.1.21";
+            CASSANDRA_VERSION = "2.1.22";
         }
         String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
         if (javaVersion.startsWith("1.7") || javaVersion.startsWith("1.8")) {
-            CASSANDRA_JAVA_HOME = System.getProperty("java.home");
+            CASSANDRA_JVM =
+                    System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
         } else {
-            CASSANDRA_JAVA_HOME = System.getProperty("cassandra.java.home");
-            if (Strings.isNullOrEmpty(CASSANDRA_JAVA_HOME)) {
+            CASSANDRA_JVM = System.getProperty("cassandra.jvm");
+            if (Strings.isNullOrEmpty(CASSANDRA_JVM)) {
                 throw new IllegalStateException("Cassandra 2.x itself requires Java 7 or Java 8,"
                         + " but this test is running under Java " + javaVersion + ", so you must"
-                        + " provide -Dcassandra.java.home=... (or run this test under Java 7 or"
-                        + " Java 8)");
+                        + " provide -Dcassandra.jvm=... (or run this test under Java 7 or Java 8)");
             }
         }
     }
@@ -107,7 +106,7 @@ class CassandraWrapper {
     private static void downloadAndExtract(File baseDir) throws IOException {
         // using System.out to make sure user sees why there is a big delay here
         System.out.print("Downloading Cassandra " + CASSANDRA_VERSION + "...");
-        URL url = new URL("https://www-us.apache.org/dist/cassandra/" + CASSANDRA_VERSION
+        URL url = new URL("https://archive.apache.org/dist/cassandra/" + CASSANDRA_VERSION
                 + "/apache-cassandra-" + CASSANDRA_VERSION + "-bin.tar.gz");
         InputStream in = url.openStream();
         File archiveFile = File.createTempFile("cassandra-" + CASSANDRA_VERSION + "-", ".tar.gz");
@@ -138,9 +137,7 @@ class CassandraWrapper {
 
     private static List<String> buildCommandLine(File cassandraDir) {
         List<String> command = new ArrayList<>();
-        String javaExecutable =
-                CASSANDRA_JAVA_HOME + File.separator + "bin" + File.separator + "java";
-        command.add(javaExecutable);
+        command.add(CASSANDRA_JVM);
         command.add("-cp");
         command.add(buildClasspath(cassandraDir));
         command.add("-javaagent:" + cassandraDir.getAbsolutePath() + "/lib/jamm-0.3.0.jar");
@@ -155,7 +152,7 @@ class CassandraWrapper {
         if (sourceOfRandomness != null) {
             command.add("-Djava.security.egd=" + sourceOfRandomness);
         }
-        command.add("-Xmx256m");
+        command.add("-Xmx512m");
         // leave as much memory as possible to old gen
         command.add("-XX:NewRatio=20");
         command.add("org.apache.cassandra.service.CassandraDaemon");

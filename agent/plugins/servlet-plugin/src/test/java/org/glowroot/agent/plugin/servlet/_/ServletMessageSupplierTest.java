@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.plugin.servlet._.ServletMessageSupplier;
 

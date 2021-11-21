@@ -69,6 +69,8 @@ class JavaagentServiceImpl extends JavaagentServiceImplBase {
         if (executingAppThread != null) {
             throw new IllegalStateException("Already executing an app");
         }
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
         try {
             executingAppThread = Thread.currentThread();
             Class<?> appClass =
@@ -80,6 +82,7 @@ class JavaagentServiceImpl extends JavaagentServiceImplBase {
             responseObserver.onError(t);
             return;
         } finally {
+            Thread.currentThread().setContextClassLoader(loader);
             executingAppThread = null;
         }
         try {

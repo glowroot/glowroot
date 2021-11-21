@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.13.7-SNAPSHOT</version>
+    <version>0.14.0-beta.3-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -36,8 +36,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -62,15 +62,6 @@
     <plugins>
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <properties>
-            <property>
-              <!-- this is just a test performance optimization -->
-              <name>listener</name>
-              <value>org.glowroot.agent.plugin.kafka.SharedSetupRunListener</value>
-            </property>
-          </properties>
-        </configuration>
         <executions>
           <execution>
             <goals>
@@ -81,23 +72,6 @@
         </executions>
       </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <!-- kafka-clients 0.9.0.0+ requires Java 7+ -->
-          <artifactId>maven-compiler-plugin</artifactId>
-          <executions>
-            <execution>
-              <id>default-testCompile</id>
-              <configuration>
-                <source>1.7</source>
-                <target>1.7</target>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 
   <profiles>

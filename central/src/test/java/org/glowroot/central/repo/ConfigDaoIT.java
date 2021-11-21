@@ -21,10 +21,10 @@ import java.util.concurrent.Executors;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PoolingOptions;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
@@ -42,20 +42,20 @@ public class ConfigDaoIT {
     private static ExecutorService asyncExecutor;
     private static AgentConfigDao agentConfigDao;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         clusterManager = ClusterManager.create();
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
-                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE, 0);
         asyncExecutor = Executors.newCachedThreadPool();
         AgentDisplayDao agentDisplayDao =
                 new AgentDisplayDao(session, clusterManager, MoreExecutors.directExecutor(), 10);
         agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager, 10);
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         asyncExecutor.shutdown();
         session.close();
@@ -64,7 +64,7 @@ public class ConfigDaoIT {
         SharedSetupRunListener.stopCassandra();
     }
 
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         session.updateSchemaWithRetry("truncate agent_config");
     }

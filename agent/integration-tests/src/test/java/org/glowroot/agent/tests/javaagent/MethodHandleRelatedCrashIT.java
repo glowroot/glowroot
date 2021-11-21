@@ -24,11 +24,7 @@ import javax.script.ScriptEngineManager;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
@@ -47,10 +43,10 @@ public class MethodHandleRelatedCrashIT {
     private static File testDir;
     private static Container container;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
-        // the javascript used in the test fails in jdk 6 javascript engine
-        assumeNotJdk6();
+        // javascript engine was removed in Java 15, but this test is only important for Java 8 anyways
+        assumeJava8();
         // need to run with embedded=true so it starts up the Netty UI
         testDir = Files.createTempDir();
         File adminFile = new File(testDir, "admin.json");
@@ -58,7 +54,7 @@ public class MethodHandleRelatedCrashIT {
         container = new JavaagentContainer(testDir, true, ImmutableList.<String>of());
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         // need null check in case assumption is false in setUp()
         if (container != null) {
@@ -69,7 +65,7 @@ public class MethodHandleRelatedCrashIT {
         }
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }
@@ -79,8 +75,8 @@ public class MethodHandleRelatedCrashIT {
         container.executeNoExpectedTrace(ShouldNotCrashJvm.class);
     }
 
-    private static void assumeNotJdk6() {
-        Assume.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.6"));
+    private static void assumeJava8() {
+        Assumptions.assumeTrue(StandardSystemProperty.JAVA_VERSION.value().startsWith("1.8"));
     }
 
     private static int getAvailablePort() throws Exception {

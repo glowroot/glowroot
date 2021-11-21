@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.io.Writer;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.ui.ChunkSource.ChunkCopier;
 

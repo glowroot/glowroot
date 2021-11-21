@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.13.7-SNAPSHOT</version>
+    <version>0.14.0-beta.3-SNAPSHOT</version>
   </parent>
 
   <artifactId>glowroot-central</artifactId>
@@ -47,11 +47,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <!-- guava 21.0+ is needed in order for ExpectedConditions in selenium 3.1+ to work smoothly
-        since WebDriverWait.until() now takes java.util.function.Function, but ExpectedConditions
-        methods still return com.google.common.base.Function, which only extends
-        java.util.function.Function in guava 21.0+ (since 21.0+ is built for Java 8) -->
-      <version>28.2-jre</version> <!-- $NO-MVN-MAN-VER$ -->
+      <version>31.0.1-jre</version>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
@@ -60,9 +56,9 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-tcnative-boringssl-static</artifactId>
-      <!-- need to stick to version known to work with gRPC 1.14.0,
-        see https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
-      <version>2.0.12.Final</version>
+      <!-- need to stick to version known to work with gRPC 1.41.0,
+        see table at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
+      <version>2.0.34.Final</version>
     </dependency>
     <dependency>
       <groupId>com.datastax.cassandra</groupId>
@@ -177,20 +173,19 @@
       <version>4.4.13</version>
     </dependency>
     <dependency>
-      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
-      <groupId>javax.annotation</groupId>
-      <artifactId>javax.annotation-api</artifactId>
-      <version>1.3.2</version>
-    </dependency>
-    <dependency>
-      <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.checkerframework</groupId>
       <artifactId>checker-qual</artifactId>
-      <version>2.10.0</version>
+      <!-- don't need this dependency at runtime since only annotations -->
+      <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -499,17 +494,6 @@
         </executions>
       </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <configuration>
-            <source>1.8</source>
-            <target>1.8</target>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 
   <profiles>
@@ -580,26 +564,6 @@
           </plugin>
         </plugins>
       </build>
-    </profile>
-    <profile>
-      <!-- use custom-built jdk6 compatible checker framework annotations by default except when
-        actually running checker framework code quality tests, in which case the real checker
-        framework annotations are provided -->
-      <id>not-the-checker-build</id>
-      <activation>
-        <property>
-          <name>!glowroot.checker.build</name>
-        </property>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.glowroot.build</groupId>
-          <artifactId>glowroot-build-checker-jdk6</artifactId>
-          <version>${project.version}</version>
-          <!-- don't need this dependency at runtime since only annotations -->
-          <optional>true</optional>
-        </dependency>
-      </dependencies>
     </profile>
   </profiles>
 </project>

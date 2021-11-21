@@ -25,9 +25,9 @@ import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.google.common.base.Stopwatch;
 import com.google.common.io.Resources;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.central.repo.CassandraWrapper.ConsoleOutputPipe;
 import org.glowroot.central.util.Session;
@@ -41,14 +41,14 @@ public class SchemaUpgradeIT {
     private static Cluster cluster;
     private static Session session;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
         com.datastax.driver.core.Session wrappedSession = cluster.newSession();
         updateSchemaWithRetry(wrappedSession, "drop keyspace if exists glowroot_upgrade_test");
         session = new Session(wrappedSession, "glowroot_upgrade_test", null,
-                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE, 0);
         URL url = Resources.getResource("glowroot-0.9.1-schema.cql");
         StringBuilder cql = new StringBuilder();
         for (String line : Resources.readLines(url, UTF_8)) {
@@ -63,7 +63,7 @@ public class SchemaUpgradeIT {
         restore("glowroot_upgrade_test");
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         session.close();
         cluster.close();
@@ -73,7 +73,7 @@ public class SchemaUpgradeIT {
     @Test
     public void shouldRead() throws Exception {
         // given
-        SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, Clock.systemClock(), false);
+        SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, 0, Clock.systemClock(), false);
         // when
         schemaUpgrade.upgrade();
         // then don't throw exception

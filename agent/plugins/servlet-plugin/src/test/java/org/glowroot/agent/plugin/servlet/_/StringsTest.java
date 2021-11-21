@@ -15,7 +15,7 @@
  */
 package org.glowroot.agent.plugin.servlet._;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.plugin.servlet._.Strings;
 

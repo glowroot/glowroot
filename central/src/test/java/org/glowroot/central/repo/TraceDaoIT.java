@@ -21,14 +21,12 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PoolingOptions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
@@ -49,7 +47,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 // NOTE this is mostly a copy of TraceDaoTest in glowroot-agent
-@RunWith(value = Parameterized.class)
 public class TraceDaoIT {
 
     private static final String AGENT_ID = "xyz";
@@ -59,20 +56,12 @@ public class TraceDaoIT {
     private static ClusterManager clusterManager;
     private static TraceDao traceDao;
 
-    @Parameter
-    public boolean partial;
-
-    @Parameters(name = "partial={0}")
-    public static Collection<Boolean> data() {
-        return ImmutableList.of(false, true);
-    }
-
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cluster = Clusters.newCluster();
         session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
-                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE, 0);
 
         clusterManager = ClusterManager.create();
         ConfigRepositoryImpl configRepository = mock(ConfigRepositoryImpl.class);
@@ -86,7 +75,7 @@ public class TraceDaoIT {
                         configRepository, clock));
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         clusterManager.close();
         session.close();
@@ -94,13 +83,14 @@ public class TraceDaoIT {
         SharedSetupRunListener.stopCassandra();
     }
 
-    @Before
+    @BeforeEach
     public void beforeEachTest() throws Exception {
         traceDao.truncateAll();
     }
 
-    @Test
-    public void shouldReadTrace() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void shouldReadTrace(boolean partial) throws Exception {
         Trace trace = TraceTestData.createTrace(partial);
         traceDao.store(AGENT_ID, trace);
         TraceQuery query = ImmutableTraceQuery.builder()
@@ -127,8 +117,9 @@ public class TraceDaoIT {
         assertThat(header2.getUser()).isEqualTo(trace.getHeader().getUser());
     }
 
-    @Test
-    public void shouldReadTraceWithDurationNanosQualifier() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void shouldReadTraceWithDurationNanosQualifier(boolean partial) throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(partial);
         traceDao.store(AGENT_ID, trace);
@@ -149,8 +140,9 @@ public class TraceDaoIT {
         assertThat(queryResult.records()).hasSize(1);
     }
 
-    @Test
-    public void shouldNotReadTraceWithHighDurationNanosQualifier() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void shouldNotReadTraceWithHighDurationNanosQualifier(boolean partial) throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(partial);
         traceDao.store(AGENT_ID, trace);
@@ -171,8 +163,9 @@ public class TraceDaoIT {
         assertThat(queryResult.records()).isEmpty();
     }
 
-    @Test
-    public void shouldNotReadTraceWithLowDurationNanosQualifier() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void shouldNotReadTraceWithLowDurationNanosQualifier(boolean partial) throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(partial);
         traceDao.store(AGENT_ID, trace);
@@ -193,8 +186,9 @@ public class TraceDaoIT {
         assertThat(queryResult.records()).isEmpty();
     }
 
-    @Test
-    public void shouldReadTraceWithAttributeQualifier() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void shouldReadTraceWithAttributeQualifier(boolean partial) throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(partial);
         traceDao.store(AGENT_ID, trace);
@@ -217,8 +211,9 @@ public class TraceDaoIT {
         assertThat(queryResult.records()).hasSize(1);
     }
 
-    @Test
-    public void shouldReadTraceWithAttributeQualifier2() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void shouldReadTraceWithAttributeQualifier2(boolean partial) throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(partial);
         traceDao.store(AGENT_ID, trace);
@@ -241,8 +236,9 @@ public class TraceDaoIT {
         assertThat(queryResult.records()).hasSize(1);
     }
 
-    @Test
-    public void shouldReadTraceWithAttributeQualifier3() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void shouldReadTraceWithAttributeQualifier3(boolean partial) throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(partial);
         traceDao.store(AGENT_ID, trace);
@@ -265,8 +261,9 @@ public class TraceDaoIT {
         assertThat(queryResult.records()).hasSize(1);
     }
 
-    @Test
-    public void shouldNotReadTraceWithNonMatchingAttributeQualifier() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void shouldNotReadTraceWithNonMatchingAttributeQualifier(boolean partial) throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(partial);
         traceDao.store(AGENT_ID, trace);
@@ -289,8 +286,9 @@ public class TraceDaoIT {
         assertThat(queryResult.records()).isEmpty();
     }
 
-    @Test
-    public void shouldNotReadTraceWithNonMatchingAttributeQualifier2() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void shouldNotReadTraceWithNonMatchingAttributeQualifier2(boolean partial) throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(partial);
         traceDao.store(AGENT_ID, trace);

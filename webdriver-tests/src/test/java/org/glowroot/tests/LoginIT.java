@@ -16,7 +16,7 @@
 package org.glowroot.tests;
 
 import com.machinepublishers.jbrowserdriver.JBrowserDriver;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.openqa.selenium.WebElement;
 
 import org.glowroot.tests.admin.ChangePasswordPage;

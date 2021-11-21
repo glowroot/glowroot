@@ -50,8 +50,8 @@ class MultipleAddressNameResolverFactory extends NameResolver.Factory {
     }
 
     @Override
-    public NameResolver newNameResolver(URI targetUri, Attributes params) {
-        return new MultipleAddressNameResolver(targets, authority, params);
+    public NameResolver newNameResolver(URI targetUri, NameResolver.Args args) {
+        return new MultipleAddressNameResolver(targets, authority, args);
     }
 
     @Override
@@ -65,15 +65,15 @@ class MultipleAddressNameResolverFactory extends NameResolver.Factory {
 
         private final List<CollectorTarget> targets;
         private final String authority;
-        private final Attributes params;
+        private final NameResolver.Args args;
 
         private volatile @Nullable Listener listener;
 
         private MultipleAddressNameResolver(List<CollectorTarget> targets, String authority,
-                Attributes params) {
+                NameResolver.Args args) {
             this.targets = targets;
             this.authority = authority;
-            this.params = params;
+            this.args = args;
         }
 
         @Override
@@ -104,7 +104,7 @@ class MultipleAddressNameResolverFactory extends NameResolver.Factory {
                 }
                 // should not return null since using the name resolver provider's default scheme
                 nameResolvers.add(
-                        checkNotNull(nameResolverProvider.newNameResolver(collectorURI, params)));
+                        checkNotNull(nameResolverProvider.newNameResolver(collectorURI, args)));
             }
             AggregatingListener aggregatingListener =
                     new AggregatingListener(checkNotNull(listener), nameResolvers);

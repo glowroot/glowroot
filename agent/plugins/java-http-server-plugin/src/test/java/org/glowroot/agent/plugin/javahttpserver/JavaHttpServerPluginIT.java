@@ -19,10 +19,10 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import com.sun.net.httpserver.HttpExchange;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
@@ -37,19 +37,19 @@ public class JavaHttpServerPluginIT {
 
     private static Container container;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         // tests only work with javaagent container because they need to weave bootstrap classes
         // that implement com.sun.net.httpserver.HttpExchange
         container = JavaagentContainer.create();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         container.close();
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }
