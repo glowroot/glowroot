@@ -32,12 +32,12 @@ class FileSystem implements FileSystemMXBean {
 
     @Override
     public long getFreeSpace() {
-        return file.getFreeSpace();
+        return file.getUsableSpace();
     }
 
     @Override
     public double getPercentFull() {
         long totalSpace = file.getTotalSpace();
-        return 100 * ((totalSpace - file.getFreeSpace()) / (double) totalSpace);
+        return 100 * ((totalSpace - file.getUsableSpace()) / (double) totalSpace);
     }
 }
