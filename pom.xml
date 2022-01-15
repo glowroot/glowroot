@@ -718,6 +718,7 @@
                 <!-- needed to suppress "bootstrap class path not set in conjunction with -source 1.6" -->
                 <arg>-Xlint:-options</arg>
               </compilerArgs>
+          	<fork>true</fork>
             </configuration>
             <dependencies>
               <dependency>
@@ -876,6 +877,7 @@
                 <arg>-Astubs=${checker.stubs.dir}</arg>
                 <arg>-AskipDefs=^org\.glowroot\.agent\.embedded\.repo\.proto\.|^org\.glowroot\.agent\.it\.harness\.grpc\.|^org\.glowroot\.central\.repo\.proto\.</arg>
               </compilerArgs>
+          	<fork>true</fork>
             </configuration>
           </plugin>
         </plugins>
