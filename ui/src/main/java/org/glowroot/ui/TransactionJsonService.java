@@ -442,6 +442,8 @@ class TransactionJsonService {
                 // this is probably data from before the requested time period
                 overallSummary = ImmutableOverallSummary.builder()
                         .totalDurationNanos(0)
+                        .totalCpuNanos(0)
+                        .totalAllocatedBytes(0)
                         .transactionCount(0)
                         .build();
             }

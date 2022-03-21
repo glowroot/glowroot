@@ -136,7 +136,9 @@ public class AggregateDao implements AggregateRepository {
     // the result set directly from the index without having to reference the table for each row
     private static final ImmutableList<String> overallAggregateIndexColumns =
             ImmutableList.of("capture_time", "transaction_type", "total_duration_nanos",
-                    "transaction_count", "error_count");
+                    "transaction_count", "error_count",
+                    "main_thread_total_cpu_nanos", "aux_thread_total_cpu_nanos",
+                    "main_thread_total_allocated_bytes", "aux_thread_total_allocated_bytes");
 
     // this index includes all columns needed for the transaction aggregate query so h2 can return
     // the result set directly from the index without having to reference the table for each row
@@ -144,7 +146,9 @@ public class AggregateDao implements AggregateRepository {
     // capture_time is first so this can also be used for readTransactionErrorCounts()
     private static final ImmutableList<String> transactionAggregateIndexColumns =
             ImmutableList.of("capture_time", "transaction_type", "transaction_name",
-                    "total_duration_nanos", "transaction_count", "error_count");
+                    "total_duration_nanos", "transaction_count", "error_count",
+                    "main_thread_total_cpu_nanos", "aux_thread_total_cpu_nanos",
+                    "main_thread_total_allocated_bytes", "aux_thread_total_allocated_bytes");
 
     private final DataSource dataSource;
     private final List<CappedDatabase> rollupCappedDatabases;
@@ -255,6 +259,8 @@ public class AggregateDao implements AggregateRepository {
     }
 
     // query.from() is non-inclusive
+    // the sortOrder is only used so that the limit includes the most-likely candidates
+    // the final sorting is performed by the caller
     @Override
     public void mergeTransactionNameSummariesInto(String agentRollupId, SummaryQuery query,
             SummarySortOrder sortOrder, int limit, TransactionNameSummaryCollector collector)
@@ -645,7 +651,11 @@ public class AggregateDao implements AggregateRepository {
         public @Untainted String getSql() {
             // it's important that all these columns are in a single index so h2 can return the
             // result set directly from the index without having to reference the table for each row
-            return "select sum(total_duration_nanos), sum(transaction_count), max(capture_time)"
+            return "select sum(total_duration_nanos),"
+                    + " sum(main_thread_total_cpu_nanos) + sum(aux_thread_total_cpu_nanos),"
+                    + " sum(main_thread_total_allocated_bytes) + sum(aux_thread_total_allocated_bytes),"
+                    + " sum(transaction_count),"
+                    + " max(capture_time)"
                     + " from aggregate_tt_rollup_" + castUntainted(query.rollupLevel())
                     + " where transaction_type = ? and capture_time > ? and capture_time <= ?";
         }
@@ -666,9 +676,12 @@ public class AggregateDao implements AggregateRepository {
             }
             int i = 1;
             double totalDurationNanos = resultSet.getDouble(i++);
+            double totalCpuNanos = resultSet.getDouble(i++);
+            double totalAllocatedBytes = resultSet.getDouble(i++);
             long transactionCount = resultSet.getLong(i++);
             long captureTime = resultSet.getLong(i++);
-            collector.mergeSummary(totalDurationNanos, transactionCount, captureTime);
+            collector.mergeSummary(totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount,
+                    captureTime);
             return null;
         }
 
@@ -699,11 +712,18 @@ public class AggregateDao implements AggregateRepository {
             // it's important that all these columns are in a single index so h2 can return the
             // result set directly from the index without having to reference the table for each row
             StringBuilder sb = new StringBuilder();
-            sb.append("select transaction_name, sum(total_duration_nanos), sum(transaction_count),"
-                    + " max(capture_time) from aggregate_tn_rollup_");
+            sb.append("select transaction_name,"
+                            + " sum(total_duration_nanos),"
+                            + " sum(main_thread_total_cpu_nanos) + sum(aux_thread_total_cpu_nanos),"
+                            + " sum(main_thread_total_allocated_bytes) + sum(aux_thread_total_allocated_bytes),"
+                            + " sum(transaction_count),"
+                            + " max(capture_time)"
+                            + " from aggregate_tn_rollup_");
             sb.append(query.rollupLevel());
             sb.append(" where transaction_type = ? and capture_time > ? and capture_time <= ?"
                     + " group by transaction_name order by ");
+            // the sortOrder is only used so that the limit includes the most-likely candidates
+            // the final sorting is performed by the caller
             sb.append(getSortClause(sortOrder));
             sb.append(", transaction_name limit ?");
             return castUntainted(sb.toString());
@@ -725,9 +745,11 @@ public class AggregateDao implements AggregateRepository {
                 int i = 1;
                 String transactionName = checkNotNull(resultSet.getString(i++));
                 double totalDurationNanos = resultSet.getDouble(i++);
+                double totalCpuNanos = resultSet.getDouble(i++);
+                double totalAllocatedBytes = resultSet.getDouble(i++);
                 long transactionCount = resultSet.getLong(i++);
                 long maxCaptureTime = resultSet.getLong(i++);
-                collector.collect(transactionName, totalDurationNanos, transactionCount,
+                collector.collect(transactionName, totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount,
                         maxCaptureTime);
             }
             return null;
@@ -746,6 +768,14 @@ public class AggregateDao implements AggregateRepository {
                     return "sum(total_duration_nanos) / sum(transaction_count) desc";
                 case THROUGHPUT:
                     return "sum(transaction_count) desc";
+                case TOTAL_CPU_TIME:
+                    return "sum(main_thread_total_cpu_nanos) + sum(aux_thread_total_cpu_nanos) desc";
+                case AVERAGE_CPU_TIME:
+                    return "(sum(main_thread_total_cpu_nanos) + sum(aux_thread_total_cpu_nanos)) / sum(transaction_count) desc";
+                case TOTAL_ALLOCATED_MEMORY:
+                    return "sum(main_thread_total_allocated_bytes) + sum(aux_thread_total_allocated_bytes) desc";
+                case AVERAGE_ALLOCATED_MEMORY:
+                    return "(sum(main_thread_total_allocated_bytes) + sum(aux_thread_total_allocated_bytes)) / sum(transaction_count) desc";
                 default:
                     throw new AssertionError("Unexpected sort order: " + sortOrder);
             }

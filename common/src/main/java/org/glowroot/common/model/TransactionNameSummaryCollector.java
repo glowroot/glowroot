@@ -52,19 +52,55 @@ public class TransactionNameSummaryCollector {
                 }
             };
 
+    private static final Ordering<TransactionNameSummary> orderingByTotalCpuTimeDesc =
+            new Ordering<TransactionNameSummary>() {
+                @Override
+                public int compare(TransactionNameSummary left, TransactionNameSummary right) {
+                    return Doubles.compare(right.totalCpuNanos(), left.totalCpuNanos());
+                }
+            };
+
+    private static final Ordering<TransactionNameSummary> orderingByAverageCpuTimeDesc =
+            new Ordering<TransactionNameSummary>() {
+                @Override
+                public int compare(TransactionNameSummary left, TransactionNameSummary right) {
+                    return Doubles.compare(right.totalCpuNanos() / right.transactionCount(),
+                            left.totalCpuNanos() / left.transactionCount());
+                }
+            };
+
+    private static final Ordering<TransactionNameSummary> orderingByTotalAllocatedMemoryDesc =
+            new Ordering<TransactionNameSummary>() {
+                @Override
+                public int compare(TransactionNameSummary left, TransactionNameSummary right) {
+                    return Doubles.compare(right.totalAllocatedBytes(), left.totalAllocatedBytes());
+                }
+            };
+
+    private static final Ordering<TransactionNameSummary> orderingByAverageAllocatedMemoryDesc =
+            new Ordering<TransactionNameSummary>() {
+                @Override
+                public int compare(TransactionNameSummary left, TransactionNameSummary right) {
+                    return Doubles.compare(right.totalAllocatedBytes() / right.transactionCount(),
+                            left.totalAllocatedBytes() / left.transactionCount());
+                }
+            };
+
     private final Map<String, MutableTransactionNameSummary> transactionNameSummaries =
             Maps.newHashMap();
 
     private long lastCaptureTime;
 
-    public void collect(String transactionName, double totalDurationNanos, long transactionCount,
-            long captureTime) {
+    public void collect(String transactionName, double totalDurationNanos, double totalCpuNanos, double totalAllocatedBytes, long transactionCount,
+                        long captureTime) {
         MutableTransactionNameSummary mts = transactionNameSummaries.get(transactionName);
         if (mts == null) {
             mts = new MutableTransactionNameSummary();
             transactionNameSummaries.put(transactionName, mts);
         }
         mts.totalDurationNanos += totalDurationNanos;
+        mts.totalCpuNanos += totalCpuNanos;
+        mts.totalAllocatedBytes += totalAllocatedBytes;
         mts.transactionCount += transactionCount;
         lastCaptureTime = Math.max(lastCaptureTime, captureTime);
     }
@@ -80,6 +116,8 @@ public class TransactionNameSummaryCollector {
             summaries.add(ImmutableTransactionNameSummary.builder()
                     .transactionName(entry.getKey())
                     .totalDurationNanos(entry.getValue().totalDurationNanos)
+                    .totalCpuNanos(entry.getValue().totalCpuNanos)
+                    .totalAllocatedBytes(entry.getValue().totalAllocatedBytes)
                     .transactionCount(entry.getValue().transactionCount)
                     .build());
         }
@@ -100,13 +138,21 @@ public class TransactionNameSummaryCollector {
                 return orderingByAverageTimeDesc.immutableSortedCopy(transactionNameSummaries);
             case THROUGHPUT:
                 return orderingByTransactionCountDesc.immutableSortedCopy(transactionNameSummaries);
+            case TOTAL_CPU_TIME:
+                return orderingByTotalCpuTimeDesc.immutableSortedCopy(transactionNameSummaries);
+            case AVERAGE_CPU_TIME:
+                return orderingByAverageCpuTimeDesc.immutableSortedCopy(transactionNameSummaries);
+            case TOTAL_ALLOCATED_MEMORY:
+                return orderingByTotalAllocatedMemoryDesc.immutableSortedCopy(transactionNameSummaries);
+            case AVERAGE_ALLOCATED_MEMORY:
+                return orderingByAverageAllocatedMemoryDesc.immutableSortedCopy(transactionNameSummaries);
             default:
                 throw new AssertionError("Unexpected sort order: " + sortOrder);
         }
     }
 
     public enum SummarySortOrder {
-        TOTAL_TIME, AVERAGE_TIME, THROUGHPUT
+        TOTAL_TIME, AVERAGE_TIME, THROUGHPUT, TOTAL_CPU_TIME, AVERAGE_CPU_TIME, TOTAL_ALLOCATED_MEMORY, AVERAGE_ALLOCATED_MEMORY
     }
 
     @Value.Immutable
@@ -114,11 +160,15 @@ public class TransactionNameSummaryCollector {
         String transactionName();
         // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
         double totalDurationNanos();
+        double totalCpuNanos();
+        double totalAllocatedBytes();
         long transactionCount();
     }
 
     private static class MutableTransactionNameSummary {
         private double totalDurationNanos;
+        private double totalCpuNanos;
+        private double totalAllocatedBytes;
         private long transactionCount;
     }
 }
