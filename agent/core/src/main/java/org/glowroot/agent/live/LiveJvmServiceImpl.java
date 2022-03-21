@@ -134,7 +134,7 @@ public class LiveJvmServiceImpl implements LiveJvmService {
         if (!dir.exists() || !dir.isDirectory()) {
             throw new DirectoryDoesNotExistException();
         }
-        return dir.getFreeSpace();
+        return dir.getUsableSpace();
     }
 
     @Override
