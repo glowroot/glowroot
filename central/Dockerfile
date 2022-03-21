@@ -18,7 +18,7 @@ EXPOSE 4000 8181
 
 WORKDIR /usr/share/glowroot-central
 
-USER glowroot:glowroot
+USER glowroot:root
 
 ENV GLOWROOT_OPTS -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap
 
