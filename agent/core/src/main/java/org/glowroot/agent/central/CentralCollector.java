@@ -113,7 +113,7 @@ public class CentralCollector implements Collector {
 
         String agentId = properties.get("glowroot.agent.id");
         // allow glowroot to read agentId from ENV
-        if(agentId==null) {
+        if (agentId == null) {
             agentId = System.getenv("GLOWROOT_AGENT_ID");
         }
         if (agentId == null) {
