@@ -37,13 +37,13 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.infinispan.commons.marshall.JavaSerializationMarshaller;
 import org.infinispan.configuration.cache.CacheMode;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.global.GlobalConfiguration;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.eviction.EvictionStrategy;
-import org.infinispan.eviction.EvictionType;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 import org.infinispan.remoting.transport.Address;
@@ -116,14 +116,25 @@ public abstract class ClusterManager {
 
         private ClusterManagerImpl(File confDir, String jgroupsConfigurationFile,
                 Map<String, String> jgroupsProperties) {
-            GlobalConfiguration configuration = new GlobalConfigurationBuilder()
-                    .transport()
-                    .defaultTransport()
-                    .addProperty("configurationFile",
-                            getConfigurationFilePropertyValue(confDir, jgroupsConfigurationFile))
-                    .globalJmxStatistics()
-                    .enable()
-                    .build();
+            GlobalConfigurationBuilder builder = new GlobalConfigurationBuilder();
+            builder
+                .transport()
+                .defaultTransport()
+                .addProperty("configurationFile",
+                        getConfigurationFilePropertyValue(confDir, jgroupsConfigurationFile))
+                .jmx()
+                .enable()
+                .serialization()
+                    .marshaller(new JavaSerializationMarshaller())
+                        .allowList()
+                            .addRegexps(
+                                    "org\\.glowroot\\.central\\..*",
+                                    "org\\.glowroot\\.wire\\.api\\.model\\..*",
+                                    "com\\.google\\.common\\.collect\\.Immutable.*",
+                                    "com\\.google\\.protobuf\\..*"
+                            );
+
+            GlobalConfiguration configuration = builder.build();
             cacheManager = doWithSystemProperties(jgroupsProperties,
                     () -> new DefaultCacheManager(configuration));
             executor = MoreExecutors2.newCachedThreadPool("Cluster-Manager-Worker");
@@ -149,7 +160,7 @@ public abstract class ClusterManager {
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.clustering()
                     .cacheMode(CacheMode.INVALIDATION_ASYNC)
-                    .jmxStatistics()
+                    .statistics()
                     .enable();
             cacheManager.defineConfiguration(cacheName, configurationBuilder.build());
             return new CacheImpl<K, V>(cacheManager.getCache(cacheName), loader);
@@ -175,7 +186,7 @@ public abstract class ClusterManager {
                     .cacheMode(CacheMode.REPL_ASYNC)
                     .expiration()
                     .lifespan(expirationTime, expirationUnit)
-                    .jmxStatistics()
+                    .statistics()
                     .enable();
             cacheManager.defineConfiguration(mapName, configurationBuilder.build());
             return cacheManager.getCache(mapName);
@@ -187,7 +198,7 @@ public abstract class ClusterManager {
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.clustering()
                     .cacheMode(CacheMode.LOCAL)
-                    .jmxStatistics()
+                    .statistics()
                     .enable();
             cacheManager.defineConfiguration(cacheName, configurationBuilder.build());
             return new DistributedExecutionMapImpl<K, V>(cacheManager.getCache(cacheName));
@@ -253,10 +264,9 @@ public abstract class ClusterManager {
                     .expiration()
                     .maxIdle(30, MINUTES)
                     .memory()
-                    .size(size)
-                    .evictionType(EvictionType.COUNT)
-                    .evictionStrategy(EvictionStrategy.REMOVE)
-                    .jmxStatistics()
+                    .maxCount(size)
+                    .whenFull(EvictionStrategy.REMOVE)
+                    .statistics()
                     .enable();
             return configurationBuilder.build();
         }

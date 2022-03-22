@@ -285,18 +285,11 @@
             <configuration>
               <rules>
                 <requireJavaVersion>
-                  <!-- immutables annotation processors require java 7+ -->
-                  <version>[1.7,)</version>
+                  <version>[1.8,)</version>
                 </requireJavaVersion>
                 <requireMavenVersion>
-                  <version>[3.3.1,)</version>
+                  <version>[3.6.1,)</version>
                 </requireMavenVersion>
-                <requireUpperBoundDeps>
-                  <excludes>
-                    <!-- Exclude until infinispan-core 10.0 is released -->
-                    <exclude>org.jgroups:jgroups</exclude>
-                  </excludes>
-                </requireUpperBoundDeps>
               </rules>
             </configuration>
           </execution>
