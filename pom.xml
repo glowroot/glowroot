@@ -95,8 +95,8 @@
     <protoc.version>3.19.4</protoc.version>
     <!-- need to stick to netty version that is used by grpc version above -->
     <netty.version>4.1.72.Final</netty.version>
-    <logback.version>1.2.6</logback.version>
-    <slf4j.version>1.7.32</slf4j.version>
+    <logback.version>1.2.11</logback.version>
+    <slf4j.version>1.7.36</slf4j.version>
     <immutables.version>2.8.8</immutables.version>
     <checker.version>3.18.1</checker.version>
     <jmh.version>1.23</jmh.version>
