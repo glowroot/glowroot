@@ -24,6 +24,16 @@
   <FD_ALL/>
   <VERIFY_SUSPECT timeout="1500" />
   <BARRIER />
+  <!-- Symmetric encryption with a keystore -->
+  <SYM_ENCRYPT
+          provider="SunJCE"
+          sym_algorithm="${jgroups.symEncryptAlgorithm:AES/CBC/PKCS5Padding}"
+          sym_iv_length="16"
+          keystore_name="${jgroups.symEncryptKeystoreLocation}"
+          store_password="${jgroups.symEncryptKeystorePassword}"
+          alias="${jgroups.symEncryptKeyAlias}"
+          key_password="${jgroups.symEncryptKeyPassword}"
+  />
   <pbcast.NAKACK2 xmit_interval="500"
                   xmit_table_num_rows="100"
                   xmit_table_msgs_per_row="2000"
@@ -37,10 +47,6 @@
             conn_expiry_timeout="0" />
   <pbcast.STABLE desired_avg_gossip="50000"
                  max_bytes="4M" />
-  <SASL mech="DIGEST-MD5"
-        server_name="glowroot"
-        client_callback_handler_class="org.glowroot.central.SaslCallbackHandler"
-        server_callback_handler_class="org.glowroot.central.SaslCallbackHandler" />
   <pbcast.GMS print_local_addr="false"
               join_timeout="${jgroups.joinTimeout:2000}" />
   <UFC max_credits="2M"
