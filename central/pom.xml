@@ -315,7 +315,7 @@
       <plugin>
         <groupId>de.dentrassi.maven</groupId>
         <artifactId>rpm</artifactId>
-        <version>1.1.0</version>
+        <version>1.8.0</version>
         <configuration>
           <skipSigning>true</skipSigning>
         </configuration>
@@ -504,13 +504,10 @@
           <plugin>
             <groupId>de.dentrassi.maven</groupId>
             <artifactId>rpm</artifactId>
-            <version>1.1.0</version>
+            <version>1.8.0</version>
             <configuration>
-              <skipSigning>false</skipSigning>
               <signature>
-                <keyId>${gpg.keyId}</keyId>
                 <keyringFile>${user.home}/.gnupg/secring.gpg</keyringFile>
-                <passphrase>${gpg.passphrase}</passphrase>
               </signature>
             </configuration>
           </plugin>
@@ -553,10 +550,10 @@
                   <arguments>
                     <argument>--armor</argument>
                     <argument>--out</argument>
-                    <argument>target/yum/RPM-GPG-KEY-${gpg.keyId}</argument>
+                    <argument>target/yum/RPM-GPG-KEY-${gpg.key.id}</argument>
                     <argument>--yes</argument> <!-- overwrite without asking -->
                     <argument>--export</argument>
-                    <argument>${gpg.keyId}</argument>
+                    <argument>${gpg.key.id}</argument>
                   </arguments>
                 </configuration>
               </execution>
