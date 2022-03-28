@@ -3,11 +3,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    if: ${{ false }}
-    uses: ./.github/workflows/reusable-build.yml
+  #TODO uncomment this after first successful release
+  #build:
+  #  uses: ./.github/workflows/reusable-build.yml
 
   release:
+    #TODO uncomment this after first successful release
     #needs: build
     runs-on: ubuntu-latest
     steps:
@@ -18,6 +19,16 @@ jobs:
         with:
           distribution: adopt
           java-version: 8
+
+      - name: Restore cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.cache/bower
+          key: release-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            release-
 
       - name: Check that no javascript snapshot dependencies are used
         run: |
@@ -50,58 +61,39 @@ jobs:
           VERSION: ${{ steps.set-version.outputs.release-version }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          sed -ri s/glowroot-[0-9]+.[0-9]+.[0-9]+\(-beta\(\.[0-9]+\)?\)?-dist.zip/glowroot-$VERSION-dist.zip/g README.md
-          sed -ri s#https://github.com/glowroot/glowroot/releases/download/v[0-9]+.[0-9]+.[0-9]+\(-beta\(\.[0-9]+\)?\)?/#https://github.com/glowroot/glowroot/releases/download/v$VERSION/# README.md
+          sed -ri "s/glowroot-[0-9]+.[0-9]+.[0-9]+(-beta(\.[0-9]+)?)?-dist.zip/glowroot-$VERSION-dist.zip/g" README.md
+          sed -ri "s#https://github.com/glowroot/glowroot/releases/download/v[0-9]+.[0-9]+.[0-9]+(-beta(\.[0-9]+)?)?/#https://github.com/glowroot/glowroot/releases/download/v$VERSION/#" README.md
 
           mvn versions:set -DgenerateBackupPoms=false -DnewVersion=$VERSION
 
           git commit -a -m "Release version $VERSION"
-          git push origin main
+          git push origin
 
       - name: Install gpg secret key
-        if: ${{ false }}
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
         run: |
-          echo "$GPG_PRIVATE_KEY" | gpg --import
+          echo "$GPG_PRIVATE_KEY" | gpg --import --batch
 
       - name: Release
-        if: ${{ false }}
         env:
-          VERSION: ${{ steps.set-version.outputs.release-version }}
-          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: |
           # javadoc is needed here since deploy :glowroot-agent attaches the javadoc from :glowroot-agent-core
           mvn clean install -pl :glowroot-agent,:glowroot-central -am \
                             -Pjavadoc \
                             -DskipTests
 
-          # gpg.keyId is needed for the rpm signing maven plugin
+          # gpg_key_id is needed for signing the rpm for the yum repository (see glowroot-central/pom.xml)
+          gpg_key_id=$(gpg --list-keys --with-colons | grep ^pub | cut -d':' -f5 | tail -c 8)
           mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-central \
                            -Pjavadoc \
                            -Prelease \
                            -Dglowroot.build.commit=$(git rev-parse HEAD) \
                            -DskipTests \
-                           -Dgpg.keyId=$GPG_KEY_ID
-
-      - name: Update glowroot-central yum repository
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-1
-        run: |
-          aws s3 sync central/target/yum s3://glowroot.org/yum
-
-      - name: Update glowroot-central Docker Hub image
-        env:
-          VERSION: ${{ steps.set-version.outputs.release-version }}
-        run: |
-          docker build -t glowroot/glowroot-central:$VERSION .
-          docker push glowroot/glowroot-central:$VERSION
-          if [[ ! $VERSION =~ *beta* ]]; then
-            docker tag glowroot/glowroot-central:$VERSION glowroot/glowroot-central:latest
-            docker push glowroot/glowroot-central:latest
-          fi
+                           -Dgpg.key.id=$gpg_key_id \
+                           --settings .github/scripts/settings.xml
 
       - name: Create GitHub release
         env:
@@ -117,7 +109,6 @@ jobs:
           gh release create --target $GITHUB_REF_NAME \
                             --title "Version $VERSION" \
                             --generate-notes \
-                            --discussion-category announcements \
                             $prerelease_option \
                             --draft \
                             v$VERSION \
@@ -135,18 +126,37 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [[ ! $VERSION =~ *beta* ]]; then
-            sed -ri s/glowroot-[0-9]+.[0-9]+.[0-9]+-dist/glowroot-$VERSION-dist/g "Agent-Installation-(with-Embedded-Collector).md"
-            sed -ri s#https://github.com/glowroot/glowroot/releases/download/v[0-9]+.[0-9]+.[0-9]+/#https://github.com/glowroot/glowroot/releases/download/v$VERSION/# "Agent-Installation-(with-Embedded-Collector).md"
+            sed -ri "s/glowroot-[0-9]+.[0-9]+.[0-9]+-dist/glowroot-$VERSION-dist/g" "Agent-Installation-(with-Embedded-Collector).md"
+            sed -ri "s#https://github.com/glowroot/glowroot/releases/download/v[0-9]+.[0-9]+.[0-9]+/#https://github.com/glowroot/glowroot/releases/download/v$VERSION/#" "Agent-Installation-(with-Embedded-Collector).md"
 
-            sed -ri s/glowroot-[0-9]+.[0-9]+.[0-9]+-dist/glowroot-$VERSION-dist/g "Agent-Installation-(for-Central-Collector).md"
-            sed -ri s#https://github.com/glowroot/glowroot/releases/download/v[0-9]+.[0-9]+.[0-9]+/#https://github.com/glowroot/glowroot/releases/download/v$VERSION/# "Agent-Installation-(for-Central-Collector).md"
+            sed -ri "s/glowroot-[0-9]+.[0-9]+.[0-9]+-dist/glowroot-$VERSION-dist/g" "Agent-Installation-(for-Central-Collector).md"
+            sed -ri "s#https://github.com/glowroot/glowroot/releases/download/v[0-9]+.[0-9]+.[0-9]+/#https://github.com/glowroot/glowroot/releases/download/v$VERSION/#" "Agent-Installation-(for-Central-Collector).md"
 
-            sed -ri s/glowroot-central-[0-9]+.[0-9]+.[0-9]+-dist/glowroot-central-$VERSION-dist/g Central-Collector-Installation.md
-            sed -ri s#https://github.com/glowroot/glowroot/releases/download/v[0-9]+.[0-9]+.[0-9]+/#https://github.com/glowroot/glowroot/releases/download/v$VERSION/# Central-Collector-Installation.md
-            sed -ri s#glowroot/glowroot-central:[0-9]+.[0-9]+.[0-9]+#glowroot/glowroot-central:$VERSION#g Central-Collector-Installation.md
+            sed -ri "s/glowroot-central-[0-9]+.[0-9]+.[0-9]+-dist/glowroot-central-$VERSION-dist/g" Central-Collector-Installation.md
+            sed -ri "s#https://github.com/glowroot/glowroot/releases/download/v[0-9]+.[0-9]+.[0-9]+/#https://github.com/glowroot/glowroot/releases/download/v$VERSION/#" Central-Collector-Installation.md
+            sed -ri "s#glowroot/glowroot-central:[0-9]+.[0-9]+.[0-9]+#glowroot/glowroot-central:$VERSION#g" Central-Collector-Installation.md
 
             sed -ri "s#https://github.com/glowroot/glowroot/blob/v[0-9]+.[0-9]+.[0-9]+/central/src/main/resources/jgroups-#https://github.com/glowroot/glowroot/blob/v$VERSION/central/src/main/resources/jgroups-#g" Central-Collector-Cluster.md
 
             git commit -a -m "Release version $VERSION"
-            git push origin main
+            git push origin
           fi
+
+      - name: Update glowroot-central Docker Hub image
+        env:
+          VERSION: ${{ steps.set-version.outputs.release-version }}
+        run: |
+          docker build -t glowroot/glowroot-central:$VERSION .
+          docker push glowroot/glowroot-central:$VERSION
+          if [[ ! $VERSION =~ *beta* ]]; then
+            docker tag glowroot/glowroot-central:$VERSION glowroot/glowroot-central:latest
+            docker push glowroot/glowroot-central:latest
+          fi
+
+      - name: Update glowroot-central yum repository
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+        run: |
+          aws s3 sync central/target/yum s3://glowroot.org/yum
