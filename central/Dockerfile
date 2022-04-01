@@ -1,4 +1,4 @@
-FROM openjdk:17.0.2-jdk-bullseye as builder
+FROM openjdk:17-jdk-bullseye as builder
 
 COPY target/glowroot-central-*.zip /tmp/glowroot-central.zip
 RUN useradd --no-log-init -r -g root glowroot
