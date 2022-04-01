@@ -90,13 +90,13 @@
   </scm>
 
   <properties>
-    <grpc.version>1.41.0</grpc.version>
-    <protobuf.version>3.18.1</protobuf.version>
-    <protoc.version>3.18.1</protoc.version>
+    <grpc.version>1.44.1</grpc.version>
+    <protobuf.version>3.19.4</protobuf.version>
+    <protoc.version>3.19.4</protoc.version>
     <!-- need to stick to netty version that is used by grpc version above -->
-    <netty.version>4.1.52.Final</netty.version>
-    <logback.version>1.2.6</logback.version>
-    <slf4j.version>1.7.32</slf4j.version>
+    <netty.version>4.1.72.Final</netty.version>
+    <logback.version>1.2.11</logback.version>
+    <slf4j.version>1.7.36</slf4j.version>
     <immutables.version>2.8.8</immutables.version>
     <checker.version>3.18.1</checker.version>
     <jmh.version>1.23</jmh.version>
@@ -285,18 +285,11 @@
             <configuration>
               <rules>
                 <requireJavaVersion>
-                  <!-- immutables annotation processors require java 7+ -->
-                  <version>[1.7,)</version>
+                  <version>[1.8,)</version>
                 </requireJavaVersion>
                 <requireMavenVersion>
-                  <version>[3.3.1,)</version>
+                  <version>[3.6.1,)</version>
                 </requireMavenVersion>
-                <requireUpperBoundDeps>
-                  <excludes>
-                    <!-- Exclude until infinispan-core 10.0 is released -->
-                    <exclude>org.jgroups:jgroups</exclude>
-                  </excludes>
-                </requireUpperBoundDeps>
               </rules>
             </configuration>
           </execution>

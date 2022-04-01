@@ -1,4 +1,4 @@
-FROM openjdk:8 as builder
+FROM openjdk:17-jdk-bullseye as builder
 
 COPY target/glowroot-central-*.zip /tmp/glowroot-central.zip
 RUN useradd --no-log-init -r -g root glowroot
@@ -6,7 +6,7 @@ RUN unzip -d /tmp /tmp/glowroot-central.zip \
     && chown -R glowroot:root /tmp/glowroot-central \
     && chmod -R g+rw /tmp/glowroot-central
 
-FROM openjdk:8
+FROM openjdk:17-jdk-bullseye
 
 COPY docker-entrypoint.sh /usr/local/bin/
 COPY glowroot-central.sh /usr/local/bin/
@@ -24,7 +24,7 @@ WORKDIR /usr/share/glowroot-central
 
 USER glowroot:root
 
-ENV GLOWROOT_OPTS -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap
+ENV GLOWROOT_OPTS ""
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 

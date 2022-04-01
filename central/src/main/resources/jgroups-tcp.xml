@@ -1,13 +1,15 @@
 <!-- based on https://github.com/belaban/JGroups/blob/JGroups-4.0.3.Final/conf/tcp.xml -->
+<!-- and https://github.com/belaban/JGroups/blob/master/conf/sym-encrypt.xml -->
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups-4.2.xsd">
 
   <TCP bind_addr="${jgroups.localAddress}"
        bind_port="${jgroups.localPort}"
        recv_buf_size="${jgroups.recvBufSize:130k}"
        send_buf_size="${jgroups.sendBufSize:130k}"
        max_bundle_size="64K"
+       enable_diagnostics="false"
        sock_conn_timeout="300"
        thread_pool.min_threads="${jgroups.minThreads:0}"
        thread_pool.max_threads="${jgroups.maxThreads:20}"
@@ -21,15 +23,21 @@
   <FD timeout="3000" max_tries="3" />
   <VERIFY_SUSPECT timeout="1500" />
   <BARRIER />
+  <!-- Symmetric encryption with a keystore -->
+  <SYM_ENCRYPT
+          provider="SunJCE"
+          sym_algorithm="${jgroups.symEncryptAlgorithm:AES/CBC/PKCS5Padding}"
+          sym_iv_length="16"
+          keystore_name="${jgroups.symEncryptKeystoreLocation}"
+          store_password="${jgroups.symEncryptKeystorePassword}"
+          alias="${jgroups.symEncryptKeyAlias}"
+          key_password="${jgroups.symEncryptKeyPassword}"
+  />
   <pbcast.NAKACK2 use_mcast_xmit="false"
                   discard_delivered_msgs="true" />
   <UNICAST3 />
   <pbcast.STABLE desired_avg_gossip="50000"
                  max_bytes="4M" />
-  <SASL mech="DIGEST-MD5"
-        server_name="glowroot"
-        client_callback_handler_class="org.glowroot.central.SaslCallbackHandler"
-        server_callback_handler_class="org.glowroot.central.SaslCallbackHandler" />
   <pbcast.GMS print_local_addr="false"
               join_timeout="${jgroups.joinTimeout:2000}" />
   <MFC max_credits="2M"
