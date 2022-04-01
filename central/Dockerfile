@@ -6,7 +6,7 @@ RUN unzip -d /tmp /tmp/glowroot-central.zip \
     && chown -R glowroot:root /tmp/glowroot-central \
     && chmod -R g+rw /tmp/glowroot-central
 
-FROM openjdk:17.0.2-jdk-bullseye
+FROM openjdk:17-jdk-bullseye
 
 COPY docker-entrypoint.sh /usr/local/bin/
 COPY glowroot-central.sh /usr/local/bin/
