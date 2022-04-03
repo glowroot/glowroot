@@ -3,13 +3,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  #TODO uncomment this after first successful release
-  #build:
-  #  uses: ./.github/workflows/reusable-build.yml
+  build:
+    uses: ./.github/workflows/reusable-build.yml
 
   release:
-    #TODO uncomment this after first successful release
-    #needs: build
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
