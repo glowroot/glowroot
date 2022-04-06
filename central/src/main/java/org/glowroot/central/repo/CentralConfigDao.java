@@ -19,10 +19,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -99,8 +96,8 @@ class CentralConfigDao {
             .setString(i++, newValue)
             .setString(i++, key)
             .setString(i++, currValue);
-        results = session.update(boundStatement);
-        row = checkNotNull(results.one());
+        AsyncResultSet asyncresults = session.update(boundStatement);
+        row = checkNotNull(asyncresults.one());
         boolean applied = row.getBoolean("[applied]");
         if (applied) {
             centralConfigCache.invalidate(key);
@@ -135,7 +132,7 @@ class CentralConfigDao {
         BoundStatement boundStatement = insertIfNotExistsPS.bind()
             .setString(i++, key)
             .setString(i++, initialValue);
-        ResultSet results = session.update(boundStatement);
+        AsyncResultSet results = session.update(boundStatement);
         Row row = checkNotNull(results.one());
         boolean applied = row.getBoolean("[applied]");
         if (applied) {

@@ -25,7 +25,6 @@ import java.util.concurrent.Semaphore;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.*;
@@ -43,6 +42,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
+import com.spotify.futures.CompletableFuturesExtra;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,7 +153,7 @@ public class Session {
         writeAsync(statement).get();
     }
 
-    public ResultSet update(Statement<?> statement) throws Exception {
+    public AsyncResultSet update(Statement<?> statement) throws Exception {
         if (statement instanceof BoundStatement) {
             BoundStatement boundStatement = (BoundStatement) statement;
             PreparedStatement preparedStatement = boundStatement.getPreparedStatement();
@@ -202,7 +202,7 @@ public class Session {
     }
 
     public ListenableFuture<ResultSet> readAsync(Statement<?> statement) throws Exception {
-        return throttleRead(() -> wrappedSession.executeAsync(statement));
+        return throttleRead(() -> CompletableFuturesExtra.toListenableFuture(wrappedSession.executeAsync(statement)));
     }
 
     public ListenableFuture<ResultSet> writeAsync(Statement<?> statement) throws Exception {
@@ -214,12 +214,12 @@ public class Session {
             // for now, need to record metrics in the same method because CassandraWriteMetrics
             // relies on some thread locals
             cassandraWriteMetrics.recordMetrics(finalStatement);
-            return wrappedSession.executeAsync(finalStatement);
+            return CompletableFuturesExtra.toListenableFuture(wrappedSession.executeAsync(finalStatement));
         });
     }
 
-    private ListenableFuture<ResultSet> updateAsync(Statement<?> statement) throws Exception {
-        return throttleWrite(() -> wrappedSession.executeAsync(statement));
+    private ListenableFuture<AsyncResultSet> updateAsync(Statement<?> statement) throws Exception {
+        return throttleWrite(() -> CompletableFuturesExtra.toListenableFuture(wrappedSession.executeAsync(statement)));
     }
 
     public String getKeyspaceName() {
@@ -360,7 +360,7 @@ public class Session {
         inRollupThread.set(value);
     }
 
-    private ListenableFuture<ResultSet> throttleRead(DoUnderThrottle doUnderThrottle)
+    private ListenableFuture<AsyncResultSet> throttleRead(DoUnderThrottle doUnderThrottle)
             throws Exception {
         if (inRollupThread.get()) {
             return throttle(doUnderThrottle, rollupQuerySemaphore);
@@ -369,7 +369,7 @@ public class Session {
         }
     }
 
-    private ListenableFuture<ResultSet> throttleWrite(DoUnderThrottle doUnderThrottle)
+    private ListenableFuture<AsyncResultSet> throttleWrite(DoUnderThrottle doUnderThrottle)
             throws Exception {
         if (inRollupThread.get()) {
             return throttle(doUnderThrottle, rollupQuerySemaphore);
@@ -378,20 +378,20 @@ public class Session {
         }
     }
 
-    private static ListenableFuture<ResultSet> throttle(DoUnderThrottle doUnderThrottle,
+    private static ListenableFuture<AsyncResultSet> throttle(DoUnderThrottle doUnderThrottle,
             Semaphore overallSemaphore) throws Exception {
         overallSemaphore.acquire();
-        SettableFuture<ResultSet> outerFuture = SettableFuture.create();
-        ResultSetFuture innerFuture;
+        SettableFuture<AsyncResultSet> outerFuture = SettableFuture.create();
+        ListenableFuture<AsyncResultSet> innerFuture;
         try {
             innerFuture = doUnderThrottle.execute();
         } catch (Throwable t) {
             overallSemaphore.release();
             throw t;
         }
-        Futures.addCallback(innerFuture, new FutureCallback<ResultSet>() {
+        Futures.addCallback(innerFuture, new FutureCallback<AsyncResultSet>() {
             @Override
-            public void onSuccess(ResultSet result) {
+            public void onSuccess(AsyncResultSet result) {
                 overallSemaphore.release();
                 outerFuture.set(result);
             }
@@ -474,6 +474,6 @@ public class Session {
     }
 
     private interface DoUnderThrottle {
-        ResultSetFuture execute();
+        ListenableFuture<AsyncResultSet> execute();
     }
 }

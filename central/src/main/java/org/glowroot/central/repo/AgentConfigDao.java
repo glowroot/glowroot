@@ -22,10 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.base.Optional;
 import com.google.protobuf.ByteString;
@@ -178,8 +175,8 @@ public class AgentConfigDao {
             }
             boundStatement = boundStatement.setString(i++, agentRollupId)
                 .setByteBuffer(i++, ByteBuffer.wrap(currValue.toByteArray()));
-            results = session.update(boundStatement);
-            row = checkNotNull(results.one());
+            AsyncResultSet asyncresults = session.update(boundStatement);
+            row = checkNotNull(asyncresults.one());
             boolean applied = row.getBoolean("[applied]");
             if (applied) {
                 agentConfigCache.invalidate(agentRollupId);
