@@ -667,6 +667,11 @@ public class CentralModule {
         if (!Strings.isNullOrEmpty(cassandraMaxConcurrentQueries)) {
             builder.cassandraMaxConcurrentQueries(Integer.parseInt(cassandraMaxConcurrentQueries));
         }
+        String cassandraGcGraceSeconds =
+                properties.get("glowroot.cassandra.gcGraceSeconds");
+        if (!Strings.isNullOrEmpty(cassandraGcGraceSeconds)) {
+            builder.cassandraGcGraceSeconds(Integer.parseInt(cassandraGcGraceSeconds));
+        }
         String cassandraPoolTimeoutMillis = properties.get("glowroot.cassandra.pool.timeoutMillis");
         if (!Strings.isNullOrEmpty(cassandraPoolTimeoutMillis)) {
             builder.cassandraPoolTimeoutMillis(Integer.parseInt(cassandraPoolTimeoutMillis));
