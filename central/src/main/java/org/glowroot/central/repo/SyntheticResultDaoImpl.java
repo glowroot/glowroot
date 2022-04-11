@@ -26,10 +26,7 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -323,7 +320,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
             .setString(i++, syntheticMonitorId)
             .setInstant(i++, Instant.ofEpochMilli(from))
             .setInstant(i++, Instant.ofEpochMilli(to));
-        ListenableFuture<ResultSet> future = session.readAsyncWarnIfNoRows(boundStatement,
+        ListenableFuture<ResultSet> future = session.readWarnIfNoRows(boundStatement,
                 "no synthetic result table records found for agentRollupId={},"
                         + " syntheticMonitorId={}, from={}, to={}, level={}",
                 agentRollupId, syntheticMonitorId, from, to, rollupLevel);

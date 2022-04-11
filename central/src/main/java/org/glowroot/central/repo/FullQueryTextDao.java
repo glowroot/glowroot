@@ -24,10 +24,7 @@ import java.util.concurrent.Future;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.Futures;
@@ -155,10 +152,10 @@ class FullQueryTextDao {
             throws Exception {
         BoundStatement boundStatement = readTtlPS.bind()
             .setString(0, fullTextSha1);
-        ListenableFuture<ResultSet> future = session.readAsync(boundStatement);
-        return MoreFutures.transformAsync(future, asyncExecutor, new DoWithResults() {
+        ListenableFuture<AsyncResultSet> future = session.readAsync(boundStatement);
+        return MoreFutures.transformAsync(future, asyncExecutor, new MoreFutures.DoWithAsyncResults() {
             @Override
-            public ListenableFuture<?> execute(ResultSet results) throws Exception {
+            public ListenableFuture<?> execute(AsyncResultSet results) throws Exception {
                 Row row = results.one();
                 int ttl = getTTL();
                 if (row == null) {

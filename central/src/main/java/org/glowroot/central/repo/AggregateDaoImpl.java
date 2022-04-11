@@ -29,10 +29,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.base.Strings;
 import com.google.common.collect.ArrayListMultimap;
@@ -1177,7 +1174,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 checkNotNull(readTransactionForRollupPS.get(errorSummaryTable))
                         .get(query.rollupLevel()).bind();
         boundStatement = bindQuery(boundStatement, rollup.agentRollupId(), query);
-        ListenableFuture<AsyncResultSet> future = session.readAsync(boundStatement);
+        ListenableFuture<ResultSet> future = Futures.immediateFuture(session.read(boundStatement));
         return MoreFutures.rollupAsync(future, asyncExecutor, new DoRollup() {
             @Override
             public ListenableFuture<?> execute(Iterable<Row> rows) throws Exception {
@@ -1612,11 +1609,11 @@ public class AggregateDaoImpl implements AggregateDao {
                     checkNotNull(readTransactionForRollupFromChildPS.get(table)).bind();
             boundStatement = bindQueryForRollupFromChild(boundStatement, childAgentRollupId, query);
             if (warnIfNoResults) {
-                futures.put(childAgentRollupId, session.readAsyncWarnIfNoRows(boundStatement,
+                futures.put(childAgentRollupId, session.readWarnIfNoRows(boundStatement,
                         "no summary table records found for agentRollupId={}, query={}",
                         childAgentRollupId, query));
             } else {
-                futures.put(childAgentRollupId, session.readAsync(boundStatement));
+                futures.put(childAgentRollupId, Futures.immediateFuture(session.read(boundStatement)));
             }
         }
         return futures;
@@ -1997,11 +1994,11 @@ public class AggregateDaoImpl implements AggregateDao {
         }
         boundStatement = bindQuery(boundStatement, agentRollupId, query);
         if (warnIfNoResults) {
-            return session.readAsyncWarnIfNoRows(boundStatement,
+            return session.readWarnIfNoRows(boundStatement,
                     "no {} records found for agentRollupId={}, query={}", table.partialName(),
                     agentRollupId, query);
         } else {
-            return session.readAsync(boundStatement);
+            return Futures.immediateFuture(session.read(boundStatement));
         }
     }
 
@@ -2015,11 +2012,11 @@ public class AggregateDaoImpl implements AggregateDao {
         }
         boundStatement = bindQueryForRollupFromChild(boundStatement, childAgentRollupId, query);
         if (warnIfNoResults) {
-            return session.readAsyncWarnIfNoRows(boundStatement,
+            return session.readWarnIfNoRows(boundStatement,
                     "no {} records found for agentRollupId={}, query={}", table.partialName(),
                     childAgentRollupId, query);
         } else {
-            return session.readAsync(boundStatement);
+            return Futures.immediateFuture(session.read(boundStatement));
         }
     }
 

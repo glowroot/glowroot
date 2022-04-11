@@ -455,7 +455,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                 .setString(i++, childAgentRollupId)
                 .setString(i++, gaugeName)
                 .setInstant(i++, Instant.ofEpochMilli(captureTime));
-            futures.add(session.readAsyncWarnIfNoRows(boundStatement, "no gauge value table"
+            futures.add(session.readWarnIfNoRows(boundStatement, "no gauge value table"
                     + " records found for agentRollupId={}, gaugeName={}, captureTime={}, level={}",
                     childAgentRollupId, gaugeName, captureTime, rollupLevel));
         }
@@ -477,7 +477,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             .setString(i++, gaugeName)
             .setInstant(i++, Instant.ofEpochMilli(from))
             .setInstant(i++, Instant.ofEpochMilli(to));
-        ListenableFuture<ResultSet> future = session.readAsyncWarnIfNoRows(boundStatement,
+        ListenableFuture<ResultSet> future = session.readWarnIfNoRows(boundStatement,
                 "no gauge value table records found for agentRollupId={}, gaugeName={}, from={},"
                         + " to={}, level={}",
                 agentRollupId, gaugeName, from, to, rollupLevel);

@@ -876,8 +876,8 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = bindTraceQuery(boundStatement, agentRollupId, query, false);
             boundStatementPartial = bindTraceQueryPartial(boundStatementPartial, agentRollupId, query, false, cassandra2x);
         }
-        Future<ResultSet> future = session.readAsync(boundStatement);
-        Future<ResultSet> futurePartial = session.readAsync(boundStatementPartial);
+        Future<AsyncResultSet> future = session.readAsync(boundStatement);
+        Future<AsyncResultSet> futurePartial = session.readAsync(boundStatementPartial);
         return future.get().one().getLong(0) + futurePartial.get().one().getLong(0);
     }
 
@@ -898,10 +898,11 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = bindTraceQuery(boundStatement, agentRollupId, query, false);
             boundStatementPartial = bindTraceQueryPartial(boundStatementPartial, agentRollupId, query, false, cassandra2x);
         }
-        Future<ResultSet> future = session.readAsync(boundStatement);
-        Future<ResultSet> futurePartial = session.readAsync(boundStatementPartial);
-        List<TracePoint> completedPoints = processPoints(future.get(), filter, false, false);
-        List<TracePoint> partialPoints = processPoints(futurePartial.get(), filter, true, false);
+        // TODO: consider using async here
+        ResultSet future = session.read(boundStatement);
+        ResultSet futurePartial = session.read(boundStatementPartial);
+        List<TracePoint> completedPoints = processPoints(future, filter, false, false);
+        List<TracePoint> partialPoints = processPoints(futurePartial, filter, true, false);
         return combine(completedPoints, partialPoints, limit);
     }
 

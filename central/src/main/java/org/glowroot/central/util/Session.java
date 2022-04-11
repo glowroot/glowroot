@@ -33,10 +33,8 @@ import com.datastax.oss.driver.api.core.servererrors.InvalidConfigurationInQuery
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import com.google.common.base.Function;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -120,9 +118,7 @@ public class Session {
         if (!query.startsWith("select ")) {
             throw new IllegalStateException("Unexpected read query: " + query);
         }
-        // do not use session.execute() because that calls getUninterruptibly() which can cause
-        // central shutdown to timeout while waiting for executor service to shutdown
-        return readAsync(SimpleStatement.newInstance(query)).get();
+        return wrappedSession.execute(SimpleStatement.newInstance(query));
     }
 
     public ResultSet read(Statement<?> statement) throws Exception {
@@ -134,9 +130,7 @@ public class Session {
                 throw new IllegalStateException("Unexpected read query: " + queryString);
             }
         }
-        // do not use session.execute() because that calls getUninterruptibly() which can cause
-        // central shutdown to timeout while waiting for executor service to shutdown
-        return readAsync(statement).get();
+        return wrappedSession.execute(statement);
     }
 
     public void write(Statement<?> statement) throws Exception {
@@ -170,42 +164,49 @@ public class Session {
         return updateAsync(statement).get();
     }
 
-    public ListenableFuture<ResultSet> readAsyncWarnIfNoRows(Statement<?> statement,
+    public ListenableFuture<AsyncResultSet> readAsyncWarnIfNoRows(Statement<?> statement,
             String warningMessage, Object... warningArguments) throws Exception {
         return Futures.transform(readAsync(statement),
-                new Function<ResultSet, ResultSet>() {
-                    @Override
-                    public ResultSet apply(ResultSet results) {
-                        if (results.isExhausted()) {
-                            logger.warn(warningMessage, warningArguments);
-                        }
-                        return results;
+                results -> {
+                    if (!results.currentPage().iterator().hasNext()) {
+                        logger.warn(warningMessage, warningArguments);
                     }
+                    return results;
                 },
                 MoreExecutors.directExecutor());
     }
 
-    public ListenableFuture<ResultSet> readAsyncFailIfNoRows(Statement<?> statement,
+    //TODO: consider replacing this method by an async one
+    public ListenableFuture<ResultSet> readWarnIfNoRows(Statement<?> statement,
+            String warningMessage, Object... warningArguments) throws Exception {
+        return Futures.transform(Futures.immediateFuture(read(statement)),
+                results -> {
+                    if (!results.iterator().hasNext()) {
+                        logger.warn(warningMessage, warningArguments);
+                    }
+                    return results;
+                },
+                MoreExecutors.directExecutor());
+    }
+
+    public ListenableFuture<AsyncResultSet> readAsyncFailIfNoRows(Statement<?> statement,
             String errorMessage) throws Exception {
         return Futures.transformAsync(readAsync(statement),
-                new AsyncFunction<ResultSet, ResultSet>() {
-                    @Override
-                    public ListenableFuture<ResultSet> apply(ResultSet results) {
-                        if (results.isExhausted()) {
-                            return Futures.immediateFailedFuture(new Exception(errorMessage));
-                        } else {
-                            return Futures.immediateFuture(results);
-                        }
+                results -> {
+                    if (!results.currentPage().iterator().hasNext()) {
+                        return Futures.immediateFailedFuture(new Exception(errorMessage));
+                    } else {
+                        return Futures.immediateFuture(results);
                     }
                 },
                 MoreExecutors.directExecutor());
     }
 
-    public ListenableFuture<ResultSet> readAsync(Statement<?> statement) throws Exception {
+    public ListenableFuture<AsyncResultSet> readAsync(Statement<?> statement) throws Exception {
         return throttleRead(() -> CompletableFuturesExtra.toListenableFuture(wrappedSession.executeAsync(statement)));
     }
 
-    public ListenableFuture<ResultSet> writeAsync(Statement<?> statement) throws Exception {
+    public ListenableFuture<AsyncResultSet> writeAsync(Statement<?> statement) throws Exception {
         if (statement.getConsistencyLevel() == null && writeConsistencyLevel != null) {
             statement = statement.setConsistencyLevel(writeConsistencyLevel);
         }

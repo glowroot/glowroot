@@ -107,10 +107,10 @@ public class AgentDisplayDao implements AgentDisplayRepository {
         public ListenableFuture<String> load(String agentRollupId) throws Exception {
             BoundStatement boundStatement = readPS.bind()
                 .setString(0, agentRollupId);
-            ListenableFuture<ResultSet> future = session.readAsync(boundStatement);
-            return Futures.transform(future, new Function<ResultSet, String>() {
+            ListenableFuture<AsyncResultSet> future = session.readAsync(boundStatement);
+            return Futures.transform(future, new Function<AsyncResultSet, String>() {
                 @Override
-                public String apply(ResultSet results) {
+                public String apply(AsyncResultSet results) {
                     Row row = results.one();
                     if (row == null) {
                         return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);

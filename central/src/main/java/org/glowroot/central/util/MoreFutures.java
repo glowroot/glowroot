@@ -23,6 +23,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
 import com.datastax.oss.driver.api.core.DriverException;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.google.common.util.concurrent.AsyncFunction;
@@ -108,7 +109,7 @@ public class MoreFutures {
                     @SuppressWarnings("unchecked")
                     public ListenableFuture</*@Nullable*/ Object> apply(ResultSet results)
                             throws Exception {
-                        if (results.isExhausted()) {
+                        if (!results.iterator().hasNext()) {
                             return Futures.immediateFuture(null);
                         }
                         return (ListenableFuture</*@Nullable*/ Object>) function.execute(results);
@@ -136,13 +137,13 @@ public class MoreFutures {
                 });
     }
 
-    public static ListenableFuture<?> transformAsync(ListenableFuture<ResultSet> input,
-            Executor asyncExecutor, DoWithResults function) {
+    public static ListenableFuture<?> transformAsync(ListenableFuture<AsyncResultSet> input,
+            Executor asyncExecutor, DoWithAsyncResults function) {
         return transformAsync(input, asyncExecutor,
-                new AsyncFunction<ResultSet, /*@Nullable*/ Object>() {
+                new AsyncFunction<AsyncResultSet, /*@Nullable*/ Object>() {
                     @Override
                     @SuppressWarnings("unchecked")
-                    public ListenableFuture</*@Nullable*/ Object> apply(ResultSet results)
+                    public ListenableFuture</*@Nullable*/ Object> apply(AsyncResultSet results)
                             throws Exception {
                         return (ListenableFuture</*@Nullable*/ Object>) function.execute(results);
                     }
@@ -184,6 +185,10 @@ public class MoreFutures {
 
     public interface DoWithResults {
         ListenableFuture<?> execute(ResultSet results) throws Exception;
+    }
+
+    public interface DoWithAsyncResults {
+        ListenableFuture<?> execute(AsyncResultSet results) throws Exception;
     }
 
     public interface DoRollup {
