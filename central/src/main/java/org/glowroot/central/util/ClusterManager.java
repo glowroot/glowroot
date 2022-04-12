@@ -129,6 +129,7 @@ public abstract class ClusterManager {
                         .allowList()
                             .addRegexps(
                                     "org\\.glowroot\\.central\\..*",
+                                    "org\\.glowroot\\.ui\\..*",
                                     "org\\.glowroot\\.wire\\.api\\.model\\..*",
                                     "com\\.google\\.common\\.collect\\.Immutable.*",
                                     "com\\.google\\.protobuf\\..*"
