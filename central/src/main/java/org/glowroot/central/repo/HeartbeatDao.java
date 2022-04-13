@@ -18,7 +18,7 @@ package org.glowroot.central.repo;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
@@ -55,7 +55,7 @@ public class HeartbeatDao {
 
     public void store(String agentId) throws Exception {
         List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);
-        List<Future<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (String agentRollupId : agentRollupIds) {
             int i = 0;
             BoundStatement boundStatement = insertPS.bind()

@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.HashMultimap;
@@ -314,7 +314,7 @@ public class Tools {
                 + " where agent_rollup = ? and transaction_type = ? and capture_time "
                 + thresholdComparator + " ?");
         int count = 0;
-        List<Future<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (TtPartitionKey partitionKey : partitionKeys) {
             int i = 0;
             BoundStatement boundStatement = deletePS.bind()
@@ -335,7 +335,7 @@ public class Tools {
                 + " where agent_rollup = ? and transaction_type = ? and transaction_name = ? and"
                 + " capture_time " + thresholdComparator + " ?");
         int count = 0;
-        List<Future<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (TnPartitionKey partitionKey : partitionKeys) {
             int i = 0;
             BoundStatement boundStatement = deletePS.bind()
@@ -357,7 +357,7 @@ public class Tools {
                 + " where agent_rollup = ? and gauge_name = ? and capture_time "
                 + thresholdComparator + " ?");
         int count = 0;
-        List<Future<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (GaugeValuePartitionKey partitionKey : partitionKeys) {
             int i = 0;
             BoundStatement boundStatement = deletePS.bind()

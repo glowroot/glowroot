@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.DoubleAccumulator;
 import java.util.function.Function;
@@ -171,7 +170,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
             boundStatement = boundStatement.setByteBuffer(i++, Messages.toByteBuffer(ImmutableList.of(errorInterval)));
         }
         boundStatement = boundStatement.setInt(i++, adjustedTTL);
-        List<Future<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         futures.add(session.writeAsync(boundStatement).toCompletableFuture());
         futures.addAll(syntheticMonitorIdDao.insert(agentRollupId, captureTime, syntheticMonitorId,
                 syntheticMonitorDisplay));

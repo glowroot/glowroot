@@ -36,8 +36,6 @@ import javax.annotation.concurrent.GuardedBy;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Ticker;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.machinepublishers.jbrowserdriver.JBrowserDriver;
 import com.machinepublishers.jbrowserdriver.ProxyConfig;
 import com.machinepublishers.jbrowserdriver.RequestHeaders;
@@ -160,7 +158,7 @@ class SyntheticMonitorService implements Runnable {
 
     private final ExecutorService mainLoopExecutor;
     private final ExecutorService workerExecutor;
-    private final ListeningExecutorService subWorkerExecutor;
+    private final ExecutorService subWorkerExecutor;
 
     private final Set<SyntheticMonitorUniqueKey> activeSyntheticMonitors =
             Sets.newConcurrentHashSet();
@@ -215,8 +213,7 @@ class SyntheticMonitorService implements Runnable {
                 "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)"
                         + " Chrome/45.0.2454.85 Safari/537.36 GlowrootCentral" + shortVersion);
         // there is one subworker per worker, so using same max
-        subWorkerExecutor = MoreExecutors.listeningDecorator(
-                MoreExecutors2.newCachedThreadPool("Synthetic-Monitor-Sub-Worker-%d"));
+        subWorkerExecutor = MoreExecutors2.newCachedThreadPool("Synthetic-Monitor-Sub-Worker-%d");
         workerExecutor = MoreExecutors2.newCachedThreadPool("Synthetic-Monitor-Worker-%d");
         mainLoopExecutor = MoreExecutors2.newSingleThreadExecutor("Synthetic-Monitor-Main-Loop");
         mainLoopExecutor.execute(castInitialized(this));

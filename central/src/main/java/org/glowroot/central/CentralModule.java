@@ -26,11 +26,7 @@ import java.security.CodeSource;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -55,7 +51,6 @@ import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.RateLimiter;
@@ -357,7 +352,7 @@ public class CentralModule {
         }
         try {
             ExecutorService executor = Executors.newCachedThreadPool();
-            List<Future<?>> futures = new ArrayList<>();
+            List<CompletableFuture<?>> futures = new ArrayList<>();
             // gracefully close down external inputs first (ui and grpc)
             futures.add(submit(executor, () -> uiModule.close(jvmTermination)));
             // updateAgentConfigIfNeededService depends on grpc downstream, so must be shutdown
@@ -985,16 +980,19 @@ public class CentralModule {
         SLF4JBridgeHandler.install();
     }
 
-    private static Future<?> submit(ExecutorService executor, ShutdownFunction fn) {
-        return executor.submit(new Callable</*@Nullable*/ Void>() {
-            @Override
-            public @Nullable Void call() throws Exception {
+    private static CompletableFuture<?> submit(ExecutorService executor, ShutdownFunction fn) {
+        return CompletableFuture.runAsync(() -> {
+            try {
                 fn.run();
-                return null;
+            } catch (RuntimeException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
-        });
+        }, executor);
     }
 
+    @FunctionalInterface
     private interface ShutdownFunction {
         void run() throws Exception;
     }

@@ -22,11 +22,6 @@ import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.DriverException;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.SettableFuture;
 import com.spotify.futures.CompletableFutures;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,45 +32,12 @@ public class MoreFutures {
 
     private MoreFutures() {}
 
-    public static void waitForAll(Collection<? extends Future<?>> futures) throws Exception {
-        Exception exception = null;
-        for (Future<?> future : futures) {
-            if (exception != null) {
-                future.cancel(true);
-            } else {
-                try {
-                    future.get();
-                } catch (InterruptedException | ExecutionException e) {
-                    logger.debug(e.getMessage(), e);
-                    exception = e;
-                }
-            }
+    public static void waitForAll(Collection<? extends CompletableFuture<?>> futures) {
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        } catch (CompletionException ce) {
+            throw unwrapDriverException(ce);
         }
-        if (exception == null) {
-            return;
-        }
-        if (exception instanceof ExecutionException) {
-            throw unwrapDriverException((ExecutionException) exception);
-        }
-        throw exception;
-    }
-
-    public static <V> ListenableFuture<V> onFailure(ListenableFuture<V> future,
-            Runnable onFailure) {
-        SettableFuture<V> outerFuture = SettableFuture.create();
-        Futures.addCallback(future, new FutureCallback<V>() {
-            @Override
-            public void onSuccess(V result) {
-                outerFuture.set(result);
-            }
-            @Override
-            public void onFailure(Throwable t) {
-                logger.debug(t.getMessage(), t);
-                onFailure.run();
-                outerFuture.setException(t);
-            }
-        }, MoreExecutors.directExecutor());
-        return outerFuture;
     }
 
     public static CompletableFuture<?> rollupAsync(CompletableFuture<AsyncResultSet> input,
@@ -114,10 +76,9 @@ public class MoreFutures {
             asyncExecutor);
     }
 
-    public static Exception unwrapDriverException(ExecutionException e) {
+    public static RuntimeException unwrapDriverException(CompletionException e) {
         Throwable cause = e.getCause();
         if (cause instanceof DriverException) {
-            // see com.datastax.driver.core.DriverThrowables.propagateCause()
             return ((DriverException) cause).copy();
         } else {
             return e;

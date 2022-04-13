@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.DoubleAccumulator;
 import java.util.function.Function;
@@ -191,7 +190,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         }
         int ttl = getTTLs().get(0);
         long maxCaptureTime = 0;
-        List<Future<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (GaugeValue gaugeValue : gaugeValues) {
             BoundStatement boundStatement = insertValuePS.get(0).bind();
             String gaugeName = gaugeValue.getGaugeName();

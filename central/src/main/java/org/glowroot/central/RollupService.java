@@ -18,15 +18,12 @@ package org.glowroot.central;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
+import com.spotify.futures.CompletableFutures;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +80,7 @@ class RollupService implements Runnable {
         Session.setInRollupThread(true);
         int counter = 0;
         int numWorkerThreads = INITIAL_WORKER_THREADS;
-        ListeningExecutorService workerExecutor = newWorkerExecutor(numWorkerThreads);
+        ExecutorService workerExecutor = newWorkerExecutor(numWorkerThreads);
         while (!closed) {
             try {
                 MILLISECONDS.sleep(millisUntilNextRollup(clock.currentTimeMillis()));
@@ -149,9 +146,8 @@ class RollupService implements Runnable {
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Outer rollup loop", traceHeadline = "Outer rollup loop",
             timer = "outer rollup loop")
-    private void runInternal(List<AgentRollup> agentRollups,
-            ListeningExecutorService workerExecutor) throws Exception {
-        List<Future<?>> futures = new ArrayList<>();
+    private void runInternal(List<AgentRollup> agentRollups, ExecutorService workerExecutor) {
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         // randomize order so that multiple central collector nodes will be less likely to perform
         // duplicative work
         for (AgentRollup agentRollup : shuffle(agentRollups)) {
@@ -179,15 +175,15 @@ class RollupService implements Runnable {
         }
     }
 
-    private List<Future<?>> rollupAggregates(AgentRollup agentRollup,
-            ListeningExecutorService workerExecutor) {
-        List<Future<?>> futures = new ArrayList<>();
+    private List<CompletableFuture<?>> rollupAggregates(AgentRollup agentRollup,
+            ExecutorService workerExecutor) {
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         // randomize order so that multiple central collector nodes will be less likely to perform
         // duplicative work
         for (AgentRollup childAgentRollup : shuffle(agentRollup.children())) {
             futures.addAll(rollupAggregates(childAgentRollup, workerExecutor));
         }
-        futures.add(workerExecutor.submit(new Runnable() {
+        futures.add(CompletableFuture.runAsync(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -198,37 +194,37 @@ class RollupService implements Runnable {
                     logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
                 }
             }
-        }));
+        }, workerExecutor));
         return futures;
     }
 
-    private ListenableFuture<?> rollupGauges(AgentRollup agentRollup,
-            ListeningExecutorService workerExecutor) {
+    private CompletableFuture<?> rollupGauges(AgentRollup agentRollup,
+            ExecutorService workerExecutor) {
         List<AgentRollup> childAgentRollups = agentRollup.children();
         if (childAgentRollups.isEmpty()) {
             // optimization of common case
-            return workerExecutor.submit(new RollupGauges(agentRollup.id()));
+            return CompletableFuture.runAsync(new RollupGauges(agentRollup.id()), workerExecutor);
         }
         // need to roll up children first, since gauge values initial roll up from children is
         // done on the 1-min aggregates of the children
-        List<ListenableFuture<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (AgentRollup childAgentRollup : shuffle(childAgentRollups)) {
             futures.add(rollupGauges(childAgentRollup, workerExecutor));
         }
-        // using _whenAllSucceed_ because need to _not_ roll up parent if exception occurs while
+        // using _allAsList_ because need to _not_ roll up parent if exception occurs while
         // rolling up a child, since gauge values initial roll up from children is done on the 1-min
         // aggregates of the children
-        return Futures.whenAllSucceed(futures)
-                .run(new RollupGauges(agentRollup.id()), workerExecutor);
+        return CompletableFutures.allAsList(futures)
+                .thenRunAsync(new RollupGauges(agentRollup.id()), workerExecutor);
     }
 
-    private List<Future<?>> rollupSyntheticMonitors(AgentRollup agentRollup,
-            ListeningExecutorService workerExecutor) {
-        List<Future<?>> futures = new ArrayList<>();
+    private List<CompletableFuture<?>> rollupSyntheticMonitors(AgentRollup agentRollup,
+            ExecutorService workerExecutor) {
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (AgentRollup childAgentRollup : shuffle(agentRollup.children())) {
             futures.addAll(rollupSyntheticMonitors(childAgentRollup, workerExecutor));
         }
-        futures.add(workerExecutor.submit(new Runnable() {
+        futures.add(CompletableFuture.runAsync(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -239,18 +235,18 @@ class RollupService implements Runnable {
                     logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
                 }
             }
-        }));
+        }, workerExecutor));
         return futures;
     }
 
-    private List<Future<?>> checkAggregateAndGaugeAndHeartbeatAlertsAsync(AgentRollup agentRollup,
-            ListeningExecutorService workerExecutor) {
-        List<Future<?>> futures = new ArrayList<>();
+    private List<CompletableFuture<?>> checkAggregateAndGaugeAndHeartbeatAlertsAsync(AgentRollup agentRollup,
+                                                                                     ExecutorService workerExecutor) {
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (AgentRollup childAgentRollup : agentRollup.children()) {
             futures.addAll(checkAggregateAndGaugeAndHeartbeatAlertsAsync(childAgentRollup,
                     workerExecutor));
         }
-        futures.add(workerExecutor.submit(new Runnable() {
+        futures.add(CompletableFuture.runAsync(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -262,13 +258,12 @@ class RollupService implements Runnable {
                     logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
                 }
             }
-        }));
+        }, workerExecutor));
         return futures;
     }
 
-    private static ListeningExecutorService newWorkerExecutor(int numWorkerThreads) {
-        return MoreExecutors.listeningDecorator(
-                MoreExecutors2.newFixedThreadPool(numWorkerThreads, "Rollup-Worker-%d"));
+    private static ExecutorService newWorkerExecutor(int numWorkerThreads) {
+        return MoreExecutors2.newFixedThreadPool(numWorkerThreads, "Rollup-Worker-%d");
     }
 
     private static <T> List<T> shuffle(List<T> agentRollups) {

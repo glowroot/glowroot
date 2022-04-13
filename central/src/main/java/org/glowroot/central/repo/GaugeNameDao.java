@@ -19,7 +19,7 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.ImmutableList;
@@ -77,7 +77,7 @@ class GaugeNameDao {
         return gaugeNames;
     }
 
-    List<Future<?>> insert(String agentRollupId, long captureTime, String gaugeName)
+    List<CompletableFuture<?>> insert(String agentRollupId, long captureTime, String gaugeName)
             throws Exception {
         long rollupCaptureTime = CaptureTimes.getRollup(captureTime, DAYS.toMillis(1));
         GaugeKey rateLimiterKey = ImmutableGaugeKey.of(agentRollupId, rollupCaptureTime, gaugeName);

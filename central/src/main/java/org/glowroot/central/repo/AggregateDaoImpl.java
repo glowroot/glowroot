@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.DoubleAccumulator;
@@ -859,7 +858,7 @@ public class AggregateDaoImpl implements AggregateDao {
             TTL adjustedTTL = getAdjustedTTL(ttl, captureTime, clock);
             RollupParams rollupParams =
                     getRollupParams(agentRollupId, agentRollupIdForMeta, rollupLevel, adjustedTTL);
-            List<Future<?>> futures = new ArrayList<>();
+            List<CompletableFuture<?>> futures = new ArrayList<>();
             for (Map.Entry<String, Collection<String>> entry : needsRollupFromChildren.getKeys()
                     .asMap()
                     .entrySet()) {
@@ -907,7 +906,7 @@ public class AggregateDaoImpl implements AggregateDao {
                     getRollupParams(agentRollupId, agentRollupIdForMeta, rollupLevel, adjustedTTL);
             long from = captureTime - rollupIntervalMillis;
             Set<String> transactionTypes = needsRollup.getKeys();
-            List<Future<?>> futures = new ArrayList<>();
+            List<CompletableFuture<?>> futures = new ArrayList<>();
             for (String transactionType : transactionTypes) {
                 futures.addAll(rollupOne(rollupParams, transactionType, from, captureTime));
             }
@@ -933,7 +932,7 @@ public class AggregateDaoImpl implements AggregateDao {
         }
     }
 
-    private List<Future<?>> rollupOneFromChildren(RollupParams rollup, String transactionType,
+    private List<CompletableFuture<?>> rollupOneFromChildren(RollupParams rollup, String transactionType,
             Collection<String> childAgentRollupIds, long captureTime) throws Exception {
 
         ImmutableAggregateQuery query = ImmutableAggregateQuery.builder()
@@ -942,7 +941,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 .to(captureTime)
                 .rollupLevel(rollup.rollupLevel()) // rolling up from same level (which is always 0)
                 .build();
-        List<Future<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
 
         futures.add(rollupOverallSummaryFromChildren(rollup, query, childAgentRollupIds));
         futures.add(rollupErrorSummaryFromChildren(rollup, query, childAgentRollupIds));
@@ -964,7 +963,7 @@ public class AggregateDaoImpl implements AggregateDao {
         return futures;
     }
 
-    private List<Future<?>> rollupOne(RollupParams rollup, String transactionType, long from,
+    private List<CompletableFuture<?>> rollupOne(RollupParams rollup, String transactionType, long from,
             long to) {
 
         ImmutableAggregateQuery query = ImmutableAggregateQuery.builder()
@@ -973,7 +972,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 .to(to)
                 .rollupLevel(rollup.rollupLevel() - 1)
                 .build();
-        List<Future<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
 
         futures.add(rollupOverallSummary(rollup, query));
         futures.add(rollupErrorSummary(rollup, query));
@@ -992,9 +991,9 @@ public class AggregateDaoImpl implements AggregateDao {
         return futures;
     }
 
-    private List<Future<?>> rollupOtherParts(RollupParams rollup, AggregateQuery query,
+    private List<CompletableFuture<?>> rollupOtherParts(RollupParams rollup, AggregateQuery query,
             ScratchBuffer scratchBuffer) {
-        List<Future<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         futures.add(rollupOverview(rollup, query));
         futures.add(rollupHistogram(rollup, query, scratchBuffer));
         futures.add(rollupThroughput(rollup, query));
