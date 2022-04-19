@@ -16,17 +16,16 @@
 package org.glowroot.central.util;
 
 import java.io.Serializable;
-
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 public interface AsyncCache<K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> {
 
-    ListenableFuture<V> get(K key) throws Exception;
+    CompletableFuture<V> get(K key);
 
     // invalidate globally
     void invalidate(K key);
 
     interface AsyncCacheLoader<K, V> {
-        ListenableFuture<V> load(K key) throws Exception;
+        CompletableFuture<V> load(K key);
     }
 }

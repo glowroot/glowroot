@@ -87,17 +87,10 @@
       <version>3.1.0</version>
       <scope>provided</scope>
     </dependency>
-    <!-- used to convert between ListenableFuture and CompletionStage -->
     <dependency>
       <groupId>com.spotify</groupId>
-      <artifactId>futures-extra</artifactId>
-      <version>4.2.0</version>
-    </dependency>
-    <!-- api-common needed by futures-extra -->
-    <dependency>
-      <groupId>com.google.api</groupId>
-      <artifactId>api-common</artifactId>
-      <version>2.1.5</version>
+      <artifactId>completable-futures</artifactId>
+      <version>0.3.1</version>
     </dependency>
     <dependency>
       <!-- not using AsyncHttpClient because it introduces another dependency on netty which already
@@ -205,6 +198,11 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

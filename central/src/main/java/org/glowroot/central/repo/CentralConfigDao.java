@@ -122,7 +122,7 @@ class CentralConfigDao {
     }
 
     @Nullable
-    Object read(String key) throws Exception {
+    Object read(String key) {
         return centralConfigCache.get(key).orNull();
     }
 
@@ -150,7 +150,7 @@ class CentralConfigDao {
 
     private class CentralConfigCacheLoader implements CacheLoader<String, Optional<Object>> {
         @Override
-        public Optional<Object> load(String key) throws Exception {
+        public Optional<Object> load(String key) {
             BoundStatement boundStatement = readPS.bind()
                 .setString(0, key);
             ResultSet results = session.read(boundStatement);

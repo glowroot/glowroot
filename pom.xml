@@ -234,6 +234,12 @@
         <version>3.12.4</version>
       </dependency>
       <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-junit-jupiter</artifactId>
+        <version>3.2.4</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
         <groupId>com.ning</groupId>
         <artifactId>async-http-client</artifactId>
         <version>1.9.40</version>

@@ -26,7 +26,9 @@ import com.datastax.oss.driver.api.core.cql.*;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.base.Optional;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.wire.api.model.AgentConfigOuterClass;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.Cache;
@@ -192,7 +194,7 @@ public class AgentConfigDao {
         throw new OptimisticLockException();
     }
 
-    public @Nullable AgentConfig read(String agentRollupId) throws Exception {
+    public @Nullable AgentConfig read(String agentRollupId) {
         Optional<AgentConfigAndUpdateToken> optional = agentConfigCache.get(agentRollupId);
         if (optional.isPresent()) {
             return optional.get().config();
@@ -281,7 +283,7 @@ public class AgentConfigDao {
     private class AgentConfigCacheLoader
             implements CacheLoader<String, Optional<AgentConfigAndUpdateToken>> {
         @Override
-        public Optional<AgentConfigAndUpdateToken> load(String agentRollupId) throws Exception {
+        public Optional<AgentConfigAndUpdateToken> load(String agentRollupId) {
             BoundStatement boundStatement = readPS.bind()
                 .setString(0, agentRollupId);
             ResultSet results = session.read(boundStatement);
@@ -292,9 +294,15 @@ public class AgentConfigDao {
             }
             int i = 0;
             ByteBuffer bytes = checkNotNull(row.getByteBuffer(i++));
-            UUID updateToken = row.getUuid(i++);
+            AgentConfig agentConfig = null;
+            try {
+                agentConfig = AgentConfig.parseFrom(bytes);
+            } catch (InvalidProtocolBufferException e) {
+                throw new RuntimeException(e);
+            }
+            UUID updateToken = row.getUuid(i);
             return Optional.of(ImmutableAgentConfigAndUpdateToken.builder()
-                    .config(AgentConfig.parseFrom(bytes))
+                    .config(agentConfig)
                     .updateToken(updateToken)
                     .build());
         }

@@ -32,10 +32,6 @@ import java.util.regex.Pattern;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.infinispan.commons.marshall.JavaSerializationMarshaller;
 import org.infinispan.configuration.cache.CacheMode;
@@ -336,7 +332,7 @@ public abstract class ClusterManager {
         }
 
         @Override
-        public V get(K key) throws Exception {
+        public V get(K key) {
             V value = cache.get(key);
             if (value == null) {
                 value = loader.load(key);
@@ -367,21 +363,17 @@ public abstract class ClusterManager {
         }
 
         @Override
-        public ListenableFuture<V> get(K key) throws Exception {
+        public CompletableFuture<V> get(K key) {
             V value = cache.get(key);
             if (value != null) {
-                return Futures.immediateFuture(value);
+                return CompletableFuture.completedFuture(value);
             }
-            ListenableFuture<V> future = loader.load(key);
-            // FIXME there's a race condition if invalidation is received at this point
-            Futures.addCallback(future, new FutureCallback<V>() {
-                @Override
-                public void onSuccess(V v) {
-                    cache.putForExternalRead(key, v);
-                }
-                @Override
-                public void onFailure(Throwable t) {}
-            }, executor);
+            CompletableFuture<V> future = loader.load(key)
+                    // FIXME there's a race condition if invalidation is received at this point
+                    .thenApplyAsync(v -> {
+                        cache.putForExternalRead(key, v);
+                        return v;
+                    }, executor);
             return future;
         }
 
@@ -402,7 +394,7 @@ public abstract class ClusterManager {
         }
 
         @Override
-        public V get(K key) throws Exception {
+        public V get(K key) {
             V value = cache.get(key);
             if (value == null) {
                 value = loader.load(key);
@@ -429,22 +421,16 @@ public abstract class ClusterManager {
         }
 
         @Override
-        public ListenableFuture<V> get(K key) throws Exception {
+        public CompletableFuture<V> get(K key) {
             V value = cache.get(key);
             if (value != null) {
-                return Futures.immediateFuture(value);
+                return CompletableFuture.completedFuture(value);
             }
-            ListenableFuture<V> future = loader.load(key);
             // FIXME there's a race condition if invalidation is received at this point
-            Futures.addCallback(future, new FutureCallback<V>() {
-                @Override
-                public void onSuccess(V v) {
-                    cache.put(key, v);
-                }
-                @Override
-                public void onFailure(Throwable t) {}
-                // ok to use direct executor since the cache is just a simple ConcurrentHashMap
-            }, MoreExecutors.directExecutor());
+            CompletableFuture<V> future = loader.load(key).thenApply(v -> {
+                cache.put(key, v);
+                return v;
+            });
             return future;
         }
 

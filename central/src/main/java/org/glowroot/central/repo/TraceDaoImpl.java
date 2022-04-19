@@ -15,12 +15,10 @@
  */
 package org.glowroot.central.repo;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -29,6 +27,8 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
@@ -39,13 +39,14 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Ordering;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.spotify.futures.CompletableFutures;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.CassandraWriteMetrics;
 import org.glowroot.central.util.Messages;
-import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.Constants;
 import org.glowroot.common.live.ImmutableEntries;
@@ -576,40 +577,42 @@ public class TraceDaoImpl implements TraceDao {
                 + " transaction_name = ? and capture_time = ? and agent_id = ? and trace_id = ?");
     }
 
+    @CheckReturnValue
     @Override
-    public void store(String agentId, Trace trace) throws Exception {
+    public CompletableFuture<?> store(String agentId, Trace trace) {
         List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);
-        store(agentId, agentRollupIds, agentRollupIds, trace);
+        return store(agentId, agentRollupIds, agentRollupIds, trace);
     }
 
-    public void store(String agentId, List<String> agentRollupIds,
-            List<String> agentRollupIdsForMeta, Trace trace) throws Exception {
+    @CheckReturnValue
+    public CompletableFuture<?> store(String agentId, List<String> agentRollupIds,
+            List<String> agentRollupIdsForMeta, Trace trace) {
         CassandraWriteMetrics cassandraWriteMetrics = session.getCassandraWriteMetrics();
         cassandraWriteMetrics.setCurrTransactionType(trace.getHeader().getTransactionType());
         cassandraWriteMetrics.setCurrTransactionName(trace.getHeader().getTransactionName());
         cassandraWriteMetrics.setPartialTrace(trace.getHeader().getPartial());
-        try {
-            storeInternal(agentId, agentRollupIds, agentRollupIdsForMeta, trace);
-        } finally {
-            cassandraWriteMetrics.setCurrTransactionType(null);
-            cassandraWriteMetrics.setCurrTransactionName(null);
-            cassandraWriteMetrics.setPartialTrace(false);
-        }
+        return storeInternal(agentId, agentRollupIds, agentRollupIdsForMeta, trace)
+                .whenComplete((results, throwable) -> {
+                    cassandraWriteMetrics.setCurrTransactionType(null);
+                    cassandraWriteMetrics.setCurrTransactionName(null);
+                    cassandraWriteMetrics.setPartialTrace(false);
+                });
     }
 
-    private void storeInternal(String agentId, List<String> agentRollupIds,
-            List<String> agentRollupIdsForMeta, Trace trace) throws Exception {
+    @CheckReturnValue
+    private CompletableFuture<?> storeInternal(String agentId, List<String> agentRollupIds,
+            List<String> agentRollupIdsForMeta, Trace trace) {
         String traceId = trace.getId();
         Trace.Header priorHeader = trace.getUpdate() ? readHeader(agentId, traceId) : null;
-        Trace.Header header = trace.getHeader();
-        if (header.getPartial()) {
-            header = header.toBuilder()
+        Trace.Header headerTmp = trace.getHeader();
+        if (headerTmp.getPartial()) {
+            headerTmp = headerTmp.toBuilder()
                     .setCaptureTimePartialRollup(
-                            getCaptureTimePartialRollup(header.getCaptureTime()))
+                            getCaptureTimePartialRollup(headerTmp.getCaptureTime()))
                     .build();
         }
-
-        List<Future<?>> futures = new ArrayList<>();
+        final Trace.Header header = headerTmp;
+        List<CompletableFuture<?>> completableFutures = new ArrayList<>();
 
         List<Trace.SharedQueryText> sharedQueryTexts = new ArrayList<>();
         for (Trace.SharedQueryText sharedQueryText : trace.getSharedQueryTextList()) {
@@ -619,7 +622,7 @@ public class TraceDaoImpl implements TraceDao {
                 if (fullText.length() > 2 * Constants.TRACE_QUERY_TEXT_TRUNCATE) {
                     // relying on agent side to rate limit (re-)sending the same full text
                     fullTextSha1 = SHA_1.hashString(fullText, UTF_8).toString();
-                    futures.addAll(fullQueryTextDao.store(agentRollupIds, fullTextSha1, fullText));
+                    completableFutures.addAll(fullQueryTextDao.store(agentRollupIds, fullTextSha1, fullText));
                     sharedQueryText = Trace.SharedQueryText.newBuilder()
                             .setTruncatedText(
                                     fullText.substring(0, Constants.TRACE_QUERY_TEXT_TRUNCATE))
@@ -635,229 +638,231 @@ public class TraceDaoImpl implements TraceDao {
 
         // wait for success before proceeding in order to ensure cannot end up with orphaned
         // fullTextSha1
-        MoreFutures.waitForAll(futures);
-        futures.clear();
+        return CompletableFutures.allAsList(completableFutures)
+                .thenCompose(ignored -> {
+            List<CompletableFuture<?>> futures = new ArrayList<>();
 
-        int adjustedTTL =
-                Common.getAdjustedTTL(configRepository.getCentralStorageConfig().getTraceTTL(),
-                        header.getCaptureTime(), clock);
-        for (String agentRollupId : agentRollupIds) {
-            if (header.getSlow()) {
-                BoundStatement boundStatement;
-                if (header.getPartial()) {
-                    boundStatement = insertOverallSlowPointPartial.bind();
-                } else {
-                    boundStatement = insertOverallSlowPoint.bind();
+            int adjustedTTL =
+                    Common.getAdjustedTTL(configRepository.getCentralStorageConfig().getTraceTTL(),
+                            header.getCaptureTime(), clock);
+            for (String agentRollupId : agentRollupIds) {
+                if (header.getSlow()) {
+                    BoundStatement boundStatement;
+                    if (header.getPartial()) {
+                        boundStatement = insertOverallSlowPointPartial.bind();
+                    } else {
+                        boundStatement = insertOverallSlowPoint.bind();
+                    }
+                    boundStatement = bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
+                            true, header.getPartial(), cassandra2x);
+                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+
+                    if (header.getPartial()) {
+                        boundStatement = insertTransactionSlowPointPartial.bind();
+                    } else {
+                        boundStatement = insertTransactionSlowPoint.bind();
+                    }
+                    boundStatement = bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
+                            false, header.getPartial(), cassandra2x);
+                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+
+                    if (header.getPartial()) {
+                        boundStatement = insertOverallSlowCountPartial.bind();
+                    } else {
+                        boundStatement = insertOverallSlowCount.bind();
+                    }
+                    boundStatement = bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
+                            true, header.getPartial(), cassandra2x);
+                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+
+                    if (header.getPartial()) {
+                        boundStatement = insertTransactionSlowCountPartial.bind();
+                    } else {
+                        boundStatement = insertTransactionSlowCount.bind();
+                    }
+                    boundStatement = bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
+                            false, header.getPartial(), cassandra2x);
+                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+
+                    if (priorHeader != null && priorHeader.getCaptureTimePartialRollup() != header
+                            .getCaptureTimePartialRollup()) {
+
+                        boolean useCaptureTimePartialRollup =
+                                priorHeader.getCaptureTimePartialRollup() != 0;
+
+                        boundStatement = deleteOverallSlowPointPartial.bind();
+                        boundStatement = bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true,
+                                useCaptureTimePartialRollup, new AtomicInteger(0));
+                        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+
+                        boundStatement = deleteTransactionSlowPointPartial.bind();
+                        boundStatement = bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false,
+                                useCaptureTimePartialRollup, new AtomicInteger(0));
+                        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+
+                        boundStatement = deleteOverallSlowCountPartial.bind();
+                        boundStatement = bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true,
+                                useCaptureTimePartialRollup, new AtomicInteger(0));
+                        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+
+                        boundStatement = deleteTransactionSlowCountPartial.bind();
+                        boundStatement = bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false,
+                                useCaptureTimePartialRollup, new AtomicInteger(0));
+                        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                    }
                 }
-                boundStatement = bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        true, header.getPartial(), cassandra2x);
-                futures.add(session.writeAsync(boundStatement));
+                // seems unnecessary to insert error info for partial traces
+                // and this avoids having to clean up partial trace data when trace is complete
+                if (header.hasError() && !header.getPartial()) {
+                    BoundStatement boundStatement = insertOverallErrorMessage.bind();
+                    boundStatement = bindErrorMessage(boundStatement, agentRollupId, agentId, traceId, header,
+                            adjustedTTL, true);
+                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
-                if (header.getPartial()) {
-                    boundStatement = insertTransactionSlowPointPartial.bind();
-                } else {
-                    boundStatement = insertTransactionSlowPoint.bind();
-                }
-                boundStatement = bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        false, header.getPartial(), cassandra2x);
-                futures.add(session.writeAsync(boundStatement));
+                    boundStatement = insertTransactionErrorMessage.bind();
+                    boundStatement = bindErrorMessage(boundStatement, agentRollupId, agentId, traceId, header,
+                            adjustedTTL, false);
+                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
-                if (header.getPartial()) {
-                    boundStatement = insertOverallSlowCountPartial.bind();
-                } else {
-                    boundStatement = insertOverallSlowCount.bind();
-                }
-                boundStatement = bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        true, header.getPartial(), cassandra2x);
-                futures.add(session.writeAsync(boundStatement));
+                    boundStatement = insertOverallErrorPoint.bind();
+                    boundStatement = bindErrorPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
+                            true);
+                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
-                if (header.getPartial()) {
-                    boundStatement = insertTransactionSlowCountPartial.bind();
-                } else {
-                    boundStatement = insertTransactionSlowCount.bind();
-                }
-                boundStatement = bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        false, header.getPartial(), cassandra2x);
-                futures.add(session.writeAsync(boundStatement));
+                    boundStatement = insertTransactionErrorPoint.bind();
+                    boundStatement = bindErrorPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
+                            false);
+                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
-                if (priorHeader != null && priorHeader.getCaptureTimePartialRollup() != header
-                        .getCaptureTimePartialRollup()) {
+                    boundStatement = insertOverallErrorCount.bind();
+                    boundStatement = bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
+                            true, false, cassandra2x);
+                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
-                    boolean useCaptureTimePartialRollup =
-                            priorHeader.getCaptureTimePartialRollup() != 0;
-
-                    boundStatement = deleteOverallSlowPointPartial.bind();
-                    boundStatement = bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true,
-                            useCaptureTimePartialRollup, new AtomicInteger(0));
-                    futures.add(session.writeAsync(boundStatement));
-
-                    boundStatement = deleteTransactionSlowPointPartial.bind();
-                    boundStatement = bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false,
-                            useCaptureTimePartialRollup, new AtomicInteger(0));
-                    futures.add(session.writeAsync(boundStatement));
-
-                    boundStatement = deleteOverallSlowCountPartial.bind();
-                    boundStatement = bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true,
-                            useCaptureTimePartialRollup, new AtomicInteger(0));
-                    futures.add(session.writeAsync(boundStatement));
-
-                    boundStatement = deleteTransactionSlowCountPartial.bind();
-                    boundStatement = bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false,
-                            useCaptureTimePartialRollup, new AtomicInteger(0));
-                    futures.add(session.writeAsync(boundStatement));
+                    boundStatement = insertTransactionErrorCount.bind();
+                    boundStatement = bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
+                            false, false, cassandra2x);
+                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
                 }
             }
-            // seems unnecessary to insert error info for partial traces
-            // and this avoids having to clean up partial trace data when trace is complete
-            if (header.hasError() && !header.getPartial()) {
-                BoundStatement boundStatement = insertOverallErrorMessage.bind();
-                boundStatement = bindErrorMessage(boundStatement, agentRollupId, agentId, traceId, header,
-                        adjustedTTL, true);
-                futures.add(session.writeAsync(boundStatement));
-
-                boundStatement = insertTransactionErrorMessage.bind();
-                boundStatement = bindErrorMessage(boundStatement, agentRollupId, agentId, traceId, header,
-                        adjustedTTL, false);
-                futures.add(session.writeAsync(boundStatement));
-
-                boundStatement = insertOverallErrorPoint.bind();
-                boundStatement = bindErrorPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        true);
-                futures.add(session.writeAsync(boundStatement));
-
-                boundStatement = insertTransactionErrorPoint.bind();
-                boundStatement = bindErrorPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        false);
-                futures.add(session.writeAsync(boundStatement));
-
-                boundStatement = insertOverallErrorCount.bind();
-                boundStatement = bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        true, false, cassandra2x);
-                futures.add(session.writeAsync(boundStatement));
-
-                boundStatement = insertTransactionErrorCount.bind();
-                boundStatement = bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
-                        false, false, cassandra2x);
-                futures.add(session.writeAsync(boundStatement));
+            for (String agentRollupIdForMeta : agentRollupIdsForMeta) {
+                for (Trace.Attribute attributeName : header.getAttributeList()) {
+                    futures.add(traceAttributeNameDao.store(agentRollupIdForMeta,
+                            header.getTransactionType(), attributeName.getName()));
+                }
             }
-        }
-        for (String agentRollupIdForMeta : agentRollupIdsForMeta) {
-            for (Trace.Attribute attributeName : header.getAttributeList()) {
-                traceAttributeNameDao.store(agentRollupIdForMeta,
-                        header.getTransactionType(), attributeName.getName(), futures);
-            }
-        }
 
-        int i = 0;
-        BoundStatement boundStatement = insertHeaderV2.bind()
-            .setString(i++, agentId)
-            .setString(i++, traceId)
-            .setByteBuffer(i++, ByteBuffer.wrap(header.toByteArray()))
-            .setInt(i++, adjustedTTL);
-        futures.add(session.writeAsync(boundStatement));
-
-        int index = 0;
-        for (Trace.Entry entry : trace.getEntryList()) {
-            i = 0;
-            boundStatement = insertEntryV2.bind()
+            int i = 0;
+            BoundStatement boundStatement = insertHeaderV2.bind()
                 .setString(i++, agentId)
                 .setString(i++, traceId)
-                .setInt(i++, index++)
-                .setInt(i++, entry.getDepth())
-                .setLong(i++, entry.getStartOffsetNanos())
-                .setLong(i++, entry.getDurationNanos())
-                .setBoolean(i++, entry.getActive());
-            if (entry.hasQueryEntryMessage()) {
-                boundStatement = boundStatement.setToNull(i++)
-                    .setInt(i++, entry.getQueryEntryMessage().getSharedQueryTextIndex())
-                    .setString(i++,
-                        Strings.emptyToNull(entry.getQueryEntryMessage().getPrefix()))
-                    .setString(i++,
-                        Strings.emptyToNull(entry.getQueryEntryMessage().getSuffix()));
-            } else {
-                // message is empty for trace entries added using addErrorEntry()
-                boundStatement = boundStatement.setString(i++, Strings.emptyToNull(entry.getMessage()))
-                    .setToNull(i++)
-                    .setToNull(i++)
-                    .setToNull(i++);
-            }
-            List<Trace.DetailEntry> detailEntries = entry.getDetailEntryList();
-            if (detailEntries.isEmpty()) {
-                boundStatement = boundStatement.setToNull(i++);
-            } else {
-                boundStatement = boundStatement.setByteBuffer(i++, Messages.toByteBuffer(detailEntries));
-            }
-            List<StackTraceElement> location = entry.getLocationStackTraceElementList();
-            if (location.isEmpty()) {
-                boundStatement = boundStatement.setToNull(i++);
-            } else {
-                boundStatement = boundStatement.setByteBuffer(i++, Messages.toByteBuffer(location));
-            }
-            if (entry.hasError()) {
-                boundStatement = boundStatement.setByteBuffer(i++, ByteBuffer.wrap(entry.getError().toByteArray()));
-            } else {
-                boundStatement = boundStatement.setToNull(i++);
-            }
-            boundStatement = boundStatement.setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
-        }
-
-        for (Aggregate.Query query : trace.getQueryList()) {
-            i = 0;
-            boundStatement = insertQueryV2.bind()
-                .setString(i++, agentId)
-                .setString(i++, traceId)
-                .setString(i++, query.getType())
-                .setInt(i++, query.getSharedQueryTextIndex())
-                .setDouble(i++, query.getTotalDurationNanos())
-                .setLong(i++, query.getExecutionCount());
-            if (query.hasTotalRows()) {
-                boundStatement = boundStatement.setLong(i++, query.getTotalRows().getValue());
-            } else {
-                boundStatement = boundStatement.setLong(i++, NotAvailableAware.NA);
-            }
-            boundStatement = boundStatement.setBoolean(i++, query.getActive())
+                .setByteBuffer(i++, ByteBuffer.wrap(header.toByteArray()))
                 .setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
-        }
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
-        index = 0;
-        for (Trace.SharedQueryText sharedQueryText : sharedQueryTexts) {
-            i = 0;
-            boundStatement = insertSharedQueryTextV2.bind()
-                .setString(i++, agentId)
-                .setString(i++, traceId)
-                .setInt(i++, index++);
-            String fullText = sharedQueryText.getFullText();
-            if (fullText.isEmpty()) {
-                boundStatement = boundStatement.setString(i++, sharedQueryText.getTruncatedText())
-                    .setString(i++, sharedQueryText.getTruncatedEndText())
-                    .setString(i++, sharedQueryText.getFullTextSha1());
-            } else {
-                boundStatement = boundStatement.setString(i++, fullText)
-                    .setToNull(i++)
-                    .setToNull(i++);
+            int index = 0;
+            for (Trace.Entry entry : trace.getEntryList()) {
+                i = 0;
+                boundStatement = insertEntryV2.bind()
+                    .setString(i++, agentId)
+                    .setString(i++, traceId)
+                    .setInt(i++, index++)
+                    .setInt(i++, entry.getDepth())
+                    .setLong(i++, entry.getStartOffsetNanos())
+                    .setLong(i++, entry.getDurationNanos())
+                    .setBoolean(i++, entry.getActive());
+                if (entry.hasQueryEntryMessage()) {
+                    boundStatement = boundStatement.setToNull(i++)
+                        .setInt(i++, entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                        .setString(i++,
+                            Strings.emptyToNull(entry.getQueryEntryMessage().getPrefix()))
+                        .setString(i++,
+                            Strings.emptyToNull(entry.getQueryEntryMessage().getSuffix()));
+                } else {
+                    // message is empty for trace entries added using addErrorEntry()
+                    boundStatement = boundStatement.setString(i++, Strings.emptyToNull(entry.getMessage()))
+                        .setToNull(i++)
+                        .setToNull(i++)
+                        .setToNull(i++);
+                }
+                List<Trace.DetailEntry> detailEntries = entry.getDetailEntryList();
+                if (detailEntries.isEmpty()) {
+                    boundStatement = boundStatement.setToNull(i++);
+                } else {
+                    boundStatement = boundStatement.setByteBuffer(i++, Messages.toByteBuffer(detailEntries));
+                }
+                List<StackTraceElement> location = entry.getLocationStackTraceElementList();
+                if (location.isEmpty()) {
+                    boundStatement = boundStatement.setToNull(i++);
+                } else {
+                    boundStatement = boundStatement.setByteBuffer(i++, Messages.toByteBuffer(location));
+                }
+                if (entry.hasError()) {
+                    boundStatement = boundStatement.setByteBuffer(i++, ByteBuffer.wrap(entry.getError().toByteArray()));
+                } else {
+                    boundStatement = boundStatement.setToNull(i++);
+                }
+                boundStatement = boundStatement.setInt(i++, adjustedTTL);
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             }
-            boundStatement = boundStatement.setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
-        }
 
-        if (trace.hasMainThreadProfile()) {
-            boundStatement = insertMainThreadProfileV2.bind();
-            boundStatement = bindThreadProfile(boundStatement, agentId, traceId, trace.getMainThreadProfile(),
-                    adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
-        }
+            for (Aggregate.Query query : trace.getQueryList()) {
+                i = 0;
+                boundStatement = insertQueryV2.bind()
+                    .setString(i++, agentId)
+                    .setString(i++, traceId)
+                    .setString(i++, query.getType())
+                    .setInt(i++, query.getSharedQueryTextIndex())
+                    .setDouble(i++, query.getTotalDurationNanos())
+                    .setLong(i++, query.getExecutionCount());
+                if (query.hasTotalRows()) {
+                    boundStatement = boundStatement.setLong(i++, query.getTotalRows().getValue());
+                } else {
+                    boundStatement = boundStatement.setLong(i++, NotAvailableAware.NA);
+                }
+                boundStatement = boundStatement.setBoolean(i++, query.getActive())
+                    .setInt(i++, adjustedTTL);
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            }
 
-        if (trace.hasAuxThreadProfile()) {
-            boundStatement = insertAuxThreadProfileV2.bind();
-            boundStatement = bindThreadProfile(boundStatement, agentId, traceId, trace.getAuxThreadProfile(),
-                    adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
-        }
-        futures.addAll(
-                transactionTypeDao.store(agentRollupIdsForMeta, header.getTransactionType()));
-        MoreFutures.waitForAll(futures);
+            index = 0;
+            for (Trace.SharedQueryText sharedQueryText : sharedQueryTexts) {
+                i = 0;
+                boundStatement = insertSharedQueryTextV2.bind()
+                    .setString(i++, agentId)
+                    .setString(i++, traceId)
+                    .setInt(i++, index++);
+                String fullText = sharedQueryText.getFullText();
+                if (fullText.isEmpty()) {
+                    boundStatement = boundStatement.setString(i++, sharedQueryText.getTruncatedText())
+                        .setString(i++, sharedQueryText.getTruncatedEndText())
+                        .setString(i++, sharedQueryText.getFullTextSha1());
+                } else {
+                    boundStatement = boundStatement.setString(i++, fullText)
+                        .setToNull(i++)
+                        .setToNull(i++);
+                }
+                boundStatement = boundStatement.setInt(i++, adjustedTTL);
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            }
+
+            if (trace.hasMainThreadProfile()) {
+                boundStatement = insertMainThreadProfileV2.bind();
+                boundStatement = bindThreadProfile(boundStatement, agentId, traceId, trace.getMainThreadProfile(),
+                        adjustedTTL);
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            }
+
+            if (trace.hasAuxThreadProfile()) {
+                boundStatement = insertAuxThreadProfileV2.bind();
+                boundStatement = bindThreadProfile(boundStatement, agentId, traceId, trace.getAuxThreadProfile(),
+                        adjustedTTL);
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            }
+            futures.addAll(
+                    transactionTypeDao.store(agentRollupIdsForMeta, header.getTransactionType()));
+            return CompletableFutures.allAsList(futures);
+        });
     }
 
     @Override
@@ -876,14 +881,14 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = bindTraceQuery(boundStatement, agentRollupId, query, false);
             boundStatementPartial = bindTraceQueryPartial(boundStatementPartial, agentRollupId, query, false, cassandra2x);
         }
-        Future<AsyncResultSet> future = session.readAsync(boundStatement);
-        Future<AsyncResultSet> futurePartial = session.readAsync(boundStatementPartial);
+        Future<AsyncResultSet> future = session.readAsync(boundStatement).toCompletableFuture();
+        Future<AsyncResultSet> futurePartial = session.readAsync(boundStatementPartial).toCompletableFuture();
         return future.get().one().getLong(0) + futurePartial.get().one().getLong(0);
     }
 
     @Override
-    public Result<TracePoint> readSlowPoints(String agentRollupId, TraceQuery query,
-            TracePointFilter filter, int limit) throws Exception {
+    public CompletableFuture<Result<TracePoint>> readSlowPoints(String agentRollupId, TraceQuery query,
+                                                                TracePointFilter filter, int limit) throws Exception {
         BoundStatement boundStatement;
         BoundStatement boundStatementPartial;
         String transactionName = query.transactionName();
@@ -898,12 +903,15 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = bindTraceQuery(boundStatement, agentRollupId, query, false);
             boundStatementPartial = bindTraceQueryPartial(boundStatementPartial, agentRollupId, query, false, cassandra2x);
         }
-        // TODO: consider using async here
-        ResultSet future = session.read(boundStatement);
-        ResultSet futurePartial = session.read(boundStatementPartial);
-        List<TracePoint> completedPoints = processPoints(future, filter, false, false);
-        List<TracePoint> partialPoints = processPoints(futurePartial, filter, true, false);
-        return combine(completedPoints, partialPoints, limit);
+
+        CompletionStage<List<TracePoint>> completedPointsCS = session.readAsync(boundStatement)
+                .thenCompose(future -> processPoints(future, filter, false, false));
+        CompletionStage<List<TracePoint>> partialPointsCS = session.readAsync(boundStatementPartial)
+                .thenCompose(futurePartial -> processPoints(futurePartial, filter, true, false));
+
+        return completedPointsCS.thenCombine(partialPointsCS,
+                (completedPoints, partialPoints) -> combine(completedPoints, partialPoints, limit))
+                .toCompletableFuture();
     }
 
     @Override
@@ -922,7 +930,7 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     @Override
-    public Result<TracePoint> readErrorPoints(String agentRollupId, TraceQuery query,
+    public CompletableFuture<Result<TracePoint>> readErrorPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws Exception {
         BoundStatement boundStatement;
         String transactionName = query.transactionName();
@@ -933,9 +941,10 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = readTransactionErrorPoint.bind();
             boundStatement = bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
-        ResultSet results = session.read(boundStatement);
-        List<TracePoint> errorPoints = processPoints(results, filter, false, true);
-        return createResult(errorPoints, limit);
+        return session.readAsync(boundStatement)
+                .thenCompose(results -> processPoints(results, filter, false, true))
+                .thenApply(errorPoints -> createResult(errorPoints, limit))
+                .toCompletableFuture();
     }
 
     @Override
@@ -1135,8 +1144,7 @@ public class TraceDaoImpl implements TraceDao {
         return Profile.parseFrom(checkNotNull(row.getByteBuffer(0)));
     }
 
-    private Trace. /*@Nullable*/ Header readHeader(String agentId, String traceId)
-            throws Exception {
+    private Trace. /*@Nullable*/ Header readHeader(String agentId, String traceId) {
         Trace.Header header = readHeaderUsingPS(agentId, traceId, readHeaderV2);
         if (header != null) {
             return header;
@@ -1145,7 +1153,7 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     private Trace. /*@Nullable*/ Header readHeaderUsingPS(String agentId, String traceId,
-            PreparedStatement readPS) throws Exception {
+            PreparedStatement readPS) {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentId)
             .setString(1, traceId);
@@ -1154,7 +1162,11 @@ public class TraceDaoImpl implements TraceDao {
         if (row == null) {
             return null;
         }
-        return Trace.Header.parseFrom(checkNotNull(row.getByteBuffer(0)));
+        try {
+            return Trace.Header.parseFrom(checkNotNull(row.getByteBuffer(0)));
+        } catch (InvalidProtocolBufferException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private List<Trace.Entry> readEntriesInternal(String agentId, String traceId) throws Exception {
@@ -1308,7 +1320,7 @@ public class TraceDaoImpl implements TraceDao {
     @CheckReturnValue
     private static BoundStatement bindSlowPoint(BoundStatement boundStatement, String agentRollupId,
             String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall,
-            boolean partial, boolean cassandra2x) throws IOException {
+            boolean partial, boolean cassandra2x) {
         AtomicInteger ind = new AtomicInteger(0);
         boundStatement = bind(boundStatement, agentRollupId, agentId, traceId, header, overall,
                 partial && !cassandra2x, ind);
@@ -1365,8 +1377,7 @@ public class TraceDaoImpl implements TraceDao {
 
     @CheckReturnValue
     private static BoundStatement bindErrorPoint(BoundStatement boundStatement, String agentRollupId,
-            String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall)
-            throws IOException {
+            String agentId, String traceId, Trace.Header header, int adjustedTTL, boolean overall) {
         AtomicInteger ind = new AtomicInteger(0);
         boundStatement = bind(boundStatement, agentRollupId, agentId, traceId, header, overall, false, ind);
         int i = ind.get();
@@ -1452,10 +1463,14 @@ public class TraceDaoImpl implements TraceDao {
         return CaptureTimes.getRollup(captureTime, MINUTES.toMillis(30));
     }
 
-    private static List<TracePoint> processPoints(ResultSet results, TracePointFilter filter,
-            boolean partial, boolean errorPoints) throws IOException {
-        List<TracePoint> tracePoints = new ArrayList<>();
-        for (Row row : results) {
+    private static CompletionStage<List<TracePoint>> processPoints(AsyncResultSet results, TracePointFilter filter,
+            boolean partial, boolean errorPoints) {
+        return processPoints(results, filter, partial, errorPoints, new ArrayList<>());
+    }
+
+    private static CompletionStage<List<TracePoint>> processPoints(AsyncResultSet results, TracePointFilter filter,
+            boolean partial, boolean errorPoints, List<TracePoint> tracePoints) {
+        for (Row row : results.currentPage()) {
             int i = 0;
             String agentId = checkNotNull(row.getString(i++));
             String traceId = checkNotNull(row.getString(i++));
@@ -1495,7 +1510,10 @@ public class TraceDaoImpl implements TraceDao {
                         .build());
             }
         }
-        return tracePoints;
+        if (results.hasMorePages()) {
+            return results.fetchNextPage().thenCompose(res -> processPoints(res, filter, partial, errorPoints, tracePoints));
+        }
+        return CompletableFuture.completedFuture(tracePoints);
     }
 
     private static Result<TracePoint> combine(List<TracePoint> completedPoints,

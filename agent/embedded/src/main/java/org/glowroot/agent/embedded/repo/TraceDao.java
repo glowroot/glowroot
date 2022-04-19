@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Strings;
@@ -213,9 +214,9 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public Result<TracePoint> readSlowPoints(String agentRollupId, TraceQuery query,
+    public CompletableFuture<Result<TracePoint>> readSlowPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws Exception {
-        return readPoints(TraceKind.SLOW, query, filter, limit);
+        return CompletableFuture.completedFuture(readPoints(TraceKind.SLOW, query, filter, limit));
     }
 
     @Override
@@ -235,9 +236,9 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public Result<TracePoint> readErrorPoints(String agentRollupId, TraceQuery query,
-            TracePointFilter filter, int limit) throws Exception {
-        return readPoints(TraceKind.ERROR, query, filter, limit);
+    public CompletableFuture<Result<TracePoint>> readErrorPoints(String agentRollupId, TraceQuery query,
+                                                                TracePointFilter filter, int limit) throws Exception {
+        return CompletableFuture.completedFuture(readPoints(TraceKind.ERROR, query, filter, limit));
     }
 
     @Override

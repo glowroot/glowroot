@@ -18,13 +18,11 @@ package org.glowroot.central.repo;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import com.datastax.oss.driver.api.core.cql.*;
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.glowroot.central.util.AsyncCache;
 import org.glowroot.central.util.AsyncCache.AsyncCacheLoader;
@@ -97,31 +95,29 @@ public class AgentDisplayDao implements AgentDisplayRepository {
     }
 
     @Override
-    public ListenableFuture<String> readLastDisplayPartAsync(String agentRollupId)
+    public CompletableFuture<String> readLastDisplayPartAsync(String agentRollupId)
             throws Exception {
         return agentDisplayCache.get(agentRollupId);
     }
 
     private class AgentDisplayCacheLoader implements AsyncCacheLoader<String, String> {
         @Override
-        public ListenableFuture<String> load(String agentRollupId) throws Exception {
+        public CompletableFuture<String> load(String agentRollupId) {
             BoundStatement boundStatement = readPS.bind()
                 .setString(0, agentRollupId);
-            ListenableFuture<AsyncResultSet> future = session.readAsync(boundStatement);
-            return Futures.transform(future, new Function<AsyncResultSet, String>() {
-                @Override
-                public String apply(AsyncResultSet results) {
-                    Row row = results.one();
-                    if (row == null) {
-                        return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
-                    }
-                    String display = checkNotNull(row.getString(0));
-                    if (display.isEmpty()) {
-                        return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
-                    }
-                    return display;
-                }
-            }, asyncExecutor);
+            return session.readAsync(boundStatement)
+                    .thenApplyAsync(results -> {
+                        Row row = results.one();
+                        if (row == null) {
+                            return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
+                        }
+                        String display = checkNotNull(row.getString(0));
+                        if (display.isEmpty()) {
+                            return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
+                        }
+                        return display;
+                    }, asyncExecutor)
+                    .toCompletableFuture();
         }
     }
 }

@@ -16,6 +16,7 @@
 package org.glowroot.common2.repo;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
@@ -35,12 +36,12 @@ public interface TraceRepository {
 
     long readSlowCount(String agentRollupId, TraceQuery query) throws Exception;
 
-    Result<TracePoint> readSlowPoints(String agentRollupId, TraceQuery query,
-            TracePointFilter filter, int limit) throws Exception;
+    CompletableFuture<Result<TracePoint>> readSlowPoints(String agentRollupId, TraceQuery query,
+                                                        TracePointFilter filter, int limit) throws Exception;
 
     long readErrorCount(String agentRollupId, TraceQuery query) throws Exception;
 
-    Result<TracePoint> readErrorPoints(String agentRollupId, TraceQuery query,
+    CompletableFuture<Result<TracePoint>> readErrorPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws Exception;
 
     ErrorMessageResult readErrorMessages(String agentRollupId, TraceQuery query,

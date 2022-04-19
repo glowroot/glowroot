@@ -332,32 +332,38 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             return;
         }
         try {
-            aggregateDao.store(postV09AgentId, captureTime, aggregatesByTypeList, sharedQueryTexts);
+            aggregateDao.store(postV09AgentId, captureTime, aggregatesByTypeList, sharedQueryTexts)
+                    .whenComplete((res, t) -> {
+                        if (t != null) {
+                            logger.error("{} - {}", postV09AgentId, t.getMessage(), t);
+                            responseObserver.onError(t);
+                            return;
+                        }
+                        String agentDisplay;
+                        try {
+                            agentDisplay = agentDisplayDao.readFullDisplay(postV09AgentId);
+                        } catch (Exception e) {
+                            logger.error("{} - {}", postV09AgentId, e.getMessage(), e);
+                            responseObserver.onError(e);
+                            return;
+                        }
+                        try {
+                            centralAlertingService.checkForDeletedAlerts(postV09AgentId);
+                            centralAlertingService.checkAggregateAlertsAsync(postV09AgentId, agentDisplay,
+                                    captureTime);
+                        } catch (InterruptedException e) {
+                            // probably shutdown requested
+                            logger.debug(e.getMessage(), e);
+                        }
+                        responseObserver.onNext(AggregateResponseMessage.newBuilder()
+                                .setNextDelayMillis(getNextDelayMillis())
+                                .build());
+                        responseObserver.onCompleted();
+                    });
         } catch (Throwable t) {
             logger.error("{} - {}", postV09AgentId, t.getMessage(), t);
             responseObserver.onError(t);
-            return;
         }
-        String agentDisplay;
-        try {
-            agentDisplay = agentDisplayDao.readFullDisplay(postV09AgentId);
-        } catch (Exception e) {
-            logger.error("{} - {}", postV09AgentId, e.getMessage(), e);
-            responseObserver.onError(e);
-            return;
-        }
-        try {
-            centralAlertingService.checkForDeletedAlerts(postV09AgentId);
-            centralAlertingService.checkAggregateAlertsAsync(postV09AgentId, agentDisplay,
-                    captureTime);
-        } catch (InterruptedException e) {
-            // probably shutdown requested
-            logger.debug(e.getMessage(), e);
-        }
-        responseObserver.onNext(AggregateResponseMessage.newBuilder()
-                .setNextDelayMillis(getNextDelayMillis())
-                .build());
-        responseObserver.onCompleted();
     }
 
     private void collectGaugeValuesUnderThrottle(GaugeValueMessage request,
@@ -433,14 +439,20 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             return;
         }
         try {
-            traceDao.store(postV09AgentId, getFutureProofTrace(trace));
+            traceDao.store(postV09AgentId, getFutureProofTrace(trace))
+                    .whenComplete((results, t) -> {
+                        if (t != null) {
+                            logger.error("{} - {}", postV09AgentId, t.getMessage(), t);
+                            responseObserver.onError(t);
+                        } else {
+                            responseObserver.onNext(EmptyMessage.getDefaultInstance());
+                            responseObserver.onCompleted();
+                        }
+                    });
         } catch (Throwable t) {
             logger.error("{} - {}", postV09AgentId, t.getMessage(), t);
             responseObserver.onError(t);
-            return;
         }
-        responseObserver.onNext(EmptyMessage.getDefaultInstance());
-        responseObserver.onCompleted();
     }
 
     private long getFutureProofAggregateCaptureTime(long captureTime) {

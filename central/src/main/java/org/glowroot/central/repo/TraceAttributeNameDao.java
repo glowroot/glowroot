@@ -17,20 +17,18 @@ package org.glowroot.central.repo;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Styles;
@@ -76,12 +74,11 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         return traceAttributeNamesCache.get(agentRollupId);
     }
 
-    void store(String agentRollupId, String transactionType, String traceAttributeName,
-            List<Future<?>> futures) throws Exception {
+    CompletableFuture<?> store(String agentRollupId, String transactionType, String traceAttributeName) {
         TraceAttributeNameKey rateLimiterKey = ImmutableTraceAttributeNameKey.of(agentRollupId,
                 transactionType, traceAttributeName);
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
         int i = 0;
         BoundStatement boundStatement = insertPS.bind()
@@ -89,13 +86,16 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
             .setString(i++, transactionType)
             .setString(i++, traceAttributeName)
             .setInt(i++, getTraceTTL());
-        ListenableFuture<?> future = session.writeAsync(boundStatement);
-        futures.add(MoreFutures.onSuccessAndFailure(future,
-                () -> traceAttributeNamesCache.invalidate(agentRollupId),
-                () -> rateLimiter.release(rateLimiterKey)));
+        return session.writeAsync(boundStatement).whenComplete(((asyncResultSet, throwable) -> {
+            if (throwable != null) {
+                rateLimiter.release(rateLimiterKey);
+            } else {
+                traceAttributeNamesCache.invalidate(agentRollupId);
+            }
+        })).toCompletableFuture();
     }
 
-    private int getTraceTTL() throws Exception {
+    private int getTraceTTL() {
         int ttl = configRepository.getCentralStorageConfig().getTraceTTL();
         if (ttl == 0) {
             return 0;
@@ -115,7 +115,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
     private class TraceAttributeNameCacheLoader
             implements CacheLoader<String, Map<String, List<String>>> {
         @Override
-        public Map<String, List<String>> load(String agentRollupId) throws Exception {
+        public Map<String, List<String>> load(String agentRollupId) {
             BoundStatement boundStatement = readPS.bind()
                 .setString(0, agentRollupId);
             ResultSet results = session.read(boundStatement);

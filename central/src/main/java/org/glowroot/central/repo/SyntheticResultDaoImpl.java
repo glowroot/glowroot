@@ -19,26 +19,27 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.DoubleAccumulator;
+import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.cql.*;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.central.repo.Common.NeedsRollup;
 import org.glowroot.central.repo.proto.Stored;
 import org.glowroot.central.util.Messages;
 import org.glowroot.central.util.MoreFutures;
-import org.glowroot.central.util.MoreFutures.DoRollup;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
@@ -171,7 +172,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         }
         boundStatement = boundStatement.setInt(i++, adjustedTTL);
         List<Future<?>> futures = new ArrayList<>();
-        futures.add(session.writeAsync(boundStatement));
+        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
         futures.addAll(syntheticMonitorIdDao.insert(agentRollupId, captureTime, syntheticMonitorId,
                 syntheticMonitorDisplay));
 
@@ -292,7 +293,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
             long from = captureTime - rollupIntervalMillis;
             int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
             Set<String> syntheticMonitorIds = needsRollup.getKeys();
-            List<ListenableFuture<?>> futures = new ArrayList<>();
+            List<CompletableFuture<?>> futures = new ArrayList<>();
             for (String syntheticMonitorId : syntheticMonitorIds) {
                 futures.add(rollupOne(rollupLevel, agentRollupId, syntheticMonitorId, from,
                         captureTime, adjustedTTL));
@@ -312,64 +313,77 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     }
 
     // from is non-inclusive
-    private ListenableFuture<?> rollupOne(int rollupLevel, String agentRollupId,
-            String syntheticMonitorId, long from, long to, int adjustedTTL) throws Exception {
+    private CompletableFuture<?> rollupOne(int rollupLevel, String agentRollupId,
+                                           String syntheticMonitorId, long from, long to, int adjustedTTL) {
         int i = 0;
         BoundStatement boundStatement = readResultForRollupPS.get(rollupLevel - 1).bind()
             .setString(i++, agentRollupId)
             .setString(i++, syntheticMonitorId)
             .setInstant(i++, Instant.ofEpochMilli(from))
             .setInstant(i++, Instant.ofEpochMilli(to));
-        ListenableFuture<ResultSet> future = session.readWarnIfNoRows(boundStatement,
+        CompletableFuture<AsyncResultSet> future = session.readAsyncWarnIfNoRows(boundStatement,
                 "no synthetic result table records found for agentRollupId={},"
                         + " syntheticMonitorId={}, from={}, to={}, level={}",
-                agentRollupId, syntheticMonitorId, from, to, rollupLevel);
-        return MoreFutures.rollupAsync(future, asyncExecutor, new DoRollup() {
+                agentRollupId, syntheticMonitorId, from, to, rollupLevel).toCompletableFuture();
+        return MoreFutures.rollupAsync(future, asyncExecutor, new MoreFutures.DoRollup() {
             @Override
-            public ListenableFuture<?> execute(Iterable<Row> rows) throws Exception {
+            public CompletableFuture<?> execute(AsyncResultSet rows) {
                 return rollupOneFromRows(rollupLevel, agentRollupId, syntheticMonitorId, to,
                         adjustedTTL, rows);
             }
         });
     }
 
-    private ListenableFuture<?> rollupOneFromRows(int rollupLevel, String agentRollupId,
-            String syntheticMonitorId, long to, int adjustedTTL, Iterable<Row> rows)
-            throws Exception {
-        double totalDurationNanos = 0;
-        long executionCount = 0;
+    private CompletableFuture<?> rollupOneFromRows(int rollupLevel, String agentRollupId,
+            String syntheticMonitorId, long to, int adjustedTTL, AsyncResultSet results) {
+        DoubleAccumulator totalDurationNanos = new DoubleAccumulator(Double::sum, 0.0);
+        AtomicLong executionCount = new AtomicLong(0);
         ErrorIntervalCollector errorIntervalCollector = new ErrorIntervalCollector();
-        for (Row row : rows) {
-            int i = 0;
-            totalDurationNanos += row.getDouble(i++);
-            executionCount += row.getLong(i++);
-            ByteBuffer errorIntervalsBytes = row.getByteBuffer(i++);
-            if (errorIntervalsBytes == null) {
-                errorIntervalCollector.addGap();
-            } else {
-                List<Stored.ErrorInterval> errorIntervals = Messages
-                        .parseDelimitedFrom(errorIntervalsBytes, Stored.ErrorInterval.parser());
-                errorIntervalCollector.addErrorIntervals(fromProto(errorIntervals));
+
+        Function<AsyncResultSet, CompletableFuture<?>> compute = new Function<AsyncResultSet, CompletableFuture<?>>() {
+            @Override
+            public CompletableFuture<?> apply(AsyncResultSet asyncResultSet) {
+                for (Row row : asyncResultSet.currentPage()) {
+                    int i = 0;
+                    totalDurationNanos.accumulate(row.getDouble(i++));
+                    executionCount.addAndGet(row.getLong(i++));
+                    ByteBuffer errorIntervalsBytes = row.getByteBuffer(i++);
+                    synchronized (errorIntervalCollector) {
+                        if (errorIntervalsBytes == null) {
+                            errorIntervalCollector.addGap();
+                        } else {
+                            List<Stored.ErrorInterval> errorIntervals = Messages
+                                    .parseDelimitedFrom(errorIntervalsBytes, Stored.ErrorInterval.parser());
+                            errorIntervalCollector.addErrorIntervals(fromProto(errorIntervals));
+                        }
+                    }
+                }
+                if (asyncResultSet.hasMorePages()) {
+                    return asyncResultSet.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(null);
             }
-        }
-        int i = 0;
-        BoundStatement boundStatement = insertResultPS.get(rollupLevel).bind()
-            .setString(i++, agentRollupId)
-            .setString(i++, syntheticMonitorId)
-            .setInstant(i++, Instant.ofEpochMilli(to))
-            .setDouble(i++, totalDurationNanos)
-            .setLong(i++, executionCount);
-        List<ErrorInterval> mergedErrorIntervals = errorIntervalCollector.getMergedErrorIntervals();
-        if (mergedErrorIntervals.isEmpty()) {
-            boundStatement = boundStatement.setToNull(i++);
-        } else {
-            boundStatement = boundStatement.setByteBuffer(i++, Messages.toByteBuffer(toProto(mergedErrorIntervals)));
-        }
-        boundStatement = boundStatement.setInt(i++, adjustedTTL);
-        return session.writeAsync(boundStatement);
+        };
+        return compute.apply(results).thenCompose(res -> {
+            int i = 0;
+            BoundStatement boundStatement = insertResultPS.get(rollupLevel).bind()
+                    .setString(i++, agentRollupId)
+                    .setString(i++, syntheticMonitorId)
+                    .setInstant(i++, Instant.ofEpochMilli(to))
+                    .setDouble(i++, totalDurationNanos.doubleValue())
+                    .setLong(i++, executionCount.get());
+            List<ErrorInterval> mergedErrorIntervals = errorIntervalCollector.getMergedErrorIntervals();
+            if (mergedErrorIntervals.isEmpty()) {
+                boundStatement = boundStatement.setToNull(i++);
+            } else {
+                boundStatement = boundStatement.setByteBuffer(i++, Messages.toByteBuffer(toProto(mergedErrorIntervals)));
+            }
+            boundStatement = boundStatement.setInt(i++, adjustedTTL);
+            return session.writeAsync(boundStatement).toCompletableFuture();
+        });
     }
 
-    private List<Integer> getTTLs() throws Exception {
+    private List<Integer> getTTLs() {
         List<Integer> ttls = new ArrayList<>();
         List<Integer> rollupExpirationHours =
                 configRepository.getCentralStorageConfig().rollupExpirationHours();

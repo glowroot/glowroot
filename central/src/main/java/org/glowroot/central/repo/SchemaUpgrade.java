@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.*;
@@ -43,7 +44,6 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.InvalidProtocolBufferException;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -1249,7 +1249,7 @@ public class SchemaUpgrade {
                     ImmutableAgentRollupIdGaugeNamePair.of(agentRollupId, gaugeName));
         }
         int maxRollupTTL = storageConfig.getMaxRollupTTL();
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         List<Long> sortedCaptureTimes =
                 Ordering.natural().sortedCopy(rowsPerCaptureTime.keySet());
         for (long captureTime : sortedCaptureTimes) {
@@ -1261,7 +1261,7 @@ public class SchemaUpgrade {
                     .setInstant(i++, Instant.ofEpochMilli(captureTime))
                     .setString(i++, row.gaugeName())
                     .setInt(i++, adjustedTTL);
-                futures.add(session.writeAsync(boundStatement));
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
                 waitForSome(futures);
             }
         }
@@ -1428,7 +1428,7 @@ public class SchemaUpgrade {
         int maxRollupTTL = storageConfig.getMaxRollupTTL();
         List<Long> sortedCaptureTimes =
                 Ordering.natural().sortedCopy(agentIdsPerCaptureTime.keySet());
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (long captureTime : sortedCaptureTimes) {
             int adjustedTTL = Common.getAdjustedTTL(maxRollupTTL, captureTime, clock);
             for (String agentId : agentIdsPerCaptureTime.get(captureTime)) {
@@ -1437,7 +1437,7 @@ public class SchemaUpgrade {
                     .setInstant(i++, Instant.ofEpochMilli(captureTime))
                     .setString(i++, agentId)
                     .setInt(i++, adjustedTTL);
-                futures.add(session.writeAsync(boundStatement));
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
                 waitForSome(futures);
             }
         }
@@ -1771,12 +1771,12 @@ public class SchemaUpgrade {
         PreparedStatement insertTempPS = session.prepare("insert into heartbeat_temp (agent_id,"
                 + " central_capture_time) values (?, ?)");
         ResultSet results = session.read("select agent_id, central_capture_time from heartbeat");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
             BoundStatement boundStatement = insertTempPS.bind()
                 .setString(0, row.getString(0))
                 .setInstant(1, row.getInstant(1));
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
@@ -1799,7 +1799,7 @@ public class SchemaUpgrade {
         int ttl = Ints.saturatedCast(HOURS.toSeconds(HeartbeatDao.EXPIRATION_HOURS));
         ResultSet results =
                 session.read("select agent_id, central_capture_time from heartbeat_temp");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
             String v09AgentRollupId = row.getString(0);
             V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
@@ -1815,7 +1815,7 @@ public class SchemaUpgrade {
                 .setString(i++, v09AgentRollup.agentRollupId())
                 .setInstant(i++, centralCaptureDate)
                 .setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
@@ -1935,13 +1935,13 @@ public class SchemaUpgrade {
                 + " (agent_rollup_id, capture_time, gauge_name) values (?, ?, ?)");
         ResultSet results =
                 session.read("select agent_rollup_id, capture_time, gauge_name from gauge_name");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
             BoundStatement boundStatement = insertTempPS.bind()
                 .setString(0, row.getString(0))
                 .setInstant(1, row.getInstant(1))
                 .setString(2, row.getString(2));
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
@@ -1967,7 +1967,7 @@ public class SchemaUpgrade {
         int ttl = getCentralStorageConfig(session).getMaxRollupTTL();
         ResultSet results = session
                 .read("select agent_rollup_id, capture_time, gauge_name from gauge_name_temp");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
             String v09AgentRollupId = row.getString(0);
             V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
@@ -1983,7 +1983,7 @@ public class SchemaUpgrade {
                 .setInstant(1, captureDate)
                 .setString(2, row.getString(2))
                 .setInt(3, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
@@ -2093,7 +2093,7 @@ public class SchemaUpgrade {
         ResultSet results = session.read("select agent_rollup, transaction_type, capture_time,"
                 + " agent_id, trace_id, duration_nanos, error, headline, user, attributes, partial"
                 + " from trace_tt_slow_point");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         Stopwatch stopwatch = Stopwatch.createStarted();
         int rowCount = 0;
         for (Row row : results) {
@@ -2112,7 +2112,7 @@ public class SchemaUpgrade {
             boundStatement = copyString(row, boundStatement, i++); // agent_id
             boundStatement = copyString(row, boundStatement, i++); // trace_id
             boundStatement = boundStatement.setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
             boundStatement = insertPointPartialPS.bind();
             i = 0;
@@ -2127,7 +2127,7 @@ public class SchemaUpgrade {
             boundStatement = copyString(row, boundStatement, i++); // user
             boundStatement = copyByteBuffer(row, boundStatement, i++); // attributes
             boundStatement = boundStatement.setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
             rowCount++;
             if (stopwatch.elapsed(SECONDS) > 60) {
@@ -2154,7 +2154,7 @@ public class SchemaUpgrade {
                 + " and trace_id = ?");
         ResultSet results = session.read("select agent_rollup, transaction_type, capture_time,"
                 + " agent_id, trace_id from trace_tt_slow_count_partial");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
             BoundStatement boundStatement = deleteCountPS.bind();
             int i = 0;
@@ -2163,7 +2163,7 @@ public class SchemaUpgrade {
             boundStatement = copyInstant(row, boundStatement, i++); // capture_time
             boundStatement = copyString(row, boundStatement, i++); // agent_id
             boundStatement = copyString(row, boundStatement, i++); // trace_id
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
             boundStatement = deletePointPS.bind();
             i = 0;
@@ -2172,7 +2172,7 @@ public class SchemaUpgrade {
             boundStatement = copyInstant(row, boundStatement, i++); // capture_time
             boundStatement = copyString(row, boundStatement, i++); // agent_id
             boundStatement = copyString(row, boundStatement, i++); // trace_id
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
@@ -2207,7 +2207,7 @@ public class SchemaUpgrade {
         ResultSet results = session.read("select agent_rollup, transaction_type,"
                 + " transaction_name, capture_time, agent_id, trace_id, duration_nanos, error,"
                 + " headline, user, attributes, partial from trace_tn_slow_point");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         Stopwatch stopwatch = Stopwatch.createStarted();
         int rowCount = 0;
         for (Row row : results) {
@@ -2227,7 +2227,7 @@ public class SchemaUpgrade {
             boundStatement = copyString(row, boundStatement, i++); // agent_id
             boundStatement = copyString(row, boundStatement, i++); // trace_id
             boundStatement = boundStatement.setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
             boundStatement = insertPointPartialPS.bind();
             i = 0;
@@ -2243,7 +2243,7 @@ public class SchemaUpgrade {
             boundStatement = copyString(row, boundStatement, i++); // user
             boundStatement = copyByteBuffer(row, boundStatement, i++); // attributes
             boundStatement = boundStatement.setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
             rowCount++;
             if (stopwatch.elapsed(SECONDS) > 60) {
@@ -2271,7 +2271,7 @@ public class SchemaUpgrade {
         ResultSet results = session.read("select agent_rollup, transaction_type,"
                 + " transaction_name, capture_time, agent_id, trace_id from"
                 + " trace_tn_slow_count_partial");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
             BoundStatement boundStatement = deleteCountPS.bind();
             int i = 0;
@@ -2281,7 +2281,7 @@ public class SchemaUpgrade {
             boundStatement = copyInstant(row, boundStatement, i++); // capture_time
             boundStatement = copyString(row, boundStatement, i++); // agent_id
             boundStatement = copyString(row, boundStatement, i++); // trace_id
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
             boundStatement = deletePointPS.bind();
             i = 0;
@@ -2291,7 +2291,7 @@ public class SchemaUpgrade {
             boundStatement = copyInstant(row, boundStatement, i++); // capture_time
             boundStatement = copyString(row, boundStatement, i++); // agent_id
             boundStatement = copyString(row, boundStatement, i++); // trace_id
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
@@ -2448,13 +2448,13 @@ public class SchemaUpgrade {
                 + " (agent_rollup, transaction_type, trace_attribute_name) values (?, ?, ?)");
         ResultSet results = session.read("select agent_rollup, transaction_type,"
                 + " trace_attribute_name from trace_attribute_name");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
             BoundStatement boundStatement = insertTempPS.bind()
                 .setString(0, row.getString(0))
                 .setString(1, row.getString(1))
                 .setString(2, row.getString(2));
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
@@ -2475,14 +2475,14 @@ public class SchemaUpgrade {
         int ttl = getCentralStorageConfig(session).getTraceTTL();
         ResultSet results = session.read("select agent_rollup, transaction_type,"
                 + " trace_attribute_name from trace_attribute_name_temp");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
             BoundStatement boundStatement = insertPS.bind()
                 .setString(0, row.getString(0))
                 .setString(1, row.getString(1))
                 .setString(2, row.getString(2))
                 .setInt(3, ttl);
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
@@ -2518,7 +2518,7 @@ public class SchemaUpgrade {
         BoundStatement boundStatement = readPS.bind()
             .setInstant(0, Instant.ofEpochMilli(now - HOURS.toMillis(expirationHours)));
         ResultSet results = session.read(boundStatement);
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
             Instant captureDate = checkNotNull(row.getInstant(0));
             String agentId = row.getString(1);
@@ -2529,7 +2529,7 @@ public class SchemaUpgrade {
                     .setInstant(0, Instant.ofEpochMilli(offsetCaptureTime))
                     .setString(1, agentId)
                     .setInt(2, adjustedTTL);
-                futures.add(session.writeAsync(boundStatement));
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
                 waitForSome(futures);
                 if (offsetCaptureTime > now) {
                     break;
@@ -2677,7 +2677,7 @@ public class SchemaUpgrade {
                     .of(agentRollupId, syntheticMonitorId));
         }
         int maxRollupTTL = storageConfig.getMaxRollupTTL();
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         List<Long> sortedCaptureTimes =
                 Ordering.natural().sortedCopy(rowsPerCaptureTime.keySet());
         Map<String, Map<String, String>> syntheticMonitorDisplays = new HashMap<>();
@@ -2702,7 +2702,7 @@ public class SchemaUpgrade {
                 }
                 boundStatement = boundStatement.setString(i++, display)
                     .setInt(i++, adjustedTTL);
-                futures.add(session.writeAsync(boundStatement));
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
                 waitForSome(futures);
             }
         }
@@ -2740,7 +2740,7 @@ public class SchemaUpgrade {
         PreparedStatement insertPS = session
                 .prepare("insert into agent_display (agent_rollup_id, display) values (?, ?)");
         ResultSet results = session.read("select agent_rollup_id, config from agent_config");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
             String agentRollupId = row.getString(0);
             AgentConfig agentConfig;
@@ -2756,7 +2756,7 @@ public class SchemaUpgrade {
                 BoundStatement boundStatement = insertPS.bind()
                     .setString(i++, agentRollupId)
                     .setString(i++, display);
-                futures.add(session.writeAsync(boundStatement));
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
                 waitForSome(futures);
             }
         }
@@ -2797,7 +2797,7 @@ public class SchemaUpgrade {
             .setInstant(0,
                     Instant.ofEpochMilli(clock.currentTimeMillis() - HOURS.toMillis(expirationHours)));
         ResultSet results = session.read(boundStatement);
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
             Instant captureDate = checkNotNull(row.getInstant(0));
             String agentId = checkNotNull(row.getString(1));
@@ -2817,14 +2817,14 @@ public class SchemaUpgrade {
                 .setInstant(0, captureDate)
                 .setString(1, topLevelId)
                 .setInt(2, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             if (childAgentId != null) {
                 boundStatement = insertChildPS.bind()
                     .setString(0, topLevelId)
                     .setInstant(1, captureDate)
                     .setString(2, childAgentId)
                     .setInt(3, adjustedTTL);
-                futures.add(session.writeAsync(boundStatement));
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             }
             waitForSome(futures);
         }
@@ -2903,7 +2903,7 @@ public class SchemaUpgrade {
 
     // this is needed to prevent OOM due to ever expanding list of futures (and the result sets that
     // they retain)
-    private static void waitForSome(Queue<ListenableFuture<?>> futures) throws Exception {
+    private static void waitForSome(Queue<CompletableFuture<?>> futures) throws Exception {
         while (futures.size() > 1000) {
             futures.remove().get();
         }

@@ -16,10 +16,9 @@
 package org.glowroot.agent.embedded.repo;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.glowroot.common2.repo.AgentDisplayRepository;
 
@@ -36,7 +35,7 @@ public class AgentDisplayRepositoryImpl implements AgentDisplayRepository {
     }
 
     @Override
-    public ListenableFuture<String> readLastDisplayPartAsync(String agentRollupId) {
-        return Futures.immediateFuture("");
+    public CompletableFuture<String> readLastDisplayPartAsync(String agentRollupId) {
+        return CompletableFuture.completedFuture("");
     }
 }

@@ -16,8 +16,7 @@
 package org.glowroot.common2.repo;
 
 import java.util.List;
-
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletionStage;
 
 public interface AgentDisplayRepository {
 
@@ -25,5 +24,5 @@ public interface AgentDisplayRepository {
 
     List<String> readDisplayParts(String agentRollupId) throws Exception;
 
-    ListenableFuture<String> readLastDisplayPartAsync(String agentRollupId) throws Exception;
+    CompletionStage<String> readLastDisplayPartAsync(String agentRollupId) throws Exception;
 }

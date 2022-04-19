@@ -62,7 +62,7 @@ public class HeartbeatDao {
                 .setString(i++, agentRollupId)
                 .setInstant(i++, Instant.ofEpochMilli(clock.currentTimeMillis()))
                 .setInt(i++, TTL);
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
         }
         MoreFutures.waitForAll(futures);
     }

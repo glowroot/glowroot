@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class SchemaUpgradeTest {
 
     @Test
-    public void shouldUpgradeWildcardPermissions() throws Exception {
+    public void shouldUpgradeWildcardPermissions() {
         // given
         Set<String> permissions = ImmutableSet.of("agent:*:view");
         // when
@@ -38,7 +38,7 @@ public class SchemaUpgradeTest {
     }
 
     @Test
-    public void shouldUpgradeSingleAgentPermissions() throws Exception {
+    public void shouldUpgradeSingleAgentPermissions() {
         // given
         Set<String> permissions = ImmutableSet.of("agent:abc:view");
         // when
@@ -49,7 +49,7 @@ public class SchemaUpgradeTest {
     }
 
     @Test
-    public void shouldUpgradeMultiAgentPermissions() throws Exception {
+    public void shouldUpgradeMultiAgentPermissions() {
         // given
         Set<String> permissions = ImmutableSet.of("agent:abc,mno,xyz:view");
         // when

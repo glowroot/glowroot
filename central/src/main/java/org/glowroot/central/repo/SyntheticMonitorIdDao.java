@@ -16,11 +16,10 @@
 package org.glowroot.central.repo;
 
 import java.time.Instant;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.ImmutableList;
@@ -81,8 +80,8 @@ class SyntheticMonitorIdDao {
         return syntheticMonitorIds;
     }
 
-    List<Future<?>> insert(String agentRollupId, long captureTime, String syntheticMonitorId,
-                                                    String syntheticMonitorDisplay) throws Exception {
+    List<CompletableFuture<?>> insert(String agentRollupId, long captureTime, String syntheticMonitorId,
+                                      String syntheticMonitorDisplay) {
         long rollupCaptureTime = CaptureTimes.getRollup(captureTime, DAYS.toMillis(1));
         SyntheticMonitorKey rateLimiterKey = ImmutableSyntheticMonitorKey.builder()
                 .agentRollupId(agentRollupId)
@@ -101,7 +100,7 @@ class SyntheticMonitorIdDao {
             .setString(i++, syntheticMonitorDisplay);
         int maxRollupTTL = configRepository.getCentralStorageConfig().getMaxRollupTTL();
         boundStatement = boundStatement.setInt(i++, Common.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
-        return ImmutableList.of(session.writeAsync(boundStatement));
+        return ImmutableList.of(session.writeAsync(boundStatement).toCompletableFuture());
     }
 
     @Value.Immutable

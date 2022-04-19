@@ -95,7 +95,7 @@ public class TraceDaoTest {
         TracePointFilter filter = ImmutableTracePointFilter.builder()
                 .durationNanosLow(0)
                 .build();
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1).get();
 
         // when
         Trace.Header header2 = traceDao
@@ -127,7 +127,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1).get();
 
         // then
         assertThat(queryResult.records()).hasSize(1);
@@ -149,7 +149,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1).get();
 
         // then
         assertThat(queryResult.records()).isEmpty();
@@ -171,7 +171,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1).get();
 
         // then
         assertThat(queryResult.records()).isEmpty();
@@ -194,7 +194,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1).get();
 
         // then
         assertThat(queryResult.records()).hasSize(1);
@@ -217,7 +217,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1).get();
 
         // then
         assertThat(queryResult.records()).hasSize(1);
@@ -240,7 +240,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1).get();
 
         // then
         assertThat(queryResult.records()).hasSize(1);
@@ -263,7 +263,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1).get();
 
         // then
         assertThat(queryResult.records()).isEmpty();
@@ -286,7 +286,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1);
+        Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1).get();
 
         // then
         assertThat(queryResult.records()).isEmpty();

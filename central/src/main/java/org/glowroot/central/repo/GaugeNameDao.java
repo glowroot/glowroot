@@ -91,7 +91,7 @@ class GaugeNameDao {
             .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
             .setString(i++, gaugeName)
             .setInt(i++, Common.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
-        return ImmutableList.of(session.writeAsync(boundStatement));
+        return ImmutableList.of(session.writeAsync(boundStatement).toCompletableFuture());
     }
 
     @Value.Immutable

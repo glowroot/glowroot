@@ -17,16 +17,15 @@ package org.glowroot.central.repo;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 import com.datastax.oss.driver.api.core.cql.*;
-import com.google.common.util.concurrent.ListenableFuture;
+import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Styles;
@@ -71,15 +70,16 @@ class TransactionTypeDao implements TransactionTypeRepository {
         return transactionTypesCache.get(agentRollupId);
     }
 
-    List<Future<?>> store(List<String> agentRollups, String transactionType) throws Exception {
-        List<Future<?>> futures = new ArrayList<>();
+    @CheckReturnValue
+    List<CompletableFuture<?>> store(List<String> agentRollups, String transactionType) {
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (String agentRollupId : agentRollups) {
             TransactionTypeKey rateLimiterKey =
                     ImmutableTransactionTypeKey.of(agentRollupId, transactionType);
             if (!rateLimiter.tryAcquire(rateLimiterKey)) {
                 continue;
             }
-            ListenableFuture<?> future;
+            CompletableFuture<?> future;
             try {
                 int i = 0;
                 BoundStatement boundStatement = insertPS.bind()
@@ -88,15 +88,19 @@ class TransactionTypeDao implements TransactionTypeRepository {
                 // intentionally not accounting for rateLimiter in TTL
                         .setInt(i++,
                             configRepository.getCentralStorageConfig().getMaxRollupTTL());
-                future = session.writeAsync(boundStatement);
+                future = session.writeAsync(boundStatement).whenComplete((results, throwable) -> {
+                    if (throwable != null) {
+                        rateLimiter.release(rateLimiterKey);
+                    } else {
+                        transactionTypesCache.invalidate(agentRollupId);
+                    }
+                }).toCompletableFuture();
             } catch (Exception e) {
                 rateLimiter.release(rateLimiterKey);
                 transactionTypesCache.invalidate(agentRollupId);
                 throw e;
             }
-            futures.add(MoreFutures.onSuccessAndFailure(future,
-                    () -> transactionTypesCache.invalidate(agentRollupId),
-                    () -> rateLimiter.release(rateLimiterKey)));
+            futures.add(future);
         }
         return futures;
     }
@@ -110,7 +114,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
 
     private class TransactionTypeCacheLoader implements CacheLoader<String, List<String>> {
         @Override
-        public List<String> load(String agentRollupId) throws Exception {
+        public List<String> load(String agentRollupId) {
             BoundStatement boundStatement = readPS.bind()
                 .setString(0, agentRollupId);
             ResultSet results = session.read(boundStatement);

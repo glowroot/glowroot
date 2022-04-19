@@ -138,13 +138,13 @@ class RoleDao {
         return ImmutableRoleConfig.builder()
                 .central(true)
                 .name(checkNotNull(row.getString(i++)))
-                .permissions(row.getSet(i++, String.class))
+                .permissions(row.getSet(i, String.class))
                 .build();
     }
 
     private class RoleConfigCacheLoader implements CacheLoader<String, Optional<RoleConfig>> {
         @Override
-        public Optional<RoleConfig> load(String name) throws Exception {
+        public Optional<RoleConfig> load(String name) {
             BoundStatement boundStatement = readOnePS.bind()
                 .setString(0, name);
             ResultSet results = session.read(boundStatement);
@@ -161,7 +161,7 @@ class RoleDao {
 
     private class AllRolesCacheLoader implements CacheLoader<String, List<RoleConfig>> {
         @Override
-        public List<RoleConfig> load(String dummy) throws Exception {
+        public List<RoleConfig> load(String dummy) {
             ResultSet results = session.read(readPS.bind());
             List<RoleConfig> role = new ArrayList<>();
             for (Row row : results) {

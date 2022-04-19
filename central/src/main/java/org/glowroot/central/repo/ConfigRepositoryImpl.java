@@ -377,7 +377,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public CentralStorageConfig getCentralStorageConfig() throws Exception {
+    public CentralStorageConfig getCentralStorageConfig() {
         CentralStorageConfig config = (CentralStorageConfig) centralConfigDao.read(STORAGE_KEY);
         if (config == null) {
             return ImmutableCentralStorageConfig.builder().build();

@@ -74,7 +74,7 @@ public class V09AgentRollupDao {
 
     private class AgentRollupIdCacheLoader implements CacheLoader<String, Map<String, String>> {
         @Override
-        public Map<String, String> load(String key) throws Exception {
+        public Map<String, String> load(String key) {
             BoundStatement boundStatement = readPS.bind();
             ResultSet results = session.read(boundStatement);
             Map<String, String> agentRollupIds = new HashMap<>();

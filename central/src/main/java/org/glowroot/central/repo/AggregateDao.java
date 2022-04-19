@@ -16,7 +16,9 @@
 package org.glowroot.central.repo;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
+import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.agent.api.Instrumentation.AlreadyInTransactionBehavior;
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -26,8 +28,9 @@ import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
 
 public interface AggregateDao extends AggregateRepository {
 
-    void store(String agentId, long captureTime, List<OldAggregatesByType> aggregatesByTypeList,
-            List<Aggregate.SharedQueryText> initialSharedQueryTexts) throws Exception;
+    @CheckReturnValue
+    CompletableFuture<?> store(String agentId, long captureTime, List<OldAggregatesByType> aggregatesByTypeList,
+                            List<Aggregate.SharedQueryText> initialSharedQueryTexts);
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Rollup aggregates", traceHeadline = "Rollup aggregates: {{0}}",

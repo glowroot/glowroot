@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
@@ -184,14 +184,14 @@ class Common {
             // intentionally not async, see method-level comment
             session.write(boundStatement);
         }
-        List<Future<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (UUID uniqueness : uniquenessKeysForDeletion) {
             int i = 0;
             BoundStatement boundStatement = deleteNeedsRollup.bind()
                 .setString(i++, agentRollupId)
                 .setInstant(i++, Instant.ofEpochMilli(captureTime))
                 .setUuid(i++, uniqueness);
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
         }
         MoreFutures.waitForAll(futures);
     }

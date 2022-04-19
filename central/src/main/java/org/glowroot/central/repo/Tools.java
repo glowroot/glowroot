@@ -321,7 +321,7 @@ public class Tools {
                 .setString(i++, partitionKey.agentRollupId())
                 .setString(i++, partitionKey.transactionType())
                 .setInstant(i++, threshold);
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             count++;
         }
         MoreFutures.waitForAll(futures);
@@ -343,7 +343,7 @@ public class Tools {
                 .setString(i++, partitionKey.transactionType())
                 .setString(i++, partitionKey.transactionName())
                 .setInstant(i++, threshold);
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             count++;
         }
         MoreFutures.waitForAll(futures);
@@ -364,7 +364,7 @@ public class Tools {
                 .setString(i++, partitionKey.agentRollupId())
                 .setString(i++, partitionKey.gaugeName())
                 .setInstant(i++, threshold);
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             count++;
         }
         MoreFutures.waitForAll(futures);

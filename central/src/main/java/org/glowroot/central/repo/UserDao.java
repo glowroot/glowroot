@@ -150,7 +150,7 @@ class UserDao {
     private class AllUsersCacheLoader implements CacheLoader<String, List<UserConfig>> {
 
         @Override
-        public List<UserConfig> load(String dummy) throws Exception {
+        public List<UserConfig> load(String dummy) {
             ResultSet results = session.read(readPS.bind());
             List<UserConfig> users = new ArrayList<>();
             for (Row row : results) {

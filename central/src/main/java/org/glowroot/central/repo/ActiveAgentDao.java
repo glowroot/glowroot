@@ -19,13 +19,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 import javax.annotation.Nullable;
@@ -37,6 +37,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
 
+import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
@@ -172,7 +173,8 @@ public class ActiveAgentDao implements ActiveAgentRepository {
         return agentRollups;
     }
 
-    public List<Future<?>> insert(String agentId, long captureTime) throws Exception {
+    @CheckReturnValue
+    public List<CompletableFuture<?>> insert(String agentId, long captureTime) {
         AgentConfig agentConfig = agentConfigDao.read(agentId);
         if (agentConfig == null) {
             // have yet to receive collectInit()
@@ -192,7 +194,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
             topLevelId = agentId.substring(0, index + 2);
             childAgentId = agentId.substring(index + 2);
         }
-        List<Future<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (int rollupLevel = 0; rollupLevel < rollupConfigs.size(); rollupLevel++) {
             long rollupIntervalMillis = getRollupIntervalMillis(rollupConfigs, rollupLevel);
             long rollupCaptureTime = CaptureTimes.getRollup(captureTime, rollupIntervalMillis);
@@ -204,7 +206,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
                 .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
                 .setString(i++, topLevelId)
                 .setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
             if (childAgentId != null) {
                 i = 0;
@@ -213,7 +215,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
                     .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
                     .setString(i++, childAgentId)
                     .setInt(i++, adjustedTTL);
-                futures.add(session.writeAsync(boundStatement));
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             }
         }
         return futures;

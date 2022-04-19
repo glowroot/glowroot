@@ -19,6 +19,7 @@ import java.lang.management.ManagementFactory;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
@@ -35,12 +36,6 @@ import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.SettableFuture;
-import com.spotify.futures.CompletableFuturesExtra;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,7 +116,7 @@ public class Session {
         return wrappedSession.execute(SimpleStatement.newInstance(query));
     }
 
-    public ResultSet read(Statement<?> statement) throws Exception {
+    public ResultSet read(Statement<?> statement) {
         if (statement instanceof BoundStatement) {
             BoundStatement boundStatement = (BoundStatement) statement;
             PreparedStatement preparedStatement = boundStatement.getPreparedStatement();
@@ -144,7 +139,7 @@ public class Session {
         }
         // do not use session.execute() because that calls getUninterruptibly() which can cause
         // central shutdown to timeout while waiting for executor service to shutdown
-        writeAsync(statement).get();
+        writeAsync(statement).toCompletableFuture().get();
     }
 
     public AsyncResultSet update(Statement<?> statement) throws Exception {
@@ -161,52 +156,24 @@ public class Session {
         }
         // do not use session.execute() because that calls getUninterruptibly() which can cause
         // central shutdown to timeout while waiting for executor service to shutdown
-        return updateAsync(statement).get();
+        return updateAsync(statement).toCompletableFuture().get();
     }
 
-    public ListenableFuture<AsyncResultSet> readAsyncWarnIfNoRows(Statement<?> statement,
-            String warningMessage, Object... warningArguments) throws Exception {
-        return Futures.transform(readAsync(statement),
-                results -> {
-                    if (!results.currentPage().iterator().hasNext()) {
-                        logger.warn(warningMessage, warningArguments);
-                    }
-                    return results;
-                },
-                MoreExecutors.directExecutor());
+    public CompletionStage<AsyncResultSet> readAsyncWarnIfNoRows(Statement<?> statement,
+                                                                 String warningMessage, Object... warningArguments) {
+        return readAsync(statement).thenApply(results -> {
+            if (!results.currentPage().iterator().hasNext()) {
+                logger.warn(warningMessage, warningArguments);
+            }
+            return results;
+        });
     }
 
-    //TODO: consider replacing this method by an async one
-    public ListenableFuture<ResultSet> readWarnIfNoRows(Statement<?> statement,
-            String warningMessage, Object... warningArguments) throws Exception {
-        return Futures.transform(Futures.immediateFuture(read(statement)),
-                results -> {
-                    if (!results.iterator().hasNext()) {
-                        logger.warn(warningMessage, warningArguments);
-                    }
-                    return results;
-                },
-                MoreExecutors.directExecutor());
+    public CompletionStage<AsyncResultSet> readAsync(Statement<?> statement) {
+        return throttleRead(() -> wrappedSession.executeAsync(statement));
     }
 
-    public ListenableFuture<AsyncResultSet> readAsyncFailIfNoRows(Statement<?> statement,
-            String errorMessage) throws Exception {
-        return Futures.transformAsync(readAsync(statement),
-                results -> {
-                    if (!results.currentPage().iterator().hasNext()) {
-                        return Futures.immediateFailedFuture(new Exception(errorMessage));
-                    } else {
-                        return Futures.immediateFuture(results);
-                    }
-                },
-                MoreExecutors.directExecutor());
-    }
-
-    public ListenableFuture<AsyncResultSet> readAsync(Statement<?> statement) throws Exception {
-        return throttleRead(() -> CompletableFuturesExtra.toListenableFuture(wrappedSession.executeAsync(statement)));
-    }
-
-    public ListenableFuture<AsyncResultSet> writeAsync(Statement<?> statement) throws Exception {
+    public CompletionStage<AsyncResultSet> writeAsync(Statement<?> statement) {
         if (statement.getConsistencyLevel() == null && writeConsistencyLevel != null) {
             statement = statement.setConsistencyLevel(writeConsistencyLevel);
         }
@@ -215,12 +182,12 @@ public class Session {
             // for now, need to record metrics in the same method because CassandraWriteMetrics
             // relies on some thread locals
             cassandraWriteMetrics.recordMetrics(finalStatement);
-            return CompletableFuturesExtra.toListenableFuture(wrappedSession.executeAsync(finalStatement));
+            return wrappedSession.executeAsync(finalStatement);
         });
     }
 
-    private ListenableFuture<AsyncResultSet> updateAsync(Statement<?> statement) throws Exception {
-        return throttleWrite(() -> CompletableFuturesExtra.toListenableFuture(wrappedSession.executeAsync(statement)));
+    private CompletionStage<AsyncResultSet> updateAsync(Statement<?> statement) {
+        return throttleWrite(() -> wrappedSession.executeAsync(statement));
     }
 
     public String getKeyspaceName() {
@@ -361,8 +328,7 @@ public class Session {
         inRollupThread.set(value);
     }
 
-    private ListenableFuture<AsyncResultSet> throttleRead(DoUnderThrottle doUnderThrottle)
-            throws Exception {
+    private CompletionStage<AsyncResultSet> throttleRead(DoUnderThrottle doUnderThrottle) {
         if (inRollupThread.get()) {
             return throttle(doUnderThrottle, rollupQuerySemaphore);
         } else {
@@ -370,8 +336,7 @@ public class Session {
         }
     }
 
-    private ListenableFuture<AsyncResultSet> throttleWrite(DoUnderThrottle doUnderThrottle)
-            throws Exception {
+    private CompletionStage<AsyncResultSet> throttleWrite(DoUnderThrottle doUnderThrottle) {
         if (inRollupThread.get()) {
             return throttle(doUnderThrottle, rollupQuerySemaphore);
         } else {
@@ -379,30 +344,16 @@ public class Session {
         }
     }
 
-    private static ListenableFuture<AsyncResultSet> throttle(DoUnderThrottle doUnderThrottle,
-            Semaphore overallSemaphore) throws Exception {
-        overallSemaphore.acquire();
-        SettableFuture<AsyncResultSet> outerFuture = SettableFuture.create();
-        ListenableFuture<AsyncResultSet> innerFuture;
+    private static CompletionStage<AsyncResultSet> throttle(DoUnderThrottle doUnderThrottle,
+                                                            Semaphore overallSemaphore) {
         try {
-            innerFuture = doUnderThrottle.execute();
-        } catch (Throwable t) {
-            overallSemaphore.release();
-            throw t;
+            overallSemaphore.acquire();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
-        Futures.addCallback(innerFuture, new FutureCallback<AsyncResultSet>() {
-            @Override
-            public void onSuccess(AsyncResultSet result) {
-                overallSemaphore.release();
-                outerFuture.set(result);
-            }
-            @Override
-            public void onFailure(Throwable t) {
-                overallSemaphore.release();
-                outerFuture.setException(t);
-            }
-        }, MoreExecutors.directExecutor());
-        return outerFuture;
+        return doUnderThrottle.execute().whenCompleteAsync((results, throwable) -> {
+            overallSemaphore.release();
+        });
     }
 
     private static @Nullable String getTableName(String createTableQuery, String prefix) {
@@ -475,6 +426,6 @@ public class Session {
     }
 
     private interface DoUnderThrottle {
-        ListenableFuture<AsyncResultSet> execute();
+        CompletionStage<AsyncResultSet> execute();
     }
 }
