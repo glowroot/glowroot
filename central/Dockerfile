@@ -12,8 +12,11 @@ COPY docker-entrypoint.sh /usr/local/bin/
 COPY glowroot-central.sh /usr/local/bin/
 
 RUN useradd --no-log-init -r -g root glowroot
+
 COPY --from=builder --chown=glowroot:root /tmp/glowroot-central /usr/share/glowroot-central
+
 WORKDIR /usr/share/glowroot-central
+
 RUN chmod a+x /usr/local/bin/docker-entrypoint.sh \
     && chmod a+x /usr/local/bin/glowroot-central.sh \
     && sed -i 's/^cassandra.contactPoints=$/cassandra.contactPoints=cassandra/' /usr/share/glowroot-central/glowroot-central.properties \
