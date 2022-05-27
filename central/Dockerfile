@@ -17,8 +17,7 @@ COPY --from=builder --chown=glowroot:root /tmp/glowroot-central /usr/share/glowr
 
 WORKDIR /usr/share/glowroot-central
 
-RUN chmod g+w /usr/share/glowroot-central \
-    chmod a+x /usr/local/bin/docker-entrypoint.sh \
+RUN chmod a+x /usr/local/bin/docker-entrypoint.sh \
     && chmod a+x /usr/local/bin/glowroot-central.sh \
     && sed -i 's/^cassandra.contactPoints=$/cassandra.contactPoints=cassandra/' /usr/share/glowroot-central/glowroot-central.properties \
     && echo '\ncassandra.symmetricEncryptionKey=' >> /usr/share/glowroot-central/glowroot-central.properties
