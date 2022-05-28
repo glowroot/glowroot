@@ -17,6 +17,9 @@ COPY --from=builder --chown=glowroot:root /tmp/glowroot-central /usr/share/glowr
 
 WORKDIR /usr/share/glowroot-central
 
+# need to give group write permission because OpenShift will ignore USER directives
+# and run the POD as a numbered userid which cannot possibly exist on the underlying physical host
+# but which is guaranteed to be a member of the "root" group
 RUN chmod g+w /usr/share/glowroot-central \
     chmod a+x /usr/local/bin/docker-entrypoint.sh \
     && chmod a+x /usr/local/bin/glowroot-central.sh \
