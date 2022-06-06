@@ -21,7 +21,7 @@ WORKDIR /usr/share/glowroot-central
 # and run the POD as a numbered userid which cannot possibly exist on the underlying physical host
 # but which is guaranteed to be a member of the "root" group
 RUN chmod g+w /usr/share/glowroot-central \
-    chmod a+x /usr/local/bin/docker-entrypoint.sh \
+    && chmod a+x /usr/local/bin/docker-entrypoint.sh \
     && chmod a+x /usr/local/bin/glowroot-central.sh \
     && sed -i 's/^cassandra.contactPoints=$/cassandra.contactPoints=cassandra/' /usr/share/glowroot-central/glowroot-central.properties \
     && echo '\ncassandra.symmetricEncryptionKey=' >> /usr/share/glowroot-central/glowroot-central.properties
