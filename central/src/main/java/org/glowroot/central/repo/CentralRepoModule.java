@@ -69,9 +69,11 @@ public class CentralRepoModule {
     private final V09AgentRollupDao v09AgentRollupDao;
 
     public CentralRepoModule(ClusterManager clusterManager, Session session, File confDir,
-            String cassandraSymmetricEncryptionKey, int cassandraGcGraceSeconds, ExecutorService asyncExecutor,
+            String cassandraSymmetricEncryptionKey, int cassandraGcGraceSeconds, Boolean helmMode, ExecutorService asyncExecutor,
             int targetMaxActiveAgentsInPast7Days, int targetMaxCentralUiUsers, Clock clock)
             throws Exception {
+        
+        boolean populateFromAdminDefault = session.getTable("central_config") == null;
 
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         agentDisplayDao = new AgentDisplayDao(session, clusterManager, asyncExecutor,
@@ -94,17 +96,19 @@ public class CentralRepoModule {
         traceAttributeNameDao = new TraceAttributeNameDao(session, configRepository, clusterManager,
                 targetMaxCentralUiUsers);
 
-        File adminDefaultFile = new File(confDir, "admin-default.json");
+        if (helmMode || populateFromAdminDefault) {
+            File adminDefaultFile = new File(confDir, "admin-default.json");
 
-        if (adminDefaultFile.exists()) {
-            try {
-                populateFromAdminDefault(adminDefaultFile, configRepository);
-            } catch (Exception e) {
-                // drop the table so that after fixing admin-default.json re-import will occur
-                session.updateSchemaWithRetry("drop table central_config");
-                throw e;
-            }
-        }         
+            if (adminDefaultFile.exists()) {
+                try {
+                    populateFromAdminDefault(adminDefaultFile, configRepository);
+                } catch (Exception e) {
+                    // drop the table so that after fixing admin-default.json re-import will occur
+                    session.updateSchemaWithRetry("drop table central_config");
+                    throw e;
+                }
+            }         
+        }
         
         Set<String> agentRollupIdsWithV09Data;
         long v09LastCaptureTime;
