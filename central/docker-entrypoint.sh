@@ -50,6 +50,9 @@ fi
 if [ "$CASSANDRA_SYMMETRIC_ENCRYPTION_KEY" ]; then
   sed -i "s/^cassandra.symmetricEncryptionKey=.*$/cassandra.symmetricEncryptionKey=$CASSANDRA_SYMMETRIC_ENCRYPTION_KEY/" glowroot-central.properties
 fi
+if [ "$HELM_MODE" ]; then
+  sed -i "s/^helmMode=.*$/helmMode=$HELM_MODE/" glowroot-central.properties
+fi
 if [ "$UI_CONTEXT_PATH" ]; then
   # not using "/" as sed delimiter since it is a common character used in context path
   sed -i "s|^ui.contextPath=.*$|ui.contextPath=$UI_CONTEXT_PATH|" glowroot-central.properties
