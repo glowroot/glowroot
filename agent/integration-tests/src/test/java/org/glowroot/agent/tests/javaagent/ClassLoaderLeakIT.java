@@ -16,6 +16,8 @@
 package org.glowroot.agent.tests.javaagent;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import com.google.common.base.StandardSystemProperty;
@@ -37,16 +39,7 @@ public class ClassLoaderLeakIT {
     @BeforeAll
     public static void setUp() throws Exception {
         // need memory limited javaagent
-        List<String> extraJvmArgs = Lists.newArrayList();
-        String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
-        if (javaVersion.startsWith("1.6") || javaVersion.startsWith("1.7")) {
-            // limit MaxPermSize for ClassLoaderLeakTest
-            extraJvmArgs.add("-XX:MaxPermSize=64m");
-        } else {
-            // jdk8+ eliminated perm gen, so just limit overall memory
-            extraJvmArgs.add("-Xmx64m");
-        }
-        container = JavaagentContainer.createWithExtraJvmArgs(extraJvmArgs);
+        container = JavaagentContainer.createWithExtraJvmArgs(Collections.singletonList("-Xmx64m"));
     }
 
     @AfterAll
