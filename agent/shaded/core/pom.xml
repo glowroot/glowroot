@@ -291,13 +291,6 @@
               <shadedPattern>glowroot.logback.configurationFile</shadedPattern>
             </relocation>
             <relocation>
-              <!-- shades logback internal constant, see
-                ch.qos.logback.classic.util.ContextInitializer -->
-              <rawString>true</rawString>
-              <pattern>^logback.groovy$</pattern>
-              <shadedPattern>glowroot.logback.groovy</shadedPattern>
-            </relocation>
-            <relocation>
               <!-- logback internal constant, see ch.qos.logback.classic.ClassicConstants -->
               <rawString>true</rawString>
               <pattern>^logback(-test)?.xml$</pattern>
