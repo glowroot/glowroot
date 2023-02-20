@@ -30,9 +30,9 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class HttpJspPageAspect {
 
-    @Pointcut(className = "javax.servlet.jsp.HttpJspPage", methodName = "_jspService",
-            methodParameterTypes = {"javax.servlet.http.HttpServletRequest",
-                    "javax.servlet.http.HttpServletResponse"},
+    @Pointcut(className = "javax.servlet.jsp.HttpJspPage|jakarta.servlet.jsp.HttpJspPage", methodName = "_jspService",
+            methodParameterTypes = {"javax.servlet.http.HttpServletRequest|jakarta.servlet.http.HttpServletRequest",
+                    "javax.servlet.http.HttpServletResponse|jakarta.servlet.http.HttpServletResponse"},
             nestingGroup = "jsp", timerName = "jsp render")
     public static class HttpJspPageAdvice {
 
