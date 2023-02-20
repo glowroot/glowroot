@@ -536,7 +536,8 @@ public class AnalyzedWorld {
         }
         boolean ejbRemote = false;
         for (Annotation annotation : clazz.getDeclaredAnnotations()) {
-            if (annotation.annotationType().getName().equals("javax.ejb.Remote")) {
+            if (annotation.annotationType().getName().equals("javax.ejb.Remote") ||
+                    annotation.annotationType().getName().equals("jakarta.ejb.Remote")) {
                 ejbRemote = true;
                 break;
             }

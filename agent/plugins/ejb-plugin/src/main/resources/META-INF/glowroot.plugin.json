@@ -3,8 +3,8 @@
   "id": "ejb",
   "instrumentation": [
     {
-      "classAnnotation": "javax.ejb.Singleton",
-      "methodAnnotation": "javax.ejb.Timeout|javax.ejb.Schedule|javax.ejb.Schedules",
+      "classAnnotation": "javax.ejb.Singleton|jakarta.ejb.Singleton",
+      "methodAnnotation": "javax.ejb.Timeout|jakarta.ejb.Timeout|javax.ejb.Schedule|jakarta.ejb.Schedule|javax.ejb.Schedules|jakarta.ejb.Schedules",
       "methodParameterTypes": [
         ".."
       ],

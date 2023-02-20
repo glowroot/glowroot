@@ -59,7 +59,7 @@ class ThinClassVisitor extends ClassVisitor {
         thinClassBuilder.addAnnotations(descriptor);
         if (descriptor.equals("Lorg/glowroot/agent/plugin/api/weaving/Pointcut;")) {
             return new PointcutAnnotationVisitor();
-        } else if (descriptor.equals("Ljavax/ejb/Remote;")) {
+        } else if (descriptor.equals("Ljavax/ejb/Remote;") || descriptor.equals("Ljakarta/ejb/Remote;")) {
             return new RemoteAnnotationVisitor();
         } else {
             return null;

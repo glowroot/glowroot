@@ -105,9 +105,9 @@ class ClassAnalyzer {
         boolean ejbRemote = false;
         boolean ejbStateless = false;
         for (String annotation : thinClass.annotations()) {
-            if (annotation.equals("Ljavax/ejb/Remote;")) {
+            if (annotation.equals("Ljavax/ejb/Remote;") || annotation.equals("Ljakarta/ejb/Remote;")) {
                 ejbRemote = true;
-            } else if (annotation.equals("Ljavax/ejb/Stateless;")) {
+            } else if (annotation.equals("Ljavax/ejb/Stateless;") || annotation.equals("Ljakarta/ejb/Stateless;")) {
                 ejbStateless = true;
             }
         }
