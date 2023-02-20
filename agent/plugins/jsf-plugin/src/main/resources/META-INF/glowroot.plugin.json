@@ -6,7 +6,7 @@
       "className": "com.sun.faces.lifecycle.ApplyRequestValuesPhase",
       "methodName": "execute",
       "methodParameterTypes": [
-        "javax.faces.context.FacesContext"
+        "javax.faces.context.FacesContext|jakarta.faces.context.FacesContext"
       ],
       "nestingGroup": "jsf",
       "captureKind": "trace-entry",
@@ -17,7 +17,7 @@
       "className": "com.sun.faces.application.ActionListenerImpl",
       "methodName": "processAction",
       "methodParameterTypes": [
-        "javax.faces.event.ActionEvent"
+        "javax.faces.event.ActionEvent|jakarta.faces.event.ActionEvent"
       ],
       "nestingGroup": "jsf",
       "captureKind": "trace-entry",
@@ -28,7 +28,7 @@
       "className": "com.sun.faces.lifecycle.RenderResponsePhase",
       "methodName": "execute",
       "methodParameterTypes": [
-        "javax.faces.context.FacesContext"
+        "javax.faces.context.FacesContext|jakarta.faces.context.FacesContext"
       ],
       "nestingGroup": "jsf",
       "captureKind": "trace-entry",
