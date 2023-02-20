@@ -3,10 +3,10 @@
   "id": "jms",
   "instrumentation": [
     {
-      "className": "javax.jms.MessageListener",
+      "className": "javax.jms.MessageListener|jakarta.jms.MessageListener",
       "methodName": "onMessage",
       "methodParameterTypes": [
-        "javax.jms.Message"
+        "javax.jms.Message|jakarta.jms.Message"
       ],
       "nestingGroup": "jms",
       "captureKind": "transaction",
@@ -15,10 +15,10 @@
       "transactionNameTemplate": "JMS Message: {{this.class.simpleName}}"
     },
     {
-      "className": "javax.jms.MessageProducer",
+      "className": "javax.jms.MessageProducer|jakarta.jms.MessageProducer",
       "methodName": "send",
       "methodParameterTypes": [
-        "javax.jms.Message",
+        "javax.jms.Message|jakarta.jms.Message",
         ".."
       ],
       "nestingGroup": "jms",
@@ -26,11 +26,11 @@
       "timerName": "jms send message"
     },
     {
-      "className": "javax.jms.MessageProducer",
+      "className": "javax.jms.MessageProducer|jakarta.jms.MessageProducer",
       "methodName": "send",
       "methodParameterTypes": [
-        "javax.jms.Destination",
-        "javax.jms.Message",
+        "javax.jms.Destination|jakarta.jms.Destination",
+        "javax.jms.Message|jakarta.jms.Message",
         ".."
       ],
       "nestingGroup": "jms",
