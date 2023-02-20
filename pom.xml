@@ -59,6 +59,7 @@
     <module>agent/plugins/grails-plugin</module>
     <module>agent/plugins/hibernate-plugin</module>
     <module>agent/plugins/http-client-plugin</module>
+    <module>agent/plugins/jakarta-servlet-plugin</module>
     <module>agent/plugins/java-http-server-plugin</module>
     <module>agent/plugins/jaxrs-plugin</module>
     <module>agent/plugins/jaxws-plugin</module>
