@@ -129,6 +129,13 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             // sun/reflect/GeneratedMethodAccessor..
             return true;
         }
+        if (className.startsWith("jdk/internal/reflect/Generated")) {
+            // optimization, no need to try to weave the many classes generated for reflection:
+            // jdk/internal/reflect/GeneratedSerializationConstructorAccessor..
+            // jdk/internal/reflect/GeneratedConstructorAccessor..
+            // jdk/internal/reflect/GeneratedMethodAccessor..
+            return true;
+        }
         // proxies under JDK 7+ start with com/sun/proxy/$Proxy
         if (className.matches("^jdk/proxy\\d+/\\$Proxy.*") || className.startsWith("com/sun/proxy/$Proxy")) {
             // optimization, especially for jdbc plugin to avoid weaving proxy wrappers when dealing
