@@ -26,8 +26,8 @@
       "className": "org.springframework.jms.listener.SessionAwareMessageListener",
       "methodName": "onMessage",
       "methodParameterTypes": [
-        "javax.jms.Message",
-        "javax.jms.Session"
+        "javax.jms.Message|jakarta.jms.Message",
+        "javax.jms.Session|jakarta.jms.Session"
       ],
       "nestingGroup": "jms",
       "captureKind": "transaction",

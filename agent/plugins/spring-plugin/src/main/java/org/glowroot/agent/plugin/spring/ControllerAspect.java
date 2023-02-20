@@ -140,7 +140,7 @@ public class ControllerAspect {
 
     @Pointcut(className = "org.springframework.web.servlet.handler.AbstractHandlerMethodMapping",
             methodName = "handleMatch", methodParameterTypes = {"java.lang.Object",
-                    "java.lang.String", "javax.servlet.http.HttpServletRequest"})
+                    "java.lang.String", "javax.servlet.http.HttpServletRequest|jakarta.servlet.http.HttpServletRequest"})
     public static class HandlerMethodMappingAdvice {
         @OnBefore
         public static void onBefore(ThreadContext context,
@@ -175,7 +175,7 @@ public class ControllerAspect {
 
     @Pointcut(className = "org.springframework.web.servlet.handler.AbstractUrlHandlerMapping",
             methodName = "exposePathWithinMapping", methodParameterTypes = {"java.lang.String",
-                    "java.lang.String", "javax.servlet.http.HttpServletRequest"})
+                    "java.lang.String", "javax.servlet.http.HttpServletRequest|jakarta.servlet.http.HttpServletRequest"})
     public static class UrlHandlerMappingAdvice {
         @OnBefore
         public static void onBefore(ThreadContext context,
