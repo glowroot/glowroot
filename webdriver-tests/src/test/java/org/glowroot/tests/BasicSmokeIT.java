@@ -18,6 +18,7 @@ package org.glowroot.tests;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -268,7 +269,7 @@ public class BasicSmokeIT extends WebDriverIT {
         clickWithWait(xpath("//button[normalize-space()='Force GC']"));
 
         jvmSidebar.clickMBeanTreeLink();
-        List<WebElement> elements = new WebDriverWait(driver, 30).until(ExpectedConditions
+        List<WebElement> elements = new WebDriverWait(driver, Duration.ofSeconds(30)).until(ExpectedConditions
                 .visibilityOfAllElementsLocatedBy(className("gt-mbean-unexpanded-content")));
         for (WebElement element : elements) {
             element.click();
@@ -450,7 +451,7 @@ public class BasicSmokeIT extends WebDriverIT {
         clickLink("Thread profile");
         Utils.getWithWait(driver, xpath("//input[@ng-model='filter']")).sendKeys("JdbcServlet");
         click(xpath("//button[@ng-click='refresh()']"));
-        new WebDriverWait(driver, 30).until(ExpectedConditions
+        new WebDriverWait(driver, Duration.ofSeconds(30)).until(ExpectedConditions
                 .textToBePresentInElementLocated(className("gt-profile"), "JdbcServlet"));
         clickLink("View flame graph");
         // give flame graph a chance to render (only for visual when running locally)

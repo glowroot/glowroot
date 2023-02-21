@@ -15,6 +15,7 @@
  */
 package org.glowroot.tests.config;
 
+import java.time.Duration;
 import java.util.function.Function;
 
 import org.openqa.selenium.By;
@@ -91,7 +92,7 @@ public class InstrumentationConfigPage extends Page {
     }
 
     public WebElement getTransactionTypeTextField() {
-        return getWithWait(xpath("//div[@gt-model='config.transactionType']//input"));
+        return getWithWait(xpath("//input[@ng-model='config.transactionType']"));
     }
 
     public WebElement getTransactionNameTemplateTextField() {
@@ -117,7 +118,7 @@ public class InstrumentationConfigPage extends Page {
 
     private void clickTypeAheadItem(String label, final String text) {
         final By xpath = xpath("//div[label[normalize-space()='" + label + "']]//ul/li/a");
-        new WebDriverWait(driver, 30).until(new Function<WebDriver, Boolean>() {
+        new WebDriverWait(driver, Duration.ofSeconds(30)).until(new Function<WebDriver, Boolean>() {
             @Override
             public Boolean apply(WebDriver driver) {
                 for (WebElement element : driver.findElements(xpath)) {

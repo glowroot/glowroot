@@ -17,7 +17,7 @@
   <description>Glowroot WebDriver Tests</description>
 
   <properties>
-    <selenium.version>3.141.59</selenium.version>
+    <selenium.version>4.8.1</selenium.version>
     <jetty.version>9.4.26.v20200117</jetty.version>
   </properties>
 
@@ -94,14 +94,14 @@
     </dependency>
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
-      <artifactId>selenium-server</artifactId>
+      <artifactId>selenium-java</artifactId>
       <version>${selenium.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.machinepublishers</groupId>
       <artifactId>jbrowserdriver</artifactId>
-      <version>1.0.1</version>
+      <version>1.1.1</version>
       <exclusions>
         <exclusion>
           <!-- a later version of jna with a different groupId is already included by selenium -->
