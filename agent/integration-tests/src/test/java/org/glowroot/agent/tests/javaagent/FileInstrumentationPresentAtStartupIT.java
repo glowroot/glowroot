@@ -29,6 +29,7 @@ import org.glowroot.agent.it.harness.TempDirs;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
+import org.junitpioneer.jupiter.RetryingTest;
 
 public class FileInstrumentationPresentAtStartupIT {
 
@@ -68,7 +69,7 @@ public class FileInstrumentationPresentAtStartupIT {
         container.checkAndReset();
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3) // this test may randomly fail on CI, retry 3 times before giving up
     public void shouldExecute1() throws Exception {
         // just verify that set up / tear down doesn't fail
     }

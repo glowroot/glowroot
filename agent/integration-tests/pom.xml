@@ -62,6 +62,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.junit-pioneer</groupId>
+      <artifactId>junit-pioneer</artifactId>
+      <version>2.0.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <!-- this dependency exists here just to test that glowroot's logback (in the bootstrap
         class loader) doesn't use the SAX parser from this dependency (in the system class loader)
         which causes problems, e.g. java.net.HttpURLConnection to be loaded early (see code and
