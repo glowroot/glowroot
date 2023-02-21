@@ -68,7 +68,7 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
-      <version>13.0.8.Final</version>
+      <version>13.0.15.Final</version>
     </dependency>
     <!-- jgroups-kubernetes specifies that it requires 4.2.x -->
     <dependency>
