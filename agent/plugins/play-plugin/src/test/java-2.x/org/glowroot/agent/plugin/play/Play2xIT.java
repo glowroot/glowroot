@@ -50,6 +50,7 @@ public class Play2xIT {
     @BeforeAll
     public static void setUp() throws Exception {
         Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("17"));
+        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("19"));
 
         // javaagent is required for Executor.execute() weaving
         // -Dlogger.resource is needed to configure play logging (at least on 2.0.8)
