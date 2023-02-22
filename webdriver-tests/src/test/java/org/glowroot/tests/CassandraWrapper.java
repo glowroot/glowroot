@@ -25,6 +25,8 @@ import org.rauschig.jarchivelib.ArchiveFormat;
 import org.rauschig.jarchivelib.Archiver;
 import org.rauschig.jarchivelib.ArchiverFactory;
 import org.rauschig.jarchivelib.CompressionType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URL;
@@ -37,13 +39,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 // see copies of this class in glowroot-server and glowroot-agent-cassandra-plugin
 class CassandraWrapper {
-
-    static final String CASSANDRA_VERSION;
+    private static final Logger logger = LoggerFactory.getLogger(CassandraWrapper.class);
+    static final String CASSANDRA_VERSION = "3.0.28";
     private static final String CASSANDRA_JVM;
 
     static {
-        CASSANDRA_VERSION = "3.0.28";
-        String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
         CASSANDRA_JVM =
                 System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
     }
@@ -52,7 +52,7 @@ class CassandraWrapper {
     private static ExecutorService consolePipeExecutorService;
 
     static void start() throws Exception {
-        assumeJdk8();
+        assumeJdk8Or11();
         File baseDir = new File("cassandra");
         File cassandraDir = new File(baseDir, "apache-cassandra-" + CASSANDRA_VERSION);
         if (!cassandraDir.exists()) {
@@ -193,11 +193,30 @@ class CassandraWrapper {
         }
     }
 
-    private static void assumeJdk8() {
+    private static void assumeJdk8Or11() {
         String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
-        String message = "Cassandra 3.x itself requires Java 8,"
+
+        int majorVersion = getJavaMajorVersion(javaVersion);
+        boolean javaVersionOk = (majorVersion >= 8 && majorVersion <= 11);
+
+        String message = "Cassandra 3.x itself requires Java 8 or 11,"
                 + " but this test is running under Java " + javaVersion + ", so you must"
-                + " provide -Dcassandra.jvm=... (or run this test under Java 8)";
-        Assumptions.assumeTrue(javaVersion.startsWith("1.8"), message);
+                + " provide -Dcassandra.jvm=... (or run this test under Java 8 or 11)";
+
+        Assumptions.assumeTrue(javaVersionOk, message);
+    }
+
+
+    private static int getJavaMajorVersion(String javaVersion) {
+        if (javaVersion == null) {
+            logger.warn("Unable to get java version");
+            return -1;
+        }
+        String[] versionElements = javaVersion.split("\\.");
+        int version = Integer.parseInt(versionElements[0]);
+        if (version == 1) {
+            return Integer.parseInt(versionElements[1]);
+        }
+        return version;
     }
 }
