@@ -85,8 +85,12 @@ public abstract class WebDriverIT {
 
     @AfterAll
     public static void tearDownBase() throws Exception {
-        httpClient.close();
-        setup.close();
+        if (httpClient != null) {
+            httpClient.close();
+        }
+        if (setup != null) {
+            setup.close();
+        }
     }
 
     @BeforeEach
