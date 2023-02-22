@@ -20,12 +20,14 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.Lists;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -45,12 +47,15 @@ public class ElasticsearchSyncIT {
 
     @BeforeAll
     public static void setUp() {
+        assumeJdkLessThan18();
         container = ElasticsearchExtension.getContainer();
     }
 
     @AfterEach
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        if (container != null) {
+            container.checkAndReset();
+        }
     }
 
     @Test
@@ -652,5 +657,29 @@ public class ElasticsearchSyncIT {
                     .addSort("abc", SortOrder.ASC)
                     .get();
         }
+    }
+
+    private static void assumeJdkLessThan18() {
+        String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
+
+        int majorVersion = getJavaMajorVersion(javaVersion);
+        boolean javaVersionOk = majorVersion < 18;
+
+        String message = "Elasticsearch 6.x requires a SecurityManager and thus is not compatible with java 18+,"
+                + " but this test is running under Java " + javaVersion + ".";
+
+        Assumptions.assumeTrue(javaVersionOk, message);
+    }
+
+    private static int getJavaMajorVersion(String javaVersion) {
+        if (javaVersion == null) {
+            return -1;
+        }
+        String[] versionElements = javaVersion.split("\\.");
+        int version = Integer.parseInt(versionElements[0]);
+        if (version == 1) {
+            return Integer.parseInt(versionElements[1]);
+        }
+        return version;
     }
 }
