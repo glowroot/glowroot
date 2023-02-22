@@ -15,6 +15,11 @@
       <unpack>true</unpack>
       <unpackOptions>
         <excludes>
+          <exclude>doc-files/speclicense.html</exclude>
+          <exclude>overview.html</exclude>
+          <exclude>META-INF/services/javax.mail.Provider</exclude>
+          <exclude>META-INF/LICENSE.md</exclude>
+          <exclude>META-INF/NOTICE.md</exclude>
           <exclude>META-INF/glowroot.javamail.charset.map</exclude>
           <exclude>META-INF/glowroot.javamail.default.address.map</exclude>
           <exclude>META-INF/glowroot.javamail.default.providers</exclude>
