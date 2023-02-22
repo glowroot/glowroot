@@ -10,7 +10,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up JDK 8 for build
         uses: actions/setup-java@v2
@@ -137,7 +137,7 @@ jobs:
         run: |
           aws s3 sync central/target/yum s3://glowroot.org/yum
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           repository: ${{github.repository}}.wiki
 

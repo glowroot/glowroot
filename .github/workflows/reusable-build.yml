@@ -17,7 +17,7 @@ jobs:
       TEST_SHADED: ${{ matrix.testShaded }}
       GLOWROOT_HARNESS: ${{ matrix.glowrootHarness }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up JDK ${{ matrix.java }} for tests
         if: ${{ matrix.java != 8 }}
