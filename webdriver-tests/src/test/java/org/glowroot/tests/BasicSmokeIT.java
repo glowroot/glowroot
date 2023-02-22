@@ -104,7 +104,9 @@ public class BasicSmokeIT extends WebDriverIT {
 
     @AfterAll
     public static void tearDown() throws Exception {
-        container.interruptAppUnderTest();
+        if (container != null) {
+            container.interruptAppUnderTest();
+        }
     }
 
     @Test
