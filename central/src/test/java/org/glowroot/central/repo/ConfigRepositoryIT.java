@@ -101,6 +101,9 @@ public class ConfigRepositoryIT {
 
     @AfterAll
     public static void tearDown() throws Exception {
+        if (!SharedSetupRunListener.isStarted()) {
+            return;
+        }
         asyncExecutor.shutdown();
         // remove bad data so other tests don't have issue
         session.updateSchemaWithRetry("drop table if exists agent_config");

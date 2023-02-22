@@ -57,6 +57,9 @@ public class ConfigDaoIT {
 
     @AfterAll
     public static void tearDown() throws Exception {
+        if (!SharedSetupRunListener.isStarted()) {
+            return;
+        }
         asyncExecutor.shutdown();
         session.close();
         cluster.close();

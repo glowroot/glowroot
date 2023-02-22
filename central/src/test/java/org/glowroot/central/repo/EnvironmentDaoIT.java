@@ -46,6 +46,9 @@ public class EnvironmentDaoIT {
 
     @AfterAll
     public static void tearDown() throws Exception {
+        if (!SharedSetupRunListener.isStarted()) {
+            return;
+        }
         session.close();
         cluster.close();
         SharedSetupRunListener.stopCassandra();

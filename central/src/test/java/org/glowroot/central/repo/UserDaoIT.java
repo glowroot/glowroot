@@ -47,6 +47,9 @@ public class UserDaoIT {
 
     @AfterAll
     public static void tearDown() throws Exception {
+        if (!SharedSetupRunListener.isStarted()) {
+            return;
+        }
         clusterManager.close();
         session.close();
         cluster.close();

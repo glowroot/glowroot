@@ -19,6 +19,7 @@ import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.opentest4j.TestAbortedException;
 
 public class CassandraExtension implements BeforeAllCallback {
 
@@ -47,6 +48,8 @@ public class CassandraExtension implements BeforeAllCallback {
             try {
                 startCassandra();
                 this.container = Containers.create();
+            } catch (TestAbortedException te) {
+                throw te;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

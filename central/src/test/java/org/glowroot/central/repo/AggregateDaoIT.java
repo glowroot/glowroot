@@ -113,6 +113,9 @@ public class AggregateDaoIT {
 
     @AfterAll
     public static void tearDown() throws Exception {
+        if (!SharedSetupRunListener.isStarted()) {
+            return;
+        }
         fullQueryTextDao.close();
         asyncExecutor.shutdown();
         session.close();

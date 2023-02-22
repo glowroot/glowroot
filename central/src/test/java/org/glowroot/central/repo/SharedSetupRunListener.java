@@ -22,17 +22,24 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 public class SharedSetupRunListener implements BeforeAllCallback, AfterAllCallback {
 
     private static volatile boolean shared;
+    private static volatile boolean started;
 
     static void startCassandra() throws Exception {
         if (!shared) {
             CassandraWrapper.start();
+            started = true;
         }
     }
 
     static void stopCassandra() throws Exception {
         if (!shared) {
             CassandraWrapper.stop();
+            started = false;
         }
+    }
+
+    public static boolean isStarted() {
+        return started;
     }
 
     @Override

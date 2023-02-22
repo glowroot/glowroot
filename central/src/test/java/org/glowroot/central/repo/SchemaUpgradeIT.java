@@ -29,7 +29,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import org.glowroot.central.repo.CassandraWrapper.ConsoleOutputPipe;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
 
@@ -65,6 +64,9 @@ public class SchemaUpgradeIT {
 
     @AfterAll
     public static void tearDown() throws Exception {
+        if (!SharedSetupRunListener.isStarted()) {
+            return;
+        }
         session.close();
         cluster.close();
         SharedSetupRunListener.stopCassandra();
@@ -110,8 +112,8 @@ public class SchemaUpgradeIT {
                             + " NUMPROCESSES = 1 and MAXBATCHSIZE = 1");
             processBuilder.redirectErrorStream(true);
             Process process = processBuilder.start();
-            ConsoleOutputPipe consoleOutputPipe =
-                    new ConsoleOutputPipe(process.getInputStream(), System.out);
+            CassandraWrapper.ConsoleOutputPipe consoleOutputPipe =
+                    new CassandraWrapper.ConsoleOutputPipe(process.getInputStream(), System.out);
             ExecutorService consolePipeExecutorService = Executors.newSingleThreadExecutor();
             consolePipeExecutorService.submit(consoleOutputPipe);
             process.waitFor();
@@ -136,7 +138,7 @@ public class SchemaUpgradeIT {
                             + " NUMPROCESSES = 1");
             processBuilder.redirectErrorStream(true);
             Process process = processBuilder.start();
-            executor.submit(new ConsoleOutputPipe(process.getInputStream(), System.out));
+            executor.submit(new CassandraWrapper.ConsoleOutputPipe(process.getInputStream(), System.out));
             process.waitFor();
         }
         executor.shutdown();

@@ -40,6 +40,9 @@ public class MiscToolIT {
     @AfterAll
     public static void tearDown() throws Exception {
         System.clearProperty("glowroot.cassandra.keyspace");
+        if (!SharedSetupRunListener.isStarted()) {
+            return;
+        }
         SharedSetupRunListener.stopCassandra();
     }
 
