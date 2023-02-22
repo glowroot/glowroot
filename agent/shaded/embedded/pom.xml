@@ -81,7 +81,8 @@
                 <exclude>META-INF/gfprobe-provider.xml</exclude>
                 <exclude>META-INF/javamail.charset.map</exclude>
                 <exclude>META-INF/mailcap</exclude>
-                <exclude>META-INF/LICENSE.txt</exclude>
+                <exclude>META-INF/LICENSE.md</exclude>
+                <exclude>META-INF/NOTICE.md</exclude>
                 <!-- pom.xml is only present in sources jar -->
                 <exclude>pom.xml</exclude>
               </excludes>
@@ -93,17 +94,19 @@
                   glowroot.javamail.address.map and glowroot.javamail.providers -->
                 <exclude>META-INF/javamail.address.map</exclude>
                 <exclude>META-INF/javamail.providers</exclude>
-                <exclude>META-INF/LICENSE.txt</exclude>
+                <exclude>META-INF/LICENSE.md</exclude>
+                <exclude>META-INF/NOTICE.md</exclude>
                 <!-- pom.xml is only present in sources jar -->
                 <exclude>pom.xml</exclude>
               </excludes>
             </filter>
             <filter>
-              <artifact>com.sun.activation:javax.activation</artifact>
+              <artifact>com.sun.activation:jakarta.activation</artifact>
               <excludes>
                 <exclude>META-INF/mailcap.default</exclude>
                 <exclude>META-INF/mimetypes.default</exclude>
-                <exclude>META-INF/LICENSE.txt</exclude>
+                <exclude>META-INF/LICENSE.md</exclude>
+                <exclude>META-INF/NOTICE.md</exclude>
               </excludes>
             </filter>
           </filters>
