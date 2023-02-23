@@ -92,28 +92,33 @@ class PreInitializeStorageShutdownClasses {
     private static List<String> getH2UsedTypes() {
         List<String> types = Lists.newArrayList();
         types.add("org.h2.api.ErrorCode");
-        types.add("org.h2.api.JavaObjectSerializer");
         types.add("org.h2.command.CommandInterface");
-        types.add("org.h2.engine.Constants");
+        types.add("org.h2.engine.CastDataProvider");
         types.add("org.h2.engine.SessionInterface");
-        types.add("org.h2.engine.SysProperties");
         types.add("org.h2.jdbc.JdbcConnection");
+        types.add("org.h2.jdbc.JdbcConnectionBackwardsCompat");
+        types.add("org.h2.jdbc.JdbcException");
+        types.add("org.h2.jdbc.JdbcSQLDataException");
         types.add("org.h2.jdbc.JdbcSQLException");
+        types.add("org.h2.jdbc.JdbcSQLFeatureNotSupportedException");
+        types.add("org.h2.jdbc.JdbcSQLIntegrityConstraintViolationException");
+        types.add("org.h2.jdbc.JdbcSQLInvalidAuthorizationSpecException");
+        types.add("org.h2.jdbc.JdbcSQLNonTransientConnectionException");
+        types.add("org.h2.jdbc.JdbcSQLNonTransientException");
+        types.add("org.h2.jdbc.JdbcSQLSyntaxErrorException");
+        types.add("org.h2.jdbc.JdbcSQLTimeoutException");
+        types.add("org.h2.jdbc.JdbcSQLTransactionRollbackException");
+        types.add("org.h2.jdbc.JdbcSQLTransientException");
         types.add("org.h2.message.DbException");
         types.add("org.h2.message.Trace");
         types.add("org.h2.message.TraceObject");
-        types.add("org.h2.message.TraceSystem");
         types.add("org.h2.message.TraceWriter");
-        types.add("org.h2.store.fs.FilePath");
-        types.add("org.h2.store.fs.FileUtils");
+        types.add("org.h2.result.ResultWithGeneratedKeys");
         types.add("org.h2.util.CloseWatcher");
         types.add("org.h2.util.IOUtils");
-        types.add("org.h2.util.MathUtils");
-        types.add("org.h2.util.New");
         types.add("org.h2.util.SortedProperties");
         types.add("org.h2.util.StringUtils");
         types.add("org.h2.util.Utils");
-        types.add("org.h2.util.Utils$ClassFactory");
         return types;
     }
 
@@ -158,11 +163,22 @@ class PreInitializeStorageShutdownClasses {
         List<String> types = Lists.newArrayList();
         types.add("java.sql.Connection");
         types.add("java.sql.DriverManager");
+        types.add("java.sql.SQLDataException");
         types.add("java.sql.SQLException");
+        types.add("java.sql.SQLFeatureNotSupportedException");
+        types.add("java.sql.SQLIntegrityConstraintViolationException");
+        types.add("java.sql.SQLInvalidAuthorizationSpecException");
+        types.add("java.sql.SQLNonTransientConnectionException");
+        types.add("java.sql.SQLNonTransientException");
         types.add("java.sql.SQLPermission");
+        types.add("java.sql.SQLSyntaxErrorException");
+        types.add("java.sql.SQLTimeoutException");
+        types.add("java.sql.SQLTransactionRollbackException");
+        types.add("java.sql.SQLTransientException");
         types.add("java.sql.SQLWarning");
         types.add("java.sql.Statement");
         types.add("java.sql.Wrapper");
+
         return types;
     }
 }
