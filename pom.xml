@@ -90,17 +90,17 @@
   </scm>
 
   <properties>
-    <grpc.version>1.44.1</grpc.version>
-    <protobuf.version>3.19.4</protobuf.version>
-    <protoc.version>3.19.4</protoc.version>
+    <grpc.version>1.53.0</grpc.version>
+    <protobuf.version>3.21.12</protobuf.version>
+    <protoc.version>3.21.12</protoc.version>
     <!-- need to stick to netty version that is used by grpc version above -->
-    <netty.version>4.1.72.Final</netty.version>
+    <netty.version>4.1.79.Final</netty.version>
     <logback.version>1.2.11</logback.version>
     <slf4j.version>1.7.36</slf4j.version>
     <immutables.version>2.8.8</immutables.version>
     <checker.version>3.18.1</checker.version>
     <jmh.version>1.33</jmh.version>
-    <junit.version>5.8.1</junit.version>
+    <junit.version>5.9.2</junit.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
@@ -225,12 +225,12 @@
       <dependency>
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>
-        <version>3.21.0</version>
+        <version>3.24.2</version>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>3.2.4</version>
+        <version>3.12.4</version>
       </dependency>
       <dependency>
         <groupId>com.ning</groupId>
@@ -250,17 +250,17 @@
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-core</artifactId>
-        <version>8.5.72</version>
+        <version>8.5.85</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-jasper</artifactId>
-        <version>8.5.72</version>
+        <version>8.5.85</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-websocket</artifactId>
-        <version>8.5.72</version>
+        <version>8.5.85</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
