@@ -33,7 +33,7 @@ The usual:
 
 Binary distribution is built under agent/dist/target.
 
-Building requires Java 8+ and Maven 3.1.0+.
+Building requires Java 8+ and Maven 3.6.0+.
 
 ## Contributing
 
