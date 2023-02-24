@@ -130,6 +130,7 @@
               <artifact>io.grpc:grpc-netty</artifact>
               <excludes>
                 <exclude>META-INF/services/io.grpc.ManagedChannelProvider</exclude>
+                <exclude>META-INF/services/io.grpc.NameResolverProvider</exclude>
                 <exclude>META-INF/services/io.grpc.ServerProvider</exclude>
               </excludes>
             </filter>
@@ -367,6 +368,10 @@
             <option>
               -keep class org.glowroot.agent.shaded.io.netty.internal.tcnative.** { *; }
             </option>
+            <!-- needed since grpc 1.53.0 -->
+            <option>
+              -keep class org.glowroot.agent.shaded.io.grpc.util.** { *; }
+            </option>
             <!-- even though these classes will be stripped out in assembly plugin below, this will
               retain the jackson classes that they depend on -->
             <option>
@@ -408,6 +413,10 @@
                   <Main-Class>org.glowroot.agent.ToolMain</Main-Class>
                   <Can-Redefine-Classes>true</Can-Redefine-Classes>
                   <Can-Retransform-Classes>true</Can-Retransform-Classes>
+                  <Implementation-Title>Glowroot Agent</Implementation-Title>
+                  <Implementation-Version>${project.version}</Implementation-Version>
+                  <Build-Commit>${glowroot.build.commit}</Build-Commit>
+                  <Build-Time>${maven.build.timestamp}</Build-Time>
                 </manifestEntries>
               </archive>
             </configuration>
