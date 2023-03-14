@@ -155,19 +155,19 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>net.bytebuddy</groupId>
       <artifactId>byte-buddy</artifactId>
-      <version>1.10.7</version>
+      <version>1.14.2</version>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>4.5.11</version>
+      <version>4.5.14</version>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore</artifactId>
-      <version>4.4.13</version>
+      <version>4.4.16</version>
     </dependency>
     <dependency>
       <groupId>org.checkerframework</groupId>
@@ -258,7 +258,7 @@
         <!-- maven-war-plugin needs to execute before maven-jar-plugin, otherwise it messes up the
           jar's manifest -->
         <artifactId>maven-war-plugin</artifactId>
-        <version>3.2.2</version>
+        <version>3.3.2</version>
         <executions>
           <execution>
             <goals>
