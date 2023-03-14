@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import ch.qos.logback.classic.LoggerContext;
 import com.datastax.oss.driver.api.core.*;
