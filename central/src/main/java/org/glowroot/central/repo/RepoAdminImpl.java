@@ -16,9 +16,12 @@
 package org.glowroot.central.repo;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
-import com.datastax.driver.core.TableMetadata;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,16 +100,18 @@ public class RepoAdminImpl implements RepoAdmin {
         CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
         List<String> tableNames = new ArrayList<>();
         for (TableMetadata table : session.getTables()) {
-            String compactionClass = table.getOptions().getCompaction().get("class");
+            Map<String, String> compaction = (Map<String, String>) table.getOptions()
+                    .getOrDefault(CqlIdentifier.fromInternal("compaction"), Collections.emptyMap());
+            String compactionClass = compaction.get("class");
             if (compactionClass == null || !compactionClass
                     .equals("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")) {
                 continue;
             }
             String actualWindowUnit =
-                    table.getOptions().getCompaction().get("compaction_window_unit");
+                    compaction.get("compaction_window_unit");
             String actualWindowSize =
-                    table.getOptions().getCompaction().get("compaction_window_size");
-            int expirationHours = getExpirationHoursForTable(table.getName(), storageConfig);
+                    compaction.get("compaction_window_size");
+            int expirationHours = getExpirationHoursForTable(table.getName().asInternal(), storageConfig);
             if (expirationHours == -1) {
                 // warning already logged above inside getExpirationHoursForTable()
                 continue;
@@ -114,7 +119,7 @@ public class RepoAdminImpl implements RepoAdmin {
             int windowSizeHours = Session.getCompactionWindowSizeHours(expirationHours);
             if (!"HOURS".equals(actualWindowUnit)
                     || !Integer.toString(windowSizeHours).equals(actualWindowSize)) {
-                tableNames.add(table.getName());
+                tableNames.add(table.getName().asInternal());
             }
         }
         int updatedTableCount = 0;

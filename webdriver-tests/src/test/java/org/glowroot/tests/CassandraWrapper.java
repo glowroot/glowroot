@@ -15,10 +15,8 @@
  */
 package org.glowroot.tests;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.google.common.base.StandardSystemProperty;
-import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import org.junit.jupiter.api.Assumptions;
 import org.rauschig.jarchivelib.ArchiveFormat;
@@ -29,7 +27,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -118,7 +118,7 @@ class CassandraWrapper {
     }
 
     private static List<String> buildCommandLine(File cassandraDir) {
-        List<String> command = Lists.newArrayList();
+        List<String> command = new ArrayList<>();
         command.add(CASSANDRA_JVM);
         command.add("-cp");
         command.add(buildClasspath(cassandraDir));
@@ -155,13 +155,13 @@ class CassandraWrapper {
 
     private static void waitForCassandra() throws InterruptedException {
         while (true) {
-            Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
-            try {
-                cluster.connect();
-                cluster.close();
+            try (CqlSession session = CqlSession.builder()
+                    .addContactPoint(InetSocketAddress.createUnresolved("127.0.0.1", 9042))
+                    .withLocalDatacenter("datacenter1")
+                    .build()) {
+                logger.info("Connected to cassandra");
                 return;
-            } catch (NoHostAvailableException e) {
-                cluster.close();
+            } catch (Exception e) {
                 SECONDS.sleep(1);
             }
         }

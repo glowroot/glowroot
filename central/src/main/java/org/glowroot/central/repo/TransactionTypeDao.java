@@ -19,10 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.immutables.value.Value;
 
@@ -84,13 +81,13 @@ class TransactionTypeDao implements TransactionTypeRepository {
             }
             ListenableFuture<?> future;
             try {
-                BoundStatement boundStatement = insertPS.bind();
                 int i = 0;
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setString(i++, transactionType);
+                BoundStatement boundStatement = insertPS.bind()
+                        .setString(i++, agentRollupId)
+                        .setString(i++, transactionType)
                 // intentionally not accounting for rateLimiter in TTL
-                boundStatement.setInt(i++,
-                        configRepository.getCentralStorageConfig().getMaxRollupTTL());
+                        .setInt(i++,
+                            configRepository.getCentralStorageConfig().getMaxRollupTTL());
                 future = session.writeAsync(boundStatement);
             } catch (Exception e) {
                 rateLimiter.release(rateLimiterKey);
@@ -114,8 +111,8 @@ class TransactionTypeDao implements TransactionTypeRepository {
     private class TransactionTypeCacheLoader implements CacheLoader<String, List<String>> {
         @Override
         public List<String> load(String agentRollupId) throws Exception {
-            BoundStatement boundStatement = readPS.bind();
-            boundStatement.setString(0, agentRollupId);
+            BoundStatement boundStatement = readPS.bind()
+                .setString(0, agentRollupId);
             ResultSet results = session.read(boundStatement);
             List<String> transactionTypes = new ArrayList<>();
             for (Row row : results) {

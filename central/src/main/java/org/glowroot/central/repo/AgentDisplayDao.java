@@ -20,10 +20,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.Executor;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.Futures;
@@ -71,13 +68,13 @@ public class AgentDisplayDao implements AgentDisplayRepository {
 
     void store(String agentRollupId, String display) throws Exception {
         if (display.isEmpty()) {
-            BoundStatement boundStatement = deletePS.bind();
-            boundStatement.setString(0, agentRollupId);
+            BoundStatement boundStatement = deletePS.bind()
+                .setString(0, agentRollupId);
             session.write(boundStatement);
         } else {
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, agentRollupId);
-            boundStatement.setString(1, display);
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(0, agentRollupId)
+                .setString(1, display);
             session.write(boundStatement);
         }
         agentDisplayCache.invalidate(agentRollupId);
@@ -108,8 +105,8 @@ public class AgentDisplayDao implements AgentDisplayRepository {
     private class AgentDisplayCacheLoader implements AsyncCacheLoader<String, String> {
         @Override
         public ListenableFuture<String> load(String agentRollupId) throws Exception {
-            BoundStatement boundStatement = readPS.bind();
-            boundStatement.setString(0, agentRollupId);
+            BoundStatement boundStatement = readPS.bind()
+                .setString(0, agentRollupId);
             ListenableFuture<ResultSet> future = session.readAsync(boundStatement);
             return Futures.transform(future, new Function<ResultSet, String>() {
                 @Override

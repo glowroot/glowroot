@@ -22,11 +22,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.base.Optional;
 import com.google.protobuf.ByteString;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -93,16 +93,16 @@ public class AgentConfigDao {
         AgentConfig existingAgentConfig = read(agentId);
         AgentConfig updatedAgentConfig =
                 buildUpdatedAgentConfig(agentConfig, existingAgentConfig, overwriteExisting);
-        if (existingAgentConfig == null || !updatedAgentConfig.equals(existingAgentConfig)) {
-            BoundStatement boundStatement = insertPS.bind();
+        if (!updatedAgentConfig.equals(existingAgentConfig)) {
             int i = 0;
-            boundStatement.setString(i++, agentId);
-            boundStatement.setBytes(i++, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(i++, agentId)
+                .setByteBuffer(i++, ByteBuffer.wrap(updatedAgentConfig.toByteArray()))
             // setting config_update to false as this method is only called by collectInit(), and
             // agent will not consider collectInit() to be successful until it receives updated
             // agent config
-            boundStatement.setBool(i++, false);
-            boundStatement.setToNull(i++);
+                .setBoolean(i++, false)
+                .setToNull(i++);
             session.write(boundStatement);
             agentConfigCache.invalidate(agentId);
         }
@@ -116,20 +116,20 @@ public class AgentConfigDao {
                 // there is no config for rollup yet
                 // so insert initial config propagating ui config and advanced config properties
                 // that pertain to rollups
-                BoundStatement boundStatement = insertPS.bind();
                 int i = 0;
-                boundStatement.setString(i++, loopAgentRollupId);
                 AdvancedConfig advancedConfig = updatedAgentConfig.getAdvancedConfig();
-                boundStatement.setBytes(i++, ByteBuffer.wrap(AgentConfig.newBuilder()
+                BoundStatement boundStatement = insertPS.bind()
+                    .setString(i++, loopAgentRollupId)
+                    .setByteBuffer(i++, ByteBuffer.wrap(AgentConfig.newBuilder()
                         .setUiDefaultsConfig(updatedAgentConfig.getUiDefaultsConfig())
                         .setAdvancedConfig(AdvancedConfig.newBuilder()
                                 .setMaxQueryAggregates(advancedConfig.getMaxQueryAggregates())
                                 .setMaxServiceCallAggregates(
                                         advancedConfig.getMaxServiceCallAggregates()))
                         .build()
-                        .toByteArray()));
-                boundStatement.setBool(i++, false);
-                boundStatement.setToNull(i++);
+                        .toByteArray()))
+                    .setBoolean(i++, false)
+                    .setToNull(i++);
                 session.write(boundStatement);
                 agentConfigCache.invalidate(loopAgentRollupId);
             }
@@ -150,14 +150,14 @@ public class AgentConfigDao {
     void update(String agentRollupId, AgentConfigUpdater agentConfigUpdater, boolean centralOnly)
             throws Exception {
         for (int j = 0; j < 10; j++) {
-            BoundStatement boundStatement = readPS.bind();
-            boundStatement.setString(0, agentRollupId);
+            BoundStatement boundStatement = readPS.bind()
+                .setString(0, agentRollupId);
             ResultSet results = session.read(boundStatement);
             Row row = results.one();
             if (row == null) {
                 throw new IllegalStateException("No config found: " + agentRollupId);
             }
-            ByteString currValue = ByteString.copyFrom(checkNotNull(row.getBytes(0)));
+            ByteString currValue = ByteString.copyFrom(checkNotNull(row.getByteBuffer(0)));
             AgentConfig currAgentConfig = AgentConfig.parseFrom(currValue);
             if (!centralOnly && currAgentConfig.getConfigReadOnly()) {
                 throw new IllegalStateException("This agent is running with config.readOnly=true so"
@@ -171,16 +171,16 @@ public class AgentConfigDao {
                 boundStatement = updatePS.bind();
             }
             int i = 0;
-            boundStatement.setBytes(i++, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
+            boundStatement = boundStatement.setByteBuffer(i++, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
             if (!centralOnly) {
-                boundStatement.setBool(i++, true);
-                boundStatement.setUUID(i++, UUIDs.random());
+                boundStatement = boundStatement.setBoolean(i++, true)
+                    .setUuid(i++, Uuids.random());
             }
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setBytes(i++, ByteBuffer.wrap(currValue.toByteArray()));
+            boundStatement = boundStatement.setString(i++, agentRollupId)
+                .setByteBuffer(i++, ByteBuffer.wrap(currValue.toByteArray()));
             results = session.update(boundStatement);
             row = checkNotNull(results.one());
-            boolean applied = row.getBool("[applied]");
+            boolean applied = row.getBoolean("[applied]");
             if (applied) {
                 agentConfigCache.invalidate(agentRollupId);
                 String updatedDisplay = updatedAgentConfig.getGeneralConfig().getDisplay();
@@ -211,10 +211,10 @@ public class AgentConfigDao {
 
     // does not apply to agent rollups
     public void markUpdated(String agentId, UUID configUpdateToken) throws Exception {
-        BoundStatement boundStatement = markUpdatedPS.bind();
         int i = 0;
-        boundStatement.setString(i++, agentId);
-        boundStatement.setUUID(i++, configUpdateToken);
+        BoundStatement boundStatement = markUpdatedPS.bind()
+            .setString(i++, agentId)
+            .setUuid(i++, configUpdateToken);
         session.update(boundStatement);
     }
 
@@ -285,8 +285,8 @@ public class AgentConfigDao {
             implements CacheLoader<String, Optional<AgentConfigAndUpdateToken>> {
         @Override
         public Optional<AgentConfigAndUpdateToken> load(String agentRollupId) throws Exception {
-            BoundStatement boundStatement = readPS.bind();
-            boundStatement.setString(0, agentRollupId);
+            BoundStatement boundStatement = readPS.bind()
+                .setString(0, agentRollupId);
             ResultSet results = session.read(boundStatement);
             Row row = results.one();
             if (row == null) {
@@ -294,8 +294,8 @@ public class AgentConfigDao {
                 return Optional.absent();
             }
             int i = 0;
-            ByteBuffer bytes = checkNotNull(row.getBytes(i++));
-            UUID updateToken = row.getUUID(i++);
+            ByteBuffer bytes = checkNotNull(row.getByteBuffer(i++));
+            UUID updateToken = row.getUuid(i++);
             return Optional.of(ImmutableAgentConfigAndUpdateToken.builder()
                     .config(AgentConfig.parseFrom(bytes))
                     .updateToken(updateToken)

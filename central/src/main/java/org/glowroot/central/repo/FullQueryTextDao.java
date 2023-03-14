@@ -24,10 +24,10 @@ import java.util.concurrent.Future;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.Futures;
@@ -36,7 +36,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.MoreFutures;
-import org.glowroot.central.util.MoreFutures.DoWithResults;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Styles;
@@ -112,11 +111,11 @@ class FullQueryTextDao {
         // relying on agent side to rate limit (re-)sending the same full text
         List<Future<?>> futures = new ArrayList<>();
         for (String agentRollupId : agentRollupIds) {
-            BoundStatement boundStatement = insertCheckV2PS.bind();
             int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, fullTextSha1);
-            boundStatement.setInt(i++, getTTL());
+            BoundStatement boundStatement = insertCheckV2PS.bind()
+                .setString(i++, agentRollupId)
+                .setString(i++, fullTextSha1)
+                .setInt(i++, getTTL());
             futures.add(session.writeAsync(boundStatement));
         }
         if (!rateLimiter.tryAcquire(fullTextSha1)) {
@@ -135,15 +134,15 @@ class FullQueryTextDao {
 
     private @Nullable String getFullTextUsingPS(String agentRollupId, String fullTextSha1,
             PreparedStatement readCheckPS) throws Exception {
-        BoundStatement boundStatement = readCheckPS.bind();
-        boundStatement.setString(0, agentRollupId);
-        boundStatement.setString(1, fullTextSha1);
+        BoundStatement boundStatement = readCheckPS.bind()
+            .setString(0, agentRollupId)
+            .setString(1, fullTextSha1);
         ResultSet results = session.read(boundStatement);
-        if (results.isExhausted()) {
+        if (results.one() == null) {
             return null;
         }
-        boundStatement = readPS.bind();
-        boundStatement.setString(0, fullTextSha1);
+        boundStatement = readPS.bind()
+            .setString(0, fullTextSha1);
         results = session.read(boundStatement);
         Row row = results.one();
         if (row == null) {
@@ -154,8 +153,8 @@ class FullQueryTextDao {
 
     private ListenableFuture<?> storeInternal(String fullTextSha1, String fullText)
             throws Exception {
-        BoundStatement boundStatement = readTtlPS.bind();
-        boundStatement.setString(0, fullTextSha1);
+        BoundStatement boundStatement = readTtlPS.bind()
+            .setString(0, fullTextSha1);
         ListenableFuture<ResultSet> future = session.readAsync(boundStatement);
         return MoreFutures.transformAsync(future, asyncExecutor, new DoWithResults() {
             @Override
@@ -176,11 +175,11 @@ class FullQueryTextDao {
                 }
             }
             private ListenableFuture<?> insertAndCompleteFuture(int ttl) throws Exception {
-                BoundStatement boundStatement = insertPS.bind();
                 int i = 0;
-                boundStatement.setString(i++, fullTextSha1);
-                boundStatement.setString(i++, fullText);
-                boundStatement.setInt(i++, ttl);
+                BoundStatement boundStatement = insertPS.bind()
+                    .setString(i++, fullTextSha1)
+                    .setString(i++, fullText)
+                    .setInt(i++, ttl);
                 return session.writeAsync(boundStatement);
             }
         });

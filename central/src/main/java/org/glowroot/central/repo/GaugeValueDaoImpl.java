@@ -16,9 +16,9 @@
 package org.glowroot.central.repo;
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,11 +28,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.cql.*;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -198,12 +195,12 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             maxCaptureTime = Math.max(captureTime, maxCaptureTime);
             int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
             int i = 0;
-            boundStatement.setString(i++, agentId);
-            boundStatement.setString(i++, gaugeName);
-            boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setDouble(i++, gaugeValue.getValue());
-            boundStatement.setLong(i++, gaugeValue.getWeight());
-            boundStatement.setInt(i++, adjustedTTL);
+            boundStatement = boundStatement.setString(i++, agentId)
+                .setString(i++, gaugeName)
+                .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                .setDouble(i++, gaugeValue.getValue())
+                .setLong(i++, gaugeValue.getWeight())
+                .setInt(i++, adjustedTTL);
             futures.add(session.writeAsync(boundStatement));
             for (String agentRollupIdForMeta : agentRollupIdsForMeta) {
                 futures.addAll(gaugeNameDao.insert(agentRollupIdForMeta, captureTime, gaugeName));
@@ -247,11 +244,11 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             int needsRollupAdjustedTTL = Common.getNeedsRollupAdjustedTTL(adjustedTTL,
                     configRepository.getRollupConfigs());
             int i = 0;
-            boundStatement.setString(i++, agentId);
-            boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setUUID(i++, UUIDs.timeBased());
-            boundStatement.setSet(i++, gaugeNames);
-            boundStatement.setInt(i++, needsRollupAdjustedTTL);
+            boundStatement = boundStatement.setString(i++, agentId)
+                .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                .setUuid(i++, Uuids.timeBased())
+                .setSet(i++, gaugeNames, String.class)
+                .setInt(i++, needsRollupAdjustedTTL);
             futures.add(session.writeAsync(boundStatement));
         }
         MoreFutures.waitForAll(futures);
@@ -280,18 +277,18 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     @Override
     public List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from,
             long to, int rollupLevel) throws Exception {
-        BoundStatement boundStatement = readValuePS.get(rollupLevel).bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, gaugeName);
-        boundStatement.setTimestamp(i++, new Date(from));
-        boundStatement.setTimestamp(i++, new Date(to));
+        BoundStatement boundStatement = readValuePS.get(rollupLevel).bind()
+            .setString(i++, agentRollupId)
+            .setString(i++, gaugeName)
+            .setInstant(i++, Instant.ofEpochMilli(from))
+            .setInstant(i++, Instant.ofEpochMilli(to));
         ResultSet results = session.read(boundStatement);
         List<GaugeValue> gaugeValues = new ArrayList<>();
         for (Row row : results) {
             i = 0;
             gaugeValues.add(GaugeValue.newBuilder()
-                    .setCaptureTime(checkNotNull(row.getTimestamp(i++)).getTime())
+                    .setCaptureTime(checkNotNull(row.getInstant(i++)).toEpochMilli())
                     .setValue(row.getDouble(i++))
                     .setWeight(row.getLong(i++))
                     .build());
@@ -302,13 +299,13 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     @Override
     public long getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel)
             throws Exception {
-        BoundStatement boundStatement = readOldestCaptureTimePS.get(rollupLevel).bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, gaugeName);
+        BoundStatement boundStatement = readOldestCaptureTimePS.get(rollupLevel).bind()
+            .setString(i++, agentRollupId)
+            .setString(i++, gaugeName);
         ResultSet results = session.read(boundStatement);
         Row row = results.one();
-        return row == null ? Long.MAX_VALUE : checkNotNull(row.getTimestamp(0)).getTime();
+        return row == null ? Long.MAX_VALUE : checkNotNull(row.getInstant(0)).toEpochMilli();
     }
 
     @Override
@@ -429,14 +426,14 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             if (rollupLevel == 1 && parentAgentRollupId != null) {
                 // insert needs to happen first before call to postRollup(), see method-level
                 // comment on postRollup
-                BoundStatement boundStatement = insertNeedsRollupFromChild.bind();
                 int i = 0;
-                boundStatement.setString(i++, parentAgentRollupId);
-                boundStatement.setTimestamp(i++, new Date(captureTime));
-                boundStatement.setUUID(i++, UUIDs.timeBased());
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setSet(i++, gaugeNames);
-                boundStatement.setInt(i++, needsRollupAdjustedTTL);
+                BoundStatement boundStatement = insertNeedsRollupFromChild.bind()
+                    .setString(i++, parentAgentRollupId)
+                    .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                    .setUuid(i++, Uuids.timeBased())
+                    .setString(i++, agentRollupId)
+                    .setSet(i++, gaugeNames, String.class)
+                    .setInt(i++, needsRollupAdjustedTTL);
                 session.write(boundStatement);
             }
             PreparedStatement insertNeedsRollup = nextRollupIntervalMillis == null ? null
@@ -453,11 +450,11 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             int adjustedTTL) throws Exception {
         List<ListenableFuture<ResultSet>> futures = new ArrayList<>();
         for (String childAgentRollupId : childAgentRollupIds) {
-            BoundStatement boundStatement = readValueForRollupFromChildPS.bind();
             int i = 0;
-            boundStatement.setString(i++, childAgentRollupId);
-            boundStatement.setString(i++, gaugeName);
-            boundStatement.setTimestamp(i++, new Date(captureTime));
+            BoundStatement boundStatement = readValueForRollupFromChildPS.bind()
+                .setString(i++, childAgentRollupId)
+                .setString(i++, gaugeName)
+                .setInstant(i++, Instant.ofEpochMilli(captureTime));
             futures.add(session.readAsyncWarnIfNoRows(boundStatement, "no gauge value table"
                     + " records found for agentRollupId={}, gaugeName={}, captureTime={}, level={}",
                     childAgentRollupId, gaugeName, captureTime, rollupLevel));
@@ -474,12 +471,12 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     // from is non-inclusive
     private ListenableFuture<?> rollupOne(int rollupLevel, String agentRollupId,
             String gaugeName, long from, long to, int adjustedTTL) throws Exception {
-        BoundStatement boundStatement = readValueForRollupPS.get(rollupLevel - 1).bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, gaugeName);
-        boundStatement.setTimestamp(i++, new Date(from));
-        boundStatement.setTimestamp(i++, new Date(to));
+        BoundStatement boundStatement = readValueForRollupPS.get(rollupLevel - 1).bind()
+            .setString(i++, agentRollupId)
+            .setString(i++, gaugeName)
+            .setInstant(i++, Instant.ofEpochMilli(from))
+            .setInstant(i++, Instant.ofEpochMilli(to));
         ListenableFuture<ResultSet> future = session.readAsyncWarnIfNoRows(boundStatement,
                 "no gauge value table records found for agentRollupId={}, gaugeName={}, from={},"
                         + " to={}, level={}",
@@ -503,17 +500,17 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             totalWeightedValue += value * weight;
             totalWeight += weight;
         }
-        BoundStatement boundStatement = insertValuePS.get(rollupLevel).bind();
-        int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, gaugeName);
-        boundStatement.setTimestamp(i++, new Date(to));
         // individual gauge value weights cannot be zero, and rows is non-empty
         // (see callers of this method), so totalWeight is guaranteed non-zero
         checkState(totalWeight != 0);
-        boundStatement.setDouble(i++, totalWeightedValue / totalWeight);
-        boundStatement.setLong(i++, totalWeight);
-        boundStatement.setInt(i++, adjustedTTL);
+        int i = 0;
+        BoundStatement boundStatement = insertValuePS.get(rollupLevel).bind()
+            .setString(i++, agentRollupId)
+            .setString(i++, gaugeName)
+            .setInstant(i++, Instant.ofEpochMilli(to))
+            .setDouble(i++, totalWeightedValue / totalWeight)
+            .setLong(i++, totalWeight)
+            .setInt(i++, adjustedTTL);
         return session.writeAsync(boundStatement);
     }
 

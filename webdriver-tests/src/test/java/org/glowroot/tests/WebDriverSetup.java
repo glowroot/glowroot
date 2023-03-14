@@ -20,13 +20,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URL;
 import java.security.SecureRandom;
 import java.util.Properties;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.PoolingOptions;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -76,6 +77,7 @@ public class WebDriverSetup {
     private static final String GECKO_DRIVER_VERSION = "0.32.2";
 
     private static final Logger logger = LoggerFactory.getLogger(WebDriverSetup.class);
+    private static final int MAX_CONCURRENT_QUERIES = 1024;
 
     static {
         // shorter time so aggregates and gauges will be collected during BasicSmokeIT
@@ -197,16 +199,15 @@ public class WebDriverSetup {
         Container container;
         if (useCentral) {
             CassandraWrapper.start();
-            Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
-            Session session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
-                    PoolingOptions.DEFAULT_MAX_QUEUE_SIZE, 0);
+            CqlSessionBuilder cqlSessionBuilder = CqlSession.builder().addContactPoint(new InetSocketAddress("127.0.0.1", 9042));
+            Session session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
+                    MAX_CONCURRENT_QUERIES, 0);
             session.updateSchemaWithRetry("drop table if exists agent_config");
             session.updateSchemaWithRetry("drop table if exists user");
             session.updateSchemaWithRetry("drop table if exists role");
             session.updateSchemaWithRetry("drop table if exists central_config");
             session.updateSchemaWithRetry("drop table if exists agent");
             session.close();
-            cluster.close();
             int grpcPort = getAvailablePort();
             centralModule = createCentralModule(uiPort, grpcPort);
             container = createContainerReportingToCentral(grpcPort, testDir);

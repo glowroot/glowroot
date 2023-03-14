@@ -15,8 +15,7 @@
  */
 package org.glowroot.central.repo;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.PoolingOptions;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -27,10 +26,11 @@ import org.glowroot.common2.config.ImmutableUserConfig;
 import org.glowroot.common2.config.UserConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.central.repo.CqlSessionBuilders.MAX_CONCURRENT_QUERIES;
 
 public class UserDaoIT {
 
-    private static Cluster cluster;
+    private static CqlSessionBuilder cqlSessionBuilder;
     private static Session session;
     private static ClusterManager clusterManager;
     private static UserDao userDao;
@@ -38,9 +38,9 @@ public class UserDaoIT {
     @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
-        cluster = Clusters.newCluster();
-        session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
-                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE, 0);
+        cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
+        session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
+                MAX_CONCURRENT_QUERIES, 0);
         clusterManager = ClusterManager.create();
         userDao = new UserDao(session, clusterManager);
     }
@@ -52,7 +52,6 @@ public class UserDaoIT {
         }
         clusterManager.close();
         session.close();
-        cluster.close();
         SharedSetupRunListener.stopCassandra();
     }
 

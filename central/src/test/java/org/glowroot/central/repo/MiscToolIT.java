@@ -15,7 +15,7 @@
  */
 package org.glowroot.central.repo;
 
-import com.datastax.driver.core.Cluster;
+import com.datastax.oss.driver.api.core.CqlSession;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -28,12 +28,13 @@ public class MiscToolIT {
     @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
-        Cluster cluster = Clusters.newCluster();
-        SchemaUpgradeIT.updateSchemaWithRetry(cluster.newSession(),
+        CqlSession session = CqlSessionBuilders.newCqlSessionBuilder().build();
+        SchemaUpgradeIT.updateSchemaWithRetry(session,
                 "drop keyspace if exists glowroot_tools_test");
-        cluster.close();
+        session.close();
 
         System.setProperty("glowroot.cassandra.keyspace", "glowroot_tools_test");
+        System.setProperty("glowroot.cassandra.localDatacenter", "datacenter1");
         Main.main(new String[] {"create-schema"});
     }
 

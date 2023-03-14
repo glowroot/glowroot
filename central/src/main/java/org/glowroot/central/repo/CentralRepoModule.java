@@ -20,8 +20,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
@@ -122,19 +122,17 @@ public class CentralRepoModule {
             ResultSet results = session.read("select agent_id from v09_agent_check where one = 1");
             for (Row row : results) {
                 String agentId = checkNotNull(row.getString(0));
-                for (String agentRollupId : AgentRollupIds.getAgentRollupIds(agentId)) {
-                    agentRollupIdsWithV09Data.add(agentRollupId);
-                }
+                agentRollupIdsWithV09Data.addAll(AgentRollupIds.getAgentRollupIds(agentId));
             }
             results = session.read("select v09_last_capture_time, v09_fqt_last_expiration_time,"
                     + " v09_trace_last_expiration_time, v09_aggregate_last_expiration_time from"
                     + " v09_last_capture_time where one = 1");
             Row row = checkNotNull(results.one());
             int i = 0;
-            v09LastCaptureTime = checkNotNull(row.getTimestamp(i++)).getTime();
-            v09FqtLastExpirationTime = checkNotNull(row.getTimestamp(i++)).getTime();
-            v09TraceLastExpirationTime = checkNotNull(row.getTimestamp(i++)).getTime();
-            v09AggregateLastExpirationTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            v09LastCaptureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+            v09FqtLastExpirationTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+            v09TraceLastExpirationTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+            v09AggregateLastExpirationTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
         }
         fullQueryTextDao = new FullQueryTextDao(session, configRepository, asyncExecutor);
         AggregateDaoImpl aggregateDaoImpl = new AggregateDaoImpl(session, activeAgentDao,

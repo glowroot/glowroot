@@ -15,16 +15,13 @@
  */
 package org.glowroot.central.repo;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
@@ -68,10 +65,10 @@ class GaugeNameDao {
     Set<String> getGaugeNames(String agentRollupId, long from, long to) throws Exception {
         long rolledUpFrom = CaptureTimes.getRollup(from, DAYS.toMillis(1));
         long rolledUpTo = CaptureTimes.getRollup(to, DAYS.toMillis(1));
-        BoundStatement boundStatement = readPS.bind();
-        boundStatement.setString(0, agentRollupId);
-        boundStatement.setTimestamp(1, new Date(rolledUpFrom));
-        boundStatement.setTimestamp(2, new Date(rolledUpTo));
+        BoundStatement boundStatement = readPS.bind()
+            .setString(0, agentRollupId)
+            .setInstant(1, Instant.ofEpochMilli(rolledUpFrom))
+            .setInstant(2, Instant.ofEpochMilli(rolledUpTo));
         ResultSet results = session.read(boundStatement);
         Set<String> gaugeNames = new HashSet<>();
         for (Row row : results) {
@@ -87,13 +84,13 @@ class GaugeNameDao {
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
         }
-        BoundStatement boundStatement = insertPS.bind();
+        final int maxRollupTTL = configRepository.getCentralStorageConfig().getMaxRollupTTL();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
-        boundStatement.setString(i++, gaugeName);
-        int maxRollupTTL = configRepository.getCentralStorageConfig().getMaxRollupTTL();
-        boundStatement.setInt(i++, Common.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
+        BoundStatement boundStatement = insertPS.bind()
+            .setString(i++, agentRollupId)
+            .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
+            .setString(i++, gaugeName)
+            .setInt(i++, Common.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
         return ImmutableList.of(session.writeAsync(boundStatement));
     }
 

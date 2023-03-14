@@ -15,9 +15,9 @@
  */
 package org.glowroot.central.repo;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,11 +26,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Future;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -83,13 +83,13 @@ class Common {
         // capture current time before reading data to prevent race condition with optimization
         // that prevents duplicate needs rollup data which is also based on current time
         long currentTimeMillis = clock.currentTimeMillis();
-        BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind();
-        boundStatement.setString(0, agentRollupId);
+        BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind()
+            .setString(0, agentRollupId);
         ResultSet results = session.read(boundStatement);
         Map<Long, NeedsRollup> needsRollupMap = new LinkedHashMap<>();
         for (Row row : results) {
             int i = 0;
-            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             if (!isOldEnoughToRollup(captureTime, currentTimeMillis, rollupIntervalMillis)) {
                 // normally, the last "needs rollup" capture time is in the near future, so don't
                 // roll it up since it is likely still being added to
@@ -106,7 +106,7 @@ class Common {
                 // capture_time
                 break;
             }
-            UUID uniqueness = row.getUUID(i++);
+            UUID uniqueness = row.getUuid(i++);
             Set<String> keys = checkNotNull(row.getSet(i++, String.class));
             NeedsRollup needsRollup = needsRollupMap.get(captureTime);
             if (needsRollup == null) {
@@ -119,16 +119,17 @@ class Common {
         return needsRollupMap.values();
     }
 
-    static List<NeedsRollupFromChildren> getNeedsRollupFromChildrenList(String agentRollupId,
+    static List<NeedsRollupFromChildren> getNeedsRollupFromChildrenList(
+            String agentRollupId,
             PreparedStatement readNeedsRollupFromChild, Session session) throws Exception {
-        BoundStatement boundStatement = readNeedsRollupFromChild.bind();
-        boundStatement.setString(0, agentRollupId);
+        BoundStatement boundStatement = readNeedsRollupFromChild.bind()
+            .setString(0, agentRollupId);
         ResultSet results = session.read(boundStatement);
         Map<Long, NeedsRollupFromChildren> needsRollupFromChildrenMap = new LinkedHashMap<>();
         for (Row row : results) {
             int i = 0;
-            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
-            UUID uniqueness = row.getUUID(i++);
+            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+            UUID uniqueness = row.getUuid(i++);
             String childAgentRollupId = checkNotNull(row.getString(i++));
             Set<String> keys = checkNotNull(row.getSet(i++, String.class));
             NeedsRollupFromChildren needsRollup = needsRollupFromChildrenMap.get(captureTime);
@@ -148,14 +149,14 @@ class Common {
             PreparedStatement insertNeedsRollupFromChild,
             NeedsRollupFromChildren needsRollupFromChildren, long captureTime,
             int needsRollupAdjustedTTL, Session session) throws Exception {
-        BoundStatement boundStatement = insertNeedsRollupFromChild.bind();
         int i = 0;
-        boundStatement.setString(i++, parentAgentRollupId);
-        boundStatement.setTimestamp(i++, new Date(captureTime));
-        boundStatement.setUUID(i++, UUIDs.timeBased());
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setSet(i++, needsRollupFromChildren.getKeys().keySet());
-        boundStatement.setInt(i++, needsRollupAdjustedTTL);
+        BoundStatement boundStatement = insertNeedsRollupFromChild.bind()
+            .setString(i++, parentAgentRollupId)
+            .setInstant(i++, Instant.ofEpochMilli(captureTime))
+            .setUuid(i++, Uuids.timeBased())
+            .setString(i++, agentRollupId)
+            .setSet(i++, needsRollupFromChildren.getKeys().keySet(), String.class)
+            .setInt(i++, needsRollupAdjustedTTL);
         session.write(boundStatement);
     }
 
@@ -173,23 +174,23 @@ class Common {
             checkNotNull(insertNeedsRollup);
             long rollupCaptureTime = CaptureTimes.getRollup(captureTime,
                     nextRollupIntervalMillis);
-            BoundStatement boundStatement = insertNeedsRollup.bind();
             int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
-            boundStatement.setUUID(i++, UUIDs.timeBased());
-            boundStatement.setSet(i++, keys);
-            boundStatement.setInt(i++, needsRollupAdjustedTTL);
+            BoundStatement boundStatement = insertNeedsRollup.bind()
+                .setString(i++, agentRollupId)
+                .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
+                .setUuid(i++, Uuids.timeBased())
+                .setSet(i++, keys, String.class)
+                .setInt(i++, needsRollupAdjustedTTL);
             // intentionally not async, see method-level comment
             session.write(boundStatement);
         }
         List<Future<?>> futures = new ArrayList<>();
         for (UUID uniqueness : uniquenessKeysForDeletion) {
-            BoundStatement boundStatement = deleteNeedsRollup.bind();
             int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setUUID(i++, uniqueness);
+            BoundStatement boundStatement = deleteNeedsRollup.bind()
+                .setString(i++, agentRollupId)
+                .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                .setUuid(i++, uniqueness);
             futures.add(session.writeAsync(boundStatement));
         }
         MoreFutures.waitForAll(futures);

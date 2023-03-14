@@ -15,6 +15,7 @@
  */
 package org.glowroot.central.repo;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -29,10 +30,7 @@ import java.util.concurrent.Future;
 
 import javax.annotation.Nullable;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -121,9 +119,9 @@ public class ActiveAgentDao implements ActiveAgentRepository {
         long revisedTo = CaptureTimes.getRollup(to, rollupIntervalMillis);
 
         Set<String> topLevelIds = new HashSet<>();
-        BoundStatement boundStatement = readTopLevelPS.get(rollupLevel).bind();
-        boundStatement.setTimestamp(0, new Date(from));
-        boundStatement.setTimestamp(1, new Date(revisedTo));
+        BoundStatement boundStatement = readTopLevelPS.get(rollupLevel).bind()
+            .setInstant(0, Instant.ofEpochMilli(from))
+            .setInstant(1, Instant.ofEpochMilli(revisedTo));
         ResultSet results = session.read(boundStatement);
         for (Row row : results) {
             topLevelIds.add(checkNotNull(row.getString(0)));
@@ -201,20 +199,20 @@ public class ActiveAgentDao implements ActiveAgentRepository {
             int ttl = Ints.saturatedCast(HOURS.toSeconds(rollupExpirationHours.get(rollupLevel)));
             int adjustedTTL = Common.getAdjustedTTL(ttl, rollupCaptureTime, clock);
 
-            BoundStatement boundStatement = insertTopLevelPS.get(rollupLevel).bind();
             int i = 0;
-            boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
-            boundStatement.setString(i++, topLevelId);
-            boundStatement.setInt(i++, adjustedTTL);
+            BoundStatement boundStatement = insertTopLevelPS.get(rollupLevel).bind()
+                .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
+                .setString(i++, topLevelId)
+                .setInt(i++, adjustedTTL);
             futures.add(session.writeAsync(boundStatement));
 
             if (childAgentId != null) {
-                boundStatement = insertChildPS.get(rollupLevel).bind();
                 i = 0;
-                boundStatement.setString(i++, topLevelId);
-                boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
-                boundStatement.setString(i++, childAgentId);
-                boundStatement.setInt(i++, adjustedTTL);
+                boundStatement = insertChildPS.get(rollupLevel).bind()
+                    .setString(i++, topLevelId)
+                    .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
+                    .setString(i++, childAgentId)
+                    .setInt(i++, adjustedTTL);
                 futures.add(session.writeAsync(boundStatement));
             }
         }
@@ -231,10 +229,10 @@ public class ActiveAgentDao implements ActiveAgentRepository {
         Set<String> allAgentRollupIds = new HashSet<>();
         Set<String> directChildAgentRollupIds = new HashSet<>();
         Multimap<String, String> childMultimap = HashMultimap.create();
-        BoundStatement boundStatement = readChildPS.get(rollupLevel).bind();
-        boundStatement.setString(0, topLevelId);
-        boundStatement.setTimestamp(1, new Date(from));
-        boundStatement.setTimestamp(2, new Date(revisedTo));
+        BoundStatement boundStatement = readChildPS.get(rollupLevel).bind()
+            .setString(0, topLevelId)
+            .setInstant(1, Instant.ofEpochMilli(from))
+            .setInstant(2, Instant.ofEpochMilli(revisedTo));
         ResultSet results = session.read(boundStatement);
         for (Row row : results) {
             String agentId = topLevelId + checkNotNull(row.getString(0));

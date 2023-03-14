@@ -18,10 +18,10 @@ package org.glowroot.central.repo;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.central.util.Cache;
@@ -60,10 +60,10 @@ public class V09AgentRollupDao {
     }
 
     public void store(String v09AgentId, String v09AgentRollupId) throws Exception {
-        BoundStatement boundStatement = insertPS.bind();
         int i = 0;
-        boundStatement.setString(i++, v09AgentId);
-        boundStatement.setString(i++, v09AgentRollupId);
+        BoundStatement boundStatement = insertPS.bind()
+            .setString(i++, v09AgentId)
+            .setString(i++, v09AgentRollupId);
         session.write(boundStatement);
         agentRollupIdsCache.invalidate(SINGLE_CACHE_KEY);
     }

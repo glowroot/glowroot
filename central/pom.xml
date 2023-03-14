@@ -61,9 +61,9 @@
       <version>2.0.54.Final</version>
     </dependency>
     <dependency>
-      <groupId>com.datastax.cassandra</groupId>
-      <artifactId>cassandra-driver-core</artifactId>
-      <version>3.7.2</version>
+      <groupId>com.datastax.oss</groupId>
+      <artifactId>java-driver-core</artifactId>
+      <version>4.15.0</version>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
@@ -86,6 +86,18 @@
       <artifactId>javax.servlet-api</artifactId>
       <version>3.1.0</version>
       <scope>provided</scope>
+    </dependency>
+    <!-- used to convert between ListenableFuture and CompletionStage -->
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>futures-extra</artifactId>
+      <version>4.2.0</version>
+    </dependency>
+    <!-- api-common needed by futures-extra -->
+    <dependency>
+      <groupId>com.google.api</groupId>
+      <artifactId>api-common</artifactId>
+      <version>2.1.5</version>
     </dependency>
     <dependency>
       <!-- not using AsyncHttpClient because it introduces another dependency on netty which already

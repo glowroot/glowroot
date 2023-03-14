@@ -18,12 +18,13 @@ package org.glowroot.central.repo;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
+import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.central.util.Cache;
@@ -72,13 +73,13 @@ class RoleDao {
             // don't use "if not exists" here since it's not needed and has more chance to fail,
             // leaving the schema in a bad state (with the role table created, but no Administrator
             // role)
-            BoundStatement boundStatement = insertPS.bind();
             int i = 0;
-            boundStatement.setString(i++, "Administrator");
-            boundStatement.setSet(i++,
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(i++, "Administrator")
+                .setSet(i++,
                     ImmutableSet.of("agent:*:transaction", "agent:*:error", "agent:*:jvm",
                             "agent:*:syntheticMonitor", "agent:*:incident", "agent:*:config",
-                            "admin"));
+                            "admin"), String.class);
             session.write(boundStatement);
         }
 
@@ -98,8 +99,8 @@ class RoleDao {
     }
 
     void delete(String name) throws Exception {
-        BoundStatement boundStatement = deletePS.bind();
-        boundStatement.setString(0, name);
+        BoundStatement boundStatement = deletePS.bind()
+            .setString(0, name);
         session.write(boundStatement);
         roleConfigCache.invalidate(name);
         allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
@@ -107,7 +108,7 @@ class RoleDao {
 
     void insert(RoleConfig roleConfig) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
-        bindInsert(boundStatement, roleConfig);
+        boundStatement = bindInsert(boundStatement, roleConfig);
         session.write(boundStatement);
         roleConfigCache.invalidate(roleConfig.name());
         allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
@@ -116,10 +117,10 @@ class RoleDao {
 
     void insertIfNotExists(RoleConfig roleConfig) throws Exception {
         BoundStatement boundStatement = insertIfNotExistsPS.bind();
-        bindInsert(boundStatement, roleConfig);
+        boundStatement = bindInsert(boundStatement, roleConfig);
         ResultSet results = session.update(boundStatement);
         Row row = checkNotNull(results.one());
-        boolean applied = row.getBool("[applied]");
+        boolean applied = row.getBoolean("[applied]");
         if (applied) {
             roleConfigCache.invalidate(roleConfig.name());
             allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
@@ -128,10 +129,11 @@ class RoleDao {
         }
     }
 
-    private static void bindInsert(BoundStatement boundStatement, RoleConfig userConfig) {
+    @CheckReturnValue
+    private static BoundStatement bindInsert(BoundStatement boundStatement, RoleConfig userConfig) {
         int i = 0;
-        boundStatement.setString(i++, userConfig.name());
-        boundStatement.setSet(i++, userConfig.permissions());
+        return boundStatement.setString(i++, userConfig.name())
+            .setSet(i++, userConfig.permissions(), String.class);
     }
 
     private static RoleConfig buildRole(Row row) {
@@ -146,14 +148,14 @@ class RoleDao {
     private class RoleConfigCacheLoader implements CacheLoader<String, Optional<RoleConfig>> {
         @Override
         public Optional<RoleConfig> load(String name) throws Exception {
-            BoundStatement boundStatement = readOnePS.bind();
-            boundStatement.setString(0, name);
+            BoundStatement boundStatement = readOnePS.bind()
+                .setString(0, name);
             ResultSet results = session.read(boundStatement);
-            if (results.isExhausted()) {
+            Row row = results.one();
+            if (row == null) {
                 return Optional.absent();
             }
-            Row row = results.one();
-            if (!results.isExhausted()) {
+            if (results.one() != null) {
                 throw new IllegalStateException("Multiple role records for name: " + name);
             }
             return Optional.of(buildRole(row));

@@ -17,9 +17,9 @@ package org.glowroot.central.repo;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,11 +29,11 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.base.Strings;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
@@ -45,6 +45,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.AbstractMessage;
+import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
@@ -484,26 +485,26 @@ public class AggregateDaoImpl implements AggregateDao {
         int needsRollupAdjustedTTL =
                 Common.getNeedsRollupAdjustedTTL(adjustedTTL.generalTTL(), rollupConfigs);
         if (agentRollupIds.size() > 1) {
-            BoundStatement boundStatement = insertNeedsRollupFromChild.bind();
             int i = 0;
-            boundStatement.setString(i++, agentRollupIds.get(1));
-            boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setUUID(i++, UUIDs.timeBased());
-            boundStatement.setString(i++, agentId);
-            boundStatement.setSet(i++, transactionTypes);
-            boundStatement.setInt(i++, needsRollupAdjustedTTL);
+            BoundStatement boundStatement = insertNeedsRollupFromChild.bind()
+                .setString(i++, agentRollupIds.get(1))
+                .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                .setUuid(i++, Uuids.timeBased())
+                .setString(i++, agentId)
+                .setSet(i++, transactionTypes, String.class)
+                .setInt(i++, needsRollupAdjustedTTL);
             futures.add(session.writeAsync(boundStatement));
         }
         // insert into aggregate_needs_rollup_1
         long intervalMillis = rollupConfigs.get(1).intervalMillis();
         long rollupCaptureTime = CaptureTimes.getRollup(captureTime, intervalMillis);
-        BoundStatement boundStatement = insertNeedsRollup.get(0).bind();
         int i = 0;
-        boundStatement.setString(i++, agentId);
-        boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
-        boundStatement.setUUID(i++, UUIDs.timeBased());
-        boundStatement.setSet(i++, transactionTypes);
-        boundStatement.setInt(i++, needsRollupAdjustedTTL);
+        BoundStatement boundStatement = insertNeedsRollup.get(0).bind()
+            .setString(i++, agentId)
+            .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
+            .setUuid(i++, Uuids.timeBased())
+            .setSet(i++, transactionTypes, String.class)
+            .setInt(i++, needsRollupAdjustedTTL);
         futures.add(session.writeAsync(boundStatement));
         MoreFutures.waitForAll(futures);
     }
@@ -517,7 +518,7 @@ public class AggregateDaoImpl implements AggregateDao {
         for (Row row : results) {
             int i = 0;
             // results are ordered by capture time so Math.max() is not needed here
-            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             double totalDurationNanos = row.getDouble(i++);
             double totalCpuNanos = row.getDouble(i++);
             double totalAllocatedBytes = row.getDouble(i++);
@@ -539,11 +540,11 @@ public class AggregateDaoImpl implements AggregateDao {
         // currently have to do group by / sort / limit client-side
         BoundStatement boundStatement =
                 checkNotNull(readTransactionPS.get(summaryTable)).get(query.rollupLevel()).bind();
-        bindQuery(boundStatement, agentRollupId, query);
+        boundStatement = bindQuery(boundStatement, agentRollupId, query);
         ResultSet results = session.read(boundStatement);
         for (Row row : results) {
             int i = 0;
-            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             String transactionName = checkNotNull(row.getString(i++));
             double totalDurationNanos = row.getDouble(i++);
             double totalCpuNanos = row.getDouble(i++);
@@ -563,7 +564,7 @@ public class AggregateDaoImpl implements AggregateDao {
         for (Row row : results) {
             int i = 0;
             // results are ordered by capture time so Math.max() is not needed here
-            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             long errorCount = row.getLong(i++);
             long transactionCount = row.getLong(i++);
             collector.mergeErrorSummary(errorCount, transactionCount, captureTime);
@@ -582,11 +583,11 @@ public class AggregateDaoImpl implements AggregateDao {
         // currently have to do group by / sort / limit client-side
         BoundStatement boundStatement = checkNotNull(readTransactionPS.get(errorSummaryTable))
                 .get(query.rollupLevel()).bind();
-        bindQuery(boundStatement, agentRollupId, query);
+        boundStatement = bindQuery(boundStatement, agentRollupId, query);
         ResultSet results = session.read(boundStatement);
         for (Row row : results) {
             int i = 0;
-            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             String transactionName = checkNotNull(row.getString(i++));
             long errorCount = row.getLong(i++);
             long transactionCount = row.getLong(i++);
@@ -602,12 +603,12 @@ public class AggregateDaoImpl implements AggregateDao {
         List<OverviewAggregate> overviewAggregates = new ArrayList<>();
         for (Row row : results) {
             int i = 0;
-            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             double totalDurationNanos = row.getDouble(i++);
             long transactionCount = row.getLong(i++);
-            boolean asyncTransactions = row.getBool(i++);
+            boolean asyncTransactions = row.getBoolean(i++);
             List<Aggregate.Timer> mainThreadRootTimers =
-                    Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
+                    Messages.parseDelimitedFrom(row.getByteBuffer(i++), Aggregate.Timer.parser());
             Aggregate.ThreadStats mainThreadStats = Aggregate.ThreadStats.newBuilder()
                     .setTotalCpuNanos(getNextThreadStat(row, i++))
                     .setTotalBlockedNanos(getNextThreadStat(row, i++))
@@ -617,7 +618,7 @@ public class AggregateDaoImpl implements AggregateDao {
             // reading delimited singleton list for backwards compatibility with data written
             // prior to 0.12.0
             List<Aggregate.Timer> list =
-                    Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
+                    Messages.parseDelimitedFrom(row.getByteBuffer(i++), Aggregate.Timer.parser());
             Aggregate.Timer auxThreadRootTimer = list.isEmpty() ? null : list.get(0);
             Aggregate.ThreadStats auxThreadStats;
             if (auxThreadRootTimer == null) {
@@ -632,7 +633,7 @@ public class AggregateDaoImpl implements AggregateDao {
                         .build();
             }
             List<Aggregate.Timer> asyncTimers =
-                    Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
+                    Messages.parseDelimitedFrom(row.getByteBuffer(i++), Aggregate.Timer.parser());
             ImmutableOverviewAggregate.Builder builder = ImmutableOverviewAggregate.builder()
                     .captureTime(captureTime)
                     .totalDurationNanos(totalDurationNanos)
@@ -656,10 +657,10 @@ public class AggregateDaoImpl implements AggregateDao {
         List<PercentileAggregate> percentileAggregates = new ArrayList<>();
         for (Row row : results) {
             int i = 0;
-            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             double totalDurationNanos = row.getDouble(i++);
             long transactionCount = row.getLong(i++);
-            ByteBuffer bytes = checkNotNull(row.getBytes(i++));
+            ByteBuffer bytes = checkNotNull(row.getByteBuffer(i++));
             Aggregate.Histogram durationNanosHistogram = Aggregate.Histogram.parseFrom(bytes);
             percentileAggregates.add(ImmutablePercentileAggregate.builder()
                     .captureTime(captureTime)
@@ -679,7 +680,7 @@ public class AggregateDaoImpl implements AggregateDao {
         List<ThroughputAggregate> throughputAggregates = new ArrayList<>();
         for (Row row : results) {
             int i = 0;
-            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             long transactionCount = row.getLong(i++);
             boolean hasErrorCount = !row.isNull(i);
             long errorCount = row.getLong(i++);
@@ -700,7 +701,7 @@ public class AggregateDaoImpl implements AggregateDao {
         long captureTime = Long.MIN_VALUE;
         for (Row row : results) {
             int i = 0;
-            captureTime = Math.max(captureTime, checkNotNull(row.getTimestamp(i++)).getTime());
+            captureTime = Math.max(captureTime, checkNotNull(row.getInstant(i++)).toEpochMilli());
             String queryType = checkNotNull(row.getString(i++));
             String truncatedText = checkNotNull(row.getString(i++));
             // full_query_text_sha1 cannot be null since it is used in clustering key
@@ -723,7 +724,7 @@ public class AggregateDaoImpl implements AggregateDao {
         long captureTime = Long.MIN_VALUE;
         for (Row row : results) {
             int i = 0;
-            captureTime = Math.max(captureTime, checkNotNull(row.getTimestamp(i++)).getTime());
+            captureTime = Math.max(captureTime, checkNotNull(row.getInstant(i++)).toEpochMilli());
             String serviceCallType = checkNotNull(row.getString(i++));
             String serviceCallText = checkNotNull(row.getString(i++));
             double totalDurationNanos = row.getDouble(i++);
@@ -761,7 +762,7 @@ public class AggregateDaoImpl implements AggregateDao {
         BoundStatement boundStatement = query.transactionName() == null
                 ? existsMainThreadProfileOverallPS.get(query.rollupLevel()).bind()
                 : existsMainThreadProfileTransactionPS.get(query.rollupLevel()).bind();
-        bindQuery(boundStatement, agentRollupId, query);
+        boundStatement = bindQuery(boundStatement, agentRollupId, query);
         ResultSet results = session.read(boundStatement);
         return results.one() != null;
     }
@@ -773,7 +774,7 @@ public class AggregateDaoImpl implements AggregateDao {
         BoundStatement boundStatement = query.transactionName() == null
                 ? existsAuxThreadProfileOverallPS.get(query.rollupLevel()).bind()
                 : existsAuxThreadProfileTransactionPS.get(query.rollupLevel()).bind();
-        bindQuery(boundStatement, agentRollupId, query);
+        boundStatement = bindQuery(boundStatement, agentRollupId, query);
         ResultSet results = session.read(boundStatement);
         return results.one() != null;
     }
@@ -1054,17 +1055,17 @@ public class AggregateDaoImpl implements AggregateDao {
             totalAllocatedBytes += row.getDouble(2);
             transactionCount += row.getLong(3);
         }
-        BoundStatement boundStatement =
-                getInsertOverallPS(summaryTable, rollup.rollupLevel()).bind();
         int i = 0;
-        boundStatement.setString(i++, rollup.agentRollupId());
-        boundStatement.setString(i++, query.transactionType());
-        boundStatement.setTimestamp(i++, new Date(query.to()));
-        boundStatement.setDouble(i++, totalDurationNanos);
-        boundStatement.setDouble(i++, totalCpuNanos);
-        boundStatement.setDouble(i++, totalAllocatedBytes);
-        boundStatement.setLong(i++, transactionCount);
-        boundStatement.setInt(i++, rollup.adjustedTTL().generalTTL());
+        BoundStatement boundStatement =
+                getInsertOverallPS(summaryTable, rollup.rollupLevel()).bind()
+            .setString(i++, rollup.agentRollupId())
+            .setString(i++, query.transactionType())
+            .setInstant(i++, Instant.ofEpochMilli(query.to()))
+            .setDouble(i++, totalDurationNanos)
+            .setDouble(i++, totalCpuNanos)
+            .setDouble(i++, totalAllocatedBytes)
+            .setLong(i++, transactionCount)
+            .setInt(i++, rollup.adjustedTTL().generalTTL());
         return session.writeAsync(boundStatement);
     }
 
@@ -1100,15 +1101,15 @@ public class AggregateDaoImpl implements AggregateDao {
             errorCount += row.getLong(0);
             transactionCount += row.getLong(1);
         }
-        BoundStatement boundStatement =
-                getInsertOverallPS(errorSummaryTable, rollup.rollupLevel()).bind();
         int i = 0;
-        boundStatement.setString(i++, rollup.agentRollupId());
-        boundStatement.setString(i++, query.transactionType());
-        boundStatement.setTimestamp(i++, new Date(query.to()));
-        boundStatement.setLong(i++, errorCount);
-        boundStatement.setLong(i++, transactionCount);
-        boundStatement.setInt(i++, rollup.adjustedTTL().generalTTL());
+        BoundStatement boundStatement =
+                getInsertOverallPS(errorSummaryTable, rollup.rollupLevel()).bind()
+            .setString(i++, rollup.agentRollupId())
+            .setString(i++, query.transactionType())
+            .setInstant(i++, Instant.ofEpochMilli(query.to()))
+            .setLong(i++, errorCount)
+            .setLong(i++, transactionCount)
+            .setInt(i++, rollup.adjustedTTL().generalTTL());
         return session.writeAsync(boundStatement);
     }
 
@@ -1117,7 +1118,7 @@ public class AggregateDaoImpl implements AggregateDao {
             AggregateQuery query, Set<String> transactionNames) throws Exception {
         BoundStatement boundStatement = checkNotNull(readTransactionForRollupPS.get(summaryTable))
                 .get(query.rollupLevel()).bind();
-        bindQuery(boundStatement, rollup.agentRollupId(), query);
+        boundStatement = bindQuery(boundStatement, rollup.agentRollupId(), query);
         // need to populate transactionNames synchronously before returning from this method
         ResultSet results = session.read(boundStatement);
         Map<String, MutableSummary> summaries = new HashMap<>();
@@ -1154,17 +1155,17 @@ public class AggregateDaoImpl implements AggregateDao {
                 getInsertTransactionPS(summaryTable, rollup.rollupLevel());
         for (Map.Entry<String, MutableSummary> entry : summaries.entrySet()) {
             MutableSummary summary = entry.getValue();
-            boundStatement = preparedStatement.bind();
             int i = 0;
-            boundStatement.setString(i++, rollup.agentRollupId());
-            boundStatement.setString(i++, query.transactionType());
-            boundStatement.setTimestamp(i++, new Date(query.to()));
-            boundStatement.setString(i++, entry.getKey());
-            boundStatement.setDouble(i++, summary.totalDurationNanos);
-            boundStatement.setDouble(i++, summary.totalCpuNanos);
-            boundStatement.setDouble(i++, summary.totalAllocatedBytes);
-            boundStatement.setLong(i++, summary.transactionCount);
-            boundStatement.setInt(i++, rollup.adjustedTTL().generalTTL());
+            boundStatement = preparedStatement.bind()
+                .setString(i++, rollup.agentRollupId())
+                .setString(i++, query.transactionType())
+                .setInstant(i++, Instant.ofEpochMilli(query.to()))
+                .setString(i++, entry.getKey())
+                .setDouble(i++, summary.totalDurationNanos)
+                .setDouble(i++, summary.totalCpuNanos)
+                .setDouble(i++, summary.totalAllocatedBytes)
+                .setLong(i++, summary.transactionCount)
+                .setInt(i++, rollup.adjustedTTL().generalTTL());
             futures.add(session.writeAsync(boundStatement));
         }
         return Futures.allAsList(futures);
@@ -1175,8 +1176,8 @@ public class AggregateDaoImpl implements AggregateDao {
         BoundStatement boundStatement =
                 checkNotNull(readTransactionForRollupPS.get(errorSummaryTable))
                         .get(query.rollupLevel()).bind();
-        bindQuery(boundStatement, rollup.agentRollupId(), query);
-        ListenableFuture<ResultSet> future = session.readAsync(boundStatement);
+        boundStatement = bindQuery(boundStatement, rollup.agentRollupId(), query);
+        ListenableFuture<AsyncResultSet> future = session.readAsync(boundStatement);
         return MoreFutures.rollupAsync(future, asyncExecutor, new DoRollup() {
             @Override
             public ListenableFuture<?> execute(Iterable<Row> rows) throws Exception {
@@ -1217,15 +1218,15 @@ public class AggregateDaoImpl implements AggregateDao {
         List<ListenableFuture<?>> futures = new ArrayList<>();
         for (Map.Entry<String, MutableErrorSummary> entry : summaries.entrySet()) {
             MutableErrorSummary summary = entry.getValue();
-            boundStatement = preparedStatement.bind();
             int i = 0;
-            boundStatement.setString(i++, rollup.agentRollupId());
-            boundStatement.setString(i++, query.transactionType());
-            boundStatement.setTimestamp(i++, new Date(query.to()));
-            boundStatement.setString(i++, entry.getKey());
-            boundStatement.setLong(i++, summary.errorCount);
-            boundStatement.setLong(i++, summary.transactionCount);
-            boundStatement.setInt(i++, rollup.adjustedTTL().generalTTL());
+            boundStatement = preparedStatement.bind()
+                .setString(i++, rollup.agentRollupId())
+                .setString(i++, query.transactionType())
+                .setInstant(i++, Instant.ofEpochMilli(query.to()))
+                .setString(i++, entry.getKey())
+                .setLong(i++, summary.errorCount)
+                .setLong(i++, summary.transactionCount)
+                .setInt(i++, rollup.adjustedTTL().generalTTL());
             futures.add(session.writeAsync(boundStatement));
         }
         return Futures.allAsList(futures);
@@ -1269,11 +1270,11 @@ public class AggregateDaoImpl implements AggregateDao {
             int i = 0;
             totalDurationNanos += row.getDouble(i++);
             transactionCount += row.getLong(i++);
-            if (row.getBool(i++)) {
+            if (row.getBoolean(i++)) {
                 asyncTransactions = true;
             }
             List<Aggregate.Timer> toBeMergedMainThreadRootTimers =
-                    Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
+                    Messages.parseDelimitedFrom(row.getByteBuffer(i++), Aggregate.Timer.parser());
             MutableAggregate.mergeRootTimers(toBeMergedMainThreadRootTimers, mainThreadRootTimers);
             mainThreadStats.addTotalCpuNanos(getNextThreadStat(row, i++));
             mainThreadStats.addTotalBlockedNanos(getNextThreadStat(row, i++));
@@ -1282,7 +1283,7 @@ public class AggregateDaoImpl implements AggregateDao {
             // reading delimited singleton list for backwards compatibility with data written
             // prior to 0.12.0
             List<Aggregate.Timer> list =
-                    Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
+                    Messages.parseDelimitedFrom(row.getByteBuffer(i++), Aggregate.Timer.parser());
             Aggregate.Timer toBeMergedAuxThreadRootTimer = list.isEmpty() ? null : list.get(0);
             if (toBeMergedAuxThreadRootTimer == null) {
                 i += 4;
@@ -1294,7 +1295,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 auxThreadStats.addTotalAllocatedBytes(getNextThreadStat(row, i++));
             }
             List<Aggregate.Timer> toBeMergedAsyncTimers =
-                    Messages.parseDelimitedFrom(row.getBytes(i++), Aggregate.Timer.parser());
+                    Messages.parseDelimitedFrom(row.getByteBuffer(i++), Aggregate.Timer.parser());
             MutableAggregate.mergeRootTimers(toBeMergedAsyncTimers, asyncTimers);
         }
         BoundStatement boundStatement;
@@ -1304,44 +1305,44 @@ public class AggregateDaoImpl implements AggregateDao {
             boundStatement = getInsertTransactionPS(overviewTable, rollup.rollupLevel()).bind();
         }
         int i = 0;
-        boundStatement.setString(i++, rollup.agentRollupId());
-        boundStatement.setString(i++, query.transactionType());
+        boundStatement = boundStatement.setString(i++, rollup.agentRollupId())
+            .setString(i++, query.transactionType());
         if (query.transactionName() != null) {
-            boundStatement.setString(i++, query.transactionName());
+            boundStatement = boundStatement.setString(i++, query.transactionName());
         }
-        boundStatement.setTimestamp(i++, new Date(query.to()));
-        boundStatement.setDouble(i++, totalDurationNanos);
-        boundStatement.setLong(i++, transactionCount);
-        boundStatement.setBool(i++, asyncTransactions);
-        boundStatement.setBytes(i++,
-                Messages.toByteBuffer(MutableAggregate.toProto(mainThreadRootTimers)));
-        boundStatement.setDouble(i++, mainThreadStats.getTotalCpuNanos());
-        boundStatement.setDouble(i++, mainThreadStats.getTotalBlockedNanos());
-        boundStatement.setDouble(i++, mainThreadStats.getTotalWaitedNanos());
-        boundStatement.setDouble(i++, mainThreadStats.getTotalAllocatedBytes());
+        boundStatement = boundStatement.setInstant(i++, Instant.ofEpochMilli(query.to()))
+            .setDouble(i++, totalDurationNanos)
+            .setLong(i++, transactionCount)
+            .setBoolean(i++, asyncTransactions)
+            .setByteBuffer(i++,
+                Messages.toByteBuffer(MutableAggregate.toProto(mainThreadRootTimers)))
+            .setDouble(i++, mainThreadStats.getTotalCpuNanos())
+            .setDouble(i++, mainThreadStats.getTotalBlockedNanos())
+            .setDouble(i++, mainThreadStats.getTotalWaitedNanos())
+            .setDouble(i++, mainThreadStats.getTotalAllocatedBytes());
         if (auxThreadRootTimer.getCount() == 0) {
-            boundStatement.setToNull(i++);
-            boundStatement.setToNull(i++);
-            boundStatement.setToNull(i++);
-            boundStatement.setToNull(i++);
-            boundStatement.setToNull(i++);
+            boundStatement = boundStatement.setToNull(i++)
+                .setToNull(i++)
+                .setToNull(i++)
+                .setToNull(i++)
+                .setToNull(i++);
         } else {
             // writing as delimited singleton list for backwards compatibility with data written
             // prior to 0.12.0
-            boundStatement.setBytes(i++, Messages
-                    .toByteBuffer(MutableAggregate.toProto(ImmutableList.of(auxThreadRootTimer))));
-            boundStatement.setDouble(i++, auxThreadStats.getTotalCpuNanos());
-            boundStatement.setDouble(i++, auxThreadStats.getTotalBlockedNanos());
-            boundStatement.setDouble(i++, auxThreadStats.getTotalWaitedNanos());
-            boundStatement.setDouble(i++, auxThreadStats.getTotalAllocatedBytes());
+            boundStatement = boundStatement.setByteBuffer(i++, Messages
+                    .toByteBuffer(MutableAggregate.toProto(ImmutableList.of(auxThreadRootTimer))))
+                .setDouble(i++, auxThreadStats.getTotalCpuNanos())
+                .setDouble(i++, auxThreadStats.getTotalBlockedNanos())
+                .setDouble(i++, auxThreadStats.getTotalWaitedNanos())
+                .setDouble(i++, auxThreadStats.getTotalAllocatedBytes());
         }
         if (asyncTimers.isEmpty()) {
-            boundStatement.setToNull(i++);
+            boundStatement = boundStatement.setToNull(i++);
         } else {
-            boundStatement.setBytes(i++,
+            boundStatement = boundStatement.setByteBuffer(i++,
                     Messages.toByteBuffer(MutableAggregate.toProto(asyncTimers)));
         }
-        boundStatement.setInt(i++, rollup.adjustedTTL().generalTTL());
+        boundStatement = boundStatement.setInt(i++, rollup.adjustedTTL().generalTTL());
         return session.writeAsync(boundStatement);
     }
 
@@ -1379,7 +1380,7 @@ public class AggregateDaoImpl implements AggregateDao {
             int i = 0;
             totalDurationNanos += row.getDouble(i++);
             transactionCount += row.getLong(i++);
-            ByteBuffer bytes = checkNotNull(row.getBytes(i++));
+            ByteBuffer bytes = checkNotNull(row.getByteBuffer(i++));
             durationNanosHistogram.merge(Aggregate.Histogram.parseFrom(bytes));
         }
         BoundStatement boundStatement;
@@ -1389,16 +1390,16 @@ public class AggregateDaoImpl implements AggregateDao {
             boundStatement = getInsertTransactionPS(histogramTable, rollup.rollupLevel()).bind();
         }
         int i = 0;
-        boundStatement.setString(i++, rollup.agentRollupId());
-        boundStatement.setString(i++, query.transactionType());
+        boundStatement = boundStatement.setString(i++, rollup.agentRollupId())
+            .setString(i++, query.transactionType());
         if (query.transactionName() != null) {
-            boundStatement.setString(i++, query.transactionName());
+            boundStatement = boundStatement.setString(i++, query.transactionName());
         }
-        boundStatement.setTimestamp(i++, new Date(query.to()));
-        boundStatement.setDouble(i++, totalDurationNanos);
-        boundStatement.setLong(i++, transactionCount);
-        boundStatement.setBytes(i++, toByteBuffer(durationNanosHistogram.toProto(scratchBuffer)));
-        boundStatement.setInt(i++, rollup.adjustedTTL().generalTTL());
+        boundStatement = boundStatement.setInstant(i++, Instant.ofEpochMilli(query.to()))
+            .setDouble(i++, totalDurationNanos)
+            .setLong(i++, transactionCount)
+            .setByteBuffer(i++, toByteBuffer(durationNanosHistogram.toProto(scratchBuffer)))
+            .setInt(i++, rollup.adjustedTTL().generalTTL());
         return session.writeAsync(boundStatement);
     }
 
@@ -1448,19 +1449,19 @@ public class AggregateDaoImpl implements AggregateDao {
             boundStatement = getInsertTransactionPS(throughputTable, rollup.rollupLevel()).bind();
         }
         int i = 0;
-        boundStatement.setString(i++, rollup.agentRollupId());
-        boundStatement.setString(i++, query.transactionType());
+        boundStatement = boundStatement.setString(i++, rollup.agentRollupId())
+            .setString(i++, query.transactionType());
         if (query.transactionName() != null) {
-            boundStatement.setString(i++, query.transactionName());
+            boundStatement = boundStatement.setString(i++, query.transactionName());
         }
-        boundStatement.setTimestamp(i++, new Date(query.to()));
-        boundStatement.setLong(i++, transactionCount);
+        boundStatement = boundStatement.setInstant(i++, Instant.ofEpochMilli(query.to()))
+            .setLong(i++, transactionCount);
         if (hasMissingErrorCount) {
-            boundStatement.setToNull(i++);
+            boundStatement = boundStatement.setToNull(i++);
         } else {
-            boundStatement.setLong(i++, errorCount);
+            boundStatement = boundStatement.setLong(i++, errorCount);
         }
-        boundStatement.setInt(i++, rollup.adjustedTTL().generalTTL());
+        boundStatement = boundStatement.setInt(i++, rollup.adjustedTTL().generalTTL());
         return session.writeAsync(boundStatement);
     }
 
@@ -1581,7 +1582,7 @@ public class AggregateDaoImpl implements AggregateDao {
             AggregateQuery query, Iterable<Row> rows, Table table) throws Exception {
         MutableProfile profile = new MutableProfile();
         for (Row row : rows) {
-            ByteBuffer bytes = checkNotNull(row.getBytes(0));
+            ByteBuffer bytes = checkNotNull(row.getByteBuffer(0));
             profile.merge(Profile.parseFrom(bytes));
         }
         BoundStatement boundStatement;
@@ -1591,14 +1592,14 @@ public class AggregateDaoImpl implements AggregateDao {
             boundStatement = getInsertTransactionPS(table, rollup.rollupLevel()).bind();
         }
         int i = 0;
-        boundStatement.setString(i++, rollup.agentRollupId());
-        boundStatement.setString(i++, query.transactionType());
+        boundStatement = boundStatement.setString(i++, rollup.agentRollupId())
+            .setString(i++, query.transactionType());
         if (query.transactionName() != null) {
-            boundStatement.setString(i++, query.transactionName());
+            boundStatement = boundStatement.setString(i++, query.transactionName());
         }
-        boundStatement.setTimestamp(i++, new Date(query.to()));
-        boundStatement.setBytes(i++, toByteBuffer(profile.toProto()));
-        boundStatement.setInt(i++, rollup.adjustedTTL().profileTTL());
+        boundStatement = boundStatement.setInstant(i++, Instant.ofEpochMilli(query.to()))
+            .setByteBuffer(i++, toByteBuffer(profile.toProto()))
+            .setInt(i++, rollup.adjustedTTL().profileTTL());
         return session.writeAsync(boundStatement);
     }
 
@@ -1609,7 +1610,7 @@ public class AggregateDaoImpl implements AggregateDao {
         for (String childAgentRollupId : childAgentRollupIds) {
             BoundStatement boundStatement =
                     checkNotNull(readTransactionForRollupFromChildPS.get(table)).bind();
-            bindQueryForRollupFromChild(boundStatement, childAgentRollupId, query);
+            boundStatement = bindQueryForRollupFromChild(boundStatement, childAgentRollupId, query);
             if (warnIfNoResults) {
                 futures.put(childAgentRollupId, session.readAsyncWarnIfNoRows(boundStatement,
                         "no summary table records found for agentRollupId={}, query={}",
@@ -1639,75 +1640,75 @@ public class AggregateDaoImpl implements AggregateDao {
         final int rollupLevel = 0;
 
         List<ListenableFuture<?>> futures = new ArrayList<>();
-        BoundStatement boundStatement = getInsertOverallPS(summaryTable, rollupLevel).bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, transactionType);
-        boundStatement.setTimestamp(i++, new Date(captureTime));
-        bindAggregateForSummary(boundStatement, aggregate, i, adjustedTTL);
+        BoundStatement boundStatement = getInsertOverallPS(summaryTable, rollupLevel).bind()
+            .setString(i++, agentRollupId)
+            .setString(i++, transactionType)
+            .setInstant(i++, Instant.ofEpochMilli(captureTime));
+        boundStatement = bindAggregateForSummary(boundStatement, aggregate, i, adjustedTTL);
         futures.add(session.writeAsync(boundStatement));
 
         if (aggregate.getErrorCount() > 0) {
-            boundStatement = getInsertOverallPS(errorSummaryTable, rollupLevel).bind();
             i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, transactionType);
-            boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setLong(i++, aggregate.getErrorCount());
-            boundStatement.setLong(i++, aggregate.getTransactionCount());
-            boundStatement.setInt(i++, adjustedTTL.generalTTL());
+            boundStatement = getInsertOverallPS(errorSummaryTable, rollupLevel).bind()
+                .setString(i++, agentRollupId)
+                .setString(i++, transactionType)
+                .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                .setLong(i++, aggregate.getErrorCount())
+                .setLong(i++, aggregate.getTransactionCount())
+                .setInt(i++, adjustedTTL.generalTTL());
             futures.add(session.writeAsync(boundStatement));
         }
 
-        boundStatement = getInsertOverallPS(overviewTable, rollupLevel).bind();
         i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, transactionType);
-        boundStatement.setTimestamp(i++, new Date(captureTime));
-        bindAggregate(boundStatement, aggregate, i++, adjustedTTL);
+        boundStatement = getInsertOverallPS(overviewTable, rollupLevel).bind()
+            .setString(i++, agentRollupId)
+            .setString(i++, transactionType)
+            .setInstant(i++, Instant.ofEpochMilli(captureTime));
+        boundStatement = bindAggregate(boundStatement, aggregate, i++, adjustedTTL);
         futures.add(session.writeAsync(boundStatement));
 
-        boundStatement = getInsertOverallPS(histogramTable, rollupLevel).bind();
         i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, transactionType);
-        boundStatement.setTimestamp(i++, new Date(captureTime));
-        boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
-        boundStatement.setLong(i++, aggregate.getTransactionCount());
-        boundStatement.setBytes(i++, toByteBuffer(aggregate.getDurationNanosHistogram()));
-        boundStatement.setInt(i++, adjustedTTL.generalTTL());
+        boundStatement = getInsertOverallPS(histogramTable, rollupLevel).bind()
+            .setString(i++, agentRollupId)
+            .setString(i++, transactionType)
+            .setInstant(i++, Instant.ofEpochMilli(captureTime))
+            .setDouble(i++, aggregate.getTotalDurationNanos())
+            .setLong(i++, aggregate.getTransactionCount())
+            .setByteBuffer(i++, toByteBuffer(aggregate.getDurationNanosHistogram()))
+            .setInt(i++, adjustedTTL.generalTTL());
         futures.add(session.writeAsync(boundStatement));
 
-        boundStatement = getInsertOverallPS(throughputTable, rollupLevel).bind();
         i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, transactionType);
-        boundStatement.setTimestamp(i++, new Date(captureTime));
-        boundStatement.setLong(i++, aggregate.getTransactionCount());
-        boundStatement.setLong(i++, aggregate.getErrorCount());
-        boundStatement.setInt(i++, adjustedTTL.generalTTL());
+        boundStatement = getInsertOverallPS(throughputTable, rollupLevel).bind()
+            .setString(i++, agentRollupId)
+            .setString(i++, transactionType)
+            .setInstant(i++, Instant.ofEpochMilli(captureTime))
+            .setLong(i++, aggregate.getTransactionCount())
+            .setLong(i++, aggregate.getErrorCount())
+            .setInt(i++, adjustedTTL.generalTTL());
         futures.add(session.writeAsync(boundStatement));
 
         if (aggregate.hasMainThreadProfile()) {
             Profile profile = aggregate.getMainThreadProfile();
-            boundStatement = getInsertOverallPS(mainThreadProfileTable, rollupLevel).bind();
             i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, transactionType);
-            boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setBytes(i++, toByteBuffer(profile));
-            boundStatement.setInt(i++, adjustedTTL.profileTTL());
+            boundStatement = getInsertOverallPS(mainThreadProfileTable, rollupLevel).bind()
+                .setString(i++, agentRollupId)
+                .setString(i++, transactionType)
+                .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                .setByteBuffer(i++, toByteBuffer(profile))
+                .setInt(i++, adjustedTTL.profileTTL());
             futures.add(session.writeAsync(boundStatement));
         }
         if (aggregate.hasAuxThreadProfile()) {
             Profile profile = aggregate.getAuxThreadProfile();
-            boundStatement = getInsertOverallPS(auxThreadProfileTable, rollupLevel).bind();
             i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, transactionType);
-            boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setBytes(i++, toByteBuffer(profile));
-            boundStatement.setInt(i++, adjustedTTL.profileTTL());
+            boundStatement = getInsertOverallPS(auxThreadProfileTable, rollupLevel).bind()
+                .setString(i++, agentRollupId)
+                .setString(i++, transactionType)
+                .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                .setByteBuffer(i++, toByteBuffer(profile))
+                .setInt(i++, adjustedTTL.profileTTL());
             futures.add(session.writeAsync(boundStatement));
         }
         futures.addAll(insertQueries(getQueries(aggregate), sharedQueryTexts, rollupLevel,
@@ -1724,60 +1725,60 @@ public class AggregateDaoImpl implements AggregateDao {
         final int rollupLevel = 0;
 
         List<Future<?>> futures = new ArrayList<>();
-        BoundStatement boundStatement = getInsertTransactionPS(overviewTable, rollupLevel).bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, transactionType);
-        boundStatement.setString(i++, transactionName);
-        boundStatement.setTimestamp(i++, new Date(captureTime));
-        bindAggregate(boundStatement, aggregate, i++, adjustedTTL);
+        BoundStatement boundStatement = getInsertTransactionPS(overviewTable, rollupLevel).bind()
+            .setString(i++, agentRollupId)
+            .setString(i++, transactionType)
+            .setString(i++, transactionName)
+            .setInstant(i++, Instant.ofEpochMilli(captureTime));
+        boundStatement = bindAggregate(boundStatement, aggregate, i++, adjustedTTL);
         futures.add(session.writeAsync(boundStatement));
 
-        boundStatement = getInsertTransactionPS(histogramTable, rollupLevel).bind();
         i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, transactionType);
-        boundStatement.setString(i++, transactionName);
-        boundStatement.setTimestamp(i++, new Date(captureTime));
-        boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
-        boundStatement.setLong(i++, aggregate.getTransactionCount());
-        boundStatement.setBytes(i++, toByteBuffer(aggregate.getDurationNanosHistogram()));
-        boundStatement.setInt(i++, adjustedTTL.generalTTL());
+        boundStatement = getInsertTransactionPS(histogramTable, rollupLevel).bind()
+            .setString(i++, agentRollupId)
+            .setString(i++, transactionType)
+            .setString(i++, transactionName)
+            .setInstant(i++, Instant.ofEpochMilli(captureTime))
+            .setDouble(i++, aggregate.getTotalDurationNanos())
+            .setLong(i++, aggregate.getTransactionCount())
+            .setByteBuffer(i++, toByteBuffer(aggregate.getDurationNanosHistogram()))
+            .setInt(i++, adjustedTTL.generalTTL());
         futures.add(session.writeAsync(boundStatement));
 
-        boundStatement = getInsertTransactionPS(throughputTable, rollupLevel).bind();
         i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, transactionType);
-        boundStatement.setString(i++, transactionName);
-        boundStatement.setTimestamp(i++, new Date(captureTime));
-        boundStatement.setLong(i++, aggregate.getTransactionCount());
-        boundStatement.setLong(i++, aggregate.getErrorCount());
-        boundStatement.setInt(i++, adjustedTTL.generalTTL());
+        boundStatement = getInsertTransactionPS(throughputTable, rollupLevel).bind()
+            .setString(i++, agentRollupId)
+            .setString(i++, transactionType)
+            .setString(i++, transactionName)
+            .setInstant(i++, Instant.ofEpochMilli(captureTime))
+            .setLong(i++, aggregate.getTransactionCount())
+            .setLong(i++, aggregate.getErrorCount())
+            .setInt(i++, adjustedTTL.generalTTL());
         futures.add(session.writeAsync(boundStatement));
 
         if (aggregate.hasMainThreadProfile()) {
             Profile profile = aggregate.getMainThreadProfile();
-            boundStatement = getInsertTransactionPS(mainThreadProfileTable, rollupLevel).bind();
             i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, transactionType);
-            boundStatement.setString(i++, transactionName);
-            boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setBytes(i++, toByteBuffer(profile));
-            boundStatement.setInt(i++, adjustedTTL.profileTTL());
+            boundStatement = getInsertTransactionPS(mainThreadProfileTable, rollupLevel).bind()
+                .setString(i++, agentRollupId)
+                .setString(i++, transactionType)
+                .setString(i++, transactionName)
+                .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                .setByteBuffer(i++, toByteBuffer(profile))
+                .setInt(i++, adjustedTTL.profileTTL());
             futures.add(session.writeAsync(boundStatement));
         }
         if (aggregate.hasAuxThreadProfile()) {
             Profile profile = aggregate.getAuxThreadProfile();
-            boundStatement = getInsertTransactionPS(auxThreadProfileTable, rollupLevel).bind();
             i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, transactionType);
-            boundStatement.setString(i++, transactionName);
-            boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setBytes(i++, toByteBuffer(profile));
-            boundStatement.setInt(i++, adjustedTTL.profileTTL());
+            boundStatement = getInsertTransactionPS(auxThreadProfileTable, rollupLevel).bind()
+                .setString(i++, agentRollupId)
+                .setString(i++, transactionType)
+                .setString(i++, transactionName)
+                .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                .setByteBuffer(i++, toByteBuffer(profile))
+                .setInt(i++, adjustedTTL.profileTTL());
             futures.add(session.writeAsync(boundStatement));
         }
         futures.addAll(insertQueries(getQueries(aggregate), sharedQueryTexts, rollupLevel,
@@ -1794,25 +1795,25 @@ public class AggregateDaoImpl implements AggregateDao {
         final int rollupLevel = 0;
 
         List<Future<?>> futures = new ArrayList<>();
-        BoundStatement boundStatement = getInsertTransactionPS(summaryTable, rollupLevel).bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, transactionType);
-        boundStatement.setTimestamp(i++, new Date(captureTime));
-        boundStatement.setString(i++, transactionName);
-        bindAggregateForSummary(boundStatement, aggregate, i, adjustedTTL);
+        BoundStatement boundStatement = getInsertTransactionPS(summaryTable, rollupLevel).bind()
+            .setString(i++, agentRollupId)
+            .setString(i++, transactionType)
+            .setInstant(i++, Instant.ofEpochMilli(captureTime))
+            .setString(i++, transactionName);
+        boundStatement = bindAggregateForSummary(boundStatement, aggregate, i, adjustedTTL);
         futures.add(session.writeAsync(boundStatement));
 
         if (aggregate.getErrorCount() > 0) {
-            boundStatement = getInsertTransactionPS(errorSummaryTable, rollupLevel).bind();
             i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, transactionType);
-            boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setString(i++, transactionName);
-            boundStatement.setLong(i++, aggregate.getErrorCount());
-            boundStatement.setLong(i++, aggregate.getTransactionCount());
-            boundStatement.setInt(i++, adjustedTTL.generalTTL());
+            boundStatement = getInsertTransactionPS(errorSummaryTable, rollupLevel).bind()
+                .setString(i++, agentRollupId)
+                .setString(i++, transactionType)
+                .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                .setString(i++, transactionName)
+                .setLong(i++, aggregate.getErrorCount())
+                .setLong(i++, aggregate.getTransactionCount())
+                .setInt(i++, adjustedTTL.generalTTL());
             futures.add(session.writeAsync(boundStatement));
         }
         return futures;
@@ -1833,30 +1834,30 @@ public class AggregateDaoImpl implements AggregateDao {
                 boundStatement = getInsertTransactionPS(queryTable, rollupLevel).bind();
             }
             int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, transactionType);
+            boundStatement = boundStatement.setString(i++, agentRollupId)
+                .setString(i++, transactionType);
             if (transactionName != null) {
-                boundStatement.setString(i++, transactionName);
+                boundStatement = boundStatement.setString(i++, transactionName);
             }
-            boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setString(i++, query.getType());
+            boundStatement = boundStatement.setInstant(i++, Instant.ofEpochMilli(captureTime))
+                .setString(i++, query.getType());
             String fullTextSha1 = sharedQueryText.getFullTextSha1();
             if (fullTextSha1.isEmpty()) {
-                boundStatement.setString(i++, sharedQueryText.getFullText());
+                boundStatement = boundStatement.setString(i++, sharedQueryText.getFullText())
                 // full_query_text_sha1 cannot be null since it is used in clustering key
-                boundStatement.setString(i++, "");
+                    .setString(i++, "");
             } else {
-                boundStatement.setString(i++, sharedQueryText.getTruncatedText());
-                boundStatement.setString(i++, fullTextSha1);
+                boundStatement = boundStatement.setString(i++, sharedQueryText.getTruncatedText())
+                    .setString(i++, fullTextSha1);
             }
-            boundStatement.setDouble(i++, query.getTotalDurationNanos());
-            boundStatement.setLong(i++, query.getExecutionCount());
+            boundStatement = boundStatement.setDouble(i++, query.getTotalDurationNanos())
+                .setLong(i++, query.getExecutionCount());
             if (query.hasTotalRows()) {
-                boundStatement.setLong(i++, query.getTotalRows().getValue());
+                boundStatement = boundStatement.setLong(i++, query.getTotalRows().getValue());
             } else {
-                boundStatement.setToNull(i++);
+                boundStatement = boundStatement.setToNull(i++);
             }
-            boundStatement.setInt(i++, adjustedTTL.queryTTL());
+            boundStatement = boundStatement.setInt(i++, adjustedTTL.queryTTL());
             futures.add(session.writeAsync(boundStatement));
         }
         return futures;
@@ -1875,24 +1876,24 @@ public class AggregateDaoImpl implements AggregateDao {
             }
             String fullTextSha1 = query.getFullTextSha1();
             int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, transactionType);
+            boundStatement = boundStatement.setString(i++, agentRollupId)
+                .setString(i++, transactionType);
             if (transactionName != null) {
-                boundStatement.setString(i++, transactionName);
+                boundStatement = boundStatement.setString(i++, transactionName);
             }
-            boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setString(i++, query.getType());
-            boundStatement.setString(i++, query.getTruncatedText());
-            // full_query_text_sha1 cannot be null since it is used in clustering key
-            boundStatement.setString(i++, Strings.nullToEmpty(fullTextSha1));
-            boundStatement.setDouble(i++, query.getTotalDurationNanos());
-            boundStatement.setLong(i++, query.getExecutionCount());
+            boundStatement = boundStatement.setInstant(i++, Instant.ofEpochMilli(captureTime))
+                .setString(i++, query.getType())
+                .setString(i++, query.getTruncatedText())
+                // full_query_text_sha1 cannot be null since it is used in clustering key
+                .setString(i++, Strings.nullToEmpty(fullTextSha1))
+                .setDouble(i++, query.getTotalDurationNanos())
+                .setLong(i++, query.getExecutionCount());
             if (query.hasTotalRows()) {
-                boundStatement.setLong(i++, query.getTotalRows());
+                boundStatement = boundStatement.setLong(i++, query.getTotalRows());
             } else {
-                boundStatement.setToNull(i++);
+                boundStatement = boundStatement.setToNull(i++);
             }
-            boundStatement.setInt(i++, adjustedTTL.queryTTL());
+            boundStatement = boundStatement.setInt(i++, adjustedTTL.queryTTL());
             futures.add(session.writeAsync(boundStatement));
         }
         return Futures.allAsList(futures);
@@ -1911,17 +1912,17 @@ public class AggregateDaoImpl implements AggregateDao {
                 boundStatement = getInsertTransactionPS(serviceCallTable, rollupLevel).bind();
             }
             int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, transactionType);
+            boundStatement = boundStatement.setString(i++, agentRollupId)
+                .setString(i++, transactionType);
             if (transactionName != null) {
-                boundStatement.setString(i++, transactionName);
+                boundStatement = boundStatement.setString(i++, transactionName);
             }
-            boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setString(i++, serviceCall.getType());
-            boundStatement.setString(i++, serviceCall.getText());
-            boundStatement.setDouble(i++, serviceCall.getTotalDurationNanos());
-            boundStatement.setLong(i++, serviceCall.getExecutionCount());
-            boundStatement.setInt(i++, adjustedTTL.serviceCallTTL());
+            boundStatement = boundStatement.setInstant(i++, Instant.ofEpochMilli(captureTime))
+                .setString(i++, serviceCall.getType())
+                .setString(i++, serviceCall.getText())
+                .setDouble(i++, serviceCall.getTotalDurationNanos())
+                .setLong(i++, serviceCall.getExecutionCount())
+                .setInt(i++, adjustedTTL.serviceCallTTL());
             futures.add(session.writeAsync(boundStatement));
         }
         return futures;
@@ -1939,17 +1940,17 @@ public class AggregateDaoImpl implements AggregateDao {
                 boundStatement = getInsertTransactionPS(serviceCallTable, rollupLevel).bind();
             }
             int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, transactionType);
+            boundStatement = boundStatement.setString(i++, agentRollupId)
+                .setString(i++, transactionType);
             if (transactionName != null) {
-                boundStatement.setString(i++, transactionName);
+                boundStatement = boundStatement.setString(i++, transactionName);
             }
-            boundStatement.setTimestamp(i++, new Date(captureTime));
-            boundStatement.setString(i++, serviceCall.getType());
-            boundStatement.setString(i++, serviceCall.getText());
-            boundStatement.setDouble(i++, serviceCall.getTotalDurationNanos());
-            boundStatement.setLong(i++, serviceCall.getExecutionCount());
-            boundStatement.setInt(i++, adjustedTTL.serviceCallTTL());
+            boundStatement = boundStatement.setInstant(i++, Instant.ofEpochMilli(captureTime))
+                .setString(i++, serviceCall.getType())
+                .setString(i++, serviceCall.getText())
+                .setDouble(i++, serviceCall.getTotalDurationNanos())
+                .setLong(i++, serviceCall.getExecutionCount())
+                .setInt(i++, adjustedTTL.serviceCallTTL());
             futures.add(session.writeAsync(boundStatement));
         }
         return Futures.allAsList(futures);
@@ -1967,7 +1968,7 @@ public class AggregateDaoImpl implements AggregateDao {
             throws Exception {
         BoundStatement boundStatement =
                 checkNotNull(readOverallPS.get(table)).get(query.rollupLevel()).bind();
-        bindQuery(boundStatement, agentRollupId, query);
+        boundStatement = bindQuery(boundStatement, agentRollupId, query);
         return session.read(boundStatement);
     }
 
@@ -1980,7 +1981,7 @@ public class AggregateDaoImpl implements AggregateDao {
             boundStatement =
                     checkNotNull(readTransactionPS.get(table)).get(query.rollupLevel()).bind();
         }
-        bindQuery(boundStatement, agentRollupId, query);
+        boundStatement = bindQuery(boundStatement, agentRollupId, query);
         return session.read(boundStatement);
     }
 
@@ -1994,7 +1995,7 @@ public class AggregateDaoImpl implements AggregateDao {
             boundStatement = checkNotNull(readTransactionForRollupPS.get(table))
                     .get(query.rollupLevel()).bind();
         }
-        bindQuery(boundStatement, agentRollupId, query);
+        boundStatement = bindQuery(boundStatement, agentRollupId, query);
         if (warnIfNoResults) {
             return session.readAsyncWarnIfNoRows(boundStatement,
                     "no {} records found for agentRollupId={}, query={}", table.partialName(),
@@ -2012,7 +2013,7 @@ public class AggregateDaoImpl implements AggregateDao {
         } else {
             boundStatement = checkNotNull(readTransactionForRollupFromChildPS.get(table)).bind();
         }
-        bindQueryForRollupFromChild(boundStatement, childAgentRollupId, query);
+        boundStatement = bindQueryForRollupFromChild(boundStatement, childAgentRollupId, query);
         if (warnIfNoResults) {
             return session.readAsyncWarnIfNoRows(boundStatement,
                     "no {} records found for agentRollupId={}, query={}", table.partialName(),
@@ -2027,8 +2028,8 @@ public class AggregateDaoImpl implements AggregateDao {
         ResultSet results = executeQuery(agentRollupId, query, profileTable);
         long captureTime = Long.MIN_VALUE;
         for (Row row : results) {
-            captureTime = Math.max(captureTime, checkNotNull(row.getTimestamp(0)).getTime());
-            ByteBuffer bytes = checkNotNull(row.getBytes(1));
+            captureTime = Math.max(captureTime, checkNotNull(row.getInstant(0)).toEpochMilli());
+            ByteBuffer bytes = checkNotNull(row.getByteBuffer(1));
             // TODO optimize this byte copying
             Profile profile = Profile.parseFrom(bytes);
             collector.mergeProfile(profile);
@@ -2087,10 +2088,11 @@ public class AggregateDaoImpl implements AggregateDao {
         return transactionName;
     }
 
-    private static void bindAggregateForSummary(BoundStatement boundStatement, Aggregate aggregate,
+    @CheckReturnValue
+    private static BoundStatement bindAggregateForSummary(BoundStatement boundStatement, Aggregate aggregate,
             int startIndex, TTL adjustedTTL) {
         int i = startIndex;
-        boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
+        boundStatement = boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
         double totalCpuNanos = 0;
         double totalAllocatedBytes = 0;
         if (aggregate.hasOldMainThreadStats()) {
@@ -2115,99 +2117,103 @@ public class AggregateDaoImpl implements AggregateDao {
                 totalAllocatedBytes += auxThreadStats.getTotalAllocatedBytes();
             }
         }
-        boundStatement.setDouble(i++, totalCpuNanos);
-        boundStatement.setDouble(i++, totalAllocatedBytes);
-        boundStatement.setLong(i++, aggregate.getTransactionCount());
-        boundStatement.setInt(i++, adjustedTTL.generalTTL());
+        return boundStatement.setDouble(i++, totalCpuNanos)
+            .setDouble(i++, totalAllocatedBytes)
+            .setLong(i++, aggregate.getTransactionCount())
+            .setInt(i++, adjustedTTL.generalTTL());
     }
 
-    private static void bindAggregate(BoundStatement boundStatement, Aggregate aggregate,
+    @CheckReturnValue
+    private static BoundStatement bindAggregate(BoundStatement boundStatement, Aggregate aggregate,
             int startIndex, TTL adjustedTTL) throws IOException {
         int i = startIndex;
-        boundStatement.setDouble(i++, aggregate.getTotalDurationNanos());
-        boundStatement.setLong(i++, aggregate.getTransactionCount());
-        boundStatement.setBool(i++, aggregate.getAsyncTransactions());
-        boundStatement.setBytes(i++, Messages.toByteBuffer(aggregate.getMainThreadRootTimerList()));
+        boundStatement = boundStatement.setDouble(i++, aggregate.getTotalDurationNanos())
+            .setLong(i++, aggregate.getTransactionCount())
+            .setBoolean(i++, aggregate.getAsyncTransactions())
+            .setByteBuffer(i++, Messages.toByteBuffer(aggregate.getMainThreadRootTimerList()));
         if (aggregate.hasOldMainThreadStats()) {
             // data from agent prior to 0.10.9
             Aggregate.OldThreadStats mainThreadStats = aggregate.getOldMainThreadStats();
-            boundStatement.setDouble(i++, mainThreadStats.getTotalCpuNanos().getValue());
-            boundStatement.setDouble(i++, mainThreadStats.getTotalBlockedNanos().getValue());
-            boundStatement.setDouble(i++, mainThreadStats.getTotalWaitedNanos().getValue());
-            boundStatement.setDouble(i++, mainThreadStats.getTotalAllocatedBytes().getValue());
+            boundStatement = boundStatement.setDouble(i++, mainThreadStats.getTotalCpuNanos().getValue())
+                .setDouble(i++, mainThreadStats.getTotalBlockedNanos().getValue())
+                .setDouble(i++, mainThreadStats.getTotalWaitedNanos().getValue())
+                .setDouble(i++, mainThreadStats.getTotalAllocatedBytes().getValue());
         } else {
             Aggregate.ThreadStats mainThreadStats = aggregate.getMainThreadStats();
-            boundStatement.setDouble(i++, mainThreadStats.getTotalCpuNanos());
-            boundStatement.setDouble(i++, mainThreadStats.getTotalBlockedNanos());
-            boundStatement.setDouble(i++, mainThreadStats.getTotalWaitedNanos());
-            boundStatement.setDouble(i++, mainThreadStats.getTotalAllocatedBytes());
+            boundStatement = boundStatement.setDouble(i++, mainThreadStats.getTotalCpuNanos())
+                .setDouble(i++, mainThreadStats.getTotalBlockedNanos())
+                .setDouble(i++, mainThreadStats.getTotalWaitedNanos())
+                .setDouble(i++, mainThreadStats.getTotalAllocatedBytes());
         }
         if (aggregate.hasAuxThreadRootTimer()) {
             // writing as delimited singleton list for backwards compatibility with data written
             // prior to 0.12.0
-            boundStatement.setBytes(i++,
+            boundStatement = boundStatement.setByteBuffer(i++,
                     Messages.toByteBuffer(ImmutableList.of(aggregate.getAuxThreadRootTimer())));
             if (aggregate.hasOldAuxThreadStats()) {
                 Aggregate.OldThreadStats auxThreadStats = aggregate.getOldAuxThreadStats();
-                boundStatement.setDouble(i++, auxThreadStats.getTotalCpuNanos().getValue());
-                boundStatement.setDouble(i++, auxThreadStats.getTotalBlockedNanos().getValue());
-                boundStatement.setDouble(i++, auxThreadStats.getTotalWaitedNanos().getValue());
-                boundStatement.setDouble(i++, auxThreadStats.getTotalAllocatedBytes().getValue());
+                boundStatement = boundStatement.setDouble(i++, auxThreadStats.getTotalCpuNanos().getValue())
+                    .setDouble(i++, auxThreadStats.getTotalBlockedNanos().getValue())
+                    .setDouble(i++, auxThreadStats.getTotalWaitedNanos().getValue())
+                    .setDouble(i++, auxThreadStats.getTotalAllocatedBytes().getValue());
             } else {
                 Aggregate.ThreadStats auxThreadStats = aggregate.getAuxThreadStats();
-                boundStatement.setDouble(i++, auxThreadStats.getTotalCpuNanos());
-                boundStatement.setDouble(i++, auxThreadStats.getTotalBlockedNanos());
-                boundStatement.setDouble(i++, auxThreadStats.getTotalWaitedNanos());
-                boundStatement.setDouble(i++, auxThreadStats.getTotalAllocatedBytes());
+                boundStatement = boundStatement.setDouble(i++, auxThreadStats.getTotalCpuNanos())
+                    .setDouble(i++, auxThreadStats.getTotalBlockedNanos())
+                    .setDouble(i++, auxThreadStats.getTotalWaitedNanos())
+                    .setDouble(i++, auxThreadStats.getTotalAllocatedBytes());
             }
         } else {
-            boundStatement.setToNull(i++);
-            boundStatement.setToNull(i++);
-            boundStatement.setToNull(i++);
-            boundStatement.setToNull(i++);
-            boundStatement.setToNull(i++);
+            boundStatement = boundStatement.setToNull(i++)
+                .setToNull(i++)
+                .setToNull(i++)
+                .setToNull(i++)
+                .setToNull(i++);
         }
         List<Aggregate.Timer> asyncTimers = aggregate.getAsyncTimerList();
         if (asyncTimers.isEmpty()) {
-            boundStatement.setToNull(i++);
+            boundStatement = boundStatement.setToNull(i++);
         } else {
-            boundStatement.setBytes(i++, Messages.toByteBuffer(asyncTimers));
+            boundStatement = boundStatement.setByteBuffer(i++, Messages.toByteBuffer(asyncTimers));
         }
-        boundStatement.setInt(i++, adjustedTTL.generalTTL());
+        return boundStatement.setInt(i++, adjustedTTL.generalTTL());
     }
 
-    private static void bindQuery(BoundStatement boundStatement, String agentRollupId,
+    @CheckReturnValue
+    private static BoundStatement bindQuery(BoundStatement boundStatement, String agentRollupId,
             SummaryQuery query) {
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, query.transactionType());
-        boundStatement.setTimestamp(i++, new Date(query.from()));
-        boundStatement.setTimestamp(i++, new Date(query.to()));
+        return boundStatement.setString(i++, agentRollupId)
+            .setString(i++, query.transactionType())
+            .setInstant(i++, Instant.ofEpochMilli(query.from()))
+            .setInstant(i++, Instant.ofEpochMilli(query.to()));
     }
 
-    private static void bindQuery(BoundStatement boundStatement, String agentRollupId,
+    @CheckReturnValue
+    private static BoundStatement bindQuery(BoundStatement boundStatement, String agentRollupId,
             AggregateQuery query) {
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, query.transactionType());
+        boundStatement = boundStatement.setString(i++, agentRollupId)
+            .setString(i++, query.transactionType());
         String transactionName = query.transactionName();
         if (transactionName != null) {
-            boundStatement.setString(i++, transactionName);
+            boundStatement = boundStatement.setString(i++, transactionName);
         }
-        boundStatement.setTimestamp(i++, new Date(query.from()));
-        boundStatement.setTimestamp(i++, new Date(query.to()));
+        return boundStatement.setInstant(i++, Instant.ofEpochMilli(query.from()))
+            .setInstant(i++, Instant.ofEpochMilli(query.to()));
     }
 
-    private static void bindQueryForRollupFromChild(BoundStatement boundStatement,
+    @CheckReturnValue
+    private static BoundStatement bindQueryForRollupFromChild(BoundStatement boundStatement,
             String agentRollupId, AggregateQuery query) {
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, query.transactionType());
+        boundStatement = boundStatement.setString(i++, agentRollupId)
+            .setString(i++, query.transactionType());
         String transactionName = query.transactionName();
         if (transactionName != null) {
-            boundStatement.setString(i++, transactionName);
+            boundStatement = boundStatement.setString(i++, transactionName);
         }
-        boundStatement.setTimestamp(i++, new Date(query.to()));
+        return boundStatement.setInstant(i++, Instant.ofEpochMilli(query.to()));
     }
 
     private static List<Aggregate.Query> getQueries(Aggregate aggregate) {

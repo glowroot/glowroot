@@ -17,9 +17,9 @@ package org.glowroot.central.repo;
 
 import java.nio.ByteBuffer;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.central.util.Session;
@@ -47,21 +47,21 @@ public class EnvironmentDao implements EnvironmentRepository {
     }
 
     public void store(String agentId, Environment environment) throws Exception {
-        BoundStatement boundStatement = insertPS.bind();
         int i = 0;
-        boundStatement.setString(i++, agentId);
-        boundStatement.setBytes(i++, ByteBuffer.wrap(environment.toByteArray()));
+        BoundStatement boundStatement = insertPS.bind()
+            .setString(i++, agentId)
+            .setByteBuffer(i++, ByteBuffer.wrap(environment.toByteArray()));
         session.write(boundStatement);
     }
 
     @Override
     public @Nullable Environment read(String agentId) throws Exception {
-        BoundStatement boundStatement = readPS.bind();
-        boundStatement.setString(0, agentId);
+        BoundStatement boundStatement = readPS.bind()
+            .setString(0, agentId);
         Row row = session.read(boundStatement).one();
         if (row == null) {
             return null;
         }
-        return Environment.parseFrom(checkNotNull(row.getBytes(0)));
+        return Environment.parseFrom(checkNotNull(row.getByteBuffer(0)));
     }
 }

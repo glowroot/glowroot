@@ -15,11 +15,11 @@
  */
 package org.glowroot.central.repo;
 
-import java.util.Date;
+import java.time.Instant;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.google.common.primitives.Ints;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -54,29 +54,29 @@ public class AlertingDisabledDao implements AlertingDisabledRepository {
 
     @Override
     public @Nullable Long getAlertingDisabledUntilTime(String agentRollupId) throws Exception {
-        BoundStatement boundStatement = readPS.bind();
-        boundStatement.setString(0, agentRollupId);
+        BoundStatement boundStatement = readPS.bind()
+            .setString(0, agentRollupId);
         Row row = session.read(boundStatement).one();
         if (row == null) {
             return null;
         }
-        Date timestamp = row.getTimestamp(0);
-        return timestamp == null ? null : timestamp.getTime();
+        Instant timestamp = row.getInstant(0);
+        return timestamp == null ? null : timestamp.toEpochMilli();
     }
 
     @Override
     public void setAlertingDisabledUntilTime(String agentRollupId, @Nullable Long disabledUntilTime)
             throws Exception {
         if (disabledUntilTime == null) {
-            BoundStatement boundStatement = deletePS.bind();
-            boundStatement.setString(0, agentRollupId);
+            BoundStatement boundStatement = deletePS.bind()
+                .setString(0, agentRollupId);
             session.write(boundStatement);
         } else {
-            BoundStatement boundStatement = insertPS.bind();
             int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setTimestamp(i++, new Date(disabledUntilTime));
-            boundStatement.setInt(i++, Ints.saturatedCast(
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(i++, agentRollupId)
+                .setInstant(i++, Instant.ofEpochMilli(disabledUntilTime))
+                .setInt(i++, Ints.saturatedCast(
                     MILLISECONDS.toSeconds(disabledUntilTime - clock.currentTimeMillis())));
             session.write(boundStatement);
         }

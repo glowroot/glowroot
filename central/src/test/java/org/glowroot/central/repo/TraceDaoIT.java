@@ -15,11 +15,7 @@
  */
 package org.glowroot.central.repo;
 
-import java.util.Collection;
-
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.PoolingOptions;
-import com.google.common.collect.ImmutableList;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.google.common.collect.ImmutableSet;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +39,7 @@ import org.glowroot.common2.repo.TraceRepository.TraceQuery;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.central.repo.CqlSessionBuilders.MAX_CONCURRENT_QUERIES;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -51,7 +48,7 @@ public class TraceDaoIT {
 
     private static final String AGENT_ID = "xyz";
 
-    private static Cluster cluster;
+    private static CqlSessionBuilder cqlSessionBuilder;
     private static Session session;
     private static ClusterManager clusterManager;
     private static TraceDao traceDao;
@@ -59,9 +56,9 @@ public class TraceDaoIT {
     @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
-        cluster = Clusters.newCluster();
-        session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
-                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE, 0);
+        cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
+        session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
+                MAX_CONCURRENT_QUERIES, 0);
 
         clusterManager = ClusterManager.create();
         ConfigRepositoryImpl configRepository = mock(ConfigRepositoryImpl.class);
@@ -82,7 +79,6 @@ public class TraceDaoIT {
         }
         clusterManager.close();
         session.close();
-        cluster.close();
         SharedSetupRunListener.stopCassandra();
     }
 

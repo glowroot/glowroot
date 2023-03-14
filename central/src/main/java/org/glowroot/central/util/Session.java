@@ -17,6 +17,7 @@ package org.glowroot.central.util;
 
 import java.lang.management.ManagementFactory;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
@@ -24,18 +25,15 @@ import java.util.concurrent.Semaphore;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.ConsistencyLevel;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
-import com.datastax.driver.core.SimpleStatement;
-import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.TableMetadata;
-import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
-import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import com.datastax.oss.driver.api.core.AllNodesFailedException;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.*;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.servererrors.InvalidConfigurationInQueryException;
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.google.common.base.Function;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
@@ -49,7 +47,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Session {
@@ -57,12 +54,7 @@ public class Session {
     private static final Logger logger = LoggerFactory.getLogger(Session.class);
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
-    private static final ThreadLocal<Boolean> inRollupThread = new ThreadLocal<Boolean>() {
-        @Override
-        protected Boolean initialValue() {
-            return false;
-        }
-    };
+    private static final ThreadLocal<Boolean> inRollupThread = ThreadLocal.withInitial(() -> false);
 
     // limit concurrent queries to avoid BusyPoolException
     // separate read/write query limits in order to give some preference to UI requests which are
@@ -74,17 +66,17 @@ public class Session {
     private final Semaphore writeQuerySemaphore;
     private final Semaphore rollupQuerySemaphore;
 
-    private final com.datastax.driver.core.Session wrappedSession;
+    private final CqlSession wrappedSession;
     private final String keyspaceName;
     private final @Nullable ConsistencyLevel writeConsistencyLevel;
-    private final int gcGraceSeonds;
+    private final int gcGraceSeconds;
 
     private final Queue<String> allTableNames = new ConcurrentLinkedQueue<>();
 
     private final CassandraWriteMetrics cassandraWriteMetrics;
 
-    public Session(com.datastax.driver.core.Session wrappedSession, String keyspaceName,
-            @Nullable ConsistencyLevel writeConsistencyLevel, int maxConcurrentQueries, int gcGraceSeconds)
+    public Session(CqlSession wrappedSession, String keyspaceName,
+                   @Nullable ConsistencyLevel writeConsistencyLevel, int maxConcurrentQueries, int gcGraceSeconds)
             throws Exception {
         this.wrappedSession = wrappedSession;
         this.keyspaceName = keyspaceName;
@@ -93,11 +85,11 @@ public class Session {
         readQuerySemaphore = new Semaphore(maxConcurrentQueries / 4);
         writeQuerySemaphore = new Semaphore(maxConcurrentQueries / 2);
         rollupQuerySemaphore = new Semaphore(maxConcurrentQueries / 4);
-        this.gcGraceSeonds = gcGraceSeconds;
+        this.gcGraceSeconds = gcGraceSeconds;
 
         cassandraWriteMetrics = new CassandraWriteMetrics(wrappedSession, keyspaceName);
 
-        if (wrappedSession.getCluster().getMetadata().getKeyspace(keyspaceName) == null) {
+        if (!wrappedSession.getMetadata().getKeyspace(keyspaceName).isPresent()) {
             // "create keyspace if not exists" requires create permission on all keyspaces
             // so only run it if needed, to allow the central collector to be run under more
             // restrictive Cassandra permission if desired
@@ -105,7 +97,7 @@ public class Session {
                     + " with replication = { 'class' : 'SimpleStrategy', 'replication_factor'"
                     + " : 1 }");
         }
-        wrappedSession.execute("use " + keyspaceName);
+        wrappedSession.execute(SimpleStatement.newInstance("use " + keyspaceName));
 
         MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
         platformMBeanServer.registerMBean(new SemaphoreStats(readQuerySemaphore),
@@ -130,14 +122,14 @@ public class Session {
         }
         // do not use session.execute() because that calls getUninterruptibly() which can cause
         // central shutdown to timeout while waiting for executor service to shutdown
-        return readAsync(new SimpleStatement(query)).get();
+        return readAsync(SimpleStatement.newInstance(query)).get();
     }
 
-    public ResultSet read(Statement statement) throws Exception {
+    public ResultSet read(Statement<?> statement) throws Exception {
         if (statement instanceof BoundStatement) {
             BoundStatement boundStatement = (BoundStatement) statement;
-            PreparedStatement preparedStatement = boundStatement.preparedStatement();
-            String queryString = preparedStatement.getQueryString();
+            PreparedStatement preparedStatement = boundStatement.getPreparedStatement();
+            String queryString = preparedStatement.getQuery();
             if (!queryString.startsWith("select ")) {
                 throw new IllegalStateException("Unexpected read query: " + queryString);
             }
@@ -147,11 +139,11 @@ public class Session {
         return readAsync(statement).get();
     }
 
-    public void write(Statement statement) throws Exception {
+    public void write(Statement<?> statement) throws Exception {
         if (statement instanceof BoundStatement) {
             BoundStatement boundStatement = (BoundStatement) statement;
-            PreparedStatement preparedStatement = boundStatement.preparedStatement();
-            String queryString = preparedStatement.getQueryString();
+            PreparedStatement preparedStatement = boundStatement.getPreparedStatement();
+            String queryString = preparedStatement.getQuery();
             if (!queryString.startsWith("insert ") && !queryString.startsWith("delete ")) {
                 throw new IllegalStateException("Unexpected write query: " + queryString);
             }
@@ -161,11 +153,11 @@ public class Session {
         writeAsync(statement).get();
     }
 
-    public ResultSet update(Statement statement) throws Exception {
+    public ResultSet update(Statement<?> statement) throws Exception {
         if (statement instanceof BoundStatement) {
             BoundStatement boundStatement = (BoundStatement) statement;
-            PreparedStatement preparedStatement = boundStatement.preparedStatement();
-            String queryString = preparedStatement.getQueryString();
+            PreparedStatement preparedStatement = boundStatement.getPreparedStatement();
+            String queryString = preparedStatement.getQuery();
             if (!queryString.contains(" if ")) {
                 throw new IllegalStateException("Unexpected update query: " + queryString);
             }
@@ -178,7 +170,7 @@ public class Session {
         return updateAsync(statement).get();
     }
 
-    public ListenableFuture<ResultSet> readAsyncWarnIfNoRows(Statement statement,
+    public ListenableFuture<ResultSet> readAsyncWarnIfNoRows(Statement<?> statement,
             String warningMessage, Object... warningArguments) throws Exception {
         return Futures.transform(readAsync(statement),
                 new Function<ResultSet, ResultSet>() {
@@ -193,7 +185,7 @@ public class Session {
                 MoreExecutors.directExecutor());
     }
 
-    public ListenableFuture<ResultSet> readAsyncFailIfNoRows(Statement statement,
+    public ListenableFuture<ResultSet> readAsyncFailIfNoRows(Statement<?> statement,
             String errorMessage) throws Exception {
         return Futures.transformAsync(readAsync(statement),
                 new AsyncFunction<ResultSet, ResultSet>() {
@@ -209,28 +201,25 @@ public class Session {
                 MoreExecutors.directExecutor());
     }
 
-    public ListenableFuture<ResultSet> readAsync(Statement statement) throws Exception {
+    public ListenableFuture<ResultSet> readAsync(Statement<?> statement) throws Exception {
         return throttleRead(() -> wrappedSession.executeAsync(statement));
     }
 
-    public ListenableFuture<?> writeAsync(Statement statement) throws Exception {
+    public ListenableFuture<ResultSet> writeAsync(Statement<?> statement) throws Exception {
         if (statement.getConsistencyLevel() == null && writeConsistencyLevel != null) {
-            statement.setConsistencyLevel(writeConsistencyLevel);
+            statement = statement.setConsistencyLevel(writeConsistencyLevel);
         }
+        final Statement<?> finalStatement = statement;
         return throttleWrite(() -> {
             // for now, need to record metrics in the same method because CassandraWriteMetrics
             // relies on some thread locals
-            cassandraWriteMetrics.recordMetrics(statement);
-            return wrappedSession.executeAsync(statement);
+            cassandraWriteMetrics.recordMetrics(finalStatement);
+            return wrappedSession.executeAsync(finalStatement);
         });
     }
 
-    private ListenableFuture<ResultSet> updateAsync(Statement statement) throws Exception {
+    private ListenableFuture<ResultSet> updateAsync(Statement<?> statement) throws Exception {
         return throttleWrite(() -> wrappedSession.executeAsync(statement));
-    }
-
-    public Cluster getCluster() {
-        return wrappedSession.getCluster();
     }
 
     public String getKeyspaceName() {
@@ -238,29 +227,24 @@ public class Session {
     }
 
     public @Nullable TableMetadata getTable(String name) {
-        KeyspaceMetadata keyspace = getKeyspace();
-        if (keyspace == null) {
-            return null;
-        } else {
-            return keyspace.getTable(name);
-        }
+        Optional<KeyspaceMetadata> keyspace = getKeyspace();
+        return keyspace.flatMap(keyspaceMetadata -> keyspaceMetadata.getTable(name)).orElse(null);
     }
 
     public Collection<TableMetadata> getTables() {
-        KeyspaceMetadata keyspace = getKeyspace();
-        if (keyspace == null) {
-            return ImmutableList.of();
-        } else {
-            return keyspace.getTables();
-        }
+        return getKeyspace().map(keyspaceMetadata -> keyspaceMetadata.getTables().values()).orElseGet(ImmutableList::of);
     }
 
     public Collection<String> getAllTableNames() {
         return allTableNames;
     }
 
-    private @Nullable KeyspaceMetadata getKeyspace() {
-        return wrappedSession.getCluster().getMetadata().getKeyspace(keyspaceName);
+    Optional<KeyspaceMetadata> getKeyspace() {
+        return wrappedSession.getMetadata().getKeyspace(keyspaceName);
+    }
+
+    public Metadata getMetadata() {
+        return wrappedSession.getMetadata();
     }
 
     public void close() throws Exception {
@@ -304,17 +288,17 @@ public class Session {
             // sstables, three 40mb sstables, etc
             createTableWithTracking(createTableQuery + " " + term + " "
                     + getTwcsCompactionClause(expirationHours) + " and gc_grace_seconds = "
-                    + gcGraceSeonds);
+                    + gcGraceSeconds);
         } catch (InvalidConfigurationInQueryException e) {
             logger.debug(e.getMessage(), e);
             if (fallbackToSTCS) {
                 createTableWithTracking(createTableQuery + " " + term + " compaction = { 'class' :"
                         + " 'SizeTieredCompactionStrategy', 'unchecked_tombstone_compaction' :"
-                        + " true } and gc_grace_seconds = " + gcGraceSeonds);
+                        + " true } and gc_grace_seconds = " + gcGraceSeconds);
             } else {
                 createTableWithTracking(createTableQuery + " " + term + " compaction = { 'class' :"
                         + " 'DateTieredCompactionStrategy', 'unchecked_tombstone_compaction' :"
-                        + " true } and gc_grace_seconds = " + gcGraceSeonds);
+                        + " true } and gc_grace_seconds = " + gcGraceSeconds);
             }
         }
     }
@@ -430,16 +414,16 @@ public class Session {
         }
     }
 
-    // creating/dropping/truncating keyspaces/tables can timeout, throwing NoHostAvailableException
+    // creating/dropping/truncating keyspaces/tables can timeout, throwing AllNodesFailedException
     // (see https://github.com/glowroot/glowroot/issues/351)
-    private static void updateSchemaWithRetry(com.datastax.driver.core.Session wrappedSession,
+    private static void updateSchemaWithRetry(CqlSession wrappedSession,
             String query) throws InterruptedException {
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(SECONDS) < 60) {
             try {
                 wrappedSession.execute(query);
                 return;
-            } catch (NoHostAvailableException e) {
+            } catch (AllNodesFailedException e) {
                 logger.debug(e.getMessage(), e);
             }
             SECONDS.sleep(1);

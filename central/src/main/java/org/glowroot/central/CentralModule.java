@@ -19,37 +19,33 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.Writer;
+import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.security.CodeSource;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+import javax.net.ssl.SSLContext;
 import javax.servlet.ServletContext;
 
 import ch.qos.logback.classic.LoggerContext;
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.ConsistencyLevel;
-import com.datastax.driver.core.HostDistance;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.PoolingOptions;
-import com.datastax.driver.core.QueryOptions;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.TimestampGenerator;
-import com.datastax.driver.core.exceptions.NoHostAvailableException;
-import com.datastax.driver.core.policies.ConstantReconnectionPolicy;
-import com.datastax.driver.core.policies.Policies;
+import com.datastax.oss.driver.api.core.*;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.internal.core.connection.ConstantReconnectionPolicy;
+import com.datastax.oss.driver.internal.core.time.ServerSideTimestampGenerator;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
@@ -59,6 +55,7 @@ import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.RateLimiter;
@@ -115,7 +112,6 @@ public class CentralModule {
 
     private final boolean servlet;
     private final ClusterManager clusterManager;
-    private final Cluster cluster;
     private final Session session;
     private final ExecutorService repoAsyncExecutor;
     private final CentralRepoModule repos;
@@ -146,7 +142,6 @@ public class CentralModule {
             throws Exception {
         servlet = servletContext != null;
         ClusterManager clusterManager = null;
-        Cluster cluster = null;
         Session session = null;
         ExecutorService repoAsyncExecutor = null;
         CentralRepoModule repos = null;
@@ -184,7 +179,6 @@ public class CentralModule {
             clusterManager = ClusterManager.create(directories.getConfDir(),
                     centralConfig.jgroupsProperties());
             session = connect(centralConfig);
-            cluster = session.getCluster();
 
             SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, centralConfig.cassandraGcGraceSeconds(), clock, servlet);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
@@ -335,16 +329,12 @@ public class CentralModule {
             if (session != null) {
                 session.close();
             }
-            if (cluster != null) {
-                cluster.close();
-            }
             if (clusterManager != null) {
                 clusterManager.close();
             }
             throw t;
         }
         this.clusterManager = clusterManager;
-        this.cluster = cluster;
         this.session = session;
         this.repoAsyncExecutor = repoAsyncExecutor;
         this.repos = repos;
@@ -395,7 +385,6 @@ public class CentralModule {
 
             repoAsyncExecutor.shutdown();
             session.close();
-            cluster.close();
             clusterManager.close();
             if (startupLogger != null) {
                 startupLogger.info("shutdown complete");
@@ -442,12 +431,10 @@ public class CentralModule {
 
         CentralConfiguration centralConfig = getCentralConfiguration(directories.getConfDir());
         Session session = null;
-        Cluster cluster = null;
         ExecutorService repoAsyncExecutor = null;
         CentralRepoModule repos = null;
         try {
             session = connect(centralConfig);
-            cluster = session.getCluster();
             SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, centralConfig.cassandraGcGraceSeconds(), Clock.systemClock(), false);
             if (schemaUpgrade.getInitialSchemaVersion() != null) {
                 startupLogger.error("glowroot central schema already exists, exiting");
@@ -468,9 +455,6 @@ public class CentralModule {
             }
             if (session != null) {
                 session.close();
-            }
-            if (cluster != null) {
-                cluster.close();
             }
         }
         startupLogger.info("glowroot central schema created");
@@ -562,13 +546,11 @@ public class CentralModule {
 
         CentralConfiguration centralConfig = getCentralConfiguration(directories.getConfDir());
         Session session = null;
-        Cluster cluster = null;
         ExecutorService repoAsyncExecutor = null;
         CentralRepoModule repos = null;
         boolean success;
         try {
             session = connect(centralConfig);
-            cluster = session.getCluster();
             SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, centralConfig.cassandraGcGraceSeconds(), Clock.systemClock(),false);
             Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
             if (initialSchemaVersion == null) {
@@ -599,9 +581,6 @@ public class CentralModule {
             }
             if (session != null) {
                 session.close();
-            }
-            if (cluster != null) {
-                cluster.close();
             }
         }
         if (success) {
@@ -638,19 +617,23 @@ public class CentralModule {
         if (!Strings.isNullOrEmpty(cassandraKeyspace)) {
             builder.cassandraKeyspace(cassandraKeyspace);
         }
+        String cassandraLocalDatacenter = properties.get("glowroot.cassandra.localDatacenter");
+        if (!Strings.isNullOrEmpty(cassandraLocalDatacenter)) {
+            builder.cassandraLocalDatacenter(cassandraLocalDatacenter);
+        }
         String cassandraConsistencyLevel = properties.get("glowroot.cassandra.consistencyLevel");
         if (!Strings.isNullOrEmpty(cassandraConsistencyLevel)) {
             int index = cassandraConsistencyLevel.indexOf('/');
             if (index == -1) {
                 ConsistencyLevel consistencyLevel =
-                        ConsistencyLevel.valueOf(cassandraConsistencyLevel);
+                        DefaultConsistencyLevel.valueOf(cassandraConsistencyLevel);
                 builder.cassandraReadConsistencyLevel(consistencyLevel);
                 builder.cassandraWriteConsistencyLevel(consistencyLevel);
             } else {
                 builder.cassandraReadConsistencyLevel(
-                        ConsistencyLevel.valueOf(cassandraConsistencyLevel.substring(0, index)));
+                        DefaultConsistencyLevel.valueOf(cassandraConsistencyLevel.substring(0, index)));
                 builder.cassandraWriteConsistencyLevel(
-                        ConsistencyLevel.valueOf(cassandraConsistencyLevel.substring(index + 1)));
+                        DefaultConsistencyLevel.valueOf(cassandraConsistencyLevel.substring(index + 1)));
             }
         }
         String cassandraSymmetricEncryptionKey =
@@ -831,19 +814,13 @@ public class CentralModule {
     @RequiresNonNull("startupLogger")
     private static Session connect(CentralConfiguration centralConfig) throws Exception {
         Session session = null;
-        // instantiate the default timestamp generator (AtomicMonotonicTimestampGenerator) only once
-        // since it calls com.datastax.driver.core.ClockFactory.newInstance() via super class
-        // (AbstractMonotonicTimestampGenerator) which logs whether using native clock or not,
-        // which is useful, but annoying when waiting for cassandra to start up and the message gets
-        // logged over and over and over
-        TimestampGenerator defaultTimestampGenerator = Policies.defaultTimestampGenerator();
 
         RateLimitedLogger waitingForCassandraLogger = new RateLimitedLogger(CentralModule.class);
         RateLimitedLogger waitingForCassandraReplicasLogger =
                 new RateLimitedLogger(CentralModule.class);
 
         Stopwatch stopwatch = Stopwatch.createStarted();
-        NoHostAvailableException lastException = null;
+        AllNodesFailedException lastException = null;
         while (stopwatch.elapsed(MINUTES) < 30) {
             try {
                 String keyspace = centralConfig.cassandraKeyspace();
@@ -857,7 +834,7 @@ public class CentralModule {
                                 centralConfig.cassandraWriteConsistencyLevel();
                     }
                     session = new Session(
-                            createCluster(centralConfig, defaultTimestampGenerator).connect(),
+                            createCluster(centralConfig).build(),
                             keyspace, writeConsistencyLevelOverride,
                             // max concurrent queries before throwing BusyPoolException is "max
                             // requests per connection" + "max queue size" (which are set to
@@ -868,7 +845,7 @@ public class CentralModule {
                 }
                 String cassandraVersion = verifyCassandraVersion(session);
                 KeyspaceMetadata keyspaceMetadata =
-                        checkNotNull(session.getCluster().getMetadata().getKeyspace(keyspace));
+                        checkNotNull(session.getMetadata().getKeyspace(keyspace).orElse(null));
                 String replicationFactor =
                         keyspaceMetadata.getReplication().get("replication_factor");
                 if (replicationFactor == null) {
@@ -879,7 +856,7 @@ public class CentralModule {
                         keyspace, replicationFactor,
                         centralConfig.cassandraConsistencyLevelDisplay());
                 return session;
-            } catch (NoHostAvailableException e) {
+            } catch (AllNodesFailedException e) {
                 startupLogger.debug(e.getMessage(), e);
                 lastException = e;
                 if (session == null) {
@@ -895,52 +872,58 @@ public class CentralModule {
             } catch (RuntimeException e) {
                 // clean up
                 if (session != null) {
-                    session.getCluster().close();
+                    session.close();
                 }
                 throw e;
             }
         }
         // clean up
         if (session != null) {
-            session.getCluster().close();
+            session.close();
         }
         checkNotNull(lastException);
         throw lastException;
     }
 
-    private static Cluster createCluster(CentralConfiguration centralConfig,
-            TimestampGenerator defaultTimestampGenerator) {
-        Cluster.Builder builder = Cluster.builder()
+    private static CqlSessionBuilder createCluster(CentralConfiguration centralConfig) {
+        CqlSessionBuilder builder = CqlSession.builder()
                 .addContactPoints(
-                        centralConfig.cassandraContactPoint().toArray(new String[0]))
-                .withPort(centralConfig.cassandraPort())
-                // aggressive reconnect policy seems ok since not many clients
-                .withReconnectionPolicy(new ConstantReconnectionPolicy(1000))
-                // let driver know that only idempotent queries are used so it will retry on timeout
-                .withQueryOptions(new QueryOptions()
-                        .setDefaultIdempotence(true)
-                        .setConsistencyLevel(centralConfig.cassandraReadConsistencyLevel()))
-                .withPoolingOptions(new PoolingOptions()
-                        .setMaxRequestsPerConnection(HostDistance.LOCAL,
-                                centralConfig.cassandraMaxConcurrentQueries())
-                        .setMaxRequestsPerConnection(HostDistance.REMOTE,
-                                centralConfig.cassandraMaxConcurrentQueries())
+                        centralConfig.cassandraContactPoint()
+                                .stream()
+                                .map(addr -> new InetSocketAddress(addr, centralConfig.cassandraPort()))
+                                .collect(Collectors.toList()))
+                // cassandra driver v4.x requires localdatacenter name to be defined
+                // see https://docs.datastax.com/en/developer/java-driver/4.13/manual/core/load_balancing/
+                .withLocalDatacenter(centralConfig.cassandraLocalDatacenter())
+                .withConfigLoader(DriverConfigLoader.programmaticBuilder()
+                        // let driver know that only idempotent queries are used so it will retry on timeout
+                        .withBoolean(DefaultDriverOption.REQUEST_DEFAULT_IDEMPOTENCE, true)
+                        // aggressive reconnect policy seems ok since not many clients
+                        .withString(DefaultDriverOption.RECONNECTION_POLICY_CLASS, ConstantReconnectionPolicy.class.getName())
+                        .withDuration(DefaultDriverOption.RECONNECTION_BASE_DELAY, Duration.ofMillis(1000))
+                        .withString(DefaultDriverOption.REQUEST_CONSISTENCY, centralConfig.cassandraReadConsistencyLevel().name())
+                        .withString(DefaultDriverOption.REQUEST_SERIAL_CONSISTENCY, centralConfig.cassandraWriteConsistencyLevel().name())
+                        .withInt(DefaultDriverOption.CONNECTION_MAX_REQUESTS, centralConfig.cassandraMaxConcurrentQueries())
                         // using 2x "max requests per connection", so that thread-based
                         // throttling can allow up to 3x "max requests per connection", which is
                         // split 50% writes / 25% reads / 25% rollups, which will keep the pool
                         // saturated with writes alone
-                        .setMaxQueueSize(centralConfig.cassandraMaxConcurrentQueries() * 2)
-                        .setPoolTimeoutMillis(centralConfig.cassandraPoolTimeoutMillis()))
-                .withTimestampGenerator(defaultTimestampGenerator);
+                        .withInt(DefaultDriverOption.REQUEST_THROTTLER_MAX_QUEUE_SIZE, centralConfig.cassandraMaxConcurrentQueries() * 2)
+                        .withString(DefaultDriverOption.TIMESTAMP_GENERATOR_CLASS, ServerSideTimestampGenerator.class.getName())
+                        .build());
         String cassandraUsername = centralConfig.cassandraUsername();
         if (!cassandraUsername.isEmpty()) {
             // empty password is strange but valid
-            builder.withCredentials(cassandraUsername, centralConfig.cassandraPassword());
+            builder = builder.withAuthCredentials(cassandraUsername, centralConfig.cassandraPassword());
         }
         if (centralConfig.cassandraSSL()) {
-        	builder.withSSL();
+            try {
+                builder = builder.withSslContext(SSLContext.getDefault());
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException("Unable to create SSLContext", e);
+            }
         }
-        return builder.build();
+        return builder;
     }
 
     private static String verifyCassandraVersion(Session session) throws Exception {
@@ -1047,6 +1030,11 @@ public class CentralModule {
         @Value.Default
         String cassandraKeyspace() {
             return "glowroot";
+        }
+
+        @Value.Default
+        String cassandraLocalDatacenter() {
+            return "datacenter1";
         }
 
         @Value.Default

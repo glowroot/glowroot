@@ -19,10 +19,10 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -80,8 +80,8 @@ class CentralConfigDao {
     }
 
     void write(String key, Object config, String priorVersion) throws Exception {
-        BoundStatement boundStatement = readPS.bind();
-        boundStatement.bind(key);
+        BoundStatement boundStatement = readPS.bind()
+            .setString(0, key);
         ResultSet results = session.read(boundStatement);
         Row row = results.one();
         if (row == null) {
@@ -94,14 +94,14 @@ class CentralConfigDao {
             throw new OptimisticLockException();
         }
         String newValue = mapper.writeValueAsString(config);
-        boundStatement = updatePS.bind();
         int i = 0;
-        boundStatement.setString(i++, newValue);
-        boundStatement.setString(i++, key);
-        boundStatement.setString(i++, currValue);
+        boundStatement = updatePS.bind()
+            .setString(i++, newValue)
+            .setString(i++, key)
+            .setString(i++, currValue);
         results = session.update(boundStatement);
         row = checkNotNull(results.one());
-        boolean applied = row.getBool("[applied]");
+        boolean applied = row.getBoolean("[applied]");
         if (applied) {
             centralConfigCache.invalidate(key);
         } else {
@@ -112,13 +112,13 @@ class CentralConfigDao {
     void writeWithoutOptimisticLocking(String key, Object config) throws Exception {
         String json = mapper.writeValueAsString(config);
         if (json.equals("{}")) {
-            BoundStatement boundStatement = deletePS.bind();
-            boundStatement.setString(0, key);
+            BoundStatement boundStatement = deletePS.bind()
+                .setString(0, key);
             session.write(boundStatement);
         } else {
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, key);
-            boundStatement.setString(1, json);
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(0, key)
+                .setString(1, json);
             session.write(boundStatement);
         }
         centralConfigCache.invalidate(key);
@@ -131,13 +131,13 @@ class CentralConfigDao {
 
     private void writeIfNotExists(String key, Object config) throws Exception {
         String initialValue = mapper.writeValueAsString(config);
-        BoundStatement boundStatement = insertIfNotExistsPS.bind();
         int i = 0;
-        boundStatement.setString(i++, key);
-        boundStatement.setString(i++, initialValue);
+        BoundStatement boundStatement = insertIfNotExistsPS.bind()
+            .setString(i++, key)
+            .setString(i++, initialValue);
         ResultSet results = session.update(boundStatement);
         Row row = checkNotNull(results.one());
-        boolean applied = row.getBool("[applied]");
+        boolean applied = row.getBoolean("[applied]");
         if (applied) {
             centralConfigCache.invalidate(key);
         } else {
@@ -154,8 +154,8 @@ class CentralConfigDao {
     private class CentralConfigCacheLoader implements CacheLoader<String, Optional<Object>> {
         @Override
         public Optional<Object> load(String key) throws Exception {
-            BoundStatement boundStatement = readPS.bind();
-            boundStatement.bind(key);
+            BoundStatement boundStatement = readPS.bind()
+                .setString(0, key);
             ResultSet results = session.read(boundStatement);
             Row row = results.one();
             if (row == null) {

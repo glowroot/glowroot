@@ -19,10 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
@@ -86,12 +83,12 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return;
         }
-        BoundStatement boundStatement = insertPS.bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, transactionType);
-        boundStatement.setString(i++, traceAttributeName);
-        boundStatement.setInt(i++, getTraceTTL());
+        BoundStatement boundStatement = insertPS.bind()
+            .setString(i++, agentRollupId)
+            .setString(i++, transactionType)
+            .setString(i++, traceAttributeName)
+            .setInt(i++, getTraceTTL());
         ListenableFuture<?> future = session.writeAsync(boundStatement);
         futures.add(MoreFutures.onSuccessAndFailure(future,
                 () -> traceAttributeNamesCache.invalidate(agentRollupId),
@@ -119,8 +116,8 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
             implements CacheLoader<String, Map<String, List<String>>> {
         @Override
         public Map<String, List<String>> load(String agentRollupId) throws Exception {
-            BoundStatement boundStatement = readPS.bind();
-            boundStatement.setString(0, agentRollupId);
+            BoundStatement boundStatement = readPS.bind()
+                .setString(0, agentRollupId);
             ResultSet results = session.read(boundStatement);
             ListMultimap<String, String> traceAttributeNames = ArrayListMultimap.create();
             for (Row row : results) {

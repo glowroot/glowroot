@@ -16,6 +16,7 @@
 package org.glowroot.central.repo;
 
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -25,11 +26,11 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
@@ -153,13 +154,13 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         maxCaptureTime = Math.max(captureTime, maxCaptureTime);
         int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, syntheticMonitorId);
-        boundStatement.setTimestamp(i++, new Date(captureTime));
-        boundStatement.setDouble(i++, durationNanos);
-        boundStatement.setLong(i++, 1);
+        boundStatement = boundStatement.setString(i++, agentRollupId)
+            .setString(i++, syntheticMonitorId)
+            .setInstant(i++, Instant.ofEpochMilli(captureTime))
+            .setDouble(i++, durationNanos)
+            .setLong(i++, 1);
         if (errorMessage == null) {
-            boundStatement.setToNull(i++);
+            boundStatement = boundStatement.setToNull(i++);
         } else {
             Stored.ErrorInterval errorInterval = Stored.ErrorInterval.newBuilder()
                     .setFrom(captureTime)
@@ -169,9 +170,9 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
                     .setDoNotMergeToTheLeft(false)
                     .setDoNotMergeToTheRight(false)
                     .build();
-            boundStatement.setBytes(i++, Messages.toByteBuffer(ImmutableList.of(errorInterval)));
+            boundStatement = boundStatement.setByteBuffer(i++, Messages.toByteBuffer(ImmutableList.of(errorInterval)));
         }
-        boundStatement.setInt(i++, adjustedTTL);
+        boundStatement = boundStatement.setInt(i++, adjustedTTL);
         List<Future<?>> futures = new ArrayList<>();
         futures.add(session.writeAsync(boundStatement));
         futures.addAll(syntheticMonitorIdDao.insert(agentRollupId, captureTime, syntheticMonitorId,
@@ -186,13 +187,13 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         long rollupCaptureTime = CaptureTimes.getRollup(captureTime, intervalMillis);
         int needsRollupAdjustedTTL =
                 Common.getNeedsRollupAdjustedTTL(adjustedTTL, configRepository.getRollupConfigs());
-        boundStatement = insertNeedsRollup.get(0).bind();
         i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
-        boundStatement.setUUID(i++, UUIDs.timeBased());
-        boundStatement.setSet(i++, ImmutableSet.of(syntheticMonitorId));
-        boundStatement.setInt(i++, needsRollupAdjustedTTL);
+        boundStatement = insertNeedsRollup.get(0).bind()
+            .setString(i++, agentRollupId)
+            .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
+            .setUuid(i++, Uuids.timeBased())
+            .setSet(i++, ImmutableSet.of(syntheticMonitorId), String.class)
+            .setInt(i++, needsRollupAdjustedTTL);
         session.write(boundStatement);
     }
 
@@ -206,20 +207,20 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     @Override
     public List<SyntheticResult> readSyntheticResults(String agentRollupId,
             String syntheticMonitorId, long from, long to, int rollupLevel) throws Exception {
-        BoundStatement boundStatement = readResultPS.get(rollupLevel).bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, syntheticMonitorId);
-        boundStatement.setTimestamp(i++, new Date(from));
-        boundStatement.setTimestamp(i++, new Date(to));
+        BoundStatement boundStatement = readResultPS.get(rollupLevel).bind()
+            .setString(i++, agentRollupId)
+            .setString(i++, syntheticMonitorId)
+            .setInstant(i++, Instant.ofEpochMilli(from))
+            .setInstant(i++, Instant.ofEpochMilli(to));
         ResultSet results = session.read(boundStatement);
         List<SyntheticResult> syntheticResults = new ArrayList<>();
         for (Row row : results) {
             i = 0;
-            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             double totalDurationNanos = row.getDouble(i++);
             long executionCount = row.getLong(i++);
-            ByteBuffer errorIntervalsBytes = row.getBytes(i++);
+            ByteBuffer errorIntervalsBytes = row.getByteBuffer(i++);
             List<ErrorInterval> errorIntervals = new ArrayList<>();
             if (errorIntervalsBytes != null) {
                 List<Stored.ErrorInterval> storedErrorIntervals = Messages
@@ -248,18 +249,18 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     @Override
     public List<SyntheticResultRollup0> readLastFromRollup0(String agentRollupId,
             String syntheticMonitorId, int x) throws Exception {
-        BoundStatement boundStatement = readLastFromRollup0.bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, syntheticMonitorId);
-        boundStatement.setInt(i++, x);
+        BoundStatement boundStatement = readLastFromRollup0.bind()
+            .setString(i++, agentRollupId)
+            .setString(i++, syntheticMonitorId)
+            .setInt(i++, x);
         ResultSet results = session.read(boundStatement);
         List<SyntheticResultRollup0> syntheticResults = new ArrayList<>();
         for (Row row : results) {
             i = 0;
-            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             double totalDurationNanos = row.getDouble(i++);
-            ByteBuffer errorIntervalsBytes = row.getBytes(i++);
+            ByteBuffer errorIntervalsBytes = row.getByteBuffer(i++);
             syntheticResults.add(ImmutableSyntheticResultRollup0.builder()
                     .captureTime(captureTime)
                     .totalDurationNanos(totalDurationNanos)
@@ -316,12 +317,12 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     // from is non-inclusive
     private ListenableFuture<?> rollupOne(int rollupLevel, String agentRollupId,
             String syntheticMonitorId, long from, long to, int adjustedTTL) throws Exception {
-        BoundStatement boundStatement = readResultForRollupPS.get(rollupLevel - 1).bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, syntheticMonitorId);
-        boundStatement.setTimestamp(i++, new Date(from));
-        boundStatement.setTimestamp(i++, new Date(to));
+        BoundStatement boundStatement = readResultForRollupPS.get(rollupLevel - 1).bind()
+            .setString(i++, agentRollupId)
+            .setString(i++, syntheticMonitorId)
+            .setInstant(i++, Instant.ofEpochMilli(from))
+            .setInstant(i++, Instant.ofEpochMilli(to));
         ListenableFuture<ResultSet> future = session.readAsyncWarnIfNoRows(boundStatement,
                 "no synthetic result table records found for agentRollupId={},"
                         + " syntheticMonitorId={}, from={}, to={}, level={}",
@@ -345,7 +346,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
             int i = 0;
             totalDurationNanos += row.getDouble(i++);
             executionCount += row.getLong(i++);
-            ByteBuffer errorIntervalsBytes = row.getBytes(i++);
+            ByteBuffer errorIntervalsBytes = row.getByteBuffer(i++);
             if (errorIntervalsBytes == null) {
                 errorIntervalCollector.addGap();
             } else {
@@ -354,20 +355,20 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
                 errorIntervalCollector.addErrorIntervals(fromProto(errorIntervals));
             }
         }
-        BoundStatement boundStatement = insertResultPS.get(rollupLevel).bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setString(i++, syntheticMonitorId);
-        boundStatement.setTimestamp(i++, new Date(to));
-        boundStatement.setDouble(i++, totalDurationNanos);
-        boundStatement.setLong(i++, executionCount);
+        BoundStatement boundStatement = insertResultPS.get(rollupLevel).bind()
+            .setString(i++, agentRollupId)
+            .setString(i++, syntheticMonitorId)
+            .setInstant(i++, Instant.ofEpochMilli(to))
+            .setDouble(i++, totalDurationNanos)
+            .setLong(i++, executionCount);
         List<ErrorInterval> mergedErrorIntervals = errorIntervalCollector.getMergedErrorIntervals();
         if (mergedErrorIntervals.isEmpty()) {
-            boundStatement.setToNull(i++);
+            boundStatement = boundStatement.setToNull(i++);
         } else {
-            boundStatement.setBytes(i++, Messages.toByteBuffer(toProto(mergedErrorIntervals)));
+            boundStatement = boundStatement.setByteBuffer(i++, Messages.toByteBuffer(toProto(mergedErrorIntervals)));
         }
-        boundStatement.setInt(i++, adjustedTTL);
+        boundStatement = boundStatement.setInt(i++, adjustedTTL);
         return session.writeAsync(boundStatement);
     }
 

@@ -16,24 +16,19 @@ private * Copyright 2018-2019 the original author or authors.
 package org.glowroot.central.util;
 
 import java.nio.ByteBuffer;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.ColumnDefinitions;
-import com.datastax.driver.core.ColumnMetadata;
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.TableMetadata;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.*;
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.type.DataType;
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -42,6 +37,8 @@ import org.slf4j.LoggerFactory;
 import org.glowroot.common2.repo.ImmutableCassandraWriteTotals;
 import org.glowroot.common2.repo.RepoAdmin.CassandraWriteTotals;
 
+import static com.datastax.oss.protocol.internal.ProtocolConstants.DataType.BLOB;
+import static com.datastax.oss.protocol.internal.ProtocolConstants.DataType.VARCHAR;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -54,7 +51,7 @@ public class CassandraWriteMetrics {
     private static final int TRANSACTION_NAME_LIMIT = 100;
     private static final String TRANSACTION_NAME_OTHER = "Other";
 
-    private final Session session;
+    private final CqlSession session;
     private final String keyspace;
 
     private final Map<String, WriteMetrics> writeMetrics = new ConcurrentHashMap<>();
@@ -73,7 +70,7 @@ public class CassandraWriteMetrics {
         }
     };
 
-    CassandraWriteMetrics(Session session, String keyspace) {
+    CassandraWriteMetrics(CqlSession session, String keyspace) {
         this.session = session;
         this.keyspace = keyspace;
         long millisSinceLastMidnightUTC = System.currentTimeMillis() % DAYS.toMillis(1);
@@ -162,10 +159,10 @@ public class CassandraWriteMetrics {
             return;
         }
         BoundStatement boundStatement = (BoundStatement) statement;
-        PreparedStatement preparedStatement = boundStatement.preparedStatement();
-        List<ColumnDefinitions.Definition> columnDefinitions =
-                preparedStatement.getVariables().asList();
-        String tableName = columnDefinitions.get(0).getTable();
+        PreparedStatement preparedStatement = boundStatement.getPreparedStatement();
+        ColumnDefinitions columnDefinitions =
+                preparedStatement.getVariableDefinitions();
+        String tableName = columnDefinitions.get(0).getTable().asInternal();
         String display;
         if (partialTrace.get() && !tableName.endsWith("_partial")) {
             display = tableName + " (partial trace)";
@@ -211,29 +208,31 @@ public class CassandraWriteMetrics {
                 perTransactionNameMetrics.rowsWritten.incrementAndGet();
             }
         }
-        KeyspaceMetadata keyspaceMetadata =
-                session.getCluster().getMetadata().getKeyspace(keyspace);
-        if (keyspaceMetadata == null) {
+        Optional<KeyspaceMetadata> keyspaceMetadata =
+                session.getMetadata().getKeyspace(keyspace);
+        if (! keyspaceMetadata.isPresent()) {
             // this should not happen
             return;
         }
-        TableMetadata tableMetadata = keyspaceMetadata.getTable(tableName);
-        if (tableMetadata == null) {
+        Optional<TableMetadata> tableMetadataOpt = keyspaceMetadata.get().getTable(tableName);
+        if (!tableMetadataOpt.isPresent()) {
             // this should not happen
             return;
         }
+        TableMetadata tableMetadata = tableMetadataOpt.get();
         Set<String> partitionKeyColumnNames = tableMetadata.getPartitionKey()
                 .stream()
                 .map(ColumnMetadata::getName)
+                .map(CqlIdentifier::asInternal)
                 .collect(Collectors.toSet());
         for (int i = 1; i < columnDefinitions.size(); i++) {
-            ColumnDefinitions.Definition columnDefinition = columnDefinitions.get(i);
-            if (partitionKeyColumnNames.contains(columnDefinition.getName())) {
+            ColumnDefinition columnDefinition = columnDefinitions.get(i);
+            if (partitionKeyColumnNames.contains(columnDefinition.getName().asInternal())) {
                 continue;
             }
             int numBytes = getNumBytes(boundStatement, i, columnDefinition.getType());
             if (numBytes > 0) {
-                String columnName = columnDefinition.getName();
+                String columnName = columnDefinition.getName().asInternal();
                 perTableMetrics.bytesWritten.addAndGet(numBytes);
                 perTableMetrics.bytesWrittenPerColumn
                         .computeIfAbsent(columnName, k -> new AtomicLong())
@@ -259,12 +258,12 @@ public class CassandraWriteMetrics {
     }
 
     private @Nullable String getTransactionType(
-            List<ColumnDefinitions.Definition> columnDefinitions, BoundStatement boundStatement) {
+            ColumnDefinitions columnDefinitions, BoundStatement boundStatement) {
         if (columnDefinitions.size() < 2) {
             return currTransactionType.get();
         }
-        ColumnDefinitions.Definition columnDefinition = columnDefinitions.get(1);
-        String columnDefinitionName = columnDefinition.getName();
+        ColumnDefinition columnDefinition = columnDefinitions.get(1);
+        String columnDefinitionName = columnDefinition.getName().asInternal();
         if (columnDefinitionName.equals("transaction_type")) {
             return boundStatement.getString(1);
         } else {
@@ -273,12 +272,12 @@ public class CassandraWriteMetrics {
     }
 
     private @Nullable String getTransactionName(
-            List<ColumnDefinitions.Definition> columnDefinitions, BoundStatement boundStatement) {
+            ColumnDefinitions columnDefinitions, BoundStatement boundStatement) {
         if (columnDefinitions.size() < 3) {
             return currTransactionName.get();
         }
-        ColumnDefinitions.Definition columnDefinition = columnDefinitions.get(2);
-        String columnDefinitionName = columnDefinition.getName();
+        ColumnDefinition columnDefinition = columnDefinitions.get(2);
+        String columnDefinitionName = columnDefinition.getName().asInternal();
         if (columnDefinitionName.equals("transaction_name")) {
             return boundStatement.getString(2);
         } else {
@@ -307,9 +306,9 @@ public class CassandraWriteMetrics {
     }
 
     private static @Nullable String getAgentRollupId(
-            List<ColumnDefinitions.Definition> columnDefinitions, BoundStatement boundStatement) {
-        ColumnDefinitions.Definition columnDefinition = columnDefinitions.get(0);
-        String columnDefinitionName = columnDefinition.getName();
+            ColumnDefinitions columnDefinitions, BoundStatement boundStatement) {
+        ColumnDefinition columnDefinition = columnDefinitions.get(0);
+        String columnDefinitionName = columnDefinition.getName().asInternal();
         if (columnDefinitionName.equals("agent_rollup_id")
                 || columnDefinitionName.equals("agent_id")
                 || columnDefinitionName.equals("agent_rollup")) {
@@ -320,12 +319,12 @@ public class CassandraWriteMetrics {
     }
 
     private static int getNumBytes(BoundStatement boundStatement, int i, DataType dataType) {
-        switch (dataType.getName()) {
-            case VARCHAR:
+        switch (dataType.toString()) {
+            case "VARCHAR":
                 String s = boundStatement.getString(i);
                 return s == null ? 0 : s.length();
-            case BLOB:
-                ByteBuffer bb = boundStatement.getBytes(i);
+            case "BLOB":
+                ByteBuffer bb = boundStatement.getByteBuffer(i);
                 return bb == null ? 0 : bb.limit();
             default:
                 return 0;
