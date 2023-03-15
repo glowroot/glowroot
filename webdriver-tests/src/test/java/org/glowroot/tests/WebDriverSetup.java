@@ -199,7 +199,9 @@ public class WebDriverSetup {
         Container container;
         if (useCentral) {
             CassandraWrapper.start();
-            CqlSessionBuilder cqlSessionBuilder = CqlSession.builder().addContactPoint(new InetSocketAddress("127.0.0.1", 9042));
+            CqlSessionBuilder cqlSessionBuilder = CqlSession.builder()
+                    .addContactPoint(new InetSocketAddress("127.0.0.1", 9042))
+                    .withLocalDatacenter("datacenter1");
             Session session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
                     MAX_CONCURRENT_QUERIES, 0);
             session.updateSchemaWithRetry("drop table if exists agent_config");
