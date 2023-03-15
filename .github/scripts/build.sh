@@ -14,11 +14,6 @@ else
   test_jvm_version=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}')
 fi
 
-if [[ $test_jvm_version == 1.6* || $test_jvm_version == 1.7* ]]
-then
-  # MaxPermSize bump is needed for running grails plugin tests
-  test_jvm_args="$test_jvm_args -XX:MaxPermSize=128m"
-fi
 if [[ "$TEST_SHADED" == "true" ]]
 then
   test_shaded_opt=-Dglowroot.test.shaded

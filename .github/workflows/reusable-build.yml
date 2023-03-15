@@ -33,11 +33,11 @@ jobs:
           echo "TEST_JVM_PATH=${test_jvm_path_matches[0]}" >> $GITHUB_ENV
           cat $GITHUB_ENV
 
-      - name: Set up JDK 8 for build
+      - name: Set up JDK 11 for build
         uses: actions/setup-java@v3
         with:
           distribution: adopt
-          java-version: 8
+          java-version: 11
 
       - name: Restore cache
         uses: actions/cache@v2
