@@ -21,18 +21,21 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.mock.web.MockHttpServletResponse;
-
 import org.glowroot.agent.it.harness.AppUnderTest;
+import org.mockito.Mockito;
+
+import static org.mockito.Mockito.doReturn;
 
 @SuppressWarnings("serial")
 public class ErrorServlet extends HttpServlet implements AppUnderTest {
 
     @Override
     public void executeApp() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/errorservlet");
-        MockHttpServletResponse response = new MockHttpServletResponse();
+        HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
+        doReturn("GET").when(request).getMethod();
+        doReturn("/errorservlet").when(request).getRequestURI();
+
+        HttpServletResponse response = Mockito.mock(HttpServletResponse.class);
         try {
             service((ServletRequest) request, (ServletResponse) response);
         } catch (IllegalStateException e) {
