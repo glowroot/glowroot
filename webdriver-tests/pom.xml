@@ -130,7 +130,7 @@
     </dependency>
     <dependency>
       <groupId>org.glowroot</groupId>
-      <artifactId>glowroot-agent-servlet-plugin</artifactId>
+      <artifactId>glowroot-agent-jakarta-servlet-plugin</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -350,7 +350,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>5.0.0</version>
+      <version>6.0.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
