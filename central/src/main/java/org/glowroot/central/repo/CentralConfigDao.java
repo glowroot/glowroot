@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.cql.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
@@ -95,7 +96,8 @@ class CentralConfigDao {
         boundStatement = updatePS.bind()
             .setString(i++, newValue)
             .setString(i++, key)
-            .setString(i++, currValue);
+            .setString(i++, currValue)
+            .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
         AsyncResultSet asyncresults = session.update(boundStatement);
         row = checkNotNull(asyncresults.one());
         boolean applied = row.getBoolean("[applied]");
@@ -131,7 +133,8 @@ class CentralConfigDao {
         int i = 0;
         BoundStatement boundStatement = insertIfNotExistsPS.bind()
             .setString(i++, key)
-            .setString(i++, initialValue);
+            .setString(i++, initialValue)
+            .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
         AsyncResultSet results = session.update(boundStatement);
         Row row = checkNotNull(results.one());
         boolean applied = row.getBoolean("[applied]");

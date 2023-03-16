@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.cql.*;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.base.Optional;
@@ -177,6 +178,7 @@ public class AgentConfigDao {
             }
             boundStatement = boundStatement.setString(i++, agentRollupId)
                 .setByteBuffer(i++, ByteBuffer.wrap(currValue.toByteArray()));
+            boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
             AsyncResultSet asyncresults = session.update(boundStatement);
             row = checkNotNull(asyncresults.one());
             boolean applied = row.getBoolean("[applied]");
@@ -213,7 +215,8 @@ public class AgentConfigDao {
         int i = 0;
         BoundStatement boundStatement = markUpdatedPS.bind()
             .setString(i++, agentId)
-            .setUuid(i++, configUpdateToken);
+            .setUuid(i++, configUpdateToken)
+            .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
         session.update(boundStatement);
     }
 
