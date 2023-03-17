@@ -215,8 +215,11 @@ public class AgentConfigDao {
         int i = 0;
         BoundStatement boundStatement = markUpdatedPS.bind()
             .setString(i++, agentId)
-            .setUuid(i++, configUpdateToken)
-            .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+            .setUuid(i++, configUpdateToken);
+        // consistency level must be at least LOCAL_SERIAL
+        if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
+            boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+        }
         session.update(boundStatement);
     }
 

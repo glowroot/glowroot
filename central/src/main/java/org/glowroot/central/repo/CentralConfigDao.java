@@ -96,8 +96,11 @@ class CentralConfigDao {
         boundStatement = updatePS.bind()
             .setString(i++, newValue)
             .setString(i++, key)
-            .setString(i++, currValue)
-            .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+            .setString(i++, currValue);
+        // consistency level must be at least LOCAL_SERIAL
+        if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
+            boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+        }
         AsyncResultSet asyncresults = session.update(boundStatement);
         row = checkNotNull(asyncresults.one());
         boolean applied = row.getBoolean("[applied]");
@@ -133,8 +136,11 @@ class CentralConfigDao {
         int i = 0;
         BoundStatement boundStatement = insertIfNotExistsPS.bind()
             .setString(i++, key)
-            .setString(i++, initialValue)
-            .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+            .setString(i++, initialValue);
+        // consistency level must be at least LOCAL_SERIAL
+        if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
+            boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+        }
         AsyncResultSet results = session.update(boundStatement);
         Row row = checkNotNull(results.one());
         boolean applied = row.getBoolean("[applied]");

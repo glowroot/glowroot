@@ -116,7 +116,10 @@ class RoleDao {
     void insertIfNotExists(RoleConfig roleConfig) throws Exception {
         BoundStatement boundStatement = insertIfNotExistsPS.bind();
         boundStatement = bindInsert(boundStatement, roleConfig);
-        boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+        // consistency level must be at least LOCAL_SERIAL
+        if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
+            boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+        }
         AsyncResultSet results = session.update(boundStatement);
         Row row = checkNotNull(results.one());
         boolean applied = row.getBoolean("[applied]");

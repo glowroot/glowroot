@@ -18,6 +18,7 @@ package org.glowroot.central.repo;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.ImmutableSet;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
@@ -121,6 +122,10 @@ class UserDao {
     void insertIfNotExists(UserConfig userConfig) throws Exception {
         BoundStatement boundStatement = insertIfNotExistsPS.bind();
         boundStatement = bindInsert(boundStatement, userConfig);
+        // consistency level must be at least LOCAL_SERIAL
+        if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
+            boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+        }
         AsyncResultSet results = session.update(boundStatement);
         Row row = checkNotNull(results.one());
         boolean applied = row.getBoolean("[applied]");
