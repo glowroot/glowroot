@@ -64,7 +64,7 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <version>5.3.10</version>
+      <version>5.3.23</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -72,7 +72,7 @@
         org.springframework.mock.web.MockHttpServletRequest -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
-      <version>5.3.10</version>
+      <version>5.3.23</version>
       <scope>test</scope>
     </dependency>
     <dependency>

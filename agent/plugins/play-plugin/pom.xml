@@ -121,8 +121,7 @@
             <plugin>
               <groupId>net.alchim31.maven</groupId>
               <artifactId>scala-maven-plugin</artifactId>
-              <!-- scala-maven-plugin version 3.3.3+ requres maven 3.5.3+ -->
-              <version>3.3.2</version>
+              <version>3.3.3</version>
               <configuration>
                 <skip>true</skip>
               </configuration>
@@ -235,8 +234,7 @@
           <plugin>
             <groupId>net.alchim31.maven</groupId>
             <artifactId>scala-maven-plugin</artifactId>
-            <!-- scala-maven-plugin version 3.3.3+ requres maven 3.5.3+ -->
-            <version>3.3.2</version>
+            <version>3.3.3</version>
             <configuration>
               <scalaVersion>${scala.version}</scalaVersion>
               <testSourceDir>

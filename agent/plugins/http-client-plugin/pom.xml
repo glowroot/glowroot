@@ -18,8 +18,8 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <apache.httpclient.version>4.5.13</apache.httpclient.version>
-    <apache.httpasyncclient.version>4.1.4</apache.httpasyncclient.version>
+    <apache.httpclient.version>4.5.14</apache.httpclient.version>
+    <apache.httpasyncclient.version>4.1.5</apache.httpasyncclient.version>
     <apache.httpclient3x.version>3.1</apache.httpclient3x.version>
     <apache.httpcore.version>4.4.14</apache.httpcore.version>
     <asynchttpclient1x.version>1.9.40</asynchttpclient1x.version>
@@ -28,7 +28,7 @@
     <okhttpclient.version>4.9.2</okhttpclient.version>
     <okhttpclient2x.version>2.7.5</okhttpclient2x.version>
     <cxf.version>3.4.5</cxf.version>
-    <spring.version>5.3.10</spring.version>
+    <spring.version>5.3.23</spring.version>
     <axis.version>1.4</axis.version>
   </properties>
 
