@@ -32,6 +32,7 @@ public class ElasticsearchExtension implements BeforeAllCallback {
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
+        assumeJdkLessThan18();
         ElasticsearchStore store = (ElasticsearchStore) getStore(context).getOrComputeIfAbsent("cassandra", (v) -> new ElasticsearchStore());
         sharedContainer = store.getContainer();
     }
@@ -40,6 +41,30 @@ public class ElasticsearchExtension implements BeforeAllCallback {
         // we want the same cassandra instance used for all test in the same test suite, so we use
         // context.getRoot()
         return context.getRoot().getStore(ExtensionContext.Namespace.create(ElasticsearchExtension.class));
+    }
+
+    private static void assumeJdkLessThan18() {
+        String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
+
+        int majorVersion = getJavaMajorVersion(javaVersion);
+        boolean javaVersionOk = majorVersion < 18;
+
+        String message = "Elasticsearch 6.x requires a SecurityManager and thus is not compatible with java 18+,"
+                + " but this test is running under Java " + javaVersion + ".";
+
+        Assumptions.assumeTrue(javaVersionOk, message);
+    }
+
+    private static int getJavaMajorVersion(String javaVersion) {
+        if (javaVersion == null) {
+            return -1;
+        }
+        String[] versionElements = javaVersion.split("\\.");
+        int version = Integer.parseInt(versionElements[0]);
+        if (version == 1) {
+            return Integer.parseInt(versionElements[1]);
+        }
+        return version;
     }
 
     static class ElasticsearchStore implements ExtensionContext.Store.CloseableResource {

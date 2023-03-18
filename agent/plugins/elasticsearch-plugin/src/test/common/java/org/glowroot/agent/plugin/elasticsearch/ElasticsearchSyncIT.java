@@ -47,7 +47,6 @@ public class ElasticsearchSyncIT {
 
     @BeforeAll
     public static void setUp() {
-        assumeJdkLessThan18();
         container = ElasticsearchExtension.getContainer();
     }
 
@@ -657,29 +656,5 @@ public class ElasticsearchSyncIT {
                     .addSort("abc", SortOrder.ASC)
                     .get();
         }
-    }
-
-    private static void assumeJdkLessThan18() {
-        String javaVersion = StandardSystemProperty.JAVA_VERSION.value();
-
-        int majorVersion = getJavaMajorVersion(javaVersion);
-        boolean javaVersionOk = majorVersion < 18;
-
-        String message = "Elasticsearch 6.x requires a SecurityManager and thus is not compatible with java 18+,"
-                + " but this test is running under Java " + javaVersion + ".";
-
-        Assumptions.assumeTrue(javaVersionOk, message);
-    }
-
-    private static int getJavaMajorVersion(String javaVersion) {
-        if (javaVersion == null) {
-            return -1;
-        }
-        String[] versionElements = javaVersion.split("\\.");
-        int version = Integer.parseInt(versionElements[0]);
-        if (version == 1) {
-            return Integer.parseInt(versionElements[1]);
-        }
-        return version;
     }
 }
