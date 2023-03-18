@@ -348,11 +348,9 @@ public class Directories {
     }
 
     private static void loadInto(File propFile, Properties props) throws IOException {
-        InputStream in = new FileInputStream(propFile);
-        try {
+
+        try (InputStream in = new FileInputStream(propFile)) {
             props.load(in);
-        } finally {
-            in.close();
         }
     }
 

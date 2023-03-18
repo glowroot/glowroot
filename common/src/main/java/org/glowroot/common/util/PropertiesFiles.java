@@ -32,11 +32,9 @@ public class PropertiesFiles {
 
     public static Properties load(File propFile) throws IOException {
         Properties props = new Properties();
-        InputStream in = new FileInputStream(propFile);
-        try {
+
+        try (InputStream in = new FileInputStream(propFile)) {
             props.load(in);
-        } finally {
-            in.close();
         }
         return props;
     }

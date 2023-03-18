@@ -179,17 +179,15 @@ public class CappedDatabase {
         // it's important to wrap CappedBlockInputStream in a BufferedInputStream to prevent
         // lots of small reads from the underlying RandomAccessFile
         final int bufferSize = 32768;
-        InputStream input = newLZFInputStream(
-                new BufferedInputStream(new CappedBlockInputStream(cappedId), bufferSize));
-        try {
+
+        try (InputStream input = newLZFInputStream(
+                new BufferedInputStream(new CappedBlockInputStream(cappedId), bufferSize))) {
             return parser.parseFrom(input);
         } catch (Exception e) {
             if (!out.isOverwritten(cappedId)) {
                 logger.error(e.getMessage(), e);
             }
             return null;
-        } finally {
-            input.close();
         }
     }
 
