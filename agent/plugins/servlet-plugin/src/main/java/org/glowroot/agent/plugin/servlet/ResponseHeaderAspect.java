@@ -27,9 +27,9 @@ import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.IsEnabled;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.servlet._.ResponseInvoker;
-import org.glowroot.agent.plugin.servlet._.ServletMessageSupplier;
-import org.glowroot.agent.plugin.servlet._.ServletPluginProperties;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.ResponseInvoker;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.ServletMessageSupplier;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.ServletPluginProperties;
 
 public class ResponseHeaderAspect {
 

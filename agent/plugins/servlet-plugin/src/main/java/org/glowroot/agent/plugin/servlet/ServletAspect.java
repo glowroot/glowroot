@@ -45,14 +45,14 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.servlet._.RequestHostAndPortDetail;
-import org.glowroot.agent.plugin.servlet._.RequestInvoker;
-import org.glowroot.agent.plugin.servlet._.ResponseInvoker;
-import org.glowroot.agent.plugin.servlet._.SendError;
-import org.glowroot.agent.plugin.servlet._.ServletMessageSupplier;
-import org.glowroot.agent.plugin.servlet._.ServletPluginProperties;
-import org.glowroot.agent.plugin.servlet._.ServletPluginProperties.SessionAttributePath;
-import org.glowroot.agent.plugin.servlet._.Strings;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.RequestHostAndPortDetail;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.RequestInvoker;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.ResponseInvoker;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.SendError;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.ServletMessageSupplier;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.ServletPluginProperties;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.ServletPluginProperties.SessionAttributePath;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.Strings;
 
 // this plugin is careful not to rely on request or session objects being thread-safe
 public class ServletAspect {

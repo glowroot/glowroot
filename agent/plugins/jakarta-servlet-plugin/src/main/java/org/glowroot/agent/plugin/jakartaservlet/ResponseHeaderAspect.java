@@ -18,9 +18,9 @@ package org.glowroot.agent.plugin.jakartaservlet;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.weaving.*;
-import org.glowroot.agent.plugin.jakartaservlet._.ResponseInvoker;
-import org.glowroot.agent.plugin.jakartaservlet._.ServletMessageSupplier;
-import org.glowroot.agent.plugin.jakartaservlet._.ServletPluginProperties;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.ResponseInvoker;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.ServletMessageSupplier;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.ServletPluginProperties;
 
 import java.util.List;
 import java.util.Locale;

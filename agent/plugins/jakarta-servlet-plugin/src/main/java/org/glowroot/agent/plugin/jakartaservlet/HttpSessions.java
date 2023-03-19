@@ -18,9 +18,9 @@ package org.glowroot.agent.plugin.jakartaservlet;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.Beans;
 import org.glowroot.agent.plugin.api.util.ImmutableMap;
-import org.glowroot.agent.plugin.jakartaservlet._.ServletPluginProperties;
-import org.glowroot.agent.plugin.jakartaservlet._.ServletPluginProperties.SessionAttributePath;
-import org.glowroot.agent.plugin.jakartaservlet._.Strings;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.ServletPluginProperties;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.ServletPluginProperties.SessionAttributePath;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.Strings;
 
 import jakarta.servlet.http.HttpSession;
 import java.util.*;

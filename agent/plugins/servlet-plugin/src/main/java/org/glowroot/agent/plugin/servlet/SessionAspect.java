@@ -25,10 +25,10 @@ import org.glowroot.agent.plugin.api.util.Beans;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.servlet._.ServletMessageSupplier;
-import org.glowroot.agent.plugin.servlet._.ServletPluginProperties;
-import org.glowroot.agent.plugin.servlet._.Strings;
-import org.glowroot.agent.plugin.servlet._.ServletPluginProperties.SessionAttributePath;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.ServletMessageSupplier;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.ServletPluginProperties;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.Strings;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.ServletPluginProperties.SessionAttributePath;
 
 public class SessionAspect {
 

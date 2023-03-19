@@ -18,10 +18,10 @@ package org.glowroot.agent.plugin.jakartaservlet;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.ImmutableList;
 import org.glowroot.agent.plugin.api.util.ImmutableMap;
-import org.glowroot.agent.plugin.jakartaservlet._.RequestHostAndPortDetail;
-import org.glowroot.agent.plugin.jakartaservlet._.RequestInvoker;
-import org.glowroot.agent.plugin.jakartaservlet._.ServletPluginProperties;
-import org.glowroot.agent.plugin.jakartaservlet._.Strings;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.RequestHostAndPortDetail;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.RequestInvoker;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.ServletPluginProperties;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.Strings;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.*;

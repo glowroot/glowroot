@@ -34,7 +34,7 @@ import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.api.weaving.Shim;
-import org.glowroot.agent.plugin.netty._.Util;
+import org.glowroot.agent.plugin.netty.bclglowrootbcl.Util;
 
 public class Netty3Aspect {
 

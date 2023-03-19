@@ -22,10 +22,10 @@ import org.glowroot.agent.plugin.api.util.Beans;
 import org.glowroot.agent.plugin.api.weaving.BindParameter;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.jakartaservlet._.ServletMessageSupplier;
-import org.glowroot.agent.plugin.jakartaservlet._.ServletPluginProperties;
-import org.glowroot.agent.plugin.jakartaservlet._.ServletPluginProperties.SessionAttributePath;
-import org.glowroot.agent.plugin.jakartaservlet._.Strings;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.ServletMessageSupplier;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.ServletPluginProperties;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.ServletPluginProperties.SessionAttributePath;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.Strings;
 
 import java.util.List;
 import java.util.Map;

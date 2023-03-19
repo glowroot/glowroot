@@ -35,7 +35,7 @@ import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.OnThrow;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.httpclient._.Uris;
+import org.glowroot.agent.plugin.httpclient.bclglowrootbcl.Uris;
 
 // see nearly identical copy of this in WiremockApacheHttpClientAspect
 public class ApacheHttpClientAspect {

@@ -60,7 +60,7 @@ class PluginClassRenamer {
         } else {
             rootPackageName = internalName.substring(0, index);
         }
-        bootstrapSafePackageName = rootPackageName + "/_/";
+        bootstrapSafePackageName = rootPackageName + "/bclglowrootbcl/";
     }
 
     @Nullable
