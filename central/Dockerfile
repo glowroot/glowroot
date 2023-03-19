@@ -31,7 +31,7 @@ EXPOSE 4000 8181
 
 USER glowroot:root
 
-ENV GLOWROOT_OPTS ""
+ENV GLOWROOT_OPTS=""
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 
