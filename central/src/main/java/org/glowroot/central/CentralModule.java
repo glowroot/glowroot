@@ -1095,13 +1095,13 @@ public class CentralModule {
         int cassandraThrottlerMaxConcurrentRequests() {
             // max simultaneous requests
             // https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/throttling/
-            return 5_000;
+            return 1024;
         }
 
         @Value.Default
         int cassandraThrottlerMaxQueueSize() {
             // https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/throttling/
-            return 10_000;
+            return 8192;
         }
 
         @Value.Default
