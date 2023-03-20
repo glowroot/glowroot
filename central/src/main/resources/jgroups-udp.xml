@@ -1,4 +1,4 @@
-<!-- based on https://github.com/belaban/JGroups/blob/JGroups-4.0.3.Final/conf/udp.xml -->
+<!-- based on https://github.com/belaban/JGroups/blob/jgroups-5.2.12.Final/conf/udp.xml -->
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
@@ -11,8 +11,6 @@
        ucast_send_buf_size="5M"
        mcast_recv_buf_size="5M"
        mcast_send_buf_size="5M"
-       max_bundle_size="64K"
-       enable_diagnostics="true"
        thread_naming_pattern="cl"
        thread_pool.min_threads="${jgroups.minThreads:0}"
        thread_pool.max_threads="${jgroups.maxThreads:20}"
@@ -20,8 +18,8 @@
   <PING />
   <MERGE3 max_interval="30000"
           min_interval="10000" />
-  <FD_SOCK/>
-  <FD_ALL/>
+  <FD_SOCK2/>
+  <FD_ALL3/>
   <VERIFY_SUSPECT timeout="1500" />
   <BARRIER />
   <!-- Symmetric encryption with a keystore -->
@@ -29,7 +27,7 @@
           provider="SunJCE"
           sym_algorithm="${jgroups.symEncryptAlgorithm:AES/CBC/PKCS5Padding}"
           sym_iv_length="16"
-          keystore_name="${jgroups.symEncryptKeystoreLocation}"
+          keystore_name="${jgroups.symEncryptKeystoreName}"
           store_password="${jgroups.symEncryptKeystorePassword}"
           alias="${jgroups.symEncryptKeyAlias}"
           key_password="${jgroups.symEncryptKeyPassword}"

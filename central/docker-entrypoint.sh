@@ -78,8 +78,8 @@ fi
 if [ "$JGROUPS_SYM_ENCRYPT_ALGORITHM" ]; then
   sed -i "s|^jgroups.symEncryptAlgorithm=.*$|jgroups.symEncryptAlgorithm=$JGROUPS_SYM_ENCRYPT_ALGORITHM|" glowroot-central.properties
 fi
-if [ "$JGROUPS_SYM_ENCRYPT_KEYSTORE_LOCATION" ]; then
-  sed -i "s|^jgroups.symEncryptKeystoreLocation=.*$|jgroups.symEncryptKeystoreLocation=$JGROUPS_SYM_ENCRYPT_KEYSTORE_LOCATION|" glowroot-central.properties
+if [ "$JGROUPS_SYM_ENCRYPT_KEYSTORE_NAME" ]; then
+  sed -i "s|^jgroups.symEncryptKeystoreName=.*$|jgroups.symEncryptKeystoreName=$JGROUPS_SYM_ENCRYPT_KEYSTORE_NAME|" glowroot-central.properties
 fi
 if [ "$JGROUPS_SYM_ENCRYPT_KEYSTORE_PASSWORD" ]; then
   sed -i "s/^jgroups.symEncryptKeystorePassword=.*$/jgroups.symEncryptKeystorePassword=$JGROUPS_SYM_ENCRYPT_KEYSTORE_PASSWORD/" glowroot-central.properties
