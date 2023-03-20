@@ -3,7 +3,8 @@ Glowroot
 
 ## Requirements
 
-* Java 8+
+* Java 8+ for agent
+* Java 11+ for glowroot-central
 
 ## Quick start
 
@@ -33,7 +34,7 @@ The usual:
 
 Binary distribution is built under agent/dist/target.
 
-Building requires Java 8+ and Maven 3.6.0+.
+Building requires Java 11+ and Maven 3.8.0+.
 
 ## Contributing
 
