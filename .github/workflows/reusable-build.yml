@@ -50,9 +50,8 @@ jobs:
             build-
 
       - name: Build
-        uses: GabrielBB/xvfb-action@v1
-        with:
-          run: .github/scripts/build.sh test${{ matrix.testGroup }}
+        run: .github/scripts/build.sh test${{ matrix.testGroup }}
+        if: ${{ matrix.os == 'ubuntu-latest' }}
 
       - name: Upload webdriver screenshots
         if: failure()
