@@ -44,6 +44,16 @@ class NopTransactionService {
         private NopAsyncQueryEntry() {}
 
         @Override
+        public void setQueryText(String queryText) {
+            return;
+        }
+
+        @Override
+        public void appendQueryText(String queryText) {
+            return;
+        }
+
+        @Override
         public void end() {}
 
         @Override

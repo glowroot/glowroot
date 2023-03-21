@@ -19,6 +19,10 @@ public interface QueryData {
 
     String getQueryText();
 
+    void setQueryText(String queryText);
+
+    void appendQueryText(String queryText);
+
     void start(long startTick, long batchSize);
 
     void end(long endTick);

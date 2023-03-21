@@ -29,8 +29,14 @@ public interface QueryEntry extends TraceEntry {
 
     /**
      * Row numbers start at 1 (not 0).
-     * 
+     *
      * @param row
      */
     void setCurrRow(long row);
+
+    void setQueryText(String queryText);
+
+    void appendQueryText(String queryText);
+
+
 }

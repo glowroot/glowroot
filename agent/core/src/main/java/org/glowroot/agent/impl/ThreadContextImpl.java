@@ -1124,6 +1124,16 @@ public class ThreadContextImpl implements ThreadContextPlus {
         }
 
         @Override
+        public void setQueryText(String queryText) {
+            return;
+        }
+
+        @Override
+        public void appendQueryText(String queryText) {
+            return;
+        }
+
+        @Override
         public void end() {
             endInternal(ticker.read());
         }

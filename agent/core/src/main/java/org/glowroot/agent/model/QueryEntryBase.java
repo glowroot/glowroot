@@ -118,4 +118,18 @@ public abstract class QueryEntryBase implements QueryEntry {
     protected @Nullable String getQueryText() {
         return queryData == null ? null : queryData.getQueryText();
     }
+
+    @Override
+    public void setQueryText(String queryText) {
+        if (queryData != null) {
+            queryData.setQueryText(queryText);
+        }
+    }
+
+    @Override
+    public void appendQueryText(String queryText) {
+        if (queryData != null) {
+            queryData.appendQueryText(queryText);
+        }
+    }
 }

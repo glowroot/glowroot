@@ -62,7 +62,7 @@ public class OkHttpClient2xAspect {
             }
             String url = originalRequest.urlString();
             return context.startServiceCallEntry("HTTP", method + Uris.stripQueryString(url),
-                    MessageSupplier.create("http client request: {}{}", method, url), timerName);
+                    MessageSupplier.create("http client request: {}h{}", method, url), timerName);
         }
         @OnReturn
         public static void onReturn(@BindTraveler @Nullable TraceEntry traceEntry) {
@@ -110,7 +110,7 @@ public class OkHttpClient2xAspect {
             }
             AsyncTraceEntry asyncTraceEntry = context.startAsyncServiceCallEntry("HTTP",
                     method + Uris.stripQueryString(url),
-                    MessageSupplier.create("http client request: {}{}", method, url), timerName);
+                    MessageSupplier.create("http client request: {}i{}", method, url), timerName);
             callback.set(createWrapper(context, callback, asyncTraceEntry));
             return asyncTraceEntry;
         }

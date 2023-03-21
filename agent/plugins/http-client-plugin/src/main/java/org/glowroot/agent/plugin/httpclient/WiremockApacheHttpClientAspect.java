@@ -64,7 +64,7 @@ public class WiremockApacheHttpClientAspect {
                 uri = uriObj.toString();
             }
             return context.startServiceCallEntry("HTTP", method + Uris.stripQueryString(uri),
-                    MessageSupplier.create("http client request: {}{}", method, uri),
+                    MessageSupplier.create("http client request: {}l{}", method, uri),
                     timerName);
         }
         @OnReturn
@@ -111,7 +111,7 @@ public class WiremockApacheHttpClientAspect {
                 uri = "";
             }
             return context.startServiceCallEntry("HTTP", method + Uris.stripQueryString(uri),
-                    MessageSupplier.create("http client request: {}{}{}", method, host, uri),
+                    MessageSupplier.create("http client request: {}{}m{}", method, host, uri),
                     timerName);
         }
         @OnReturn

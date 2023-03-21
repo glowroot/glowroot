@@ -159,7 +159,7 @@
       </resource>
     </resources>
     <plugins>
-      <plugin>
+      <!-- <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.10.1</version>
         <configuration>
@@ -167,7 +167,7 @@
           <target>11</target>
           <release>11</release>
         </configuration>
-      </plugin>
+      </plugin> -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>animal-sniffer-maven-plugin</artifactId>

@@ -70,7 +70,7 @@ public class ApacheHttpAsyncClientAspect {
             }
             AsyncTraceEntry asyncTraceEntry = context.startAsyncServiceCallEntry("HTTP",
                     method + Uris.stripQueryString(uri),
-                    MessageSupplier.create("http client request: {}{}", method, uri), timerName);
+                    MessageSupplier.create("http client request: {}a{}", method, uri), timerName);
             callback.set(createWrapper(context, callback, asyncTraceEntry));
             return asyncTraceEntry;
         }
@@ -156,7 +156,7 @@ public class ApacheHttpAsyncClientAspect {
             }
             AsyncTraceEntry asyncTraceEntry = context.startAsyncServiceCallEntry("HTTP",
                     method + Uris.stripQueryString(uri),
-                    MessageSupplier.create("http client request: {}{}{}", method, host, uri),
+                    MessageSupplier.create("http client request: {}{}b{}", method, host, uri),
                     timerName);
             callback.set(ExecuteAdvice.createWrapper(context, callback, asyncTraceEntry));
             return asyncTraceEntry;
