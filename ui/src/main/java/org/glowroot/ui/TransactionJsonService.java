@@ -967,6 +967,7 @@ class TransactionJsonService {
         String type();
         String text();
         double totalDurationNanos();
+        double maxDurationNanos();
         long executionCount();
     }
 

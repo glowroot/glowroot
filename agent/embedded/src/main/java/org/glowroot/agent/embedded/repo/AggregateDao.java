@@ -680,7 +680,7 @@ public class AggregateDao implements AggregateRepository {
             double totalAllocatedBytes = resultSet.getDouble(i++);
             long transactionCount = resultSet.getLong(i++);
             long captureTime = resultSet.getLong(i++);
-            collector.mergeSummary(totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount,
+            collector.mergeSummary(totalDurationNanos, 0.0, totalCpuNanos, totalAllocatedBytes, transactionCount,
                     captureTime);
             return null;
         }

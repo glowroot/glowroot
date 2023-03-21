@@ -526,7 +526,7 @@ public class AggregateDaoImpl implements AggregateDao {
             double totalCpuNanos = row.getDouble(i++);
             double totalAllocatedBytes = row.getDouble(i++);
             long transactionCount = row.getLong(i++);
-            collector.mergeSummary(totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount,
+            collector.mergeSummary(totalDurationNanos, 0.0, totalCpuNanos, totalAllocatedBytes, transactionCount,
                     captureTime);
         }
     }

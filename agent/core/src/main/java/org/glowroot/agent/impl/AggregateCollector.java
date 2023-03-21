@@ -57,6 +57,7 @@ class AggregateCollector {
     private final @Nullable String transactionName;
     // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
     private double totalDurationNanos;
+    private double maxDurationNanos;
     private double totalCpuNanos;
     private double totalAllocatedBytes;
     private long transactionCount;
@@ -101,6 +102,9 @@ class AggregateCollector {
         synchronized (lock) {
             long totalDurationNanos = transaction.getDurationNanos();
             this.totalDurationNanos += totalDurationNanos;
+            if (totalDurationNanos > maxDurationNanos) {
+                maxDurationNanos = totalDurationNanos;
+            }
             transactionCount++;
             if (transaction.getErrorMessage() != null) {
                 errorCount++;
@@ -183,7 +187,7 @@ class AggregateCollector {
 
     void mergeOverallSummaryInto(OverallSummaryCollector collector) {
         synchronized (lock) {
-            collector.mergeSummary(totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount, 0);
+            collector.mergeSummary(totalDurationNanos, maxDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount, 0);
         }
     }
 

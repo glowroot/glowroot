@@ -20,6 +20,7 @@ import org.immutables.value.Value;
 public class OverallSummaryCollector {
 
     private double totalDurationNanos;
+    private double maxDurationNanos;
     private double totalCpuNanos;
     private double totalAllocatedBytes;
     private long transactionCount;
@@ -39,9 +40,10 @@ public class OverallSummaryCollector {
                 .build();
     }
 
-    public void mergeSummary(double totalDurationNanos, double totalCpuNanos, double totalAllocatedBytes, long transactionCount,
+    public void mergeSummary(double totalDurationNanos, double maxDurationNanos, double totalCpuNanos, double totalAllocatedBytes, long transactionCount,
                              long captureTime) {
         this.totalDurationNanos += totalDurationNanos;
+        this.maxDurationNanos = Math.max(this.maxDurationNanos, maxDurationNanos);
         this.totalCpuNanos += totalCpuNanos;
         this.totalAllocatedBytes += totalAllocatedBytes;
         this.transactionCount += transactionCount;
@@ -52,6 +54,7 @@ public class OverallSummaryCollector {
     public interface OverallSummary {
         // aggregates use double instead of long to avoid (unlikely) 292 year nanosecond rollover
         double totalDurationNanos();
+        double maxDurationNanos();
         double totalCpuNanos();
         double totalAllocatedBytes();
         long transactionCount();

@@ -20,10 +20,15 @@ import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 class MutableServiceCall {
 
     private double totalDurationNanos;
+    private double maxDurationNanos;
     private long executionCount;
 
     double getTotalDurationNanos() {
         return totalDurationNanos;
+    }
+
+    double getMaxDurationNanos() {
+        return maxDurationNanos;
     }
 
     long getExecutionCount() {
@@ -32,6 +37,7 @@ class MutableServiceCall {
 
     void addToTotalDurationNanos(double totalDurationNanos) {
         this.totalDurationNanos += totalDurationNanos;
+        this.maxDurationNanos = Math.max(this.maxDurationNanos, totalDurationNanos);
     }
 
     void addToExecutionCount(long executionCount) {
@@ -53,6 +59,7 @@ class MutableServiceCall {
                 .setType(serviceCallType)
                 .setText(serviceCallText)
                 .setTotalDurationNanos(totalDurationNanos)
+                .setMaxDurationNanos(maxDurationNanos)
                 .setExecutionCount(executionCount);
         return builder.build();
     }
