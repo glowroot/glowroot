@@ -54,12 +54,10 @@ class PropertiesFiles {
         addSchemeToCollectorAddressIfNeeded(propFile);
         // upgrade from 0.9.28 to 0.10.0
         prependAgentRollupToAgentIdIfNeeded(propFile);
-        InputStream in = new FileInputStream(propFile);
+
         Properties props = new Properties();
-        try {
+        try (InputStream in = new FileInputStream(propFile)) {
             props.load(in);
-        } finally {
-            in.close();
         }
         for (String key : props.stringPropertyNames()) {
             String value = props.getProperty(key);
@@ -196,13 +194,10 @@ class PropertiesFiles {
     private static void writePropertiesFile(File propFile, List<String> newLines)
             throws FileNotFoundException {
         // properties files must be ISO_8859_1
-        PrintWriter out = new PrintWriter(Files.newWriter(propFile, ISO_8859_1));
-        try {
+        try (PrintWriter out = new PrintWriter(Files.newWriter(propFile, ISO_8859_1))) {
             for (String newLine : newLines) {
                 out.println(newLine);
             }
-        } finally {
-            out.close();
         }
     }
 }

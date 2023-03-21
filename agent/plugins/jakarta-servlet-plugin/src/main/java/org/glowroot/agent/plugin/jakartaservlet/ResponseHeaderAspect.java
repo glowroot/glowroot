@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ package org.glowroot.agent.plugin.jakartaservlet;
 import org.glowroot.agent.plugin.api.ThreadContext;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.weaving.*;
-import org.glowroot.agent.plugin.jakartaservlet._.ResponseInvoker;
-import org.glowroot.agent.plugin.jakartaservlet._.ServletMessageSupplier;
-import org.glowroot.agent.plugin.jakartaservlet._.ServletPluginProperties;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.ResponseInvoker;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.ServletMessageSupplier;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.ServletPluginProperties;
 
 import java.util.List;
 import java.util.Locale;

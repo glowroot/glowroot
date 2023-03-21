@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.cql.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
@@ -96,6 +97,10 @@ class CentralConfigDao {
             .setString(i++, newValue)
             .setString(i++, key)
             .setString(i++, currValue);
+        // consistency level must be at least LOCAL_SERIAL
+        if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
+            boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+        }
         AsyncResultSet asyncresults = session.update(boundStatement);
         row = checkNotNull(asyncresults.one());
         boolean applied = row.getBoolean("[applied]");
@@ -132,6 +137,10 @@ class CentralConfigDao {
         BoundStatement boundStatement = insertIfNotExistsPS.bind()
             .setString(i++, key)
             .setString(i++, initialValue);
+        // consistency level must be at least LOCAL_SERIAL
+        if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
+            boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+        }
         AsyncResultSet results = session.update(boundStatement);
         Row row = checkNotNull(results.one());
         boolean applied = row.getBoolean("[applied]");

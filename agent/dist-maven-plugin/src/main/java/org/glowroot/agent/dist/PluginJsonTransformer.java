@@ -98,8 +98,8 @@ class PluginJsonTransformer {
             }
             return Files.toString(jsonFile, UTF_8);
         }
-        JarInputStream jarIn = new JarInputStream(new FileInputStream(artifact.getFile()));
-        try {
+
+        try (JarInputStream jarIn = new JarInputStream(new FileInputStream(artifact.getFile()))) {
             JarEntry jarEntry;
             while ((jarEntry = jarIn.getNextJarEntry()) != null) {
                 String name = jarEntry.getName();
@@ -109,14 +109,12 @@ class PluginJsonTransformer {
                 if (!name.equals("META-INF/glowroot.plugin.json")) {
                     continue;
                 }
-                InputStreamReader in = new InputStreamReader(jarIn, UTF_8);
-                String content = CharStreams.toString(in);
-                in.close();
-                return content;
+                try (InputStreamReader in = new InputStreamReader(jarIn, UTF_8)) {
+                    String content = CharStreams.toString(in);
+                    return content;
+                }
             }
             return null;
-        } finally {
-            jarIn.close();
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2019 the original author or authors.
+ * Copyright 2011-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import org.glowroot.agent.plugin.api.weaving.BindClassMeta;
 import org.glowroot.agent.plugin.api.weaving.BindReceiver;
 import org.glowroot.agent.plugin.api.weaving.OnReturn;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.jakartaservlet._.RequestClassMeta;
-import org.glowroot.agent.plugin.jakartaservlet._.ServletMessageSupplier;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.RequestClassMeta;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.ServletMessageSupplier;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.cql.*;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.base.Optional;
@@ -177,6 +178,7 @@ public class AgentConfigDao {
             }
             boundStatement = boundStatement.setString(i++, agentRollupId)
                 .setByteBuffer(i++, ByteBuffer.wrap(currValue.toByteArray()));
+            boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
             AsyncResultSet asyncresults = session.update(boundStatement);
             row = checkNotNull(asyncresults.one());
             boolean applied = row.getBoolean("[applied]");
@@ -214,6 +216,10 @@ public class AgentConfigDao {
         BoundStatement boundStatement = markUpdatedPS.bind()
             .setString(i++, agentId)
             .setUuid(i++, configUpdateToken);
+        // consistency level must be at least LOCAL_SERIAL
+        if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
+            boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+        }
         session.update(boundStatement);
     }
 

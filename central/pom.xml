@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.14.0-beta.4-SNAPSHOT</version>
+    <version>0.14.0-beta.4</version>
   </parent>
 
   <artifactId>glowroot-central</artifactId>
@@ -74,12 +74,12 @@
     <dependency>
       <groupId>org.jgroups</groupId>
       <artifactId>jgroups</artifactId>
-      <version>4.2.18.Final</version>
+      <version>5.2.12.Final</version>
     </dependency>
     <dependency>
       <groupId>org.jgroups.kubernetes</groupId>
       <artifactId>jgroups-kubernetes</artifactId>
-      <version>1.0.16.Final</version>
+      <version>2.0.1.Final</version>
     </dependency>
     <dependency>
       <groupId>jakarta.servlet</groupId>

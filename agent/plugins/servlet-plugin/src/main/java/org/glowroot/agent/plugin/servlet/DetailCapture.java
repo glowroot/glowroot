@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,10 +29,10 @@ import javax.servlet.http.HttpServletRequest;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.ImmutableList;
 import org.glowroot.agent.plugin.api.util.ImmutableMap;
-import org.glowroot.agent.plugin.servlet._.RequestHostAndPortDetail;
-import org.glowroot.agent.plugin.servlet._.RequestInvoker;
-import org.glowroot.agent.plugin.servlet._.ServletPluginProperties;
-import org.glowroot.agent.plugin.servlet._.Strings;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.RequestHostAndPortDetail;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.RequestInvoker;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.ServletPluginProperties;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.Strings;
 
 // shallow copies are necessary because request may not be thread safe, which may affect ability
 // to see detail from active traces

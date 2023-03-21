@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
+
+import com.datastax.oss.driver.internal.core.session.throttling.ConcurrencyLimitingRequestThrottler;
 import jakarta.servlet.ServletContext;
 
 import ch.qos.logback.classic.LoggerContext;
@@ -640,10 +642,20 @@ public class CentralModule {
             }
             builder.cassandraSymmetricEncryptionKey(cassandraSymmetricEncryptionKey);
         }
-        String cassandraMaxConcurrentQueries =
-                properties.get("glowroot.cassandra.maxConcurrentQueries");
-        if (!Strings.isNullOrEmpty(cassandraMaxConcurrentQueries)) {
-            builder.cassandraMaxConcurrentQueries(Integer.parseInt(cassandraMaxConcurrentQueries));
+        String cassandraConnectionMaxRequests =
+                properties.get("glowroot.cassandra.connectionMaxRequests");
+        if (!Strings.isNullOrEmpty(cassandraConnectionMaxRequests)) {
+            builder.cassandraConnectionMaxRequests(Integer.parseInt(cassandraConnectionMaxRequests));
+        }
+        String cassandraThrottlerMaxConcurrentRequests =
+                properties.get("glowroot.cassandra.throttlerMaxConcurrentRequests");
+        if (!Strings.isNullOrEmpty(cassandraThrottlerMaxConcurrentRequests)) {
+            builder.cassandraThrottlerMaxConcurrentRequests(Integer.parseInt(cassandraThrottlerMaxConcurrentRequests));
+        }
+        String cassandraThrottlerMaxQueueSize =
+                properties.get("glowroot.cassandra.throttlerMaxQueueSize");
+        if (!Strings.isNullOrEmpty(cassandraThrottlerMaxQueueSize)) {
+            builder.cassandraThrottlerMaxQueueSize(Integer.parseInt(cassandraThrottlerMaxQueueSize));
         }
         String cassandraGcGraceSeconds =
                 properties.get("glowroot.cassandra.gcGraceSeconds");
@@ -831,11 +843,11 @@ public class CentralModule {
                     session = new Session(
                             createCluster(centralConfig).build(),
                             keyspace, writeConsistencyLevelOverride,
-                            // max concurrent queries before throwing BusyPoolException is "max
-                            // requests per connection" + "max queue size" (which are set to
-                            // cassandraMaxConcurrentQueries and cassandraMaxConcurrentQueries * 2
+                            // max concurrent requests before throwing BusyConnectionException is "max
+                            // concurrent requests" + "max queue size" (which are set to
+                            // cassandraThrottlerMaxConcurrentRequests and cassandraThrottlerMaxQueueSize * 2
                             // respectively)
-                            centralConfig.cassandraMaxConcurrentQueries() * 3,
+                            centralConfig.cassandraThrottlerMaxConcurrentRequests() + centralConfig.cassandraThrottlerMaxQueueSize(),
                             centralConfig.cassandraGcGraceSeconds());
                 }
                 String cassandraVersion = verifyCassandraVersion(session);
@@ -888,7 +900,7 @@ public class CentralModule {
                                 .map(addr -> new InetSocketAddress(addr, centralConfig.cassandraPort()))
                                 .collect(Collectors.toList()))
                 // cassandra driver v4.x requires localdatacenter name to be defined
-                // see https://docs.datastax.com/en/developer/java-driver/4.13/manual/core/load_balancing/
+                // see https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/load_balancing/
                 .withLocalDatacenter(centralConfig.cassandraLocalDatacenter())
                 .withConfigLoader(DriverConfigLoader.programmaticBuilder()
                         // let driver know that only idempotent queries are used so it will retry on timeout
@@ -898,12 +910,12 @@ public class CentralModule {
                         .withDuration(DefaultDriverOption.RECONNECTION_BASE_DELAY, Duration.ofMillis(1000))
                         .withString(DefaultDriverOption.REQUEST_CONSISTENCY, centralConfig.cassandraReadConsistencyLevel().name())
                         .withString(DefaultDriverOption.REQUEST_SERIAL_CONSISTENCY, centralConfig.cassandraWriteConsistencyLevel().name())
-                        .withInt(DefaultDriverOption.CONNECTION_MAX_REQUESTS, centralConfig.cassandraMaxConcurrentQueries())
-                        // using 2x "max requests per connection", so that thread-based
-                        // throttling can allow up to 3x "max requests per connection", which is
-                        // split 50% writes / 25% reads / 25% rollups, which will keep the pool
-                        // saturated with writes alone
-                        .withInt(DefaultDriverOption.REQUEST_THROTTLER_MAX_QUEUE_SIZE, centralConfig.cassandraMaxConcurrentQueries() * 2)
+                        // CONNECTION_MAX_REQUESTS see https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/pooling/#tuning
+                        .withInt(DefaultDriverOption.CONNECTION_MAX_REQUESTS, centralConfig.cassandraConnectionMaxRequests())
+                        // REQUEST_THROTTLER_CLASS see https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/throttling/
+                        .withClass(DefaultDriverOption.REQUEST_THROTTLER_CLASS, ConcurrencyLimitingRequestThrottler.class)
+                        .withInt(DefaultDriverOption.REQUEST_THROTTLER_MAX_CONCURRENT_REQUESTS, centralConfig.cassandraThrottlerMaxConcurrentRequests())
+                        .withInt(DefaultDriverOption.REQUEST_THROTTLER_MAX_QUEUE_SIZE, centralConfig.cassandraThrottlerMaxQueueSize())
                         .withString(DefaultDriverOption.TIMESTAMP_GENERATOR_CLASS, ServerSideTimestampGenerator.class.getName())
                         .build());
         String cassandraUsername = centralConfig.cassandraUsername();
@@ -1074,8 +1086,22 @@ public class CentralModule {
         }
 
         @Value.Default
-        int cassandraMaxConcurrentQueries() {
+        int cassandraConnectionMaxRequests() {
+            // https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/pooling/#tuning
             return 1024;
+        }
+
+        @Value.Default
+        int cassandraThrottlerMaxConcurrentRequests() {
+            // max simultaneous requests
+            // https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/throttling/
+            return 1024;
+        }
+
+        @Value.Default
+        int cassandraThrottlerMaxQueueSize() {
+            // https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/throttling/
+            return 8192;
         }
 
         @Value.Default

@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.14.0-beta.4-SNAPSHOT</version>
+    <version>0.14.0-beta.4</version>
   </parent>
 
   <artifactId>glowroot-ui</artifactId>
@@ -188,7 +188,7 @@
             </goals>
             <configuration>
               <skip>${glowroot.ui.skip}</skip>
-              <nodeVersion>v8.11.1</nodeVersion>
+              <nodeVersion>v14.21.3</nodeVersion>
             </configuration>
           </execution>
           <execution>

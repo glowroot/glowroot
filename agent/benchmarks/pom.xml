@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.14.0-beta.4-SNAPSHOT</version>
+    <version>0.14.0-beta.4</version>
     <relativePath>../..</relativePath>
   </parent>
 
@@ -36,7 +36,7 @@
       <!-- this jar file is used by WeavingBenchmark -->
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
-      <version>5.3.10</version>
+      <version>5.3.23</version>
     </dependency>
     <dependency>
       <groupId>org.openjdk.jmh</groupId>

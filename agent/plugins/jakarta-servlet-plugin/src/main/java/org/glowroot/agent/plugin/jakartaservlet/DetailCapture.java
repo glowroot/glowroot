@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@ package org.glowroot.agent.plugin.jakartaservlet;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.ImmutableList;
 import org.glowroot.agent.plugin.api.util.ImmutableMap;
-import org.glowroot.agent.plugin.jakartaservlet._.RequestHostAndPortDetail;
-import org.glowroot.agent.plugin.jakartaservlet._.RequestInvoker;
-import org.glowroot.agent.plugin.jakartaservlet._.ServletPluginProperties;
-import org.glowroot.agent.plugin.jakartaservlet._.Strings;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.RequestHostAndPortDetail;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.RequestInvoker;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.ServletPluginProperties;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.Strings;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.*;

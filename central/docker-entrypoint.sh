@@ -50,6 +50,15 @@ fi
 if [ "$CASSANDRA_SYMMETRIC_ENCRYPTION_KEY" ]; then
   sed -i "s/^cassandra.symmetricEncryptionKey=.*$/cassandra.symmetricEncryptionKey=$CASSANDRA_SYMMETRIC_ENCRYPTION_KEY/" glowroot-central.properties
 fi
+if [ "$CASSANDRA_CONNECTION_MAX_REQUESTS" ]; then
+  sed -i "s/^cassandra.connectionMaxRequests=.*$/cassandra.connectionMaxRequests=$CASSANDRA_CONNECTION_MAX_REQUESTS/" glowroot-central.properties
+fi
+if [ "$CASSANDRA_THROTTLER_MAX_CONCURRENT_REQUESTS" ]; then
+  sed -i "s/^cassandra.throttlerMaxConcurrentRequests=.*$/cassandra.throttlerMaxConcurrentRequests=$CASSANDRA_THROTTLER_MAX_CONCURRENT_REQUESTS/" glowroot-central.properties
+fi
+if [ "$CASSANDRA_THROTTLER_MAX_QUEUE_SIZE" ]; then
+  sed -i "s/^cassandra.throttlerMaxQueueSize=.*$/cassandra.throttlerMaxQueueSize=$CASSANDRA_THROTTLER_MAX_QUEUE_SIZE/" glowroot-central.properties
+fi
 if [ "$UI_CONTEXT_PATH" ]; then
   # not using "/" as sed delimiter since it is a common character used in context path
   sed -i "s|^ui.contextPath=.*$|ui.contextPath=$UI_CONTEXT_PATH|" glowroot-central.properties
@@ -69,8 +78,8 @@ fi
 if [ "$JGROUPS_SYM_ENCRYPT_ALGORITHM" ]; then
   sed -i "s|^jgroups.symEncryptAlgorithm=.*$|jgroups.symEncryptAlgorithm=$JGROUPS_SYM_ENCRYPT_ALGORITHM|" glowroot-central.properties
 fi
-if [ "$JGROUPS_SYM_ENCRYPT_KEYSTORE_LOCATION" ]; then
-  sed -i "s|^jgroups.symEncryptKeystoreLocation=.*$|jgroups.symEncryptKeystoreLocation=$JGROUPS_SYM_ENCRYPT_KEYSTORE_LOCATION|" glowroot-central.properties
+if [ "$JGROUPS_SYM_ENCRYPT_KEYSTORE_NAME" ]; then
+  sed -i "s|^jgroups.symEncryptKeystoreName=.*$|jgroups.symEncryptKeystoreName=$JGROUPS_SYM_ENCRYPT_KEYSTORE_NAME|" glowroot-central.properties
 fi
 if [ "$JGROUPS_SYM_ENCRYPT_KEYSTORE_PASSWORD" ]; then
   sed -i "s/^jgroups.symEncryptKeystorePassword=.*$/jgroups.symEncryptKeystorePassword=$JGROUPS_SYM_ENCRYPT_KEYSTORE_PASSWORD/" glowroot-central.properties

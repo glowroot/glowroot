@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2019 the original author or authors.
+ * Copyright 2011-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import org.glowroot.agent.plugin.api.ThreadContext.Priority;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.FastThreadLocal;
 import org.glowroot.agent.plugin.api.weaving.*;
-import org.glowroot.agent.plugin.jakartaservlet._.*;
-import org.glowroot.agent.plugin.jakartaservlet._.ServletPluginProperties.SessionAttributePath;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.*;
+import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.ServletPluginProperties.SessionAttributePath;
 
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;

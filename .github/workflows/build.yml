@@ -27,7 +27,7 @@ jobs:
 #          distribution: adopt
 #          java-version: 8
 #      - name: Restore cache
-#        uses: actions/cache@v2
+#        uses: actions/cache@v3
 #        with:
 #          path: |
 #            ~/.m2/repository
@@ -36,9 +36,8 @@ jobs:
 #          restore-keys: |
 #            checker-
 #      - name: Build
-#        uses: GabrielBB/xvfb-action@v1
-#        with:
-#          run: .github/scripts/build.sh checker
+#        run: .github/scripts/build.sh checker
+#        if: ${{ matrix.os == 'ubuntu-latest' }}
 
 #  saucelabs:
 #    runs-on: ubuntu-latest
@@ -67,7 +66,7 @@ jobs:
 #          distribution: adopt
 #          java-version: 8
 #      - name: Restore cache
-#        uses: actions/cache@v2
+#        uses: actions/cache@v3
 #        with:
 #          path: |
 #            ~/.m2/repository
@@ -83,9 +82,8 @@ jobs:
 #          tunnelIdentifier: github-action-tunnel
 #          scVersion: 4.6.4
 #      - name: Build
-#        uses: GabrielBB/xvfb-action@v1
-#        with:
-#          run: .github/scripts/build.sh saucelabs${{ matrix.Group }}
+#        run: .github/scripts/build.sh saucelabs${{ matrix.Group }}
+#        if: ${{ matrix.os == 'ubuntu-latest' }}
 
   deploy:
     needs: build
@@ -100,7 +98,7 @@ jobs:
           distribution: adopt
           java-version: 11
       - name: Restore cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.m2/repository
@@ -109,6 +107,5 @@ jobs:
           restore-keys: |
             deploy-
       - name: Build
-        uses: GabrielBB/xvfb-action@v1
-        with:
-          run: .github/scripts/build.sh deploy
+        run: .github/scripts/build.sh deploy
+        if: ${{ matrix.os == 'ubuntu-latest' }}

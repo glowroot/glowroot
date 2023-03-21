@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,15 +69,15 @@ public class Session {
     private final CassandraWriteMetrics cassandraWriteMetrics;
 
     public Session(CqlSession wrappedSession, String keyspaceName,
-                   @Nullable ConsistencyLevel writeConsistencyLevel, int maxConcurrentQueries, int gcGraceSeconds)
+                   @Nullable ConsistencyLevel writeConsistencyLevel, int maxConcurrentRequests, int gcGraceSeconds)
             throws Exception {
         this.wrappedSession = wrappedSession;
         this.keyspaceName = keyspaceName;
         this.writeConsistencyLevel = writeConsistencyLevel;
 
-        readQuerySemaphore = new Semaphore(maxConcurrentQueries / 4);
-        writeQuerySemaphore = new Semaphore(maxConcurrentQueries / 2);
-        rollupQuerySemaphore = new Semaphore(maxConcurrentQueries / 4);
+        readQuerySemaphore = new Semaphore(maxConcurrentRequests / 4);
+        writeQuerySemaphore = new Semaphore(maxConcurrentRequests / 2);
+        rollupQuerySemaphore = new Semaphore(maxConcurrentRequests / 4);
         this.gcGraceSeconds = gcGraceSeconds;
 
         cassandraWriteMetrics = new CassandraWriteMetrics(wrappedSession, keyspaceName);
