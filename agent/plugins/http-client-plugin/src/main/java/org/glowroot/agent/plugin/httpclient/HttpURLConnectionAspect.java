@@ -216,8 +216,10 @@ public class HttpURLConnectionAspect {
                             supplier.setResult(responseCodeStr);
                         }
 
+                        logger.info("response code: {}", responseCodeStr);
                         if (traceEntry instanceof QueryEntry) {
-                            ((QueryEntry) traceEntry).appendQueryText(responseCodeStr);
+                            logger.info("setting response code in traceEntry: {}", responseCodeStr);
+                            ((QueryEntry) traceEntry).appendQueryText(responseCodeStr + "mehhh");
                         }
                     }
                 } else if (returnValue != null && !inputStreamIssueAlreadyLogged.getAndSet(true)) {
