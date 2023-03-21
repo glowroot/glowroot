@@ -61,7 +61,7 @@ public class RestTemplatePluginIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
-                .matches("http client request: GET http://localhost:\\d+/hello1/");
+                .matches("http client request: GET http://localhost:\\d+/hello1/ 200");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -77,7 +77,7 @@ public class RestTemplatePluginIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
-                .matches("http client request: GET http://localhost:\\d+/hello1/one/two");
+                .matches("http client request: GET http://localhost:\\d+/hello1/one/two 200");
 
         assertThat(i.hasNext()).isFalse();
     }
@@ -93,7 +93,7 @@ public class RestTemplatePluginIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
-                .matches("http client request: POST http://localhost:\\d+/hello1/");
+                .matches("http client request: POST http://localhost:\\d+/hello1/ 200");
 
         assertThat(i.hasNext()).isFalse();
     }

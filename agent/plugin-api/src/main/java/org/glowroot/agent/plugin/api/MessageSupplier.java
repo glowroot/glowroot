@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.plugin.api;
 
+import java.util.Arrays;
+
 import org.glowroot.agent.plugin.api.checker.Nullable;
 
 /**
@@ -25,7 +27,7 @@ public abstract class MessageSupplier {
 
     /**
      * Returns the {@code Message} for a {@link TraceEntry}.
-     * 
+     *
      * The {@code Message} does not need to be thread safe if it is instantiated by the
      * implementation of this method.
      */
@@ -47,7 +49,7 @@ public abstract class MessageSupplier {
 
     /**
      * Creates a {@code MessageSupplier} for the specified {@code template} and {@code args}.
-     * 
+     *
      * The {@code template} can contain one or more placeholders <code>{}</code> that will be
      * substituted if/when the message text is needed by the specified {@code args}.
      */
@@ -58,5 +60,29 @@ public abstract class MessageSupplier {
                 return Message.create(template, args);
             }
         };
+    }
+
+    public static class WithResult extends MessageSupplier {
+        private final String template;
+        private final String[] args;
+        private volatile String result = "";
+
+        public WithResult(final String template, final @Nullable String... args) {
+            this.template = template;
+            this.args = args;
+        }
+
+        public void setResult(String result) {
+            this.result = result;
+        }
+
+        @Override
+        public Message get() {
+            String[] finalArgs = Arrays.copyOf(this.args, this.args.length + 1);
+            finalArgs[this.args.length] = result;
+
+            return Message.create(this.template + " {}", finalArgs);
+        }
+
     }
 }

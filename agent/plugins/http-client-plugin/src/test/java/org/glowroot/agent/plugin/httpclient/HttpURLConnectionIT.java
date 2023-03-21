@@ -94,7 +94,7 @@ public class HttpURLConnectionIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
-                .matches("http client request: GET " + protocol + "://localhost:\\d+/hello1/");
+                .matches("http client request: GET " + protocol + "://localhost:\\d+/hello1/ 200");
         assertThat(entry.getActive()).isFalse();
 
         assertThat(i.hasNext()).isFalse();
@@ -111,7 +111,7 @@ public class HttpURLConnectionIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).matches(
-                "http client request: GET " + protocol + "://localhost:\\d+/hello1\\?abc=xyz");
+                "http client request: GET " + protocol + "://localhost:\\d+/hello1\\?abc=xyz 200");
         assertThat(entry.getActive()).isFalse();
 
         assertThat(i.hasNext()).isFalse();
@@ -128,7 +128,7 @@ public class HttpURLConnectionIT {
         Trace.Entry entry = i.next();
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage())
-                .matches("http client request: POST " + protocol + "://localhost:\\d+/hello1/");
+                .matches("http client request: POST " + protocol + "://localhost:\\d+/hello1/ 200");
         assertThat(entry.getActive()).isFalse();
 
         assertThat(i.hasNext()).isFalse();

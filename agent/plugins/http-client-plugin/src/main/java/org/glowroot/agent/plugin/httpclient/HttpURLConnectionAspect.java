@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.glowroot.agent.plugin.api.Agent;
@@ -87,8 +88,16 @@ public class HttpURLConnectionAspect {
 
     private static class TraceEntryOrTimer {
 
-        private final @Nullable TraceEntry traceEntry;
+        private @Nullable TraceEntry traceEntry;
         private final @Nullable Timer timer;
+
+        public TraceEntry getTraceEntry() {
+            return traceEntry;
+        }
+
+        public void setTraceEntry(TraceEntry traceEntry) {
+            this.traceEntry = traceEntry;
+        }
 
         private TraceEntryOrTimer(TraceEntry traceEntry) {
             this.traceEntry = traceEntry;
@@ -102,6 +111,7 @@ public class HttpURLConnectionAspect {
 
         private void onReturn() {
             if (traceEntry != null) {
+                // System.out.println("&&&& " + Arrays.toString(Thread.currentThread().getStackTrace()).replace( ',', '\n' ));
                 traceEntry.end();
             } else if (timer != null) {
                 timer.stop();
@@ -128,8 +138,30 @@ public class HttpURLConnectionAspect {
             return onBefore(threadContext, httpURLConnection, false);
         }
         @OnReturn
-        public static void onReturn(@BindTraveler @Nullable TraceEntryOrTimer entryOrTimer) {
+        public static void onReturn(@BindReceiver HttpURLConnection httpURLConnection,
+                @BindTraveler @Nullable TraceEntryOrTimer entryOrTimer) {
             if (entryOrTimer != null) {
+                // TraceEntry traceEntry = entryOrTimer.getTraceEntry();
+                if (httpURLConnection instanceof HasTraceEntryMixin) {
+                    TraceEntry traceEntry = ((HasTraceEntryMixin) httpURLConnection).glowroot$getTraceEntry();
+
+                    // if (traceEntry != null) {
+
+                    //     Object messageSupplierObj = traceEntry.getMessageSupplier();
+                    //     if (messageSupplierObj instanceof MessageSupplier.WithResult) {
+                    //         MessageSupplier.WithResult supplier = (MessageSupplier.WithResult) messageSupplierObj;
+                    //         int responseCode = 0;
+                    //         // try {
+                    //         //     responseCode = httpURLConnection.getResponseCode();
+                    //         // } catch (Exception e) {
+                    //         //    // logger.error(e.getMessage(), e);
+                    //         // }
+                    //         supplier.setResult(Integer.toString(responseCode));
+                    //     }
+                    // }
+                }
+
+
                 entryOrTimer.onReturn();
             }
         }
@@ -169,7 +201,8 @@ public class HttpURLConnectionAspect {
             }
             traceEntry = threadContext.startServiceCallEntry("HTTP",
                     method + Uris.stripQueryString(url),
-                    MessageSupplier.create("http client request: {}{}", method, url), timerName);
+                    new MessageSupplier.WithResult("http client request: {}{}", method, url),
+                    timerName);
             ((HasTraceEntryMixin) httpURLConnection).glowroot$setTraceEntry(traceEntry);
             return new TraceEntryOrTimer(traceEntry);
         }
@@ -188,18 +221,35 @@ public class HttpURLConnectionAspect {
         public static void onReturn(@BindReturn @Nullable Object returnValue,
                 @BindReceiver HttpURLConnection httpURLConnection,
                 @BindTraveler @Nullable TraceEntryOrTimer entryOrTimer) {
+
+            TraceEntry traceEntry = null;
             if (httpURLConnection instanceof HasTraceEntryMixin) {
                 if (returnValue instanceof HasTraceEntryMixin) {
-                    TraceEntry traceEntry =
+                    traceEntry =
                             ((HasTraceEntryMixin) httpURLConnection).glowroot$getTraceEntry();
                     ((HasTraceEntryMixin) returnValue).glowroot$setTraceEntry(traceEntry);
+
+                    if (traceEntry != null) {
+
+                        Object messageSupplierObj = traceEntry.getMessageSupplier();
+                        if (messageSupplierObj instanceof MessageSupplier.WithResult) {
+                            MessageSupplier.WithResult supplier = (MessageSupplier.WithResult) messageSupplierObj;
+                            int responseCode = 0;
+                            try {
+                                responseCode = httpURLConnection.getResponseCode();
+                            } catch (Exception e) {
+                                logger.error(e.getMessage(), e);
+                            }
+                            supplier.setResult(Integer.toString(responseCode));
+                        }
+                    }
                 } else if (returnValue != null && !inputStreamIssueAlreadyLogged.getAndSet(true)) {
                     logger.info("found non-instrumented http url connection input stream, please"
                             + " report to the Glowroot project: {}",
                             returnValue.getClass().getName());
                 }
             }
-            ConnectAdvice.onReturn(entryOrTimer);
+            ConnectAdvice.onReturn(httpURLConnection, entryOrTimer);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
@@ -232,7 +282,7 @@ public class HttpURLConnectionAspect {
                             returnValue.getClass().getName());
                 }
             }
-            ConnectAdvice.onReturn(entryOrTimer);
+            ConnectAdvice.onReturn(httpURLConnection, entryOrTimer);
         }
         @OnThrow
         public static void onThrow(@BindThrowable Throwable t,
