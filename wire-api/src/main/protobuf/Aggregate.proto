@@ -24,6 +24,7 @@ message OldTransactionAggregate {
 message Aggregate {
 
   double total_duration_nanos = 1;
+  double max_duration_nanos = 19;
   int64 transaction_count = 2;
   int64 error_count = 3;
   bool async_transactions = 4; // true if there was at least one async transaction in aggregate
@@ -119,6 +120,7 @@ message Aggregate {
     string type = 1;
     string text = 2;
     double total_duration_nanos = 3;
+    double max_duration_nanos = 5;
     int64 execution_count = 4;
   }
 
