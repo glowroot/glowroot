@@ -108,4 +108,4 @@ jobs:
             deploy-
       - name: Build
         run: .github/scripts/build.sh deploy
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+        if: runner.os == 'Linux'
