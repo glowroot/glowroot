@@ -50,7 +50,9 @@ jobs:
             build-
 
       - name: Build
-        run: .github/scripts/build.sh test${{ matrix.testGroup }}
+        uses: coactions/setup-xvfb@v1
+        with:
+          run: .github/scripts/build.sh test${{ matrix.testGroup }}
         if: runner.os == 'Linux'
 
       - name: Upload webdriver screenshots

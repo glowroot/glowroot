@@ -36,8 +36,10 @@ jobs:
 #          restore-keys: |
 #            checker-
 #      - name: Build
-#        run: .github/scripts/build.sh checker
-#        if: ${{ matrix.os == 'ubuntu-latest' }}
+#        uses: coactions/setup-xvfb@v1
+#        with:
+#          run: .github/scripts/build.sh checker
+#        if: runner.os == 'Linux'
 
 #  saucelabs:
 #    runs-on: ubuntu-latest
@@ -82,8 +84,10 @@ jobs:
 #          tunnelIdentifier: github-action-tunnel
 #          scVersion: 4.6.4
 #      - name: Build
-#        run: .github/scripts/build.sh saucelabs${{ matrix.Group }}
-#        if: ${{ matrix.os == 'ubuntu-latest' }}
+#        uses: coactions/setup-xvfb@v1
+#        with:
+#          run: .github/scripts/build.sh saucelabs${{ matrix.Group }}
+#        if: runner.os == 'Linux'
 
   deploy:
     needs: build
@@ -107,5 +111,7 @@ jobs:
           restore-keys: |
             deploy-
       - name: Build
-        run: .github/scripts/build.sh deploy
+        uses: coactions/setup-xvfb@v1
+        with:
+          run: .github/scripts/build.sh deploy
         if: runner.os == 'Linux'
