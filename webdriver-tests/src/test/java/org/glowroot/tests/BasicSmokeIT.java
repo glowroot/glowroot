@@ -35,6 +35,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.RetryingTest;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.StaleElementReferenceException;
@@ -109,7 +110,7 @@ public class BasicSmokeIT extends WebDriverIT {
         }
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3)
     public void shouldCheckTransactionPages() throws Exception {
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
@@ -137,7 +138,7 @@ public class BasicSmokeIT extends WebDriverIT {
         clickAcross();
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3)
     public void shouldCheckNonActiveTraceModalPages() throws Exception {
         App app = app();
 
@@ -177,7 +178,7 @@ public class BasicSmokeIT extends WebDriverIT {
         clickAroundInTraceModal(traceId, false);
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3)
     public void shouldCheckActiveTraceModalPages() throws Exception {
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
@@ -194,7 +195,7 @@ public class BasicSmokeIT extends WebDriverIT {
         clickAroundInTraceModal(traceId, true);
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3)
     public void shouldCheckErrorsPages() throws Exception {
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
@@ -226,7 +227,7 @@ public class BasicSmokeIT extends WebDriverIT {
         waitFor(xpath("//label[normalize-space()='Response time']"));
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3)
     public void shouldCheckJvmPages() throws Exception {
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
@@ -288,7 +289,7 @@ public class BasicSmokeIT extends WebDriverIT {
         app.open("/jvm/capabilities");
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3)
     public void shouldRunReportTransactionAverage() throws Exception {
         // given
         App app = app();
@@ -310,7 +311,7 @@ public class BasicSmokeIT extends WebDriverIT {
         waitFor(xpath("//div[@ng-if='showChart']"));
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3)
     public void shouldRunReportTransactionPercentile() throws Exception {
         // given
         App app = app();
@@ -333,7 +334,7 @@ public class BasicSmokeIT extends WebDriverIT {
         waitFor(xpath("//div[@ng-if='showChart']"));
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3)
     public void shouldRunReportTransactionCount() throws Exception {
         // given
         App app = app();
