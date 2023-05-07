@@ -18,7 +18,7 @@
 
   <properties>
     <selenium.version>4.8.1</selenium.version>
-    <jetty.version>11.0.14</jetty.version>
+    <jetty.version>11.0.15</jetty.version>
   </properties>
 
   <dependencies>
@@ -175,13 +175,13 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.4.6</version>
+      <version>1.4.7</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.4.6</version>
+      <version>1.4.7</version>
       <scope>test</scope>
     </dependency>
     <dependency>
