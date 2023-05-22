@@ -3,6 +3,7 @@
   "id": "http-client",
   "aspects": [
     "org.glowroot.agent.plugin.httpclient.ApacheHttpClientAspect",
+    "org.glowroot.agent.plugin.httpclient.ApacheHttpClient5xAspect",
     "org.glowroot.agent.plugin.httpclient.ApacheHttpAsyncClientAspect",
     "org.glowroot.agent.plugin.httpclient.ApacheHttpClient3xAspect",
     "org.glowroot.agent.plugin.httpclient.AsyncHttpClientAspect1x",
