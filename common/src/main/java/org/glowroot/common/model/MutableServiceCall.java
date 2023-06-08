@@ -31,6 +31,7 @@ public class MutableServiceCall {
     private final String type;
     private final String text;
     private double totalDurationNanos;
+    private double maxDurationNanos;
     private long executionCount;
 
     MutableServiceCall(String type, String text) {
@@ -50,12 +51,17 @@ public class MutableServiceCall {
         return totalDurationNanos;
     }
 
+    public double getMaxDurationNanos() {
+        return maxDurationNanos;
+    }
+
     public long getExecutionCount() {
         return executionCount;
     }
 
     void addToTotalDurationNanos(double totalDurationNanos) {
         this.totalDurationNanos += totalDurationNanos;
+        maxDurationNanos = Math.max(maxDurationNanos, totalDurationNanos);
     }
 
     void addToExecutionCount(long executionCount) {

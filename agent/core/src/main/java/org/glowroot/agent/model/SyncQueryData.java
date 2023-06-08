@@ -57,7 +57,7 @@ public class SyncQueryData implements QueryData {
     public SyncQueryData(String queryType, String queryText, @Nullable SyncQueryData nextQueryData,
             @Nullable SyncQueryData limitExceededBucket) {
         this.queryType = queryType;
-        this.queryText = "testes"+queryText;
+        this.queryText = queryText;
         this.nextQueryData = nextQueryData;
         this.limitExceededBucket = limitExceededBucket;
     }

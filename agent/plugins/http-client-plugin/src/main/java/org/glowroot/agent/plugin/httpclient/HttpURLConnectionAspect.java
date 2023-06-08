@@ -209,17 +209,20 @@ public class HttpURLConnectionAspect {
                         }
                         String responseCodeStr = String.valueOf(responseCode);
 
+                        boolean responseRecorded = false;
                         Object messageSupplierObj = traceEntry.getMessageSupplier();
                         if (messageSupplierObj instanceof MessageSupplier.WithResult) {
                             MessageSupplier.WithResult supplier = (MessageSupplier.WithResult) messageSupplierObj;
-
-                            supplier.setResult(responseCodeStr);
+                            if (supplier.getResult() == null || supplier.getResult().isEmpty()) {
+                                supplier.setResult(responseCodeStr);
+                                responseRecorded = true;
+                            }
                         }
 
                         logger.info("response code: {}", responseCodeStr);
-                        if (traceEntry instanceof QueryEntry) {
+                        if (traceEntry instanceof QueryEntry && !responseRecorded) {
                             logger.info("setting response code in traceEntry: {}", responseCodeStr);
-                            ((QueryEntry) traceEntry).appendQueryText(responseCodeStr + "mehhh");
+                            ((QueryEntry) traceEntry).appendQueryText(" " + responseCodeStr);
                         }
                     }
                 } else if (returnValue != null && !inputStreamIssueAlreadyLogged.getAndSet(true)) {

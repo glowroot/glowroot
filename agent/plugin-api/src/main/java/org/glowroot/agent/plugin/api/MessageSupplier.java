@@ -76,6 +76,10 @@ public abstract class MessageSupplier {
             this.result = result;
         }
 
+        public String getResult() {
+            return this.result;
+        }
+
         @Override
         public Message get() {
             String[] finalArgs = Arrays.copyOf(this.args, this.args.length + 1);
