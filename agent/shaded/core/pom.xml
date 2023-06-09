@@ -353,6 +353,7 @@
           <obfuscate>false</obfuscate>
           <options>
             <option>-dontoptimize</option>
+            <option>-dontpreverify</option>
             <option>-dontnote **</option>
             <option>-dontwarn **</option>
             <option>

@@ -116,7 +116,7 @@ public class AsyncHttpClientAspect1x {
             }
             String url = requestInvoker.getUrl(request);
             return context.startAsyncServiceCallEntry("HTTP", method + Uris.stripQueryString(url),
-                    MessageSupplier.create("http client request: {}f{}", method, url), timerName);
+                    MessageSupplier.create("http client request: {}{}", method, url), timerName);
         }
         @OnReturn
         public static <T extends ListenableFutureMixin & ListenableFuture<?>> void onReturn(

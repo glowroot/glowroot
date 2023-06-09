@@ -61,20 +61,14 @@ public class CxfClientPluginIT {
 
     @Test
     public void shouldCaptureHttpGet() throws Exception {
-        System.out.println("$$$$$$$");
         // when
         Trace trace = container.execute(ExecuteSoapRequest.class);
-
-        System.out.println("!!!!!!!");
 
         // then
         Iterator<Trace.Entry> i = trace.getEntryList().iterator();
 
         Trace.Entry entry = i.next();
-        System.out.println("********)))))))))");
         assertThat(entry.getDepth()).isEqualTo(0);
-        System.out.println(entry.getMessage());
-        System.out.println("********");
         assertThat(entry.getMessage()).matches("http client request:"
                 + " POST http://localhost:\\d+/cxf/helloWorld 200");
 
