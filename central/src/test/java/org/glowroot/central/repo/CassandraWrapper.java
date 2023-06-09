@@ -46,7 +46,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 // see copies of this class in glowroot-agent-cassandra-plugin and glowroot-webdriver-tests
 class CassandraWrapper {
     private static final Logger logger = LoggerFactory.getLogger(CassandraWrapper.class);
-    static final String CASSANDRA_VERSION = "3.0.28";
+    static final String CASSANDRA_VERSION = "3.11.15";
     private static final String CASSANDRA_JVM;
 
     static {

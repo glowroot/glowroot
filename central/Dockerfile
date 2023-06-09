@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17.0.6_10-jdk-jammy as builder
+FROM eclipse-temurin:17.0.7_7-jdk-jammy as builder
 
 COPY target/glowroot-central-*.zip /tmp/glowroot-central.zip
 RUN useradd --no-log-init -r -g root glowroot

@@ -43,11 +43,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyListOf;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -344,6 +340,6 @@ public class GaugeCollectorTest {
 
     @SuppressWarnings("deprecation")
     private static List<MBeanServer> anyMBeanServerList() {
-        return anyListOf(MBeanServer.class);
+        return anyList();
     }
 }

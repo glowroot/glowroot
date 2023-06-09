@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.14.0-beta.4</version>
+    <version>0.14.1-beta-SNAPSHOT</version>
   </parent>
 
   <artifactId>glowroot-central</artifactId>
@@ -56,9 +56,9 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-tcnative-boringssl-static</artifactId>
-      <!-- need to stick to version known to work with gRPC 1.53.0,
+      <!-- need to stick to version known to work with gRPC 1.54.0,
         see table at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
-      <version>2.0.54.Final</version>
+      <version>2.0.56.Final</version>
     </dependency>
     <dependency>
       <groupId>com.datastax.oss</groupId>
@@ -68,7 +68,7 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
-      <version>14.0.7.Final</version>
+      <version>14.0.9.Final</version>
     </dependency>
     <!-- jgroups-kubernetes specifies that it requires 4.2.x -->
     <dependency>
@@ -141,27 +141,27 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>2.0.6</version>
+      <version>2.0.7</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jul-to-slf4j</artifactId>
-      <version>2.0.6</version>
+      <version>2.0.7</version>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.4.5</version>
+      <version>1.4.7</version>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.4.5</version>
+      <version>1.4.7</version>
     </dependency>
     <dependency>
       <groupId>org.codehaus.janino</groupId>
       <artifactId>janino</artifactId>
-      <version>3.1.6</version>
+      <version>3.1.8</version>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->

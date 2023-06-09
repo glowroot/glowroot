@@ -59,6 +59,18 @@
       "transactionNameTemplate": "Spring amqp: {{this.class.simpleName}}#{{methodName}}",
       "traceEntryMessageTemplate": "Spring amqp: {{this.class.name}}.{{methodName}}()",
       "timerName": "spring amqp"
+    },
+    {
+      "classAnnotation": "org.springframework.stereotype.Component|org.springframework.stereotype.Service",
+      "methodAnnotation": "org.springframework.kafka.annotation.KafkaListener",
+      "methodParameterTypes": [
+        ".."
+      ],
+      "captureKind": "transaction",
+      "transactionType": "Background",
+      "transactionNameTemplate": "Spring kafka: {{this.class.simpleName}}#{{methodName}}",
+      "traceEntryMessageTemplate": "Spring kafka: {{this.class.name}}.{{methodName}}()",
+      "timerName": "spring kafka"
     }
   ],
   "aspects": [

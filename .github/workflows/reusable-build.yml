@@ -50,12 +50,14 @@ jobs:
             build-
 
       - name: Build
-        run: .github/scripts/build.sh test${{ matrix.testGroup }}
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+        uses: coactions/setup-xvfb@v1
+        with:
+          run: .github/scripts/build.sh test${{ matrix.testGroup }}
+        if: runner.os == 'Linux'
 
       - name: Upload webdriver screenshots
         if: failure()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           path: /tmp/glowroot-webdriver-test-*.png
           if-no-files-found: ignore

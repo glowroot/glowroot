@@ -5,7 +5,7 @@
 
   <groupId>org.glowroot</groupId>
   <artifactId>glowroot-parent</artifactId>
-  <version>0.14.0-beta.4</version>
+  <version>0.14.1-beta-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Glowroot Parent Project</name>
@@ -91,17 +91,17 @@
   </scm>
 
   <properties>
-    <grpc.version>1.53.0</grpc.version>
+    <grpc.version>1.54.1</grpc.version>
     <protobuf.version>3.21.12</protobuf.version>
     <protoc.version>3.21.12</protoc.version>
     <!-- need to stick to netty version that is used by grpc version above -->
-    <netty.version>4.1.79.Final</netty.version>
+    <netty.version>4.1.87.Final</netty.version>
     <logback.version>1.2.11</logback.version>
     <slf4j.version>1.7.36</slf4j.version>
-    <immutables.version>2.8.8</immutables.version>
+    <immutables.version>2.9.3</immutables.version>
     <checker.version>3.18.1</checker.version>
     <jmh.version>1.33</jmh.version>
-    <junit.version>5.9.2</junit.version>
+    <junit.version>5.9.3</junit.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
@@ -163,7 +163,7 @@
       <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
-        <version>2.8.8</version>
+        <version>2.10.1</version>
       </dependency>
       <dependency>
         <groupId>com.google.code.findbugs</groupId>
@@ -203,22 +203,22 @@
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-core</artifactId>
-        <version>2.13.0</version>
+        <version>2.15.0</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>2.13.0</version>
+        <version>2.15.0</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-annotations</artifactId>
-        <version>2.13.0</version>
+        <version>2.15.0</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.datatype</groupId>
         <artifactId>jackson-datatype-guava</artifactId>
-        <version>2.13.0</version>
+        <version>2.15.0</version>
       </dependency>
       <dependency>
         <groupId>org.checkerframework</groupId>
@@ -238,12 +238,12 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>3.12.4</version>
+        <version>5.3.1</version>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-junit-jupiter</artifactId>
-        <version>3.2.4</version>
+        <version>5.3.1</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -264,17 +264,17 @@
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-core</artifactId>
-        <version>8.5.85</version>
+        <version>8.5.88</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-jasper</artifactId>
-        <version>8.5.85</version>
+        <version>8.5.88</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-websocket</artifactId>
-        <version>8.5.85</version>
+        <version>8.5.88</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -323,7 +323,7 @@
           recent jdk -->
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>animal-sniffer-maven-plugin</artifactId>
-        <version>1.22</version>
+        <version>1.23</version>
         <configuration>
           <signature>
             <groupId>org.codehaus.mojo.signature</groupId>
@@ -359,7 +359,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
@@ -367,7 +367,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.10.1</version>
+          <version>3.11.0</version>
           <configuration>
             <source>1.8</source>
             <target>1.8</target>
@@ -382,18 +382,18 @@
         </plugin>
         <plugin>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>3.0.0-M1</version>
+          <version>3.1.1</version>
           <configuration>
             <deployAtEnd>true</deployAtEnd>
           </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.2.1</version>
+          <version>3.3.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>3.0.0-M9</version>
+          <version>3.0.0</version>
           <configuration>
             <systemPropertyVariables>
               <glowroot.test.fileLoggingOnly>true</glowroot.test.fileLoggingOnly>
@@ -405,7 +405,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-install-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.1.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
@@ -451,7 +451,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.0.0-M9</version>
+          <version>3.0.0</version>
           <configuration>
             <systemPropertyVariables>
               <glowroot.test.fileLoggingOnly>true</glowroot.test.fileLoggingOnly>

@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.14.0-beta.4</version>
+    <version>0.14.1-beta-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
@@ -18,7 +18,7 @@
 
   <properties>
     <selenium.version>4.8.1</selenium.version>
-    <jetty.version>11.0.14</jetty.version>
+    <jetty.version>11.0.15</jetty.version>
   </properties>
 
   <dependencies>
@@ -163,25 +163,25 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>2.0.6</version>
+      <version>2.0.7</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jul-to-slf4j</artifactId>
-      <version>2.0.6</version>
+      <version>2.0.7</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.4.5</version>
+      <version>1.4.7</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.4.5</version>
+      <version>1.4.7</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -215,35 +215,35 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>9.4</version>
+      <version>9.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
-      <version>9.4</version>
+      <version>9.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-tree</artifactId>
-      <version>9.4</version>
+      <version>9.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-util</artifactId>
-      <version>9.4</version>
+      <version>9.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-analysis</artifactId>
-      <version>9.4</version>
+      <version>9.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -370,6 +370,12 @@
       <groupId>io.netty</groupId>
       <artifactId>netty-handler</artifactId>
       <version>${netty.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit-pioneer</groupId>
+      <artifactId>junit-pioneer</artifactId>
+      <version>1.9.1</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
