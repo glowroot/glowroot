@@ -34,6 +34,7 @@ public class OverallSummaryCollector {
     public OverallSummary getOverallSummary() {
         return ImmutableOverallSummary.builder()
                 .totalDurationNanos(totalDurationNanos)
+                .maxDurationNanos(maxDurationNanos)
                 .totalCpuNanos(totalCpuNanos)
                 .totalAllocatedBytes(totalAllocatedBytes)
                 .transactionCount(transactionCount)

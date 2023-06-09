@@ -46,10 +46,10 @@
     <module>agent/shaded/embedded</module>
     <module>agent/shaded/core</module>
     <module>agent/shaded/it-harness</module>
-    <!-- <module>agent/shaded/central-https-linux</module> -->
-    <!-- <module>agent/shaded/central-https-windows</module> -->
-    <!-- <module>agent/shaded/central-https-osx</module> -->
-    <!-- <module>agent/shaded/logging-logstash</module> -->
+    <module>agent/shaded/central-https-linux</module>
+    <module>agent/shaded/central-https-windows</module>
+    <module>agent/shaded/central-https-osx</module>
+    <module>agent/shaded/logging-logstash</module>
 
     <module>agent/integration-tests</module>
 
@@ -119,7 +119,7 @@
       <dependency>
         <groupId>javax.annotation</groupId>
         <artifactId>javax.annotation-api</artifactId>
-        <version>1.2</version>
+        <version>1.3.2</version>
       </dependency>
 
       <dependency>

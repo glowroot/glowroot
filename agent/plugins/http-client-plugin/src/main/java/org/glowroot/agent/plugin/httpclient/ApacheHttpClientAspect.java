@@ -65,7 +65,7 @@ public class ApacheHttpClientAspect {
                 uri = uriObj.toString();
             }
             return context.startServiceCallEntry("HTTP", method + Uris.stripQueryString(uri),
-                    MessageSupplier.create("http client request: {}d{}", method, uri),
+                    MessageSupplier.create("http client request: {}{}", method, uri),
                     timerName);
         }
         @OnReturn
@@ -112,7 +112,7 @@ public class ApacheHttpClientAspect {
                 uri = "";
             }
             return context.startServiceCallEntry("HTTP", method + Uris.stripQueryString(uri),
-                    MessageSupplier.create("http client request: {}{}e{}", method, host, uri),
+                    MessageSupplier.create("http client request: {}{}{}", method, host, uri),
                     timerName);
         }
         @OnReturn
