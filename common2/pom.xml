@@ -16,6 +16,13 @@
   <description>Glowroot Common2</description>
 
   <dependencies>
+
+    <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+      <version>1.2</version>
+    </dependency>
+
     <dependency>
       <groupId>org.glowroot</groupId>
       <artifactId>glowroot-common</artifactId>

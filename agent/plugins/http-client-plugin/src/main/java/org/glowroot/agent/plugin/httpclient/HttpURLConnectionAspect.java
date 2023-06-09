@@ -172,7 +172,7 @@ public class HttpURLConnectionAspect {
             }
             traceEntry = threadContext.startServiceCallEntry("HTTP",
                     method + Uris.stripQueryString(url),
-                    new MessageSupplier.WithResult("http client request: {}test{}", method, url),
+                    new MessageSupplier.WithResult("http client request: {}{}", method, url),
                     timerName);
             ((HasTraceEntryMixin) httpURLConnection).glowroot$setTraceEntry(traceEntry);
             return new TraceEntryOrTimer(traceEntry);
