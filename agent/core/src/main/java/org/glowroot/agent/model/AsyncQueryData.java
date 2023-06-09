@@ -36,7 +36,7 @@ public class AsyncQueryData implements QueryData {
     private final AtomicLong totalRows = new AtomicLong(-1);
 
     public AsyncQueryData(String queryText, @Nullable AsyncQueryData limitExceededBucket) {
-        this.queryText = "testoos"+queryText;
+        this.queryText = queryText;
         this.limitExceededBucket = limitExceededBucket;
     }
 
