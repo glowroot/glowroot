@@ -48,7 +48,7 @@
       <artifactId>netty-tcnative-boringssl-static</artifactId>
       <!-- need to stick to version known to work with gRPC 1.54.0,
         see table at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
-      <version>2.0.56.Final</version>
+      <version>2.0.61.Final</version>
     </dependency>
     <dependency>
       <!-- need to include logstash support for proguard step, but then it is stripped out after -->
