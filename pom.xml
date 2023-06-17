@@ -92,8 +92,8 @@
 
   <properties>
     <grpc.version>1.56.0</grpc.version>
-    <protobuf.version>3.21.12</protobuf.version>
-    <protoc.version>3.21.12</protoc.version>
+    <protobuf.version>3.22.5</protobuf.version>
+    <protoc.version>3.22.5</protoc.version>
     <!-- need to stick to netty version that is used by grpc version above -->
     <netty.version>4.1.87.Final</netty.version>
     <logback.version>1.2.12</logback.version>
@@ -196,22 +196,22 @@
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-core</artifactId>
-        <version>2.15.0</version>
+        <version>2.15.2</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>2.15.0</version>
+        <version>2.15.2</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-annotations</artifactId>
-        <version>2.15.0</version>
+        <version>2.15.2</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.datatype</groupId>
         <artifactId>jackson-datatype-guava</artifactId>
-        <version>2.15.0</version>
+        <version>2.15.2</version>
       </dependency>
       <dependency>
         <groupId>org.checkerframework</groupId>

@@ -162,6 +162,9 @@
                 <exclude>META-INF/services/com.fasterxml.jackson.core.JsonFactory</exclude>
                 <exclude>META-INF/LICENSE</exclude>
                 <exclude>META-INF/NOTICE</exclude>
+                <exclude>META-INF/FastDoubleParser-LICENSE</exclude>
+                <exclude>META-INF/FastDoubleParser-NOTICE</exclude>
+                <exclude>META-INF/bigint-LICENSE</exclude>
               </excludes>
             </filter>
             <filter>
