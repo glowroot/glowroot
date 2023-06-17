@@ -362,8 +362,8 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.11.0</version>
           <configuration>
-            <source>1.8</source>
-            <target>1.8</target>
+            <source>8</source>
+            <target>8</target>
             <!-- prevents endPosTable exception for maven compile due to annotation processing,
               see http://immutables.github.io/getstarted.html -->
             <useIncrementalCompilation>false</useIncrementalCompilation>
@@ -854,8 +854,8 @@
           <plugin>
             <artifactId>maven-compiler-plugin</artifactId>
             <configuration>
-              <source>1.8</source>
-              <target>1.8</target>
+              <source>8</source>
+              <target>8</target>
               <maxmem>512m</maxmem>
               <annotationProcessors>
                 <annotationProcessor>
