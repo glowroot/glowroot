@@ -187,7 +187,7 @@ public class CentralModule {
             if (schemaUpgrade.reloadCentralConfiguration()) {
                 centralConfig = getCentralConfiguration(directories.getConfDir());
             }
-            repoAsyncExecutor = MoreExecutors2.newCachedThreadPool("Repo-Async-Worker-%d");
+            repoAsyncExecutor = MoreExecutors2.newFixedThreadPool(centralConfig.threadPoolMaxSize(), "Repo-Async-Worker-%d");
             repos = new CentralRepoModule(clusterManager, session, directories.getConfDir(),
                     centralConfig.cassandraSymmetricEncryptionKey(), centralConfig.cassandraGcGraceSeconds(), repoAsyncExecutor,
                     TARGET_MAX_ACTIVE_AGENTS_IN_PAST_7_DAYS, TARGET_MAX_CENTRAL_UI_USERS, clock);
@@ -702,6 +702,10 @@ public class CentralModule {
         if (!Strings.isNullOrEmpty(uiContextPath)) {
             builder.uiContextPath(uiContextPath);
         }
+        String threadPoolMaxSize = properties.get("glowroot.central.threadPoolMaxSize");
+        if (!Strings.isNullOrEmpty(threadPoolMaxSize)) {
+            builder.threadPoolMaxSize(Integer.parseInt(threadPoolMaxSize));
+        }
         for (Map.Entry<String, String> entry : properties.entrySet()) {
             String propertyName = entry.getKey();
             if (propertyName.startsWith("glowroot.jgroups.")) {
@@ -1017,6 +1021,11 @@ public class CentralModule {
             return ImmutableList.of("127.0.0.1");
         }
         
+        @Value.Default
+        int threadPoolMaxSize() {
+        	return 50;
+        }
+
         @Value.Default
         int cassandraPort() {
         	return 9042;

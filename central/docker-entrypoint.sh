@@ -63,6 +63,9 @@ if [ "$UI_CONTEXT_PATH" ]; then
   # not using "/" as sed delimiter since it is a common character used in context path
   sed -i "s|^ui.contextPath=.*$|ui.contextPath=$UI_CONTEXT_PATH|" glowroot-central.properties
 fi
+if [ "$CENTRAL_THREAD_POOL_MAX_SIZE" ]; then
+  sed -i "s|^central.threadPoolMaxSize=.*$|central.threadPoolMaxSize=$CENTRAL_THREAD_POOL_MAX_SIZE|" glowroot-central.properties
+fi
 if [ "$JGROUPS_CONFIGURATION_FILE" ]; then
   sed -i "s/^jgroups.configurationFile=.*$/jgroups.configurationFile=$JGROUPS_CONFIGURATION_FILE/" glowroot-central.properties
 fi
