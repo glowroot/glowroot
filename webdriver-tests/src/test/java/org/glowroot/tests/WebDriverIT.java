@@ -89,7 +89,11 @@ public abstract class WebDriverIT {
             httpClient.close();
         }
         if (setup != null) {
-            setup.close();
+            try {
+                setup.close();
+            } catch (RuntimeException re) {
+                re.printStackTrace();
+            }
         }
     }
 

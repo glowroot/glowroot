@@ -48,6 +48,8 @@ import org.junit.rules.TestWatcher;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxOptions;
+import org.openqa.selenium.firefox.FirefoxProfile;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.rauschig.jarchivelib.ArchiveFormat;
 import org.rauschig.jarchivelib.Archiver;
@@ -74,7 +76,7 @@ public class WebDriverSetup {
     // travis build is currently failing with jbrowser driver
     private static final boolean USE_JBROWSER_DRIVER = false;
 
-    private static final String GECKO_DRIVER_VERSION = "0.32.2";
+    private static final String GECKO_DRIVER_VERSION = "0.33.0";
 
     private static final Logger logger = LoggerFactory.getLogger(WebDriverSetup.class);
     private static final int MAX_CONCURRENT_QUERIES = 1024;
@@ -232,7 +234,14 @@ public class WebDriverSetup {
             File geckoDriverExecutable = downloadGeckoDriverIfNeeded();
             System.setProperty("webdriver.gecko.driver",
                     geckoDriverExecutable.getAbsolutePath());
-            driver = new FirefoxDriver();
+
+            FirefoxOptions options = new FirefoxOptions();
+            FirefoxProfile profile = new FirefoxProfile();
+            profile.setPreference("fission.bfcacheInParent.enabled", false);
+            profile.setPreference("fission.bfcacheInParent", false);
+            profile.setPreference("fission.webContentIsolationStrategy", 0);
+            options.setProfile(profile);
+            driver = new FirefoxDriver(options);
         }
         // 768 is bootstrap media query breakpoint for screen-sm-min
         // 992 is bootstrap media query breakpoint for screen-md-min
