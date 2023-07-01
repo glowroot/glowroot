@@ -175,13 +175,13 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.4.7</version>
+      <version>1.4.8</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.4.7</version>
+      <version>1.4.8</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -208,7 +208,7 @@
     <dependency>
       <groupId>com.datastax.oss</groupId>
       <artifactId>java-driver-core</artifactId>
-      <version>4.15.0</version>
+      <version>4.16.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>

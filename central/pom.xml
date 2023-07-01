@@ -56,19 +56,19 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-tcnative-boringssl-static</artifactId>
-      <!-- need to stick to version known to work with gRPC 1.54.0,
+      <!-- need to stick to version known to work with gRPC 1.56.0,
         see table at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
       <version>2.0.61.Final</version>
     </dependency>
     <dependency>
       <groupId>com.datastax.oss</groupId>
       <artifactId>java-driver-core</artifactId>
-      <version>4.15.0</version>
+      <version>4.16.0</version>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
-      <version>14.0.9.Final</version>
+      <version>14.0.11.Final</version>
     </dependency>
     <!-- jgroups-kubernetes specifies that it requires 4.2.x -->
     <dependency>
@@ -151,12 +151,12 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.4.7</version>
+      <version>1.4.8</version>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.4.7</version>
+      <version>1.4.8</version>
     </dependency>
     <dependency>
       <groupId>org.codehaus.janino</groupId>
@@ -167,7 +167,7 @@
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>net.bytebuddy</groupId>
       <artifactId>byte-buddy</artifactId>
-      <version>1.14.2</version>
+      <version>1.14.5</version>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
