@@ -58,7 +58,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public abstract class ClusterManager {
+public abstract class ClusterManager implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(ClusterManager.class);
 
@@ -103,6 +103,7 @@ public abstract class ClusterManager {
     public abstract <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> DistributedExecutionMap<K, V> createDistributedExecutionMap(
             String cacheName);
 
+    @Override
     public abstract void close() throws InterruptedException;
 
     private static class ClusterManagerImpl extends ClusterManager {

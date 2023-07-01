@@ -42,7 +42,7 @@ import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-class FullQueryTextDao {
+class FullQueryTextDao implements AutoCloseable {
 
     private final Session session;
     private final ConfigRepositoryImpl configRepository;
@@ -197,6 +197,7 @@ class FullQueryTextDao {
         return Ints.saturatedCast(ttl);
     }
 
+    @Override
     public void close() throws Exception {
         MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
         platformMBeanServer.unregisterMBean(ObjectName

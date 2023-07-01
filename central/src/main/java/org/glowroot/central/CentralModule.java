@@ -901,7 +901,7 @@ public class CentralModule {
                                 .map(addr -> new InetSocketAddress(addr, centralConfig.cassandraPort()))
                                 .collect(Collectors.toList()))
                 // cassandra driver v4.x requires localdatacenter name to be defined
-                // see https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/load_balancing/
+                // see https://docs.datastax.com/en/developer/java-driver/4.16/manual/core/load_balancing/
                 .withLocalDatacenter(centralConfig.cassandraLocalDatacenter())
                 .withConfigLoader(DriverConfigLoader.programmaticBuilder()
                         // let driver know that only idempotent queries are used so it will retry on timeout
@@ -911,15 +911,16 @@ public class CentralModule {
                         .withDuration(DefaultDriverOption.RECONNECTION_BASE_DELAY, Duration.ofMillis(1000))
                         .withString(DefaultDriverOption.REQUEST_CONSISTENCY, centralConfig.cassandraReadConsistencyLevel().name())
                         .withString(DefaultDriverOption.REQUEST_SERIAL_CONSISTENCY, centralConfig.cassandraWriteConsistencyLevel().name())
-                        // CONNECTION_MAX_REQUESTS see https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/pooling/#tuning
+                        // CONNECTION_MAX_REQUESTS see https://docs.datastax.com/en/developer/java-driver/4.16/manual/core/pooling/#tuning
                         .withInt(DefaultDriverOption.CONNECTION_MAX_REQUESTS, centralConfig.cassandraConnectionMaxRequests())
-                        // REQUEST_THROTTLER_CLASS see https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/throttling/
+                        // REQUEST_THROTTLER_CLASS see https://docs.datastax.com/en/developer/java-driver/4.16/manual/core/throttling/
                         .withClass(DefaultDriverOption.REQUEST_THROTTLER_CLASS, ConcurrencyLimitingRequestThrottler.class)
                         .withInt(DefaultDriverOption.REQUEST_THROTTLER_MAX_CONCURRENT_REQUESTS, centralConfig.cassandraThrottlerMaxConcurrentRequests())
                         .withInt(DefaultDriverOption.REQUEST_THROTTLER_MAX_QUEUE_SIZE, centralConfig.cassandraThrottlerMaxQueueSize())
                         .withString(DefaultDriverOption.TIMESTAMP_GENERATOR_CLASS, ServerSideTimestampGenerator.class.getName())
                         .startProfile(CassandraProfile.SLOW.name())
                         .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(30))
+                        .withBoolean(DefaultDriverOption.REQUEST_WARN_IF_SET_KEYSPACE, false)
                         .endProfile()
                         .build());
         String cassandraUsername = centralConfig.cassandraUsername();

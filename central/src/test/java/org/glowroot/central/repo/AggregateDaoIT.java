@@ -120,11 +120,15 @@ public class AggregateDaoIT {
         if (!SharedSetupRunListener.isStarted()) {
             return;
         }
-        fullQueryTextDao.close();
-        asyncExecutor.shutdown();
-        session.close();
-        clusterManager.close();
-        SharedSetupRunListener.stopCassandra();
+        try (var dao = fullQueryTextDao;
+             var se = session;
+             var cm = clusterManager) {
+            if (asyncExecutor != null) {
+                asyncExecutor.shutdown();
+            }
+        } finally {
+            SharedSetupRunListener.stopCassandra();
+        }
     }
 
     @BeforeEach

@@ -64,8 +64,10 @@ public class IncidentDaoIT {
         if (!SharedSetupRunListener.isStarted()) {
             return;
         }
-        session.close();
-        SharedSetupRunListener.stopCassandra();
+        try (var se = session) {
+        } finally {
+            SharedSetupRunListener.stopCassandra();
+        }
     }
 
     @BeforeEach

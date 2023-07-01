@@ -68,8 +68,10 @@ public class SchemaUpgradeIT {
         if (!SharedSetupRunListener.isStarted()) {
             return;
         }
-        session.close();
-        SharedSetupRunListener.stopCassandra();
+        try (var se = session) {
+        } finally {
+            SharedSetupRunListener.stopCassandra();
+        }
     }
 
     @Test

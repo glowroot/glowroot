@@ -50,9 +50,11 @@ public class RoleDaoIT {
         if (!SharedSetupRunListener.isStarted()) {
             return;
         }
-        clusterManager.close();
-        session.close();
-        SharedSetupRunListener.stopCassandra();
+        try (var se = session;
+             var cm = clusterManager) {
+        } finally {
+            SharedSetupRunListener.stopCassandra();
+        }
     }
 
     @Test

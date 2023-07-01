@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import org.glowroot.central.util.CassandraProfile;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
@@ -38,6 +39,10 @@ class CqlSessionBuilders {
                         // let driver know that only idempotent queries are used so it will retry on timeout
                         .withBoolean(DefaultDriverOption.REQUEST_DEFAULT_IDEMPOTENCE, true)
                         .withBoolean(DefaultDriverOption.REQUEST_WARN_IF_SET_KEYSPACE, false)
+                        .startProfile(CassandraProfile.SLOW.name())
+                        .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(60))
+                        .withBoolean(DefaultDriverOption.REQUEST_WARN_IF_SET_KEYSPACE, false)
+                        .endProfile()
                 .build());
     }
 }

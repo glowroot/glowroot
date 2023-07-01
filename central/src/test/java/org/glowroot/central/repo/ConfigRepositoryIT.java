@@ -104,15 +104,19 @@ public class ConfigRepositoryIT {
         if (!SharedSetupRunListener.isStarted()) {
             return;
         }
-        asyncExecutor.shutdown();
-        // remove bad data so other tests don't have issue
-        session.updateSchemaWithRetry("drop table if exists agent_config");
-        session.updateSchemaWithRetry("drop table if exists user");
-        session.updateSchemaWithRetry("drop table if exists role");
-        session.updateSchemaWithRetry("drop table if exists central_config");
-        session.close();
-        clusterManager.close();
-        SharedSetupRunListener.stopCassandra();
+        try (var se = session;
+             var cm = clusterManager) {
+            if (asyncExecutor != null) {
+                asyncExecutor.shutdown();
+            }
+            // remove bad data so other tests don't have issue
+            se.updateSchemaWithRetry("drop table if exists agent_config");
+            se.updateSchemaWithRetry("drop table if exists user");
+            se.updateSchemaWithRetry("drop table if exists role");
+            se.updateSchemaWithRetry("drop table if exists central_config");
+        } finally {
+            SharedSetupRunListener.stopCassandra();
+        }
     }
 
     @Test

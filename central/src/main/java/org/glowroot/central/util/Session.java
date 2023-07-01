@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class Session {
+public class Session implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(Session.class);
 
@@ -216,6 +216,7 @@ public class Session {
         return wrappedSession.getMetadata();
     }
 
+    @Override
     public void close() throws Exception {
         MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
         platformMBeanServer.unregisterMBean(
