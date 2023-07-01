@@ -24,10 +24,14 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URL;
 import java.security.SecureRandom;
+import java.sql.Driver;
+import java.time.Duration;
 import java.util.Properties;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -44,6 +48,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultRedirectStrategy;
 import org.apache.http.impl.client.HttpClients;
+import org.glowroot.central.util.CassandraProfile;
 import org.junit.rules.TestWatcher;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
@@ -203,7 +208,13 @@ public class WebDriverSetup {
             CassandraWrapper.start();
             CqlSessionBuilder cqlSessionBuilder = CqlSession.builder()
                     .addContactPoint(new InetSocketAddress("127.0.0.1", 9042))
-                    .withLocalDatacenter("datacenter1");
+                    .withLocalDatacenter("datacenter1")
+                    .withConfigLoader(DriverConfigLoader.programmaticBuilder()
+                            .startProfile(CassandraProfile.SLOW.name())
+                            .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(60))
+                            .withBoolean(DefaultDriverOption.REQUEST_WARN_IF_SET_KEYSPACE, false)
+                            .endProfile()
+                            .build());
             Session session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
                     MAX_CONCURRENT_QUERIES, 0);
             session.updateSchemaWithRetry("drop table if exists agent_config");
