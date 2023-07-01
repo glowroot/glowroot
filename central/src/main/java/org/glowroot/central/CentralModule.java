@@ -60,6 +60,7 @@ import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
+import org.glowroot.central.util.*;
 import org.immutables.value.Value;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
@@ -72,10 +73,6 @@ import org.glowroot.central.repo.ConfigRepositoryImpl.LazySecretKeyImpl;
 import org.glowroot.central.repo.RepoAdminImpl;
 import org.glowroot.central.repo.SchemaUpgrade;
 import org.glowroot.central.repo.Tools;
-import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.MoreExecutors2;
-import org.glowroot.central.util.MoreFutures;
-import org.glowroot.central.util.Session;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.PropertiesFiles;
@@ -921,6 +918,9 @@ public class CentralModule {
                         .withInt(DefaultDriverOption.REQUEST_THROTTLER_MAX_CONCURRENT_REQUESTS, centralConfig.cassandraThrottlerMaxConcurrentRequests())
                         .withInt(DefaultDriverOption.REQUEST_THROTTLER_MAX_QUEUE_SIZE, centralConfig.cassandraThrottlerMaxQueueSize())
                         .withString(DefaultDriverOption.TIMESTAMP_GENERATOR_CLASS, ServerSideTimestampGenerator.class.getName())
+                        .startProfile(CassandraProfile.SLOW.name())
+                        .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(30))
+                        .endProfile()
                         .build());
         String cassandraUsername = centralConfig.cassandraUsername();
         if (!cassandraUsername.isEmpty()) {

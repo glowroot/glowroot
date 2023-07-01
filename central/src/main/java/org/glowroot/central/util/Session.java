@@ -28,6 +28,7 @@ import javax.management.ObjectName;
 
 import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.config.DriverExecutionProfile;
 import com.datastax.oss.driver.api.core.cql.*;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.servererrors.InvalidConfigurationInQueryException;
@@ -373,7 +374,8 @@ public class Session {
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(SECONDS) < 60) {
             try {
-                wrappedSession.execute(query);
+                SimpleStatement stmt = SimpleStatement.builder(query).setExecutionProfileName(CassandraProfile.SLOW.name()).build();
+                wrappedSession.execute(stmt);
                 return;
             } catch (AllNodesFailedException e) {
                 logger.debug(e.getMessage(), e);
