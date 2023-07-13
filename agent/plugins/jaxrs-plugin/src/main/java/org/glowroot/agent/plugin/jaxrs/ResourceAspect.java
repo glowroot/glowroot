@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,8 +39,10 @@ public class ResourceAspect {
     private static final BooleanProperty useAltTransactionNaming =
             Agent.getConfigService("jaxrs").getBooleanProperty("useAltTransactionNaming");
 
-    @Pointcut(methodAnnotation = "javax.ws.rs.Path|javax.ws.rs.DELETE|javax.ws.rs.GET"
-            + "|javax.ws.rs.HEAD|javax.ws.rs.OPTIONS|javax.ws.rs.POST|javax.ws.rs.PUT",
+    @Pointcut(methodAnnotation = "javax.ws.rs.Path|jakarta.ws.rs.Path|javax.ws.rs.DELETE|jakarta.ws.rs.DELETE" +
+            "|javax.ws.rs.GET|jakarta.ws.rs.GET|javax.ws.rs.HEAD|jakarta.ws.rs.HEAD" +
+            "|javax.ws.rs.OPTIONS|jakarta.ws.rs.OPTIONS|javax.ws.rs.POST|jakarta.ws.rs.POST" +
+            "|javax.ws.rs.PUT|jakarta.ws.rs.PUT",
             methodParameterTypes = {".."}, timerName = "jaxrs resource", nestingGroup = "jaxrs")
     public static class ResourceAdvice {
 

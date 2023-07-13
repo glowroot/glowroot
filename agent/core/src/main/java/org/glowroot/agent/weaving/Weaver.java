@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ import org.glowroot.agent.weaving.ClassLoaders.LazyDefinedClass;
 import org.glowroot.common.util.ScheduledRunnable.TerminateSubsequentExecutionsException;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.objectweb.asm.Opcodes.ASM7;
+import static org.objectweb.asm.Opcodes.ASM9;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.V1_6;
 
@@ -414,7 +414,7 @@ public class Weaver {
         private final ClassWriter cw;
 
         private JBossWeldHackClassVisitor(ClassWriter cw) {
-            super(ASM7, cw);
+            super(ASM9, cw);
             this.cw = cw;
         }
 
@@ -434,7 +434,7 @@ public class Weaver {
     private static class JBossWeldHackMethodVisitor extends MethodVisitor {
 
         private JBossWeldHackMethodVisitor(MethodVisitor mv) {
-            super(ASM7, mv);
+            super(ASM9, mv);
         }
 
         @Override
@@ -453,7 +453,7 @@ public class Weaver {
         private final ClassWriter cw;
 
         private JBossUrlHackClassVisitor(ClassWriter cw) {
-            super(ASM7, cw);
+            super(ASM9, cw);
             this.cw = cw;
         }
 
@@ -473,7 +473,7 @@ public class Weaver {
 
         private JBossUrlHackMethodVisitor(MethodVisitor mv, int access, String name,
                 String descriptor) {
-            super(ASM7, mv, access, name, descriptor);
+            super(ASM9, mv, access, name, descriptor);
         }
 
         @Override
@@ -520,7 +520,7 @@ public class Weaver {
         private final ClassWriter cw;
 
         private ClassLoaderHackClassVisitor(ClassWriter cw) {
-            super(ASM7, cw);
+            super(ASM9, cw);
             this.cw = cw;
         }
 
@@ -541,7 +541,7 @@ public class Weaver {
 
         private ClassLoaderHackMethodVisitor(MethodVisitor mv, int access, String name,
                 String descriptor) {
-            super(ASM7, mv, access, name, descriptor);
+            super(ASM9, mv, access, name, descriptor);
         }
 
         @Override

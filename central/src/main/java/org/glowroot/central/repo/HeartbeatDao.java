@@ -15,14 +15,13 @@
  */
 package org.glowroot.central.repo;
 
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
@@ -56,25 +55,25 @@ public class HeartbeatDao {
 
     public void store(String agentId) throws Exception {
         List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);
-        List<Future<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (String agentRollupId : agentRollupIds) {
-            BoundStatement boundStatement = insertPS.bind();
             int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setTimestamp(i++, new Date(clock.currentTimeMillis()));
-            boundStatement.setInt(i++, TTL);
-            futures.add(session.writeAsync(boundStatement));
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(i++, agentRollupId)
+                .setInstant(i++, Instant.ofEpochMilli(clock.currentTimeMillis()))
+                .setInt(i++, TTL);
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
         }
         MoreFutures.waitForAll(futures);
     }
 
     public boolean exists(String agentRollupId, long centralCaptureFrom, long centralCaptureTo)
             throws Exception {
-        BoundStatement boundStatement = existsPS.bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setTimestamp(i++, new Date(centralCaptureFrom));
-        boundStatement.setTimestamp(i++, new Date(centralCaptureTo));
-        return !session.read(boundStatement).isExhausted();
+        BoundStatement boundStatement = existsPS.bind()
+            .setString(i++, agentRollupId)
+            .setInstant(i++, Instant.ofEpochMilli(centralCaptureFrom))
+            .setInstant(i++, Instant.ofEpochMilli(centralCaptureTo));
+        return session.read(boundStatement).one() != null;
     }
 }

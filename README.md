@@ -1,13 +1,14 @@
-Glowroot &nbsp;&nbsp; [![Build Status](https://img.shields.io/travis/glowroot/glowroot.svg)](https://travis-ci.org/glowroot/glowroot) [![Code Coverage](https://sonarcloud.io/api/project_badges/measure?project=org.glowroot:glowroot-parent&metric=coverage)](https://sonarcloud.io/dashboard?id=org.glowroot%3Aglowroot-parent)
+Glowroot
 =========
 
 ## Requirements
 
-* Java 6+
+* Java 8+ for agent
+* Java 11+ for glowroot-central
 
 ## Quick start
 
-1. Download and unzip [glowroot-0.13.6-dist.zip](https://github.com/glowroot/glowroot/releases/download/v0.13.6/glowroot-0.13.6-dist.zip)
+1. Download and unzip [glowroot-0.14.1-beta-dist.zip](https://github.com/glowroot/glowroot/releases/download/v0.14.1-beta/glowroot-0.14.1-beta-dist.zip)
 2. Add `-javaagent:path/to/glowroot.jar` to your application's JVM args [[where are my application server's JVM args?](https://github.com/glowroot/glowroot/wiki/Where-are-my-application-server's-JVM-args%3F)]
 3. Check that the user account that runs the JVM has write access to the glowroot folder
 4. Start your application
@@ -33,7 +34,7 @@ The usual:
 
 Binary distribution is built under agent/dist/target.
 
-Building requires Java 7+ (in order to perform [Immutables](https://immutables.github.io) annotation processing) and Maven 3.1.0+.
+Building requires Java 11+ and Maven 3.8.0+.
 
 ## Contributing
 
@@ -43,11 +44,11 @@ To work on the UI, run org.glowroot.ui.sandbox.UiSandboxMain under a debugger in
 
 Also, Glowroot uses [Bower](http://bower.io) and [Grunt](http://gruntjs.com) to build its web assets (dependency management, Javascript concat/minify, LESS compile/uncss/minify, AngularJS template concat/minify, asset revving and more). The first time you run `mvn clean install`, Node, Bower and Grunt are installed locally under the `ui` directory (thanks to the [frontend-maven-plugin](https://github.com/eirslett/frontend-maven-plugin)).
 
-If you are modifying web assets, you either need to run grunt to re-build them after each change, or (better) run `grunt serve` from the `ui` directory and connect your browser to http://localhost:9000.
+If you are modifying web assets, you either need to run grunt to re-build them after each change, or (better) run `./grunt serve` from the `ui` directory and connect your browser to http://localhost:9000.
 
-`grunt serve` serves up the Glowroot web assets to the browser without the concat/minify/rev step, which makes testing/debugging much easier. It reverse proxies non- static resource requests to http://localhost:4000 to be handled by Glowroot. It also watches for changes to the files and performs live-reload of web assets inside the browser.
+`./grunt serve` serves up the Glowroot web assets to the browser without the concat/minify/rev step, which makes testing/debugging much easier. It reverse proxies non- static resource requests to http://localhost:4000 to be handled by Glowroot. It also watches for changes to the files and performs live-reload of web assets inside the browser.
 
-`grunt serve:demo` does the same as above, except that it reverse proxies non- static resource requests to [https://demo.glowroot.org](https://demo.glowroot.org) instead of http://localhost:4000.
+`./grunt serve:demo` does the same as above, except that it reverse proxies non- static resource requests to [https://demo.glowroot.org](https://demo.glowroot.org) instead of http://localhost:4000.
 
 ## Integration tests
 

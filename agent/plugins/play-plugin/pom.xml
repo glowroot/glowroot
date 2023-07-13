@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.13.7-SNAPSHOT</version>
+    <version>0.14.1-beta.2-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -24,8 +24,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -38,7 +38,7 @@
         different play versions -->
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>4.5.11</version>
+      <version>4.5.13</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -121,8 +121,7 @@
             <plugin>
               <groupId>net.alchim31.maven</groupId>
               <artifactId>scala-maven-plugin</artifactId>
-              <!-- scala-maven-plugin version 3.3.3+ requres maven 3.5.3+ -->
-              <version>3.3.2</version>
+              <version>3.3.3</version>
               <configuration>
                 <skip>true</skip>
               </configuration>
@@ -235,8 +234,7 @@
           <plugin>
             <groupId>net.alchim31.maven</groupId>
             <artifactId>scala-maven-plugin</artifactId>
-            <!-- scala-maven-plugin version 3.3.3+ requres maven 3.5.3+ -->
-            <version>3.3.2</version>
+            <version>3.3.3</version>
             <configuration>
               <scalaVersion>${scala.version}</scalaVersion>
               <testSourceDir>
@@ -279,24 +277,6 @@
           <scope>test</scope>
         </dependency>
       </dependencies>
-      <build>
-        <plugins>
-          <plugin>
-            <!-- play 2.4+ requires Java 8+, and tests for play 2.4 use lambdas so require
-              source/target 1.8 -->
-            <artifactId>maven-compiler-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>default-testCompile</id>
-                <configuration>
-                  <source>1.8</source>
-                  <target>1.8</target>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
     <profile>
       <id>play-2.2.x</id>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2019-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@
 package org.glowroot.common2.repo;
 
 import java.util.List;
-
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletionStage;
 
 public interface AgentDisplayRepository {
 
@@ -25,5 +24,5 @@ public interface AgentDisplayRepository {
 
     List<String> readDisplayParts(String agentRollupId) throws Exception;
 
-    ListenableFuture<String> readLastDisplayPartAsync(String agentRollupId) throws Exception;
+    CompletionStage<String> readLastDisplayPartAsync(String agentRollupId) throws Exception;
 }

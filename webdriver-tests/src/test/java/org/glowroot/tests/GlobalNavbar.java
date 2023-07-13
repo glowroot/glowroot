@@ -15,6 +15,7 @@
  */
 package org.glowroot.tests;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Function;
 
@@ -110,7 +111,7 @@ class GlobalNavbar extends Page {
     private static WebElement getNavbarLink(final WebDriver driver, final By by) {
         // scrolling to top seems to be needed for Edge
         ((JavascriptExecutor) driver).executeScript("window.scrollTo(0,0)");
-        return new WebDriverWait(driver, 60).until(new Function<WebDriver, WebElement>() {
+        return new WebDriverWait(driver, Duration.ofSeconds(60)).until(new Function<WebDriver, WebElement>() {
             @Override
             public WebElement apply(WebDriver driver) {
                 List<WebElement> elements = driver.findElements(by);

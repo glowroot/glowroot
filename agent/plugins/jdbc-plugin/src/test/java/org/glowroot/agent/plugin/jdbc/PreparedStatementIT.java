@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,11 +34,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.commons.dbcp.DelegatingConnection;
 import org.apache.commons.dbcp.DelegatingPreparedStatement;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
@@ -60,17 +56,17 @@ public class PreparedStatementIT {
 
     private static Container container;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         container = Containers.create();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         container.close();
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }
@@ -515,7 +511,7 @@ public class PreparedStatementIT {
             } catch (NoSuchMethodException e) {
                 exception = e;
             }
-            Assume.assumeNoException(exception);
+            Assumptions.assumeTrue(exception == null);
         }
 
         // given
@@ -564,7 +560,7 @@ public class PreparedStatementIT {
             } catch (NoSuchMethodException e) {
                 exception = e;
             }
-            Assume.assumeNoException(exception);
+            Assumptions.assumeTrue(exception == null);
         }
 
         // given

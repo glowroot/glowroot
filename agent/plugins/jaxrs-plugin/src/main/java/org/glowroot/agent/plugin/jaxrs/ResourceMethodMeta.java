@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,7 +89,8 @@ public class ResourceMethodMeta {
         try {
             for (Annotation annotation : clazz.getDeclaredAnnotations()) {
                 Class<?> annotationClass = annotation.annotationType();
-                if (annotationClass.getName().equals("javax.ws.rs.Path")) {
+                if (annotationClass.getName().equals("javax.ws.rs.Path") ||
+                        annotationClass.getName().equals("jakarta.ws.rs.Path")) {
                     return getPathAttribute(annotationClass, annotation, "value");
                 }
             }
@@ -133,7 +134,8 @@ public class ResourceMethodMeta {
             boolean hasHttpMethodAnnotation = false;
             for (Annotation annotation : method.getDeclaredAnnotations()) {
                 Class<?> annotationClass = annotation.annotationType();
-                if (annotationClass.getName().equals("javax.ws.rs.Path")) {
+                if (annotationClass.getName().equals("javax.ws.rs.Path") ||
+                        annotationClass.getName().equals("jakarta.ws.rs.Path")) {
                     pathAnnotation = getPathAttribute(annotationClass, annotation, "value");
                 } else if (isHttpMethodAnnotation(annotationClass)) {
                     hasHttpMethodAnnotation = true;
@@ -151,7 +153,8 @@ public class ResourceMethodMeta {
     private static boolean isHttpMethodAnnotation(Class<?> annotationClass) {
         for (Annotation annotation : annotationClass.getDeclaredAnnotations()) {
             Class<?> metaClass = annotation.annotationType();
-            if (metaClass.getName().equals("javax.ws.rs.HttpMethod")) {
+            if (metaClass.getName().equals("javax.ws.rs.HttpMethod") ||
+                    metaClass.getName().equals("jakarta.ws.rs.HttpMethod")) {
                 return true;
             }
         }

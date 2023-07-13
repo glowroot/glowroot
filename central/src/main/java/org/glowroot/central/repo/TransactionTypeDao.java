@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,15 @@ package org.glowroot.central.repo;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.google.common.util.concurrent.ListenableFuture;
+import com.datastax.oss.driver.api.core.cql.*;
+import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Styles;
@@ -74,32 +70,37 @@ class TransactionTypeDao implements TransactionTypeRepository {
         return transactionTypesCache.get(agentRollupId);
     }
 
-    List<Future<?>> store(List<String> agentRollups, String transactionType) throws Exception {
-        List<Future<?>> futures = new ArrayList<>();
+    @CheckReturnValue
+    List<CompletableFuture<?>> store(List<String> agentRollups, String transactionType) {
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (String agentRollupId : agentRollups) {
             TransactionTypeKey rateLimiterKey =
                     ImmutableTransactionTypeKey.of(agentRollupId, transactionType);
             if (!rateLimiter.tryAcquire(rateLimiterKey)) {
                 continue;
             }
-            ListenableFuture<?> future;
+            CompletableFuture<?> future;
             try {
-                BoundStatement boundStatement = insertPS.bind();
                 int i = 0;
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setString(i++, transactionType);
+                BoundStatement boundStatement = insertPS.bind()
+                        .setString(i++, agentRollupId)
+                        .setString(i++, transactionType)
                 // intentionally not accounting for rateLimiter in TTL
-                boundStatement.setInt(i++,
-                        configRepository.getCentralStorageConfig().getMaxRollupTTL());
-                future = session.writeAsync(boundStatement);
+                        .setInt(i++,
+                            configRepository.getCentralStorageConfig().getMaxRollupTTL());
+                future = session.writeAsync(boundStatement).whenComplete((results, throwable) -> {
+                    if (throwable != null) {
+                        rateLimiter.release(rateLimiterKey);
+                    } else {
+                        transactionTypesCache.invalidate(agentRollupId);
+                    }
+                }).toCompletableFuture();
             } catch (Exception e) {
                 rateLimiter.release(rateLimiterKey);
                 transactionTypesCache.invalidate(agentRollupId);
                 throw e;
             }
-            futures.add(MoreFutures.onSuccessAndFailure(future,
-                    () -> transactionTypesCache.invalidate(agentRollupId),
-                    () -> rateLimiter.release(rateLimiterKey)));
+            futures.add(future);
         }
         return futures;
     }
@@ -113,9 +114,9 @@ class TransactionTypeDao implements TransactionTypeRepository {
 
     private class TransactionTypeCacheLoader implements CacheLoader<String, List<String>> {
         @Override
-        public List<String> load(String agentRollupId) throws Exception {
-            BoundStatement boundStatement = readPS.bind();
-            boundStatement.setString(0, agentRollupId);
+        public List<String> load(String agentRollupId) {
+            BoundStatement boundStatement = readPS.bind()
+                .setString(0, agentRollupId);
             ResultSet results = session.read(boundStatement);
             List<String> transactionTypes = new ArrayList<>();
             for (Row row : results) {

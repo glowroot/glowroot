@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,6 +69,8 @@ class JavaagentServiceImpl extends JavaagentServiceImplBase {
         if (executingAppThread != null) {
             throw new IllegalStateException("Already executing an app");
         }
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
         try {
             executingAppThread = Thread.currentThread();
             Class<?> appClass =
@@ -80,6 +82,7 @@ class JavaagentServiceImpl extends JavaagentServiceImplBase {
             responseObserver.onError(t);
             return;
         } finally {
+            Thread.currentThread().setContextClassLoader(loader);
             executingAppThread = null;
         }
         try {

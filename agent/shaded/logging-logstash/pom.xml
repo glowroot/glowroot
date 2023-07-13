@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.13.7-SNAPSHOT</version>
+    <version>0.14.1-beta.2-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -20,7 +20,7 @@
     <dependency>
       <groupId>net.logstash.logback</groupId>
       <artifactId>logstash-logback-encoder</artifactId>
-      <version>5.3</version>
+      <version>6.6</version>
       <exclusions>
         <exclusion>
           <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->

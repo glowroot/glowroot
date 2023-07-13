@@ -1,0 +1,117 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/reusable-build.yml
+
+#  checker:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#        with:
+#          fetch-depth: 0
+#      - name: Set up JDK 8
+#        uses: actions/setup-java@v3
+#        with:
+#          distribution: adopt
+#          java-version: 8
+#      - name: Restore cache
+#        uses: actions/cache@v3
+#        with:
+#          path: |
+#            ~/.m2/repository
+#            ~/.cache/bower
+#          key: checker-${{ hashFiles('**/pom.xml') }}
+#          restore-keys: |
+#            checker-
+#      - name: Build
+#        uses: coactions/setup-xvfb@v1
+#        with:
+#          run: .github/scripts/build.sh checker
+#        if: runner.os == 'Linux'
+
+#  saucelabs:
+#    runs-on: ubuntu-latest
+#    strategy:
+#      matrix:
+#        testGroup: [ 1, 2, 3 ]
+#        environment: [
+#          { platform: "Windows 10", browserName: "chrome", browserVersion: "" },
+#          { platform: "Windows 10", browserName: "firefox", browserVersion: "" },
+#          { platform: "Windows 10", browserName: "MicrosoftEdge", browserVersion: "17.17134" },
+#          { platform: "Windows 10", browserName: "internet explorer", browserVersion: "" },
+#          { platform: "macOS 10.13", browserName: "safari", browserVersion: "11.1" }
+#        ]
+#      fail-fast: false
+#    env:
+#      SAUCELABS_PLATFORM: ${{ matrix.environment.platform }}
+#      SAUCELABS_BROWSER_NAME: ${{ matrix.environment.browserName }}
+#      SAUCELABS_BROWSER_VERSION: ${{ matrix.environment.browserVersion }}
+#    steps:
+#      - uses: actions/checkout@v3
+#        with:
+#          fetch-depth: 0
+#      - name: Set up JDK 8
+#        uses: actions/setup-java@v3
+#        with:
+#          distribution: adopt
+#          java-version: 8
+#      - name: Restore cache
+#        uses: actions/cache@v3
+#        with:
+#          path: |
+#            ~/.m2/repository
+#            ~/.cache/bower
+#          key: saucelabs-${{ hashFiles('**/pom.xml') }}
+#          restore-keys: |
+#            saucelabs-
+#      - name: Connect to Sauce Labs
+#        uses: saucelabs/sauce-connect-action@v1
+#        with:
+#          username: ${{ secrets.SAUCE_USERNAME }}
+#          accessKey: ${{ secrets.SAUCE_ACCESS_KEY }}
+#          tunnelIdentifier: github-action-tunnel
+#          scVersion: 4.6.4
+#      - name: Build
+#        uses: coactions/setup-xvfb@v1
+#        with:
+#          run: .github/scripts/build.sh saucelabs${{ matrix.Group }}
+#        if: runner.os == 'Linux'
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          distribution: adopt
+          java-version: 11
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.cache/bower
+          key: deploy-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            deploy-
+      - name: Build
+        uses: coactions/setup-xvfb@v1
+        with:
+          run: .github/scripts/build.sh deploy
+        if: runner.os == 'Linux'

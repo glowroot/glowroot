@@ -18,7 +18,7 @@ package org.glowroot.ui;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

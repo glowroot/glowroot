@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.13.7-SNAPSHOT</version>
+    <version>0.14.1-beta.2-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -23,8 +23,8 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -81,7 +81,8 @@
                 <exclude>META-INF/gfprobe-provider.xml</exclude>
                 <exclude>META-INF/javamail.charset.map</exclude>
                 <exclude>META-INF/mailcap</exclude>
-                <exclude>META-INF/LICENSE.txt</exclude>
+                <exclude>META-INF/LICENSE.md</exclude>
+                <exclude>META-INF/NOTICE.md</exclude>
                 <!-- pom.xml is only present in sources jar -->
                 <exclude>pom.xml</exclude>
               </excludes>
@@ -93,17 +94,19 @@
                   glowroot.javamail.address.map and glowroot.javamail.providers -->
                 <exclude>META-INF/javamail.address.map</exclude>
                 <exclude>META-INF/javamail.providers</exclude>
-                <exclude>META-INF/LICENSE.txt</exclude>
+                <exclude>META-INF/LICENSE.md</exclude>
+                <exclude>META-INF/NOTICE.md</exclude>
                 <!-- pom.xml is only present in sources jar -->
                 <exclude>pom.xml</exclude>
               </excludes>
             </filter>
             <filter>
-              <artifact>com.sun.activation:javax.activation</artifact>
+              <artifact>com.sun.activation:jakarta.activation</artifact>
               <excludes>
                 <exclude>META-INF/mailcap.default</exclude>
                 <exclude>META-INF/mimetypes.default</exclude>
-                <exclude>META-INF/LICENSE.txt</exclude>
+                <exclude>META-INF/LICENSE.md</exclude>
+                <exclude>META-INF/NOTICE.md</exclude>
               </excludes>
             </filter>
           </filters>
@@ -200,18 +203,6 @@
             <relocation>
               <pattern>com.ning.compress</pattern>
               <shadedPattern>org.glowroot.agent.embedded.shaded.com.ning.compress</shadedPattern>
-            </relocation>
-            <relocation>
-              <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due
-                to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
-              <pattern>org.checkerframework.checker</pattern>
-              <shadedPattern>org.glowroot.agent.shaded.org.checkerframework.checker</shadedPattern>
-            </relocation>
-            <relocation>
-              <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due
-                to http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
-              <pattern>javax.annotation</pattern>
-              <shadedPattern>org.glowroot.agent.shaded.javax.annotation</shadedPattern>
             </relocation>
             <relocation>
               <pattern>javax.mail</pattern>

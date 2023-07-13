@@ -16,7 +16,7 @@
 package org.glowroot.agent.embedded.repo;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.common.model.Result;
 

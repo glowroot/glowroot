@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.13.7-SNAPSHOT</version>
+    <version>0.14.1-beta.2-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -46,15 +46,15 @@
       <!-- need to include https support for proguard step, but then it is stripped out after -->
       <groupId>io.netty</groupId>
       <artifactId>netty-tcnative-boringssl-static</artifactId>
-      <!-- need to stick to version known to work with gRPC 1.14.0,
-        see https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
-      <version>2.0.12.Final</version>
+      <!-- need to stick to version known to work with gRPC 1.56.0,
+        see table at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
+      <version>2.0.61.Final</version>
     </dependency>
     <dependency>
       <!-- need to include logstash support for proguard step, but then it is stripped out after -->
       <groupId>net.logstash.logback</groupId>
       <artifactId>logstash-logback-encoder</artifactId>
-      <version>6.3</version>
+      <version>6.6</version>
       <exclusions>
         <exclusion>
           <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
@@ -64,8 +64,8 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -92,6 +92,20 @@
           </dependencyReducedPomLocation>
           <createSourcesJar>true</createSourcesJar>
           <shadeSourcesContent>true</shadeSourcesContent>
+          <artifactSet>
+            <excludes>
+              <!-- don't need these dependencies at runtime since only annotations -->
+              <!-- these are transitive dependencies of guava -->
+              <exclude>org.checkerframework:checker-qual</exclude>
+              <exclude>com.google.errorprone:error_prone_annotations</exclude>
+              <exclude>com.google.code.findbugs:jsr305</exclude>
+              <!-- these are transitive dependencies of grpc-core -->
+              <exclude>com.google.android:annotations</exclude>
+              <exclude>org.codehaus.mojo:animal-sniffer-annotations</exclude>
+              <!-- these is a transitive dependency of grpc-protobuf -->
+              <exclude>com.google.api.grpc:proto-google-common-protos</exclude>
+            </excludes>
+          </artifactSet>
           <filters>
             <filter>
               <artifact>*:*</artifact>
@@ -116,6 +130,7 @@
               <artifact>io.grpc:grpc-netty</artifact>
               <excludes>
                 <exclude>META-INF/services/io.grpc.ManagedChannelProvider</exclude>
+                <exclude>META-INF/services/io.grpc.NameResolverProvider</exclude>
                 <exclude>META-INF/services/io.grpc.ServerProvider</exclude>
               </excludes>
             </filter>
@@ -123,12 +138,22 @@
               <artifact>io.netty:netty-*</artifact>
               <excludes>
                 <exclude>META-INF/io.netty.versions.properties</exclude>
+                <exclude>META-INF/native-image/**</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>io.netty:netty-common</artifact>
+              <excludes>
+                <exclude>META-INF/services/reactor.blockhound.integration.BlockHoundIntegration</exclude>
               </excludes>
             </filter>
             <filter>
               <artifact>io.netty:netty-tcnative-boringssl-static</artifact>
               <excludes>
+                <exclude>META-INF/license/*</exclude>
                 <exclude>META-INF/native/*</exclude>
+                <exclude>META-INF/LICENSE.txt</exclude>
+                <exclude>META-INF/NOTICE.txt</exclude>
               </excludes>
             </filter>
             <filter>
@@ -137,6 +162,9 @@
                 <exclude>META-INF/services/com.fasterxml.jackson.core.JsonFactory</exclude>
                 <exclude>META-INF/LICENSE</exclude>
                 <exclude>META-INF/NOTICE</exclude>
+                <exclude>META-INF/FastDoubleParser-LICENSE</exclude>
+                <exclude>META-INF/FastDoubleParser-NOTICE</exclude>
+                <exclude>META-INF/bigint-LICENSE</exclude>
               </excludes>
             </filter>
             <filter>
@@ -173,12 +201,6 @@
                 <exclude>META-INF/NOTICE.txt</exclude>
               </excludes>
             </filter>
-            <filter>
-              <artifact>javax.annotation:javax.annotation-api</artifact>
-              <excludes>
-                <exclude>META-INF/LICENSE.txt</exclude>
-              </excludes>
-            </filter>
           </filters>
           <relocations>
             <!-- need to shade glowroot modules so they can be used in glowroot-central without
@@ -212,6 +234,10 @@
             <relocation>
               <pattern>io.opencensus</pattern>
               <shadedPattern>org.glowroot.agent.shaded.io.opencensus</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>io.perfmark</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.io.perfmark</shadedPattern>
             </relocation>
             <relocation>
               <pattern>org.HdrHistogram</pattern>
@@ -269,13 +295,6 @@
               <shadedPattern>glowroot.logback.configurationFile</shadedPattern>
             </relocation>
             <relocation>
-              <!-- shades logback internal constant, see
-                ch.qos.logback.classic.util.ContextInitializer -->
-              <rawString>true</rawString>
-              <pattern>^logback.groovy$</pattern>
-              <shadedPattern>glowroot.logback.groovy</shadedPattern>
-            </relocation>
-            <relocation>
               <!-- logback internal constant, see ch.qos.logback.classic.ClassicConstants -->
               <rawString>true</rawString>
               <pattern>^logback(-test)?.xml$</pattern>
@@ -305,24 +324,6 @@
                 consistency -->
               <pattern>net.logstash.logback</pattern>
               <shadedPattern>org.glowroot.agent.shaded.net.logstash.logback</shadedPattern>
-            </relocation>
-            <relocation>
-              <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due to
-                http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
-              <pattern>org.checkerframework.checker</pattern>
-              <shadedPattern>org.glowroot.agent.shaded.org.checkerframework.checker</shadedPattern>
-            </relocation>
-            <relocation>
-              <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due to
-                http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
-              <pattern>javax.annotation</pattern>
-              <shadedPattern>org.glowroot.agent.shaded.javax.annotation</shadedPattern>
-            </relocation>
-            <relocation>
-              <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due to
-                http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
-              <pattern>com.google.errorprone</pattern>
-              <shadedPattern>org.glowroot.agent.shaded.com.google.errorprone</shadedPattern>
             </relocation>
           </relocations>
           <transformers>
@@ -365,17 +366,14 @@
             <option>-keep class org.glowroot.agent.shaded.org.glowroot.common.** { *; }</option>
             <!-- needed by custom collectors -->
             <option>-keep class org.glowroot.agent.shaded.org.glowroot.wire.api.** { *; }</option>
-            <!-- all annotation classes must be available on IBM Java 1.6 SR8 and earlier due to
-              http://www-01.ibm.com/support/docview.wss?uid=swg1IZ76354 -->
-            <option>
-              -keep class org.glowroot.agent.shaded.org.checkerframework.checker.** { *; }
-            </option>
-            <option>-keep class org.glowroot.agent.shaded.javax.annotation.** { *; }</option>
-            <option>-keep class org.glowroot.agent.shaded.com.google.errorprone.** { *; }</option>
             <!-- even though these classes will be stripped out in assembly plugin below, this will
               retain the netty classes that they depend on -->
             <option>
               -keep class org.glowroot.agent.shaded.io.netty.internal.tcnative.** { *; }
+            </option>
+            <!-- needed since grpc 1.54.0 -->
+            <option>
+              -keep class org.glowroot.agent.shaded.io.grpc.util.** { *; }
             </option>
             <!-- even though these classes will be stripped out in assembly plugin below, this will
               retain the jackson classes that they depend on -->
@@ -418,6 +416,10 @@
                   <Main-Class>org.glowroot.agent.ToolMain</Main-Class>
                   <Can-Redefine-Classes>true</Can-Redefine-Classes>
                   <Can-Retransform-Classes>true</Can-Retransform-Classes>
+                  <Implementation-Title>Glowroot Agent</Implementation-Title>
+                  <Implementation-Version>${project.version}</Implementation-Version>
+                  <Build-Commit>${glowroot.build.commit}</Build-Commit>
+                  <Build-Time>${maven.build.timestamp}</Build-Time>
                 </manifestEntries>
               </archive>
             </configuration>

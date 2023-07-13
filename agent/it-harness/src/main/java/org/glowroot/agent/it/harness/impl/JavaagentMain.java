@@ -45,10 +45,6 @@ class JavaagentMain {
 
         int javaagentServicePort = Integer.parseInt(args[1]);
         JavaagentServiceImpl javaagentService = new JavaagentServiceImpl();
-        final EventLoopGroup bossEventLoopGroup =
-                EventLoopGroups.create("Glowroot-IT-Harness*-GRPC-Boss-ELG");
-        final EventLoopGroup workerEventLoopGroup =
-                EventLoopGroups.create("Glowroot-IT-Harness*-GRPC-Worker-ELG");
         // need at least 2 threads, one for executeApp(), and another for handling interruptApp() at
         // the same time
         final ExecutorService executor = Executors.newCachedThreadPool(
@@ -57,8 +53,6 @@ class JavaagentMain {
                         .setNameFormat("Glowroot-IT-Harness*-GRPC-Executor-%d")
                         .build());
         final Server server = NettyServerBuilder.forPort(javaagentServicePort)
-                .bossEventLoopGroup(bossEventLoopGroup)
-                .workerEventLoopGroup(workerEventLoopGroup)
                 .executor(executor)
                 .addService(javaagentService.bindService())
                 .build()
@@ -73,14 +67,6 @@ class JavaagentMain {
                 executor.shutdown();
                 if (!executor.awaitTermination(10, SECONDS)) {
                     throw new IllegalStateException("Could not terminate executor");
-                }
-                if (!bossEventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
-                    throw new IllegalStateException(
-                            "Could not terminate gRPC boss event loop group");
-                }
-                if (!workerEventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
-                    throw new IllegalStateException(
-                            "Could not terminate gRPC worker event loop group");
                 }
                 socketHeartbeat.close();
                 return null;

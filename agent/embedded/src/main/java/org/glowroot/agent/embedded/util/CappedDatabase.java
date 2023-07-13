@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -179,17 +179,15 @@ public class CappedDatabase {
         // it's important to wrap CappedBlockInputStream in a BufferedInputStream to prevent
         // lots of small reads from the underlying RandomAccessFile
         final int bufferSize = 32768;
-        InputStream input = newLZFInputStream(
-                new BufferedInputStream(new CappedBlockInputStream(cappedId), bufferSize));
-        try {
+
+        try (InputStream input = newLZFInputStream(
+                new BufferedInputStream(new CappedBlockInputStream(cappedId), bufferSize))) {
             return parser.parseFrom(input);
         } catch (Exception e) {
             if (!out.isOverwritten(cappedId)) {
                 logger.error(e.getMessage(), e);
             }
             return null;
-        } finally {
-            input.close();
         }
     }
 

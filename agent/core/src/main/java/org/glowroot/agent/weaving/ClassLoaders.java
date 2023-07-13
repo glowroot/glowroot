@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2019 the original author or authors.
+ * Copyright 2013-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,10 +82,14 @@ class ClassLoaders {
     }
 
     static void defineClass(String name, byte[] bytes, ClassLoader loader) throws Exception {
-        Method defineClassMethod = ClassLoader.class.getDeclaredMethod("defineClass",
-                String.class, byte[].class, int.class, int.class);
-        defineClassMethod.setAccessible(true);
-        defineClassMethod.invoke(loader, name, bytes, 0, bytes.length);
+        if (loader instanceof IsolatedWeavingClassLoader) {
+            ((IsolatedWeavingClassLoader) loader).publicDefineClass(name, bytes, 0, bytes.length);
+        } else {
+            Method defineClassMethod = ClassLoader.class.getDeclaredMethod("defineClass",
+                    String.class, byte[].class, int.class, int.class);
+            defineClassMethod.setAccessible(true);
+            defineClassMethod.invoke(loader, name, bytes, 0, bytes.length);
+        }
     }
 
     static void createDirectoryOrCleanPreviousContentsWithPrefix(File dir, String prefix)
@@ -124,10 +128,14 @@ class ClassLoaders {
     }
 
     private static boolean classExists(String name, ClassLoader loader) throws Exception {
-        Method findLoadedClassMethod =
-                ClassLoader.class.getDeclaredMethod("findLoadedClass", String.class);
-        findLoadedClassMethod.setAccessible(true);
-        return findLoadedClassMethod.invoke(loader, name) != null;
+        if (loader instanceof IsolatedWeavingClassLoader) {
+            return ((IsolatedWeavingClassLoader) loader).publicFindLoadedClass(name) != null;
+        } else {
+            Method findLoadedClassMethod =
+                    ClassLoader.class.getDeclaredMethod("findLoadedClass", String.class);
+            findLoadedClassMethod.setAccessible(true);
+            return findLoadedClassMethod.invoke(loader, name) != null;
+        }
     }
 
     private static void generate(Collection<LazyDefinedClass> lazyDefinedClasses,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 the original author or authors.
+ * Copyright 2018-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ import org.glowroot.agent.weaving.PluginDetail.PointcutMethod;
 import org.glowroot.common.util.OnlyUsedByTests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.objectweb.asm.Opcodes.ASM7;
+import static org.objectweb.asm.Opcodes.ASM9;
 
 class PluginDetailBuilder {
 
@@ -141,7 +141,7 @@ class PluginDetailBuilder {
         private List<String> innerClassNames = Lists.newArrayList();
 
         private AspectClassVisitor() {
-            super(ASM7);
+            super(ASM9);
         }
 
         @Override
@@ -162,7 +162,7 @@ class PluginDetailBuilder {
         private boolean shim;
 
         private MemberClassVisitor() {
-            super(ASM7);
+            super(ASM9);
         }
 
         @Override
@@ -278,7 +278,7 @@ class PluginDetailBuilder {
         private String suppressionKey = "";
 
         private PointcutAnnotationVisitor() {
-            super(ASM7);
+            super(ASM9);
         }
 
         @Override
@@ -397,7 +397,7 @@ class PluginDetailBuilder {
         private final Map<Integer, List<Type>> parameterAnnotationTypes = Maps.newHashMap();
 
         private PointcutMethodVisitor(String name, String descriptor) {
-            super(ASM7);
+            super(ASM9);
             this.name = name;
             this.descriptor = descriptor;
         }
@@ -433,7 +433,7 @@ class PluginDetailBuilder {
     private static class MixinAnnotationVisitor extends AnnotationVisitor {
 
         private MixinAnnotationVisitor() {
-            super(ASM7);
+            super(ASM9);
         }
 
         private List<String> values = Lists.newArrayList();
@@ -474,7 +474,7 @@ class PluginDetailBuilder {
         private boolean init;
 
         private MixinMethodVisitor(String name, String descriptor) {
-            super(ASM7);
+            super(ASM9);
             this.name = name;
             this.descriptor = descriptor;
         }
@@ -499,7 +499,7 @@ class PluginDetailBuilder {
         private final List<String> list;
 
         private StringArrayAnnotationVisitor(List<String> list) {
-            super(ASM7);
+            super(ASM9);
             this.list = list;
         }
 
@@ -514,7 +514,7 @@ class PluginDetailBuilder {
         private final List<MethodModifier> list;
 
         private MethodModifierArrayAnnotationVisitor(List<MethodModifier> list) {
-            super(ASM7);
+            super(ASM9);
             this.list = list;
         }
 

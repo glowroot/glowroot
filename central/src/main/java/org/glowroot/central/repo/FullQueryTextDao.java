@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,25 +18,20 @@ package org.glowroot.central.repo;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
-import org.glowroot.central.util.MoreFutures;
-import org.glowroot.central.util.MoreFutures.DoWithResults;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Styles;
@@ -47,7 +42,7 @@ import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-class FullQueryTextDao {
+class FullQueryTextDao implements AutoCloseable {
 
     private final Session session;
     private final ConfigRepositoryImpl configRepository;
@@ -107,43 +102,45 @@ class FullQueryTextDao {
         return getFullTextUsingPS(agentRollupId, fullTextSha1, readCheckV1PS);
     }
 
-    List<Future<?>> store(List<String> agentRollupIds, String fullTextSha1, String fullText)
-            throws Exception {
+    List<CompletableFuture<?>> store(List<String> agentRollupIds, String fullTextSha1, String fullText) {
         // relying on agent side to rate limit (re-)sending the same full text
-        List<Future<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (String agentRollupId : agentRollupIds) {
-            BoundStatement boundStatement = insertCheckV2PS.bind();
             int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, fullTextSha1);
-            boundStatement.setInt(i++, getTTL());
-            futures.add(session.writeAsync(boundStatement));
+            BoundStatement boundStatement = insertCheckV2PS.bind()
+                .setString(i++, agentRollupId)
+                .setString(i++, fullTextSha1)
+                .setInt(i, getTTL());
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
         }
         if (!rateLimiter.tryAcquire(fullTextSha1)) {
             return futures;
         }
-        ListenableFuture<?> future2;
         try {
-            future2 = storeInternal(fullTextSha1, fullText);
-        } catch (Throwable t) {
+            futures.add(storeInternal(fullTextSha1, fullText)
+                    .whenComplete((ret, throwable) -> {
+                        if (throwable != null) {
+                            rateLimiter.release(fullTextSha1);
+                        }
+                    }).toCompletableFuture());
+        } catch (RuntimeException t) {
             rateLimiter.release(fullTextSha1);
             throw t;
         }
-        futures.add(MoreFutures.onFailure(future2, () -> rateLimiter.release(fullTextSha1)));
         return futures;
     }
 
     private @Nullable String getFullTextUsingPS(String agentRollupId, String fullTextSha1,
-            PreparedStatement readCheckPS) throws Exception {
-        BoundStatement boundStatement = readCheckPS.bind();
-        boundStatement.setString(0, agentRollupId);
-        boundStatement.setString(1, fullTextSha1);
+            PreparedStatement readCheckPS) {
+        BoundStatement boundStatement = readCheckPS.bind()
+            .setString(0, agentRollupId)
+            .setString(1, fullTextSha1);
         ResultSet results = session.read(boundStatement);
-        if (results.isExhausted()) {
+        if (results.one() == null) {
             return null;
         }
-        boundStatement = readPS.bind();
-        boundStatement.setString(0, fullTextSha1);
+        boundStatement = readPS.bind()
+            .setString(0, fullTextSha1);
         results = session.read(boundStatement);
         Row row = results.one();
         if (row == null) {
@@ -152,41 +149,38 @@ class FullQueryTextDao {
         return row.getString(0);
     }
 
-    private ListenableFuture<?> storeInternal(String fullTextSha1, String fullText)
-            throws Exception {
-        BoundStatement boundStatement = readTtlPS.bind();
-        boundStatement.setString(0, fullTextSha1);
-        ListenableFuture<ResultSet> future = session.readAsync(boundStatement);
-        return MoreFutures.transformAsync(future, asyncExecutor, new DoWithResults() {
-            @Override
-            public ListenableFuture<?> execute(ResultSet results) throws Exception {
-                Row row = results.one();
-                int ttl = getTTL();
-                if (row == null) {
-                    return insertAndCompleteFuture(ttl);
-                } else {
-                    int existingTTL = row.getInt(0);
-                    if (existingTTL != 0 && ttl > existingTTL + DAYS.toSeconds(1)) {
-                        // only overwrite if bumping TTL at least 1 day
-                        // also, never overwrite with smaller TTL
-                        return insertAndCompleteFuture(ttl);
-                    } else {
-                        return Futures.immediateFuture(null);
-                    }
-                }
+    @CheckReturnValue
+    private CompletableFuture<AsyncResultSet> storeInternal(String fullTextSha1, String fullText) {
+        BoundStatement boundStatement = readTtlPS.bind()
+            .setString(0, fullTextSha1);
+        return session.readAsync(boundStatement).thenCompose(results -> {
+            Row row = results.one();
+            int ttl = getTTL();
+            if (row == null) {
+                return insertAndCompleteFuture(fullTextSha1, fullText, ttl);
             }
-            private ListenableFuture<?> insertAndCompleteFuture(int ttl) throws Exception {
-                BoundStatement boundStatement = insertPS.bind();
-                int i = 0;
-                boundStatement.setString(i++, fullTextSha1);
-                boundStatement.setString(i++, fullText);
-                boundStatement.setInt(i++, ttl);
-                return session.writeAsync(boundStatement);
+            int existingTTL = row.getInt(0);
+            if (existingTTL != 0 && ttl > existingTTL + DAYS.toSeconds(1)) {
+                // only overwrite if bumping TTL at least 1 day
+                // also, never overwrite with smaller TTL
+                return insertAndCompleteFuture(fullTextSha1, fullText, ttl);
+            } else {
+                return CompletableFuture.completedFuture(null);
             }
-        });
+        }).toCompletableFuture();
     }
 
-    private int getTTL() throws Exception {
+    private CompletionStage<AsyncResultSet> insertAndCompleteFuture(
+            String fullTextSha1, String fullText, int ttl) {
+        int i = 0;
+        BoundStatement boundStatement = insertPS.bind()
+                .setString(i++, fullTextSha1)
+                .setString(i++, fullText)
+                .setInt(i, ttl);
+        return session.writeAsync(boundStatement);
+    }
+
+    private int getTTL() {
         CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
         int queryRollupExpirationHours =
                 Iterables.getLast(storageConfig.queryAndServiceCallRollupExpirationHours());
@@ -203,6 +197,7 @@ class FullQueryTextDao {
         return Ints.saturatedCast(ttl);
     }
 
+    @Override
     public void close() throws Exception {
         MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
         platformMBeanServer.unregisterMBean(ObjectName

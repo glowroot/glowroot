@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2019 the original author or authors.
+ * Copyright 2011-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,9 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.*;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -287,11 +288,12 @@ class ConfigJsonService {
         for (PluginPropertyDto property : properties) {
             if (property.name().equals("captureBindParametersIncludes")
                     || property.name().equals("captureBindParametersExcludes")) {
-                for (Object value : (List<?>) checkNotNull(property.value())) {
+                for (JsonNode value : checkNotNull(property.value())) {
+                    String val = checkNotNull(value).textValue();
                     try {
-                        Pattern.compile((String) checkNotNull(value));
+                        Pattern.compile(val);
                     } catch (PatternSyntaxException e) {
-                        return (String) value;
+                        return val;
                     }
                 }
             }
@@ -488,7 +490,7 @@ class ConfigJsonService {
 
         abstract String name();
         abstract PropertyType type();
-        abstract @Nullable Object value();
+        abstract @Nullable JsonNode value();
         abstract @Nullable String label();
         abstract @Nullable String checkboxLabel();
         abstract @Nullable String description();
@@ -501,26 +503,26 @@ class ConfigJsonService {
         }
 
         private PluginProperty.Value getValue() {
-            Object value = value();
+            JsonNode value = value();
             switch (type()) {
                 case BOOLEAN:
                     checkNotNull(value);
-                    return PluginProperty.Value.newBuilder().setBval((Boolean) value).build();
+                    return PluginProperty.Value.newBuilder().setBval(value.booleanValue()).build();
                 case DOUBLE:
                     if (value == null) {
                         return PluginProperty.Value.newBuilder().setDvalNull(true).build();
                     } else {
                         return PluginProperty.Value.newBuilder()
-                                .setDval(((Number) value).doubleValue()).build();
+                                .setDval((value.numberValue()).doubleValue()).build();
                     }
                 case STRING:
                     checkNotNull(value);
-                    return PluginProperty.Value.newBuilder().setSval((String) value).build();
+                    return PluginProperty.Value.newBuilder().setSval(value.textValue()).build();
                 case LIST:
                     checkNotNull(value);
                     StringList.Builder lval = StringList.newBuilder();
-                    for (Object v : (List<?>) value) {
-                        lval.addVal((String) checkNotNull(v));
+                    for (JsonNode val : value) {
+                        lval.addVal(checkNotNull(val).textValue());
                     }
                     return PluginProperty.Value.newBuilder().setLval(lval).build();
                 default:
@@ -555,19 +557,23 @@ class ConfigJsonService {
             }
         }
 
-        private static @Nullable Object getPropertyValue(PluginProperty.Value value) {
+        private static @Nullable JsonNode getPropertyValue(PluginProperty.Value value) {
             PluginProperty.Value.ValCase valCase = value.getValCase();
             switch (valCase) {
                 case BVAL:
-                    return value.getBval();
+                    return BooleanNode.valueOf(value.getBval());
                 case DVAL_NULL:
                     return null;
                 case DVAL:
-                    return value.getDval();
+                    return DoubleNode.valueOf(value.getDval());
                 case SVAL:
-                    return value.getSval();
+                    return TextNode.valueOf(value.getSval());
                 case LVAL:
-                    return value.getLval().getValList();
+                    ArrayNode arrayNode = mapper.createArrayNode();
+                    for (String val : value.getLval().getValList()) {
+                        arrayNode.add(val);
+                    }
+                    return arrayNode;
                 default:
                     throw new IllegalStateException("Unexpected property type: " + valCase);
             }

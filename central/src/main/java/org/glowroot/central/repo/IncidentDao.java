@@ -16,15 +16,15 @@
 package org.glowroot.central.repo;
 
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.google.common.primitives.Ints;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -92,31 +92,31 @@ public class IncidentDao implements IncidentRepository {
     public void insertOpenIncident(String agentRollupId, AlertCondition condition,
             AlertSeverity severity, AlertNotification notification, long openTime)
             throws Exception {
-        BoundStatement boundStatement = insertOpenIncidentPS.bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setBytes(i++, ByteBuffer.wrap(condition.toByteArray()));
-        boundStatement.setString(i++, severity.name().toLowerCase(Locale.ENGLISH));
-        boundStatement.setBytes(i++, ByteBuffer.wrap(notification.toByteArray()));
-        boundStatement.setTimestamp(i++, new Date(openTime));
+        BoundStatement boundStatement = insertOpenIncidentPS.bind()
+            .setString(i++, agentRollupId)
+            .setByteBuffer(i++, ByteBuffer.wrap(condition.toByteArray()))
+            .setString(i++, severity.name().toLowerCase(Locale.ENGLISH))
+            .setByteBuffer(i++, ByteBuffer.wrap(notification.toByteArray()))
+            .setInstant(i++, Instant.ofEpochMilli(openTime));
         session.write(boundStatement);
     }
 
     @Override
     public @Nullable OpenIncident readOpenIncident(String agentRollupId, AlertCondition condition,
             AlertSeverity severity) throws Exception {
-        BoundStatement boundStatement = readOpenIncidentPS.bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setBytes(i++, ByteBuffer.wrap(condition.toByteArray()));
-        boundStatement.setString(i++, severity.name().toLowerCase(Locale.ENGLISH));
+        BoundStatement boundStatement = readOpenIncidentPS.bind()
+            .setString(i++, agentRollupId)
+            .setByteBuffer(i++, ByteBuffer.wrap(condition.toByteArray()))
+            .setString(i++, severity.name().toLowerCase(Locale.ENGLISH));
         ResultSet results = session.read(boundStatement);
         Row row = results.one();
         if (row == null) {
             return null;
         }
-        AlertNotification notification = AlertNotification.parseFrom(checkNotNull(row.getBytes(0)));
-        long openTime = checkNotNull(row.getTimestamp(1)).getTime();
+        AlertNotification notification = AlertNotification.parseFrom(checkNotNull(row.getByteBuffer(0)));
+        long openTime = checkNotNull(row.getInstant(1)).toEpochMilli();
         return ImmutableOpenIncident.builder()
                 .agentRollupId(agentRollupId)
                 .condition(condition)
@@ -128,18 +128,18 @@ public class IncidentDao implements IncidentRepository {
 
     @Override
     public List<OpenIncident> readOpenIncidents(String agentRollupId) throws Exception {
-        BoundStatement boundStatement = readOpenIncidentsPS.bind();
-        boundStatement.setString(0, agentRollupId);
+        BoundStatement boundStatement = readOpenIncidentsPS.bind()
+            .setString(0, agentRollupId);
         ResultSet results = session.read(boundStatement);
         List<OpenIncident> openIncidents = new ArrayList<>();
         for (Row row : results) {
             int i = 0;
-            AlertCondition condition = AlertCondition.parseFrom(checkNotNull(row.getBytes(i++)));
+            AlertCondition condition = AlertCondition.parseFrom(checkNotNull(row.getByteBuffer(i++)));
             AlertSeverity severity = AlertSeverity
                     .valueOf(checkNotNull(row.getString(i++)).toUpperCase(Locale.ENGLISH));
             AlertNotification notification =
-                    AlertNotification.parseFrom(checkNotNull(row.getBytes(i++)));
-            long openTime = checkNotNull(row.getTimestamp(i++)).getTime();
+                    AlertNotification.parseFrom(checkNotNull(row.getByteBuffer(i++)));
+            long openTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             openIncidents.add(ImmutableOpenIncident.builder()
                     .agentRollupId(agentRollupId)
                     .condition(condition)
@@ -159,12 +159,12 @@ public class IncidentDao implements IncidentRepository {
         for (Row row : results) {
             int i = 0;
             String agentRollupId = checkNotNull(row.getString(i++));
-            AlertCondition condition = AlertCondition.parseFrom(checkNotNull(row.getBytes(i++)));
+            AlertCondition condition = AlertCondition.parseFrom(checkNotNull(row.getByteBuffer(i++)));
             AlertSeverity severity = AlertSeverity
                     .valueOf(checkNotNull(row.getString(i++)).toUpperCase(Locale.ENGLISH));
             AlertNotification notification =
-                    AlertNotification.parseFrom(checkNotNull(row.getBytes(i++)));
-            long openTime = checkNotNull(row.getTimestamp(i++)).getTime();
+                    AlertNotification.parseFrom(checkNotNull(row.getByteBuffer(i++)));
+            long openTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             openIncidents.add(ImmutableOpenIncident.builder()
                     .agentRollupId(agentRollupId)
                     .condition(condition)
@@ -183,45 +183,45 @@ public class IncidentDao implements IncidentRepository {
                         HOURS.toSeconds(Constants.RESOLVED_INCIDENT_EXPIRATION_HOURS)),
                 resolveTime, clock);
 
-        BoundStatement boundStatement = insertResolvedIncidentPS.bind();
-        int i = 0;
-        boundStatement.setTimestamp(i++, new Date(resolveTime));
-        boundStatement.setString(i++, openIncident.agentRollupId());
         ByteBuffer conditionBytes = ByteBuffer.wrap(openIncident.condition().toByteArray());
-        boundStatement.setBytes(i++, conditionBytes);
-        boundStatement.setString(i++,
-                openIncident.severity().name().toLowerCase(Locale.ENGLISH));
         ByteBuffer notificationBytes = ByteBuffer.wrap(openIncident.notification().toByteArray());
-        boundStatement.setBytes(i++, notificationBytes);
-        boundStatement.setTimestamp(i++, new Date(openIncident.openTime()));
-        boundStatement.setInt(i++, adjustedTTL);
+        int i = 0;
+        BoundStatement boundStatement = insertResolvedIncidentPS.bind()
+            .setInstant(i++, Instant.ofEpochMilli(resolveTime))
+            .setString(i++, openIncident.agentRollupId())
+            .setByteBuffer(i++, conditionBytes)
+            .setString(i++,
+                openIncident.severity().name().toLowerCase(Locale.ENGLISH))
+            .setByteBuffer(i++, notificationBytes)
+            .setInstant(i++, Instant.ofEpochMilli(openIncident.openTime()))
+            .setInt(i++, adjustedTTL);
         session.write(boundStatement);
 
-        boundStatement = deleteOpenIncidentPS.bind();
         i = 0;
-        boundStatement.setString(i++, openIncident.agentRollupId());
-        boundStatement.setBytes(i++, conditionBytes);
-        boundStatement.setString(i++,
+        boundStatement = deleteOpenIncidentPS.bind()
+            .setString(i++, openIncident.agentRollupId())
+            .setByteBuffer(i++, conditionBytes)
+            .setString(i++,
                 openIncident.severity().name().toLowerCase(Locale.ENGLISH));
         session.write(boundStatement);
     }
 
     @Override
     public List<ResolvedIncident> readResolvedIncidents(long from) throws Exception {
-        BoundStatement boundStatement = readRecentResolvedIncidentsPS.bind();
-        boundStatement.setTimestamp(0, new Date(from));
+        BoundStatement boundStatement = readRecentResolvedIncidentsPS.bind()
+            .setInstant(0, Instant.ofEpochMilli(from));
         ResultSet results = session.read(boundStatement);
         List<ResolvedIncident> resolvedIncidents = new ArrayList<>();
         for (Row row : results) {
             int i = 0;
-            long resolveTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long resolveTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             String agentRollupId = checkNotNull(row.getString(i++));
-            AlertCondition condition = AlertCondition.parseFrom(checkNotNull(row.getBytes(i++)));
+            AlertCondition condition = AlertCondition.parseFrom(checkNotNull(row.getByteBuffer(i++)));
             AlertSeverity severity = AlertSeverity
                     .valueOf(checkNotNull(row.getString(i++)).toUpperCase(Locale.ENGLISH));
             AlertNotification notification =
-                    AlertNotification.parseFrom(checkNotNull(row.getBytes(i++)));
-            long openTime = checkNotNull(row.getTimestamp(i++)).getTime();
+                    AlertNotification.parseFrom(checkNotNull(row.getByteBuffer(i++)));
+            long openTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             resolvedIncidents.add(ImmutableResolvedIncident.builder()
                     .agentRollupId(agentRollupId)
                     .openTime(openTime)

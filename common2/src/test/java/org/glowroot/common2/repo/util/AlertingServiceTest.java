@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ import javax.mail.Message;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.common.live.ImmutableAggregateQuery;
 import org.glowroot.common.live.ImmutablePercentileAggregate;
@@ -136,7 +136,7 @@ public class AlertingServiceTest {
     private MockMailService mailService;
     private HttpClient httpClient;
 
-    @Before
+    @BeforeEach
     public void beforeEachTest() throws Exception {
         configRepository = mock(ConfigRepository.class);
         incidentRepository = mock(IncidentRepository.class);

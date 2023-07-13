@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.13.7-SNAPSHOT</version>
+    <version>0.14.1-beta.2-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -18,8 +18,7 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <!-- Spring 5+ requires Java 8+ -->
-    <spring.version>4.3.26.RELEASE</spring.version>
+    <spring.version>5.3.12</spring.version>
   </properties>
 
   <dependencies>
@@ -30,8 +29,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -56,11 +55,6 @@
     </dependency>
     <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
-      <artifactId>tomcat-embed-logging-juli</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.tomcat.embed</groupId>
       <artifactId>tomcat-embed-websocket</artifactId>
       <scope>test</scope>
     </dependency>
@@ -80,8 +74,8 @@
       -->
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
-      <!-- Tomcat 7 (above) uses Servlet API 3.0 -->
-      <version>3.0.1</version>
+      <!-- Tomcat 8 (above) uses Servlet API 3.1 -->
+      <version>3.1.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -105,7 +99,7 @@
     <dependency>
       <groupId>org.java-websocket</groupId>
       <artifactId>Java-WebSocket</artifactId>
-      <version>1.4.0</version>
+      <version>1.5.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -138,24 +132,6 @@
         </executions>
       </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <executions>
-            <execution>
-              <id>default-testCompile</id>
-              <configuration>
-                <!-- Java 7 is needed for running tests in eclipse because of test dependence on
-                  executor plugin which targets Java 7 in order to run its own ForkJoinPool tests -->
-                <source>1.7</source>
-                <target>1.7</target>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 
   <profiles>
@@ -204,63 +180,6 @@
       </dependencies>
     </profile>
     <profile>
-      <id>test-java6</id>
-      <activation>
-        <property>
-          <name>glowroot.test.java6</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <configuration>
-              <testExcludes>
-                <!-- Tomcat's websocket support requires Java 7 -->
-                <exclude>org/glowroot/agent/plugin/spring/WebSocketIT.java</exclude>
-                <!-- just the presence of this class on classpath causes issues on some spring
-                  versions due to https://jira.spring.io/browse/SPR-12238 -->
-                <exclude>org/glowroot/agent/plugin/spring/WebSocketConfig.java</exclude>
-              </testExcludes>
-            </configuration>
-          </plugin>
-        </plugins>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <artifactId>maven-compiler-plugin</artifactId>
-              <executions>
-                <execution>
-                  <id>default-testCompile</id>
-                  <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
-    <profile>
-      <id>java6or7</id>
-      <activation>
-        <jdk>[1.6,1.8)</jdk>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <!-- this is needed when building with Java 6 or 7 -->
-              <argLine>-XX:MaxPermSize=128m</argLine>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
       <!-- this profile is cumulative on top of spring-4.x -->
       <id>spring-5.1.x</id>
       <properties>
@@ -303,19 +222,6 @@
                   <sources>
                     <source>src/test/spring-5.1.x/java</source>
                   </sources>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>default-testCompile</id>
-                <configuration>
-                  <!-- spring 5.x requires Java 8+ -->
-                  <source>1.8</source>
-                  <target>1.8</target>
                 </configuration>
               </execution>
             </executions>
@@ -366,19 +272,6 @@
                   <sources>
                     <source>src/test/spring-5.0.x/java</source>
                   </sources>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>default-testCompile</id>
-                <configuration>
-                  <!-- spring 5.x requires Java 8+ -->
-                  <source>1.8</source>
-                  <target>1.8</target>
                 </configuration>
               </execution>
             </executions>

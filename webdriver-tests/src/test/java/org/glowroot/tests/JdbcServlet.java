@@ -20,20 +20,20 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.hsqldb.jdbc.JDBCDriver;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.mock.web.MockHttpServletResponse;
+import org.mockito.Mockito;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.mockito.Mockito.doReturn;
 
 @SuppressWarnings("serial")
 public class JdbcServlet extends HttpServlet implements AppUnderTest {
@@ -54,8 +54,11 @@ public class JdbcServlet extends HttpServlet implements AppUnderTest {
                 statement.close();
             }
         }
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/jdbcservlet");
-        MockHttpServletResponse response = new MockHttpServletResponse();
+        HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
+        doReturn("GET").when(request).getMethod();
+        doReturn("/jdbcservlet").when(request).getRequestURI();
+
+        HttpServletResponse response = Mockito.mock(HttpServletResponse.class);
         service((ServletRequest) request, (ServletResponse) response);
     }
 

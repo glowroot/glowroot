@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2019 the original author or authors.
+ * Copyright 2011-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
  */
 package org.glowroot.agent.impl;
 
-import com.google.common.base.Ticker;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
-
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.impl.Transaction.CompletionCallback;
@@ -30,8 +30,15 @@ import org.glowroot.agent.util.IterableWithSelfRemovableEntries.SelfRemovableEnt
 import org.glowroot.agent.util.ThreadAllocatedBytes;
 import org.glowroot.common.config.AdvancedConfig;
 import org.glowroot.common.util.Clock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Ticker;
+import com.google.common.collect.Queues;
 
 public class TransactionService implements ConfigListener {
+
+    private static final Logger logger = LoggerFactory.getLogger(TransactionService.class);
 
     private final TransactionRegistry transactionRegistry;
     private final ConfigService configService;
@@ -75,6 +82,7 @@ public class TransactionService implements ConfigListener {
 
     public void setTransactionProcessor(TransactionProcessor transactionProcessor) {
         this.transactionProcessor = transactionProcessor;
+        transactionCompletionCallback.processStartupTransaction(transactionProcessor);
     }
 
     public void setThreadAllocatedBytes(@Nullable ThreadAllocatedBytes threadAllocatedBytes) {
@@ -124,10 +132,25 @@ public class TransactionService implements ConfigListener {
 
     private class TransactionCompletionCallback implements CompletionCallback {
 
+        private final ConcurrentLinkedQueue<Transaction> startupTransactions =
+                Queues.newConcurrentLinkedQueue();
+
         @Override
         public void completed(Transaction transaction) {
-            if (transactionProcessor != null) {
+            if (transactionProcessor == null) {
+                if (startupTransactions.size() < 100) {
+                    startupTransactions.add(transaction);
+                } else {
+                    logger.warn("not processing startup transaction because already 100 pending");
+                }
+            } else {
                 transactionProcessor.processOnCompletion(transaction);
+            }
+        }
+
+        private void processStartupTransaction(TransactionProcessor transactionProcessor) {
+            for (Transaction startupTransaction : startupTransactions) {
+                transactionProcessor.processOnCompletion(startupTransaction);
             }
         }
     }

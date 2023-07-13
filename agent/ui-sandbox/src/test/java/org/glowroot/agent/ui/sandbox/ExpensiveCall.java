@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.ui.sandbox;
 
-import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -108,8 +107,6 @@ public class ExpensiveCall {
         try {
             asyncHttpClient.prepareGet("http://example.org").execute().get();
         } catch (ExecutionException e) {
-            logger.error(e.getMessage(), e);
-        } catch (IOException e) {
             logger.error(e.getMessage(), e);
         }
     }

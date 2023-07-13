@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,7 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import com.google.common.base.Strings;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
@@ -42,10 +38,10 @@ public class JavaLoggingIT {
 
     private static Container container;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
-        Assume.assumeFalse(isBridged());
-        Assume.assumeTrue(isShaded());
+        Assumptions.assumeFalse(isBridged());
+        Assumptions.assumeTrue(isShaded());
         String julManager = System.getProperty("glowroot.test.julManager");
         if (Strings.isNullOrEmpty(julManager)) {
             container = JavaagentContainer.create();
@@ -73,7 +69,7 @@ public class JavaLoggingIT {
         }
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         // need null check in case assumption is false in setUp()
         if (container != null) {
@@ -81,7 +77,7 @@ public class JavaLoggingIT {
         }
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }

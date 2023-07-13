@@ -19,12 +19,12 @@ import java.io.Serializable;
 
 public interface Cache<K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> {
 
-    V get(K key) throws Exception;
+    V get(K key);
 
     // invalidate globally
     void invalidate(K key);
 
     interface CacheLoader<K, V> {
-        V load(K key) throws Exception;
+        V load(K key);
     }
 }

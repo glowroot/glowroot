@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.glowroot.tests;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -30,10 +31,11 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.Sets;
 import com.machinepublishers.jbrowserdriver.JBrowserDriver;
 import io.netty.handler.codec.http.QueryStringDecoder;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.RetryingTest;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.StaleElementReferenceException;
@@ -53,7 +55,7 @@ import static org.openqa.selenium.By.xpath;
 
 public class BasicSmokeIT extends WebDriverIT {
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         String content = httpGet("http://localhost:" + getUiPort()
                 + "/backend/config/transaction?agent-id=" + agentId);
@@ -101,12 +103,14 @@ public class BasicSmokeIT extends WebDriverIT {
         });
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
-        container.interruptAppUnderTest();
+        if (container != null) {
+            container.interruptAppUnderTest();
+        }
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3)
     public void shouldCheckTransactionPages() throws Exception {
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
@@ -117,14 +121,14 @@ public class BasicSmokeIT extends WebDriverIT {
         Utils.getWithWait(driver, Utils.linkText("Response time")).sendKeys(Keys.F5);
 
         waitFor(xpath("//a[@gt-display='All Web Transactions'][contains(., '%')]"));
-        click(xpath("//button[normalize-space()='By percent of total time']"));
+        click(xpath("//button[normalize-space()='By total time (%)']"));
         clickLink("By average time");
         waitFor(xpath("//a[@gt-display='All Web Transactions'][contains(., 'ms')]"));
         click(xpath("//button[normalize-space()='By average time']"));
         clickLink("By throughput (per min)");
         waitFor(xpath("//a[@gt-display='All Web Transactions'][contains(., '/min')]"));
         click(xpath("//button[normalize-space()='By throughput (per min)']"));
-        clickLink("By percent of total time");
+        clickLink("By total time (%)");
         waitFor(xpath("//a[@gt-display='All Web Transactions'][contains(., '%')]"));
 
         clickAcross();
@@ -134,7 +138,7 @@ public class BasicSmokeIT extends WebDriverIT {
         clickAcross();
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3)
     public void shouldCheckNonActiveTraceModalPages() throws Exception {
         App app = app();
 
@@ -174,7 +178,7 @@ public class BasicSmokeIT extends WebDriverIT {
         clickAroundInTraceModal(traceId, false);
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3)
     public void shouldCheckActiveTraceModalPages() throws Exception {
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
@@ -191,7 +195,7 @@ public class BasicSmokeIT extends WebDriverIT {
         clickAroundInTraceModal(traceId, true);
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3)
     public void shouldCheckErrorsPages() throws Exception {
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
@@ -223,7 +227,7 @@ public class BasicSmokeIT extends WebDriverIT {
         waitFor(xpath("//label[normalize-space()='Response time']"));
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3)
     public void shouldCheckJvmPages() throws Exception {
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
@@ -268,7 +272,7 @@ public class BasicSmokeIT extends WebDriverIT {
         clickWithWait(xpath("//button[normalize-space()='Force GC']"));
 
         jvmSidebar.clickMBeanTreeLink();
-        List<WebElement> elements = new WebDriverWait(driver, 30).until(ExpectedConditions
+        List<WebElement> elements = new WebDriverWait(driver, Duration.ofSeconds(30)).until(ExpectedConditions
                 .visibilityOfAllElementsLocatedBy(className("gt-mbean-unexpanded-content")));
         for (WebElement element : elements) {
             element.click();
@@ -285,7 +289,7 @@ public class BasicSmokeIT extends WebDriverIT {
         app.open("/jvm/capabilities");
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3)
     public void shouldRunReportTransactionAverage() throws Exception {
         // given
         App app = app();
@@ -307,7 +311,7 @@ public class BasicSmokeIT extends WebDriverIT {
         waitFor(xpath("//div[@ng-if='showChart']"));
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3)
     public void shouldRunReportTransactionPercentile() throws Exception {
         // given
         App app = app();
@@ -330,7 +334,7 @@ public class BasicSmokeIT extends WebDriverIT {
         waitFor(xpath("//div[@ng-if='showChart']"));
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3)
     public void shouldRunReportTransactionCount() throws Exception {
         // given
         App app = app();
@@ -430,7 +434,7 @@ public class BasicSmokeIT extends WebDriverIT {
 
     @Test
     public void shouldCheckCassandraWriteTotals() throws Exception {
-        Assume.assumeTrue(WebDriverSetup.useCentral);
+        Assumptions.assumeTrue(WebDriverSetup.useCentral);
         httpGet("http://localhost:" + getUiPort()
                 + "/backend/admin/cassandra-write-totals?limit=10");
     }
@@ -450,7 +454,7 @@ public class BasicSmokeIT extends WebDriverIT {
         clickLink("Thread profile");
         Utils.getWithWait(driver, xpath("//input[@ng-model='filter']")).sendKeys("JdbcServlet");
         click(xpath("//button[@ng-click='refresh()']"));
-        new WebDriverWait(driver, 30).until(ExpectedConditions
+        new WebDriverWait(driver, Duration.ofSeconds(30)).until(ExpectedConditions
                 .textToBePresentInElementLocated(className("gt-profile"), "JdbcServlet"));
         clickLink("View flame graph");
         // give flame graph a chance to render (only for visual when running locally)

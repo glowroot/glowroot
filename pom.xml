@@ -5,7 +5,7 @@
 
   <groupId>org.glowroot</groupId>
   <artifactId>glowroot-parent</artifactId>
-  <version>0.13.7-SNAPSHOT</version>
+  <version>0.14.1-beta.2-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Glowroot Parent Project</name>
@@ -32,8 +32,6 @@
 
   <modules>
     <module>build/license-bundle</module>
-    <module>build/checker-jdk6</module>
-    <module>build/error-prone-jdk6</module>
     <module>build/multi-lib-tests</module>
     <module>common</module>
     <module>common2</module>
@@ -49,7 +47,6 @@
     <module>agent/shaded/core</module>
     <module>agent/shaded/it-harness</module>
     <module>agent/shaded/central-https-linux</module>
-    <module>agent/shaded/central-https-linux-alpine</module>
     <module>agent/shaded/central-https-windows</module>
     <module>agent/shaded/central-https-osx</module>
     <module>agent/shaded/logging-logstash</module>
@@ -62,6 +59,7 @@
     <module>agent/plugins/grails-plugin</module>
     <module>agent/plugins/hibernate-plugin</module>
     <module>agent/plugins/http-client-plugin</module>
+    <module>agent/plugins/jakarta-servlet-plugin</module>
     <module>agent/plugins/java-http-server-plugin</module>
     <module>agent/plugins/jaxrs-plugin</module>
     <module>agent/plugins/jaxws-plugin</module>
@@ -93,17 +91,17 @@
   </scm>
 
   <properties>
-    <!-- grpc 1.15.0+ requires Java 7+ -->
-    <grpc.version>1.14.0</grpc.version>
-    <!-- protobuf 3.6.0+ requires Java 7+ -->
-    <protobuf.version>3.5.1</protobuf.version>
-    <protoc.version>3.5.1</protoc.version>
+    <grpc.version>1.56.0</grpc.version>
+    <protobuf.version>3.22.5</protobuf.version>
+    <protoc.version>3.22.5</protoc.version>
     <!-- need to stick to netty version that is used by grpc version above -->
-    <netty.version>4.1.27.Final</netty.version>
-    <logback.version>1.2.3</logback.version>
-    <slf4j.version>1.7.30</slf4j.version>
-    <immutables.version>2.8.3</immutables.version>
-    <jmh.version>1.23</jmh.version>
+    <netty.version>4.1.87.Final</netty.version>
+    <logback.version>1.2.12</logback.version>
+    <slf4j.version>1.7.36</slf4j.version>
+    <immutables.version>2.9.3</immutables.version>
+    <checker.version>3.18.1</checker.version>
+    <jmh.version>1.33</jmh.version>
+    <junit.version>5.9.3</junit.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
@@ -124,17 +122,6 @@
         <groupId>org.immutables</groupId>
         <artifactId>builder</artifactId>
         <version>${immutables.version}</version>
-      </dependency>
-      <dependency>
-        <!-- the presence of this dependency triggers generation of Java 6 compatible classes -->
-        <groupId>org.immutables</groupId>
-        <artifactId>android-stub</artifactId>
-        <version>${immutables.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.github.trask</groupId>
-        <artifactId>immutables-jdk6-shim</artifactId>
-        <version>1.0.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.protobuf</groupId>
@@ -169,7 +156,7 @@
       <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
-        <version>2.8.6</version>
+        <version>2.10.1</version>
       </dependency>
       <dependency>
         <groupId>com.google.code.findbugs</groupId>
@@ -192,55 +179,70 @@
         <version>${logback.version}</version>
       </dependency>
       <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>4.13</version>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-api</artifactId>
+        <version>${junit.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-params</artifactId>
+        <version>${junit.version}</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>20.0</version>
+        <version>31.0.1-jre</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-core</artifactId>
-        <!-- jackson 2.7.0+ requires Java 7+ -->
-        <version>2.6.7</version>
+        <version>2.15.2</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <!-- jackson 2.7.0+ requires Java 7+ -->
-        <version>2.6.7.3</version>
+        <version>2.15.2</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-annotations</artifactId>
-        <!-- jackson 2.7.0+ requires Java 7+ -->
-        <version>2.6.7</version>
+        <version>2.15.2</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.datatype</groupId>
         <artifactId>jackson-datatype-guava</artifactId>
-        <!-- jackson 2.7.0+ requires Java 7+ -->
-        <version>2.6.7</version>
+        <version>2.15.2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.checkerframework</groupId>
+        <artifactId>checker-qual</artifactId>
+        <version>${checker.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.errorprone</groupId>
+        <artifactId>error_prone_annotations</artifactId>
+        <version>2.9.0</version>
       </dependency>
       <dependency>
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>
-        <!-- assertj 2.0.0+ requires Java 7+ -->
-        <version>1.7.1</version>
+        <version>3.24.2</version>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>3.2.4</version>
+        <version>5.3.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-junit-jupiter</artifactId>
+        <version>5.3.1</version>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>com.ning</groupId>
         <artifactId>async-http-client</artifactId>
-        <!-- async-http-client 1.9.0+ requires Java 7+ -->
-        <version>1.8.17</version>
+        <version>1.9.40</version>
       </dependency>
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
@@ -255,27 +257,17 @@
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-core</artifactId>
-        <!-- tomcat 8.0.0+ requires Java 7+ -->
-        <version>7.0.99</version>
+        <version>8.5.88</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-jasper</artifactId>
-        <!-- tomcat 8.0.0+ requires Java 7+ -->
-        <version>7.0.99</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.tomcat.embed</groupId>
-        <artifactId>tomcat-embed-logging-juli</artifactId>
-        <!-- tomcat 8.0.0+ requires Java 7+ -->
-        <version>7.0.99</version>
+        <version>8.5.88</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tomcat.embed</groupId>
         <artifactId>tomcat-embed-websocket</artifactId>
-        <!-- tomcat 8.0.0+ requires Java 7+ -->
-        <!-- tomcat-embed-websocket 7.0.92+ is causing spring websocket tests to fail -->
-        <version>7.0.91</version>
+        <version>8.5.88</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -299,18 +291,11 @@
             <configuration>
               <rules>
                 <requireJavaVersion>
-                  <!-- immutables annotation processors require java 7+ -->
-                  <version>[1.7,)</version>
+                  <version>[1.8,)</version>
                 </requireJavaVersion>
                 <requireMavenVersion>
-                  <version>[3.3.1,)</version>
+                  <version>[3.8.7,)</version>
                 </requireMavenVersion>
-                <requireUpperBoundDeps>
-                  <excludes>
-                    <!-- Exclude until infinispan-core 10.0 is released -->
-                    <exclude>org.jgroups:jgroups</exclude>
-                  </excludes>
-                </requireUpperBoundDeps>
               </rules>
             </configuration>
           </execution>
@@ -327,16 +312,16 @@
         </executions>
       </plugin>
       <plugin>
-        <!-- ensure that only methods available in jdk 6 can be used even when compiling with a more
+        <!-- ensure that only methods available in jdk 8 can be used even when compiling with a more
           recent jdk -->
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>animal-sniffer-maven-plugin</artifactId>
-        <version>1.17</version>
+        <version>1.23</version>
         <configuration>
           <signature>
             <groupId>org.codehaus.mojo.signature</groupId>
-            <artifactId>java16</artifactId>
-            <version>1.1</version>
+            <artifactId>java18</artifactId>
+            <version>1.0</version>
           </signature>
         </configuration>
         <executions>
@@ -367,18 +352,18 @@
         </plugin>
         <plugin>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.2.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.1</version>
+          <version>3.11.0</version>
           <configuration>
-            <source>1.6</source>
-            <target>1.6</target>
+            <source>8</source>
+            <target>8</target>
             <!-- prevents endPosTable exception for maven compile due to annotation processing,
               see http://immutables.github.io/getstarted.html -->
             <useIncrementalCompilation>false</useIncrementalCompilation>
@@ -386,22 +371,22 @@
         </plugin>
         <plugin>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>3.0.0-M1</version>
+          <version>3.1.1</version>
           <configuration>
             <deployAtEnd>true</deployAtEnd>
           </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.0.0-M3</version>
+          <version>3.3.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>3.0.0-M4</version>
+          <version>3.0.0</version>
           <configuration>
             <systemPropertyVariables>
               <glowroot.test.fileLoggingOnly>true</glowroot.test.fileLoggingOnly>
@@ -413,11 +398,11 @@
         </plugin>
         <plugin>
           <artifactId>maven-install-plugin</artifactId>
-          <version>3.0.0-M1</version>
+          <version>3.1.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.3.0</version>
           <configuration>
             <archive>
               <manifestEntries>
@@ -431,27 +416,27 @@
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-plugin-plugin</artifactId>
-          <version>3.6.0</version>
+          <version>3.7.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-remote-resources-plugin</artifactId>
-          <version>1.7.0</version>
+          <version>3.0.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.3.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.2.1</version>
+          <version>3.4.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-site-plugin</artifactId>
-          <version>3.8.2</version>
+          <version>3.12.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-source-plugin</artifactId>
@@ -459,7 +444,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.0.0-M4</version>
+          <version>3.0.0</version>
           <configuration>
             <systemPropertyVariables>
               <glowroot.test.fileLoggingOnly>true</glowroot.test.fileLoggingOnly>
@@ -472,34 +457,27 @@
         <plugin>
           <groupId>com.github.wvengen</groupId>
           <artifactId>proguard-maven-plugin</artifactId>
-          <version>2.2.0</version>
-          <dependencies>
-            <dependency>
-              <groupId>net.sf.proguard</groupId>
-              <artifactId>proguard-base</artifactId>
-              <version>6.2.2</version>
-            </dependency>
-          </dependencies>
+          <version>2.6.0</version>
         </plugin>
         <plugin>
           <groupId>com.github.os72</groupId>
           <artifactId>protoc-jar-maven-plugin</artifactId>
-          <version>3.11.1</version>
+          <version>3.11.4</version>
         </plugin>
         <plugin>
           <groupId>org.sonarsource.scanner.maven</groupId>
           <artifactId>sonar-maven-plugin</artifactId>
-          <version>3.7.0.1746</version>
+          <version>3.9.1.2184</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.3.0</version>
         </plugin>
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.5</version>
+          <version>0.8.8</version>
         </plugin>
         <plugin>
           <groupId>org.eclipse.m2e</groupId>
@@ -556,26 +534,6 @@
   </build>
 
   <profiles>
-    <profile>
-      <id>auto-activated-skip-proguard-under-java-11</id>
-      <activation>
-        <!-- proguard doesn't currently work on jdk 11 -->
-        <jdk>[11,)</jdk>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>com.github.wvengen</groupId>
-              <artifactId>proguard-maven-plugin</artifactId>
-              <configuration>
-                <skip>true</skip>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
     <profile>
       <id>auto-activated-java-8</id>
       <activation>
@@ -721,7 +679,7 @@
         <plugins>
           <plugin>
             <artifactId>maven-gpg-plugin</artifactId>
-            <version>1.6</version>
+            <version>3.0.1</version>
             <executions>
               <execution>
                 <phase>verify</phase>
@@ -837,9 +795,6 @@
           <name>glowroot.checker.build</name>
         </property>
       </activation>
-      <properties>
-        <checker.version>2.5.6</checker.version>
-      </properties>
       <dependencies>
         <dependency>
           <groupId>org.checkerframework</groupId>
@@ -899,8 +854,8 @@
           <plugin>
             <artifactId>maven-compiler-plugin</artifactId>
             <configuration>
-              <source>1.8</source>
-              <target>1.8</target>
+              <source>8</source>
+              <target>8</target>
               <maxmem>512m</maxmem>
               <annotationProcessors>
                 <annotationProcessor>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,23 +15,19 @@
  */
 package org.glowroot.agent.init;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.impl.TraceCollector;
 import org.glowroot.agent.impl.Transaction;
 import org.glowroot.agent.init.ImmediateTraceStoreWatcher.ImmediateTraceStoreRunnable;
 import org.glowroot.common.util.ScheduledRunnable.TerminateSubsequentExecutionsException;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 public class ImmediateTraceStoreRunnableTest {
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void testOneCallBeyondComplete() {
@@ -44,20 +40,21 @@ public class ImmediateTraceStoreRunnableTest {
         // when
         immediateTraceStoreRunnable.run();
         // then
-        verifyZeroInteractions(traceCollector);
+        verifyNoInteractions(traceCollector);
     }
 
     @Test
     public void testTwoCallsBeyondComplete() {
-        // given
-        thrown.expect(TerminateSubsequentExecutionsException.class);
-        Transaction transaction = mock(Transaction.class);
-        when(transaction.isCompleted()).thenReturn(true);
-        TraceCollector traceCollector = mock(TraceCollector.class);
-        ImmediateTraceStoreRunnable immediateTraceStoreRunnable =
-                new ImmediateTraceStoreRunnable(transaction, traceCollector);
-        // when
-        immediateTraceStoreRunnable.run();
-        immediateTraceStoreRunnable.run();
+        assertThrows(TerminateSubsequentExecutionsException.class, () -> {
+            // given
+            Transaction transaction = mock(Transaction.class);
+            when(transaction.isCompleted()).thenReturn(true);
+            TraceCollector traceCollector = mock(TraceCollector.class);
+            ImmediateTraceStoreRunnable immediateTraceStoreRunnable =
+                    new ImmediateTraceStoreRunnable(transaction, traceCollector);
+            // when
+            immediateTraceStoreRunnable.run();
+            immediateTraceStoreRunnable.run();
+        });
     }
 }

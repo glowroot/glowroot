@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2019-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,9 @@
 package org.glowroot.agent.embedded.repo;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.glowroot.common2.repo.AgentDisplayRepository;
 
@@ -36,7 +35,7 @@ public class AgentDisplayRepositoryImpl implements AgentDisplayRepository {
     }
 
     @Override
-    public ListenableFuture<String> readLastDisplayPartAsync(String agentRollupId) {
-        return Futures.immediateFuture("");
+    public CompletableFuture<String> readLastDisplayPartAsync(String agentRollupId) {
+        return CompletableFuture.completedFuture("");
     }
 }

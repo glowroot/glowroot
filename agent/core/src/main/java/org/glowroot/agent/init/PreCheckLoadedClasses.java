@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 the original author or authors.
+ * Copyright 2018-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,11 @@ public class PreCheckLoadedClasses {
     private static boolean isImportantRunnableOrCallable(String className, Class<?> clazz) {
         return className.startsWith("java.util.concurrent.") && !clazz.isInterface()
                 && (Runnable.class.isAssignableFrom(clazz)
-                        || Callable.class.isAssignableFrom(clazz));
+                        || Callable.class.isAssignableFrom(clazz))
+                // it seems that java 19+ loads very early the ForkJoinWorkerThread class
+                // maybe because of the virtual threads feature
+                // see https://levelup.gitconnected.com/java-virtual-threads-millions-of-threads-within-grasp-e0a4d26548ba
+                && !className.equals("java.util.concurrent.ForkJoinWorkerThread");
     }
 
     private static boolean isShaded() {

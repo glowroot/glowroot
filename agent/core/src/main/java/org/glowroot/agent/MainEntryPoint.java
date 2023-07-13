@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2019 the original author or authors.
+ * Copyright 2011-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -468,11 +468,7 @@ public class MainEntryPoint {
         // using logic from https://github.com/trustin/os-maven-plugin#property-osdetectedname
         String lowerOsName = osName.toLowerCase(Locale.ENGLISH).replaceAll("[^a-z0-9]+", "");
         if (lowerOsName.startsWith("linux")) {
-            if (new File("/etc/alpine-release").exists()) {
-                return "linux-alpine";
-            } else {
-                return "linux";
-            }
+            return "linux";
         } else if (lowerOsName.startsWith("windows")) {
             return "windows";
         } else if (lowerOsName.startsWith("macosx") || lowerOsName.startsWith("osx")) {

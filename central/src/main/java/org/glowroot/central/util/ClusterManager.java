@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,18 +32,14 @@ import java.util.regex.Pattern;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.infinispan.commons.marshall.JavaSerializationMarshaller;
 import org.infinispan.configuration.cache.CacheMode;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.global.GlobalConfiguration;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.eviction.EvictionStrategy;
-import org.infinispan.eviction.EvictionType;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 import org.infinispan.remoting.transport.Address;
@@ -62,7 +58,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public abstract class ClusterManager {
+public abstract class ClusterManager implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(ClusterManager.class);
 
@@ -107,6 +103,7 @@ public abstract class ClusterManager {
     public abstract <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> DistributedExecutionMap<K, V> createDistributedExecutionMap(
             String cacheName);
 
+    @Override
     public abstract void close() throws InterruptedException;
 
     private static class ClusterManagerImpl extends ClusterManager {
@@ -116,14 +113,26 @@ public abstract class ClusterManager {
 
         private ClusterManagerImpl(File confDir, String jgroupsConfigurationFile,
                 Map<String, String> jgroupsProperties) {
-            GlobalConfiguration configuration = new GlobalConfigurationBuilder()
-                    .transport()
-                    .defaultTransport()
-                    .addProperty("configurationFile",
-                            getConfigurationFilePropertyValue(confDir, jgroupsConfigurationFile))
-                    .globalJmxStatistics()
-                    .enable()
-                    .build();
+            GlobalConfigurationBuilder builder = new GlobalConfigurationBuilder();
+            builder
+                .transport()
+                .defaultTransport()
+                .addProperty("configurationFile",
+                        getConfigurationFilePropertyValue(confDir, jgroupsConfigurationFile))
+                .jmx()
+                .enable()
+                .serialization()
+                    .marshaller(new JavaSerializationMarshaller())
+                        .allowList()
+                            .addRegexps(
+                                    "org\\.glowroot\\.central\\..*",
+                                    "org\\.glowroot\\.ui\\..*",
+                                    "org\\.glowroot\\.wire\\.api\\.model\\..*",
+                                    "com\\.google\\.common\\.collect\\.Immutable.*",
+                                    "com\\.google\\.protobuf\\..*"
+                            );
+
+            GlobalConfiguration configuration = builder.build();
             cacheManager = doWithSystemProperties(jgroupsProperties,
                     () -> new DefaultCacheManager(configuration));
             executor = MoreExecutors2.newCachedThreadPool("Cluster-Manager-Worker");
@@ -149,7 +158,7 @@ public abstract class ClusterManager {
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.clustering()
                     .cacheMode(CacheMode.INVALIDATION_ASYNC)
-                    .jmxStatistics()
+                    .statistics()
                     .enable();
             cacheManager.defineConfiguration(cacheName, configurationBuilder.build());
             return new CacheImpl<K, V>(cacheManager.getCache(cacheName), loader);
@@ -175,7 +184,7 @@ public abstract class ClusterManager {
                     .cacheMode(CacheMode.REPL_ASYNC)
                     .expiration()
                     .lifespan(expirationTime, expirationUnit)
-                    .jmxStatistics()
+                    .statistics()
                     .enable();
             cacheManager.defineConfiguration(mapName, configurationBuilder.build());
             return cacheManager.getCache(mapName);
@@ -187,7 +196,7 @@ public abstract class ClusterManager {
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.clustering()
                     .cacheMode(CacheMode.LOCAL)
-                    .jmxStatistics()
+                    .statistics()
                     .enable();
             cacheManager.defineConfiguration(cacheName, configurationBuilder.build());
             return new DistributedExecutionMapImpl<K, V>(cacheManager.getCache(cacheName));
@@ -253,10 +262,9 @@ public abstract class ClusterManager {
                     .expiration()
                     .maxIdle(30, MINUTES)
                     .memory()
-                    .size(size)
-                    .evictionType(EvictionType.COUNT)
-                    .evictionStrategy(EvictionStrategy.REMOVE)
-                    .jmxStatistics()
+                    .maxCount(size)
+                    .whenFull(EvictionStrategy.REMOVE)
+                    .statistics()
                     .enable();
             return configurationBuilder.build();
         }
@@ -325,7 +333,7 @@ public abstract class ClusterManager {
         }
 
         @Override
-        public V get(K key) throws Exception {
+        public V get(K key) {
             V value = cache.get(key);
             if (value == null) {
                 value = loader.load(key);
@@ -356,21 +364,17 @@ public abstract class ClusterManager {
         }
 
         @Override
-        public ListenableFuture<V> get(K key) throws Exception {
+        public CompletableFuture<V> get(K key) {
             V value = cache.get(key);
             if (value != null) {
-                return Futures.immediateFuture(value);
+                return CompletableFuture.completedFuture(value);
             }
-            ListenableFuture<V> future = loader.load(key);
-            // FIXME there's a race condition if invalidation is received at this point
-            Futures.addCallback(future, new FutureCallback<V>() {
-                @Override
-                public void onSuccess(V v) {
-                    cache.putForExternalRead(key, v);
-                }
-                @Override
-                public void onFailure(Throwable t) {}
-            }, executor);
+            CompletableFuture<V> future = loader.load(key)
+                    // FIXME there's a race condition if invalidation is received at this point
+                    .thenApplyAsync(v -> {
+                        cache.putForExternalRead(key, v);
+                        return v;
+                    }, executor);
             return future;
         }
 
@@ -391,7 +395,7 @@ public abstract class ClusterManager {
         }
 
         @Override
-        public V get(K key) throws Exception {
+        public V get(K key) {
             V value = cache.get(key);
             if (value == null) {
                 value = loader.load(key);
@@ -418,22 +422,16 @@ public abstract class ClusterManager {
         }
 
         @Override
-        public ListenableFuture<V> get(K key) throws Exception {
+        public CompletableFuture<V> get(K key) {
             V value = cache.get(key);
             if (value != null) {
-                return Futures.immediateFuture(value);
+                return CompletableFuture.completedFuture(value);
             }
-            ListenableFuture<V> future = loader.load(key);
             // FIXME there's a race condition if invalidation is received at this point
-            Futures.addCallback(future, new FutureCallback<V>() {
-                @Override
-                public void onSuccess(V v) {
-                    cache.put(key, v);
-                }
-                @Override
-                public void onFailure(Throwable t) {}
-                // ok to use direct executor since the cache is just a simple ConcurrentHashMap
-            }, MoreExecutors.directExecutor());
+            CompletableFuture<V> future = loader.load(key).thenApply(v -> {
+                cache.put(key, v);
+                return v;
+            });
             return future;
         }
 

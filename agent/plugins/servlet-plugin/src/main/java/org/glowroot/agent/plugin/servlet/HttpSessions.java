@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,14 +23,12 @@ import java.util.Map;
 
 import javax.servlet.http.HttpSession;
 
-import org.glowroot.agent.plugin.api.Logger;
 import org.glowroot.agent.plugin.api.checker.Nullable;
 import org.glowroot.agent.plugin.api.util.Beans;
 import org.glowroot.agent.plugin.api.util.ImmutableMap;
-import org.glowroot.agent.plugin.servlet._.ServletMessageSupplier;
-import org.glowroot.agent.plugin.servlet._.ServletPluginProperties;
-import org.glowroot.agent.plugin.servlet._.ServletPluginProperties.SessionAttributePath;
-import org.glowroot.agent.plugin.servlet._.Strings;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.ServletPluginProperties;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.ServletPluginProperties.SessionAttributePath;
+import org.glowroot.agent.plugin.servlet.bclglowrootbcl.Strings;
 
 public class HttpSessions {
 

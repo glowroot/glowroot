@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2019 the original author or authors.
+ * Copyright 2011-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -232,6 +232,9 @@ public class AgentModule {
         }
 
         initPlugins(pluginCache.pluginDescriptors());
+
+        // init stack trace collector early for profiling other agents
+        stackTraceCollector = new StackTraceCollector(transactionRegistry, configService, random);
     }
 
     public void setOnEnteringMain(OnEnteringMain onEnteringMain) {
@@ -282,7 +285,6 @@ public class AgentModule {
         // using fixed rate to keep gauge collections close to on the second mark
         long gaugeCollectionIntervalMillis = configService.getGaugeCollectionIntervalMillis();
         gaugeCollector.scheduleWithFixedDelay(gaugeCollectionIntervalMillis, MILLISECONDS);
-        stackTraceCollector = new StackTraceCollector(transactionRegistry, configService, random);
 
         immedateTraceStoreWatcher = new ImmediateTraceStoreWatcher(backgroundExecutor,
                 transactionRegistry, traceCollector, configService, ticker);

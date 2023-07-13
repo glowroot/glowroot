@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 the original author or authors.
+ * Copyright 2018-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,13 @@
  */
 package org.glowroot.central.repo;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
@@ -71,10 +68,10 @@ class SyntheticMonitorIdDao {
             throws Exception {
         long rolledUpFrom = CaptureTimes.getRollup(from, DAYS.toMillis(1));
         long rolledUpTo = CaptureTimes.getRollup(to, DAYS.toMillis(1));
-        BoundStatement boundStatement = readPS.bind();
-        boundStatement.setString(0, agentRollupId);
-        boundStatement.setTimestamp(1, new Date(rolledUpFrom));
-        boundStatement.setTimestamp(2, new Date(rolledUpTo));
+        BoundStatement boundStatement = readPS.bind()
+            .setString(0, agentRollupId)
+            .setInstant(1, Instant.ofEpochMilli(rolledUpFrom))
+            .setInstant(2, Instant.ofEpochMilli(rolledUpTo));
         ResultSet results = session.read(boundStatement);
         Map<String, String> syntheticMonitorIds = new HashMap<>();
         for (Row row : results) {
@@ -83,8 +80,8 @@ class SyntheticMonitorIdDao {
         return syntheticMonitorIds;
     }
 
-    List<Future<?>> insert(String agentRollupId, long captureTime, String syntheticMonitorId,
-            String syntheticMonitorDisplay) throws Exception {
+    List<CompletableFuture<?>> insert(String agentRollupId, long captureTime, String syntheticMonitorId,
+                                      String syntheticMonitorDisplay) {
         long rollupCaptureTime = CaptureTimes.getRollup(captureTime, DAYS.toMillis(1));
         SyntheticMonitorKey rateLimiterKey = ImmutableSyntheticMonitorKey.builder()
                 .agentRollupId(agentRollupId)
@@ -95,15 +92,15 @@ class SyntheticMonitorIdDao {
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return ImmutableList.of();
         }
-        BoundStatement boundStatement = insertPS.bind();
         int i = 0;
-        boundStatement.setString(i++, agentRollupId);
-        boundStatement.setTimestamp(i++, new Date(rollupCaptureTime));
-        boundStatement.setString(i++, syntheticMonitorId);
-        boundStatement.setString(i++, syntheticMonitorDisplay);
+        BoundStatement boundStatement = insertPS.bind()
+            .setString(i++, agentRollupId)
+            .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
+            .setString(i++, syntheticMonitorId)
+            .setString(i++, syntheticMonitorDisplay);
         int maxRollupTTL = configRepository.getCentralStorageConfig().getMaxRollupTTL();
-        boundStatement.setInt(i++, Common.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
-        return ImmutableList.of(session.writeAsync(boundStatement));
+        boundStatement = boundStatement.setInt(i++, Common.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
+        return ImmutableList.of(session.writeAsync(boundStatement).toCompletableFuture());
     }
 
     @Value.Immutable

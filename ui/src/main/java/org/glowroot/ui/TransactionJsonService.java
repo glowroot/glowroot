@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2019 the original author or authors.
+ * Copyright 2011-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -442,6 +442,8 @@ class TransactionJsonService {
                 // this is probably data from before the requested time period
                 overallSummary = ImmutableOverallSummary.builder()
                         .totalDurationNanos(0)
+                        .totalCpuNanos(0)
+                        .totalAllocatedBytes(0)
                         .transactionCount(0)
                         .build();
             }

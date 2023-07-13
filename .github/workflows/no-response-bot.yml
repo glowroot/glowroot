@@ -1,0 +1,28 @@
+name: No Response
+
+# Both `issue_comment` and `scheduled` event types are required for this Action
+# to work properly.
+on:
+  issue_comment:
+    types: [created]
+  schedule:
+    # Schedule for five minutes after the hour, every hour
+    - cron: '5 * * * *'
+
+jobs:
+  noResponse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: lee-dohm/no-response@v0.5.0
+        with:
+          token: ${{ github.token }}
+          daysUntilClose: 30
+          closeComment: >
+            This issue has been auto-closed as awaiting feedback for 30 days.
+            If you would like to continue discussing it, no problem!
+            If you are the original author of this issue,
+            any comment you make will trigger the bot to automatically re-open it
+            (sometime in the next hour).
+            If you are not the original author, you can still leave a comment,
+            but it won't trigger the bot to re-open the issue. Thanks!
+          responseRequiredLabel: "awaiting feedback"

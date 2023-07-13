@@ -17,12 +17,11 @@ package org.glowroot.central.repo;
 
 import java.util.List;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.PoolingOptions;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
@@ -35,6 +34,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.central.repo.CqlSessionBuilders.MAX_CONCURRENT_QUERIES;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -43,30 +43,34 @@ public class IncidentDaoIT {
 
     private static final String AGENT_ID = "xyz";
 
-    private static Cluster cluster;
+    private static CqlSessionBuilder cqlSessionBuilder;
     private static Session session;
     private static IncidentDao incidentDao;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
-        cluster = Clusters.newCluster();
-        session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
-                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+        cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
+        session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
+                MAX_CONCURRENT_QUERIES, 0);
 
         Clock clock = mock(Clock.class);
         when(clock.currentTimeMillis()).thenReturn(345L);
         incidentDao = new IncidentDao(session, clock);
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
-        session.close();
-        cluster.close();
-        SharedSetupRunListener.stopCassandra();
+        if (!SharedSetupRunListener.isStarted()) {
+            return;
+        }
+        try (var se = session) {
+        } finally {
+            SharedSetupRunListener.stopCassandra();
+        }
     }
 
-    @Before
+    @BeforeEach
     public void beforeEach() throws Exception {
         session.updateSchemaWithRetry("truncate open_incident");
         session.updateSchemaWithRetry("truncate resolved_incident");

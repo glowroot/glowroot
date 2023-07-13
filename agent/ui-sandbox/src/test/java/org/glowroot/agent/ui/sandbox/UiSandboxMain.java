@@ -42,6 +42,9 @@ public class UiSandboxMain {
     public static void main(String[] args) throws Exception {
         Container container;
         File testDir = new File("target");
+        if (!testDir.exists()) {
+            testDir.mkdir();
+        }
         File configFile = new File(testDir, "config.json");
         if (!configFile.exists()) {
             Files.write(

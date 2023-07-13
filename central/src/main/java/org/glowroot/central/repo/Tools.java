@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 the original author or authors.
+ * Copyright 2018-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,15 @@
  */
 package org.glowroot.central.repo;
 
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
@@ -115,7 +112,7 @@ public class Tools {
         } else {
             throw new Exception("Unexpected partial table name: " + partialTableName);
         }
-        Date threshold = new Date(
+        Instant threshold = Instant.ofEpochMilli(
                 System.currentTimeMillis() - HOURS.toMillis(expirationHours.get(rollupLevel)));
         if (partialTableName.equals("gauge_value")) {
             return executeGaugeValueRangeDeletes(rollupLevel, "<", threshold);
@@ -130,7 +127,7 @@ public class Tools {
     public boolean deleteBadFutureData(List<String> args) throws Exception {
         String partialTableName = args.get(0);
         int rollupLevel = Integer.parseInt(args.get(1));
-        Date threshold = new Date(System.currentTimeMillis() + DAYS.toMillis(1));
+        Instant threshold = Instant.ofEpochMilli(System.currentTimeMillis() + DAYS.toMillis(1));
         if (partialTableName.equals("gauge_value")) {
             return executeGaugeValueRangeDeletes(rollupLevel, ">", threshold);
         } else if (partialTableName.equals("summary") || partialTableName.equals("error_summary")) {
@@ -142,7 +139,7 @@ public class Tools {
     }
 
     private boolean executeAggregateRangeDeletes(String partialTableName, int rollupLevel,
-            String thresholdComparator, Date threshold) throws Exception {
+            String thresholdComparator, Instant threshold) throws Exception {
         startupLogger.info("this could take several minutes on large data sets...");
         Set<TtPartitionKey> ttPartitionKeys =
                 getPartitionKeys(rollupLevel, thresholdComparator, threshold);
@@ -182,7 +179,7 @@ public class Tools {
     }
 
     private boolean executeAggregateSummaryRangeDeletes(String partialTableName, int rollupLevel,
-            String thresholdComparator, Date threshold) throws Exception {
+            String thresholdComparator, Instant threshold) throws Exception {
         startupLogger.info("this could take several minutes on large data sets...");
         Set<TtPartitionKey> ttPartitionKeys =
                 getPartitionKeys(rollupLevel, thresholdComparator, threshold);
@@ -200,7 +197,7 @@ public class Tools {
     }
 
     private boolean executeGaugeValueRangeDeletes(int rollupLevel, String thresholdComparator,
-            Date threshold) throws Exception {
+            Instant threshold) throws Exception {
         startupLogger.info("this could take several minutes on large data sets...");
         Set<GaugeValuePartitionKey> partitionKeys =
                 getGaugeValuePartitionKeys(rollupLevel, thresholdComparator, threshold);
@@ -216,7 +213,7 @@ public class Tools {
     }
 
     private Set<TtPartitionKey> getPartitionKeys(int rollupLevel, String thresholdComparator,
-            Date threshold) throws Exception {
+            Instant threshold) throws Exception {
         ResultSet results = session.read("select agent_rollup, transaction_type, capture_time"
                 + " from aggregate_tt_summary_rollup_" + rollupLevel);
         Multimap<String, String> transactionTypes = HashMultimap.create();
@@ -224,13 +221,13 @@ public class Tools {
             int i = 0;
             String agentRollupId = checkNotNull(row.getString(i++));
             String transactionType = checkNotNull(row.getString(i++));
-            Date captureTime = checkNotNull(row.getTimestamp(i++));
+            Instant captureTime = checkNotNull(row.getInstant(i++));
             if (thresholdComparator.equals("<")) {
-                if (captureTime.getTime() < threshold.getTime()) {
+                if (captureTime.toEpochMilli() < threshold.toEpochMilli()) {
                     transactionTypes.put(agentRollupId, transactionType);
                 }
             } else if (thresholdComparator.equals(">")) {
-                if (captureTime.getTime() > threshold.getTime()) {
+                if (captureTime.toEpochMilli() > threshold.toEpochMilli()) {
                     transactionTypes.put(agentRollupId, transactionType);
                 }
             } else {
@@ -249,18 +246,18 @@ public class Tools {
     }
 
     private Set<TnPartitionKey> getPartitionKeys(int rollupLevel,
-            Set<TtPartitionKey> ttPartitionKeys, String thresholdComparator, Date threshold)
+            Set<TtPartitionKey> ttPartitionKeys, String thresholdComparator, Instant threshold)
             throws Exception {
         Set<TnPartitionKey> tnPartitionKeys = new HashSet<>();
         PreparedStatement readPS = session.prepare("select transaction_name from"
                 + " aggregate_tn_summary_rollup_" + rollupLevel + " where agent_rollup = ? and"
                 + " transaction_type = ? and capture_time " + thresholdComparator + " ?");
         for (TtPartitionKey ttPartitionKey : ttPartitionKeys) {
-            BoundStatement boundStatement = readPS.bind();
             int i = 0;
-            boundStatement.setString(i++, ttPartitionKey.agentRollupId());
-            boundStatement.setString(i++, ttPartitionKey.transactionType());
-            boundStatement.setTimestamp(i++, threshold);
+            BoundStatement boundStatement = readPS.bind()
+                .setString(i++, ttPartitionKey.agentRollupId())
+                .setString(i++, ttPartitionKey.transactionType())
+                .setInstant(i++, threshold);
             ResultSet results = session.read(boundStatement);
             Set<String> transactionNames = new HashSet<>();
             for (Row row : results) {
@@ -278,7 +275,7 @@ public class Tools {
     }
 
     private Set<GaugeValuePartitionKey> getGaugeValuePartitionKeys(int rollupLevel,
-            String thresholdComparator, Date threshold) throws Exception {
+            String thresholdComparator, Instant threshold) throws Exception {
         ResultSet results = session.read("select agent_rollup, gauge_name, capture_time from"
                 + " gauge_value_rollup_" + rollupLevel);
         Multimap<String, String> gaugeNames = HashMultimap.create();
@@ -286,13 +283,13 @@ public class Tools {
             int i = 0;
             String agentRollupId = checkNotNull(row.getString(i++));
             String gaugeName = checkNotNull(row.getString(i++));
-            Date captureTime = checkNotNull(row.getTimestamp(i++));
+            Instant captureTime = checkNotNull(row.getInstant(i++));
             if (thresholdComparator.equals("<")) {
-                if (captureTime.getTime() < threshold.getTime()) {
+                if (captureTime.toEpochMilli() < threshold.toEpochMilli()) {
                     gaugeNames.put(agentRollupId, gaugeName);
                 }
             } else if (thresholdComparator.equals(">")) {
-                if (captureTime.getTime() > threshold.getTime()) {
+                if (captureTime.toEpochMilli() > threshold.toEpochMilli()) {
                     gaugeNames.put(agentRollupId, gaugeName);
                 }
             } else {
@@ -311,20 +308,20 @@ public class Tools {
     }
 
     private void executeDeletesTt(int rollupLevel, String partialName, String thresholdComparator,
-            Date threshold, Set<TtPartitionKey> partitionKeys) throws Exception {
+            Instant threshold, Set<TtPartitionKey> partitionKeys) throws Exception {
         String tableName = "aggregate_tt_" + partialName + "_rollup_" + rollupLevel;
         PreparedStatement deletePS = session.prepare("delete from " + tableName
                 + " where agent_rollup = ? and transaction_type = ? and capture_time "
                 + thresholdComparator + " ?");
         int count = 0;
-        List<Future<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (TtPartitionKey partitionKey : partitionKeys) {
-            BoundStatement boundStatement = deletePS.bind();
             int i = 0;
-            boundStatement.setString(i++, partitionKey.agentRollupId());
-            boundStatement.setString(i++, partitionKey.transactionType());
-            boundStatement.setTimestamp(i++, threshold);
-            futures.add(session.writeAsync(boundStatement));
+            BoundStatement boundStatement = deletePS.bind()
+                .setString(i++, partitionKey.agentRollupId())
+                .setString(i++, partitionKey.transactionType())
+                .setInstant(i++, threshold);
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             count++;
         }
         MoreFutures.waitForAll(futures);
@@ -332,21 +329,21 @@ public class Tools {
     }
 
     private void executeDeletesTn(int rollupLevel, String partialName, String thresholdComparator,
-            Date threshold, Set<TnPartitionKey> partitionKeys) throws Exception {
+            Instant threshold, Set<TnPartitionKey> partitionKeys) throws Exception {
         String tableName = "aggregate_tn_" + partialName + "_rollup_" + rollupLevel;
         PreparedStatement deletePS = session.prepare("delete from " + tableName
                 + " where agent_rollup = ? and transaction_type = ? and transaction_name = ? and"
                 + " capture_time " + thresholdComparator + " ?");
         int count = 0;
-        List<Future<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (TnPartitionKey partitionKey : partitionKeys) {
-            BoundStatement boundStatement = deletePS.bind();
             int i = 0;
-            boundStatement.setString(i++, partitionKey.agentRollupId());
-            boundStatement.setString(i++, partitionKey.transactionType());
-            boundStatement.setString(i++, partitionKey.transactionName());
-            boundStatement.setTimestamp(i++, threshold);
-            futures.add(session.writeAsync(boundStatement));
+            BoundStatement boundStatement = deletePS.bind()
+                .setString(i++, partitionKey.agentRollupId())
+                .setString(i++, partitionKey.transactionType())
+                .setString(i++, partitionKey.transactionName())
+                .setInstant(i++, threshold);
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             count++;
         }
         MoreFutures.waitForAll(futures);
@@ -354,20 +351,20 @@ public class Tools {
     }
 
     private void executeGaugeValueDeletes(int rollupLevel, String thresholdComparator,
-            Date threshold, Set<GaugeValuePartitionKey> partitionKeys) throws Exception {
+            Instant threshold, Set<GaugeValuePartitionKey> partitionKeys) throws Exception {
         String tableName = "gauge_value_rollup_" + rollupLevel;
         PreparedStatement deletePS = session.prepare("delete from " + tableName
                 + " where agent_rollup = ? and gauge_name = ? and capture_time "
                 + thresholdComparator + " ?");
         int count = 0;
-        List<Future<?>> futures = new ArrayList<>();
+        List<CompletableFuture<?>> futures = new ArrayList<>();
         for (GaugeValuePartitionKey partitionKey : partitionKeys) {
-            BoundStatement boundStatement = deletePS.bind();
             int i = 0;
-            boundStatement.setString(i++, partitionKey.agentRollupId());
-            boundStatement.setString(i++, partitionKey.gaugeName());
-            boundStatement.setTimestamp(i++, threshold);
-            futures.add(session.writeAsync(boundStatement));
+            BoundStatement boundStatement = deletePS.bind()
+                .setString(i++, partitionKey.agentRollupId())
+                .setString(i++, partitionKey.gaugeName())
+                .setInstant(i++, threshold);
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             count++;
         }
         MoreFutures.waitForAll(futures);

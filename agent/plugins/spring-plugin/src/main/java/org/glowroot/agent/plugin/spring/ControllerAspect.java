@@ -65,6 +65,17 @@ public class ControllerAspect {
                 + " getPatternsCondition()")
         @Nullable
         PatternsRequestCondition glowroot$getPatternsCondition();
+
+        @Shim("org.springframework.web.servlet.mvc.condition.PathPatternsRequestCondition"
+                + " getPathPatternsCondition()")
+        @Nullable
+        PathPatternsRequestCondition glowroot$getPathPatternsCondition();
+    }
+
+    @Shim("org.springframework.web.servlet.mvc.condition.PathPatternsRequestCondition")
+    public interface PathPatternsRequestCondition {
+        @Nullable
+        Set<String> getPatternValues();
     }
 
     @Shim("org.springframework.web.servlet.mvc.condition.PatternsRequestCondition")
@@ -129,7 +140,7 @@ public class ControllerAspect {
 
     @Pointcut(className = "org.springframework.web.servlet.handler.AbstractHandlerMethodMapping",
             methodName = "handleMatch", methodParameterTypes = {"java.lang.Object",
-                    "java.lang.String", "javax.servlet.http.HttpServletRequest"})
+                    "java.lang.String", "javax.servlet.http.HttpServletRequest|jakarta.servlet.http.HttpServletRequest"})
     public static class HandlerMethodMappingAdvice {
         @OnBefore
         public static void onBefore(ThreadContext context,
@@ -140,18 +151,12 @@ public class ControllerAspect {
             if (!(mapping instanceof RequestMappingInfo)) {
                 return;
             }
-            PatternsRequestCondition patternCondition =
-                    ((RequestMappingInfo) mapping).glowroot$getPatternsCondition();
-            if (patternCondition == null) {
-                return;
-            }
-            Set<String> patterns = patternCondition.getPatterns();
-            if (patterns == null || patterns.isEmpty()) {
+            String pattern = getPattern((RequestMappingInfo) mapping);
+            if (pattern == null) {
                 return;
             }
             String prefix = getServletPath(context.getServletRequestInfo());
-            String pattern = patterns.iterator().next();
-            if (pattern == null || pattern.isEmpty()) {
+            if (pattern.isEmpty()) {
                 context.setTransactionName(prefix, Priority.CORE_PLUGIN);
                 return;
             }
@@ -170,7 +175,7 @@ public class ControllerAspect {
 
     @Pointcut(className = "org.springframework.web.servlet.handler.AbstractUrlHandlerMapping",
             methodName = "exposePathWithinMapping", methodParameterTypes = {"java.lang.String",
-                    "java.lang.String", "javax.servlet.http.HttpServletRequest"})
+                    "java.lang.String", "javax.servlet.http.HttpServletRequest|jakarta.servlet.http.HttpServletRequest"})
     public static class UrlHandlerMappingAdvice {
         @OnBefore
         public static void onBefore(ThreadContext context,
@@ -375,5 +380,27 @@ public class ControllerAspect {
         } else {
             return servletRequestInfo.getContextPath() + servletRequestInfo.getServletPath();
         }
+    }
+
+    private static String getPattern(RequestMappingInfo mapping) {
+        PatternsRequestCondition patternCondition =
+                mapping.glowroot$getPatternsCondition();
+        if (patternCondition != null) {
+            Set<String> patterns = patternCondition.getPatterns();
+            if (patterns == null || patterns.isEmpty()) {
+                return null;
+            }
+            return patterns.iterator().next();
+        }
+        PathPatternsRequestCondition pathPatternCondition =
+                mapping.glowroot$getPathPatternsCondition();
+        if (pathPatternCondition == null) {
+            return null;
+        }
+        Set<String> patterns = pathPatternCondition.getPatternValues();
+        if (patterns == null || patterns.isEmpty()) {
+            return null;
+        }
+        return patterns.iterator().next();
     }
 }

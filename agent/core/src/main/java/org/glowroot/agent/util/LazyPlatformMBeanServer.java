@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,6 +109,7 @@ public class LazyPlatformMBeanServer {
 
     private LazyPlatformMBeanServer(@Nullable String mainClass) {
         boolean jbossModules = "org.jboss.modules.Main".equals(mainClass);
+        boolean wildflyBootable = "org.wildfly.core.jar.boot.Main".equals(mainClass);
         boolean wildflySwarm = "org.wildfly.swarm.bootstrap.Main".equals(mainClass);
         boolean oldJBoss = "org.jboss.Main".equals(mainClass);
         boolean glassfish = "com.sun.enterprise.glassfish.bootstrap.ASMain".equals(mainClass)
@@ -116,7 +117,7 @@ public class LazyPlatformMBeanServer {
         boolean weblogic = "weblogic.Server".equals(mainClass);
         boolean websphere = "com.ibm.wsspi.bootstrap.WSPreLauncher".equals(mainClass);
         waitForContainerToCreatePlatformMBeanServer =
-                jbossModules || wildflySwarm || oldJBoss || glassfish || weblogic || websphere;
+                jbossModules || wildflyBootable || wildflySwarm || oldJBoss || glassfish || weblogic || websphere;
         needsManualPatternMatching = oldJBoss;
     }
 

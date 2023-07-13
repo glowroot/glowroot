@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.glowroot.central.v09support;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
@@ -68,17 +69,17 @@ public class AggregateDaoWithV09Support implements AggregateDao {
     }
 
     @Override
-    public void store(String agentId, long captureTime,
-            List<OldAggregatesByType> aggregatesByTypeList,
-            List<Aggregate.SharedQueryText> initialSharedQueryTexts) throws Exception {
+    public CompletableFuture<?> store(String agentId, long captureTime,
+                                   List<OldAggregatesByType> aggregatesByTypeList,
+                                   List<Aggregate.SharedQueryText> initialSharedQueryTexts) {
         if (captureTime <= v09LastCaptureTime
                 && agentRollupIdsWithV09Data.contains(agentId)) {
-            delegate.store(V09Support.convertToV09(agentId),
+            return delegate.store(V09Support.convertToV09(agentId),
                     V09Support.getAgentRollupIdsV09(agentId), agentId,
                     AgentRollupIds.getAgentRollupIds(agentId), captureTime, aggregatesByTypeList,
                     initialSharedQueryTexts);
         } else {
-            delegate.store(agentId, captureTime, aggregatesByTypeList, initialSharedQueryTexts);
+            return delegate.store(agentId, captureTime, aggregatesByTypeList, initialSharedQueryTexts);
         }
     }
 

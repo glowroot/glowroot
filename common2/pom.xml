@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.13.7-SNAPSHOT</version>
+    <version>0.14.1-beta.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>glowroot-common2</artifactId>
@@ -36,20 +36,6 @@
       <groupId>org.immutables</groupId>
       <artifactId>serial</artifactId>
       <version>${immutables.version}</version>
-      <!-- immutables is only needed at compile time -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <!-- this dependency is needed for generating Java 6 compatible classes -->
-      <groupId>org.immutables</groupId>
-      <artifactId>android-stub</artifactId>
-      <!-- immutables is only needed at compile time -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <!-- this dependency is needed for generating Java 6 compatible classes -->
-      <groupId>com.github.trask</groupId>
-      <artifactId>immutables-jdk6-shim</artifactId>
       <!-- immutables is only needed at compile time -->
       <scope>provided</scope>
     </dependency>
@@ -85,20 +71,18 @@
     <dependency>
       <groupId>com.sun.mail</groupId>
       <artifactId>mailapi</artifactId>
-      <!-- JavaMail 1.6+ requires Java 7+ -->
-      <version>1.5.6</version>
+      <version>1.6.7</version>
     </dependency>
     <dependency>
       <groupId>com.sun.mail</groupId>
       <artifactId>smtp</artifactId>
-      <!-- JavaMail 1.6+ requires Java 7+ -->
-      <version>1.5.6</version>
+      <version>1.6.7</version>
     </dependency>
     <dependency>
       <!-- this is no longer included in JDK starting with Java 9 -->
       <groupId>com.sun.activation</groupId>
-      <artifactId>javax.activation</artifactId>
-      <version>1.2.0</version>
+      <artifactId>jakarta.activation</artifactId>
+      <version>1.2.2</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
@@ -126,8 +110,14 @@
       <version>${netty.version}</version>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>org.checkerframework</groupId>
+      <artifactId>checker-qual</artifactId>
+      <!-- don't need this dependency at runtime since only annotations -->
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -146,27 +136,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <profiles>
-    <profile>
-      <!-- use custom-built jdk6 compatible checker framework annotations by default except when
-        actually running checker framework code quality tests, in which case the real checker
-        framework annotations are provided -->
-      <id>not-the-checker-build</id>
-      <activation>
-        <property>
-          <name>!glowroot.checker.build</name>
-        </property>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.glowroot.build</groupId>
-          <artifactId>glowroot-build-checker-jdk6</artifactId>
-          <version>${project.version}</version>
-          <!-- don't need this dependency at runtime since only annotations -->
-          <optional>true</optional>
-        </dependency>
-      </dependencies>
-    </profile>
-  </profiles>
 </project>

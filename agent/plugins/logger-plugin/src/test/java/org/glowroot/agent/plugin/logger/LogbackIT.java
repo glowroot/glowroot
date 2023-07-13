@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,7 @@ package org.glowroot.agent.plugin.logger;
 
 import java.util.Iterator;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,15 +42,15 @@ public class LogbackIT {
         OLD_LOGBACK = Boolean.getBoolean("glowroot.test.oldLogback");
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         // unshaded doesn't work because glowroot loads slf4j classes before the Weaver is
         // registered, so the slf4j classes don't have a chance to get woven
-        Assume.assumeTrue(isShaded());
+        Assumptions.assumeTrue(isShaded());
         container = Containers.create();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         // need null check in case assumption is false in setUp()
         if (container != null) {
@@ -62,7 +58,7 @@ public class LogbackIT {
         }
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }

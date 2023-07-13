@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 class GaugeCollector extends ScheduledRunnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(GaugeCollector.class);
+    // not final for testing purposes
+    private static volatile Logger logger = LoggerFactory.getLogger(GaugeCollector.class);
 
     // back pressure on writing captured data to disk/network
     private static final int PENDING_LIMIT = 60;
@@ -350,6 +351,10 @@ class GaugeCollector extends ScheduledRunnable {
             logger.warn("error accessing mbean attribute: {} {}", mbeanObjectName,
                     mbeanAttributeName, e);
         }
+    }
+
+    public void setLoggerForTesting(Logger logger) {
+        GaugeCollector.logger = logger;
     }
 
     @Value.Immutable

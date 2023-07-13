@@ -15,7 +15,9 @@
  */
 package org.glowroot.tests.util;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.openqa.selenium.By;
@@ -24,7 +26,7 @@ import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.remote.BrowserType;
+import org.openqa.selenium.remote.Browser;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -76,7 +78,7 @@ public class Utils {
 
     public static WebElement withWait(WebDriver driver, final SearchContext context, final By by,
             final boolean waitForEnabled) {
-        return new WebDriverWait(driver, 30).until(new Function<WebDriver, WebElement>() {
+        return new WebDriverWait(driver, Duration.ofSeconds(30)).until(new Function<WebDriver, WebElement>() {
             @Override
             public WebElement apply(WebDriver driver) {
                 List<WebElement> elements = context.findElements(by);
@@ -128,6 +130,6 @@ public class Utils {
             return false;
         }
         String browserName = ((RemoteWebDriver) driver).getCapabilities().getBrowserName();
-        return BrowserType.EDGE.equals(browserName) || BrowserType.SAFARI.equals(browserName);
+        return Browser.EDGE.browserName().equals(browserName) || Browser.SAFARI.browserName().equals(browserName);
     }
 }

@@ -201,10 +201,10 @@ class TracePointJsonService {
             }
             Result<TracePoint> queryResult;
             if (traceKind == TraceKind.SLOW) {
-                queryResult = traceRepository.readSlowPoints(agentRollupId, query, filter, limit);
+                queryResult = traceRepository.readSlowPoints(agentRollupId, query, filter, limit).get();
             } else {
                 // TraceKind.ERROR
-                queryResult = traceRepository.readErrorPoints(agentRollupId, query, filter, limit);
+                queryResult = traceRepository.readErrorPoints(agentRollupId, query, filter, limit).get();
             }
             // create single merged and limited list of points
             List<TracePoint> orderedPoints = Lists.newArrayList(queryResult.records());

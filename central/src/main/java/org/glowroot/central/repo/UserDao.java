@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,10 @@ package org.glowroot.central.repo;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.ImmutableSet;
+import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.central.util.Cache;
@@ -67,12 +66,12 @@ class UserDao {
             // don't use "if not exists" here since it's not needed and has more chance to fail,
             // leaving the schema in a bad state (with the user table created, but no anonymous
             // user)
-            BoundStatement boundStatement = insertPS.bind();
             int i = 0;
-            boundStatement.setString(i++, "anonymous");
-            boundStatement.setBool(i++, false);
-            boundStatement.setString(i++, "");
-            boundStatement.setSet(i++, ImmutableSet.of("Administrator"));
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(i++, "anonymous")
+                .setBoolean(i++, false)
+                .setString(i++, "")
+                .setSet(i++, ImmutableSet.of("Administrator"), String.class);
             session.write(boundStatement);
         }
 
@@ -115,17 +114,21 @@ class UserDao {
 
     void insert(UserConfig userConfig) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
-        bindInsert(boundStatement, userConfig);
+        boundStatement = bindInsert(boundStatement, userConfig);
         session.write(boundStatement);
         allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
     }
 
     void insertIfNotExists(UserConfig userConfig) throws Exception {
         BoundStatement boundStatement = insertIfNotExistsPS.bind();
-        bindInsert(boundStatement, userConfig);
-        ResultSet results = session.update(boundStatement);
+        boundStatement = bindInsert(boundStatement, userConfig);
+        // consistency level must be at least LOCAL_SERIAL
+        if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
+            boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+        }
+        AsyncResultSet results = session.update(boundStatement);
         Row row = checkNotNull(results.one());
-        boolean applied = row.getBool("[applied]");
+        boolean applied = row.getBoolean("[applied]");
         if (applied) {
             allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
         } else {
@@ -134,24 +137,25 @@ class UserDao {
     }
 
     void delete(String username) throws Exception {
-        BoundStatement boundStatement = deletePS.bind();
-        boundStatement.setString(0, username);
+        BoundStatement boundStatement = deletePS.bind()
+            .setString(0, username);
         session.write(boundStatement);
         allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
     }
 
-    private static void bindInsert(BoundStatement boundStatement, UserConfig userConfig) {
+    @CheckReturnValue
+    private static BoundStatement bindInsert(BoundStatement boundStatement, UserConfig userConfig) {
         int i = 0;
-        boundStatement.setString(i++, userConfig.username());
-        boundStatement.setBool(i++, userConfig.ldap());
-        boundStatement.setString(i++, userConfig.passwordHash());
-        boundStatement.setSet(i++, userConfig.roles());
+        return boundStatement.setString(i++, userConfig.username())
+            .setBoolean(i++, userConfig.ldap())
+            .setString(i++, userConfig.passwordHash())
+            .setSet(i++, userConfig.roles(), String.class);
     }
 
     private class AllUsersCacheLoader implements CacheLoader<String, List<UserConfig>> {
 
         @Override
-        public List<UserConfig> load(String dummy) throws Exception {
+        public List<UserConfig> load(String dummy) {
             ResultSet results = session.read(readPS.bind());
             List<UserConfig> users = new ArrayList<>();
             for (Row row : results) {
@@ -164,7 +168,7 @@ class UserDao {
             int i = 0;
             return ImmutableUserConfig.builder()
                     .username(checkNotNull(row.getString(i++)))
-                    .ldap(row.getBool(i++))
+                    .ldap(row.getBoolean(i++))
                     .passwordHash(checkNotNull(row.getString(i++)))
                     .roles(row.getSet(i++, String.class))
                     .build();

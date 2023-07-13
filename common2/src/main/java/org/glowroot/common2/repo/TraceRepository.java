@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.glowroot.common2.repo;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
@@ -35,12 +36,12 @@ public interface TraceRepository {
 
     long readSlowCount(String agentRollupId, TraceQuery query) throws Exception;
 
-    Result<TracePoint> readSlowPoints(String agentRollupId, TraceQuery query,
-            TracePointFilter filter, int limit) throws Exception;
+    CompletableFuture<Result<TracePoint>> readSlowPoints(String agentRollupId, TraceQuery query,
+                                                        TracePointFilter filter, int limit) throws Exception;
 
     long readErrorCount(String agentRollupId, TraceQuery query) throws Exception;
 
-    Result<TracePoint> readErrorPoints(String agentRollupId, TraceQuery query,
+    CompletableFuture<Result<TracePoint>> readErrorPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws Exception;
 
     ErrorMessageResult readErrorMessages(String agentRollupId, TraceQuery query,

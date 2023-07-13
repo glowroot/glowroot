@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2019-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,11 @@ package org.glowroot.central.repo;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.google.common.base.Function;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.base.Joiner;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.glowroot.central.util.AsyncCache;
 import org.glowroot.central.util.AsyncCache.AsyncCacheLoader;
@@ -71,13 +66,13 @@ public class AgentDisplayDao implements AgentDisplayRepository {
 
     void store(String agentRollupId, String display) throws Exception {
         if (display.isEmpty()) {
-            BoundStatement boundStatement = deletePS.bind();
-            boundStatement.setString(0, agentRollupId);
+            BoundStatement boundStatement = deletePS.bind()
+                .setString(0, agentRollupId);
             session.write(boundStatement);
         } else {
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, agentRollupId);
-            boundStatement.setString(1, display);
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(0, agentRollupId)
+                .setString(1, display);
             session.write(boundStatement);
         }
         agentDisplayCache.invalidate(agentRollupId);
@@ -100,31 +95,29 @@ public class AgentDisplayDao implements AgentDisplayRepository {
     }
 
     @Override
-    public ListenableFuture<String> readLastDisplayPartAsync(String agentRollupId)
+    public CompletableFuture<String> readLastDisplayPartAsync(String agentRollupId)
             throws Exception {
         return agentDisplayCache.get(agentRollupId);
     }
 
     private class AgentDisplayCacheLoader implements AsyncCacheLoader<String, String> {
         @Override
-        public ListenableFuture<String> load(String agentRollupId) throws Exception {
-            BoundStatement boundStatement = readPS.bind();
-            boundStatement.setString(0, agentRollupId);
-            ListenableFuture<ResultSet> future = session.readAsync(boundStatement);
-            return Futures.transform(future, new Function<ResultSet, String>() {
-                @Override
-                public String apply(ResultSet results) {
-                    Row row = results.one();
-                    if (row == null) {
-                        return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
-                    }
-                    String display = checkNotNull(row.getString(0));
-                    if (display.isEmpty()) {
-                        return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
-                    }
-                    return display;
-                }
-            }, asyncExecutor);
+        public CompletableFuture<String> load(String agentRollupId) {
+            BoundStatement boundStatement = readPS.bind()
+                .setString(0, agentRollupId);
+            return session.readAsync(boundStatement)
+                    .thenApplyAsync(results -> {
+                        Row row = results.one();
+                        if (row == null) {
+                            return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
+                        }
+                        String display = checkNotNull(row.getString(0));
+                        if (display.isEmpty()) {
+                            return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
+                        }
+                        return display;
+                    }, asyncExecutor)
+                    .toCompletableFuture();
         }
     }
 }

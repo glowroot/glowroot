@@ -25,36 +25,34 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.sort.SortOrder;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ExtendWith(ElasticsearchExtension.class)
 public class ElasticsearchSyncIT {
 
     private static Container container;
 
-    @BeforeClass
-    public static void setUp() throws Exception {
-        container = SharedSetupRunListener.getContainer();
+    @BeforeAll
+    public static void setUp() {
+        container = ElasticsearchExtension.getContainer();
     }
 
-    @AfterClass
-    public static void tearDown() throws Exception {
-        SharedSetupRunListener.close(container);
-    }
-
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
-        container.checkAndReset();
+        if (container != null) {
+            container.checkAndReset();
+        }
     }
 
     @Test

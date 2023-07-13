@@ -18,7 +18,7 @@ package org.glowroot.ui;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.common2.repo.ImmutableErrorInterval;
 import org.glowroot.common2.repo.SyntheticResult.ErrorInterval;

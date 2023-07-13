@@ -1,0 +1,186 @@
+{
+  "name": "Jakarta Servlet Plugin",
+  "id": "jakartaservlet",
+  "properties": [
+    {
+      "name": "sessionUserAttribute",
+      "type": "string",
+      "label": "Session user attribute",
+      "description": "Session attribute to capture as the user of the trace. Traces can be filtered by user in the explorer. Nested paths are supported, e.g. something.user.username. The attribute value is converted into a String if necessary via toString(). The special attribute name '::id' can be used to refer to the http session id."
+    },
+    {
+      "name": "captureSessionAttributes",
+      "type": "list",
+      "label": "Session attributes",
+      "description": "List of servlet session attributes to capture in the root trace entry. Nested paths are supported, e.g. mainObject.nestedObject.displayName. '*' at the end of a path is supported, e.g. mainObject.nestedObject.*, meaning capture all properties of mainObject.nestedObject (via reflection, looking at methods that begin with \"get[A-Z]\" or \"is[A-Z]\"). '*' by itself means capture all session attributes. Values are converted into Strings if necessary via toString(). The special attribute name '::id' can be used to refer to the http session id."
+    },
+    {
+      "name": "captureRequestParameters",
+      "type": "list",
+      "default": [
+        "*"
+      ],
+      "label": "Capture request parameters",
+      "description": "List of request parameters to capture in the root trace entry. The wildcard '*' is supported anywhere in the parameter name."
+    },
+    {
+      "name": "maskRequestParameters",
+      "type": "list",
+      "default": [
+        "*password*",
+        "*token*",
+        "*access*",
+        "*secret*"
+      ],
+      "label": "Mask request parameters",
+      "description": "List of sensitive request parameters to mask, e.g. passwords. The wildcard '*' is supported anywhere in the parameter name."
+    },
+    {
+      "name": "captureRequestHeaders",
+      "type": "list",
+      "label": "Capture request headers",
+      "description": "List of request headers to capture in the root trace entry. The wildcard '*' is supported anywhere in the header name."
+    },
+    {
+      "name": "captureResponseHeaders",
+      "type": "list",
+      "label": "Capture response headers",
+      "description": "List of response headers to capture in the root trace entry. The wildcard '*' is supported anywhere in the header name."
+    },
+    {
+      "name": "traceErrorOn4xxResponseCode",
+      "type": "boolean",
+      "label": "Error on 4xx",
+      "checkboxLabel": "Mark trace as error on 4xx response code",
+      "description": "Mark the trace as an error when a 4xx response code is returned."
+    },
+    {
+      "name": "captureRequestRemoteAddr",
+      "type": "boolean",
+      "label": "Capture request remote address",
+      "checkboxLabel": "Capture request remote address using ServletRequest.getRemoteAddr()"
+    },
+    {
+      "name": "captureRequestRemoteHostname",
+      "type": "boolean",
+      "label": "Capture request remote hostname",
+      "checkboxLabel": "Capture request remote hostname using ServletRequest.getRemoteHost()"
+    },
+    {
+      "name": "captureRequestRemotePort",
+      "type": "boolean",
+      "label": "Capture request remote port",
+      "checkboxLabel": "Capture request remote port using ServletRequest.getRemotePort()",
+      "description": "This only applies to Servlet 3.0+ containers."
+    },
+    {
+      "name": "captureRequestLocalAddr",
+      "type": "boolean",
+      "label": "Capture request local address",
+      "checkboxLabel": "Capture request local address using ServletRequest.getLocalAddr()",
+      "description": "This only applies to Servlet 3.0+ containers."
+    },
+    {
+      "name": "captureRequestLocalHostname",
+      "type": "boolean",
+      "label": "Capture request local hostname",
+      "checkboxLabel": "Capture request local hostname using ServletRequest.getLocalName()",
+      "description": "This only applies to Servlet 3.0+ containers."
+    },
+    {
+      "name": "captureRequestLocalPort",
+      "type": "boolean",
+      "label": "Capture request local port",
+      "checkboxLabel": "Capture request local port using ServletRequest.getLocalPort()",
+      "description": "This only applies to Servlet 3.0+ containers."
+    },
+    {
+      "name": "captureRequestServerHostname",
+      "type": "boolean",
+      "label": "Capture request server hostname",
+      "checkboxLabel": "Capture request server hostname using ServletRequest.getServerName()"
+    },
+    {
+      "name": "captureRequestServerPort",
+      "type": "boolean",
+      "label": "Capture request server port",
+      "checkboxLabel": "Capture request server port using ServletRequest.getServerPort()"
+    }
+  ],
+  "instrumentation": [
+    {
+      "className": "jakarta.servlet.ServletContextListener",
+      "methodName": "contextInitialized",
+      "methodParameterTypes": [
+        "jakarta.servlet.ServletContextEvent"
+      ],
+      "captureKind": "transaction",
+      "timerName": "listener init",
+      "transactionType": "Startup",
+      "transactionNameTemplate": "Listener init: {{this.class.name}}"
+    },
+    {
+      "className": "jakarta.servlet.Servlet",
+      "methodName": "init",
+      "methodParameterTypes": [
+        "jakarta.servlet.ServletConfig"
+      ],
+      "captureKind": "transaction",
+      "timerName": "servlet init",
+      "transactionType": "Startup",
+      "transactionNameTemplate": "Servlet init: {{this.class.name}}"
+    },
+    {
+      "className": "jakarta.servlet.Filter",
+      "methodName": "init",
+      "methodParameterTypes": [
+        "jakarta.servlet.FilterConfig"
+      ],
+      "captureKind": "transaction",
+      "timerName": "filter init",
+      "transactionType": "Startup",
+      "transactionNameTemplate": "Filter init: {{this.class.name}}"
+    },
+    {
+      "className": "jakarta.servlet.ServletContainerInitializer",
+      "methodName": "onStartup",
+      "methodParameterTypes": [
+        "java.util.Set",
+        "jakarta.servlet.ServletContext"
+      ],
+      "captureKind": "transaction",
+      "timerName": "container initializer",
+      "transactionType": "Startup",
+      "transactionNameTemplate": "Container initializer: {{this.class.name}}"
+    },
+    {
+      "className": "org.wildfly.extension.undertow.deployment.UndertowDeploymentService",
+      "methodName": "startContext",
+      "methodParameterTypes": [
+      ],
+      "captureKind": "transaction",
+      "timerName": "application startup",
+      "transactionType": "Startup",
+      "transactionNameTemplate": "Servlet context: {{this.deploymentInfoInjectedValue.value.contextPath}}"
+    },
+    {
+      "className": "org.eclipse.jetty.webapp.WebAppContext",
+      "methodName": "doStart",
+      "methodParameterTypes": [
+      ],
+      "captureKind": "transaction",
+      "timerName": "application startup",
+      "transactionType": "Startup",
+      "transactionNameTemplate": "Servlet context: {{this.contextPath}}"
+    }
+  ],
+  "aspects": [
+    "org.glowroot.agent.plugin.jakartaservlet.ServletAspect",
+    "org.glowroot.agent.plugin.jakartaservlet.AsyncServletAspect",
+    "org.glowroot.agent.plugin.jakartaservlet.RequestParameterAspect",
+    "org.glowroot.agent.plugin.jakartaservlet.ResponseHeaderAspect",
+    "org.glowroot.agent.plugin.jakartaservlet.RequestDispatcherAspect",
+    "org.glowroot.agent.plugin.jakartaservlet.SessionAspect"
+  ],
+  "collocate": true
+}

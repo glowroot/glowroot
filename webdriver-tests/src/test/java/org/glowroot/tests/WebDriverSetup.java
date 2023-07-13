@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,18 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URL;
 import java.security.SecureRandom;
+import java.sql.Driver;
+import java.time.Duration;
 import java.util.Properties;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.PoolingOptions;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -43,10 +48,13 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultRedirectStrategy;
 import org.apache.http.impl.client.HttpClients;
+import org.glowroot.central.util.CassandraProfile;
 import org.junit.rules.TestWatcher;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxOptions;
+import org.openqa.selenium.firefox.FirefoxProfile;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.rauschig.jarchivelib.ArchiveFormat;
 import org.rauschig.jarchivelib.Archiver;
@@ -73,9 +81,10 @@ public class WebDriverSetup {
     // travis build is currently failing with jbrowser driver
     private static final boolean USE_JBROWSER_DRIVER = false;
 
-    private static final String GECKO_DRIVER_VERSION = "0.23.0";
+    private static final String GECKO_DRIVER_VERSION = "0.33.0";
 
     private static final Logger logger = LoggerFactory.getLogger(WebDriverSetup.class);
+    private static final int MAX_CONCURRENT_QUERIES = 1024;
 
     static {
         // shorter time so aggregates and gauges will be collected during BasicSmokeIT
@@ -197,16 +206,23 @@ public class WebDriverSetup {
         Container container;
         if (useCentral) {
             CassandraWrapper.start();
-            Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
-            Session session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
-                    PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+            CqlSessionBuilder cqlSessionBuilder = CqlSession.builder()
+                    .addContactPoint(new InetSocketAddress("127.0.0.1", 9042))
+                    .withLocalDatacenter("datacenter1")
+                    .withConfigLoader(DriverConfigLoader.programmaticBuilder()
+                            .startProfile(CassandraProfile.SLOW.name())
+                            .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(60))
+                            .withBoolean(DefaultDriverOption.REQUEST_WARN_IF_SET_KEYSPACE, false)
+                            .endProfile()
+                            .build());
+            Session session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
+                    MAX_CONCURRENT_QUERIES, 0);
             session.updateSchemaWithRetry("drop table if exists agent_config");
             session.updateSchemaWithRetry("drop table if exists user");
             session.updateSchemaWithRetry("drop table if exists role");
             session.updateSchemaWithRetry("drop table if exists central_config");
             session.updateSchemaWithRetry("drop table if exists agent");
             session.close();
-            cluster.close();
             int grpcPort = getAvailablePort();
             centralModule = createCentralModule(uiPort, grpcPort);
             container = createContainerReportingToCentral(grpcPort, testDir);
@@ -229,7 +245,14 @@ public class WebDriverSetup {
             File geckoDriverExecutable = downloadGeckoDriverIfNeeded();
             System.setProperty("webdriver.gecko.driver",
                     geckoDriverExecutable.getAbsolutePath());
-            driver = new FirefoxDriver();
+
+            FirefoxOptions options = new FirefoxOptions();
+            FirefoxProfile profile = new FirefoxProfile();
+            profile.setPreference("fission.bfcacheInParent.enabled", false);
+            profile.setPreference("fission.bfcacheInParent", false);
+            profile.setPreference("fission.webContentIsolationStrategy", 0);
+            options.setProfile(profile);
+            driver = new FirefoxDriver(options);
         }
         // 768 is bootstrap media query breakpoint for screen-sm-min
         // 992 is bootstrap media query breakpoint for screen-md-min

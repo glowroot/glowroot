@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2019 the original author or authors.
+ * Copyright 2015-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 package org.glowroot.agent.live;
 
 import com.google.common.base.Ticker;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.impl.Transaction;
 import org.glowroot.agent.impl.TraceCollector;
@@ -34,7 +34,7 @@ public class LiveTraceRespositoryTest {
     private LiveTraceRepositoryImpl liveTraceRepository;
     private TraceCollector traceCollector;
 
-    @Before
+    @BeforeEach
     public void beforeEachTest() {
         TransactionRegistry transactionRegistry = mock(TransactionRegistry.class);
         traceCollector = mock(TraceCollector.class);

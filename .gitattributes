@@ -1,1 +1,3 @@
-* text=auto
+# the files that are copied into the central collector docker image must not have
+# crlf line endings, may as well apply eol=lf as the default for the whole repository
+* text=auto eol=lf

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2019 the original author or authors.
+ * Copyright 2011-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -76,7 +77,6 @@ public class JavaagentContainer implements Container {
     private final ServerSocket heartbeatListenerSocket;
     private final ExecutorService heartbeatListenerExecutor;
     private final @Nullable GrpcServerWrapper server;
-    private final EventLoopGroup eventLoopGroup;
     private final ExecutorService executor;
     private final ManagedChannel channel;
     private final @Nullable TraceCollector traceCollector;
@@ -160,14 +160,12 @@ public class JavaagentContainer implements Container {
         consolePipeFuture = consolePipeExecutor.submit(consoleOutputPipe);
         this.process = process;
 
-        eventLoopGroup = EventLoopGroups.create("Glowroot-IT-Harness*-GRPC-Worker-ELG");
         executor = Executors.newCachedThreadPool(
                 new ThreadFactoryBuilder()
                         .setDaemon(true)
                         .setNameFormat("Glowroot-IT-Harness*-GRPC-Executor-%d")
                         .build());
         channel = NettyChannelBuilder.forAddress("localhost", javaagentServicePort)
-                .eventLoopGroup(eventLoopGroup)
                 .executor(executor)
                 .negotiationType(NegotiationType.PLAINTEXT)
                 .build();
@@ -281,9 +279,6 @@ public class JavaagentContainer implements Container {
         if (!executor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
         }
-        if (!eventLoopGroup.shutdownGracefully(0, 0, SECONDS).await(10, SECONDS)) {
-            throw new IllegalStateException("Could not terminate event loop group");
-        }
         if (server != null) {
             server.close();
         }
@@ -348,14 +343,15 @@ public class JavaagentContainer implements Container {
             File file = new File(path);
             String name = file.getName();
             String targetClasses = File.separator + "target" + File.separator + "classes";
-            if (name.matches("glowroot-agent-core(-unshaded)?-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-agent-it-harness-[0-9.]+(-SNAPSHOT)?.jar")) {
+            String glowrootJarSuffix = "-[0-9.]+(-beta(\\.[0-9]+)?)?(-SNAPSHOT)?\\.jar";
+            if (name.matches("glowroot-agent-core(-unshaded)?" + glowrootJarSuffix)
+                    || name.matches("glowroot-agent-it-harness" + glowrootJarSuffix)) {
                 javaagentJarFile = file;
-            } else if (name.matches("glowroot-common-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-wire-api-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-agent-plugin-api-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-agent-bytecode-api-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-build-error-prone-jdk6-[0-9.]+(-SNAPSHOT)?.jar")) {
+            } else if (name.matches("glowroot-common" + glowrootJarSuffix)
+                    || name.matches("glowroot-wire-api" + glowrootJarSuffix)
+                    || name.matches("glowroot-agent-plugin-api" + glowrootJarSuffix)
+                    || name.matches("glowroot-agent-bytecode-api" + glowrootJarSuffix)
+                    || name.matches("glowroot-build-error-prone-jdk6" + glowrootJarSuffix)) {
                 // these are glowroot-agent-core-unshaded transitive dependencies
                 maybeBootPaths.add(path);
             } else if (file.getAbsolutePath().endsWith(File.separator + "common" + targetClasses)
@@ -368,7 +364,7 @@ public class JavaagentContainer implements Container {
                             .endsWith(File.separator + "error-prone-jdk6" + targetClasses)) {
                 // these are glowroot-agent-core-unshaded transitive dependencies
                 maybeBootPaths.add(path);
-            } else if (name.matches("glowroot-agent-api-[0-9.]+(-SNAPSHOT)?.jar")) {
+            } else if (name.matches("glowroot-agent-api" + glowrootJarSuffix)) {
                 // agent-api lives with the application
                 paths.add(path);
             } else if (file.getAbsolutePath().endsWith(File.separator + "api" + targetClasses)) {
@@ -376,6 +372,7 @@ public class JavaagentContainer implements Container {
                 paths.add(path);
             } else if (name.matches("asm-.*\\.jar")
                     || name.matches("grpc-.*\\.jar")
+                    || name.matches("perfmark-.*\\.jar")
                     || name.matches("opencensus-.*\\.jar")
                     || name.matches("guava-.*\\.jar")
                     // dependency of guava 27.0+ (which is used by glowroot-webdriver-tests)
@@ -407,10 +404,10 @@ public class JavaagentContainer implements Container {
                     || name.matches("jsr305-.*\\.jar")) {
                 // these are glowroot-agent-core-unshaded transitive dependencies
                 maybeBootPaths.add(path);
-            } else if (name.matches("glowroot-common2-[0-9.]+(-SNAPSHOT)?.jar")
-                    || name.matches("glowroot-ui-[0-9.]+(-SNAPSHOT)?.jar")
+            } else if (name.matches("glowroot-common2" + glowrootJarSuffix)
+                    || name.matches("glowroot-ui" + glowrootJarSuffix)
                     || name.matches(
-                            "glowroot-agent-embedded(-unshaded)?-[0-9.]+(-SNAPSHOT)?.jar")) {
+                            "glowroot-agent-embedded(-unshaded)?" + glowrootJarSuffix)) {
                 // these are glowroot-agent-embedded-unshaded transitive dependencies
                 paths.add(path);
             } else if (file.getAbsolutePath().endsWith(File.separator + "common2" + targetClasses)
@@ -422,10 +419,11 @@ public class JavaagentContainer implements Container {
             } else if (name.matches("compress-.*\\.jar")
                     || name.matches("h2-.*\\.jar")
                     || name.matches("mailapi-.*\\.jar")
+                    || name.matches("jakarta\\.activation-.*\\.jar")
                     || name.matches("smtp-.*\\.jar")) {
                 // these are glowroot-agent-embedded-unshaded transitive dependencies
                 paths.add(path);
-            } else if (name.matches("glowroot-agent-it-harness-unshaded-[0-9.]+(-SNAPSHOT)?.jar")) {
+            } else if (name.matches("glowroot-agent-it-harness-unshaded" + glowrootJarSuffix)) {
                 // this is integration test harness, needs to be in bootstrap class loader when it
                 // it is shaded (because then it contains glowroot-agent-core), and for consistency
                 // putting it in bootstrap class loader at other times as well
@@ -440,7 +438,7 @@ public class JavaagentContainer implements Container {
                     .endsWith(File.separator + "target" + File.separator + name)) {
                 // this is the plugin under test
                 bootPaths.add(path);
-            } else if (name.matches("glowroot-agent-[a-z-]+-plugin-[0-9.]+(-SNAPSHOT)?.jar")) {
+            } else if (name.matches("glowroot-agent-[a-z-]+-plugin" + glowrootJarSuffix)) {
                 // this another (core) plugin that it depends on, e.g. the executor plugin
                 bootPaths.add(path);
             } else if (file.getAbsolutePath().endsWith(targetClasses)) {
@@ -459,8 +457,8 @@ public class JavaagentContainer implements Container {
             bootPaths.addAll(maybeBootPaths);
         } else {
             boolean shaded = false;
-            JarInputStream jarIn = new JarInputStream(new FileInputStream(javaagentJarFile));
-            try {
+            try (InputStream is = Files.newInputStream(javaagentJarFile.toPath());
+                 JarInputStream jarIn = new JarInputStream(is)) {
                 JarEntry jarEntry;
                 while ((jarEntry = jarIn.getNextJarEntry()) != null) {
                     if (jarEntry.getName().startsWith("org/glowroot/agent/shaded/")) {
@@ -468,8 +466,6 @@ public class JavaagentContainer implements Container {
                         break;
                     }
                 }
-            } finally {
-                jarIn.close();
             }
             if (shaded) {
                 paths.addAll(maybeBootPaths);

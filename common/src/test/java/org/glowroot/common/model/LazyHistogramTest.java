@@ -15,7 +15,7 @@
  */
 package org.glowroot.common.model;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.common.model.LazyHistogram.ScratchBuffer;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;

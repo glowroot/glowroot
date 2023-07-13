@@ -15,7 +15,7 @@
  */
 package org.glowroot.tests;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.openqa.selenium.NoSuchElementException;
 
 import org.glowroot.tests.admin.UserConfigPage;
@@ -85,7 +85,7 @@ public class UserConfigIT extends WebDriverIT {
         clickWithWait(xpath("//input[@ng-model='role.checked']/.."));
         userPage.clickSaveButton();
         // wait for save to finish
-        SECONDS.sleep(1);
+        SECONDS.sleep(2);
         clickLink("Return to list");
 
         // then

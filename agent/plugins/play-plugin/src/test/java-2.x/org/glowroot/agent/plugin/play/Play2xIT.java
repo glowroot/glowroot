@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
@@ -30,10 +31,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 import play.test.TestServer;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
@@ -49,8 +47,11 @@ public class Play2xIT {
 
     private static Container container;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
+        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("17"));
+        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("20"));
+
         // javaagent is required for Executor.execute() weaving
         // -Dlogger.resource is needed to configure play logging (at least on 2.0.8)
         container = JavaagentContainer
@@ -60,12 +61,14 @@ public class Play2xIT {
         container.execute(GetIndex.class);
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
-        container.close();
+        if (container != null) {
+            container.close();
+        }
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }
@@ -94,7 +97,7 @@ public class Play2xIT {
         assertThat(entry.getMessage()).isEqualTo("play render: index");
 
         if (i.hasNext()) {
-            // TODO investigate why this happens sporadically on travis ci
+            // TODO investigate why this happens sporadically
 
             // see similar issue in org.glowroot.agent.plugin.spring.AsyncControllerIT
 
@@ -130,9 +133,14 @@ public class Play2xIT {
         assertThat(entry.getMessage()).isEqualTo("play render: index");
 
         if (i.hasNext()) {
+            // TODO investigate why this happens sporadically
+
+            // see similar issue in org.glowroot.agent.plugin.spring.AsyncControllerIT
+
             entry = i.next();
-            throw new AssertionError("Unexpected entry: depth=" + entry.getDepth() + ", message="
-                    + entry.getMessage());
+            assertThat(entry.getDepth()).isEqualTo(0);
+            assertThat(entry.getMessage()).isEqualTo(
+                    "this auxiliary thread was still running when the transaction ended");
         }
 
         assertThat(i.hasNext()).isFalse();

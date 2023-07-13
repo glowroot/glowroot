@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,27 +20,16 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Queue;
-import java.util.Set;
-import java.util.UUID;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.TableMetadata;
-import com.datastax.driver.core.exceptions.InvalidConfigurationInQueryException;
-import com.datastax.driver.core.exceptions.InvalidQueryException;
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.cql.*;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.servererrors.InvalidConfigurationInQueryException;
+import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -55,8 +44,8 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.InvalidProtocolBufferException;
+import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
@@ -107,9 +96,10 @@ public class SchemaUpgrade {
 
     private static final ObjectMapper mapper = ObjectMappers.create();
 
-    private static final int CURR_SCHEMA_VERSION = 90;
+    private static final int CURR_SCHEMA_VERSION = 91;
 
     private final Session session;
+    private final int cassandraGcGraceSeconds;
     private final Clock clock;
     private final boolean servlet;
 
@@ -118,8 +108,9 @@ public class SchemaUpgrade {
 
     private boolean reloadCentralConfiguration;
 
-    public SchemaUpgrade(Session session, Clock clock, boolean servlet) throws Exception {
+    public SchemaUpgrade(Session session, int cassandraGcGraceSeconds, Clock clock, boolean servlet) throws Exception {
         this.session = session;
+        this.cassandraGcGraceSeconds = cassandraGcGraceSeconds;
         this.clock = clock;
         this.servlet = servlet;
 
@@ -535,6 +526,10 @@ public class SchemaUpgrade {
             splitActiveAgentRollupTables(3);
             updateSchemaVersion(90);
         }
+        if (initialSchemaVersion < 91) {
+            addAggregateSummaryColumns();
+            updateSchemaVersion(91);
+        }
 
         // when adding new schema upgrade, make sure to update CURR_SCHEMA_VERSION above
         startupLogger.info("upgraded glowroot central schema from version {} to version {}",
@@ -558,21 +553,23 @@ public class SchemaUpgrade {
         List<String> snappyTableNames = new ArrayList<>();
         List<String> dtcsTableNames = new ArrayList<>();
         for (TableMetadata table : session.getTables()) {
-            String compressionClass = table.getOptions().getCompression().get("class");
+            String compressionClass = ((Map<String, String>)table.getOptions()
+                    .getOrDefault(CqlIdentifier.fromInternal("compression"), Collections.emptyMap())).get("class");
             if (compressionClass != null && compressionClass
                     .equals("org.apache.cassandra.io.compress.SnappyCompressor")) {
                 snappyTableNames.add(compressionClass);
             }
-            String compactionClass = table.getOptions().getCompaction().get("class");
+            String compactionClass = ((Map<String, String>)table.getOptions()
+                    .getOrDefault(CqlIdentifier.fromInternal("compaction"), Collections.emptyMap())).get("class");
             if (compactionClass != null && compactionClass
                     .equals("org.apache.cassandra.db.compaction.DateTieredCompactionStrategy")) {
-                dtcsTableNames.add(table.getName());
+                dtcsTableNames.add(table.getName().asInternal());
             }
-            if (table.getName().startsWith("trace_") && table.getName().endsWith("_partial")
+            if (table.getName().asInternal().startsWith("trace_") && table.getName().asInternal().endsWith("_partial")
                     && compactionClass != null && compactionClass.equals(
                             "org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy")) {
                 // these need to be updated to TWCS also
-                dtcsTableNames.add(table.getName());
+                dtcsTableNames.add(table.getName().asInternal());
             }
         }
 
@@ -616,8 +613,8 @@ public class SchemaUpgrade {
     }
 
     private void updateSchemaVersion(int schemaVersion) throws Exception {
-        BoundStatement boundStatement = insertIntoSchemVersionPS.bind();
-        boundStatement.setInt(0, schemaVersion);
+        BoundStatement boundStatement = insertIntoSchemVersionPS.bind()
+            .setInt(0, schemaVersion);
         session.write(boundStatement);
     }
 
@@ -631,9 +628,9 @@ public class SchemaUpgrade {
         PreparedStatement preparedStatement =
                 session.prepare("insert into agent (agent_id, environment) values (?, ?)");
         for (Row row : results) {
-            BoundStatement boundStatement = preparedStatement.bind();
-            boundStatement.setString(0, row.getString(0));
-            boundStatement.setBytes(1, row.getBytes(1));
+            BoundStatement boundStatement = preparedStatement.bind()
+                .setString(0, row.getString(0))
+                .setByteBuffer(1, row.getByteBuffer(1));
             session.write(boundStatement);
         }
         session.updateSchemaWithRetry("alter table agent drop system_info");
@@ -650,9 +647,9 @@ public class SchemaUpgrade {
             if (upgradedPermissions == null) {
                 continue;
             }
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, name);
-            boundStatement.setSet(1, upgradedPermissions, String.class);
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(0, name)
+                .setSet(1, upgradedPermissions, String.class);
             session.write(boundStatement);
         }
     }
@@ -695,9 +692,9 @@ public class SchemaUpgrade {
         PreparedStatement insertPS =
                 session.prepare("insert into central_config (key, value) values (?, ?)");
         for (Row row : results) {
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, row.getString(0));
-            boundStatement.setString(1, row.getString(1));
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(0, row.getString(0))
+                .setString(1, row.getString(1));
             session.write(boundStatement);
         }
         dropTableIfExists("server_config");
@@ -714,8 +711,8 @@ public class SchemaUpgrade {
         PreparedStatement insertPS =
                 session.prepare("insert into agent_one (one, agent_id) values (1, ?)");
         for (Row row : results) {
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, row.getString(0));
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(0, row.getString(0));
             session.write(boundStatement);
         }
         dropTableIfExists("agent_rollup");
@@ -728,7 +725,8 @@ public class SchemaUpgrade {
     private void updateTwcsDtcsGcSeconds() throws Exception {
         logger.info("updating gc_grace_seconds on TWCS/DTCS tables...");
         for (TableMetadata table : session.getTables()) {
-            String compactionClass = table.getOptions().getCompaction().get("class");
+            String compactionClass = ((Map<String, String>)table.getOptions()
+                    .getOrDefault(CqlIdentifier.fromInternal("compaction"), Collections.emptyMap())).get("class");
             if (compactionClass == null) {
                 continue;
             }
@@ -736,10 +734,8 @@ public class SchemaUpgrade {
                     .equals("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")
                     || compactionClass.equals(
                             "org.apache.cassandra.db.compaction.DateTieredCompactionStrategy")) {
-                // see gc_grace_seconds related comments in Sessions.createTableWithTWCS()
-                // for reasoning behind the value of 4 hours
                 session.updateSchemaWithRetry("alter table " + table.getName()
-                        + " with gc_grace_seconds = " + HOURS.toSeconds(4));
+                        + " with gc_grace_seconds = " + cassandraGcGraceSeconds);
             }
         }
         logger.info("updating gc_grace_seconds on TWCS/DTCS tables - complete");
@@ -747,39 +743,29 @@ public class SchemaUpgrade {
 
     private void updateNeedsRollupGcSeconds() throws Exception {
         logger.info("updating gc_grace_seconds on \"needs rollup\" tables...");
-        // reduce from default 10 days to 4 hours
-        //
-        // since rollup operations are idempotent, any records resurrected after gc_grace_seconds
-        // would just create extra work, but not have any other effect
-        //
-        // not using gc_grace_seconds of 0 since that disables hinted handoff
-        // (http://www.uberobert.com/cassandra_gc_grace_disables_hinted_handoff)
-        //
-        // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
-        long gcGraceSeconds = HOURS.toSeconds(4);
 
         if (tableExists("aggregate_needs_rollup_from_child")) {
             session.updateSchemaWithRetry("alter table aggregate_needs_rollup_from_child with"
-                    + " gc_grace_seconds = " + gcGraceSeconds);
+                    + " gc_grace_seconds = " + cassandraGcGraceSeconds);
         }
         session.updateSchemaWithRetry(
-                "alter table aggregate_needs_rollup_1 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table aggregate_needs_rollup_1 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         session.updateSchemaWithRetry(
-                "alter table aggregate_needs_rollup_2 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table aggregate_needs_rollup_2 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         session.updateSchemaWithRetry(
-                "alter table aggregate_needs_rollup_3 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table aggregate_needs_rollup_3 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         if (tableExists("gauge_needs_rollup_from_child")) {
             session.updateSchemaWithRetry("alter table gauge_needs_rollup_from_child with"
-                    + " gc_grace_seconds = " + gcGraceSeconds);
+                    + " gc_grace_seconds = " + cassandraGcGraceSeconds);
         }
         session.updateSchemaWithRetry(
-                "alter table gauge_needs_rollup_1 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table gauge_needs_rollup_1 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         session.updateSchemaWithRetry(
-                "alter table gauge_needs_rollup_2 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table gauge_needs_rollup_2 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         session.updateSchemaWithRetry(
-                "alter table gauge_needs_rollup_3 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table gauge_needs_rollup_3 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         session.updateSchemaWithRetry(
-                "alter table gauge_needs_rollup_4 with gc_grace_seconds = " + gcGraceSeconds);
+                "alter table gauge_needs_rollup_4 with gc_grace_seconds = " + cassandraGcGraceSeconds);
         logger.info("updating gc_grace_seconds on \"needs rollup\" tables - complete");
     }
 
@@ -800,11 +786,11 @@ public class SchemaUpgrade {
         for (Row row : results) {
             String agentRollupId = row.getString(0);
             String parentAgentRollupId = row.getString(1);
-            BoundStatement boundStatement = insertPS.bind();
             int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setString(i++, parentAgentRollupId);
-            boundStatement.setBool(i++, true);
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(i++, agentRollupId)
+                .setString(i++, parentAgentRollupId)
+                .setBoolean(i++, true);
             session.write(boundStatement);
             if (parentAgentRollupId != null) {
                 parentAgentRollupIds.addAll(getAgentRollupIds(parentAgentRollupId));
@@ -814,11 +800,11 @@ public class SchemaUpgrade {
             int index = parentAgentRollupId.lastIndexOf('/');
             String parentOfParentAgentRollupId =
                     index == -1 ? null : parentAgentRollupId.substring(0, index);
-            BoundStatement boundStatement = insertPS.bind();
             int i = 0;
-            boundStatement.setString(i++, parentAgentRollupId);
-            boundStatement.setString(i++, parentOfParentAgentRollupId);
-            boundStatement.setBool(i++, false);
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(i++, parentAgentRollupId)
+                .setString(i++, parentOfParentAgentRollupId)
+                .setBoolean(i++, false);
             session.write(boundStatement);
         }
         session.updateSchemaWithRetry("alter table agent drop agent_rollup");
@@ -855,7 +841,7 @@ public class SchemaUpgrade {
                 session.read("select agent_rollup_id, agent from agent_rollup where one = 1");
         List<String> agentIds = new ArrayList<>();
         for (Row row : results) {
-            if (row.getBool(1)) {
+            if (row.getBoolean(1)) {
                 agentIds.add(checkNotNull(row.getString(0)));
             }
         }
@@ -866,8 +852,8 @@ public class SchemaUpgrade {
         PreparedStatement insertConfigPS = session.prepare("insert into config (agent_rollup_id,"
                 + " config, config_update, config_update_token) values (?, ?, ?, ?)");
         for (String agentId : agentIds) {
-            BoundStatement boundStatement = readPS.bind();
-            boundStatement.setString(0, agentId);
+            BoundStatement boundStatement = readPS.bind()
+                .setString(0, agentId);
             results = session.read(boundStatement);
             Row row = results.one();
             if (row == null) {
@@ -875,22 +861,22 @@ public class SchemaUpgrade {
                 continue;
             }
             int i = 0;
-            ByteBuffer environmentBytes = checkNotNull(row.getBytes(i++));
-            ByteBuffer configBytes = checkNotNull(row.getBytes(i++));
-            boolean configUpdate = row.getBool(i++);
-            UUID configUpdateToken = row.getUUID(i++);
+            ByteBuffer environmentBytes = checkNotNull(row.getByteBuffer(i++));
+            ByteBuffer configBytes = checkNotNull(row.getByteBuffer(i++));
+            boolean configUpdate = row.getBoolean(i++);
+            UUID configUpdateToken = row.getUuid(i++);
 
-            boundStatement = insertEnvironmentPS.bind();
-            boundStatement.setString(0, agentId);
-            boundStatement.setBytes(1, environmentBytes);
+            boundStatement = insertEnvironmentPS.bind()
+                .setString(0, agentId)
+                .setByteBuffer(1, environmentBytes);
             session.write(boundStatement);
 
-            boundStatement = insertConfigPS.bind();
             i = 0;
-            boundStatement.setString(i++, agentId);
-            boundStatement.setBytes(i++, configBytes);
-            boundStatement.setBool(i++, configUpdate);
-            boundStatement.setUUID(i++, configUpdateToken);
+            boundStatement = insertConfigPS.bind()
+                .setString(i++, agentId)
+                .setByteBuffer(i++, configBytes)
+                .setBoolean(i++, configUpdate)
+                .setUuid(i++, configUpdateToken);
             session.write(boundStatement);
         }
         dropTableIfExists("agent");
@@ -905,7 +891,7 @@ public class SchemaUpgrade {
             int i = 0;
             String agentRollupId = row.getString(i++);
             String parentAgentRollupId = row.getString(i++);
-            boolean agent = row.getBool(i++);
+            boolean agent = row.getBoolean(i++);
             if (!agent) {
                 agentRollupIds.add(checkNotNull(agentRollupId));
             }
@@ -933,25 +919,25 @@ public class SchemaUpgrade {
             Iterator<String> iterator = childAgentIds.get(agentRollupId).iterator();
             if (!iterator.hasNext()) {
                 logger.warn("could not find a child agent for rollup: {}", agentRollupId);
-                BoundStatement boundStatement = insertPS.bind();
-                boundStatement.setString(0, agentRollupId);
-                boundStatement.setBytes(1, ByteBuffer.wrap(defaultAgentConfig.toByteArray()));
+                BoundStatement boundStatement = insertPS.bind()
+                    .setString(0, agentRollupId)
+                    .setByteBuffer(1, ByteBuffer.wrap(defaultAgentConfig.toByteArray()));
                 session.write(boundStatement);
                 continue;
             }
             String childAgentId = iterator.next();
-            BoundStatement boundStatement = readPS.bind();
-            boundStatement.setString(0, childAgentId);
+            BoundStatement boundStatement = readPS.bind()
+                .setString(0, childAgentId);
             Row row = session.read(boundStatement).one();
 
-            boundStatement = insertPS.bind();
-            boundStatement.setString(0, agentRollupId);
+            boundStatement = insertPS.bind()
+                .setString(0, agentRollupId);
             if (row == null) {
                 logger.warn("could not find config for agent id: {}", childAgentId);
-                boundStatement.setBytes(1, ByteBuffer.wrap(defaultAgentConfig.toByteArray()));
+                boundStatement = boundStatement.setByteBuffer(1, ByteBuffer.wrap(defaultAgentConfig.toByteArray()));
             } else {
                 try {
-                    AgentConfig agentConfig = AgentConfig.parseFrom(checkNotNull(row.getBytes(0)));
+                    AgentConfig agentConfig = AgentConfig.parseFrom(checkNotNull(row.getByteBuffer(0)));
                     AdvancedConfig advancedConfig = agentConfig.getAdvancedConfig();
                     AgentConfig updatedAgentConfig = AgentConfig.newBuilder()
                             .setUiDefaultsConfig(agentConfig.getUiDefaultsConfig())
@@ -960,10 +946,10 @@ public class SchemaUpgrade {
                                     .setMaxServiceCallAggregates(
                                             advancedConfig.getMaxServiceCallAggregates()))
                             .build();
-                    boundStatement.setBytes(1, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
+                    boundStatement = boundStatement.setByteBuffer(1, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
                 } catch (InvalidProtocolBufferException e) {
                     logger.error(e.getMessage(), e);
-                    boundStatement.setBytes(1, ByteBuffer.wrap(defaultAgentConfig.toByteArray()));
+                    boundStatement = boundStatement.setByteBuffer(1, ByteBuffer.wrap(defaultAgentConfig.toByteArray()));
                 }
             }
             session.write(boundStatement);
@@ -986,9 +972,9 @@ public class SchemaUpgrade {
                 continue;
             }
             permissions.addAll(permissionsToBeAdded);
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, name);
-            boundStatement.setSet(1, permissions, String.class);
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(0, name)
+                .setSet(1, permissions, String.class);
             session.write(boundStatement);
         }
     }
@@ -1023,8 +1009,8 @@ public class SchemaUpgrade {
         String updatedWebConfigText = mapper.writeValueAsString(builder.build());
         PreparedStatement preparedStatement =
                 session.prepare("insert into central_config (key, value) values ('web', ?)");
-        BoundStatement boundStatement = preparedStatement.bind();
-        boundStatement.setString(0, updatedWebConfigText);
+        BoundStatement boundStatement = preparedStatement.bind()
+            .setString(0, updatedWebConfigText);
         session.write(boundStatement);
     }
 
@@ -1035,8 +1021,8 @@ public class SchemaUpgrade {
                 session.prepare("delete from agent_rollup where one = 1 and agent_rollup_id = ?");
         for (Row row : results) {
             if (row.isNull(1)) {
-                BoundStatement boundStatement = deletePS.bind();
-                boundStatement.setString(0, checkNotNull(row.getString(0)));
+                BoundStatement boundStatement = deletePS.bind()
+                    .setString(0, checkNotNull(row.getString(0)));
                 session.write(boundStatement);
             }
         }
@@ -1056,11 +1042,11 @@ public class SchemaUpgrade {
                 session.prepare("insert into agent_config (agent_rollup_id, config, config_update,"
                         + " config_update_token) values (?, ?, ?, ?)");
         for (Row row : results) {
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, row.getString(0));
-            boundStatement.setBytes(1, row.getBytes(1));
-            boundStatement.setBool(2, row.getBool(2));
-            boundStatement.setUUID(3, row.getUUID(3));
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(0, row.getString(0))
+                .setByteBuffer(1, row.getByteBuffer(1))
+                .setBoolean(2, row.getBoolean(2))
+                .setUuid(3, row.getUuid(3));
             session.write(boundStatement);
         }
         dropTableIfExists("config");
@@ -1074,7 +1060,7 @@ public class SchemaUpgrade {
             String agentRollupId = row.getString(0);
             AgentConfig oldAgentConfig;
             try {
-                oldAgentConfig = AgentConfig.parseFrom(checkNotNull(row.getBytes(1)));
+                oldAgentConfig = AgentConfig.parseFrom(checkNotNull(row.getByteBuffer(1)));
             } catch (InvalidProtocolBufferException e) {
                 logger.error(e.getMessage(), e);
                 continue;
@@ -1084,12 +1070,12 @@ public class SchemaUpgrade {
                 continue;
             }
             AgentConfig agentConfig = upgradeOldAgentConfig(oldAgentConfig);
-            BoundStatement boundStatement = insertPS.bind();
             int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setBytes(i++, ByteBuffer.wrap(agentConfig.toByteArray()));
-            boundStatement.setBool(i++, true);
-            boundStatement.setUUID(i++, UUIDs.random());
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(i++, agentRollupId)
+                .setByteBuffer(i++, ByteBuffer.wrap(agentConfig.toByteArray()))
+                .setBoolean(i++, true)
+                .setUuid(i++, Uuids.random());
             session.write(boundStatement);
         }
     }
@@ -1127,9 +1113,9 @@ public class SchemaUpgrade {
                 }
             }
             if (updated) {
-                BoundStatement boundStatement = insertPS.bind();
-                boundStatement.setString(0, name);
-                boundStatement.setSet(1, upgradedPermissions, String.class);
+                BoundStatement boundStatement = insertPS.bind()
+                    .setString(0, name)
+                    .setSet(1, upgradedPermissions, String.class);
                 session.write(boundStatement);
             }
         }
@@ -1158,8 +1144,8 @@ public class SchemaUpgrade {
         String updatedWebConfigText = mapper.writeValueAsString(smtpConfigNode);
         PreparedStatement preparedStatement =
                 session.prepare("insert into central_config (key, value) values ('smtp', ?)");
-        BoundStatement boundStatement = preparedStatement.bind();
-        boundStatement.setString(0, updatedWebConfigText);
+        BoundStatement boundStatement = preparedStatement.bind()
+            .setString(0, updatedWebConfigText);
         session.write(boundStatement);
     }
 
@@ -1171,7 +1157,7 @@ public class SchemaUpgrade {
             String agentRollupId = row.getString(0);
             AgentConfig oldAgentConfig;
             try {
-                oldAgentConfig = AgentConfig.parseFrom(checkNotNull(row.getBytes(1)));
+                oldAgentConfig = AgentConfig.parseFrom(checkNotNull(row.getByteBuffer(1)));
             } catch (InvalidProtocolBufferException e) {
                 logger.error(e.getMessage(), e);
                 continue;
@@ -1180,12 +1166,12 @@ public class SchemaUpgrade {
                     .setUiDefaultsConfig(oldAgentConfig.getUiDefaultsConfig().toBuilder()
                             .addAllDefaultGaugeName(ConfigDefaults.UI_DEFAULTS_GAUGE_NAMES))
                     .build();
-            BoundStatement boundStatement = insertPS.bind();
             int i = 0;
-            boundStatement.setString(i++, agentRollupId);
-            boundStatement.setBytes(i++, ByteBuffer.wrap(agentConfig.toByteArray()));
-            boundStatement.setBool(i++, true);
-            boundStatement.setUUID(i++, UUIDs.random());
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(i++, agentRollupId)
+                .setByteBuffer(i++, ByteBuffer.wrap(agentConfig.toByteArray()))
+                .setBoolean(i++, true)
+                .setUuid(i++, Uuids.random());
             session.write(boundStatement);
         }
     }
@@ -1242,7 +1228,7 @@ public class SchemaUpgrade {
             int i = 0;
             String agentRollupId = checkNotNull(row.getString(i++));
             String gaugeName = checkNotNull(row.getString(i++));
-            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             long millisPerDay = DAYS.toMillis(1);
             long rollupCaptureTime = CaptureTimes.getRollup(captureTime, millisPerDay);
             rowsPerCaptureTime.put(rollupCaptureTime,
@@ -1256,26 +1242,26 @@ public class SchemaUpgrade {
             int i = 0;
             String agentRollupId = checkNotNull(row.getString(i++));
             String gaugeName = checkNotNull(row.getString(i++));
-            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             long millisPerDay = DAYS.toMillis(1);
             long rollupCaptureTime = CaptureTimes.getRollup(captureTime, millisPerDay);
             rowsPerCaptureTime.put(rollupCaptureTime,
                     ImmutableAgentRollupIdGaugeNamePair.of(agentRollupId, gaugeName));
         }
         int maxRollupTTL = storageConfig.getMaxRollupTTL();
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         List<Long> sortedCaptureTimes =
                 Ordering.natural().sortedCopy(rowsPerCaptureTime.keySet());
         for (long captureTime : sortedCaptureTimes) {
             int adjustedTTL = Common.getAdjustedTTL(maxRollupTTL, captureTime, clock);
             for (AgentRollupIdGaugeNamePair row : rowsPerCaptureTime.get(captureTime)) {
-                BoundStatement boundStatement = insertPS.bind();
                 int i = 0;
-                boundStatement.setString(i++, row.agentRollupId());
-                boundStatement.setTimestamp(i++, new Date(captureTime));
-                boundStatement.setString(i++, row.gaugeName());
-                boundStatement.setInt(i++, adjustedTTL);
-                futures.add(session.writeAsync(boundStatement));
+                BoundStatement boundStatement = insertPS.bind()
+                    .setString(i++, row.agentRollupId())
+                    .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                    .setString(i++, row.gaugeName())
+                    .setInt(i++, adjustedTTL);
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
                 waitForSome(futures);
             }
         }
@@ -1300,21 +1286,21 @@ public class SchemaUpgrade {
             if (display == null) {
                 continue;
             }
-            BoundStatement boundStatement = readConfigPS.bind();
-            boundStatement.setString(0, agentRollupId);
+            BoundStatement boundStatement = readConfigPS.bind()
+                .setString(0, agentRollupId);
             Row configRow = session.read(boundStatement).one();
             if (configRow == null) {
                 logger.warn("could not find config for agent rollup id: {}", agentRollupId);
                 continue;
             }
-            AgentConfig agentConfig = AgentConfig.parseFrom(checkNotNull(configRow.getBytes(0)));
+            AgentConfig agentConfig = AgentConfig.parseFrom(checkNotNull(configRow.getByteBuffer(0)));
             AgentConfig updatedAgentConfig = agentConfig.toBuilder()
                     .setGeneralConfig(GeneralConfig.newBuilder()
                             .setDisplay(display))
                     .build();
-            boundStatement = insertConfigPS.bind();
-            boundStatement.setString(0, agentRollupId);
-            boundStatement.setBytes(1, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
+            boundStatement = insertConfigPS.bind()
+                .setString(0, agentRollupId)
+                .setByteBuffer(1, ByteBuffer.wrap(updatedAgentConfig.toByteArray()));
             session.write(boundStatement);
         }
         dropColumnIfExists("agent_rollup", "display");
@@ -1349,10 +1335,10 @@ public class SchemaUpgrade {
                     long v09AggregateLastExpirationTime = addExpirationHours(nextDailyRollup,
                             storageConfig.getMaxRollupHours());
                     int i = 0;
-                    boundStatement.setTimestamp(i++, new Date(nextDailyRollup));
-                    boundStatement.setTimestamp(i++, new Date(v09FqtLastExpirationTime));
-                    boundStatement.setTimestamp(i++, new Date(v09TraceLastExpirationTime));
-                    boundStatement.setTimestamp(i++, new Date(v09AggregateLastExpirationTime));
+                    boundStatement = boundStatement.setInstant(i++, Instant.ofEpochMilli(nextDailyRollup))
+                        .setInstant(i++, Instant.ofEpochMilli(v09FqtLastExpirationTime))
+                        .setInstant(i++, Instant.ofEpochMilli(v09TraceLastExpirationTime))
+                        .setInstant(i++, Instant.ofEpochMilli(v09AggregateLastExpirationTime));
                     session.write(boundStatement);
 
                     dropTableIfExists("v09_agent_check");
@@ -1361,8 +1347,8 @@ public class SchemaUpgrade {
                     insertV09AgentCheckPS = session.prepare(
                             "insert into v09_agent_check (one, agent_id) values (1, ?)");
                 }
-                BoundStatement boundStatement = insertV09AgentCheckPS.bind();
-                boundStatement.setString(0, v09AgentRollup.agentRollupId());
+                BoundStatement boundStatement = insertV09AgentCheckPS.bind()
+                    .setString(0, v09AgentRollup.agentRollupId());
                 session.write(boundStatement);
             }
         }
@@ -1417,7 +1403,7 @@ public class SchemaUpgrade {
                 continue;
             }
             String agentId = v09AgentRollup.agentRollupId();
-            long captureTime = checkNotNull(row.getTimestamp(1)).getTime();
+            long captureTime = checkNotNull(row.getInstant(1)).toEpochMilli();
             long millisPerDay = DAYS.toMillis(1);
             long rollupCaptureTime = CaptureTimes.getRollup(captureTime, millisPerDay);
             agentIdsPerCaptureTime.put(rollupCaptureTime, agentId);
@@ -1434,7 +1420,7 @@ public class SchemaUpgrade {
                 continue;
             }
             String agentId = v09AgentRollup.agentRollupId();
-            long captureTime = checkNotNull(row.getTimestamp(1)).getTime();
+            long captureTime = checkNotNull(row.getInstant(1)).toEpochMilli();
             long millisPerDay = DAYS.toMillis(1);
             long rollupCaptureTime = CaptureTimes.getRollup(captureTime, millisPerDay);
             agentIdsPerCaptureTime.put(rollupCaptureTime, agentId);
@@ -1442,16 +1428,16 @@ public class SchemaUpgrade {
         int maxRollupTTL = storageConfig.getMaxRollupTTL();
         List<Long> sortedCaptureTimes =
                 Ordering.natural().sortedCopy(agentIdsPerCaptureTime.keySet());
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (long captureTime : sortedCaptureTimes) {
             int adjustedTTL = Common.getAdjustedTTL(maxRollupTTL, captureTime, clock);
             for (String agentId : agentIdsPerCaptureTime.get(captureTime)) {
-                BoundStatement boundStatement = insertPS.bind();
                 int i = 0;
-                boundStatement.setTimestamp(i++, new Date(captureTime));
-                boundStatement.setString(i++, agentId);
-                boundStatement.setInt(i++, adjustedTTL);
-                futures.add(session.writeAsync(boundStatement));
+                BoundStatement boundStatement = insertPS.bind()
+                    .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                    .setString(i++, agentId)
+                    .setInt(i++, adjustedTTL);
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
                 waitForSome(futures);
             }
         }
@@ -1470,11 +1456,11 @@ public class SchemaUpgrade {
         ResultSet results = session.read("select agent_rollup_id, config, config_update,"
                 + " config_update_token from agent_config");
         for (Row row : results) {
-            BoundStatement boundStatement = insertTempPS.bind();
-            boundStatement.setString(0, row.getString(0));
-            boundStatement.setBytes(1, row.getBytes(1));
-            boundStatement.setBool(2, row.getBool(2));
-            boundStatement.setUUID(3, row.getUUID(3));
+            BoundStatement boundStatement = insertTempPS.bind()
+                .setString(0, row.getString(0))
+                .setByteBuffer(1, row.getByteBuffer(1))
+                .setBoolean(2, row.getBoolean(2))
+                .setUuid(3, row.getUuid(3));
             session.write(boundStatement);
         }
     }
@@ -1502,11 +1488,11 @@ public class SchemaUpgrade {
                 // table in which case its parent is no longer known and best to ignore
                 continue;
             }
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, v09AgentRollup.agentRollupId());
-            boundStatement.setBytes(1, row.getBytes(1));
-            boundStatement.setBool(2, row.getBool(2));
-            boundStatement.setUUID(3, row.getUUID(3));
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(0, v09AgentRollup.agentRollupId())
+                .setByteBuffer(1, row.getByteBuffer(1))
+                .setBoolean(2, row.getBoolean(2))
+                .setUuid(3, row.getUuid(3));
             session.write(boundStatement);
         }
         dropTableIfExists("agent_config_temp");
@@ -1520,9 +1506,9 @@ public class SchemaUpgrade {
                 .prepare("insert into environment_temp (agent_id, environment) values (?, ?)");
         ResultSet results = session.read("select agent_id, environment from environment");
         for (Row row : results) {
-            BoundStatement boundStatement = insertTempPS.bind();
-            boundStatement.setString(0, row.getString(0));
-            boundStatement.setBytes(1, row.getBytes(1));
+            BoundStatement boundStatement = insertTempPS.bind()
+                .setString(0, row.getString(0))
+                .setByteBuffer(1, row.getByteBuffer(1));
             session.write(boundStatement);
         }
     }
@@ -1547,9 +1533,9 @@ public class SchemaUpgrade {
                 // table in which case its parent is no longer known and best to ignore
                 continue;
             }
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, v09AgentRollup.agentRollupId());
-            boundStatement.setBytes(1, row.getBytes(1));
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(0, v09AgentRollup.agentRollupId())
+                .setByteBuffer(1, row.getByteBuffer(1));
             session.write(boundStatement);
         }
         dropTableIfExists("environment_temp");
@@ -1570,12 +1556,12 @@ public class SchemaUpgrade {
         ResultSet results = session.read("select agent_rollup_id, condition, severity,"
                 + " notification, open_time from open_incident where one = 1");
         for (Row row : results) {
-            BoundStatement boundStatement = insertTempPS.bind();
-            boundStatement.setString(0, row.getString(0));
-            boundStatement.setBytes(1, row.getBytes(1));
-            boundStatement.setString(2, row.getString(2));
-            boundStatement.setBytes(3, row.getBytes(3));
-            boundStatement.setTimestamp(4, row.getTimestamp(4));
+            BoundStatement boundStatement = insertTempPS.bind()
+                .setString(0, row.getString(0))
+                .setByteBuffer(1, row.getByteBuffer(1))
+                .setString(2, row.getString(2))
+                .setByteBuffer(3, row.getByteBuffer(3))
+                .setInstant(4, row.getInstant(4));
             session.write(boundStatement);
         }
     }
@@ -1603,12 +1589,12 @@ public class SchemaUpgrade {
                 // table in which case its parent is no longer known and best to ignore
                 continue;
             }
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, v09AgentRollup.agentRollupId());
-            boundStatement.setBytes(1, row.getBytes(1));
-            boundStatement.setString(2, row.getString(2));
-            boundStatement.setBytes(3, row.getBytes(3));
-            boundStatement.setTimestamp(4, row.getTimestamp(4));
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(0, v09AgentRollup.agentRollupId())
+                .setByteBuffer(1, row.getByteBuffer(1))
+                .setString(2, row.getString(2))
+                .setByteBuffer(3, row.getByteBuffer(3))
+                .setInstant(4, row.getInstant(4));
             session.write(boundStatement);
         }
         dropTableIfExists("open_incident_temp");
@@ -1631,13 +1617,13 @@ public class SchemaUpgrade {
         ResultSet results = session.read("select resolve_time, agent_rollup_id, condition,"
                 + " severity, notification, open_time from resolved_incident where one = 1");
         for (Row row : results) {
-            BoundStatement boundStatement = insertTempPS.bind();
-            boundStatement.setTimestamp(0, row.getTimestamp(0));
-            boundStatement.setString(1, row.getString(1));
-            boundStatement.setBytes(2, row.getBytes(2));
-            boundStatement.setString(3, row.getString(3));
-            boundStatement.setBytes(4, row.getBytes(4));
-            boundStatement.setTimestamp(5, row.getTimestamp(5));
+            BoundStatement boundStatement = insertTempPS.bind()
+                .setInstant(0, row.getInstant(0))
+                .setString(1, row.getString(1))
+                .setByteBuffer(2, row.getByteBuffer(2))
+                .setString(3, row.getString(3))
+                .setByteBuffer(4, row.getByteBuffer(4))
+                .setInstant(5, row.getInstant(5));
             session.write(boundStatement);
         }
     }
@@ -1669,16 +1655,16 @@ public class SchemaUpgrade {
                 // table in which case its parent is no longer known and best to ignore
                 continue;
             }
-            Date resolveTime = checkNotNull(row.getTimestamp(0));
-            int adjustedTTL = Common.getAdjustedTTL(ttl, resolveTime.getTime(), clock);
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setTimestamp(0, resolveTime);
-            boundStatement.setString(1, v09AgentRollup.agentRollupId());
-            boundStatement.setBytes(2, row.getBytes(2));
-            boundStatement.setString(3, row.getString(3));
-            boundStatement.setBytes(4, row.getBytes(4));
-            boundStatement.setTimestamp(5, row.getTimestamp(5));
-            boundStatement.setInt(6, adjustedTTL);
+            Instant resolveTime = checkNotNull(row.getInstant(0));
+            int adjustedTTL = Common.getAdjustedTTL(ttl, resolveTime.toEpochMilli(), clock);
+            BoundStatement boundStatement = insertPS.bind()
+                .setInstant(0, resolveTime)
+                .setString(1, v09AgentRollup.agentRollupId())
+                .setByteBuffer(2, row.getByteBuffer(2))
+                .setString(3, row.getString(3))
+                .setByteBuffer(4, row.getByteBuffer(4))
+                .setInstant(5, row.getInstant(5))
+                .setInt(6, adjustedTTL);
             session.write(boundStatement);
         }
         dropTableIfExists("resolved_incident_temp");
@@ -1692,9 +1678,9 @@ public class SchemaUpgrade {
                 session.prepare("insert into role_temp (name, permissions) values (?, ?)");
         ResultSet results = session.read("select name, permissions from role");
         for (Row row : results) {
-            BoundStatement boundStatement = insertTempPS.bind();
-            boundStatement.setString(0, row.getString(0));
-            boundStatement.setSet(1, row.getSet(1, String.class));
+            BoundStatement boundStatement = insertTempPS.bind()
+                .setString(0, row.getString(0))
+                .setSet(1, row.getSet(1, String.class), String.class);
             session.write(boundStatement);
         }
     }
@@ -1765,9 +1751,9 @@ public class SchemaUpgrade {
                 // above)
                 continue;
             }
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, row.getString(0));
-            boundStatement.setSet(1, permissions);
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(0, row.getString(0))
+                .setSet(1, permissions, String.class);
             session.write(boundStatement);
         }
         dropTableIfExists("role_temp");
@@ -1785,12 +1771,12 @@ public class SchemaUpgrade {
         PreparedStatement insertTempPS = session.prepare("insert into heartbeat_temp (agent_id,"
                 + " central_capture_time) values (?, ?)");
         ResultSet results = session.read("select agent_id, central_capture_time from heartbeat");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
-            BoundStatement boundStatement = insertTempPS.bind();
-            boundStatement.setString(0, row.getString(0));
-            boundStatement.setTimestamp(1, row.getTimestamp(1));
-            futures.add(session.writeAsync(boundStatement));
+            BoundStatement boundStatement = insertTempPS.bind()
+                .setString(0, row.getString(0))
+                .setInstant(1, row.getInstant(1));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
@@ -1813,7 +1799,7 @@ public class SchemaUpgrade {
         int ttl = Ints.saturatedCast(HOURS.toSeconds(HeartbeatDao.EXPIRATION_HOURS));
         ResultSet results =
                 session.read("select agent_id, central_capture_time from heartbeat_temp");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
             String v09AgentRollupId = row.getString(0);
             V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
@@ -1822,14 +1808,14 @@ public class SchemaUpgrade {
                 // table in which case its parent is no longer known and best to ignore
                 continue;
             }
-            Date centralCaptureDate = checkNotNull(row.getTimestamp(1));
-            int adjustedTTL = Common.getAdjustedTTL(ttl, centralCaptureDate.getTime(), clock);
-            BoundStatement boundStatement = insertPS.bind();
+            Instant centralCaptureDate = checkNotNull(row.getInstant(1));
+            int adjustedTTL = Common.getAdjustedTTL(ttl, centralCaptureDate.toEpochMilli(), clock);
             int i = 0;
-            boundStatement.setString(i++, v09AgentRollup.agentRollupId());
-            boundStatement.setTimestamp(i++, centralCaptureDate);
-            boundStatement.setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(i++, v09AgentRollup.agentRollupId())
+                .setInstant(i++, centralCaptureDate)
+                .setInt(i++, adjustedTTL);
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
@@ -1847,9 +1833,9 @@ public class SchemaUpgrade {
         ResultSet results = session.read(
                 "select agent_rollup, transaction_type from transaction_type where one = 1");
         for (Row row : results) {
-            BoundStatement boundStatement = insertTempPS.bind();
-            boundStatement.setString(0, row.getString(0));
-            boundStatement.setString(1, row.getString(1));
+            BoundStatement boundStatement = insertTempPS.bind()
+                .setString(0, row.getString(0))
+                .setString(1, row.getString(1));
             session.write(boundStatement);
         }
     }
@@ -1877,10 +1863,10 @@ public class SchemaUpgrade {
                 // table in which case its parent is no longer known and best to ignore
                 continue;
             }
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, v09AgentRollup.agentRollupId());
-            boundStatement.setString(1, row.getString(1));
-            boundStatement.setInt(2, ttl);
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(0, v09AgentRollup.agentRollupId())
+                .setString(1, row.getString(1))
+                .setInt(2, ttl);
             session.write(boundStatement);
         }
         dropTableIfExists("transaction_type_temp");
@@ -1896,10 +1882,10 @@ public class SchemaUpgrade {
         ResultSet results = session.read("select agent_rollup, transaction_type,"
                 + " trace_attribute_name from trace_attribute_name");
         for (Row row : results) {
-            BoundStatement boundStatement = insertTempPS.bind();
-            boundStatement.setString(0, row.getString(0));
-            boundStatement.setString(1, row.getString(1));
-            boundStatement.setString(2, row.getString(2));
+            BoundStatement boundStatement = insertTempPS.bind()
+                .setString(0, row.getString(0))
+                .setString(1, row.getString(1))
+                .setString(2, row.getString(2));
             session.write(boundStatement);
         }
     }
@@ -1928,11 +1914,11 @@ public class SchemaUpgrade {
                 // table in which case its parent is no longer known and best to ignore
                 continue;
             }
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, v09AgentRollup.agentRollupId());
-            boundStatement.setString(1, row.getString(1));
-            boundStatement.setString(2, row.getString(2));
-            boundStatement.setInt(3, ttl);
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(0, v09AgentRollup.agentRollupId())
+                .setString(1, row.getString(1))
+                .setString(2, row.getString(2))
+                .setInt(3, ttl);
             session.write(boundStatement);
         }
         dropTableIfExists("trace_attribute_name_temp");
@@ -1949,13 +1935,13 @@ public class SchemaUpgrade {
                 + " (agent_rollup_id, capture_time, gauge_name) values (?, ?, ?)");
         ResultSet results =
                 session.read("select agent_rollup_id, capture_time, gauge_name from gauge_name");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
-            BoundStatement boundStatement = insertTempPS.bind();
-            boundStatement.setString(0, row.getString(0));
-            boundStatement.setTimestamp(1, row.getTimestamp(1));
-            boundStatement.setString(2, row.getString(2));
-            futures.add(session.writeAsync(boundStatement));
+            BoundStatement boundStatement = insertTempPS.bind()
+                .setString(0, row.getString(0))
+                .setInstant(1, row.getInstant(1))
+                .setString(2, row.getString(2));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
@@ -1981,7 +1967,7 @@ public class SchemaUpgrade {
         int ttl = getCentralStorageConfig(session).getMaxRollupTTL();
         ResultSet results = session
                 .read("select agent_rollup_id, capture_time, gauge_name from gauge_name_temp");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
             String v09AgentRollupId = row.getString(0);
             V09AgentRollup v09AgentRollup = v09AgentRollups.get(v09AgentRollupId);
@@ -1990,14 +1976,14 @@ public class SchemaUpgrade {
                 // table in which case its parent is no longer known and best to ignore
                 continue;
             }
-            Date captureDate = checkNotNull(row.getTimestamp(1));
-            int adjustedTTL = Common.getAdjustedTTL(ttl, captureDate.getTime(), clock);
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, v09AgentRollup.agentRollupId());
-            boundStatement.setTimestamp(1, captureDate);
-            boundStatement.setString(2, row.getString(2));
-            boundStatement.setInt(3, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
+            Instant captureDate = checkNotNull(row.getInstant(1));
+            int adjustedTTL = Common.getAdjustedTTL(ttl, captureDate.toEpochMilli(), clock);
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(0, v09AgentRollup.agentRollupId())
+                .setInstant(1, captureDate)
+                .setString(2, row.getString(2))
+                .setInt(3, adjustedTTL);
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
@@ -2019,11 +2005,11 @@ public class SchemaUpgrade {
                     insertPS = session.prepare("insert into v09_agent_rollup"
                             + " (one, v09_agent_id, v09_agent_rollup_id) values (1, ?, ?)");
                 }
-                BoundStatement boundStatement = insertPS.bind();
-                boundStatement.setString(0, v09AgentRollup.agentRollupId());
                 int i = 0;
-                boundStatement.setString(i++, v09AgentRollup.v09AgentRollupId());
-                boundStatement.setString(i++,
+                BoundStatement boundStatement = insertPS.bind()
+                    .setString(0, v09AgentRollup.agentRollupId())
+                    .setString(i++, v09AgentRollup.v09AgentRollupId())
+                    .setString(i++,
                         checkNotNull(v09AgentRollup.v09ParentAgentRollupId()));
                 session.write(boundStatement);
             }
@@ -2038,7 +2024,7 @@ public class SchemaUpgrade {
             int i = 0;
             String v09AgentRollupId = checkNotNull(row.getString(i++));
             String v09ParentAgentRollupId = row.getString(i++);
-            boolean agent = row.getBool(i++);
+            boolean agent = row.getBoolean(i++);
             boolean hasRollup = v09ParentAgentRollupId != null;
             String agentRollupId;
             if (agent) {
@@ -2107,41 +2093,41 @@ public class SchemaUpgrade {
         ResultSet results = session.read("select agent_rollup, transaction_type, capture_time,"
                 + " agent_id, trace_id, duration_nanos, error, headline, user, attributes, partial"
                 + " from trace_tt_slow_point");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         Stopwatch stopwatch = Stopwatch.createStarted();
         int rowCount = 0;
         for (Row row : results) {
-            if (!row.getBool(10)) { // partial
+            if (!row.getBoolean(10)) { // partial
                 // unfortunately cannot use "where partial = true allow filtering" in the query
                 // above as that leads to ReadTimeoutException
                 continue;
             }
             BoundStatement boundStatement = insertCountPartialPS.bind();
             int i = 0;
-            copyString(row, boundStatement, i++); // agent_rollup
-            copyString(row, boundStatement, i++); // transaction_type
-            Date captureDate = checkNotNull(row.getTimestamp(i));
-            int adjustedTTL = Common.getAdjustedTTL(ttl, captureDate.getTime(), clock);
-            copyTimestamp(row, boundStatement, i++); // capture_time
-            copyString(row, boundStatement, i++); // agent_id
-            copyString(row, boundStatement, i++); // trace_id
-            boundStatement.setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
+            boundStatement = copyString(row, boundStatement, i++); // agent_rollup
+            boundStatement = copyString(row, boundStatement, i++); // transaction_type
+            Instant captureDate = checkNotNull(row.getInstant(i));
+            int adjustedTTL = Common.getAdjustedTTL(ttl, captureDate.toEpochMilli(), clock);
+            boundStatement = copyInstant(row, boundStatement, i++); // capture_time
+            boundStatement = copyString(row, boundStatement, i++); // agent_id
+            boundStatement = copyString(row, boundStatement, i++); // trace_id
+            boundStatement = boundStatement.setInt(i++, adjustedTTL);
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
             boundStatement = insertPointPartialPS.bind();
             i = 0;
-            copyString(row, boundStatement, i++); // agent_rollup
-            copyString(row, boundStatement, i++); // transaction_type
-            copyTimestamp(row, boundStatement, i++); // capture_time
-            copyString(row, boundStatement, i++); // agent_id
-            copyString(row, boundStatement, i++); // trace_id
-            copyLong(row, boundStatement, i++); // duration_nanos
-            copyBool(row, boundStatement, i++); // error
-            copyString(row, boundStatement, i++); // headline
-            copyString(row, boundStatement, i++); // user
-            copyBytes(row, boundStatement, i++); // attributes
-            boundStatement.setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
+            boundStatement = copyString(row, boundStatement, i++); // agent_rollup
+            boundStatement = copyString(row, boundStatement, i++); // transaction_type
+            boundStatement = copyInstant(row, boundStatement, i++); // capture_time
+            boundStatement = copyString(row, boundStatement, i++); // agent_id
+            boundStatement = copyString(row, boundStatement, i++); // trace_id
+            boundStatement = copyLong(row, boundStatement, i++); // duration_nanos
+            boundStatement = copyBoolean(row, boundStatement, i++); // error
+            boundStatement = copyString(row, boundStatement, i++); // headline
+            boundStatement = copyString(row, boundStatement, i++); // user
+            boundStatement = copyByteBuffer(row, boundStatement, i++); // attributes
+            boundStatement = boundStatement.setInt(i++, adjustedTTL);
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
             rowCount++;
             if (stopwatch.elapsed(SECONDS) > 60) {
@@ -2168,25 +2154,25 @@ public class SchemaUpgrade {
                 + " and trace_id = ?");
         ResultSet results = session.read("select agent_rollup, transaction_type, capture_time,"
                 + " agent_id, trace_id from trace_tt_slow_count_partial");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
             BoundStatement boundStatement = deleteCountPS.bind();
             int i = 0;
-            copyString(row, boundStatement, i++); // agent_rollup
-            copyString(row, boundStatement, i++); // transaction_type
-            copyTimestamp(row, boundStatement, i++); // capture_time
-            copyString(row, boundStatement, i++); // agent_id
-            copyString(row, boundStatement, i++); // trace_id
-            futures.add(session.writeAsync(boundStatement));
+            boundStatement = copyString(row, boundStatement, i++); // agent_rollup
+            boundStatement = copyString(row, boundStatement, i++); // transaction_type
+            boundStatement = copyInstant(row, boundStatement, i++); // capture_time
+            boundStatement = copyString(row, boundStatement, i++); // agent_id
+            boundStatement = copyString(row, boundStatement, i++); // trace_id
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
             boundStatement = deletePointPS.bind();
             i = 0;
-            copyString(row, boundStatement, i++); // agent_rollup
-            copyString(row, boundStatement, i++); // transaction_type
-            copyTimestamp(row, boundStatement, i++); // capture_time
-            copyString(row, boundStatement, i++); // agent_id
-            copyString(row, boundStatement, i++); // trace_id
-            futures.add(session.writeAsync(boundStatement));
+            boundStatement = copyString(row, boundStatement, i++); // agent_rollup
+            boundStatement = copyString(row, boundStatement, i++); // transaction_type
+            boundStatement = copyInstant(row, boundStatement, i++); // capture_time
+            boundStatement = copyString(row, boundStatement, i++); // agent_id
+            boundStatement = copyString(row, boundStatement, i++); // trace_id
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
@@ -2221,43 +2207,43 @@ public class SchemaUpgrade {
         ResultSet results = session.read("select agent_rollup, transaction_type,"
                 + " transaction_name, capture_time, agent_id, trace_id, duration_nanos, error,"
                 + " headline, user, attributes, partial from trace_tn_slow_point");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         Stopwatch stopwatch = Stopwatch.createStarted();
         int rowCount = 0;
         for (Row row : results) {
-            if (!row.getBool(11)) { // partial
+            if (!row.getBoolean(11)) { // partial
                 // unfortunately cannot use "where partial = true allow filtering" in the query
                 // above as that leads to ReadTimeoutException
                 continue;
             }
-            BoundStatement boundStatement = insertCountPartialPS.bind();
             int i = 0;
-            copyString(row, boundStatement, i++); // agent_rollup
-            copyString(row, boundStatement, i++); // transaction_type
-            copyString(row, boundStatement, i++); // transaction_name
-            Date captureDate = checkNotNull(row.getTimestamp(i));
-            int adjustedTTL = Common.getAdjustedTTL(ttl, captureDate.getTime(), clock);
-            copyTimestamp(row, boundStatement, i++); // capture_time
-            copyString(row, boundStatement, i++); // agent_id
-            copyString(row, boundStatement, i++); // trace_id
-            boundStatement.setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
+            BoundStatement boundStatement = insertCountPartialPS.bind();
+            boundStatement = copyString(row, boundStatement, i++); // agent_rollup
+            boundStatement = copyString(row, boundStatement, i++); // transaction_type
+            boundStatement = copyString(row, boundStatement, i++); // transaction_name
+            Instant captureDate = checkNotNull(row.getInstant(i));
+            int adjustedTTL = Common.getAdjustedTTL(ttl, captureDate.toEpochMilli(), clock);
+            boundStatement = copyInstant(row, boundStatement, i++); // capture_time
+            boundStatement = copyString(row, boundStatement, i++); // agent_id
+            boundStatement = copyString(row, boundStatement, i++); // trace_id
+            boundStatement = boundStatement.setInt(i++, adjustedTTL);
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
             boundStatement = insertPointPartialPS.bind();
             i = 0;
-            copyString(row, boundStatement, i++); // agent_rollup
-            copyString(row, boundStatement, i++); // transaction_type
-            copyString(row, boundStatement, i++); // transaction_name
-            copyTimestamp(row, boundStatement, i++); // capture_time
-            copyString(row, boundStatement, i++); // agent_id
-            copyString(row, boundStatement, i++); // trace_id
-            copyLong(row, boundStatement, i++); // duration_nanos
-            copyBool(row, boundStatement, i++); // error
-            copyString(row, boundStatement, i++); // headline
-            copyString(row, boundStatement, i++); // user
-            copyBytes(row, boundStatement, i++); // attributes
-            boundStatement.setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
+            boundStatement = copyString(row, boundStatement, i++); // agent_rollup
+            boundStatement = copyString(row, boundStatement, i++); // transaction_type
+            boundStatement = copyString(row, boundStatement, i++); // transaction_name
+            boundStatement = copyInstant(row, boundStatement, i++); // capture_time
+            boundStatement = copyString(row, boundStatement, i++); // agent_id
+            boundStatement = copyString(row, boundStatement, i++); // trace_id
+            boundStatement = copyLong(row, boundStatement, i++); // duration_nanos
+            boundStatement = copyBoolean(row, boundStatement, i++); // error
+            boundStatement = copyString(row, boundStatement, i++); // headline
+            boundStatement = copyString(row, boundStatement, i++); // user
+            boundStatement = copyByteBuffer(row, boundStatement, i++); // attributes
+            boundStatement = boundStatement.setInt(i++, adjustedTTL);
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
             rowCount++;
             if (stopwatch.elapsed(SECONDS) > 60) {
@@ -2285,27 +2271,27 @@ public class SchemaUpgrade {
         ResultSet results = session.read("select agent_rollup, transaction_type,"
                 + " transaction_name, capture_time, agent_id, trace_id from"
                 + " trace_tn_slow_count_partial");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
             BoundStatement boundStatement = deleteCountPS.bind();
             int i = 0;
-            copyString(row, boundStatement, i++); // agent_rollup
-            copyString(row, boundStatement, i++); // transaction_type
-            copyString(row, boundStatement, i++); // transaction_name
-            copyTimestamp(row, boundStatement, i++); // capture_time
-            copyString(row, boundStatement, i++); // agent_id
-            copyString(row, boundStatement, i++); // trace_id
-            futures.add(session.writeAsync(boundStatement));
+            boundStatement = copyString(row, boundStatement, i++); // agent_rollup
+            boundStatement = copyString(row, boundStatement, i++); // transaction_type
+            boundStatement = copyString(row, boundStatement, i++); // transaction_name
+            boundStatement = copyInstant(row, boundStatement, i++); // capture_time
+            boundStatement = copyString(row, boundStatement, i++); // agent_id
+            boundStatement = copyString(row, boundStatement, i++); // trace_id
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
 
             boundStatement = deletePointPS.bind();
             i = 0;
-            copyString(row, boundStatement, i++); // agent_rollup
-            copyString(row, boundStatement, i++); // transaction_type
-            copyString(row, boundStatement, i++); // transaction_name
-            copyTimestamp(row, boundStatement, i++); // capture_time
-            copyString(row, boundStatement, i++); // agent_id
-            copyString(row, boundStatement, i++); // trace_id
-            futures.add(session.writeAsync(boundStatement));
+            boundStatement = copyString(row, boundStatement, i++); // agent_rollup
+            boundStatement = copyString(row, boundStatement, i++); // transaction_type
+            boundStatement = copyString(row, boundStatement, i++); // transaction_name
+            boundStatement = copyInstant(row, boundStatement, i++); // capture_time
+            boundStatement = copyString(row, boundStatement, i++); // agent_id
+            boundStatement = copyString(row, boundStatement, i++); // trace_id
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
@@ -2314,7 +2300,8 @@ public class SchemaUpgrade {
 
     private void updateLcsUncheckedTombstoneCompaction() throws Exception {
         for (TableMetadata table : session.getTables()) {
-            String compactionClass = table.getOptions().getCompaction().get("class");
+            String compactionClass = ((Map<String, String>) table.getOptions()
+                    .getOrDefault(CqlIdentifier.fromInternal("compaction"), Collections.emptyMap())).get("class");
             if (compactionClass != null && compactionClass
                     .equals("org.apache.cassandra.db.compaction.LeveledCompactionStrategy")) {
                 session.updateSchemaWithRetry("alter table " + table.getName()
@@ -2326,7 +2313,8 @@ public class SchemaUpgrade {
 
     private void updateStcsUncheckedTombstoneCompaction() throws Exception {
         for (TableMetadata table : session.getTables()) {
-            String compactionClass = table.getOptions().getCompaction().get("class");
+            String compactionClass = ((Map<String, String>) table.getOptions()
+                    .getOrDefault(CqlIdentifier.fromInternal("compaction"), Collections.emptyMap())).get("class");
             if (compactionClass != null && compactionClass
                     .equals("org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy")) {
                 session.updateSchemaWithRetry("alter table " + table.getName()
@@ -2338,7 +2326,8 @@ public class SchemaUpgrade {
 
     private void optimizeTwcsTables() throws Exception {
         for (TableMetadata table : session.getTables()) {
-            Map<String, String> compaction = table.getOptions().getCompaction();
+            Map<String, String> compaction = (Map<String, String>) table.getOptions()
+                    .getOrDefault(CqlIdentifier.fromInternal("compaction"), Collections.emptyMap());
             String compactionClass = compaction.get("class");
             if (compactionClass != null && compactionClass
                     .equals("org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy")) {
@@ -2360,7 +2349,7 @@ public class SchemaUpgrade {
                             compactionWindowSizeText);
                     continue;
                 }
-                session.updateTableTwcsProperties(table.getName(), compactionWindowUnit,
+                session.updateTableTwcsProperties(table.getName().asCql(false), compactionWindowUnit,
                         compactionWindowSize);
             }
         }
@@ -2401,9 +2390,9 @@ public class SchemaUpgrade {
         }
         PreparedStatement insertPS =
                 session.prepare("insert into central_config (key, value) values (?, ?)");
-        BoundStatement boundStatement = insertPS.bind();
-        boundStatement.setString(0, "storage");
-        boundStatement.setString(1, mapper.writeValueAsString(storageConfig));
+        BoundStatement boundStatement = insertPS.bind()
+            .setString(0, "storage")
+            .setString(1, mapper.writeValueAsString(storageConfig));
         session.write(boundStatement);
     }
 
@@ -2421,9 +2410,9 @@ public class SchemaUpgrade {
         ResultSet results = session.read(
                 "select v09_agent_id, v09_agent_rollup_id from v09_agent_rollup where one = 1");
         for (Row row : results) {
-            BoundStatement boundStatement = insertTempPS.bind();
-            boundStatement.setString(0, row.getString(0));
-            boundStatement.setString(1, row.getString(1));
+            BoundStatement boundStatement = insertTempPS.bind()
+                .setString(0, row.getString(0))
+                .setString(1, row.getString(1));
             session.write(boundStatement);
         }
     }
@@ -2442,9 +2431,9 @@ public class SchemaUpgrade {
         ResultSet results = session.read("select v09_agent_id, v09_agent_rollup_id from"
                 + " v09_agent_rollup_temp where one = 1");
         for (Row row : results) {
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, row.getString(0));
-            boundStatement.setString(1, row.getString(1));
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(0, row.getString(0))
+                .setString(1, row.getString(1));
             session.write(boundStatement);
         }
         dropTableIfExists("v09_agent_rollup_temp");
@@ -2459,13 +2448,13 @@ public class SchemaUpgrade {
                 + " (agent_rollup, transaction_type, trace_attribute_name) values (?, ?, ?)");
         ResultSet results = session.read("select agent_rollup, transaction_type,"
                 + " trace_attribute_name from trace_attribute_name");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
-            BoundStatement boundStatement = insertTempPS.bind();
-            boundStatement.setString(0, row.getString(0));
-            boundStatement.setString(1, row.getString(1));
-            boundStatement.setString(2, row.getString(2));
-            futures.add(session.writeAsync(boundStatement));
+            BoundStatement boundStatement = insertTempPS.bind()
+                .setString(0, row.getString(0))
+                .setString(1, row.getString(1))
+                .setString(2, row.getString(2));
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
@@ -2486,14 +2475,14 @@ public class SchemaUpgrade {
         int ttl = getCentralStorageConfig(session).getTraceTTL();
         ResultSet results = session.read("select agent_rollup, transaction_type,"
                 + " trace_attribute_name from trace_attribute_name_temp");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
-            BoundStatement boundStatement = insertPS.bind();
-            boundStatement.setString(0, row.getString(0));
-            boundStatement.setString(1, row.getString(1));
-            boundStatement.setString(2, row.getString(2));
-            boundStatement.setInt(3, ttl);
-            futures.add(session.writeAsync(boundStatement));
+            BoundStatement boundStatement = insertPS.bind()
+                .setString(0, row.getString(0))
+                .setString(1, row.getString(1))
+                .setString(2, row.getString(2))
+                .setInt(3, ttl);
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
@@ -2525,22 +2514,22 @@ public class SchemaUpgrade {
         }
         PreparedStatement readPS = session.prepare(
                 "select capture_time, agent_id from agent where one = 1 and capture_time > ?");
-        BoundStatement boundStatement = readPS.bind();
-        long now = clock.currentTimeMillis();
-        boundStatement.setTimestamp(0, new Date(now - HOURS.toMillis(expirationHours)));
+        final long now = clock.currentTimeMillis();
+        BoundStatement boundStatement = readPS.bind()
+            .setInstant(0, Instant.ofEpochMilli(now - HOURS.toMillis(expirationHours)));
         ResultSet results = session.read(boundStatement);
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
-            Date captureDate = checkNotNull(row.getTimestamp(0));
+            Instant captureDate = checkNotNull(row.getInstant(0));
             String agentId = row.getString(1);
             for (int negativeOffset : negativeOffsets) {
-                long offsetCaptureTime = captureDate.getTime() + negativeOffset;
+                long offsetCaptureTime = captureDate.toEpochMilli() + negativeOffset;
                 int adjustedTTL = Common.getAdjustedTTL(ttl, offsetCaptureTime, clock);
-                boundStatement = insertPS.bind();
-                boundStatement.setTimestamp(0, new Date(offsetCaptureTime));
-                boundStatement.setString(1, agentId);
-                boundStatement.setInt(2, adjustedTTL);
-                futures.add(session.writeAsync(boundStatement));
+                boundStatement = insertPS.bind()
+                    .setInstant(0, Instant.ofEpochMilli(offsetCaptureTime))
+                    .setString(1, agentId)
+                    .setInt(2, adjustedTTL);
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
                 waitForSome(futures);
                 if (offsetCaptureTime > now) {
                     break;
@@ -2598,9 +2587,9 @@ public class SchemaUpgrade {
                 }
             }
             if (updated) {
-                BoundStatement boundStatement = insertPS.bind();
-                boundStatement.setString(0, name);
-                boundStatement.setSet(1, upgradedPermissions, String.class);
+                BoundStatement boundStatement = insertPS.bind()
+                    .setString(0, name)
+                    .setSet(1, upgradedPermissions, String.class);
                 session.write(boundStatement);
             }
         }
@@ -2618,8 +2607,8 @@ public class SchemaUpgrade {
 
     private void updateEncryptedPasswordAttributeName(String key, PreparedStatement readPS,
             PreparedStatement insertPS) throws Exception {
-        BoundStatement boundStatement = readPS.bind();
-        boundStatement.setString(0, key);
+        BoundStatement boundStatement = readPS.bind()
+            .setString(0, key);
         ResultSet results = session.read(boundStatement);
         Row row = results.one();
         if (row == null) {
@@ -2639,9 +2628,9 @@ public class SchemaUpgrade {
             objectNode.set("encryptedPassword", passwordNode);
         }
         String updatedConfigText = mapper.writeValueAsString(objectNode);
-        boundStatement = insertPS.bind();
-        boundStatement.setString(0, key);
-        boundStatement.setString(1, updatedConfigText);
+        boundStatement = insertPS.bind()
+            .setString(0, key)
+            .setString(1, updatedConfigText);
         session.write(boundStatement);
     }
 
@@ -2668,7 +2657,7 @@ public class SchemaUpgrade {
             int i = 0;
             String agentRollupId = checkNotNull(row.getString(i++));
             String syntheticMonitorId = checkNotNull(row.getString(i++));
-            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             long millisPerDay = DAYS.toMillis(1);
             long rollupCaptureTime = CaptureTimes.getRollup(captureTime, millisPerDay);
             rowsPerCaptureTime.put(rollupCaptureTime, ImmutableAgentRollupIdSyntheticMonitorIdPair
@@ -2681,14 +2670,14 @@ public class SchemaUpgrade {
             int i = 0;
             String agentRollupId = checkNotNull(row.getString(i++));
             String syntheticMonitorId = checkNotNull(row.getString(i++));
-            long captureTime = checkNotNull(row.getTimestamp(i++)).getTime();
+            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             long millisPerDay = DAYS.toMillis(1);
             long rollupCaptureTime = CaptureTimes.getRollup(captureTime, millisPerDay);
             rowsPerCaptureTime.put(rollupCaptureTime, ImmutableAgentRollupIdSyntheticMonitorIdPair
                     .of(agentRollupId, syntheticMonitorId));
         }
         int maxRollupTTL = storageConfig.getMaxRollupTTL();
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         List<Long> sortedCaptureTimes =
                 Ordering.natural().sortedCopy(rowsPerCaptureTime.keySet());
         Map<String, Map<String, String>> syntheticMonitorDisplays = new HashMap<>();
@@ -2697,11 +2686,11 @@ public class SchemaUpgrade {
         for (long captureTime : sortedCaptureTimes) {
             int adjustedTTL = Common.getAdjustedTTL(maxRollupTTL, captureTime, clock);
             for (AgentRollupIdSyntheticMonitorIdPair row : rowsPerCaptureTime.get(captureTime)) {
-                BoundStatement boundStatement = insertPS.bind();
                 int i = 0;
-                boundStatement.setString(i++, row.agentRollupId());
-                boundStatement.setTimestamp(i++, new Date(captureTime));
-                boundStatement.setString(i++, row.syntheticMonitorId());
+                BoundStatement boundStatement = insertPS.bind()
+                    .setString(i++, row.agentRollupId())
+                    .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                    .setString(i++, row.syntheticMonitorId());
                 Map<String, String> innerMap = syntheticMonitorDisplays.get(row.agentRollupId());
                 if (innerMap == null) {
                     innerMap = getSyntheticMonitorDisplays(readAgentConfig, row.agentRollupId());
@@ -2711,9 +2700,9 @@ public class SchemaUpgrade {
                 if (display == null) {
                     display = row.syntheticMonitorId() + " (deleted prior to 0.12.3)";
                 }
-                boundStatement.setString(i++, display);
-                boundStatement.setInt(i++, adjustedTTL);
-                futures.add(session.writeAsync(boundStatement));
+                boundStatement = boundStatement.setString(i++, display)
+                    .setInt(i++, adjustedTTL);
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
                 waitForSome(futures);
             }
         }
@@ -2722,16 +2711,16 @@ public class SchemaUpgrade {
 
     private Map<String, String> getSyntheticMonitorDisplays(PreparedStatement readAgentConfig,
             String agentRollupId) throws Exception {
-        BoundStatement boundStatement = readAgentConfig.bind();
-        boundStatement.setString(0, agentRollupId);
+        BoundStatement boundStatement = readAgentConfig.bind()
+            .setString(0, agentRollupId);
         ResultSet results = session.read(boundStatement);
-        if (results.isExhausted()) {
+        Row row = results.one();
+        if (row == null) {
             return ImmutableMap.of();
         }
         AgentConfig agentConfig;
         try {
-            Row row = checkNotNull(results.one());
-            agentConfig = AgentConfig.parseFrom(checkNotNull(row.getBytes(0)));
+            agentConfig = AgentConfig.parseFrom(checkNotNull(row.getByteBuffer(0)));
         } catch (InvalidProtocolBufferException e) {
             logger.error(e.getMessage(), e);
             return ImmutableMap.of();
@@ -2751,23 +2740,23 @@ public class SchemaUpgrade {
         PreparedStatement insertPS = session
                 .prepare("insert into agent_display (agent_rollup_id, display) values (?, ?)");
         ResultSet results = session.read("select agent_rollup_id, config from agent_config");
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
             String agentRollupId = row.getString(0);
             AgentConfig agentConfig;
             try {
-                agentConfig = AgentConfig.parseFrom(checkNotNull(row.getBytes(1)));
+                agentConfig = AgentConfig.parseFrom(checkNotNull(row.getByteBuffer(1)));
             } catch (InvalidProtocolBufferException e) {
                 logger.error(e.getMessage(), e);
                 continue;
             }
             String display = agentConfig.getGeneralConfig().getDisplay();
             if (!display.isEmpty()) {
-                BoundStatement boundStatement = insertPS.bind();
                 int i = 0;
-                boundStatement.setString(i++, agentRollupId);
-                boundStatement.setString(i++, display);
-                futures.add(session.writeAsync(boundStatement));
+                BoundStatement boundStatement = insertPS.bind()
+                    .setString(i++, agentRollupId)
+                    .setString(i++, display);
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
                 waitForSome(futures);
             }
         }
@@ -2783,7 +2772,7 @@ public class SchemaUpgrade {
 
     private void splitActiveAgentRollupTables(int rollupLevel) throws Exception {
         logger.info("populating active_top_level_rollup_{} and active_child_rollup_{} tables - this"
-                + " could take several minutes on large data sets...", rollupLevel);
+                + " could take several minutes on large data sets...", rollupLevel, rollupLevel);
         dropTableIfExists("active_top_level_rollup_" + rollupLevel);
         dropTableIfExists("active_child_rollup_" + rollupLevel);
         Integer expirationHours =
@@ -2804,13 +2793,13 @@ public class SchemaUpgrade {
         int ttl = Ints.saturatedCast(HOURS.toSeconds(expirationHours));
         PreparedStatement readPS = session.prepare("select capture_time, agent_id from"
                 + " active_agent_rollup_" + rollupLevel + " where one = 1 and capture_time > ?");
-        BoundStatement boundStatement = readPS.bind();
-        boundStatement.setTimestamp(0,
-                new Date(clock.currentTimeMillis() - HOURS.toMillis(expirationHours)));
+        BoundStatement boundStatement = readPS.bind()
+            .setInstant(0,
+                    Instant.ofEpochMilli(clock.currentTimeMillis() - HOURS.toMillis(expirationHours)));
         ResultSet results = session.read(boundStatement);
-        Queue<ListenableFuture<?>> futures = new ArrayDeque<>();
+        Queue<CompletableFuture<?>> futures = new ArrayDeque<>();
         for (Row row : results) {
-            Date captureDate = checkNotNull(row.getTimestamp(0));
+            Instant captureDate = checkNotNull(row.getInstant(0));
             String agentId = checkNotNull(row.getString(1));
             int index = agentId.indexOf("::");
             String topLevelId;
@@ -2823,26 +2812,46 @@ public class SchemaUpgrade {
                 childAgentId = agentId.substring(index + 2);
             }
 
-            int adjustedTTL = Common.getAdjustedTTL(ttl, captureDate.getTime(), clock);
-            boundStatement = insertTopLevelPS.bind();
-            boundStatement.setTimestamp(0, captureDate);
-            boundStatement.setString(1, topLevelId);
-            boundStatement.setInt(2, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement));
+            int adjustedTTL = Common.getAdjustedTTL(ttl, captureDate.toEpochMilli(), clock);
+            boundStatement = insertTopLevelPS.bind()
+                .setInstant(0, captureDate)
+                .setString(1, topLevelId)
+                .setInt(2, adjustedTTL);
+            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             if (childAgentId != null) {
-                boundStatement = insertChildPS.bind();
-                boundStatement.setString(0, topLevelId);
-                boundStatement.setTimestamp(1, captureDate);
-                boundStatement.setString(2, childAgentId);
-                boundStatement.setInt(3, adjustedTTL);
-                futures.add(session.writeAsync(boundStatement));
+                boundStatement = insertChildPS.bind()
+                    .setString(0, topLevelId)
+                    .setInstant(1, captureDate)
+                    .setString(2, childAgentId)
+                    .setInt(3, adjustedTTL);
+                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
             }
             waitForSome(futures);
         }
         MoreFutures.waitForAll(futures);
         dropTableIfExists("active_agent_rollup_" + rollupLevel);
         logger.info("populating active_top_level_rollup_{} and active_child_rollup_{} tables"
-                + " - complete", rollupLevel);
+                + " - complete", rollupLevel, rollupLevel);
+    }
+
+    private void addAggregateSummaryColumns() throws Exception {
+        addColumnIfNotExists("aggregate_tt_summary_rollup_0", "total_cpu_nanos", "double");
+        addColumnIfNotExists("aggregate_tt_summary_rollup_1", "total_cpu_nanos", "double");
+        addColumnIfNotExists("aggregate_tt_summary_rollup_2", "total_cpu_nanos", "double");
+        addColumnIfNotExists("aggregate_tt_summary_rollup_3", "total_cpu_nanos", "double");
+        addColumnIfNotExists("aggregate_tn_summary_rollup_0", "total_cpu_nanos", "double");
+        addColumnIfNotExists("aggregate_tn_summary_rollup_1", "total_cpu_nanos", "double");
+        addColumnIfNotExists("aggregate_tn_summary_rollup_2", "total_cpu_nanos", "double");
+        addColumnIfNotExists("aggregate_tn_summary_rollup_3", "total_cpu_nanos", "double");
+
+        addColumnIfNotExists("aggregate_tt_summary_rollup_0", "total_allocated_bytes", "double");
+        addColumnIfNotExists("aggregate_tt_summary_rollup_1", "total_allocated_bytes", "double");
+        addColumnIfNotExists("aggregate_tt_summary_rollup_2", "total_allocated_bytes", "double");
+        addColumnIfNotExists("aggregate_tt_summary_rollup_3", "total_allocated_bytes", "double");
+        addColumnIfNotExists("aggregate_tn_summary_rollup_0", "total_allocated_bytes", "double");
+        addColumnIfNotExists("aggregate_tn_summary_rollup_1", "total_allocated_bytes", "double");
+        addColumnIfNotExists("aggregate_tn_summary_rollup_2", "total_allocated_bytes", "double");
+        addColumnIfNotExists("aggregate_tn_summary_rollup_3", "total_allocated_bytes", "double");
     }
 
     private void addColumnIfNotExists(String tableName, String columnName, String cqlType)
@@ -2883,7 +2892,7 @@ public class SchemaUpgrade {
 
     private boolean columnExists(String tableName, String columnName) {
         TableMetadata tableMetadata = session.getTable(tableName);
-        return tableMetadata != null && tableMetadata.getColumn(columnName) != null;
+        return tableMetadata != null && tableMetadata.getColumn(columnName).isPresent();
     }
 
     // drop table can timeout, throwing NoHostAvailableException
@@ -2894,7 +2903,7 @@ public class SchemaUpgrade {
 
     // this is needed to prevent OOM due to ever expanding list of futures (and the result sets that
     // they retain)
-    private static void waitForSome(Queue<ListenableFuture<?>> futures) throws Exception {
+    private static void waitForSome(Queue<CompletableFuture<?>> futures) throws Exception {
         while (futures.size() > 1000) {
             futures.remove().get();
         }
@@ -3152,24 +3161,29 @@ public class SchemaUpgrade {
         }
     }
 
-    private static void copyString(Row row, BoundStatement boundStatement, int i) {
-        boundStatement.setString(i, row.getString(i));
+    @CheckReturnValue
+    private static BoundStatement copyString(Row row, BoundStatement boundStatement, int i) {
+        return boundStatement.setString(i, row.getString(i));
     }
 
-    private static void copyLong(Row row, BoundStatement boundStatement, int i) {
-        boundStatement.setLong(i, row.getLong(i));
+    @CheckReturnValue
+    private static BoundStatement copyLong(Row row, BoundStatement boundStatement, int i) {
+        return boundStatement.setLong(i, row.getLong(i));
     }
 
-    private static void copyBool(Row row, BoundStatement boundStatement, int i) {
-        boundStatement.setBool(i, row.getBool(i));
+    @CheckReturnValue
+    private static BoundStatement copyBoolean(Row row, BoundStatement boundStatement, int i) {
+        return boundStatement.setBoolean(i, row.getBoolean(i));
     }
 
-    private static void copyTimestamp(Row row, BoundStatement boundStatement, int i) {
-        boundStatement.setTimestamp(i, row.getTimestamp(i));
+    @CheckReturnValue
+    private static BoundStatement copyInstant(Row row, BoundStatement boundStatement, int i) {
+        return boundStatement.setInstant(i, row.getInstant(i));
     }
 
-    private static void copyBytes(Row row, BoundStatement boundStatement, int i) {
-        boundStatement.setBytes(i, row.getBytes(i));
+    @CheckReturnValue
+    private static BoundStatement copyByteBuffer(Row row, BoundStatement boundStatement, int i) {
+        return boundStatement.setByteBuffer(i, row.getByteBuffer(i));
     }
 
     private static @Nullable Integer getSchemaVersion(Session session) throws Exception {
@@ -3180,7 +3194,7 @@ public class SchemaUpgrade {
             return row.getInt(0);
         }
         TableMetadata agentTable = session.getTable("agent");
-        if (agentTable != null && agentTable.getColumn("system_info") != null) {
+        if (agentTable != null && agentTable.getColumn("system_info").isPresent()) {
             // special case, this is glowroot version 0.9.1, the only version supporting upgrades
             // prior to schema_version table
             return 1;

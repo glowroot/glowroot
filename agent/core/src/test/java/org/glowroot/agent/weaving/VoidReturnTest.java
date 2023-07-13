@@ -15,18 +15,13 @@
  */
 package org.glowroot.agent.weaving;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.bytecode.api.VoidReturn;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class VoidReturnTest {
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void testNullVersion() {

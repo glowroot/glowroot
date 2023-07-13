@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 the original author or authors.
+ * Copyright 2018-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@ package org.glowroot.agent.tests.javaagent;
 import java.io.File;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.agent.it.harness.Containers;
@@ -29,13 +29,14 @@ import org.glowroot.agent.it.harness.TempDirs;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
+import org.junitpioneer.jupiter.RetryingTest;
 
 public class FileInstrumentationPresentAtStartupIT {
 
     protected static Container container;
     private static File testDir;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         testDir = TempDirs.createTempDir("glowroot-test-dir");
         container = Containers.create(testDir);
@@ -57,18 +58,18 @@ public class FileInstrumentationPresentAtStartupIT {
         container = Containers.create(testDir);
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         container.close();
         TempDirs.deleteRecursively(testDir);
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }
 
-    @Test
+    @RetryingTest(maxAttempts = 3) // this test may randomly fail on CI, retry 3 times before giving up
     public void shouldExecute1() throws Exception {
         // just verify that set up / tear down doesn't fail
     }

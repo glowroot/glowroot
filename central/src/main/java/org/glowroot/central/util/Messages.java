@@ -33,18 +33,23 @@ public class Messages {
 
     private Messages() {}
 
-    public static ByteBuffer toByteBuffer(List<? extends AbstractMessage> messages)
-            throws IOException {
+    public static ByteBuffer toByteBuffer(List<? extends AbstractMessage> messages) {
         // TODO optimize byte copying
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        for (AbstractMessage message : messages) {
-            message.writeDelimitedTo(output);
+        try {
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            for (AbstractMessage message : messages) {
+                    message.writeDelimitedTo(output);
+            }
+            return ByteBuffer.wrap(output.toByteArray());
+        } catch (IOException e) {
+            // wrap checked exception in an unchecked because checked exceptions are
+            // not compatible with completionstage
+            throw new RuntimeException(e);
         }
-        return ByteBuffer.wrap(output.toByteArray());
     }
 
     public static <T extends /*@NonNull*/ AbstractMessage> List<T> parseDelimitedFrom(
-            @Nullable ByteBuffer byteBuf, Parser<T> parser) throws IOException {
+            @Nullable ByteBuffer byteBuf, Parser<T> parser) {
         if (byteBuf == null) {
             return ImmutableList.of();
         }
@@ -56,6 +61,10 @@ public class Messages {
             while ((message = sizeLimitBypassingParser.parseDelimitedFrom(input)) != null) {
                 messages.add(message);
             }
+        } catch (IOException ioe) {
+            // wrap checked exception in an unchecked because checked exceptions are
+            // not compatible with completionstage
+            throw new RuntimeException(ioe);
         }
         return messages;
     }

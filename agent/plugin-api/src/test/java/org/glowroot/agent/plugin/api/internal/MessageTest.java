@@ -22,7 +22,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.agent.plugin.api.Message;
 import org.glowroot.agent.plugin.api.util.Optional;
@@ -100,7 +100,7 @@ public class MessageTest {
         assertThat(truncatedDetail.get("x" + Strings.repeat("a", 9999) + suffix)).isEqualTo("x");
         assertThat(truncatedDetail.get("xx" + Strings.repeat("a", 9998) + suffix))
                 .isEqualTo("xx" + Strings.repeat("a", 9998) + suffix);
-        assertThat((List<?>) truncatedDetail.get("list")).containsExactly(longString,
+        assertThat((List<Object>) truncatedDetail.get("list")).containsExactly(longString,
                 longString + suffix, Optional.of("x" + Strings.repeat("a", 9999) + suffix));
         assertThat(truncatedDetail.get("absent")).isEqualTo(Optional.fromNullable(null));
         assertThat(truncatedDetail.get("oa")).isEqualTo(Optional.of("a"));

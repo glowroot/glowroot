@@ -16,11 +16,7 @@
 package org.glowroot.agent.tests;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
@@ -32,17 +28,17 @@ public class JdbcDriverIT {
 
     private static Container container;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         // this test only passes when glowroot is shaded, since it is testing that
         // java.sql.DriverManager has been shaded to org.glowroot.agent.sql.DriverManager
-        Assume.assumeTrue(isShaded());
+        Assumptions.assumeTrue(isShaded());
         // running in embedded mode to make sure H2 library doesn't trigger other drivers to load
         // via java.sql.DriverManager
         container = new JavaagentContainer(null, true, ImmutableList.<String>of());
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         // need null check in case assumption is false in setUp()
         if (container != null) {
@@ -50,7 +46,7 @@ public class JdbcDriverIT {
         }
     }
 
-    @After
+    @AfterEach
     public void afterEachTest() throws Exception {
         container.checkAndReset();
     }

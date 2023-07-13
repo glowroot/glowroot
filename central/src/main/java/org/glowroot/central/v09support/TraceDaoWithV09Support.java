@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 the original author or authors.
+ * Copyright 2017-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Ordering;
+import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 
@@ -74,16 +76,16 @@ public class TraceDaoWithV09Support implements TraceDao {
         }
     }
 
+    @CheckReturnValue
     @Override
-    public void store(String agentId, Trace trace) throws Exception {
+    public CompletableFuture<?> store(String agentId, Trace trace) {
         if (trace.getHeader().getCaptureTime() <= v09LastCaptureTime
                 && agentRollupIdsWithV09Data.contains(agentId)) {
-            delegate.store(V09Support.convertToV09(agentId),
+            return delegate.store(V09Support.convertToV09(agentId),
                     V09Support.getAgentRollupIdsV09(agentId),
                     AgentRollupIds.getAgentRollupIds(agentId), trace);
-        } else {
-            delegate.store(agentId, trace);
         }
+        return delegate.store(agentId, trace);
     }
 
     @Override
@@ -92,10 +94,11 @@ public class TraceDaoWithV09Support implements TraceDao {
     }
 
     @Override
-    public Result<TracePoint> readSlowPoints(String agentRollupId, TraceQuery query,
-            TracePointFilter filter, int limit) throws Exception {
-        return splitResultIfNeeded(agentRollupId, query, limit,
-                (id, q) -> delegate.readSlowPoints(id, q, filter, limit));
+    public CompletableFuture<Result<TracePoint>> readSlowPoints(String agentRollupId, TraceQuery query,
+                                                               TracePointFilter filter, int limit) throws Exception {
+        // TODO avoid .get()
+        return CompletableFuture.completedFuture(splitResultIfNeeded(agentRollupId, query, limit,
+                (id, q) -> delegate.readSlowPoints(id, q, filter, limit).get()));
     }
 
     @Override
@@ -104,10 +107,11 @@ public class TraceDaoWithV09Support implements TraceDao {
     }
 
     @Override
-    public Result<TracePoint> readErrorPoints(String agentRollupId, TraceQuery query,
+    public CompletableFuture<Result<TracePoint>> readErrorPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws Exception {
-        return splitResultIfNeeded(agentRollupId, query, limit,
-                (id, q) -> delegate.readErrorPoints(id, q, filter, limit));
+        // TODO avoid .get()
+        return CompletableFuture.completedFuture(splitResultIfNeeded(agentRollupId, query, limit,
+                (id, q) -> delegate.readErrorPoints(id, q, filter, limit).get()));
     }
 
     @Override

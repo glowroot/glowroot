@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2019 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,7 +130,7 @@ class WeavingMethodVisitor extends AdviceAdapter {
             String descriptor, Type owner, List<Advice> advisors,
             @Nullable String metaHolderInternalName, @Nullable Integer methodMetaGroupUniqueNum,
             boolean bootstrapClassLoader) {
-        super(ASM7, new FrameDeduppingMethodVisitor(mv), access, name, descriptor);
+        super(ASM9, new FrameDeduppingMethodVisitor(mv), access, name, descriptor);
         this.frames = frames;
         this.access = access;
         this.name = name;

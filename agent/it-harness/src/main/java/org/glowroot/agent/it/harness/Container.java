@@ -17,7 +17,7 @@ package org.glowroot.agent.it.harness;
 
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
-public interface Container {
+public interface Container extends AutoCloseable {
 
     ConfigService getConfigService();
 
@@ -42,5 +42,6 @@ public interface Container {
     // resets Glowroot back to square one (including re-weaving instrumentation configs if needed)
     void checkAndReset() throws Exception;
 
+    @Override
     void close() throws Exception;
 }

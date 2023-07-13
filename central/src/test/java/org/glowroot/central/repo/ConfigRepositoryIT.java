@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,12 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.PoolingOptions;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
@@ -65,23 +64,24 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsC
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.glowroot.central.repo.CqlSessionBuilders.MAX_CONCURRENT_QUERIES;
 
 public class ConfigRepositoryIT {
 
     private static ClusterManager clusterManager;
-    private static Cluster cluster;
+    private static CqlSessionBuilder cqlSessionBuilder;
     private static Session session;
     private static ExecutorService asyncExecutor;
     private static ConfigRepository configRepository;
     private static AgentConfigDao agentConfigDao;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         clusterManager = ClusterManager.create();
-        cluster = Clusters.newCluster();
-        session = new Session(cluster.newSession(), "glowroot_unit_tests", null,
-                PoolingOptions.DEFAULT_MAX_QUEUE_SIZE);
+        cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
+        session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
+                MAX_CONCURRENT_QUERIES, 0);
         session.updateSchemaWithRetry("drop table if exists agent_config");
         session.updateSchemaWithRetry("drop table if exists user");
         session.updateSchemaWithRetry("drop table if exists role");
@@ -99,18 +99,24 @@ public class ConfigRepositoryIT {
                 new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao, roleDao, "");
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
-        asyncExecutor.shutdown();
-        // remove bad data so other tests don't have issue
-        session.updateSchemaWithRetry("drop table if exists agent_config");
-        session.updateSchemaWithRetry("drop table if exists user");
-        session.updateSchemaWithRetry("drop table if exists role");
-        session.updateSchemaWithRetry("drop table if exists central_config");
-        session.close();
-        cluster.close();
-        clusterManager.close();
-        SharedSetupRunListener.stopCassandra();
+        if (!SharedSetupRunListener.isStarted()) {
+            return;
+        }
+        try (var se = session;
+             var cm = clusterManager) {
+            if (asyncExecutor != null) {
+                asyncExecutor.shutdown();
+            }
+            // remove bad data so other tests don't have issue
+            se.updateSchemaWithRetry("drop table if exists agent_config");
+            se.updateSchemaWithRetry("drop table if exists user");
+            se.updateSchemaWithRetry("drop table if exists role");
+            se.updateSchemaWithRetry("drop table if exists central_config");
+        } finally {
+            SharedSetupRunListener.stopCassandra();
+        }
     }
 
     @Test
