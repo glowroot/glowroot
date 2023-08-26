@@ -263,12 +263,9 @@ class AdminJsonService {
         AllAdminConfigUtil.removePasswords(rootNode);
         ObjectMappers.stripEmptyContainerNodes(rootNode);
         StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        try {
+        try (JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))) {
             jg.setPrettyPrinter(ObjectMappers.getPrettyPrinter());
             jg.writeObject(rootNode);
-        } finally {
-            jg.close();
         }
         // newline is not required, just a personal preference
         sb.append(ObjectMappers.NEWLINE);
@@ -332,14 +329,10 @@ class AdminJsonService {
                 } catch (Exception e) {
                     logger.debug(e.getMessage(), e);
                     StringBuilder sb = new StringBuilder();
-                    JsonGenerator jg =
-                            mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-                    try {
+                    try (JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))) {
                         jg.writeStartObject();
                         jg.writeStringField("httpsValidationError", e.getMessage());
                         jg.writeEndObject();
-                    } finally {
-                        jg.close();
                     }
                     return sb.toString();
                 }
@@ -563,13 +556,10 @@ class AdminJsonService {
             return createErrorResponse(e);
         }
         StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        try {
+        try (JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))) {
             jg.writeStartObject();
             jg.writeStringField("content", responseContent);
             jg.writeEndObject();
-        } finally {
-            jg.close();
         }
         return sb.toString();
     }
@@ -606,14 +596,11 @@ class AdminJsonService {
         }
         Set<String> glowrootRoles = LdapAuthentication.getGlowrootRoles(ldapGroupDns, config);
         StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        try {
+        try (JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))) {
             jg.writeStartObject();
             jg.writeObjectField("ldapGroupDns", ldapGroupDns);
             jg.writeObjectField("glowrootRoles", glowrootRoles);
             jg.writeEndObject();
-        } finally {
-            jg.close();
         }
         return sb.toString();
     }
@@ -642,14 +629,11 @@ class AdminJsonService {
         long h2DataFileSize = repoAdmin.getH2DataFileSize();
         List<H2Table> tables = repoAdmin.analyzeH2DiskSpace();
         StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        try {
+        try (JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))) {
             jg.writeStartObject();
             jg.writeNumberField("h2DataFileSize", h2DataFileSize);
             jg.writeObjectField("tables", orderingByBytesDesc.sortedCopy(tables));
             jg.writeEndObject();
-        } finally {
-            jg.close();
         }
         return sb.toString();
     }
@@ -786,14 +770,11 @@ class AdminJsonService {
 
     private static String createErrorResponse(@Nullable String message) throws IOException {
         StringBuilder sb = new StringBuilder();
-        JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
-        try {
+        try (JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))) {
             jg.writeStartObject();
             jg.writeBooleanField("error", true);
             jg.writeStringField("message", message);
             jg.writeEndObject();
-        } finally {
-            jg.close();
         }
         return sb.toString();
     }
