@@ -91,6 +91,7 @@ class LdapAuthentication {
         env.put(Context.SECURITY_CREDENTIALS, password);
         env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
         env.put(Context.PROVIDER_URL, ldapConfig.url());
+        env.put("com.sun.jndi.ldap.connect.timeout", "10000"); // CVE-2022-42052
         return new InitialLdapContext(env, null);
     }
 
