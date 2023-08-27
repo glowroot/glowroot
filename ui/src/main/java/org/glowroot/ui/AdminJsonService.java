@@ -34,6 +34,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
 import com.google.common.net.MediaType;
 import com.google.common.primitives.Longs;
@@ -121,6 +122,8 @@ class AdminJsonService {
             return Longs.compare(right.bytes(), left.bytes());
         }
     };
+
+    private static final Set<String> NOT_ALLOWED_HOST_FOR_PROXY = Sets.newHashSet("localhost", "127.0.0.1", "::1");
 
     private final boolean central;
     private final boolean offlineViewer;
@@ -546,6 +549,9 @@ class AdminJsonService {
         }
         if (uri.getHost() == null) {
             return createErrorResponse("Invalid url, missing host");
+        }
+        if (NOT_ALLOWED_HOST_FOR_PROXY.contains(uri.getHost())) { // CVE-2022-42050
+            return createErrorResponse("Invalid url, invalid host");
         }
         String responseContent;
         try {

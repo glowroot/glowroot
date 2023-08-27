@@ -33,8 +33,8 @@ import org.glowroot.common2.repo.util.MailService;
 import org.glowroot.ui.AdminJsonService.SmtpConfigDto;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 public class AdminJsonServiceTest {
 
@@ -125,6 +125,38 @@ public class AdminJsonServiceTest {
                 .isEqualTo("to@example.org");
         assertThat(message.getSubject()).isEqualTo("[Glowroot] Test email");
         assertThat(message.getContent()).isEqualTo("");
+    }
+
+    @Test
+    public void testWithLocalhostAsHttpProxyTestUrl() throws Exception {
+        // given
+        AdminJsonService.HttpProxyConfigDto configDto = ImmutableHttpProxyConfigDto.builder()
+                .host("localhost")
+                .username("")
+                .passwordExists(false)
+                .testUrl("http://127.0.0.1:3000/")
+                .version("1234")
+                .build();
+        // when
+        String ret = adminJsonService.testHttpProxy(configDto);
+        // then
+        assertThat(ret).isEqualTo("{\"error\":true,\"message\":\"Invalid url, invalid host\"}");
+    }
+
+    @Test
+    public void testWithGoogleAsHttpProxyTestUrl() throws Exception {
+        // given
+        AdminJsonService.HttpProxyConfigDto configDto = ImmutableHttpProxyConfigDto.builder()
+                .host("localhost")
+                .username("")
+                .passwordExists(false)
+                .testUrl("https://www.google.com/")
+                .version("1234")
+                .build();
+        // when
+        String ret = adminJsonService.testHttpProxy(configDto);
+        // then
+        verify(httpClient).getWithHttpProxyConfigOverride(eq("https://www.google.com/"), any(), isNull());
     }
 
     static class MockMailService extends MailService {
