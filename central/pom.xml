@@ -63,18 +63,18 @@
     <dependency>
       <groupId>com.datastax.oss</groupId>
       <artifactId>java-driver-core</artifactId>
-      <version>4.16.0</version>
+      <version>4.17.0</version>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
-      <version>14.0.11.Final</version>
+      <version>14.0.14.Final</version>
     </dependency>
     <!-- jgroups-kubernetes specifies that it requires 4.2.x -->
     <dependency>
       <groupId>org.jgroups</groupId>
       <artifactId>jgroups</artifactId>
-      <version>5.2.12.Final</version>
+      <version>5.2.18.Final</version>
     </dependency>
     <dependency>
       <groupId>org.jgroups.kubernetes</groupId>
