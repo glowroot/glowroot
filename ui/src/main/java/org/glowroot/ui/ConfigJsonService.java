@@ -15,15 +15,11 @@
  */
 package org.glowroot.ui;
 
-import java.util.List;
-import java.util.Set;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.*;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -31,8 +27,6 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.immutables.value.Value;
-
 import org.glowroot.common.config.PluginNameComparison;
 import org.glowroot.common.live.LiveAggregateRepository;
 import org.glowroot.common.util.ObjectMappers;
@@ -46,16 +40,17 @@ import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
 import org.glowroot.common2.repo.TransactionTypeRepository;
 import org.glowroot.ui.GaugeValueJsonService.GaugeOrdering;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.*;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.StringList;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SlowThresholdOverride;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
+import org.immutables.value.Value;
+import org.owasp.html.HtmlPolicyBuilder;
+import org.owasp.html.PolicyFactory;
+
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static io.netty.handler.codec.http.HttpResponseStatus.PRECONDITION_FAILED;
@@ -69,6 +64,7 @@ class ConfigJsonService {
     private final GaugeValueRepository gaugeValueRepository;
     private final LiveAggregateRepository liveAggregateRepository;
     private final ConfigRepository configRepository;
+    private final SanitizationService sanitizationService;
 
     ConfigJsonService(TransactionTypeRepository transactionTypeRepository,
             GaugeValueRepository gaugeValueRepository,
@@ -77,6 +73,7 @@ class ConfigJsonService {
         this.gaugeValueRepository = gaugeValueRepository;
         this.liveAggregateRepository = liveAggregateRepository;
         this.configRepository = configRepository;
+        this.sanitizationService = new SanitizationService();
     }
 
     @GET(path = "/backend/config/general", permission = "agent:config:view:general")
@@ -208,6 +205,7 @@ class ConfigJsonService {
     @POST(path = "/backend/config/ui-defaults", permission = "agent:config:edit:uiDefaults")
     String updateUiDefaultsConfig(@BindAgentRollupId String agentRollupId,
             @BindRequest UiDefaultsConfigDto configDto) throws Exception {
+        configDto = sanitizationService.sanitize(configDto);
         try {
             configRepository.updateUiDefaultsConfig(agentRollupId, configDto.convert(),
                     configDto.version());
@@ -669,6 +667,22 @@ class ConfigJsonService {
         @Override
         public int compare(PluginConfig left, PluginConfig right) {
             return PluginNameComparison.compareNames(left.getName(), right.getName());
+        }
+    }
+
+    @VisibleForTesting
+    static class SanitizationService {
+
+        private final PolicyFactory policy;
+
+        public SanitizationService() {
+            policy = new HtmlPolicyBuilder().toFactory();
+        }
+
+        UiDefaultsConfigDto sanitize(UiDefaultsConfigDto configDto) {
+            return ImmutableUiDefaultsConfigDto.builder()
+                    .copyFrom(configDto).build()
+                    .withDefaultTransactionType(policy.sanitize(configDto.defaultTransactionType()));
         }
     }
 }
