@@ -93,6 +93,11 @@
       <version>0.3.1</version>
     </dependency>
     <dependency>
+      <groupId>com.googlecode.owasp-java-html-sanitizer</groupId>
+      <artifactId>owasp-java-html-sanitizer</artifactId>
+      <version>20220608.1</version>
+    </dependency>
+    <dependency>
       <!-- not using AsyncHttpClient because it introduces another dependency on netty which already
         needs to be kept in sync with grpc version -->
       <groupId>org.apache.httpcomponents</groupId>
