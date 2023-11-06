@@ -919,7 +919,7 @@ public class CentralModule {
                         .withInt(DefaultDriverOption.REQUEST_THROTTLER_MAX_QUEUE_SIZE, centralConfig.cassandraThrottlerMaxQueueSize())
                         .withString(DefaultDriverOption.TIMESTAMP_GENERATOR_CLASS, ServerSideTimestampGenerator.class.getName())
                         .startProfile(CassandraProfile.SLOW.name())
-                        .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(30))
+                        .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(300))
                         .withBoolean(DefaultDriverOption.REQUEST_WARN_IF_SET_KEYSPACE, false)
                         .endProfile()
                         .build());
