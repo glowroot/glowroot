@@ -17,7 +17,7 @@
   <description>Glowroot Agent Core (Unshaded)</description>
 
   <properties>
-    <asm.version>9.5</asm.version>
+    <asm.version>9.6</asm.version>
   </properties>
 
   <dependencies>
