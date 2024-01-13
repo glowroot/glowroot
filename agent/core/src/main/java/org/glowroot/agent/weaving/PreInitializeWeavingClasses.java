@@ -443,6 +443,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.Symbol");
         types.add("org.objectweb.asm.SymbolTable");
         types.add("org.objectweb.asm.SymbolTable$Entry");
+        types.add("org.objectweb.asm.SymbolTable$LabelEntry");
         types.add("org.objectweb.asm.Type");
         types.add("org.objectweb.asm.TypePath");
         types.add("org.objectweb.asm.TypeReference");
