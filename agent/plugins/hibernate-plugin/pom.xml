@@ -75,8 +75,8 @@
     <dependency>
       <!-- this is needed for running tests on Java 9+ -->
       <groupId>com.sun.activation</groupId>
-      <artifactId>jakarta.activation</artifactId>
-      <version>1.2.2</version>
+      <artifactId>javax.activation</artifactId>
+      <version>1.2.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
