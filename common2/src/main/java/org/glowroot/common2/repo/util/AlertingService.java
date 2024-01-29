@@ -458,7 +458,7 @@ public class AlertingService {
         message.setSubject(subj);
         message.setText(messageText);
         mailService.send(message);
-    }    
+    }
 
     public static String getPreUpperBoundText(boolean ok) {
         if (ok) {
