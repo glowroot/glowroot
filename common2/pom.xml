@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.14.1-beta.6</version>
+    <version>0.14.2-beta.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>glowroot-common2</artifactId>
@@ -69,20 +69,20 @@
       <version>2.1.12</version>
     </dependency>
     <dependency>
-      <groupId>jakarta.mail</groupId>
-      <artifactId>jakarta.mail-api</artifactId>
-      <version>2.1.2</version>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>mailapi</artifactId>
+      <version>1.6.7</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.angus</groupId>
-      <artifactId>angus-mail</artifactId>
-      <version>2.0.2</version>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>smtp</artifactId>
+      <version>1.6.7</version>
     </dependency>
     <dependency>
       <!-- this is no longer included in JDK starting with Java 9 -->
       <groupId>com.sun.activation</groupId>
-      <artifactId>jakarta.activation</artifactId>
-      <version>1.2.2</version>
+      <artifactId>javax.activation</artifactId>
+      <version>1.2.0</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>

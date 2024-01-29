@@ -24,7 +24,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -419,7 +418,6 @@ public class JavaagentContainer implements Container {
             } else if (name.matches("compress-.*\\.jar")
                     || name.matches("h2-.*\\.jar")
                     || name.matches("mailapi-.*\\.jar")
-                    || name.matches("jakarta\\.activation-.*\\.jar")
                     || name.matches("smtp-.*\\.jar")) {
                 // these are glowroot-agent-embedded-unshaded transitive dependencies
                 paths.add(path);
@@ -457,8 +455,8 @@ public class JavaagentContainer implements Container {
             bootPaths.addAll(maybeBootPaths);
         } else {
             boolean shaded = false;
-            try (InputStream is = Files.newInputStream(javaagentJarFile.toPath());
-                 JarInputStream jarIn = new JarInputStream(is)) {
+            JarInputStream jarIn = new JarInputStream(new FileInputStream(javaagentJarFile));
+            try {
                 JarEntry jarEntry;
                 while ((jarEntry = jarIn.getNextJarEntry()) != null) {
                     if (jarEntry.getName().startsWith("org/glowroot/agent/shaded/")) {
@@ -466,6 +464,8 @@ public class JavaagentContainer implements Container {
                         break;
                     }
                 }
+            } finally {
+                jarIn.close();
             }
             if (shaded) {
                 paths.addAll(maybeBootPaths);

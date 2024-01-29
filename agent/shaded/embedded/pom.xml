@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.14.1-beta.6</version>
+    <version>0.14.2-beta.1-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -63,20 +63,13 @@
               <include>com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer</include>
               <include>com.h2database:h2</include>
               <include>com.ning:compress-lzf</include>
-              <include>jakarta.mail:jakarta.mail-api</include>
-              <include>org.eclipse.angus:angus.mail</include>
-              <include>org.eclipse.angus:angus.activation</include>
+              <include>com.sun.mail:mailapi</include>
+              <include>com.sun.mail:smtp</include>
+              <!-- this is no longer included in JDK starting with Java 9 -->
+              <include>com.sun.activation:javax.activation</include>
             </includes>
           </artifactSet>
           <filters>
-            <filter>
-              <artifact>com.ning:compress-lzf</artifact>
-              <excludes>
-                <exclude>META-INF/LICENSE</exclude>
-                <exclude>META-INF/NOTICE</exclude>
-                <exclude>META-INF/MANIFEST.MF</exclude>
-              </excludes>
-            </filter>
             <filter>
               <artifact>com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer</artifact>
               <excludes>
@@ -90,38 +83,34 @@
               </excludes>
             </filter>
             <filter>
-              <artifact>jakarta.mail:jakarta.mail-api</artifact>
+              <artifact>com.sun.mail:mailapi</artifact>
               <excludes>
-                <exclude>META-INF/LICENSE.md</exclude>
-                <exclude>META-INF/MANIFEST.MF</exclude>
-                <exclude>META-INF/NOTICE.md</exclude>
+                <exclude>META-INF/gfprobe-provider.xml</exclude>
+                <exclude>META-INF/javamail.charset.map</exclude>
+                <exclude>META-INF/mailcap</exclude>
+                <exclude>META-INF/LICENSE.txt</exclude>
                 <!-- pom.xml is only present in sources jar -->
                 <exclude>pom.xml</exclude>
               </excludes>
             </filter>
             <filter>
-              <artifact>org.eclipse.angus:angus.mail</artifact>
+              <artifact>com.sun.mail:smtp</artifact>
               <excludes>
                 <!-- javamail.address.map and javamail.providers are replaced with
                   glowroot.javamail.address.map and glowroot.javamail.providers -->
-                <exclude>META-INF/gfprobe-provider.xml</exclude>
-                <exclude>META-INF/mailcap</exclude>
                 <exclude>META-INF/javamail.address.map</exclude>
-                <exclude>META-INF/javamail.charset.map</exclude>
                 <exclude>META-INF/javamail.providers</exclude>
-                <exclude>META-INF/LICENSE.md</exclude>
-                <exclude>META-INF/NOTICE.md</exclude>
+                <exclude>META-INF/LICENSE.txt</exclude>
                 <!-- pom.xml is only present in sources jar -->
                 <exclude>pom.xml</exclude>
               </excludes>
             </filter>
             <filter>
-              <artifact>org.eclipse.angus:angus-activation</artifact>
+              <artifact>com.sun.activation:javax.activation</artifact>
               <excludes>
                 <exclude>META-INF/mailcap.default</exclude>
                 <exclude>META-INF/mimetypes.default</exclude>
-                <exclude>META-INF/LICENSE.md</exclude>
-                <exclude>META-INF/NOTICE.md</exclude>
+                <exclude>META-INF/LICENSE.txt</exclude>
               </excludes>
             </filter>
           </filters>
@@ -224,8 +213,8 @@
               <shadedPattern>org.glowroot.agent.embedded.shaded.com.ning.compress</shadedPattern>
             </relocation>
             <relocation>
-              <pattern>jakarta.mail</pattern>
-              <shadedPattern>org.glowroot.agent.embedded.shaded.jakarta.mail</shadedPattern>
+              <pattern>javax.mail</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.shaded.javax.mail</shadedPattern>
             </relocation>
             <relocation>
               <pattern>com.sun.mail</pattern>
@@ -270,12 +259,12 @@
               <shadedPattern>META-INF/glowroot.mailcap</shadedPattern>
             </relocation>
             <relocation>
-              <pattern>org.eclipse.angus.mail</pattern>
-              <shadedPattern>org.glowroot.agent.embedded.shaded.org.eclipse.angus.mail</shadedPattern>
+              <pattern>javax.activation</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.shaded.javax.activation</shadedPattern>
             </relocation>
             <relocation>
-              <pattern>org.eclipse.angus.activation</pattern>
-              <shadedPattern>org.glowroot.agent.embedded.shaded.org.eclipse.angus.activation</shadedPattern>
+              <pattern>com.sun.activation</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.shaded.com.sun.activation</shadedPattern>
             </relocation>
           </relocations>
         </configuration>

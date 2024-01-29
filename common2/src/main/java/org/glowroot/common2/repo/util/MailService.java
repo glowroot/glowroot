@@ -15,9 +15,9 @@
  */
 package org.glowroot.common2.repo.util;
 
-import jakarta.mail.Message;
-import jakarta.mail.MessagingException;
-import jakarta.mail.Transport;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Transport;
 
 // this exists solely for mocking purposes
 public class MailService {

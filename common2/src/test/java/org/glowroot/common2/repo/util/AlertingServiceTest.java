@@ -19,7 +19,7 @@ import java.text.DecimalFormat;
 import java.util.UUID;
 
 import javax.crypto.SecretKey;
-import jakarta.mail.Message;
+import javax.mail.Message;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;

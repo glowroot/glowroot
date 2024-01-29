@@ -19,7 +19,7 @@ import java.io.File;
 import java.net.InetAddress;
 import java.util.Arrays;
 
-import jakarta.mail.Message;
+import javax.mail.Message;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
