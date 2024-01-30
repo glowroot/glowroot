@@ -509,7 +509,7 @@ class AdminJsonService {
             String subject = "Test email";
             AlertingService.sendEmail(centralDisplay, agentDisplay, subject, emailAddresses, "",
                     configDtoWithoutNewPassword.convert(configRepository), passwordOverride,
-                    configRepository.getLazySecretKey(), mailService);
+                    configRepository.getLazySecretKey(), mailService, true);
         } catch (Exception e) {
             logger.debug(e.getMessage(), e);
             return createErrorResponse(e);

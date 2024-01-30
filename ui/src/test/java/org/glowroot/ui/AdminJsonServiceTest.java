@@ -73,7 +73,7 @@ public class AdminJsonServiceTest {
         assertThat(message.getFrom()[0].toString()).isEqualTo("From Example <from@example.org>");
         assertThat(message.getRecipients(Message.RecipientType.TO)[0].toString())
                 .isEqualTo("to@example.org");
-        assertThat(message.getSubject()).isEqualTo("[Glowroot] Test email");
+        assertThat(message.getSubject()).isEqualTo("[Glowroot] Test email - resolved");
         assertThat(message.getContent()).isEqualTo("");
     }
 
@@ -98,7 +98,7 @@ public class AdminJsonServiceTest {
                 .isEqualTo("From Example <glowroot@" + localHostname + ">");
         assertThat(message.getRecipients(Message.RecipientType.TO)[0].toString())
                 .isEqualTo("to@example.org");
-        assertThat(message.getSubject()).isEqualTo("[Glowroot] Test email");
+        assertThat(message.getSubject()).isEqualTo("[Glowroot] Test email - resolved");
         assertThat(message.getContent()).isEqualTo("");
     }
 
@@ -123,7 +123,7 @@ public class AdminJsonServiceTest {
                 .isEqualTo("Glowroot <glowroot@" + localHostname + ">");
         assertThat(message.getRecipients(Message.RecipientType.TO)[0].toString())
                 .isEqualTo("to@example.org");
-        assertThat(message.getSubject()).isEqualTo("[Glowroot] Test email");
+        assertThat(message.getSubject()).isEqualTo("[Glowroot] Test email - resolved");
         assertThat(message.getContent()).isEqualTo("");
     }
 

@@ -345,7 +345,7 @@ public class AlertingService {
                 sendEmail(centralDisplay, agentRollupDisplay, subject,
                         emailNotification.getEmailAddressList(),
                         messageText, smtpConfig, null, configRepository.getLazySecretKey(),
-                        mailService);
+                        mailService, ok);
             }
         }
         PagerDutyNotification pagerDutyNotification = alertNotification.getPagerDutyNotification();
@@ -421,8 +421,8 @@ public class AlertingService {
     // org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException
     public static void sendEmail(String centralDisplay, String agentRollupDisplay, String subject,
             List<String> emailAddresses, String messageText, SmtpConfig smtpConfig,
-            @Nullable String passwordOverride, LazySecretKey lazySecretKey, MailService mailService)
-            throws Exception {
+            @Nullable String passwordOverride, LazySecretKey lazySecretKey, MailService mailService, 
+            boolean ok) throws Exception {
         Session session = createMailSession(smtpConfig, passwordOverride, lazySecretKey);
         Message message = new MimeMessage(session);
         String fromEmailAddress = smtpConfig.fromEmailAddress();
@@ -449,6 +449,11 @@ public class AlertingService {
         }
         if (agentRollupDisplay.isEmpty() && centralDisplay.isEmpty()) {
             subj = "[Glowroot] " + subj;
+        }
+        if (ok) {
+            subj = subj + " - resolved";
+        } else {
+            subj = subj + " - triggered";
         }
         message.setSubject(subj);
         message.setText(messageText);
