@@ -24,6 +24,7 @@ import org.glowroot.common.model.TransactionNameErrorSummaryCollector;
 import org.glowroot.common.model.TransactionNameErrorSummaryCollector.ErrorSummarySortOrder;
 import org.glowroot.common.model.TransactionNameErrorSummaryCollector.TransactionNameErrorSummary;
 import org.glowroot.common2.repo.AggregateRepository;
+import org.glowroot.common2.repo.CassandraProfile;
 
 class ErrorCommonService {
 
@@ -56,7 +57,7 @@ class ErrorCommonService {
                     .rollupLevel(rollupLevel)
                     .build();
             aggregateRepository.mergeOverallErrorSummaryInto(agentRollupId, revisedQuery,
-                    collector);
+                    collector, CassandraProfile.web);
             long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > revisedTo) {
@@ -87,7 +88,7 @@ class ErrorCommonService {
                     .rollupLevel(rollupLevel)
                     .build();
             aggregateRepository.mergeTransactionNameErrorSummariesInto(agentRollupId, revisedQuery,
-                    sortOrder, limit, collector);
+                    sortOrder, limit, collector, CassandraProfile.web);
             long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > revisedTo) {

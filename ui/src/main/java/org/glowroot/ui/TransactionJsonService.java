@@ -32,6 +32,7 @@ import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import com.google.common.primitives.Doubles;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.common.live.ImmutableAggregateQuery;
@@ -279,7 +280,7 @@ class TransactionJsonService {
     String getQueryText(@BindAgentRollupId String agentRollupId,
             @BindRequest FullQueryTextRequest request) throws Exception {
         String fullQueryText =
-                transactionCommonService.readFullQueryText(agentRollupId, request.fullTextSha1());
+                transactionCommonService.readFullQueryText(agentRollupId, request.fullTextSha1(), CassandraProfile.web);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
@@ -450,7 +451,7 @@ class TransactionJsonService {
         }
         Result<TransactionNameSummary> queryResult = transactionCommonService
                 .readTransactionNameSummaries(agentRollupId, query, request.sortOrder(),
-                        request.limit(), autoRefresh);
+                        request.limit(), autoRefresh, CassandraProfile.web);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {

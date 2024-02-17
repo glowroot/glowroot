@@ -40,6 +40,7 @@ import org.glowroot.agent.embedded.util.Schemas.Column;
 import org.glowroot.agent.embedded.util.Schemas.ColumnType;
 import org.glowroot.agent.embedded.util.Schemas.Index;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.util.Gauges;
@@ -109,11 +110,11 @@ public class GaugeValueDao implements GaugeValueRepository {
     public List<Gauge> getRecentlyActiveGauges(String agentRollupId) throws Exception {
         long now = clock.currentTimeMillis();
         long from = now - DAYS.toMillis(7);
-        return getGauges(agentRollupId, from, now + DAYS.toMillis(365));
+        return getGauges(agentRollupId, from, now + DAYS.toMillis(365), CassandraProfile.web);
     }
 
     @Override
-    public List<Gauge> getGauges(String agentRollupId, long from, long to) throws Exception {
+    public List<Gauge> getGauges(String agentRollupId, long from, long to, CassandraProfile profile) throws Exception {
         Set<String> allGaugeNames = gaugeNameDao.readAllGaugeNames(from, to);
         List<Gauge> gauges = Lists.newArrayList();
         for (String gaugeName : allGaugeNames) {
@@ -166,7 +167,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     // from is INCLUSIVE
     @Override
     public List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from,
-            long to, int rollupLevel) throws Exception {
+            long to, int rollupLevel, CassandraProfile profile) throws Exception {
         Long gaugeId = gaugeIdDao.getGaugeId(gaugeName);
         if (gaugeId == null) {
             // not necessarily an error, gauge id not created until first store
@@ -176,7 +177,7 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public long getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel)
+    public long getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel, CassandraProfile profile)
             throws Exception {
         Long gaugeId = gaugeIdDao.getGaugeId(gaugeName);
         if (gaugeId == null) {

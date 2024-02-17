@@ -43,6 +43,7 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.primitives.Ints;
 import com.spotify.futures.CompletableFutures;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 
@@ -204,7 +205,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                 .setDouble(i++, gaugeValue.getValue())
                 .setLong(i++, gaugeValue.getWeight())
                 .setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
             for (String agentRollupIdForMeta : agentRollupIdsForMeta) {
                 futures.addAll(gaugeNameDao.insert(agentRollupIdForMeta, captureTime, gaugeName));
             }
@@ -252,7 +253,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                 .setUuid(i++, Uuids.timeBased())
                 .setSet(i++, gaugeNames, String.class)
                 .setInt(i++, needsRollupAdjustedTTL);
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
         }
         MoreFutures.waitForAll(futures);
 
@@ -264,13 +265,13 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     public List<Gauge> getRecentlyActiveGauges(String agentRollupId) throws Exception {
         long now = clock.currentTimeMillis();
         long from = now - DAYS.toMillis(7);
-        return getGauges(agentRollupId, from, now + DAYS.toMillis(365));
+        return getGauges(agentRollupId, from, now + DAYS.toMillis(365), CassandraProfile.web);
     }
 
     @Override
-    public List<Gauge> getGauges(String agentRollupId, long from, long to) throws Exception {
+    public List<Gauge> getGauges(String agentRollupId, long from, long to, CassandraProfile profile) throws Exception {
         List<Gauge> gauges = new ArrayList<>();
-        for (String gaugeName : gaugeNameDao.getGaugeNames(agentRollupId, from, to)) {
+        for (String gaugeName : gaugeNameDao.getGaugeNames(agentRollupId, from, to, profile)) {
             gauges.add(Gauges.getGauge(gaugeName));
         }
         return gauges;
@@ -279,14 +280,14 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     // from is INCLUSIVE
     @Override
     public List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from,
-            long to, int rollupLevel) {
+            long to, int rollupLevel, CassandraProfile profile) {
         int i = 0;
         BoundStatement boundStatement = readValuePS.get(rollupLevel).bind()
             .setString(i++, agentRollupId)
             .setString(i++, gaugeName)
             .setInstant(i++, Instant.ofEpochMilli(from))
             .setInstant(i++, Instant.ofEpochMilli(to));
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         List<GaugeValue> gaugeValues = new ArrayList<>();
         for (Row row : results) {
             i = 0;
@@ -300,12 +301,12 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     }
 
     @Override
-    public long getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel) {
+    public long getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel, CassandraProfile profile) {
         int i = 0;
         BoundStatement boundStatement = readOldestCaptureTimePS.get(rollupLevel).bind()
             .setString(i++, agentRollupId)
             .setString(i++, gaugeName);
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         Row row = results.one();
         return row == null ? Long.MAX_VALUE : checkNotNull(row.getInstant(0)).toEpochMilli();
     }
@@ -313,14 +314,14 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     @Override
     public void rollup(String agentRollupId) throws Exception {
         rollup(agentRollupId, AgentRollupIds.getParent(agentRollupId),
-                !agentRollupId.endsWith("::"));
+                !agentRollupId.endsWith("::"), CassandraProfile.rollup);
     }
 
     // there is no rollup from children on 5-second gauge values
     //
     // child agent rollups should be processed before their parent agent rollup, since initial
     // parent rollup depends on the 1-minute child rollup
-    public void rollup(String agentRollupId, @Nullable String parentAgentRollupId, boolean leaf)
+    public void rollup(String agentRollupId, @Nullable String parentAgentRollupId, boolean leaf, CassandraProfile profile)
             throws Exception {
 
         List<Integer> ttls = getTTLs();
@@ -328,12 +329,12 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         if (leaf) {
             rollupLevel = 1;
         } else {
-            rollupFromChildren(agentRollupId, parentAgentRollupId, ttls.get(1));
+            rollupFromChildren(agentRollupId, parentAgentRollupId, ttls.get(1), profile);
             rollupLevel = 2;
         }
         while (rollupLevel <= configRepository.getRollupConfigs().size()) {
             int ttl = ttls.get(rollupLevel);
-            rollup(agentRollupId, parentAgentRollupId, rollupLevel, ttl);
+            rollup(agentRollupId, parentAgentRollupId, rollupLevel, ttl, profile);
             rollupLevel++;
         }
     }
@@ -352,10 +353,10 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     }
 
     private void rollupFromChildren(String agentRollupId, @Nullable String parentAgentRollupId,
-            int ttl) throws Exception {
+            int ttl, CassandraProfile profile) throws Exception {
         final int rollupLevel = 1;
         List<NeedsRollupFromChildren> needsRollupFromChildrenList = Common
-                .getNeedsRollupFromChildrenList(agentRollupId, readNeedsRollupFromChild, session);
+                .getNeedsRollupFromChildrenList(agentRollupId, readNeedsRollupFromChild, session, profile);
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         long nextRollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
         for (NeedsRollupFromChildren needsRollupFromChildren : needsRollupFromChildrenList) {
@@ -368,7 +369,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                 String gaugeName = entry.getKey();
                 Collection<String> childAgentRollupIds = entry.getValue();
                 futures.add(rollupOneFromChildren(rollupLevel, agentRollupId, gaugeName,
-                        childAgentRollupIds, captureTime, adjustedTTL));
+                        childAgentRollupIds, captureTime, adjustedTTL, profile));
             }
             // wait for above async work to ensure rollup complete before proceeding
             MoreFutures.waitForAll(futures);
@@ -380,22 +381,22 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                 // comment on postRollup
                 Common.insertNeedsRollupFromChild(agentRollupId, parentAgentRollupId,
                         insertNeedsRollupFromChild, needsRollupFromChildren, captureTime,
-                        needsRollupAdjustedTTL, session);
+                        needsRollupAdjustedTTL, session, profile);
             }
             Common.postRollup(agentRollupId, needsRollupFromChildren.getCaptureTime(),
                     needsRollupFromChildren.getKeys().keySet(),
                     needsRollupFromChildren.getUniquenessKeysForDeletion(),
                     nextRollupIntervalMillis, insertNeedsRollup.get(rollupLevel),
-                    deleteNeedsRollupFromChild, needsRollupAdjustedTTL, session);
+                    deleteNeedsRollupFromChild, needsRollupAdjustedTTL, session, profile);
         }
     }
 
     private void rollup(String agentRollupId, @Nullable String parentAgentRollupId, int rollupLevel,
-            int ttl) throws Exception {
+            int ttl, CassandraProfile profile) throws Exception {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         long rollupIntervalMillis = rollupConfigs.get(rollupLevel - 1).intervalMillis();
         Collection<NeedsRollup> needsRollupList = Common.getNeedsRollupList(agentRollupId,
-                rollupLevel, rollupIntervalMillis, readNeedsRollup, session, clock);
+                rollupLevel, rollupIntervalMillis, readNeedsRollup, session, clock, profile);
         Long nextRollupIntervalMillis = null;
         if (rollupLevel < rollupConfigs.size()) {
             nextRollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
@@ -408,7 +409,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             List<CompletableFuture<?>> futures = new ArrayList<>();
             for (String gaugeName : gaugeNames) {
                 futures.add(rollupOne(rollupLevel, agentRollupId, gaugeName, from, captureTime,
-                        adjustedTTL));
+                        adjustedTTL, profile));
             }
             if (futures.isEmpty()) {
                 // no rollups occurred, warning already logged inside rollupOne() above
@@ -417,7 +418,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                 // processed (also prior to 0.9.6), and when the corresponding old data has expired
                 Common.postRollup(agentRollupId, needsRollup.getCaptureTime(), gaugeNames,
                         needsRollup.getUniquenessKeysForDeletion(), null, null,
-                        deleteNeedsRollup.get(rollupLevel - 1), -1, session);
+                        deleteNeedsRollup.get(rollupLevel - 1), -1, session, profile);
                 continue;
             }
             // wait for above async work to ensure rollup complete before proceeding
@@ -436,20 +437,20 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                     .setString(i++, agentRollupId)
                     .setSet(i++, gaugeNames, String.class)
                     .setInt(i++, needsRollupAdjustedTTL);
-                session.write(boundStatement);
+                session.write(boundStatement, CassandraProfile.collector);
             }
             PreparedStatement insertNeedsRollup = nextRollupIntervalMillis == null ? null
                     : this.insertNeedsRollup.get(rollupLevel);
             PreparedStatement deleteNeedsRollup = this.deleteNeedsRollup.get(rollupLevel - 1);
             Common.postRollup(agentRollupId, needsRollup.getCaptureTime(), gaugeNames,
                     needsRollup.getUniquenessKeysForDeletion(), nextRollupIntervalMillis,
-                    insertNeedsRollup, deleteNeedsRollup, needsRollupAdjustedTTL, session);
+                    insertNeedsRollup, deleteNeedsRollup, needsRollupAdjustedTTL, session, profile);
         }
     }
 
     private CompletableFuture<?> rollupOneFromChildren(int rollupLevel, String agentRollupId,
             String gaugeName, Collection<String> childAgentRollupIds, long captureTime,
-            int adjustedTTL) {
+            int adjustedTTL, CassandraProfile profile) {
         List<CompletableFuture<AsyncResultSet>> futures = new ArrayList<>();
         for (String childAgentRollupId : childAgentRollupIds) {
             int i = 0;
@@ -457,7 +458,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                 .setString(i++, childAgentRollupId)
                 .setString(i++, gaugeName)
                 .setInstant(i++, Instant.ofEpochMilli(captureTime));
-            futures.add(session.readAsyncWarnIfNoRows(boundStatement, "no gauge value table"
+            futures.add(session.readAsyncWarnIfNoRows(boundStatement, profile, "no gauge value table"
                     + " records found for agentRollupId={}, gaugeName={}, captureTime={}, level={}",
                     childAgentRollupId, gaugeName, captureTime, rollupLevel).toCompletableFuture());
         }
@@ -465,21 +466,21 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             @Override
             public CompletableFuture<?> execute(List<AsyncResultSet> rows) {
                 return rollupOneFromRows(rollupLevel, agentRollupId, gaugeName, captureTime,
-                        adjustedTTL, rows);
+                        adjustedTTL, rows, profile);
             }
         });
     }
 
     // from is non-inclusive
     private CompletableFuture<?> rollupOne(int rollupLevel, String agentRollupId,
-            String gaugeName, long from, long to, int adjustedTTL) {
+            String gaugeName, long from, long to, int adjustedTTL, CassandraProfile profile) {
         int i = 0;
         BoundStatement boundStatement = readValueForRollupPS.get(rollupLevel - 1).bind()
             .setString(i++, agentRollupId)
             .setString(i++, gaugeName)
             .setInstant(i++, Instant.ofEpochMilli(from))
             .setInstant(i++, Instant.ofEpochMilli(to));
-        CompletableFuture<AsyncResultSet> future = session.readAsyncWarnIfNoRows(boundStatement,
+        CompletableFuture<AsyncResultSet> future = session.readAsyncWarnIfNoRows(boundStatement, profile,
                 "no gauge value table records found for agentRollupId={}, gaugeName={}, from={},"
                         + " to={}, level={}",
                 agentRollupId, gaugeName, from, to, rollupLevel).toCompletableFuture();
@@ -487,13 +488,13 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             @Override
             public CompletableFuture<?> execute(AsyncResultSet rows) {
                 return rollupOneFromRows(rollupLevel, agentRollupId, gaugeName, to, adjustedTTL,
-                        Lists.newArrayList(rows));
+                        Lists.newArrayList(rows), profile);
             }
         });
     }
 
     private CompletableFuture<?> rollupOneFromRows(int rollupLevel, String agentRollupId,
-            String gaugeName, long to, int adjustedTTL, List<AsyncResultSet> results) {
+            String gaugeName, long to, int adjustedTTL, List<AsyncResultSet> results, CassandraProfile profile) {
         DoubleAccumulator totalWeightedValue = new DoubleAccumulator(Double::sum, 0.0);
         AtomicLong totalWeight = new AtomicLong(0);
 
@@ -525,7 +526,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                     boundStatement = boundStatement.setDouble(i++, totalWeightedValue.get() / totalWeight.get())
                             .setLong(i++, totalWeight.get())
                             .setInt(i++, adjustedTTL);
-                    return session.writeAsync(boundStatement).toCompletableFuture();
+                    return session.writeAsync(boundStatement, profile).toCompletableFuture();
                 });
     }
 

@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Ordering;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.central.repo.AgentRollupIds;
@@ -123,9 +124,9 @@ public class TraceDaoWithV09Support implements TraceDao {
 
     @Override
     public long readErrorMessageCount(String agentRollupId, TraceQuery query,
-            String errorMessageFilter) throws Exception {
+            String errorMessageFilter, CassandraProfile profile) throws Exception {
         return splitCountIfNeeded(agentRollupId, query,
-                (id, q) -> delegate.readErrorMessageCount(id, q, errorMessageFilter));
+                (id, q) -> delegate.readErrorMessageCount(id, q, errorMessageFilter, profile));
     }
 
     @Override
@@ -138,33 +139,33 @@ public class TraceDaoWithV09Support implements TraceDao {
     }
 
     @Override
-    public Entries readEntries(String agentId, String traceId) throws Exception {
-        Entries entries = delegate.readEntries(agentId, traceId);
+    public Entries readEntries(String agentId, String traceId, CassandraProfile profile) throws Exception {
+        Entries entries = delegate.readEntries(agentId, traceId, profile);
         if (entries.entries().isEmpty() && checkV09(agentId, traceId)) {
-            return delegate.readEntries(V09Support.convertToV09(agentId), traceId);
+            return delegate.readEntries(V09Support.convertToV09(agentId), traceId, profile);
         }
         return entries;
     }
 
     @Override
-    public Queries readQueries(String agentId, String traceId) throws Exception {
-        Queries queries = delegate.readQueries(agentId, traceId);
+    public Queries readQueries(String agentId, String traceId, CassandraProfile profile) throws Exception {
+        Queries queries = delegate.readQueries(agentId, traceId, profile);
         if (queries.queries().isEmpty() && checkV09(agentId, traceId)) {
-            return delegate.readQueries(V09Support.convertToV09(agentId), traceId);
+            return delegate.readQueries(V09Support.convertToV09(agentId), traceId, profile);
         }
         return queries;
     }
 
     @Override
-    public EntriesAndQueries readEntriesAndQueriesForExport(String agentId, String traceId)
+    public EntriesAndQueries readEntriesAndQueriesForExport(String agentId, String traceId, CassandraProfile profile)
             throws Exception {
         EntriesAndQueries entriesAndQueries =
-                delegate.readEntriesAndQueriesForExport(agentId, traceId);
+                delegate.readEntriesAndQueriesForExport(agentId, traceId, profile);
         if (entriesAndQueries.entries().isEmpty()
                 && clock.currentTimeMillis() < v09FqtLastExpirationTime
                 && checkV09(agentId, traceId)) {
             return delegate.readEntriesAndQueriesForExport(V09Support.convertToV09(agentId),
-                    traceId);
+                    traceId, profile);
         }
         return entriesAndQueries;
     }

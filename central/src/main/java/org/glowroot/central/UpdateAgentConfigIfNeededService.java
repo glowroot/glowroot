@@ -19,6 +19,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +98,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
             timer = "outer rollup loop")
     private void runInternal() throws Exception {
         for (AgentRollup agentRollup : activeAgentDao
-                .readRecentlyActiveAgentRollups(DAYS.toMillis(7))) {
+                .readRecentlyActiveAgentRollups(DAYS.toMillis(7), CassandraProfile.rollup)) {
             updateAgentConfigIfNeededAndConnected(agentRollup);
         }
     }

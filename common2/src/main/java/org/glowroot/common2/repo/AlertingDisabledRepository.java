@@ -21,9 +21,9 @@ public interface AlertingDisabledRepository {
 
     // central supports alert configs on rollups
     @Nullable
-    Long getAlertingDisabledUntilTime(String agentRollupId) throws Exception;
+    Long getAlertingDisabledUntilTime(String agentRollupId, CassandraProfile profile) throws Exception;
 
     // central supports alert configs on rollups
-    void setAlertingDisabledUntilTime(String agentRollupId, @Nullable Long disabledUntilTime)
+    void setAlertingDisabledUntilTime(String agentRollupId, @Nullable Long disabledUntilTime, CassandraProfile profile)
             throws Exception;
 }

@@ -43,6 +43,7 @@ import io.netty.handler.ssl.SslContextBuilder;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
+import org.glowroot.common2.repo.*;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,15 +85,11 @@ import org.glowroot.common2.config.SlackConfig.SlackWebhook;
 import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.SmtpConfig.ConnectionSecurity;
 import org.glowroot.common2.config.UserConfig;
-import org.glowroot.common2.repo.AllAdminConfigUtil;
-import org.glowroot.common2.repo.ConfigRepository;
-import org.glowroot.common2.repo.PasswordHash;
 import org.glowroot.common2.repo.ConfigRepository.DuplicatePagerDutyIntegrationKeyDisplayException;
 import org.glowroot.common2.repo.ConfigRepository.DuplicatePagerDutyIntegrationKeyException;
 import org.glowroot.common2.repo.ConfigRepository.DuplicateSlackWebhookDisplayException;
 import org.glowroot.common2.repo.ConfigRepository.DuplicateSlackWebhookUrlException;
 import org.glowroot.common2.repo.ConfigRepository.OptimisticLockException;
-import org.glowroot.common2.repo.RepoAdmin;
 import org.glowroot.common2.repo.RepoAdmin.H2Table;
 import org.glowroot.common2.repo.util.AlertingService;
 import org.glowroot.common2.repo.util.Encryption;
@@ -174,7 +171,7 @@ class AdminJsonService {
         ImmutableUserConfig updatedUserConfig = ImmutableUserConfig.builder().copyFrom(userConfig)
                 .passwordHash(PasswordHash.createHash(changePassword.newPassword()))
                 .build();
-        configRepository.updateUserConfig(updatedUserConfig, userConfig.version());
+        configRepository.updateUserConfig(updatedUserConfig, userConfig.version(), CassandraProfile.web);
         return "";
     }
 
@@ -282,7 +279,7 @@ class AdminJsonService {
                     mapper.readValue(content, ImmutableCentralAdminGeneralConfigDto.class);
             CentralAdminGeneralConfig config = configDto.convert();
             try {
-                configRepository.updateCentralAdminGeneralConfig(config, configDto.version());
+                configRepository.updateCentralAdminGeneralConfig(config, configDto.version(), CassandraProfile.web);
             } catch (OptimisticLockException e) {
                 throw new JsonServiceException(PRECONDITION_FAILED, e);
             }
@@ -292,7 +289,7 @@ class AdminJsonService {
                     mapper.readValue(content, ImmutableEmbeddedAdminGeneralConfigDto.class);
             EmbeddedAdminGeneralConfig config = configDto.convert();
             try {
-                configRepository.updateEmbeddedAdminGeneralConfig(config, configDto.version());
+                configRepository.updateEmbeddedAdminGeneralConfig(config, configDto.version(), CassandraProfile.web);
             } catch (OptimisticLockException e) {
                 throw new JsonServiceException(PRECONDITION_FAILED, e);
             }

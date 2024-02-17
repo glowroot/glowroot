@@ -18,6 +18,7 @@ package org.glowroot.central.repo;
 import java.util.List;
 
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -34,7 +35,6 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.glowroot.central.repo.CqlSessionBuilders.MAX_CONCURRENT_QUERIES;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -51,8 +51,7 @@ public class IncidentDaoIT {
     public static void setUp() throws Exception {
         SharedSetupRunListener.startCassandra();
         cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
-        session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
-                MAX_CONCURRENT_QUERIES, 0);
+        session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null, 0);
 
         Clock clock = mock(Clock.class);
         when(clock.currentTimeMillis()).thenReturn(345L);
@@ -82,7 +81,7 @@ public class IncidentDaoIT {
                 .setHeartbeatCondition(HeartbeatCondition.newBuilder()
                         .setTimePeriodSeconds(60))
                 .build();
-        assertThat(incidentDao.readOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH))
+        assertThat(incidentDao.readOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH, CassandraProfile.web))
                 .isNull();
     }
 
@@ -101,12 +100,12 @@ public class IncidentDaoIT {
                 .build();
         // when
         incidentDao.insertOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH,
-                AlertNotification.getDefaultInstance(), 123);
+                AlertNotification.getDefaultInstance(), 123, CassandraProfile.web);
         // then
-        assertThat(incidentDao.readOpenIncident(AGENT_ID, otherAlertCondition, AlertSeverity.HIGH))
+        assertThat(incidentDao.readOpenIncident(AGENT_ID, otherAlertCondition, AlertSeverity.HIGH, CassandraProfile.web))
                 .isNull();
         OpenIncident openIncident =
-                incidentDao.readOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH);
+                incidentDao.readOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH, CassandraProfile.web);
         assertThat(openIncident).isNotNull();
         assertThat(openIncident.openTime()).isEqualTo(123);
     }
@@ -120,12 +119,12 @@ public class IncidentDaoIT {
                 .build();
         // when
         incidentDao.insertOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH,
-                AlertNotification.getDefaultInstance(), 234);
+                AlertNotification.getDefaultInstance(), 234, CassandraProfile.web);
         OpenIncident openIncident =
-                incidentDao.readOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH);
-        incidentDao.resolveIncident(openIncident, 345);
+                incidentDao.readOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH, CassandraProfile.web);
+        incidentDao.resolveIncident(openIncident, 345, CassandraProfile.web);
         // then
-        assertThat(incidentDao.readOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH))
+        assertThat(incidentDao.readOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH, CassandraProfile.web))
                 .isNull();
     }
 
@@ -138,10 +137,10 @@ public class IncidentDaoIT {
                 .build();
         // when
         incidentDao.insertOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH,
-                AlertNotification.getDefaultInstance(), 234);
+                AlertNotification.getDefaultInstance(), 234, CassandraProfile.web);
         OpenIncident openIncident =
-                incidentDao.readOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH);
-        incidentDao.resolveIncident(openIncident, 345);
+                incidentDao.readOpenIncident(AGENT_ID, alertCondition, AlertSeverity.HIGH, CassandraProfile.web);
+        incidentDao.resolveIncident(openIncident, 345, CassandraProfile.web);
         List<ResolvedIncident> resolvedIncidents = incidentDao.readResolvedIncidents(345);
         // then
         assertThat(resolvedIncidents).hasSize(1);
@@ -163,11 +162,11 @@ public class IncidentDaoIT {
                 .build();
         // when
         incidentDao.insertOpenIncident("xyz", alertCondition, AlertSeverity.HIGH,
-                AlertNotification.getDefaultInstance(), 456);
+                AlertNotification.getDefaultInstance(), 456, CassandraProfile.web);
         incidentDao.insertOpenIncident("abc", alertCondition2, AlertSeverity.HIGH,
-                AlertNotification.getDefaultInstance(), 567);
+                AlertNotification.getDefaultInstance(), 567, CassandraProfile.web);
         // then
-        List<OpenIncident> openIncidents = incidentDao.readAllOpenIncidents();
+        List<OpenIncident> openIncidents = incidentDao.readAllOpenIncidents(CassandraProfile.collector);
         assertThat(openIncidents).hasSize(2);
     }
 }

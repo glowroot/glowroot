@@ -32,6 +32,7 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -348,9 +349,9 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                             return;
                         }
                         try {
-                            centralAlertingService.checkForDeletedAlerts(postV09AgentId);
+                            centralAlertingService.checkForDeletedAlerts(postV09AgentId, CassandraProfile.collector);
                             centralAlertingService.checkAggregateAlertsAsync(postV09AgentId, agentDisplay,
-                                    captureTime);
+                                    captureTime, CassandraProfile.collector);
                         } catch (InterruptedException e) {
                             // probably shutdown requested
                             logger.debug(e.getMessage(), e);
@@ -406,9 +407,9 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             return;
         }
         try {
-            centralAlertingService.checkForDeletedAlerts(postV09AgentId);
+            centralAlertingService.checkForDeletedAlerts(postV09AgentId, CassandraProfile.collector);
             centralAlertingService.checkGaugeAndHeartbeatAlertsAsync(postV09AgentId, agentDisplay,
-                    maxCaptureTime);
+                    maxCaptureTime, CassandraProfile.collector);
         } catch (InterruptedException e) {
             // probably shutdown requested
             logger.debug(e.getMessage(), e);
@@ -416,7 +417,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         boolean resendInit;
         try {
             resendInit = agentConfigDao.read(postV09AgentId) == null
-                    || environmentDao.read(postV09AgentId) == null;
+                    || environmentDao.read(postV09AgentId, CassandraProfile.collector) == null;
         } catch (Throwable t) {
             // log as error, but not worth failing for this
             logger.error("{} - {}", postV09AgentId, t.getMessage(), t);

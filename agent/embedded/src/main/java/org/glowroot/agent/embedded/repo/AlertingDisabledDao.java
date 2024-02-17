@@ -29,6 +29,7 @@ import org.glowroot.agent.embedded.util.ImmutableColumn;
 import org.glowroot.agent.embedded.util.Schemas.Column;
 import org.glowroot.agent.embedded.util.Schemas.ColumnType;
 import org.glowroot.common2.repo.AlertingDisabledRepository;
+import org.glowroot.common2.repo.CassandraProfile;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -46,12 +47,12 @@ public class AlertingDisabledDao implements AlertingDisabledRepository {
     }
 
     @Override
-    public @Nullable Long getAlertingDisabledUntilTime(String agentRollupId) throws Exception {
+    public @Nullable Long getAlertingDisabledUntilTime(String agentRollupId, CassandraProfile profile) throws Exception {
         return dataSource.queryForOptionalLong("select disabled_until_time from alerting_disabled");
     }
 
     @Override
-    public void setAlertingDisabledUntilTime(String agentRollupId, @Nullable Long disabledUntilTime)
+    public void setAlertingDisabledUntilTime(String agentRollupId, @Nullable Long disabledUntilTime, CassandraProfile profile)
             throws SQLException {
         dataSource.update(new AlertingDisabledBinder(disabledUntilTime));
     }

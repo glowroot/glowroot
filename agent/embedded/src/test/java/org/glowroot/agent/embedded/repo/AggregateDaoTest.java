@@ -23,6 +23,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -118,9 +119,9 @@ public class AggregateDaoTest {
                 .build();
         TransactionNameSummaryCollector collector = new TransactionNameSummaryCollector();
         List<OverviewAggregate> overallAggregates =
-                aggregateDao.readOverviewAggregates(AGENT_ID, aggregateQuery);
+                aggregateDao.readOverviewAggregates(AGENT_ID, aggregateQuery, CassandraProfile.web);
         aggregateDao.mergeTransactionNameSummariesInto(AGENT_ID, summaryQuery,
-                SummarySortOrder.TOTAL_TIME, 10, collector);
+                SummarySortOrder.TOTAL_TIME, 10, collector, CassandraProfile.web);
         Result<TransactionNameSummary> queryResult =
                 collector.getResult(SummarySortOrder.TOTAL_TIME, 10);
 

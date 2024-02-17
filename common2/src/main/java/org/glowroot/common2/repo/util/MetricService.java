@@ -26,10 +26,7 @@ import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
 import org.glowroot.common.model.LazyHistogram;
-import org.glowroot.common2.repo.AggregateRepository;
-import org.glowroot.common2.repo.GaugeValueRepository;
-import org.glowroot.common2.repo.ImmutableTraceQuery;
-import org.glowroot.common2.repo.TraceRepository;
+import org.glowroot.common2.repo.*;
 import org.glowroot.common2.repo.util.RollupLevelService.DataKind;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
@@ -56,29 +53,29 @@ class MetricService {
 
     @Nullable
     Number getMetricValue(String agentRollupId, MetricCondition metricCondition, long startTime,
-            long endTime) throws Exception {
+            long endTime, CassandraProfile profile) throws Exception {
         String metric = metricCondition.getMetric();
         if (metric.equals("transaction:x-percentile")) {
             return getTransactionDurationPercentile(agentRollupId,
                     metricCondition.getTransactionType(),
                     Strings.emptyToNull(metricCondition.getTransactionName()),
-                    metricCondition.getPercentile().getValue(), startTime, endTime);
+                    metricCondition.getPercentile().getValue(), startTime, endTime, profile);
         } else if (metric.equals("transaction:average")) {
             return getTransactionAverage(agentRollupId, metricCondition.getTransactionType(),
-                    Strings.emptyToNull(metricCondition.getTransactionName()), startTime, endTime);
+                    Strings.emptyToNull(metricCondition.getTransactionName()), startTime, endTime, profile);
         } else if (metric.equals("transaction:count")) {
             return getTransactionCount(agentRollupId, metricCondition.getTransactionType(),
-                    Strings.emptyToNull(metricCondition.getTransactionName()), startTime, endTime);
+                    Strings.emptyToNull(metricCondition.getTransactionName()), startTime, endTime, profile);
         } else if (metric.equals("error:rate")) {
             return getErrorRate(agentRollupId, metricCondition.getTransactionType(),
-                    Strings.emptyToNull(metricCondition.getTransactionName()), startTime, endTime);
+                    Strings.emptyToNull(metricCondition.getTransactionName()), startTime, endTime, profile);
         } else if (metric.equals("error:count")) {
             return getErrorCount(agentRollupId, metricCondition.getTransactionType(),
                     Strings.emptyToNull(metricCondition.getTransactionName()),
-                    metricCondition.getErrorMessageFilter(), startTime, endTime);
+                    metricCondition.getErrorMessageFilter(), startTime, endTime, profile);
         } else if (metric.startsWith("gauge:")) {
             return getGaugeValue(agentRollupId, metric.substring("gauge:".length()), startTime,
-                    endTime);
+                    endTime, profile);
         } else {
             throw new IllegalStateException("Unexpected metric: " + metric);
         }
@@ -86,7 +83,7 @@ class MetricService {
 
     private @Nullable Double getTransactionDurationPercentile(String agentRollupId,
             String transactionType, @Nullable String transactionName, double percentile,
-            long startTime, long endTime) throws Exception {
+            long startTime, long endTime, CassandraProfile profile) throws Exception {
         int rollupLevel =
                 rollupLevelService.getRollupLevelForView(startTime, endTime, DataKind.GENERAL);
         // startTime + 1 in order to not include the aggregate value at startTime
@@ -98,7 +95,7 @@ class MetricService {
                                 .from(startTime + 1)
                                 .to(endTime)
                                 .rollupLevel(rollupLevel)
-                                .build());
+                                .build(), profile);
         if (aggregates.isEmpty()) {
             return null;
         }
@@ -111,9 +108,9 @@ class MetricService {
     }
 
     private @Nullable Double getTransactionAverage(String agentRollupId, String transactionType,
-            @Nullable String transactionName, long startTime, long endTime) throws Exception {
+            @Nullable String transactionName, long startTime, long endTime, CassandraProfile profile) throws Exception {
         List<OverviewAggregate> aggregates = getOverviewAggregates(agentRollupId, transactionType,
-                transactionName, startTime, endTime);
+                transactionName, startTime, endTime, profile);
         if (aggregates.isEmpty()) {
             return null;
         }
@@ -130,9 +127,9 @@ class MetricService {
     }
 
     public long getTransactionCount(String agentRollupId, String transactionType,
-            @Nullable String transactionName, long startTime, long endTime) throws Exception {
+            @Nullable String transactionName, long startTime, long endTime, CassandraProfile profile) throws Exception {
         List<ThroughputAggregate> throughputAggregates = getThroughputAggregates(agentRollupId,
-                transactionType, transactionName, startTime, endTime);
+                transactionType, transactionName, startTime, endTime, profile);
         long totalTransactionCount = 0;
         for (ThroughputAggregate throughputAggregate : throughputAggregates) {
             totalTransactionCount += throughputAggregate.transactionCount();
@@ -141,9 +138,9 @@ class MetricService {
     }
 
     private @Nullable Double getErrorRate(String agentRollupId, String transactionType,
-            @Nullable String transactionName, long startTime, long endTime) throws Exception {
+            @Nullable String transactionName, long startTime, long endTime, CassandraProfile profile) throws Exception {
         List<ThroughputAggregate> aggregates = getThroughputAggregates(agentRollupId,
-                transactionType, transactionName, startTime, endTime);
+                transactionType, transactionName, startTime, endTime, profile);
         if (aggregates.isEmpty()) {
             return null;
         }
@@ -161,10 +158,10 @@ class MetricService {
 
     private long getErrorCount(String agentRollupId, String transactionType,
             @Nullable String transactionName, @Nullable String errorMessageFilter, long startTime,
-            long endTime) throws Exception {
+            long endTime, CassandraProfile profile) throws Exception {
         if (errorMessageFilter == null) {
             List<ThroughputAggregate> aggregates = getThroughputAggregates(agentRollupId,
-                    transactionType, transactionName, startTime, endTime);
+                    transactionType, transactionName, startTime, endTime, profile);
             long totalErrorCount = 0;
             for (ThroughputAggregate aggregate : aggregates) {
                 totalErrorCount += MoreObjects.firstNonNull(aggregate.errorCount(), 0L);
@@ -178,18 +175,18 @@ class MetricService {
                     .to(endTime)
                     .build();
             return traceRepository.readErrorMessageCount(agentRollupId, traceQuery,
-                    errorMessageFilter);
+                    errorMessageFilter, profile);
 
         }
     }
 
     private @Nullable Double getGaugeValue(String agentRollupId, String gaugeName,
-            long startTime, long endTime) throws Exception {
+                                           long startTime, long endTime, CassandraProfile profile) throws Exception {
         int rollupLevel = rollupLevelService.getGaugeRollupLevelForView(startTime, endTime,
                 agentRollupId.endsWith("::"));
         // startTime + 1 in order to not include the gauge value at startTime
         List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(agentRollupId,
-                gaugeName, startTime + 1, endTime, rollupLevel);
+                gaugeName, startTime + 1, endTime, rollupLevel, profile);
         if (gaugeValues.isEmpty()) {
             return null;
         }
@@ -206,7 +203,7 @@ class MetricService {
     }
 
     private List<ThroughputAggregate> getThroughputAggregates(String agentRollupId,
-            String transactionType, @Nullable String transactionName, long startTime, long endTime)
+            String transactionType, @Nullable String transactionName, long startTime, long endTime, CassandraProfile profile)
             throws Exception {
         int rollupLevel =
                 rollupLevelService.getRollupLevelForView(startTime, endTime, DataKind.GENERAL);
@@ -218,11 +215,12 @@ class MetricService {
                         .from(startTime + 1)
                         .to(endTime)
                         .rollupLevel(rollupLevel)
-                        .build());
+                        .build(),
+                profile);
     }
 
     private List<OverviewAggregate> getOverviewAggregates(String agentRollupId,
-            String transactionType, @Nullable String transactionName, long startTime, long endTime)
+            String transactionType, @Nullable String transactionName, long startTime, long endTime, CassandraProfile profile)
             throws Exception {
         int rollupLevel =
                 rollupLevelService.getRollupLevelForView(startTime, endTime, DataKind.GENERAL);
@@ -234,6 +232,6 @@ class MetricService {
                         .from(startTime + 1)
                         .to(endTime)
                         .rollupLevel(rollupLevel)
-                        .build());
+                        .build(), profile);
     }
 }

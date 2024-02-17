@@ -21,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 
 import com.datastax.oss.driver.api.core.cql.*;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.Cache;
@@ -88,7 +89,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
                 // intentionally not accounting for rateLimiter in TTL
                         .setInt(i++,
                             configRepository.getCentralStorageConfig().getMaxRollupTTL());
-                future = session.writeAsync(boundStatement).whenComplete((results, throwable) -> {
+                future = session.writeAsync(boundStatement, CassandraProfile.collector).whenComplete((results, throwable) -> {
                     if (throwable != null) {
                         rateLimiter.release(rateLimiterKey);
                     } else {
@@ -117,7 +118,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
         public List<String> load(String agentRollupId) {
             BoundStatement boundStatement = readPS.bind()
                 .setString(0, agentRollupId);
-            ResultSet results = session.read(boundStatement);
+            ResultSet results = session.read(boundStatement, CassandraProfile.collector);
             List<String> transactionTypes = new ArrayList<>();
             for (Row row : results) {
                 transactionTypes.add(checkNotNull(row.getString(0)));

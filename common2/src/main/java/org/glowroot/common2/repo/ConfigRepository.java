@@ -171,85 +171,85 @@ public interface ConfigRepository {
 
     boolean isConfigReadOnly(String agentId) throws Exception;
 
-    void updateGeneralConfig(String agentId, GeneralConfig config, String priorVersion)
+    void updateGeneralConfig(String agentId, GeneralConfig config, String priorVersion, CassandraProfile profile)
             throws Exception;
 
-    void updateTransactionConfig(String agentId, TransactionConfig config, String priorVersion)
+    void updateTransactionConfig(String agentId, TransactionConfig config, String priorVersion, CassandraProfile profile)
             throws Exception;
 
-    void insertGaugeConfig(String agentId, GaugeConfig config) throws Exception;
+    void insertGaugeConfig(String agentId, GaugeConfig config, CassandraProfile profile) throws Exception;
 
-    void updateGaugeConfig(String agentId, GaugeConfig config, String priorVersion)
+    void updateGaugeConfig(String agentId, GaugeConfig config, String priorVersion, CassandraProfile profile)
             throws Exception;
 
-    void deleteGaugeConfig(String agentId, String version) throws Exception;
+    void deleteGaugeConfig(String agentId, String version, CassandraProfile profile) throws Exception;
 
-    void updateJvmConfig(String agentId, JvmConfig config, String priorVersion) throws Exception;
+    void updateJvmConfig(String agentId, JvmConfig config, String priorVersion, CassandraProfile profile) throws Exception;
 
     // central supports synthetic monitor configs on rollups
-    void insertSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config)
+    void insertSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config, CassandraProfile profile)
             throws Exception;
 
     // central supports synthetic monitor configs on rollups
     void updateSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config,
-            String priorVersion) throws Exception;
+            String priorVersion, CassandraProfile profile) throws Exception;
 
     // central supports synthetic monitor configs on rollups
-    void deleteSyntheticMonitorConfig(String agentRollupId, String syntheticMonitorId)
+    void deleteSyntheticMonitorConfig(String agentRollupId, String syntheticMonitorId, CassandraProfile profile)
             throws Exception;
 
     // central supports alert configs on rollups
-    void insertAlertConfig(String agentRollupId, AlertConfig config) throws Exception;
+    void insertAlertConfig(String agentRollupId, AlertConfig config, CassandraProfile profile) throws Exception;
 
     // central supports alert configs on rollups
-    void updateAlertConfig(String agentRollupId, AlertConfig config, String priorVersion)
+    void updateAlertConfig(String agentRollupId, AlertConfig config, String priorVersion, CassandraProfile profile)
             throws Exception;
 
     // central supports alert configs on rollups
-    void deleteAlertConfig(String agentRollupId, String version) throws Exception;
+    void deleteAlertConfig(String agentRollupId, String version, CassandraProfile profile) throws Exception;
 
     // central supports ui config on rollups
-    void updateUiDefaultsConfig(String agentRollupId, UiDefaultsConfig config, String priorVersion)
+    void updateUiDefaultsConfig(String agentRollupId, UiDefaultsConfig config, String priorVersion, CassandraProfile profile)
             throws Exception;
 
     // only plugin id and property names and values are used
-    void updatePluginConfig(String agentId, PluginConfig config, String priorVersion)
+    void updatePluginConfig(String agentId, PluginConfig config, String priorVersion, CassandraProfile profile)
             throws Exception;
 
-    void insertInstrumentationConfig(String agentId, InstrumentationConfig config) throws Exception;
+    void insertInstrumentationConfig(String agentId, InstrumentationConfig config, CassandraProfile profile) throws Exception;
 
     void updateInstrumentationConfig(String agentId, InstrumentationConfig config,
-            String priorVersion) throws Exception;
+            String priorVersion, CassandraProfile profile) throws Exception;
 
-    void deleteInstrumentationConfigs(String agentId, List<String> versions) throws Exception;
+    void deleteInstrumentationConfigs(String agentId, List<String> versions, CassandraProfile profile) throws Exception;
 
-    void insertInstrumentationConfigs(String agentId, List<InstrumentationConfig> configs)
+    void insertInstrumentationConfigs(String agentId, List<InstrumentationConfig> configs, CassandraProfile profile)
             throws Exception;
 
     // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
-    void updateAdvancedConfig(String agentRollupId, AdvancedConfig config, String priorVersion)
+    void updateAdvancedConfig(String agentRollupId, AdvancedConfig config, String priorVersion, CassandraProfile profile)
             throws Exception;
 
-    void updateAllConfig(String agentId, AgentConfig config, @Nullable String priorVersion)
+    void updateAllConfig(String agentId, AgentConfig config, @Nullable String priorVersion, CassandraProfile profile)
             throws Exception;
 
-    void updateEmbeddedAdminGeneralConfig(EmbeddedAdminGeneralConfig config, String priorVersion)
+    void updateEmbeddedAdminGeneralConfig(EmbeddedAdminGeneralConfig config, String priorVersion, CassandraProfile profile)
             throws Exception;
 
-    void updateCentralAdminGeneralConfig(CentralAdminGeneralConfig config, String priorVersion)
+    void updateCentralAdminGeneralConfig(CentralAdminGeneralConfig config, String priorVersion, CassandraProfile profile)
             throws Exception;
 
-    void insertUserConfig(UserConfig config) throws Exception;
+    void insertUserConfig(UserConfig config, CassandraProfile profile) throws Exception;
 
-    void updateUserConfig(UserConfig config, String priorVersion) throws Exception;
+    void updateUserConfig(UserConfig config, String priorVersion, CassandraProfile profile) throws Exception;
 
-    void deleteUserConfig(String username) throws Exception;
+    void deleteUserConfig(String username, CassandraProfile profile) throws Exception;
 
-    void insertRoleConfig(RoleConfig config) throws Exception;
+    void insertRoleConfig(RoleConfig config, CassandraProfile profile) throws Exception;
 
-    void updateRoleConfig(RoleConfig config, String priorVersion) throws Exception;
+    void updateRoleConfig(RoleConfig config, String priorVersion, CassandraProfile profile) throws Exception;
 
-    void deleteRoleConfig(String name) throws Exception;
+    void deleteRoleConfig(String name, CassandraProfile profile) throws Exception;
 
     void updateEmbeddedWebConfig(EmbeddedWebConfig config, String priorVersion) throws Exception;
 

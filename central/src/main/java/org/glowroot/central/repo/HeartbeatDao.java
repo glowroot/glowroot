@@ -25,6 +25,7 @@ import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.CassandraProfile;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
@@ -62,18 +63,18 @@ public class HeartbeatDao {
                 .setString(i++, agentRollupId)
                 .setInstant(i++, Instant.ofEpochMilli(clock.currentTimeMillis()))
                 .setInt(i++, TTL);
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
         }
         MoreFutures.waitForAll(futures);
     }
 
-    public boolean exists(String agentRollupId, long centralCaptureFrom, long centralCaptureTo)
+    public boolean exists(String agentRollupId, long centralCaptureFrom, long centralCaptureTo, CassandraProfile profile)
             throws Exception {
         int i = 0;
         BoundStatement boundStatement = existsPS.bind()
             .setString(i++, agentRollupId)
             .setInstant(i++, Instant.ofEpochMilli(centralCaptureFrom))
             .setInstant(i++, Instant.ofEpochMilli(centralCaptureTo));
-        return session.read(boundStatement).one() != null;
+        return session.read(boundStatement, profile).one() != null;
     }
 }

@@ -65,6 +65,7 @@ import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
@@ -103,6 +104,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.glowroot.common2.repo.CassandraProfile.rollup;
 
 class SyntheticMonitorService implements Runnable {
 
@@ -268,7 +270,7 @@ class SyntheticMonitorService implements Runnable {
             timer = "outer synthetic monitor loop")
     private void runInternal() throws Exception {
         for (AgentRollup agentRollup : activeAgentDao
-                .readRecentlyActiveAgentRollups(DAYS.toMillis(7))) {
+                .readRecentlyActiveAgentRollups(DAYS.toMillis(7), rollup)) {
             consumeAgentRollups(agentRollup, this::runSyntheticMonitors);
         }
     }
@@ -316,7 +318,7 @@ class SyntheticMonitorService implements Runnable {
                 try {
                     switch (syntheticMonitorConfig.getKind()) {
                         case PING:
-                            runPing(agentRollup, syntheticMonitorConfig, alertConfigs);
+                            runPing(agentRollup, syntheticMonitorConfig, alertConfigs, rollup);
                             break;
                         case JAVA:
                             runJava(agentRollup, syntheticMonitorConfig, alertConfigs);
@@ -340,9 +342,9 @@ class SyntheticMonitorService implements Runnable {
             timer = "synthetic monitor",
             alreadyInTransactionBehavior = AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION)
     private void runPing(AgentRollup agentRollup, SyntheticMonitorConfig syntheticMonitorConfig,
-            List<AlertConfig> alertConfigs) throws Exception {
+            List<AlertConfig> alertConfigs, CassandraProfile profile) throws Exception {
         runSyntheticMonitor(agentRollup, syntheticMonitorConfig, alertConfigs,
-                () -> runPing(syntheticMonitorConfig.getPingUrl()));
+                () -> runPing(syntheticMonitorConfig.getPingUrl()), rollup);
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
@@ -360,7 +362,7 @@ class SyntheticMonitorService implements Runnable {
         }
         matcher.appendTail(sb);
         runSyntheticMonitor(agentRollup, syntheticMonitorConfig, alertConfigs,
-                () -> runJava(sb.toString()));
+                () -> runJava(sb.toString()), rollup);
     }
 
     private FutureWithStartTick runJava(String javaSource) throws Exception {
@@ -500,7 +502,7 @@ class SyntheticMonitorService implements Runnable {
 
     private void runSyntheticMonitor(AgentRollup agentRollup,
             SyntheticMonitorConfig syntheticMonitorConfig, List<AlertConfig> alertConfigs,
-            Callable<FutureWithStartTick> callable) throws Exception {
+            Callable<FutureWithStartTick> callable, CassandraProfile profile) throws Exception {
         SyntheticMonitorUniqueKey uniqueKey = ImmutableSyntheticMonitorUniqueKey
                 .of(agentRollup.id(), syntheticMonitorConfig.getId());
         if (!activeSyntheticMonitors.add(uniqueKey)) {
@@ -553,11 +555,11 @@ class SyntheticMonitorService implements Runnable {
                     boolean currentlyTriggered =
                             durationNanos >= MILLISECONDS.toNanos(condition.getThresholdMillis());
                     sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfig,
-                            condition, captureTime, currentlyTriggered, null);
+                            condition, captureTime, currentlyTriggered, null, profile);
                 }
             } else {
                 sendAlertOnErrorIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfigs,
-                        errorMessage, captureTime);
+                        errorMessage, captureTime, profile);
             }
         }
         // need to run at end to ensure new synthetic response doesn't get stored before consecutive
@@ -566,7 +568,7 @@ class SyntheticMonitorService implements Runnable {
     }
 
     private boolean isCurrentlyDisabled(String agentRollupId) throws Exception {
-        Long disabledUntilTime = alertingDisabledDao.getAlertingDisabledUntilTime(agentRollupId);
+        Long disabledUntilTime = alertingDisabledDao.getAlertingDisabledUntilTime(agentRollupId, rollup);
         return disabledUntilTime != null && disabledUntilTime > clock.currentTimeMillis();
     }
 
@@ -621,31 +623,31 @@ class SyntheticMonitorService implements Runnable {
 
     private void sendAlertOnErrorIfStatusChanged(AgentRollup agentRollup,
             SyntheticMonitorConfig syntheticMonitorConfig, List<AlertConfig> alertConfigs,
-            @Nullable String errorMessage, long captureTime) throws Exception {
+            @Nullable String errorMessage, long captureTime, CassandraProfile profile) throws Exception {
         for (AlertConfig alertConfig : alertConfigs) {
             AlertCondition alertCondition = alertConfig.getCondition();
             SyntheticMonitorCondition condition = alertCondition.getSyntheticMonitorCondition();
             sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfig, condition,
-                    captureTime, true, errorMessage);
+                    captureTime, true, errorMessage, profile);
         }
     }
 
     private void sendAlertIfStatusChanged(AgentRollup agentRollup,
             SyntheticMonitorConfig syntheticMonitorConfig, AlertConfig alertConfig,
             SyntheticMonitorCondition condition, long endTime, boolean currentlyTriggered,
-            @Nullable String errorMessage) throws Exception {
+            @Nullable String errorMessage, CassandraProfile profile) throws Exception {
         AlertCondition alertCondition = alertConfig.getCondition();
         OpenIncident openIncident = incidentDao.readOpenIncident(agentRollup.id(), alertCondition,
-                alertConfig.getSeverity());
+                alertConfig.getSeverity(), profile);
         if (openIncident != null && !currentlyTriggered) {
-            incidentDao.resolveIncident(openIncident, endTime);
+            incidentDao.resolveIncident(openIncident, endTime, rollup);
             sendAlert(agentRollup.id(), agentRollup.display(), syntheticMonitorConfig,
                     alertConfig, condition, endTime, true, null);
         } else if (openIncident == null && currentlyTriggered
                 && consecutiveCountHit(agentRollup.id(), syntheticMonitorConfig, condition)) {
             // the start time for the incident is the end time of the interval evaluated above
             incidentDao.insertOpenIncident(agentRollup.id(), alertCondition,
-                    alertConfig.getSeverity(), alertConfig.getNotification(), endTime);
+                    alertConfig.getSeverity(), alertConfig.getNotification(), endTime, profile);
             sendAlert(agentRollup.id(), agentRollup.display(), syntheticMonitorConfig,
                     alertConfig, condition, endTime, false, errorMessage);
         }

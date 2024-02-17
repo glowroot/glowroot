@@ -16,6 +16,7 @@
 package org.glowroot.central.repo;
 
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -26,7 +27,6 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Enviro
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment.HostInfo;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.glowroot.central.repo.CqlSessionBuilders.MAX_CONCURRENT_QUERIES;
 
 public class EnvironmentDaoIT {
 
@@ -39,7 +39,7 @@ public class EnvironmentDaoIT {
         SharedSetupRunListener.startCassandra();
         cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
         session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
-                MAX_CONCURRENT_QUERIES, 0);
+                0);
 
         environmentDao = new EnvironmentDao(session);
     }
@@ -69,7 +69,7 @@ public class EnvironmentDaoIT {
                 .build();
         environmentDao.store("a", environment);
         // when
-        Environment readEnvironment = environmentDao.read("a");
+        Environment readEnvironment = environmentDao.read("a", CassandraProfile.web);
         // then
         assertThat(readEnvironment).isEqualTo(environment);
     }

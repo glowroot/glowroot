@@ -15,56 +15,35 @@
  */
 package org.glowroot.central.repo;
 
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.MoreExecutors;
+import org.glowroot.central.util.ClusterManager;
+import org.glowroot.central.util.Session;
+import org.glowroot.common.util.Versions;
+import org.glowroot.common2.config.*;
+import org.glowroot.common2.config.SmtpConfig.ConnectionSecurity;
+import org.glowroot.common2.repo.CassandraProfile;
+import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.*;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.EmailNotification;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.MethodModifier;
+import org.glowroot.wire.api.model.Proto.OptionalInt32;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.datastax.oss.driver.api.core.CqlSessionBuilder;
-import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.MoreExecutors;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
-import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.Session;
-import org.glowroot.common.util.Versions;
-import org.glowroot.common2.config.CentralStorageConfig;
-import org.glowroot.common2.config.CentralWebConfig;
-import org.glowroot.common2.config.HttpProxyConfig;
-import org.glowroot.common2.config.ImmutableCentralStorageConfig;
-import org.glowroot.common2.config.ImmutableCentralWebConfig;
-import org.glowroot.common2.config.ImmutableHttpProxyConfig;
-import org.glowroot.common2.config.ImmutableLdapConfig;
-import org.glowroot.common2.config.ImmutableRoleConfig;
-import org.glowroot.common2.config.ImmutableSmtpConfig;
-import org.glowroot.common2.config.ImmutableUserConfig;
-import org.glowroot.common2.config.LdapConfig;
-import org.glowroot.common2.config.RoleConfig;
-import org.glowroot.common2.config.SmtpConfig;
-import org.glowroot.common2.config.SmtpConfig.ConnectionSecurity;
-import org.glowroot.common2.config.UserConfig;
-import org.glowroot.common2.repo.ConfigRepository;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.EmailNotification;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.MethodModifier;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MBeanAttribute;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
-import org.glowroot.wire.api.model.Proto.OptionalInt32;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.glowroot.central.repo.CqlSessionBuilders.MAX_CONCURRENT_QUERIES;
 
 public class ConfigRepositoryIT {
 
@@ -81,7 +60,7 @@ public class ConfigRepositoryIT {
         clusterManager = ClusterManager.create();
         cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
         session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
-                MAX_CONCURRENT_QUERIES, 0);
+                0);
         session.updateSchemaWithRetry("drop table if exists agent_config");
         session.updateSchemaWithRetry("drop table if exists user");
         session.updateSchemaWithRetry("drop table if exists role");
@@ -133,7 +112,7 @@ public class ConfigRepositoryIT {
 
         // when
         configRepository.updateTransactionConfig(agentId, updatedConfig,
-                Versions.getVersion(config));
+                Versions.getVersion(config), CassandraProfile.web);
         config = configRepository.getTransactionConfig(agentId);
 
         // then
@@ -154,7 +133,7 @@ public class ConfigRepositoryIT {
 
         // when
         configRepository.updateJvmConfig(agentId, updatedConfig,
-                Versions.getVersion(config));
+                Versions.getVersion(config), CassandraProfile.web);
         config = configRepository.getJvmConfig(agentId);
 
         // then
@@ -176,7 +155,7 @@ public class ConfigRepositoryIT {
 
         // when
         configRepository.updateUiDefaultsConfig(agentId, updatedConfig,
-                Versions.getVersion(config));
+                Versions.getVersion(config), CassandraProfile.web);
         config = configRepository.getUiDefaultsConfig(agentId);
 
         // then
@@ -201,7 +180,7 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.updateAdvancedConfig(agentId, updatedConfig, Versions.getVersion(config));
+        configRepository.updateAdvancedConfig(agentId, updatedConfig, Versions.getVersion(config), CassandraProfile.web);
         config = configRepository.getAdvancedConfig(agentId);
 
         // then
@@ -221,7 +200,7 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.insertGaugeConfig(agentId, gaugeConfig);
+        configRepository.insertGaugeConfig(agentId, gaugeConfig, CassandraProfile.web);
         List<GaugeConfig> gaugeConfigs = configRepository.getGaugeConfigs(agentId);
 
         // then
@@ -239,7 +218,7 @@ public class ConfigRepositoryIT {
 
         // when
         configRepository.updateGaugeConfig(agentId, updatedGaugeConfig,
-                Versions.getVersion(gaugeConfig));
+                Versions.getVersion(gaugeConfig), CassandraProfile.web);
         gaugeConfigs = configRepository.getGaugeConfigs(agentId);
 
         // then
@@ -249,7 +228,7 @@ public class ConfigRepositoryIT {
         // and further
 
         // when
-        configRepository.deleteGaugeConfig(agentId, Versions.getVersion(updatedGaugeConfig));
+        configRepository.deleteGaugeConfig(agentId, Versions.getVersion(updatedGaugeConfig), CassandraProfile.web);
         gaugeConfigs = configRepository.getGaugeConfigs(agentId);
 
         // then
@@ -274,7 +253,7 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.insertAlertConfig(agentId, alertConfig);
+        configRepository.insertAlertConfig(agentId, alertConfig, CassandraProfile.web);
         List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(agentId);
 
         // then
@@ -298,7 +277,7 @@ public class ConfigRepositoryIT {
 
         // when
         configRepository.updateAlertConfig(agentId, updatedAlertConfig,
-                Versions.getVersion(alertConfig));
+                Versions.getVersion(alertConfig), CassandraProfile.web);
         alertConfigs = configRepository.getAlertConfigs(agentId);
 
         // then
@@ -308,7 +287,7 @@ public class ConfigRepositoryIT {
         // and further
 
         // when
-        configRepository.deleteAlertConfig(agentId, Versions.getVersion(updatedAlertConfig));
+        configRepository.deleteAlertConfig(agentId, Versions.getVersion(updatedAlertConfig), CassandraProfile.web);
         alertConfigs = configRepository.getAlertConfigs(agentId);
 
         // then
@@ -335,7 +314,7 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.insertInstrumentationConfig(agentId, instrumentationConfig);
+        configRepository.insertInstrumentationConfig(agentId, instrumentationConfig, CassandraProfile.web);
         List<InstrumentationConfig> instrumentationConfigs =
                 configRepository.getInstrumentationConfigs(agentId);
 
@@ -362,7 +341,7 @@ public class ConfigRepositoryIT {
 
         // when
         configRepository.updateInstrumentationConfig(agentId, updatedInstrumentationConfig,
-                Versions.getVersion(instrumentationConfig));
+                Versions.getVersion(instrumentationConfig), CassandraProfile.web);
         instrumentationConfigs = configRepository.getInstrumentationConfigs(agentId);
 
         // then
@@ -373,7 +352,7 @@ public class ConfigRepositoryIT {
 
         // when
         configRepository.deleteInstrumentationConfigs(agentId,
-                ImmutableList.of(Versions.getVersion(updatedInstrumentationConfig)));
+                ImmutableList.of(Versions.getVersion(updatedInstrumentationConfig)), CassandraProfile.web);
         instrumentationConfigs = configRepository.getInstrumentationConfigs(agentId);
 
         // then
@@ -389,7 +368,7 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.insertUserConfig(userConfig);
+        configRepository.insertUserConfig(userConfig, CassandraProfile.web);
         List<UserConfig> userConfigs = configRepository.getUserConfigs();
 
         // then
@@ -416,7 +395,7 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.updateUserConfig(updatedUserConfig, userConfig.version());
+        configRepository.updateUserConfig(updatedUserConfig, userConfig.version(), CassandraProfile.web);
         userConfigs = configRepository.getUserConfigs();
 
         // then
@@ -426,7 +405,7 @@ public class ConfigRepositoryIT {
         // and further
 
         // when
-        configRepository.deleteUserConfig(updatedUserConfig.username());
+        configRepository.deleteUserConfig(updatedUserConfig.username(), CassandraProfile.web);
         userConfigs = configRepository.getUserConfigs();
 
         // then
@@ -445,7 +424,7 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.insertRoleConfig(roleConfig);
+        configRepository.insertRoleConfig(roleConfig, CassandraProfile.web);
         List<RoleConfig> roleConfigs = configRepository.getRoleConfigs();
 
         // then
@@ -464,7 +443,7 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.updateRoleConfig(updatedRoleConfig, roleConfig.version());
+        configRepository.updateRoleConfig(updatedRoleConfig, roleConfig.version(), CassandraProfile.web);
         roleConfigs = configRepository.getRoleConfigs();
 
         // then
@@ -474,7 +453,7 @@ public class ConfigRepositoryIT {
         // and further
 
         // when
-        configRepository.deleteRoleConfig(updatedRoleConfig.name());
+        configRepository.deleteRoleConfig(updatedRoleConfig.name(), CassandraProfile.web);
         roleConfigs = configRepository.getRoleConfigs();
 
         // then

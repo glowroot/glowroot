@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -390,7 +391,7 @@ class EmbeddedAgentModule {
                         .copyFrom(config)
                         .addPermissions("agent:alert")
                         .build();
-                configRepository.updateRoleConfig(updatedConfig, Versions.getJsonVersion(config));
+                configRepository.updateRoleConfig(updatedConfig, Versions.getJsonVersion(config), CassandraProfile.web);
             }
         }
     }
@@ -412,7 +413,7 @@ class EmbeddedAgentModule {
     private static class ActiveAgentRepositoryImpl implements ActiveAgentRepository {
 
         @Override
-        public List<TopLevelAgentRollup> readActiveTopLevelAgentRollups(long from, long to) {
+        public List<TopLevelAgentRollup> readActiveTopLevelAgentRollups(long from, long to, CassandraProfile profile) {
             return ImmutableList.<TopLevelAgentRollup>of(ImmutableTopLevelAgentRollup.builder()
                     .id("")
                     .display("")
@@ -421,7 +422,7 @@ class EmbeddedAgentModule {
 
         @Override
         public List<AgentRollup> readActiveChildAgentRollups(String topLevelId, long from,
-                long to) {
+                long to, CassandraProfile profile) {
             return ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder()
                     .id("")
                     .display("")
@@ -430,7 +431,7 @@ class EmbeddedAgentModule {
         }
 
         @Override
-        public List<AgentRollup> readRecentlyActiveAgentRollups(long lastXMillis) {
+        public List<AgentRollup> readRecentlyActiveAgentRollups(long lastXMillis, CassandraProfile profile) {
             return ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder()
                     .id("")
                     .display("")
@@ -439,7 +440,7 @@ class EmbeddedAgentModule {
         }
 
         @Override
-        public List<AgentRollup> readActiveAgentRollups(long from, long to) {
+        public List<AgentRollup> readActiveAgentRollups(long from, long to, CassandraProfile profile) {
             return ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder()
                     .id("")
                     .display("")

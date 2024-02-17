@@ -69,6 +69,7 @@ import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.StorageConfig;
 import org.glowroot.common2.config.UserConfig;
 import org.glowroot.common2.config.WebConfig;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigValidation;
 import org.glowroot.common2.repo.util.LazySecretKey;
@@ -473,7 +474,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateGeneralConfig(String agentId, GeneralConfig config, String priorVersion)
+    public void updateGeneralConfig(String agentId, GeneralConfig config, String priorVersion, CassandraProfile profile)
             throws Exception {
         agentConfigDao.updateCentralOnly(agentId, new AgentConfigUpdater() {
             @Override
@@ -486,13 +487,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .setGeneralConfig(config)
                         .build();
             }
-        });
+        }, profile);
         // no need to call notifyAgentConfigListeners since updating "central only" data
     }
 
     @Override
     public void updateTransactionConfig(String agentId, TransactionConfig config,
-            String priorVersion) throws Exception {
+            String priorVersion, CassandraProfile profile) throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
@@ -504,12 +505,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .setTransactionConfig(config)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentId);
     }
 
     @Override
-    public void insertGaugeConfig(String agentId, GaugeConfig config) throws Exception {
+    public void insertGaugeConfig(String agentId, GaugeConfig config, CassandraProfile profile) throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
@@ -524,12 +525,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .addGaugeConfig(config)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentId);
     }
 
     @Override
-    public void updateGaugeConfig(String agentId, GaugeConfig config, String priorVersion)
+    public void updateGaugeConfig(String agentId, GaugeConfig config, String priorVersion, CassandraProfile profile)
             throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
@@ -559,12 +560,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .addAllGaugeConfig(existingConfigs)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentId);
     }
 
     @Override
-    public void deleteGaugeConfig(String agentId, String version) throws Exception {
+    public void deleteGaugeConfig(String agentId, String version, CassandraProfile profile) throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
@@ -587,12 +588,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .addAllGaugeConfig(existingConfigs)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentId);
     }
 
     @Override
-    public void updateJvmConfig(String agentId, JvmConfig config, String priorVersion)
+    public void updateJvmConfig(String agentId, JvmConfig config, String priorVersion, CassandraProfile profile)
             throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
@@ -605,13 +606,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .setJvmConfig(config)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentId);
     }
 
     // central supports synthetic monitor configs on rollups
     @Override
-    public void insertSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config)
+    public void insertSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config, CassandraProfile profile)
             throws Exception {
         agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
@@ -629,14 +630,14 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .addSyntheticMonitorConfig(config)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentRollupId);
     }
 
     // central supports synthetic monitor configs on rollups
     @Override
     public void updateSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config,
-            String priorVersion) throws Exception {
+            String priorVersion, CassandraProfile profile) throws Exception {
         agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
@@ -665,13 +666,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .addAllSyntheticMonitorConfig(existingConfigs)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentRollupId);
     }
 
     // central supports synthetic monitor configs on rollups
     @Override
-    public void deleteSyntheticMonitorConfig(String agentRollupId, String syntheticMonitorId)
+    public void deleteSyntheticMonitorConfig(String agentRollupId, String syntheticMonitorId, CassandraProfile profile)
             throws Exception {
         agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
@@ -700,13 +701,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .addAllSyntheticMonitorConfig(existingConfigs)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentRollupId);
     }
 
     // central supports alert configs on rollups
     @Override
-    public void insertAlertConfig(String agentRollupId, AlertConfig config) throws Exception {
+    public void insertAlertConfig(String agentRollupId, AlertConfig config, CassandraProfile profile) throws Exception {
         agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
@@ -720,13 +721,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .addAlertConfig(config)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentRollupId);
     }
 
     // central supports alert configs on rollups
     @Override
-    public void updateAlertConfig(String agentRollupId, AlertConfig config, String priorVersion)
+    public void updateAlertConfig(String agentRollupId, AlertConfig config, String priorVersion, CassandraProfile profile)
             throws Exception {
         agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
@@ -753,13 +754,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .addAllAlertConfig(existingConfigs)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentRollupId);
     }
 
     // central supports alert configs on rollups
     @Override
-    public void deleteAlertConfig(String agentRollupId, String version) throws Exception {
+    public void deleteAlertConfig(String agentRollupId, String version, CassandraProfile profile) throws Exception {
         agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
@@ -782,14 +783,14 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .addAllAlertConfig(existingConfigs)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentRollupId);
     }
 
     // central supports ui config on rollups
     @Override
     public void updateUiDefaultsConfig(String agentRollupId, UiDefaultsConfig config,
-            String priorVersion) throws Exception {
+            String priorVersion, CassandraProfile profile) throws Exception {
         agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
@@ -801,12 +802,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .setUiDefaultsConfig(config)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentRollupId);
     }
 
     @Override
-    public void updatePluginConfig(String agentId, PluginConfig config, String priorVersion)
+    public void updatePluginConfig(String agentId, PluginConfig config, String priorVersion, CassandraProfile profile)
             throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
@@ -818,12 +819,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .addAllPluginConfig(pluginConfigs)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentId);
     }
 
     @Override
-    public void insertInstrumentationConfig(String agentId, InstrumentationConfig config)
+    public void insertInstrumentationConfig(String agentId, InstrumentationConfig config, CassandraProfile profile)
             throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
@@ -835,13 +836,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .addInstrumentationConfig(config)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentId);
     }
 
     @Override
     public void updateInstrumentationConfig(String agentId, InstrumentationConfig config,
-            String priorVersion) throws Exception {
+            String priorVersion, CassandraProfile profile) throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
@@ -868,12 +869,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .addAllInstrumentationConfig(existingConfigs)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentId);
     }
 
     @Override
-    public void deleteInstrumentationConfigs(String agentId, List<String> versions)
+    public void deleteInstrumentationConfigs(String agentId, List<String> versions, CassandraProfile profile)
             throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
@@ -897,13 +898,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .addAllInstrumentationConfig(existingConfigs)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentId);
     }
 
     // ignores any instrumentation configs that are duplicates of existing instrumentation configs
     @Override
-    public void insertInstrumentationConfigs(String agentId, List<InstrumentationConfig> configs)
+    public void insertInstrumentationConfigs(String agentId, List<InstrumentationConfig> configs, CassandraProfile profile)
             throws Exception {
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
@@ -920,13 +921,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .addAllInstrumentationConfig(existingConfigs)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentId);
     }
 
     @Override
     public void updateAdvancedConfig(String agentRollupId, AdvancedConfig config,
-            String priorVersion) throws Exception {
+            String priorVersion, CassandraProfile profile) throws Exception {
         agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public AgentConfig updateAgentConfig(AgentConfig agentConfig)
@@ -939,12 +940,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                         .setAdvancedConfig(config)
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentRollupId);
     }
 
     @Override
-    public void updateAllConfig(String agentId, AgentConfig config, @Nullable String priorVersion)
+    public void updateAllConfig(String agentId, AgentConfig config, @Nullable String priorVersion, CassandraProfile profile)
             throws Exception {
         ConfigValidation.validatePartOne(config);
         agentConfigDao.update(agentId, new AgentConfigUpdater() {
@@ -967,24 +968,24 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                                 buildPluginConfigs(config.getPluginConfigList(), agentConfig))
                         .build();
             }
-        });
+        }, profile);
         notifyAgentConfigListeners(agentId);
     }
 
     @Override
     public void updateEmbeddedAdminGeneralConfig(EmbeddedAdminGeneralConfig config,
-            String priorVersion) {
+            String priorVersion, CassandraProfile profile) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateCentralAdminGeneralConfig(CentralAdminGeneralConfig config,
-            String priorVersion) throws Exception {
+            String priorVersion, CassandraProfile profile) throws Exception {
         centralConfigDao.write(GENERAL_KEY, config, priorVersion);
     }
 
     @Override
-    public void insertUserConfig(UserConfig config) throws Exception {
+    public void insertUserConfig(UserConfig config, CassandraProfile profile) throws Exception {
         // check for case-insensitive duplicate
         String username = config.username();
         for (UserConfig loopConfig : userDao.read()) {
@@ -992,11 +993,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 throw new DuplicateUsernameException();
             }
         }
-        userDao.insertIfNotExists(config);
+        userDao.insertIfNotExists(config, profile);
     }
 
     @Override
-    public void updateUserConfig(UserConfig config, String priorVersion) throws Exception {
+    public void updateUserConfig(UserConfig config, String priorVersion, CassandraProfile profile) throws Exception {
         UserConfig existingConfig = userDao.read(config.username());
         if (existingConfig == null) {
             throw new UserNotFoundException();
@@ -1004,11 +1005,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         if (!existingConfig.version().equals(priorVersion)) {
             throw new OptimisticLockException();
         }
-        userDao.insert(config);
+        userDao.insert(config, profile);
     }
 
     @Override
-    public void deleteUserConfig(String username) throws Exception {
+    public void deleteUserConfig(String username, CassandraProfile profile) throws Exception {
         boolean found = false;
         List<UserConfig> configs = userDao.read();
         for (UserConfig config : configs) {
@@ -1023,11 +1024,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         if (getSmtpConfig().host().isEmpty() && configs.size() == 1) {
             throw new CannotDeleteLastUserException();
         }
-        userDao.delete(username);
+        userDao.delete(username, profile);
     }
 
     @Override
-    public void insertRoleConfig(RoleConfig config) throws Exception {
+    public void insertRoleConfig(RoleConfig config, CassandraProfile profile) throws Exception {
         // check for case-insensitive duplicate
         String name = config.name();
         for (RoleConfig loopConfig : roleDao.read()) {
@@ -1035,11 +1036,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 throw new DuplicateRoleNameException();
             }
         }
-        roleDao.insertIfNotExists(config);
+        roleDao.insertIfNotExists(config, profile);
     }
 
     @Override
-    public void updateRoleConfig(RoleConfig config, String priorVersion) throws Exception {
+    public void updateRoleConfig(RoleConfig config, String priorVersion, CassandraProfile profile) throws Exception {
         RoleConfig existingConfig = roleDao.read(config.name());
         if (existingConfig == null) {
             throw new RoleNotFoundException();
@@ -1047,11 +1048,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         if (!existingConfig.version().equals(priorVersion)) {
             throw new OptimisticLockException();
         }
-        roleDao.insert(config);
+        roleDao.insert(config, profile);
     }
 
     @Override
-    public void deleteRoleConfig(String name) throws Exception {
+    public void deleteRoleConfig(String name, CassandraProfile profile) throws Exception {
         boolean found = false;
         List<RoleConfig> configs = roleDao.read();
         for (RoleConfig config : configs) {
@@ -1066,7 +1067,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         if (configs.size() == 1) {
             throw new CannotDeleteLastRoleException();
         }
-        roleDao.delete(name);
+        roleDao.delete(name, profile);
     }
 
     @Override
@@ -1206,10 +1207,10 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                 userConfig = ImmutableUserConfig.copyOf(userConfig)
                         .withPasswordHash(existingUserConfig.passwordHash());
             }
-            userDao.insert(userConfig);
+            userDao.insert(userConfig, CassandraProfile.web);
         }
         for (String remainingUsername : remainingUserConfigs.keySet()) {
-            userDao.delete(remainingUsername);
+            userDao.delete(remainingUsername, CassandraProfile.web);
         }
     }
 
@@ -1221,10 +1222,10 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         }
         for (RoleConfig roleConfig : roleConfigs) {
             remainingRoleConfigs.remove(roleConfig.name());
-            roleDao.insert(roleConfig);
+            roleDao.insert(roleConfig, CassandraProfile.web);
         }
         for (String remainingRolename : remainingRoleConfigs.keySet()) {
-            roleDao.delete(remainingRolename);
+            roleDao.delete(remainingRolename, CassandraProfile.web);
         }
     }
 

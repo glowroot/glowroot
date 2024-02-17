@@ -45,6 +45,7 @@ import org.glowroot.common.model.TransactionNameSummaryCollector.TransactionName
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.AggregateRepository;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.MutableAggregate;
@@ -88,7 +89,7 @@ class TransactionCommonService {
                     .to(revisedTo)
                     .rollupLevel(rollupLevel)
                     .build();
-            aggregateRepository.mergeOverallSummaryInto(agentRollupId, revisedQuery, collector);
+            aggregateRepository.mergeOverallSummaryInto(agentRollupId, revisedQuery, collector, CassandraProfile.web);
             long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > revisedTo) {
@@ -100,7 +101,7 @@ class TransactionCommonService {
 
     // query.from() is non-inclusive
     Result<TransactionNameSummary> readTransactionNameSummaries(String agentRollupId,
-            SummaryQuery query, SummarySortOrder sortOrder, int limit, boolean autoRefresh)
+                                                                SummaryQuery query, SummarySortOrder sortOrder, int limit, boolean autoRefresh, CassandraProfile profile)
             throws Exception {
         TransactionNameSummaryCollector collector = new TransactionNameSummaryCollector();
         long revisedFrom = query.from();
@@ -120,7 +121,7 @@ class TransactionCommonService {
                     .rollupLevel(rollupLevel)
                     .build();
             aggregateRepository.mergeTransactionNameSummariesInto(agentRollupId, revisedQuery,
-                    sortOrder, limit, collector);
+                    sortOrder, limit, collector, profile);
             long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > revisedTo) {
@@ -147,7 +148,7 @@ class TransactionCommonService {
                 .to(revisedTo)
                 .build();
         List<OverviewAggregate> aggregates =
-                aggregateRepository.readOverviewAggregates(agentRollupId, revisedQuery);
+                aggregateRepository.readOverviewAggregates(agentRollupId, revisedQuery, CassandraProfile.web);
         if (revisedQuery.rollupLevel() == 0) {
             if (liveResult != null) {
                 aggregates = Lists.newArrayList(aggregates);
@@ -167,7 +168,7 @@ class TransactionCommonService {
                                     .copyFrom(revisedQuery)
                                     .from(nonRolledUpFrom)
                                     .rollupLevel(0)
-                                    .build()));
+                                    .build(), CassandraProfile.web));
         }
         if (liveResult != null) {
             orderedNonRolledUpAggregates.addAll(liveResult.get());
@@ -204,7 +205,7 @@ class TransactionCommonService {
                 .to(revisedTo)
                 .build();
         List<PercentileAggregate> aggregates =
-                aggregateRepository.readPercentileAggregates(agentRollupId, revisedQuery);
+                aggregateRepository.readPercentileAggregates(agentRollupId, revisedQuery, CassandraProfile.web);
         if (revisedQuery.rollupLevel() == 0) {
             if (liveResult != null) {
                 aggregates = Lists.newArrayList(aggregates);
@@ -224,7 +225,7 @@ class TransactionCommonService {
                                     .copyFrom(revisedQuery)
                                     .from(nonRolledUpFrom)
                                     .rollupLevel(0)
-                                    .build()));
+                                    .build(), CassandraProfile.web));
         }
         if (liveResult != null) {
             orderedNonRolledUpAggregates.addAll(liveResult.get());
@@ -261,7 +262,7 @@ class TransactionCommonService {
                 .to(revisedTo)
                 .build();
         List<ThroughputAggregate> aggregates =
-                aggregateRepository.readThroughputAggregates(agentRollupId, revisedQuery);
+                aggregateRepository.readThroughputAggregates(agentRollupId, revisedQuery, CassandraProfile.web);
         if (revisedQuery.rollupLevel() == 0) {
             if (liveResult != null) {
                 aggregates = Lists.newArrayList(aggregates);
@@ -281,7 +282,7 @@ class TransactionCommonService {
                                     .copyFrom(revisedQuery)
                                     .from(nonRolledUpFrom)
                                     .rollupLevel(0)
-                                    .build()));
+                                    .build(), CassandraProfile.web));
         }
         if (liveResult != null) {
             orderedNonRolledUpAggregates.addAll(liveResult.get());
@@ -318,7 +319,7 @@ class TransactionCommonService {
                     .to(revisedTo)
                     .rollupLevel(rollupLevel)
                     .build();
-            aggregateRepository.mergeQueriesInto(agentRollupId, revisedQuery, queryCollector);
+            aggregateRepository.mergeQueriesInto(agentRollupId, revisedQuery, queryCollector, CassandraProfile.web);
             long lastRolledUpTime = queryCollector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > revisedTo) {
@@ -346,7 +347,7 @@ class TransactionCommonService {
                     .rollupLevel(rollupLevel)
                     .build();
             aggregateRepository.mergeServiceCallsInto(agentRollupId, revisedQuery,
-                    serviceCallCollector);
+                    serviceCallCollector, CassandraProfile.web);
             long lastRolledUpTime = serviceCallCollector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > revisedTo) {
@@ -360,7 +361,7 @@ class TransactionCommonService {
     ProfileCollector getMergedProfile(String agentRollupId, AggregateQuery query, boolean auxiliary,
             List<String> includes, List<String> excludes, double truncateBranchPercentage)
             throws Exception {
-        ProfileCollector profileCollector = getMergedProfile(agentRollupId, query, auxiliary);
+        ProfileCollector profileCollector = getMergedProfile(agentRollupId, query, auxiliary, CassandraProfile.web);
         MutableProfile profile = profileCollector.getProfile();
         if (!includes.isEmpty() || !excludes.isEmpty()) {
             profile.filter(includes, excludes);
@@ -370,11 +371,11 @@ class TransactionCommonService {
     }
 
     @Nullable
-    String readFullQueryText(String agentRollupId, String fullQueryTextSha1) throws Exception {
+    String readFullQueryText(String agentRollupId, String fullQueryTextSha1, CassandraProfile profile) throws Exception {
         // checking live data is not efficient since must perform many sha1 hashes
         // so check repository first
         String fullQueryText =
-                aggregateRepository.readFullQueryText(agentRollupId, fullQueryTextSha1);
+                aggregateRepository.readFullQueryText(agentRollupId, fullQueryTextSha1, profile);
         if (fullQueryText != null) {
             return fullQueryText;
         }
@@ -387,7 +388,7 @@ class TransactionCommonService {
                     .copyFrom(query)
                     .rollupLevel(rollupLevel)
                     .build();
-            if (aggregateRepository.hasMainThreadProfile(agentRollupId, revisedQuery)) {
+            if (aggregateRepository.hasMainThreadProfile(agentRollupId, revisedQuery, CassandraProfile.web)) {
                 return true;
             }
         }
@@ -400,7 +401,7 @@ class TransactionCommonService {
                     .copyFrom(query)
                     .rollupLevel(rollupLevel)
                     .build();
-            if (aggregateRepository.hasAuxThreadProfile(agentRollupId, revisedQuery)) {
+            if (aggregateRepository.hasAuxThreadProfile(agentRollupId, revisedQuery, CassandraProfile.web)) {
                 return true;
             }
         }
@@ -523,7 +524,7 @@ class TransactionCommonService {
     }
 
     private ProfileCollector getMergedProfile(String agentRollupId, AggregateQuery query,
-            boolean auxiliary) throws Exception {
+            boolean auxiliary, CassandraProfile profile) throws Exception {
         ProfileCollector profileCollector = new ProfileCollector();
         long revisedFrom = query.from();
         long revisedTo;
@@ -543,10 +544,10 @@ class TransactionCommonService {
                     .build();
             if (auxiliary) {
                 aggregateRepository.mergeAuxThreadProfilesInto(agentRollupId, revisedQuery,
-                        profileCollector);
+                        profileCollector, profile);
             } else {
                 aggregateRepository.mergeMainThreadProfilesInto(agentRollupId, revisedQuery,
-                        profileCollector);
+                        profileCollector, profile);
             }
             long lastRolledUpTime = profileCollector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);

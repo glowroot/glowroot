@@ -20,29 +20,17 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
-import org.glowroot.central.util.CassandraProfile;
+import org.glowroot.common2.repo.CassandraProfile;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
 
 class CqlSessionBuilders {
 
-    static final int MAX_CONCURRENT_QUERIES = 1024;
-
     static CqlSessionBuilder newCqlSessionBuilder() {
         return CqlSession.builder()
                 .addContactPoint(new InetSocketAddress("127.0.0.1", 9042))
                 .withLocalDatacenter("datacenter1")
-                .withConfigLoader(DriverConfigLoader.programmaticBuilder()
-                        // long read timeout is sometimes needed on slow travis ci machines
-                        .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofMillis(30_000))
-                        // let driver know that only idempotent queries are used so it will retry on timeout
-                        .withBoolean(DefaultDriverOption.REQUEST_DEFAULT_IDEMPOTENCE, true)
-                        .withBoolean(DefaultDriverOption.REQUEST_WARN_IF_SET_KEYSPACE, false)
-                        .startProfile(CassandraProfile.SLOW.name())
-                        .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(60))
-                        .withBoolean(DefaultDriverOption.REQUEST_WARN_IF_SET_KEYSPACE, false)
-                        .endProfile()
-                .build());
+                .withConfigLoader(DriverConfigLoader.fromClasspath("datastax-driver.conf"));
     }
 }

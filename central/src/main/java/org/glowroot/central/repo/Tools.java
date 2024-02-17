@@ -27,6 +27,7 @@ import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,8 +71,8 @@ public class Tools {
                 .username(username)
                 .passwordHash(PasswordHash.createHash(password))
                 .addRoles("Administrator")
-                .build());
-        repos.getUserDao().delete("anonymous");
+                .build(), CassandraProfile.slow);
+        repos.getUserDao().delete("anonymous", CassandraProfile.slow);
         return true;
     }
 
@@ -215,7 +216,7 @@ public class Tools {
     private Set<TtPartitionKey> getPartitionKeys(int rollupLevel, String thresholdComparator,
             Instant threshold) throws Exception {
         ResultSet results = session.read("select agent_rollup, transaction_type, capture_time"
-                + " from aggregate_tt_summary_rollup_" + rollupLevel);
+                + " from aggregate_tt_summary_rollup_" + rollupLevel, CassandraProfile.slow);
         Multimap<String, String> transactionTypes = HashMultimap.create();
         for (Row row : results) {
             int i = 0;
@@ -258,7 +259,7 @@ public class Tools {
                 .setString(i++, ttPartitionKey.agentRollupId())
                 .setString(i++, ttPartitionKey.transactionType())
                 .setInstant(i++, threshold);
-            ResultSet results = session.read(boundStatement);
+            ResultSet results = session.read(boundStatement, CassandraProfile.slow);
             Set<String> transactionNames = new HashSet<>();
             for (Row row : results) {
                 transactionNames.add(checkNotNull(row.getString(0)));
@@ -277,7 +278,7 @@ public class Tools {
     private Set<GaugeValuePartitionKey> getGaugeValuePartitionKeys(int rollupLevel,
             String thresholdComparator, Instant threshold) throws Exception {
         ResultSet results = session.read("select agent_rollup, gauge_name, capture_time from"
-                + " gauge_value_rollup_" + rollupLevel);
+                + " gauge_value_rollup_" + rollupLevel, CassandraProfile.slow);
         Multimap<String, String> gaugeNames = HashMultimap.create();
         for (Row row : results) {
             int i = 0;
@@ -321,7 +322,7 @@ public class Tools {
                 .setString(i++, partitionKey.agentRollupId())
                 .setString(i++, partitionKey.transactionType())
                 .setInstant(i++, threshold);
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, CassandraProfile.slow).toCompletableFuture());
             count++;
         }
         MoreFutures.waitForAll(futures);
@@ -343,7 +344,7 @@ public class Tools {
                 .setString(i++, partitionKey.transactionType())
                 .setString(i++, partitionKey.transactionName())
                 .setInstant(i++, threshold);
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, CassandraProfile.slow).toCompletableFuture());
             count++;
         }
         MoreFutures.waitForAll(futures);
@@ -364,7 +365,7 @@ public class Tools {
                 .setString(i++, partitionKey.agentRollupId())
                 .setString(i++, partitionKey.gaugeName())
                 .setInstant(i++, threshold);
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, CassandraProfile.slow).toCompletableFuture());
             count++;
         }
         MoreFutures.waitForAll(futures);

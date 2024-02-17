@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 
 import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.ImmutableList;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.RateLimiter;
@@ -72,7 +73,7 @@ class SyntheticMonitorIdDao {
             .setString(0, agentRollupId)
             .setInstant(1, Instant.ofEpochMilli(rolledUpFrom))
             .setInstant(2, Instant.ofEpochMilli(rolledUpTo));
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, CassandraProfile.web);
         Map<String, String> syntheticMonitorIds = new HashMap<>();
         for (Row row : results) {
             syntheticMonitorIds.put(checkNotNull(row.getString(0)), checkNotNull(row.getString(1)));
@@ -100,7 +101,7 @@ class SyntheticMonitorIdDao {
             .setString(i++, syntheticMonitorDisplay);
         int maxRollupTTL = configRepository.getCentralStorageConfig().getMaxRollupTTL();
         boundStatement = boundStatement.setInt(i++, Common.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
-        return ImmutableList.of(session.writeAsync(boundStatement).toCompletableFuture());
+        return ImmutableList.of(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
     }
 
     @Value.Immutable

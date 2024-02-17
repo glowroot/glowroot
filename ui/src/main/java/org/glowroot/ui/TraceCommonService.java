@@ -29,6 +29,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.io.CharStreams;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
@@ -89,7 +90,7 @@ class TraceCommonService {
     }
 
     @Nullable
-    String getEntriesJson(String agentId, String traceId, boolean checkLiveTraces)
+    String getEntriesJson(String agentId, String traceId, boolean checkLiveTraces, CassandraProfile profile)
             throws Exception {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
@@ -106,7 +107,7 @@ class TraceCommonService {
                 return toJson(entries);
             }
         }
-        return toJson(getStoredEntries(agentId, traceId, new RetryCountdown(checkLiveTraces)));
+        return toJson(getStoredEntries(agentId, traceId, new RetryCountdown(checkLiveTraces), profile));
     }
 
     @Nullable
@@ -127,7 +128,7 @@ class TraceCommonService {
                 return toJson(queries);
             }
         }
-        return toJson(getStoredQueries(agentId, traceId, new RetryCountdown(checkLiveTraces)));
+        return toJson(getStoredQueries(agentId, traceId, new RetryCountdown(checkLiveTraces), CassandraProfile.web));
     }
 
     @Nullable
@@ -185,7 +186,7 @@ class TraceCommonService {
     }
 
     @Nullable
-    TraceExport getExport(String agentId, String traceId, boolean checkLiveTraces)
+    TraceExport getExport(String agentId, String traceId, boolean checkLiveTraces, CassandraProfile profile)
             throws Exception {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
@@ -223,7 +224,7 @@ class TraceCommonService {
                 .fileName(getFileName(header.header()))
                 .headerJson(toJsonRepoHeader(agentId, header));
         EntriesAndQueries queriesAndEntries =
-                getStoredEntriesAndQueriesForExport(agentId, traceId, retryCountdown);
+                getStoredEntriesAndQueriesForExport(agentId, traceId, retryCountdown, profile);
         if (queriesAndEntries != null) {
             builder.entriesJson(entriesToJson(queriesAndEntries.entries()));
             builder.queriesJson(queriesToJson(queriesAndEntries.queries()));
@@ -251,35 +252,35 @@ class TraceCommonService {
     }
 
     private @Nullable Entries getStoredEntries(String agentId, String traceId,
-            RetryCountdown retryCountdown) throws Exception {
-        Entries entries = traceRepository.readEntries(agentId, traceId);
+            RetryCountdown retryCountdown, CassandraProfile profile) throws Exception {
+        Entries entries = traceRepository.readEntries(agentId, traceId, profile);
         while (entries == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             MILLISECONDS.sleep(500);
-            entries = traceRepository.readEntries(agentId, traceId);
+            entries = traceRepository.readEntries(agentId, traceId, profile);
         }
         return entries;
     }
 
     private @Nullable Queries getStoredQueries(String agentId, String traceId,
-            RetryCountdown retryCountdown) throws Exception {
-        Queries queries = traceRepository.readQueries(agentId, traceId);
+            RetryCountdown retryCountdown, CassandraProfile profile) throws Exception {
+        Queries queries = traceRepository.readQueries(agentId, traceId, profile);
         while (queries == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             MILLISECONDS.sleep(500);
-            queries = traceRepository.readQueries(agentId, traceId);
+            queries = traceRepository.readQueries(agentId, traceId, profile);
         }
         return queries;
     }
 
     private @Nullable EntriesAndQueries getStoredEntriesAndQueriesForExport(String agentId,
-            String traceId, RetryCountdown retryCountdown) throws Exception {
+            String traceId, RetryCountdown retryCountdown, CassandraProfile profile) throws Exception {
         EntriesAndQueries entries =
-                traceRepository.readEntriesAndQueriesForExport(agentId, traceId);
+                traceRepository.readEntriesAndQueriesForExport(agentId, traceId, profile);
         while (entries == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             MILLISECONDS.sleep(500);
-            entries = traceRepository.readEntriesAndQueriesForExport(agentId, traceId);
+            entries = traceRepository.readEntriesAndQueriesForExport(agentId, traceId, profile);
         }
         return entries;
     }

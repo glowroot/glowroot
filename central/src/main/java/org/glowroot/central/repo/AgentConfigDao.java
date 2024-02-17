@@ -29,7 +29,7 @@ import com.google.common.base.Optional;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glowroot.wire.api.model.AgentConfigOuterClass;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.Cache;
@@ -103,7 +103,7 @@ public class AgentConfigDao {
             // agent config
                 .setBoolean(i++, false)
                 .setToNull(i++);
-            session.write(boundStatement);
+            session.write(boundStatement, CassandraProfile.collector);
             agentConfigCache.invalidate(agentId);
         }
         String agentRollupId = AgentRollupIds.getParent(agentId);
@@ -130,29 +130,29 @@ public class AgentConfigDao {
                         .toByteArray()))
                     .setBoolean(i++, false)
                     .setToNull(i++);
-                session.write(boundStatement);
+                session.write(boundStatement, CassandraProfile.collector);
                 agentConfigCache.invalidate(loopAgentRollupId);
             }
         }
         return updatedAgentConfig;
     }
 
-    void update(String agentRollupId, AgentConfigUpdater agentConfigUpdater) throws Exception {
-        update(agentRollupId, agentConfigUpdater, false);
+    void update(String agentRollupId, AgentConfigUpdater agentConfigUpdater, CassandraProfile profile) throws Exception {
+        update(agentRollupId, agentConfigUpdater, false, profile);
     }
 
     // only call this method when updating AgentConfig data that resides only on central
-    void updateCentralOnly(String agentRollupId, AgentConfigUpdater agentConfigUpdater)
+    void updateCentralOnly(String agentRollupId, AgentConfigUpdater agentConfigUpdater, CassandraProfile profile)
             throws Exception {
-        update(agentRollupId, agentConfigUpdater, true);
+        update(agentRollupId, agentConfigUpdater, true, profile);
     }
 
-    void update(String agentRollupId, AgentConfigUpdater agentConfigUpdater, boolean centralOnly)
+    void update(String agentRollupId, AgentConfigUpdater agentConfigUpdater, boolean centralOnly, CassandraProfile profile)
             throws Exception {
         for (int j = 0; j < 10; j++) {
             BoundStatement boundStatement = readPS.bind()
                 .setString(0, agentRollupId);
-            ResultSet results = session.read(boundStatement);
+            ResultSet results = session.read(boundStatement, profile);
             Row row = results.one();
             if (row == null) {
                 throw new IllegalStateException("No config found: " + agentRollupId);
@@ -179,7 +179,7 @@ public class AgentConfigDao {
             boundStatement = boundStatement.setString(i++, agentRollupId)
                 .setByteBuffer(i++, ByteBuffer.wrap(currValue.toByteArray()));
             boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
-            AsyncResultSet asyncresults = session.update(boundStatement);
+            AsyncResultSet asyncresults = session.update(boundStatement, profile);
             row = checkNotNull(asyncresults.one());
             boolean applied = row.getBoolean("[applied]");
             if (applied) {
@@ -220,7 +220,7 @@ public class AgentConfigDao {
         if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
             boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
         }
-        session.update(boundStatement);
+        session.update(boundStatement, CassandraProfile.collector);
     }
 
     private static AgentConfig buildUpdatedAgentConfig(AgentConfig agentConfig,
@@ -292,7 +292,7 @@ public class AgentConfigDao {
         public Optional<AgentConfigAndUpdateToken> load(String agentRollupId) {
             BoundStatement boundStatement = readPS.bind()
                 .setString(0, agentRollupId);
-            ResultSet results = session.read(boundStatement);
+            ResultSet results = session.read(boundStatement, CassandraProfile.collector);
             Row row = results.one();
             if (row == null) {
                 // agent must have been manually deleted

@@ -47,7 +47,7 @@ public interface TraceRepository {
     ErrorMessageResult readErrorMessages(String agentRollupId, TraceQuery query,
             ErrorMessageFilter filter, long resolutionMillis, int limit) throws Exception;
 
-    long readErrorMessageCount(String agentRollupId, TraceQuery query, String errorMessageFilter)
+    long readErrorMessageCount(String agentRollupId, TraceQuery query, String errorMessageFilter, CassandraProfile profile)
             throws Exception;
 
     // null return value means trace not found
@@ -59,21 +59,21 @@ public interface TraceRepository {
     // SharedQueryTexts are returned with either fullTrace or
     // truncatedText/truncatedEndText/fullTraceSha1
     @Nullable
-    Entries readEntries(String agentId, String traceId) throws Exception;
+    Entries readEntries(String agentId, String traceId, CassandraProfile profile) throws Exception;
 
     // null return value means trace not found or was found but had no queries
     //
     // SharedQueryTexts are returned with either fullTrace or
     // truncatedText/truncatedEndText/fullTraceSha1
     @Nullable
-    Queries readQueries(String agentId, String traceId) throws Exception;
+    Queries readQueries(String agentId, String traceId, CassandraProfile profile) throws Exception;
 
     // null return value means trace not found or was found but had no entries
     //
     // since this is only used by export, SharedQueryTexts are always returned with fullTrace
     // (never with truncatedText/truncatedEndText/fullTraceSha1)
     @Nullable
-    EntriesAndQueries readEntriesAndQueriesForExport(String agentId, String traceId)
+    EntriesAndQueries readEntriesAndQueriesForExport(String agentId, String traceId, CassandraProfile profile)
             throws Exception;
 
     // null return value means trace not found or was found but had no main thread profile

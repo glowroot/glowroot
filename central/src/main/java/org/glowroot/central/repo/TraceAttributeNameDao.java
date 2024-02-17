@@ -24,6 +24,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.primitives.Ints;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.Cache;
@@ -86,7 +87,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
             .setString(i++, transactionType)
             .setString(i++, traceAttributeName)
             .setInt(i++, getTraceTTL());
-        return session.writeAsync(boundStatement).whenComplete(((asyncResultSet, throwable) -> {
+        return session.writeAsync(boundStatement, CassandraProfile.collector).whenComplete(((asyncResultSet, throwable) -> {
             if (throwable != null) {
                 rateLimiter.release(rateLimiterKey);
             } else {
@@ -118,7 +119,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         public Map<String, List<String>> load(String agentRollupId) {
             BoundStatement boundStatement = readPS.bind()
                 .setString(0, agentRollupId);
-            ResultSet results = session.read(boundStatement);
+            ResultSet results = session.read(boundStatement, CassandraProfile.collector);
             ListMultimap<String, String> traceAttributeNames = ArrayListMultimap.create();
             for (Row row : results) {
                 int i = 0;

@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 
 import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.ImmutableList;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.RateLimiter;
@@ -62,14 +63,14 @@ class GaugeNameDao {
                 + " capture_time >= ? and capture_time <= ?");
     }
 
-    Set<String> getGaugeNames(String agentRollupId, long from, long to) throws Exception {
+    Set<String> getGaugeNames(String agentRollupId, long from, long to, CassandraProfile profile) throws Exception {
         long rolledUpFrom = CaptureTimes.getRollup(from, DAYS.toMillis(1));
         long rolledUpTo = CaptureTimes.getRollup(to, DAYS.toMillis(1));
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentRollupId)
             .setInstant(1, Instant.ofEpochMilli(rolledUpFrom))
             .setInstant(2, Instant.ofEpochMilli(rolledUpTo));
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         Set<String> gaugeNames = new HashSet<>();
         for (Row row : results) {
             gaugeNames.add(checkNotNull(row.getString(0)));
@@ -91,7 +92,7 @@ class GaugeNameDao {
             .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
             .setString(i++, gaugeName)
             .setInt(i++, Common.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
-        return ImmutableList.of(session.writeAsync(boundStatement).toCompletableFuture());
+        return ImmutableList.of(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
     }
 
     @Value.Immutable

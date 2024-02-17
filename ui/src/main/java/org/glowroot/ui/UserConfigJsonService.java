@@ -25,6 +25,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,7 +90,7 @@ class UserConfigJsonService {
     String addUser(@BindRequest UserConfigDto userConfigDto) throws Exception {
         UserConfig userConfig = userConfigDto.convert(null);
         try {
-            configRepository.insertUserConfig(userConfig);
+            configRepository.insertUserConfig(userConfig, CassandraProfile.web);
         } catch (DuplicateUsernameException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
@@ -107,7 +108,7 @@ class UserConfigJsonService {
         UserConfig userConfig = userConfigDto.convert(existingUserConfig);
         String version = userConfigDto.version().get();
         try {
-            configRepository.updateUserConfig(userConfig, version);
+            configRepository.updateUserConfig(userConfig, version, CassandraProfile.web);
         } catch (DuplicateUsernameException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
@@ -119,7 +120,7 @@ class UserConfigJsonService {
     @POST(path = "/backend/admin/users/remove", permission = "admin:edit:user")
     String removeUser(@BindRequest UserConfigRequest request) throws Exception {
         try {
-            configRepository.deleteUserConfig(request.username().get());
+            configRepository.deleteUserConfig(request.username().get(), CassandraProfile.web);
         } catch (CannotDeleteLastUserException e) {
             logger.debug(e.getMessage(), e);
             return "{\"errorCannotDeleteLastUser\":true}";

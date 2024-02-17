@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Untainted;
+import org.glowroot.common2.repo.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,11 +61,6 @@ import org.glowroot.common.live.LiveTraceRepository.TraceKind;
 import org.glowroot.common.live.LiveTraceRepository.TracePoint;
 import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
 import org.glowroot.common.model.Result;
-import org.glowroot.common2.repo.ImmutableErrorMessageCount;
-import org.glowroot.common2.repo.ImmutableErrorMessagePoint;
-import org.glowroot.common2.repo.ImmutableErrorMessageResult;
-import org.glowroot.common2.repo.ImmutableHeaderPlus;
-import org.glowroot.common2.repo.TraceRepository;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
@@ -257,7 +253,7 @@ public class TraceDao implements TraceRepository {
 
     @Override
     public long readErrorMessageCount(String agentRollupId, TraceQuery query,
-            String errorMessageFilter) throws Exception {
+            String errorMessageFilter, CassandraProfile profile) throws Exception {
         if (errorMessageFilter.startsWith("/") && errorMessageFilter.endsWith("/")) {
             Pattern errorMessagePattern = Pattern
                     .compile(errorMessageFilter.substring(1, errorMessageFilter.length() - 1));
@@ -273,12 +269,12 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public @Nullable Entries readEntries(String agentId, String traceId) throws Exception {
+    public @Nullable Entries readEntries(String agentId, String traceId, CassandraProfile profile) throws Exception {
         return dataSource.query(new EntriesQuery(traceId));
     }
 
     @Override
-    public @Nullable Queries readQueries(String agentId, String traceId) throws Exception {
+    public @Nullable Queries readQueries(String agentId, String traceId, CassandraProfile profile) throws Exception {
         return dataSource.query(new QueriesQuery(traceId));
     }
 
@@ -286,7 +282,7 @@ public class TraceDao implements TraceRepository {
     // (never with truncatedText/truncatedEndText/fullTraceSha1)
     @Override
     public @Nullable EntriesAndQueries readEntriesAndQueriesForExport(String agentId,
-            String traceId) throws Exception {
+            String traceId, CassandraProfile profile) throws Exception {
         EntriesAndQueries entriesAndQueries = dataSource.query(new EntriesAndQueriesQuery(traceId));
         if (entriesAndQueries == null) {
             return null;

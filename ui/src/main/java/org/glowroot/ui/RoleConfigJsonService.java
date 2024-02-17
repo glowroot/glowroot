@@ -27,6 +27,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +94,7 @@ class RoleConfigJsonService {
     String addRole(@BindRequest RoleConfigDto roleConfigDto) throws Exception {
         RoleConfig roleConfig = roleConfigDto.convert(central);
         try {
-            configRepository.insertRoleConfig(roleConfig);
+            configRepository.insertRoleConfig(roleConfig, CassandraProfile.web);
         } catch (DuplicateRoleNameException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
@@ -107,7 +108,7 @@ class RoleConfigJsonService {
         RoleConfig roleConfig = roleConfigDto.convert(central);
         String version = roleConfigDto.version().get();
         try {
-            configRepository.updateRoleConfig(roleConfig, version);
+            configRepository.updateRoleConfig(roleConfig, version, CassandraProfile.web);
         } catch (DuplicateRoleNameException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
@@ -119,7 +120,7 @@ class RoleConfigJsonService {
     @POST(path = "/backend/admin/roles/remove", permission = "admin:edit:role")
     String removeRole(@BindRequest RoleConfigRequest request) throws Exception {
         try {
-            configRepository.deleteRoleConfig(request.name().get());
+            configRepository.deleteRoleConfig(request.name().get(), CassandraProfile.web);
         } catch (CannotDeleteLastRoleException e) {
             logger.debug(e.getMessage(), e);
             return "{\"errorCannotDeleteLastRole\":true}";
@@ -142,7 +143,7 @@ class RoleConfigJsonService {
 
     private List<FlattenedAgentRollup> getFlattenedAgentRollups() throws Exception {
         List<AgentRollup> agentRollups =
-                activeAgentRepository.readRecentlyActiveAgentRollups(DAYS.toMillis(7));
+                activeAgentRepository.readRecentlyActiveAgentRollups(DAYS.toMillis(7), CassandraProfile.web);
         List<FlattenedAgentRollup> flattenedAgentRollups = Lists.newArrayList();
         for (AgentRollup agentRollup : agentRollups) {
             flattenedAgentRollups.addAll(getFlattenedAgentRollups(agentRollup, 0));

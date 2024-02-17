@@ -29,6 +29,7 @@ import org.glowroot.agent.embedded.util.DataSource.JdbcUpdate;
 import org.glowroot.agent.embedded.util.ImmutableColumn;
 import org.glowroot.agent.embedded.util.Schemas.Column;
 import org.glowroot.agent.embedded.util.Schemas.ColumnType;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.EnvironmentRepository;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 
@@ -58,7 +59,7 @@ public class EnvironmentDao implements EnvironmentRepository {
     }
 
     @Override
-    public @Nullable Environment read(String agentId) throws Exception {
+    public @Nullable Environment read(String agentId, CassandraProfile profile) throws Exception {
         return dataSource.queryAtMostOne(new EnvironmentRowMapper());
     }
 

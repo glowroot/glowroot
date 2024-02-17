@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.central.repo.AgentRollupIds;
@@ -86,119 +87,119 @@ public class AggregateDaoWithV09Support implements AggregateDao {
     // query.from() is non-inclusive
     @Override
     public void mergeOverallSummaryInto(String agentRollupId, SummaryQuery query,
-            OverallSummaryCollector collector) throws Exception {
+            OverallSummaryCollector collector, CassandraProfile profile) throws Exception {
         splitMergeIfNeeded(agentRollupId, query,
-                (id, q) -> delegate.mergeOverallSummaryInto(id, q, collector));
+                (id, q) -> delegate.mergeOverallSummaryInto(id, q, collector, profile));
     }
 
     // query.from() is non-inclusive
     @Override
     public void mergeTransactionNameSummariesInto(String agentRollupId, SummaryQuery query,
-            SummarySortOrder sortOrder, int limit, TransactionNameSummaryCollector collector)
+                                                  SummarySortOrder sortOrder, int limit, TransactionNameSummaryCollector collector, CassandraProfile profile)
             throws Exception {
         splitMergeIfNeeded(agentRollupId, query, (id, q) -> delegate
-                .mergeTransactionNameSummariesInto(id, q, sortOrder, limit, collector));
+                .mergeTransactionNameSummariesInto(id, q, sortOrder, limit, collector, profile));
     }
 
     // query.from() is non-inclusive
     @Override
     public void mergeOverallErrorSummaryInto(String agentRollupId, SummaryQuery query,
-            OverallErrorSummaryCollector collector) throws Exception {
+            OverallErrorSummaryCollector collector, CassandraProfile profile) throws Exception {
         splitMergeIfNeeded(agentRollupId, query,
-                (id, q) -> delegate.mergeOverallErrorSummaryInto(id, q, collector));
+                (id, q) -> delegate.mergeOverallErrorSummaryInto(id, q, collector, profile));
     }
 
     // query.from() is non-inclusive
     @Override
     public void mergeTransactionNameErrorSummariesInto(String agentRollupId, SummaryQuery query,
             ErrorSummarySortOrder sortOrder, int limit,
-            TransactionNameErrorSummaryCollector collector) throws Exception {
+            TransactionNameErrorSummaryCollector collector, CassandraProfile profile) throws Exception {
         splitMergeIfNeeded(agentRollupId, query, (id, q) -> delegate
-                .mergeTransactionNameErrorSummariesInto(id, q, sortOrder, limit, collector));
+                .mergeTransactionNameErrorSummariesInto(id, q, sortOrder, limit, collector, profile));
     }
 
     // query.from() is INCLUSIVE
     @Override
     public List<OverviewAggregate> readOverviewAggregates(String agentRollupId,
-            AggregateQuery query) throws Exception {
+            AggregateQuery query, CassandraProfile profile) throws Exception {
         return splitListIfNeeded(agentRollupId, query,
-                (id, q) -> delegate.readOverviewAggregates(id, q));
+                (id, q) -> delegate.readOverviewAggregates(id, q, profile));
     }
 
     // query.from() is INCLUSIVE
     @Override
     public List<PercentileAggregate> readPercentileAggregates(String agentRollupId,
-            AggregateQuery query) throws Exception {
+            AggregateQuery query, CassandraProfile profile) throws Exception {
         return splitListIfNeeded(agentRollupId, query,
-                (id, q) -> delegate.readPercentileAggregates(id, q));
+                (id, q) -> delegate.readPercentileAggregates(id, q, profile));
     }
 
     // query.from() is INCLUSIVE
     @Override
     public List<ThroughputAggregate> readThroughputAggregates(String agentRollupId,
-            AggregateQuery query) throws Exception {
+            AggregateQuery query, CassandraProfile profile) throws Exception {
         return splitListIfNeeded(agentRollupId, query,
-                (id, q) -> delegate.readThroughputAggregates(id, q));
+                (id, q) -> delegate.readThroughputAggregates(id, q, profile));
     }
 
     // query.from() is non-inclusive
     @Override
     public void mergeQueriesInto(String agentRollupId, AggregateQuery query,
-            QueryCollector collector) throws Exception {
+            QueryCollector collector, CassandraProfile profile) throws Exception {
         splitMergeIfNeeded(agentRollupId, query,
-                (id, q) -> delegate.mergeQueriesInto(id, q, collector));
+                (id, q) -> delegate.mergeQueriesInto(id, q, collector, profile));
     }
 
     // query.from() is non-inclusive
     @Override
     public void mergeServiceCallsInto(String agentRollupId, AggregateQuery query,
-            ServiceCallCollector collector) throws Exception {
+            ServiceCallCollector collector, CassandraProfile profile) throws Exception {
         splitMergeIfNeeded(agentRollupId, query,
-                (id, q) -> delegate.mergeServiceCallsInto(id, q, collector));
+                (id, q) -> delegate.mergeServiceCallsInto(id, q, collector, profile));
     }
 
     // query.from() is non-inclusive
     @Override
     public void mergeMainThreadProfilesInto(String agentRollupId, AggregateQuery query,
-            ProfileCollector collector) throws Exception {
+            ProfileCollector collector, CassandraProfile profile) throws Exception {
         splitMergeIfNeeded(agentRollupId, query,
-                (id, q) -> delegate.mergeMainThreadProfilesInto(id, q, collector));
+                (id, q) -> delegate.mergeMainThreadProfilesInto(id, q, collector, profile));
     }
 
     // query.from() is non-inclusive
     @Override
     public void mergeAuxThreadProfilesInto(String agentRollupId, AggregateQuery query,
-            ProfileCollector collector) throws Exception {
+            ProfileCollector collector, CassandraProfile profile) throws Exception {
         splitMergeIfNeeded(agentRollupId, query,
-                (id, q) -> delegate.mergeAuxThreadProfilesInto(id, q, collector));
+                (id, q) -> delegate.mergeAuxThreadProfilesInto(id, q, collector, profile));
     }
 
     @Override
-    public @Nullable String readFullQueryText(String agentRollupId, String fullQueryTextSha1)
+    public @Nullable String readFullQueryText(String agentRollupId, String fullQueryTextSha1, CassandraProfile profile)
             throws Exception {
-        String value = delegate.readFullQueryText(agentRollupId, fullQueryTextSha1);
+        String value = delegate.readFullQueryText(agentRollupId, fullQueryTextSha1, profile);
         if (value == null && clock.currentTimeMillis() < v09FqtLastExpirationTime
                 && agentRollupIdsWithV09Data.contains(agentRollupId)) {
             value = delegate.readFullQueryText(V09Support.convertToV09(agentRollupId),
-                    fullQueryTextSha1);
+                    fullQueryTextSha1, profile);
         }
         return value;
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean hasMainThreadProfile(String agentRollupId, AggregateQuery query)
+    public boolean hasMainThreadProfile(String agentRollupId, AggregateQuery query, CassandraProfile profile)
             throws Exception {
         return splitCheckIfNeeded(agentRollupId, query,
-                (id, q) -> delegate.hasMainThreadProfile(id, q));
+                (id, q) -> delegate.hasMainThreadProfile(id, q, profile));
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean hasAuxThreadProfile(String agentRollupId, AggregateQuery query)
+    public boolean hasAuxThreadProfile(String agentRollupId, AggregateQuery query, CassandraProfile profile)
             throws Exception {
         return splitCheckIfNeeded(agentRollupId, query,
-                (id, q) -> delegate.hasAuxThreadProfile(id, q));
+                (id, q) -> delegate.hasAuxThreadProfile(id, q, profile));
     }
 
     // query.from() is non-inclusive

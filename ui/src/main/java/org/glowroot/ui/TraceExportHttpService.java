@@ -25,6 +25,7 @@ import com.google.common.collect.Lists;
 import com.google.common.io.CharSource;
 import com.google.common.io.Resources;
 import com.google.common.net.MediaType;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +75,7 @@ class TraceExportHttpService implements HttpService {
                 && Boolean.parseBoolean(checkLiveTracesParams.get(0));
         logger.debug("handleRequest(): agentId={}, traceId={}, checkLiveTraces={}", agentId,
                 traceId, checkLiveTraces);
-        TraceExport traceExport = traceCommonService.getExport(agentId, traceId, checkLiveTraces);
+        TraceExport traceExport = traceCommonService.getExport(agentId, traceId, checkLiveTraces, CassandraProfile.web);
         if (traceExport == null) {
             logger.warn("no trace found for id: {}", traceId);
             return new CommonResponse(NOT_FOUND);

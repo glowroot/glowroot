@@ -19,6 +19,7 @@ import java.io.File;
 import java.sql.SQLException;
 import java.util.List;
 
+import org.glowroot.common2.repo.CassandraProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +81,7 @@ class EmbeddedCollector implements Collector {
     @Override
     public void collectAggregates(AggregateReader aggregateReader) throws Exception {
         aggregateDao.store(aggregateReader);
-        alertingService.checkForDeletedAlerts(AGENT_ID);
+        alertingService.checkForDeletedAlerts(AGENT_ID, CassandraProfile.web);
         if (!isCurrentlyDisabled()) {
             for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID)) {
                 AlertCondition alertCondition = alertConfig.getCondition();
@@ -90,7 +91,7 @@ class EmbeddedCollector implements Collector {
                                 configRepository.getEmbeddedAdminGeneralConfig()
                                         .agentDisplayNameOrDefault(),
                                 alertConfig, alertCondition.getMetricCondition(),
-                                aggregateReader.captureTime());
+                                aggregateReader.captureTime(), CassandraProfile.collector);
                     } catch (InterruptedException e) {
                         // probably shutdown requested
                         throw e;
@@ -118,7 +119,7 @@ class EmbeddedCollector implements Collector {
         for (GaugeValue gaugeValue : gaugeValues) {
             maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
         }
-        alertingService.checkForDeletedAlerts(AGENT_ID);
+        alertingService.checkForDeletedAlerts(AGENT_ID, CassandraProfile.web);
         if (!isCurrentlyDisabled()) {
             for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID)) {
                 AlertCondition alertCondition = alertConfig.getCondition();
@@ -127,7 +128,7 @@ class EmbeddedCollector implements Collector {
                         alertingService.checkMetricAlert("", AGENT_ID,
                                 configRepository.getEmbeddedAdminGeneralConfig()
                                         .agentDisplayNameOrDefault(),
-                                alertConfig, alertCondition.getMetricCondition(), maxCaptureTime);
+                                alertConfig, alertCondition.getMetricCondition(), maxCaptureTime, CassandraProfile.collector);
                     } catch (InterruptedException e) {
                         // probably shutdown requested
                         throw e;
@@ -150,7 +151,7 @@ class EmbeddedCollector implements Collector {
     }
 
     private boolean isCurrentlyDisabled() throws Exception {
-        Long disabledUntilTime = alertingDisabledDao.getAlertingDisabledUntilTime(AGENT_ID);
+        Long disabledUntilTime = alertingDisabledDao.getAlertingDisabledUntilTime(AGENT_ID, CassandraProfile.web);
         return disabledUntilTime != null && disabledUntilTime > clock.currentTimeMillis();
     }
 

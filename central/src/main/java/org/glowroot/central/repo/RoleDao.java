@@ -31,6 +31,7 @@ import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.common2.config.ImmutableRoleConfig;
 import org.glowroot.common2.config.RoleConfig;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository.DuplicateRoleNameException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -78,7 +79,7 @@ class RoleDao {
                     ImmutableSet.of("agent:*:transaction", "agent:*:error", "agent:*:jvm",
                             "agent:*:syntheticMonitor", "agent:*:incident", "agent:*:config",
                             "admin"), String.class);
-            session.write(boundStatement);
+            session.write(boundStatement, CassandraProfile.slow);
         }
 
         roleConfigCache = clusterManager.createSelfBoundedCache("roleConfigCache",
@@ -96,31 +97,31 @@ class RoleDao {
         return roleConfigCache.get(name).orNull();
     }
 
-    void delete(String name) throws Exception {
+    void delete(String name, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = deletePS.bind()
             .setString(0, name);
-        session.write(boundStatement);
+        session.write(boundStatement, profile);
         roleConfigCache.invalidate(name);
         allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
     }
 
-    void insert(RoleConfig roleConfig) throws Exception {
+    void insert(RoleConfig roleConfig, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         boundStatement = bindInsert(boundStatement, roleConfig);
-        session.write(boundStatement);
+        session.write(boundStatement, profile);
         roleConfigCache.invalidate(roleConfig.name());
         allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
 
     }
 
-    void insertIfNotExists(RoleConfig roleConfig) throws Exception {
+    void insertIfNotExists(RoleConfig roleConfig, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = insertIfNotExistsPS.bind();
         boundStatement = bindInsert(boundStatement, roleConfig);
         // consistency level must be at least LOCAL_SERIAL
         if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
             boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
         }
-        AsyncResultSet results = session.update(boundStatement);
+        AsyncResultSet results = session.update(boundStatement, profile);
         Row row = checkNotNull(results.one());
         boolean applied = row.getBoolean("[applied]");
         if (applied) {
@@ -152,7 +153,7 @@ class RoleDao {
         public Optional<RoleConfig> load(String name) {
             BoundStatement boundStatement = readOnePS.bind()
                 .setString(0, name);
-            ResultSet results = session.read(boundStatement);
+            ResultSet results = session.read(boundStatement, CassandraProfile.collector);
             Row row = results.one();
             if (row == null) {
                 return Optional.absent();
@@ -167,7 +168,7 @@ class RoleDao {
     private class AllRolesCacheLoader implements CacheLoader<String, List<RoleConfig>> {
         @Override
         public List<RoleConfig> load(String dummy) {
-            ResultSet results = session.read(readPS.bind());
+            ResultSet results = session.read(readPS.bind(), CassandraProfile.collector);
             List<RoleConfig> role = new ArrayList<>();
             for (Row row : results) {
                 role.add(buildRole(row));

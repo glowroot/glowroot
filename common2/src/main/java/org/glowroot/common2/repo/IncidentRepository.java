@@ -27,18 +27,18 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 public interface IncidentRepository {
 
     void insertOpenIncident(String agentRollupId, AlertCondition condition, AlertSeverity severity,
-            AlertNotification notification, long openTime) throws Exception;
+            AlertNotification notification, long openTime, CassandraProfile profile) throws Exception;
 
     @Nullable
     OpenIncident readOpenIncident(String agentRollupId, AlertCondition condition,
-            AlertSeverity severity) throws Exception;
+            AlertSeverity severity, CassandraProfile profile) throws Exception;
 
-    List<OpenIncident> readOpenIncidents(String agentRollupId) throws Exception;
+    List<OpenIncident> readOpenIncidents(String agentRollupId, CassandraProfile profile) throws Exception;
 
     // this is used by UI
-    List<OpenIncident> readAllOpenIncidents() throws Exception;
+    List<OpenIncident> readAllOpenIncidents(CassandraProfile profile) throws Exception;
 
-    void resolveIncident(OpenIncident openIncident, long resolveTime) throws Exception;
+    void resolveIncident(OpenIncident openIncident, long resolveTime, CassandraProfile profile) throws Exception;
 
     List<ResolvedIncident> readResolvedIncidents(long from) throws Exception;
 

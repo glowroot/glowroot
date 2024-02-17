@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import com.google.common.base.Stopwatch;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,9 +75,9 @@ class CentralAlertingService {
         }
     }
 
-    void checkForDeletedAlerts(String agentRollupId) throws InterruptedException {
+    void checkForDeletedAlerts(String agentRollupId, CassandraProfile profile) throws InterruptedException {
         try {
-            alertingService.checkForDeletedAlerts(agentRollupId);
+            alertingService.checkForDeletedAlerts(agentRollupId, profile);
         } catch (InterruptedException e) {
             // probably shutdown requested
             throw e;
@@ -85,9 +86,9 @@ class CentralAlertingService {
         }
     }
 
-    void checkForAllDeletedAlerts() throws InterruptedException {
+    void checkForAllDeletedAlerts(CassandraProfile profile) throws InterruptedException {
         try {
-            alertingService.checkForAllDeletedAlerts();
+            alertingService.checkForAllDeletedAlerts(profile);
         } catch (InterruptedException e) {
             // probably shutdown requested
             throw e;
@@ -96,11 +97,11 @@ class CentralAlertingService {
         }
     }
 
-    void checkAggregateAlertsAsync(String agentId, String agentDisplay, long endTime)
+    void checkAggregateAlertsAsync(String agentId, String agentDisplay, long endTime, CassandraProfile profile)
             throws InterruptedException {
         List<AlertConfig> alertConfigs;
         try {
-            if (isCurrentlyDisabled(agentId)) {
+            if (isCurrentlyDisabled(agentId, profile)) {
                 return;
             }
             alertConfigs = configRepository.getAlertConfigs(agentId);
@@ -122,15 +123,15 @@ class CentralAlertingService {
             }
         }
         if (!aggregateAlertConfigs.isEmpty()) {
-            checkAlertsAsync(agentId, agentDisplay, endTime, aggregateAlertConfigs);
+            checkAlertsAsync(agentId, agentDisplay, endTime, aggregateAlertConfigs, profile);
         }
     }
 
-    void checkGaugeAndHeartbeatAlertsAsync(String agentId, String agentDisplay, long endTime)
+    void checkGaugeAndHeartbeatAlertsAsync(String agentId, String agentDisplay, long endTime, CassandraProfile profile)
             throws InterruptedException {
         List<AlertConfig> alertConfigs;
         try {
-            if (isCurrentlyDisabled(agentId)) {
+            if (isCurrentlyDisabled(agentId, profile)) {
                 return;
             }
             alertConfigs = configRepository.getAlertConfigs(agentId);
@@ -154,7 +155,7 @@ class CentralAlertingService {
             }
         }
         if (!gaugeAndHeartbeatAlertConfigs.isEmpty()) {
-            checkAlertsAsync(agentId, agentDisplay, endTime, gaugeAndHeartbeatAlertConfigs);
+            checkAlertsAsync(agentId, agentDisplay, endTime, gaugeAndHeartbeatAlertConfigs, profile);
         }
     }
 
@@ -162,10 +163,10 @@ class CentralAlertingService {
             traceHeadline = "Check alerts: {{0}}", timer = "check alerts",
             alreadyInTransactionBehavior = AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION)
     void checkAggregateAndGaugeAndHeartbeatAlertsAsync(String agentRollupId,
-            String agentRollupDisplay, long endTime) throws InterruptedException {
+            String agentRollupDisplay, long endTime, CassandraProfile profile) throws InterruptedException {
         List<AlertConfig> alertConfigs;
         try {
-            if (isCurrentlyDisabled(agentRollupId)) {
+            if (isCurrentlyDisabled(agentRollupId, profile)) {
                 return;
             }
             alertConfigs = configRepository.getAlertConfigs(agentRollupId);
@@ -190,25 +191,25 @@ class CentralAlertingService {
         }
         if (!aggregateAndGaugeAndHeartbeatAlertConfigs.isEmpty()) {
             checkAlertsAsync(agentRollupId, agentRollupDisplay, endTime,
-                    aggregateAndGaugeAndHeartbeatAlertConfigs);
+                    aggregateAndGaugeAndHeartbeatAlertConfigs, profile);
         }
     }
 
-    private boolean isCurrentlyDisabled(String agentRollupId) throws Exception {
+    private boolean isCurrentlyDisabled(String agentRollupId, CassandraProfile profile) throws Exception {
         Long disabledUntilTime =
-                alertingDisabledDao.getAlertingDisabledUntilTime(agentRollupId);
+                alertingDisabledDao.getAlertingDisabledUntilTime(agentRollupId, profile);
         return disabledUntilTime != null && disabledUntilTime > clock.currentTimeMillis();
     }
 
     private void checkAlertsAsync(String agentRollupId, String agentRollupDisplay, long endTime,
-            List<AlertConfig> alertConfigs) {
+            List<AlertConfig> alertConfigs, CassandraProfile profile) {
         if (closed) {
             return;
         }
         workerExecutor.execute(() -> {
             for (AlertConfig alertConfig : alertConfigs) {
                 try {
-                    checkAlert(agentRollupId, agentRollupDisplay, endTime, alertConfig);
+                    checkAlert(agentRollupId, agentRollupDisplay, endTime, alertConfig, profile);
                 } catch (InterruptedException e) {
                     // probably shutdown requested (see close method above)
                     logger.debug(e.getMessage(), e);
@@ -221,14 +222,14 @@ class CentralAlertingService {
     }
 
     private void checkAlert(String agentRollupId, String agentDisplay, long endTime,
-            AlertConfig alertConfig) throws Exception {
+            AlertConfig alertConfig, CassandraProfile profile) throws Exception {
         AlertCondition alertCondition = alertConfig.getCondition();
         switch (alertCondition.getValCase()) {
             case METRIC_CONDITION:
                 alertingService.checkMetricAlert(
                         configRepository.getCentralAdminGeneralConfig().centralDisplayName(),
                         agentRollupId, agentDisplay, alertConfig,
-                        alertCondition.getMetricCondition(), endTime);
+                        alertCondition.getMetricCondition(), endTime, profile);
                 break;
             case HEARTBEAT_CONDITION:
                 if (stopwatch.elapsed(MINUTES) >= 4) {
@@ -237,7 +238,7 @@ class CentralAlertingService {
                     // +/- 20% jitter (see io.grpc.internal.ExponentialBackoffPolicy) but better to
                     // give a bit extra (4 minutes above) to avoid false heartbeat alert
                     heartbeatAlertingService.checkHeartbeatAlert(agentRollupId, agentDisplay,
-                            alertConfig, alertCondition.getHeartbeatCondition(), endTime);
+                            alertConfig, alertCondition.getHeartbeatCondition(), endTime, profile);
                 }
                 break;
             default:

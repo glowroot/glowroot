@@ -30,6 +30,7 @@ import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.common2.config.MoreConfigDefaults;
 import org.glowroot.common2.repo.AgentDisplayRepository;
+import org.glowroot.common2.repo.CassandraProfile;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -68,12 +69,12 @@ public class AgentDisplayDao implements AgentDisplayRepository {
         if (display.isEmpty()) {
             BoundStatement boundStatement = deletePS.bind()
                 .setString(0, agentRollupId);
-            session.write(boundStatement);
+            session.write(boundStatement, CassandraProfile.collector);
         } else {
             BoundStatement boundStatement = insertPS.bind()
                 .setString(0, agentRollupId)
                 .setString(1, display);
-            session.write(boundStatement);
+            session.write(boundStatement, CassandraProfile.collector);
         }
         agentDisplayCache.invalidate(agentRollupId);
     }
@@ -105,7 +106,7 @@ public class AgentDisplayDao implements AgentDisplayRepository {
         public CompletableFuture<String> load(String agentRollupId) {
             BoundStatement boundStatement = readPS.bind()
                 .setString(0, agentRollupId);
-            return session.readAsync(boundStatement)
+            return session.readAsync(boundStatement, CassandraProfile.web)
                     .thenApplyAsync(results -> {
                         Row row = results.one();
                         if (row == null) {

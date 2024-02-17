@@ -19,6 +19,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.ObjectMappers;
@@ -47,7 +48,7 @@ class LayoutJsonService {
     String getTopLevelAgentRollups(@BindRequest TopLevelAgentRollupsRequest request,
             @BindAuthentication Authentication authentication) throws Exception {
         List<TopLevelAgentRollup> topLevelAgentRollups =
-                activeAgentRepository.readActiveTopLevelAgentRollups(request.from(), request.to());
+                activeAgentRepository.readActiveTopLevelAgentRollups(request.from(), request.to(), CassandraProfile.web);
         List<FilteredTopLevelAgentRollup> filtered = Lists.newArrayList();
         for (TopLevelAgentRollup topLevelAgentRollup : topLevelAgentRollups) {
             HasAnyPermission hasAnyPermission =
@@ -69,7 +70,7 @@ class LayoutJsonService {
         List<FilteredChildAgentRollup> childAgentRollups =
                 filterChildAgentRollups(
                         activeAgentRepository.readActiveChildAgentRollups(
-                                request.topLevelId(), request.from(), request.to()),
+                                request.topLevelId(), request.from(), request.to(), CassandraProfile.web),
                         authentication);
         List<AgentRollupSmall> dropdown = Lists.newArrayList();
         for (FilteredChildAgentRollup childAgentRollup : childAgentRollups) {

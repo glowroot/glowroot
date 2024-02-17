@@ -16,6 +16,7 @@
 package org.glowroot.central.repo;
 
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,6 @@ import org.glowroot.common2.config.ImmutableRoleConfig;
 import org.glowroot.common2.config.RoleConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.glowroot.central.repo.CqlSessionBuilders.MAX_CONCURRENT_QUERIES;
 
 public class RoleDaoIT {
 
@@ -40,7 +40,7 @@ public class RoleDaoIT {
         SharedSetupRunListener.startCassandra();
         cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
         session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
-                MAX_CONCURRENT_QUERIES, 0);
+                0);
         clusterManager = ClusterManager.create();
         roleDao = new RoleDao(session, clusterManager);
     }
@@ -64,7 +64,7 @@ public class RoleDaoIT {
                 .central(true)
                 .name("abc")
                 .addPermissions("*:*")
-                .build());
+                .build(), CassandraProfile.web);
         // when
         RoleConfig roleConfig = roleDao.read("abc");
         // then

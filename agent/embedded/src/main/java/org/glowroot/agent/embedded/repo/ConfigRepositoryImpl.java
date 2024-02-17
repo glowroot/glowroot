@@ -67,6 +67,7 @@ import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.StorageConfig;
 import org.glowroot.common2.config.UserConfig;
 import org.glowroot.common2.config.WebConfig;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigValidation;
 import org.glowroot.common2.repo.util.LazySecretKey;
@@ -359,13 +360,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void updateGeneralConfig(String agentId, AgentConfig.GeneralConfig protoConfig,
-            String priorVersion) throws Exception {
+                                    String priorVersion, CassandraProfile profile) throws Exception {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateTransactionConfig(String agentId, AgentConfig.TransactionConfig protoConfig,
-            String priorVersion) throws Exception {
+            String priorVersion, CassandraProfile profile) throws Exception {
         TransactionConfig config = TransactionConfig.create(protoConfig);
         synchronized (writeLock) {
             String currVersion =
@@ -376,7 +377,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void insertGaugeConfig(String agentId, AgentConfig.GaugeConfig protoConfig)
+    public void insertGaugeConfig(String agentId, AgentConfig.GaugeConfig protoConfig, CassandraProfile profile)
             throws Exception {
         GaugeConfig config = GaugeConfig.create(protoConfig);
         synchronized (writeLock) {
@@ -395,7 +396,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void updateGaugeConfig(String agentId, AgentConfig.GaugeConfig protoConfig,
-            String priorVersion) throws Exception {
+            String priorVersion, CassandraProfile profile) throws Exception {
         GaugeConfig config = GaugeConfig.create(protoConfig);
         synchronized (writeLock) {
             List<GaugeConfig> configs = Lists.newArrayList(configService.getGaugeConfigs());
@@ -419,7 +420,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void deleteGaugeConfig(String agentId, String version) throws Exception {
+    public void deleteGaugeConfig(String agentId, String version, CassandraProfile profile) throws Exception {
         synchronized (writeLock) {
             List<GaugeConfig> configs = Lists.newArrayList(configService.getGaugeConfigs());
             boolean found = false;
@@ -441,7 +442,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void updateJvmConfig(String agentId, AgentConfig.JvmConfig protoConfig,
-            String priorVersion) throws Exception {
+            String priorVersion, CassandraProfile profile) throws Exception {
         JvmConfig config = JvmConfig.create(protoConfig);
         synchronized (writeLock) {
             String currVersion =
@@ -453,23 +454,23 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void insertSyntheticMonitorConfig(String agentRollupId,
-            AgentConfig.SyntheticMonitorConfig config) {
+            AgentConfig.SyntheticMonitorConfig config, CassandraProfile profile) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateSyntheticMonitorConfig(String agentRollupId,
-            AgentConfig.SyntheticMonitorConfig config, String priorVersion) {
+            AgentConfig.SyntheticMonitorConfig config, String priorVersion, CassandraProfile profile) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void deleteSyntheticMonitorConfig(String agentRollupId, String syntheticMonitorId) {
+    public void deleteSyntheticMonitorConfig(String agentRollupId, String syntheticMonitorId, CassandraProfile profile) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void insertAlertConfig(String agentRollupId, AgentConfig.AlertConfig protoConfig)
+    public void insertAlertConfig(String agentRollupId, AgentConfig.AlertConfig protoConfig, CassandraProfile profile)
             throws Exception {
         String version = Versions.getVersion(protoConfig);
         ImmutableAlertConfig config = AlertConfig.create(protoConfig);
@@ -489,7 +490,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void updateAlertConfig(String agentRollupId, AgentConfig.AlertConfig config,
-            String priorVersion) throws Exception {
+            String priorVersion, CassandraProfile profile) throws Exception {
         synchronized (writeLock) {
             List<AlertConfig> configs = Lists.newArrayList(configService.getAlertConfigs());
             boolean found = false;
@@ -510,7 +511,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void deleteAlertConfig(String agentRollupId, String version) throws Exception {
+    public void deleteAlertConfig(String agentRollupId, String version, CassandraProfile profile) throws Exception {
         synchronized (writeLock) {
             List<AlertConfig> configs = Lists.newArrayList(configService.getAlertConfigs());
             boolean found = false;
@@ -532,7 +533,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void updateUiDefaultsConfig(String agentId, AgentConfig.UiDefaultsConfig protoConfig,
-            String priorVersion) throws Exception {
+            String priorVersion, CassandraProfile profile) throws Exception {
         UiDefaultsConfig config = UiDefaultsConfig.create(protoConfig);
         synchronized (writeLock) {
             String currVersion = Versions.getVersion(configService.getUiDefaultsConfig().toProto());
@@ -543,7 +544,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void updatePluginConfig(String agentId, AgentConfig.PluginConfig protoConfig,
-            String priorVersion) throws Exception {
+            String priorVersion, CassandraProfile profile) throws Exception {
         PluginDescriptor pluginDescriptor = getPluginDescriptor(protoConfig.getId());
         PluginConfig config = PluginConfig.create(pluginDescriptor, protoConfig.getPropertyList());
         synchronized (writeLock) {
@@ -566,7 +567,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void insertInstrumentationConfig(String agentId,
-            AgentConfig.InstrumentationConfig protoConfig) throws Exception {
+            AgentConfig.InstrumentationConfig protoConfig, CassandraProfile profile) throws Exception {
         InstrumentationConfig config = InstrumentationConfig.create(protoConfig);
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
@@ -581,7 +582,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void updateInstrumentationConfig(String agentId,
-            AgentConfig.InstrumentationConfig protoConfig, String priorVersion) throws Exception {
+            AgentConfig.InstrumentationConfig protoConfig, String priorVersion, CassandraProfile profile) throws Exception {
         InstrumentationConfig config = InstrumentationConfig.create(protoConfig);
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
@@ -605,7 +606,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void deleteInstrumentationConfigs(String agentId, List<String> versions)
+    public void deleteInstrumentationConfigs(String agentId, List<String> versions, CassandraProfile profile)
             throws Exception {
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
@@ -629,7 +630,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     // ignores any instrumentation configs that are duplicates of existing instrumentation configs
     @Override
     public void insertInstrumentationConfigs(String agentId,
-            List<AgentConfig.InstrumentationConfig> protoConfigs) throws Exception {
+            List<AgentConfig.InstrumentationConfig> protoConfigs, CassandraProfile profile) throws Exception {
         List<InstrumentationConfig> configs = Lists.newArrayList();
         for (AgentConfig.InstrumentationConfig instrumentationConfig : protoConfigs) {
             InstrumentationConfig config = InstrumentationConfig.create(instrumentationConfig);
@@ -649,7 +650,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void updateAdvancedConfig(String agentId, AgentConfig.AdvancedConfig protoConfig,
-            String priorVersion) throws Exception {
+            String priorVersion, CassandraProfile profile) throws Exception {
         AdvancedConfig config = AdvancedConfig.create(protoConfig);
         synchronized (writeLock) {
             String currVersion = Versions.getVersion(configService.getAdvancedConfig().toProto());
@@ -659,7 +660,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateAllConfig(String agentId, AgentConfig config, @Nullable String priorVersion)
+    public void updateAllConfig(String agentId, AgentConfig config, @Nullable String priorVersion, CassandraProfile profile)
             throws Exception {
         ConfigValidation.validatePartOne(config);
         Set<String> validPluginIds = Sets.newHashSet();
@@ -680,7 +681,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void updateEmbeddedAdminGeneralConfig(EmbeddedAdminGeneralConfig config,
-            String priorVersion) throws Exception {
+            String priorVersion, CassandraProfile profile) throws Exception {
         synchronized (writeLock) {
             String currVersion = adminConfigService.getEmbeddedAdminGeneralConfig().version();
             checkVersionsEqual(currVersion, priorVersion);
@@ -690,12 +691,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public void updateCentralAdminGeneralConfig(CentralAdminGeneralConfig config,
-            String priorVersion) {
+            String priorVersion, CassandraProfile profile) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void insertUserConfig(UserConfig config) throws Exception {
+    public void insertUserConfig(UserConfig config, CassandraProfile profile) throws Exception {
         synchronized (writeLock) {
             List<UserConfig> configs = Lists.newArrayList(adminConfigService.getUserConfigs());
             // check for case-insensitive duplicate
@@ -711,7 +712,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateUserConfig(UserConfig config, String priorVersion) throws Exception {
+    public void updateUserConfig(UserConfig config, String priorVersion, CassandraProfile profile) throws Exception {
         synchronized (writeLock) {
             List<UserConfig> configs = Lists.newArrayList(adminConfigService.getUserConfigs());
             String username = config.username();
@@ -736,7 +737,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void deleteUserConfig(String username) throws Exception {
+    public void deleteUserConfig(String username, CassandraProfile profile) throws Exception {
         synchronized (writeLock) {
             List<UserConfig> configs = Lists.newArrayList(adminConfigService.getUserConfigs());
             boolean found = false;
@@ -759,7 +760,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void insertRoleConfig(RoleConfig config) throws Exception {
+    public void insertRoleConfig(RoleConfig config, CassandraProfile profile) throws Exception {
         synchronized (writeLock) {
             List<RoleConfig> configs = Lists.newArrayList(adminConfigService.getRoleConfigs());
             // check for case-insensitive duplicate
@@ -775,7 +776,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateRoleConfig(RoleConfig config, String priorVersion) throws Exception {
+    public void updateRoleConfig(RoleConfig config, String priorVersion, CassandraProfile profile) throws Exception {
         synchronized (writeLock) {
             List<RoleConfig> configs = Lists.newArrayList(adminConfigService.getRoleConfigs());
             String name = config.name();
@@ -800,7 +801,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void deleteRoleConfig(String name) throws Exception {
+    public void deleteRoleConfig(String name, CassandraProfile profile) throws Exception {
         synchronized (writeLock) {
             List<RoleConfig> configs = Lists.newArrayList(adminConfigService.getRoleConfigs());
             boolean found = false;

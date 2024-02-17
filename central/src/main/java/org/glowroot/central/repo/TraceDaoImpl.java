@@ -43,6 +43,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.spotify.futures.CompletableFutures;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.*;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.CassandraWriteMetrics;
@@ -64,10 +65,6 @@ import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.NotAvailableAware;
 import org.glowroot.common.util.OnlyUsedByTests;
-import org.glowroot.common2.repo.ImmutableErrorMessageCount;
-import org.glowroot.common2.repo.ImmutableErrorMessagePoint;
-import org.glowroot.common2.repo.ImmutableErrorMessageResult;
-import org.glowroot.common2.repo.ImmutableHeaderPlus;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.Proto;
@@ -168,7 +165,7 @@ public class TraceDaoImpl implements TraceDao {
         this.clock = clock;
 
         ResultSet results =
-                session.read("select release_version from system.local where key = 'local'");
+                session.read("select release_version from system.local where key = 'local'", CassandraProfile.slow);
         Row row = checkNotNull(results.one());
         String cassandraVersion = checkNotNull(row.getString(0));
         cassandra2x = cassandraVersion.startsWith("2.");
@@ -655,7 +652,7 @@ public class TraceDaoImpl implements TraceDao {
                     }
                     boundStatement = bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                             true, header.getPartial(), cassandra2x);
-                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                    futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
 
                     if (header.getPartial()) {
                         boundStatement = insertTransactionSlowPointPartial.bind();
@@ -664,7 +661,7 @@ public class TraceDaoImpl implements TraceDao {
                     }
                     boundStatement = bindSlowPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                             false, header.getPartial(), cassandra2x);
-                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                    futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
 
                     if (header.getPartial()) {
                         boundStatement = insertOverallSlowCountPartial.bind();
@@ -673,7 +670,7 @@ public class TraceDaoImpl implements TraceDao {
                     }
                     boundStatement = bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                             true, header.getPartial(), cassandra2x);
-                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                    futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
 
                     if (header.getPartial()) {
                         boundStatement = insertTransactionSlowCountPartial.bind();
@@ -682,7 +679,7 @@ public class TraceDaoImpl implements TraceDao {
                     }
                     boundStatement = bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                             false, header.getPartial(), cassandra2x);
-                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                    futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
 
                     if (priorHeader != null && priorHeader.getCaptureTimePartialRollup() != header
                             .getCaptureTimePartialRollup()) {
@@ -693,22 +690,22 @@ public class TraceDaoImpl implements TraceDao {
                         boundStatement = deleteOverallSlowPointPartial.bind();
                         boundStatement = bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true,
                                 useCaptureTimePartialRollup, new AtomicInteger(0));
-                        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                        futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
 
                         boundStatement = deleteTransactionSlowPointPartial.bind();
                         boundStatement = bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false,
                                 useCaptureTimePartialRollup, new AtomicInteger(0));
-                        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                        futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
 
                         boundStatement = deleteOverallSlowCountPartial.bind();
                         boundStatement = bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, true,
                                 useCaptureTimePartialRollup, new AtomicInteger(0));
-                        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                        futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
 
                         boundStatement = deleteTransactionSlowCountPartial.bind();
                         boundStatement = bind(boundStatement, agentRollupId, agentId, traceId, priorHeader, false,
                                 useCaptureTimePartialRollup, new AtomicInteger(0));
-                        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                        futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
                     }
                 }
                 // seems unnecessary to insert error info for partial traces
@@ -717,32 +714,32 @@ public class TraceDaoImpl implements TraceDao {
                     BoundStatement boundStatement = insertOverallErrorMessage.bind();
                     boundStatement = bindErrorMessage(boundStatement, agentRollupId, agentId, traceId, header,
                             adjustedTTL, true);
-                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                    futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
 
                     boundStatement = insertTransactionErrorMessage.bind();
                     boundStatement = bindErrorMessage(boundStatement, agentRollupId, agentId, traceId, header,
                             adjustedTTL, false);
-                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                    futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
 
                     boundStatement = insertOverallErrorPoint.bind();
                     boundStatement = bindErrorPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                             true);
-                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                    futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
 
                     boundStatement = insertTransactionErrorPoint.bind();
                     boundStatement = bindErrorPoint(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                             false);
-                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                    futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
 
                     boundStatement = insertOverallErrorCount.bind();
                     boundStatement = bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                             true, false, cassandra2x);
-                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                    futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
 
                     boundStatement = insertTransactionErrorCount.bind();
                     boundStatement = bindCount(boundStatement, agentRollupId, agentId, traceId, header, adjustedTTL,
                             false, false, cassandra2x);
-                    futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                    futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
                 }
             }
             for (String agentRollupIdForMeta : agentRollupIdsForMeta) {
@@ -758,7 +755,7 @@ public class TraceDaoImpl implements TraceDao {
                 .setString(i++, traceId)
                 .setByteBuffer(i++, ByteBuffer.wrap(header.toByteArray()))
                 .setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
 
             int index = 0;
             for (Trace.Entry entry : trace.getEntryList()) {
@@ -803,7 +800,7 @@ public class TraceDaoImpl implements TraceDao {
                     boundStatement = boundStatement.setToNull(i++);
                 }
                 boundStatement = boundStatement.setInt(i++, adjustedTTL);
-                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
             }
 
             for (Aggregate.Query query : trace.getQueryList()) {
@@ -822,7 +819,7 @@ public class TraceDaoImpl implements TraceDao {
                 }
                 boundStatement = boundStatement.setBoolean(i++, query.getActive())
                     .setInt(i++, adjustedTTL);
-                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
             }
 
             index = 0;
@@ -843,21 +840,21 @@ public class TraceDaoImpl implements TraceDao {
                         .setToNull(i++);
                 }
                 boundStatement = boundStatement.setInt(i++, adjustedTTL);
-                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
             }
 
             if (trace.hasMainThreadProfile()) {
                 boundStatement = insertMainThreadProfileV2.bind();
                 boundStatement = bindThreadProfile(boundStatement, agentId, traceId, trace.getMainThreadProfile(),
                         adjustedTTL);
-                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
             }
 
             if (trace.hasAuxThreadProfile()) {
                 boundStatement = insertAuxThreadProfileV2.bind();
                 boundStatement = bindThreadProfile(boundStatement, agentId, traceId, trace.getAuxThreadProfile(),
                         adjustedTTL);
-                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
             }
             futures.addAll(
                     transactionTypeDao.store(agentRollupIdsForMeta, header.getTransactionType()));
@@ -881,8 +878,8 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = bindTraceQuery(boundStatement, agentRollupId, query, false);
             boundStatementPartial = bindTraceQueryPartial(boundStatementPartial, agentRollupId, query, false, cassandra2x);
         }
-        Future<AsyncResultSet> future = session.readAsync(boundStatement).toCompletableFuture();
-        Future<AsyncResultSet> futurePartial = session.readAsync(boundStatementPartial).toCompletableFuture();
+        Future<AsyncResultSet> future = session.readAsync(boundStatement, CassandraProfile.web).toCompletableFuture();
+        Future<AsyncResultSet> futurePartial = session.readAsync(boundStatementPartial, CassandraProfile.web).toCompletableFuture();
         return future.get().one().getLong(0) + futurePartial.get().one().getLong(0);
     }
 
@@ -904,9 +901,9 @@ public class TraceDaoImpl implements TraceDao {
             boundStatementPartial = bindTraceQueryPartial(boundStatementPartial, agentRollupId, query, false, cassandra2x);
         }
 
-        CompletionStage<List<TracePoint>> completedPointsCS = session.readAsync(boundStatement)
+        CompletionStage<List<TracePoint>> completedPointsCS = session.readAsync(boundStatement, CassandraProfile.web)
                 .thenCompose(future -> processPoints(future, filter, false, false));
-        CompletionStage<List<TracePoint>> partialPointsCS = session.readAsync(boundStatementPartial)
+        CompletionStage<List<TracePoint>> partialPointsCS = session.readAsync(boundStatementPartial, CassandraProfile.web)
                 .thenCompose(futurePartial -> processPoints(futurePartial, filter, true, false));
 
         return completedPointsCS.thenCombine(partialPointsCS,
@@ -925,7 +922,7 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = readTransactionErrorCount.bind();
             boundStatement = bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, CassandraProfile.web);
         return results.one().getLong(0);
     }
 
@@ -941,7 +938,7 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = readTransactionErrorPoint.bind();
             boundStatement = bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
-        return session.readAsync(boundStatement)
+        return session.readAsync(boundStatement, CassandraProfile.web)
                 .thenCompose(results -> processPoints(results, filter, false, true))
                 .thenApply(errorPoints -> createResult(errorPoints, limit))
                 .toCompletableFuture();
@@ -959,7 +956,7 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = readTransactionErrorMessage.bind();
             boundStatement = bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, CassandraProfile.web);
         // rows are already in order by captureTime, so saving sort step by using linked hash map
         Map<Long, MutableLong> pointCounts = new LinkedHashMap<>();
         Map<String, MutableLong> messageCounts = new HashMap<>();
@@ -1001,7 +998,7 @@ public class TraceDaoImpl implements TraceDao {
 
     @Override
     public long readErrorMessageCount(String agentRollupId, TraceQuery query,
-            String errorMessageFilter) throws Exception {
+            String errorMessageFilter, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement;
         String transactionName = query.transactionName();
         if (transactionName == null) {
@@ -1020,7 +1017,7 @@ public class TraceDaoImpl implements TraceDao {
         } else {
             errorMessagePattern = null;
         }
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         long count = 0;
         for (Row row : results) {
             String errorMessage = checkNotNull(row.getString(1));
@@ -1052,36 +1049,36 @@ public class TraceDaoImpl implements TraceDao {
     }
 
     @Override
-    public Entries readEntries(String agentId, String traceId) throws Exception {
+    public Entries readEntries(String agentId, String traceId, CassandraProfile profile) throws Exception {
         return ImmutableEntries.builder()
-                .addAllEntries(readEntriesInternal(agentId, traceId))
-                .addAllSharedQueryTexts(readSharedQueryTexts(agentId, traceId))
+                .addAllEntries(readEntriesInternal(agentId, traceId, profile))
+                .addAllSharedQueryTexts(readSharedQueryTexts(agentId, traceId, profile))
                 .build();
     }
 
     @Override
-    public Queries readQueries(String agentId, String traceId) throws Exception {
+    public Queries readQueries(String agentId, String traceId, CassandraProfile profile) throws Exception {
         return ImmutableQueries.builder()
-                .addAllQueries(readQueriesInternal(agentId, traceId))
-                .addAllSharedQueryTexts(readSharedQueryTexts(agentId, traceId))
+                .addAllQueries(readQueriesInternal(agentId, traceId, profile))
+                .addAllSharedQueryTexts(readSharedQueryTexts(agentId, traceId, profile))
                 .build();
     }
 
     // since this is only used by export, SharedQueryTexts are always returned with fullTrace
     // (never with truncatedText/truncatedEndText/fullTraceSha1)
     @Override
-    public EntriesAndQueries readEntriesAndQueriesForExport(String agentId, String traceId)
+    public EntriesAndQueries readEntriesAndQueriesForExport(String agentId, String traceId, CassandraProfile profile)
             throws Exception {
         ImmutableEntriesAndQueries.Builder entries = ImmutableEntriesAndQueries.builder()
-                .addAllEntries(readEntriesInternal(agentId, traceId))
-                .addAllQueries(readQueriesInternal(agentId, traceId));
+                .addAllEntries(readEntriesInternal(agentId, traceId, profile))
+                .addAllQueries(readQueriesInternal(agentId, traceId, profile));
         List<Trace.SharedQueryText> sharedQueryTexts = new ArrayList<>();
-        for (Trace.SharedQueryText sharedQueryText : readSharedQueryTexts(agentId, traceId)) {
+        for (Trace.SharedQueryText sharedQueryText : readSharedQueryTexts(agentId, traceId, profile)) {
             String fullTextSha1 = sharedQueryText.getFullTextSha1();
             if (fullTextSha1.isEmpty()) {
                 sharedQueryTexts.add(sharedQueryText);
             } else {
-                String fullText = fullQueryTextDao.getFullText(agentId, fullTextSha1);
+                String fullText = fullQueryTextDao.getFullText(agentId, fullTextSha1, profile);
                 if (fullText == null) {
                     sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
                             .setFullText(sharedQueryText.getTruncatedText()
@@ -1114,7 +1111,7 @@ public class TraceDaoImpl implements TraceDao {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentId)
             .setString(1, traceId);
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, CassandraProfile.web);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -1136,7 +1133,7 @@ public class TraceDaoImpl implements TraceDao {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentId)
             .setString(1, traceId);
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, CassandraProfile.web);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -1157,7 +1154,7 @@ public class TraceDaoImpl implements TraceDao {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentId)
             .setString(1, traceId);
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, CassandraProfile.web);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -1169,20 +1166,20 @@ public class TraceDaoImpl implements TraceDao {
         }
     }
 
-    private List<Trace.Entry> readEntriesInternal(String agentId, String traceId) throws Exception {
-        List<Trace.Entry> entries = readEntriesUsingPS(agentId, traceId, readEntriesV2);
+    private List<Trace.Entry> readEntriesInternal(String agentId, String traceId, CassandraProfile profile) throws Exception {
+        List<Trace.Entry> entries = readEntriesUsingPS(agentId, traceId, readEntriesV2, profile);
         if (!entries.isEmpty()) {
             return entries;
         }
-        return readEntriesUsingPS(agentId, traceId, readEntriesV1);
+        return readEntriesUsingPS(agentId, traceId, readEntriesV1, profile);
     }
 
     private List<Trace.Entry> readEntriesUsingPS(String agentId, String traceId,
-            PreparedStatement readPS) throws Exception {
+            PreparedStatement readPS, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentId)
             .setString(1, traceId);
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         List<Trace.Entry> entries = new ArrayList<>();
         Row row;
         while ((row = results.one()) != null) {
@@ -1226,12 +1223,12 @@ public class TraceDaoImpl implements TraceDao {
         return entries;
     }
 
-    private List<Aggregate.Query> readQueriesInternal(String agentId, String traceId)
+    private List<Aggregate.Query> readQueriesInternal(String agentId, String traceId, CassandraProfile profile)
             throws Exception {
         BoundStatement boundStatement = readQueriesV2.bind()
             .setString(0, agentId)
             .setString(1, traceId);
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         List<Aggregate.Query> queries = new ArrayList<>();
         Row row;
         while ((row = results.one()) != null) {
@@ -1251,22 +1248,22 @@ public class TraceDaoImpl implements TraceDao {
         return queries;
     }
 
-    private List<Trace.SharedQueryText> readSharedQueryTexts(String agentId, String traceId)
+    private List<Trace.SharedQueryText> readSharedQueryTexts(String agentId, String traceId, CassandraProfile profile)
             throws Exception {
         List<Trace.SharedQueryText> sharedQueryTexts =
-                readSharedQueryTextsUsingPS(agentId, traceId, readSharedQueryTextsV2);
+                readSharedQueryTextsUsingPS(agentId, traceId, readSharedQueryTextsV2, profile);
         if (!sharedQueryTexts.isEmpty()) {
             return sharedQueryTexts;
         }
-        return readSharedQueryTextsUsingPS(agentId, traceId, readSharedQueryTextsV1);
+        return readSharedQueryTextsUsingPS(agentId, traceId, readSharedQueryTextsV1, profile);
     }
 
     private List<Trace.SharedQueryText> readSharedQueryTextsUsingPS(String agentId, String traceId,
-            PreparedStatement readPS) throws Exception {
+            PreparedStatement readPS, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentId)
             .setString(1, traceId);
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         List<Trace.SharedQueryText> sharedQueryTexts = new ArrayList<>();
         Row row;
         while ((row = results.one()) != null) {

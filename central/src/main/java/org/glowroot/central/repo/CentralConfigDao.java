@@ -24,6 +24,7 @@ import com.datastax.oss.driver.api.core.cql.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +81,7 @@ class CentralConfigDao {
     void write(String key, Object config, String priorVersion) throws Exception {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, key);
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, CassandraProfile.web);
         Row row = results.one();
         if (row == null) {
             writeIfNotExists(key, config);
@@ -101,7 +102,7 @@ class CentralConfigDao {
         if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
             boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
         }
-        AsyncResultSet asyncresults = session.update(boundStatement);
+        AsyncResultSet asyncresults = session.update(boundStatement, CassandraProfile.web);
         row = checkNotNull(asyncresults.one());
         boolean applied = row.getBoolean("[applied]");
         if (applied) {
@@ -116,12 +117,12 @@ class CentralConfigDao {
         if (json.equals("{}")) {
             BoundStatement boundStatement = deletePS.bind()
                 .setString(0, key);
-            session.write(boundStatement);
+            session.write(boundStatement, CassandraProfile.web);
         } else {
             BoundStatement boundStatement = insertPS.bind()
                 .setString(0, key)
                 .setString(1, json);
-            session.write(boundStatement);
+            session.write(boundStatement, CassandraProfile.web);
         }
         centralConfigCache.invalidate(key);
     }
@@ -141,7 +142,7 @@ class CentralConfigDao {
         if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
             boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
         }
-        AsyncResultSet results = session.update(boundStatement);
+        AsyncResultSet results = session.update(boundStatement, CassandraProfile.web);
         Row row = checkNotNull(results.one());
         boolean applied = row.getBoolean("[applied]");
         if (applied) {
@@ -162,7 +163,7 @@ class CentralConfigDao {
         public Optional<Object> load(String key) {
             BoundStatement boundStatement = readPS.bind()
                 .setString(0, key);
-            ResultSet results = session.read(boundStatement);
+            ResultSet results = session.read(boundStatement, CassandraProfile.collector);
             Row row = results.one();
             if (row == null) {
                 return Optional.absent();

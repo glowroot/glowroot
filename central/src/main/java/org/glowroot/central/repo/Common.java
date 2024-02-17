@@ -42,6 +42,7 @@ import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -78,14 +79,14 @@ class Common {
     }
 
     static Collection<NeedsRollup> getNeedsRollupList(String agentRollupId, int rollupLevel,
-            long rollupIntervalMillis, List<PreparedStatement> readNeedsRollup, Session session,
-            Clock clock) throws Exception {
+                                                      long rollupIntervalMillis, List<PreparedStatement> readNeedsRollup, Session session,
+                                                      Clock clock, CassandraProfile profile) throws Exception {
         // capture current time before reading data to prevent race condition with optimization
         // that prevents duplicate needs rollup data which is also based on current time
         long currentTimeMillis = clock.currentTimeMillis();
         BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind()
             .setString(0, agentRollupId);
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         Map<Long, NeedsRollup> needsRollupMap = new LinkedHashMap<>();
         for (Row row : results) {
             int i = 0;
@@ -121,10 +122,10 @@ class Common {
 
     static List<NeedsRollupFromChildren> getNeedsRollupFromChildrenList(
             String agentRollupId,
-            PreparedStatement readNeedsRollupFromChild, Session session) throws Exception {
+            PreparedStatement readNeedsRollupFromChild, Session session, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = readNeedsRollupFromChild.bind()
             .setString(0, agentRollupId);
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         Map<Long, NeedsRollupFromChildren> needsRollupFromChildrenMap = new LinkedHashMap<>();
         for (Row row : results) {
             int i = 0;
@@ -148,7 +149,7 @@ class Common {
     static void insertNeedsRollupFromChild(String agentRollupId, String parentAgentRollupId,
             PreparedStatement insertNeedsRollupFromChild,
             NeedsRollupFromChildren needsRollupFromChildren, long captureTime,
-            int needsRollupAdjustedTTL, Session session) throws Exception {
+            int needsRollupAdjustedTTL, Session session, CassandraProfile profile) throws Exception {
         int i = 0;
         BoundStatement boundStatement = insertNeedsRollupFromChild.bind()
             .setString(i++, parentAgentRollupId)
@@ -157,7 +158,7 @@ class Common {
             .setString(i++, agentRollupId)
             .setSet(i++, needsRollupFromChildren.getKeys().keySet(), String.class)
             .setInt(i++, needsRollupAdjustedTTL);
-        session.write(boundStatement);
+        session.write(boundStatement, profile);
     }
 
     // it is important that the insert into next needs_rollup happens after present
@@ -169,7 +170,7 @@ class Common {
     static void postRollup(String agentRollupId, long captureTime, Set<String> keys,
             Set<UUID> uniquenessKeysForDeletion, @Nullable Long nextRollupIntervalMillis,
             @Nullable PreparedStatement insertNeedsRollup, PreparedStatement deleteNeedsRollup,
-            int needsRollupAdjustedTTL, Session session) throws Exception {
+            int needsRollupAdjustedTTL, Session session, CassandraProfile profile) throws Exception {
         if (nextRollupIntervalMillis != null) {
             checkNotNull(insertNeedsRollup);
             long rollupCaptureTime = CaptureTimes.getRollup(captureTime,
@@ -182,7 +183,7 @@ class Common {
                 .setSet(i++, keys, String.class)
                 .setInt(i++, needsRollupAdjustedTTL);
             // intentionally not async, see method-level comment
-            session.write(boundStatement);
+            session.write(boundStatement, profile);
         }
         List<CompletableFuture<?>> futures = new ArrayList<>();
         for (UUID uniqueness : uniquenessKeysForDeletion) {
@@ -191,7 +192,7 @@ class Common {
                 .setString(i++, agentRollupId)
                 .setInstant(i++, Instant.ofEpochMilli(captureTime))
                 .setUuid(i++, uniqueness);
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, profile).toCompletableFuture());
         }
         MoreFutures.waitForAll(futures);
     }

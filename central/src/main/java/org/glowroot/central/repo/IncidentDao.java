@@ -31,6 +31,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.Constants;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ImmutableOpenIncident;
 import org.glowroot.common2.repo.ImmutableResolvedIncident;
 import org.glowroot.common2.repo.IncidentRepository;
@@ -90,7 +91,7 @@ public class IncidentDao implements IncidentRepository {
 
     @Override
     public void insertOpenIncident(String agentRollupId, AlertCondition condition,
-            AlertSeverity severity, AlertNotification notification, long openTime)
+            AlertSeverity severity, AlertNotification notification, long openTime, CassandraProfile profile)
             throws Exception {
         int i = 0;
         BoundStatement boundStatement = insertOpenIncidentPS.bind()
@@ -99,18 +100,18 @@ public class IncidentDao implements IncidentRepository {
             .setString(i++, severity.name().toLowerCase(Locale.ENGLISH))
             .setByteBuffer(i++, ByteBuffer.wrap(notification.toByteArray()))
             .setInstant(i++, Instant.ofEpochMilli(openTime));
-        session.write(boundStatement);
+        session.write(boundStatement, profile);
     }
 
     @Override
     public @Nullable OpenIncident readOpenIncident(String agentRollupId, AlertCondition condition,
-            AlertSeverity severity) throws Exception {
+            AlertSeverity severity, CassandraProfile profile) throws Exception {
         int i = 0;
         BoundStatement boundStatement = readOpenIncidentPS.bind()
             .setString(i++, agentRollupId)
             .setByteBuffer(i++, ByteBuffer.wrap(condition.toByteArray()))
             .setString(i++, severity.name().toLowerCase(Locale.ENGLISH));
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -127,10 +128,10 @@ public class IncidentDao implements IncidentRepository {
     }
 
     @Override
-    public List<OpenIncident> readOpenIncidents(String agentRollupId) throws Exception {
+    public List<OpenIncident> readOpenIncidents(String agentRollupId, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = readOpenIncidentsPS.bind()
             .setString(0, agentRollupId);
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         List<OpenIncident> openIncidents = new ArrayList<>();
         for (Row row : results) {
             int i = 0;
@@ -152,9 +153,9 @@ public class IncidentDao implements IncidentRepository {
     }
 
     @Override
-    public List<OpenIncident> readAllOpenIncidents() throws Exception {
+    public List<OpenIncident> readAllOpenIncidents(CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = readAllOpenIncidentsPS.bind();
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         List<OpenIncident> openIncidents = new ArrayList<>();
         for (Row row : results) {
             int i = 0;
@@ -177,7 +178,7 @@ public class IncidentDao implements IncidentRepository {
     }
 
     @Override
-    public void resolveIncident(OpenIncident openIncident, long resolveTime) throws Exception {
+    public void resolveIncident(OpenIncident openIncident, long resolveTime, CassandraProfile profile) throws Exception {
         int adjustedTTL = Common.getAdjustedTTL(
                 Ints.saturatedCast(
                         HOURS.toSeconds(Constants.RESOLVED_INCIDENT_EXPIRATION_HOURS)),
@@ -195,7 +196,7 @@ public class IncidentDao implements IncidentRepository {
             .setByteBuffer(i++, notificationBytes)
             .setInstant(i++, Instant.ofEpochMilli(openIncident.openTime()))
             .setInt(i++, adjustedTTL);
-        session.write(boundStatement);
+        session.write(boundStatement, profile);
 
         i = 0;
         boundStatement = deleteOpenIncidentPS.bind()
@@ -203,14 +204,14 @@ public class IncidentDao implements IncidentRepository {
             .setByteBuffer(i++, conditionBytes)
             .setString(i++,
                 openIncident.severity().name().toLowerCase(Locale.ENGLISH));
-        session.write(boundStatement);
+        session.write(boundStatement, profile);
     }
 
     @Override
     public List<ResolvedIncident> readResolvedIncidents(long from) throws Exception {
         BoundStatement boundStatement = readRecentResolvedIncidentsPS.bind()
             .setInstant(0, Instant.ofEpochMilli(from));
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, CassandraProfile.web);
         List<ResolvedIncident> resolvedIncidents = new ArrayList<>();
         for (Row row : results) {
             int i = 0;

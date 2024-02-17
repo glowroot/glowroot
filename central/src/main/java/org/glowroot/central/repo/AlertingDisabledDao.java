@@ -26,6 +26,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.AlertingDisabledRepository;
+import org.glowroot.common2.repo.CassandraProfile;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -53,10 +54,10 @@ public class AlertingDisabledDao implements AlertingDisabledRepository {
     }
 
     @Override
-    public @Nullable Long getAlertingDisabledUntilTime(String agentRollupId) throws Exception {
+    public @Nullable Long getAlertingDisabledUntilTime(String agentRollupId, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentRollupId);
-        Row row = session.read(boundStatement).one();
+        Row row = session.read(boundStatement, profile).one();
         if (row == null) {
             return null;
         }
@@ -65,12 +66,12 @@ public class AlertingDisabledDao implements AlertingDisabledRepository {
     }
 
     @Override
-    public void setAlertingDisabledUntilTime(String agentRollupId, @Nullable Long disabledUntilTime)
+    public void setAlertingDisabledUntilTime(String agentRollupId, @Nullable Long disabledUntilTime, CassandraProfile profile)
             throws Exception {
         if (disabledUntilTime == null) {
             BoundStatement boundStatement = deletePS.bind()
                 .setString(0, agentRollupId);
-            session.write(boundStatement);
+            session.write(boundStatement, profile);
         } else {
             int i = 0;
             BoundStatement boundStatement = insertPS.bind()
@@ -78,7 +79,7 @@ public class AlertingDisabledDao implements AlertingDisabledRepository {
                 .setInstant(i++, Instant.ofEpochMilli(disabledUntilTime))
                 .setInt(i++, Ints.saturatedCast(
                     MILLISECONDS.toSeconds(disabledUntilTime - clock.currentTimeMillis())));
-            session.write(boundStatement);
+            session.write(boundStatement, profile);
         }
     }
 }

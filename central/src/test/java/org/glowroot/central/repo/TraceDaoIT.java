@@ -17,14 +17,6 @@ package org.glowroot.central.repo;
 
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.google.common.collect.ImmutableSet;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.central.v09support.TraceDaoWithV09Support;
@@ -35,9 +27,17 @@ import org.glowroot.common.live.StringComparator;
 import org.glowroot.common.model.Result;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.config.ImmutableCentralStorageConfig;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ImmutableTraceQuery;
 import org.glowroot.common2.repo.TraceRepository.TraceQuery;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -45,7 +45,6 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.glowroot.central.repo.CqlSessionBuilders.MAX_CONCURRENT_QUERIES;
 import static org.mockito.Mockito.*;
 
 // NOTE this is mostly a copy of TraceDaoTest in glowroot-agent
@@ -74,7 +73,7 @@ public class TraceDaoIT {
         SharedSetupRunListener.startCassandra();
         cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
         session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
-                MAX_CONCURRENT_QUERIES, 0);
+                0);
 
         clusterManager = ClusterManager.create();
     }
@@ -306,7 +305,7 @@ public class TraceDaoIT {
         // given
         Trace trace = TraceTestData.createTrace(partial);
         CompletableFuture<?> cf = traceDao.store(AGENT_ID, trace).thenAccept(res -> {
-           try {
+            try {
                 TraceQuery query = ImmutableTraceQuery.builder()
                         .transactionType("unit test")
                         .from(0)
@@ -324,11 +323,11 @@ public class TraceDaoIT {
 
                 // then
                 assertThat(queryResult.records()).hasSize(1);
-           } catch (RuntimeException e) {
-               throw e;
-           } catch (Exception e) {
-               throw new RuntimeException(e);
-           }
+            } catch (RuntimeException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         });
         assertThat(cf).succeedsWithin(Duration.ofMillis(60_000));
     }
@@ -339,29 +338,29 @@ public class TraceDaoIT {
         // given
         Trace trace = TraceTestData.createTrace(partial);
         CompletableFuture<?> cf = traceDao.store(AGENT_ID, trace).thenAccept(res -> {
-           try {
-               TraceQuery query = ImmutableTraceQuery.builder()
-                       .transactionType("unit test")
-                       .from(0)
-                       .to(100)
-                       .build();
-               TracePointFilter filter = ImmutableTracePointFilter.builder()
-                       .durationNanosLow(0)
-                       .attributeName("abc")
-                       .attributeValueComparator(StringComparator.EQUALS)
-                       .attributeValue("abc")
-                       .build();
+            try {
+                TraceQuery query = ImmutableTraceQuery.builder()
+                        .transactionType("unit test")
+                        .from(0)
+                        .to(100)
+                        .build();
+                TracePointFilter filter = ImmutableTracePointFilter.builder()
+                        .durationNanosLow(0)
+                        .attributeName("abc")
+                        .attributeValueComparator(StringComparator.EQUALS)
+                        .attributeValue("abc")
+                        .build();
 
-               // when
-               Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1).get();
+                // when
+                Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1).get();
 
-               // then
-               assertThat(queryResult.records()).isEmpty();
-           } catch (RuntimeException e) {
-               throw e;
-           } catch (Exception e) {
-               throw new RuntimeException(e);
-           }
+                // then
+                assertThat(queryResult.records()).isEmpty();
+            } catch (RuntimeException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         });
         assertThat(cf).succeedsWithin(Duration.ofMillis(60_000));
     }
@@ -372,29 +371,29 @@ public class TraceDaoIT {
         // given
         Trace trace = TraceTestData.createTrace(partial);
         CompletableFuture<?> cf = traceDao.store(AGENT_ID, trace).thenAccept(res -> {
-           try {
-               TraceQuery query = ImmutableTraceQuery.builder()
-                       .transactionType("unit test")
-                       .from(0)
-                       .to(100)
-                       .build();
-               TracePointFilter filter = ImmutableTracePointFilter.builder()
-                       .durationNanosLow(0)
-                       .attributeName(null)
-                       .attributeValueComparator(StringComparator.EQUALS)
-                       .attributeValue("xyz1")
-                       .build();
+            try {
+                TraceQuery query = ImmutableTraceQuery.builder()
+                        .transactionType("unit test")
+                        .from(0)
+                        .to(100)
+                        .build();
+                TracePointFilter filter = ImmutableTracePointFilter.builder()
+                        .durationNanosLow(0)
+                        .attributeName(null)
+                        .attributeValueComparator(StringComparator.EQUALS)
+                        .attributeValue("xyz1")
+                        .build();
 
-               // when
-               Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1).get();
+                // when
+                Result<TracePoint> queryResult = traceDao.readSlowPoints(AGENT_ID, query, filter, 1).get();
 
-               // then
-               assertThat(queryResult.records()).isEmpty();
-           } catch (RuntimeException e) {
-               throw e;
-           } catch (Exception e) {
-               throw new RuntimeException(e);
-           }
+                // then
+                assertThat(queryResult.records()).isEmpty();
+            } catch (RuntimeException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         });
         assertThat(cf).succeedsWithin(Duration.ofMillis(60_000));
     }
@@ -403,7 +402,7 @@ public class TraceDaoIT {
     public void shouldReadTraceError() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(false); // partial records are not inserted into
-                                                        // error tables
+        // error tables
         trace = trace.toBuilder()
                 .setHeader(trace.getHeader().toBuilder()
                         .setError(Trace.Error.newBuilder()
@@ -418,7 +417,7 @@ public class TraceDaoIT {
                         .build();
 
                 // when
-                long count = traceDao.readErrorMessageCount(AGENT_ID, query, "is A");
+                long count = traceDao.readErrorMessageCount(AGENT_ID, query, "is A", CassandraProfile.web);
 
                 // then
                 assertThat(count).isEqualTo(1);
@@ -435,7 +434,7 @@ public class TraceDaoIT {
     public void shouldReadTraceErrorCaseInsensitive() throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(false); // partial records are not inserted into
-                                                        // error tables
+        // error tables
         trace = trace.toBuilder()
                 .setHeader(trace.getHeader().toBuilder()
                         .setError(Trace.Error.newBuilder()
@@ -450,7 +449,7 @@ public class TraceDaoIT {
                         .build();
 
                 // when
-                long count = traceDao.readErrorMessageCount(AGENT_ID, query, "/(?i)is a/");
+                long count = traceDao.readErrorMessageCount(AGENT_ID, query, "/(?i)is a/", CassandraProfile.web);
 
                 // then
                 assertThat(count).isEqualTo(1);

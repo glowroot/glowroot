@@ -30,6 +30,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.central.util.RateLimiter;
@@ -94,12 +95,12 @@ class FullQueryTextDao implements AutoCloseable {
     }
 
     @Nullable
-    String getFullText(String agentRollupId, String fullTextSha1) throws Exception {
-        String fullText = getFullTextUsingPS(agentRollupId, fullTextSha1, readCheckV2PS);
+    String getFullText(String agentRollupId, String fullTextSha1, CassandraProfile profile) throws Exception {
+        String fullText = getFullTextUsingPS(agentRollupId, fullTextSha1, readCheckV2PS, profile);
         if (fullText != null) {
             return fullText;
         }
-        return getFullTextUsingPS(agentRollupId, fullTextSha1, readCheckV1PS);
+        return getFullTextUsingPS(agentRollupId, fullTextSha1, readCheckV1PS, profile);
     }
 
     List<CompletableFuture<?>> store(List<String> agentRollupIds, String fullTextSha1, String fullText) {
@@ -111,7 +112,7 @@ class FullQueryTextDao implements AutoCloseable {
                 .setString(i++, agentRollupId)
                 .setString(i++, fullTextSha1)
                 .setInt(i, getTTL());
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
         }
         if (!rateLimiter.tryAcquire(fullTextSha1)) {
             return futures;
@@ -131,17 +132,17 @@ class FullQueryTextDao implements AutoCloseable {
     }
 
     private @Nullable String getFullTextUsingPS(String agentRollupId, String fullTextSha1,
-            PreparedStatement readCheckPS) {
+            PreparedStatement readCheckPS, CassandraProfile profile) {
         BoundStatement boundStatement = readCheckPS.bind()
             .setString(0, agentRollupId)
             .setString(1, fullTextSha1);
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         if (results.one() == null) {
             return null;
         }
         boundStatement = readPS.bind()
             .setString(0, fullTextSha1);
-        results = session.read(boundStatement);
+        results = session.read(boundStatement, profile);
         Row row = results.one();
         if (row == null) {
             return null;
@@ -153,17 +154,17 @@ class FullQueryTextDao implements AutoCloseable {
     private CompletableFuture<AsyncResultSet> storeInternal(String fullTextSha1, String fullText) {
         BoundStatement boundStatement = readTtlPS.bind()
             .setString(0, fullTextSha1);
-        return session.readAsync(boundStatement).thenCompose(results -> {
+        return session.readAsync(boundStatement, CassandraProfile.collector).thenCompose(results -> {
             Row row = results.one();
             int ttl = getTTL();
             if (row == null) {
-                return insertAndCompleteFuture(fullTextSha1, fullText, ttl);
+                return insertAndCompleteFuture(fullTextSha1, fullText, ttl, CassandraProfile.collector);
             }
             int existingTTL = row.getInt(0);
             if (existingTTL != 0 && ttl > existingTTL + DAYS.toSeconds(1)) {
                 // only overwrite if bumping TTL at least 1 day
                 // also, never overwrite with smaller TTL
-                return insertAndCompleteFuture(fullTextSha1, fullText, ttl);
+                return insertAndCompleteFuture(fullTextSha1, fullText, ttl, CassandraProfile.collector);
             } else {
                 return CompletableFuture.completedFuture(null);
             }
@@ -171,13 +172,13 @@ class FullQueryTextDao implements AutoCloseable {
     }
 
     private CompletionStage<AsyncResultSet> insertAndCompleteFuture(
-            String fullTextSha1, String fullText, int ttl) {
+            String fullTextSha1, String fullText, int ttl, CassandraProfile profile) {
         int i = 0;
         BoundStatement boundStatement = insertPS.bind()
                 .setString(i++, fullTextSha1)
                 .setString(i++, fullText)
                 .setInt(i, ttl);
-        return session.writeAsync(boundStatement);
+        return session.writeAsync(boundStatement, profile);
     }
 
     private int getTTL() {

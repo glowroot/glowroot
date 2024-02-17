@@ -33,6 +33,7 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common.util.Versions;
 import org.glowroot.common2.config.MoreConfigDefaults;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.OptimisticLockException;
 import org.glowroot.common2.repo.GaugeValueRepository;
@@ -171,7 +172,7 @@ class ConfigJsonService {
             @BindRequest GeneralConfigDto configDto) throws Exception {
         try {
             configRepository.updateGeneralConfig(agentRollupId, configDto.convert(),
-                    configDto.version());
+                    configDto.version(), CassandraProfile.web);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -183,7 +184,7 @@ class ConfigJsonService {
             @BindRequest TransactionConfigDto configDto) throws Exception {
         try {
             configRepository.updateTransactionConfig(agentId, configDto.convert(),
-                    configDto.version());
+                    configDto.version(), CassandraProfile.web);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -194,7 +195,7 @@ class ConfigJsonService {
     String updateJvmConfig(@BindAgentId String agentId, @BindRequest JvmConfigDto configDto)
             throws Exception {
         try {
-            configRepository.updateJvmConfig(agentId, configDto.convert(), configDto.version());
+            configRepository.updateJvmConfig(agentId, configDto.convert(), configDto.version(), CassandraProfile.web);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -208,7 +209,7 @@ class ConfigJsonService {
         configDto = sanitizationService.sanitize(configDto);
         try {
             configRepository.updateUiDefaultsConfig(agentRollupId, configDto.convert(),
-                    configDto.version());
+                    configDto.version(), CassandraProfile.web);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -242,7 +243,7 @@ class ConfigJsonService {
             builder.addProperty(prop.convert());
         }
         try {
-            configRepository.updatePluginConfig(agentId, builder.build(), request.version());
+            configRepository.updatePluginConfig(agentId, builder.build(), request.version(), CassandraProfile.web);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -255,7 +256,7 @@ class ConfigJsonService {
             @BindRequest AdvancedConfigDto configDto) throws Exception {
         try {
             configRepository.updateAdvancedConfig(agentRollupId, configDto.convert(),
-                    configDto.version());
+                    configDto.version(), CassandraProfile.web);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }
@@ -266,7 +267,7 @@ class ConfigJsonService {
     String updateAllConfig(@BindAgentId String agentId, @BindRequest AllConfigDto config)
             throws Exception {
         try {
-            configRepository.updateAllConfig(agentId, config.toProto(), config.version());
+            configRepository.updateAllConfig(agentId, config.toProto(), config.version(), CassandraProfile.web);
         } catch (OptimisticLockException e) {
             throw new JsonServiceException(PRECONDITION_FAILED, e);
         }

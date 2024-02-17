@@ -42,6 +42,7 @@ import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ActiveAgentRepository;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common2.repo.ImmutableAgentRollup;
 import org.glowroot.common2.repo.ImmutableTopLevelAgentRollup;
@@ -112,7 +113,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
     }
 
     @Override
-    public List<TopLevelAgentRollup> readActiveTopLevelAgentRollups(long from, long to)
+    public List<TopLevelAgentRollup> readActiveTopLevelAgentRollups(long from, long to, CassandraProfile profile)
             throws Exception {
         int rollupLevel = rollupLevelService.getRollupLevelForView(from, to, DataKind.GENERAL);
         long rollupIntervalMillis =
@@ -123,7 +124,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
         BoundStatement boundStatement = readTopLevelPS.get(rollupLevel).bind()
             .setInstant(0, Instant.ofEpochMilli(from))
             .setInstant(1, Instant.ofEpochMilli(revisedTo));
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         for (Row row : results) {
             topLevelIds.add(checkNotNull(row.getString(0)));
         }
@@ -144,20 +145,20 @@ public class ActiveAgentDao implements ActiveAgentRepository {
     }
 
     @Override
-    public List<AgentRollup> readActiveChildAgentRollups(String topLevelId, long from, long to)
+    public List<AgentRollup> readActiveChildAgentRollups(String topLevelId, long from, long to, CassandraProfile profile)
             throws Exception {
-        return readActiveChildAgentRollups(topLevelId, from, to, true);
+        return readActiveChildAgentRollups(topLevelId, from, to, true, profile);
     }
 
     @Override
-    public List<AgentRollup> readRecentlyActiveAgentRollups(long lastXMillis) throws Exception {
+    public List<AgentRollup> readRecentlyActiveAgentRollups(long lastXMillis, CassandraProfile profile) throws Exception {
         long now = clock.currentTimeMillis();
-        return readActiveAgentRollups(now - lastXMillis, now);
+        return readActiveAgentRollups(now - lastXMillis, now, profile);
     }
 
     @Override
-    public List<AgentRollup> readActiveAgentRollups(long from, long to) throws Exception {
-        List<TopLevelAgentRollup> topLevelAgentRollups = readActiveTopLevelAgentRollups(from, to);
+    public List<AgentRollup> readActiveAgentRollups(long from, long to, CassandraProfile profile) throws Exception {
+        List<TopLevelAgentRollup> topLevelAgentRollups = readActiveTopLevelAgentRollups(from, to, profile);
         List<AgentRollup> agentRollups = new ArrayList<>();
         for (TopLevelAgentRollup topLevelAgentRollup : topLevelAgentRollups) {
             ImmutableAgentRollup.Builder builder = ImmutableAgentRollup.builder()
@@ -166,7 +167,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
                     .lastDisplayPart(topLevelAgentRollup.display());
             if (topLevelAgentRollup.id().endsWith("::")) {
                 builder.addAllChildren(
-                        readActiveChildAgentRollups(topLevelAgentRollup.id(), from, to, false));
+                        readActiveChildAgentRollups(topLevelAgentRollup.id(), from, to, false, profile));
             }
             agentRollups.add(builder.build());
         }
@@ -206,7 +207,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
                 .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
                 .setString(i++, topLevelId)
                 .setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
 
             if (childAgentId != null) {
                 i = 0;
@@ -215,14 +216,14 @@ public class ActiveAgentDao implements ActiveAgentRepository {
                     .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
                     .setString(i++, childAgentId)
                     .setInt(i++, adjustedTTL);
-                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
             }
         }
         return futures;
     }
 
     private List<AgentRollup> readActiveChildAgentRollups(String topLevelId, long from, long to,
-            boolean stripTopLevelDisplay) throws Exception {
+            boolean stripTopLevelDisplay, CassandraProfile profile) throws Exception {
         int rollupLevel = rollupLevelService.getRollupLevelForView(from, to, DataKind.GENERAL);
         long rollupIntervalMillis =
                 getRollupIntervalMillis(configRepository.getRollupConfigs(), rollupLevel);
@@ -235,7 +236,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
             .setString(0, topLevelId)
             .setInstant(1, Instant.ofEpochMilli(from))
             .setInstant(2, Instant.ofEpochMilli(revisedTo));
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         for (Row row : results) {
             String agentId = topLevelId + checkNotNull(row.getString(0));
             List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);

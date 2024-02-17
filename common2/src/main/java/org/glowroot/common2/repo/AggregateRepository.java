@@ -38,19 +38,19 @@ public interface AggregateRepository {
 
     // query.from() is non-inclusive
     void mergeOverallSummaryInto(String agentRollupId, SummaryQuery query,
-            OverallSummaryCollector collector) throws Exception;
+            OverallSummaryCollector collector, CassandraProfile profile) throws Exception;
 
     // query.from() is non-inclusive
     // sortOrder and limit are only used by embedded H2 repository, while the central cassandra
     // repository which currently has to pull in all records anyways just delegates ordering and
     // limit to TransactionNameSummaryCollector
     void mergeTransactionNameSummariesInto(String agentRollupId, SummaryQuery query,
-            SummarySortOrder sortOrder, int limit, TransactionNameSummaryCollector collector)
+            SummarySortOrder sortOrder, int limit, TransactionNameSummaryCollector collector, CassandraProfile profile)
             throws Exception;
 
     // query.from() is non-inclusive
     void mergeOverallErrorSummaryInto(String agentRollupId, SummaryQuery query,
-            OverallErrorSummaryCollector collector) throws Exception;
+            OverallErrorSummaryCollector collector, CassandraProfile profile) throws Exception;
 
     // query.from() is non-inclusive
     // sortOrder and limit are only used by embedded H2 repository, while the central cassandra
@@ -58,44 +58,44 @@ public interface AggregateRepository {
     // limit to TransactionNameErrorSummaryCollector
     void mergeTransactionNameErrorSummariesInto(String agentRollupId, SummaryQuery query,
             ErrorSummarySortOrder sortOrder, int limit,
-            TransactionNameErrorSummaryCollector collector) throws Exception;
+            TransactionNameErrorSummaryCollector collector, CassandraProfile profile) throws Exception;
 
     // query.from() is INCLUSIVE
-    List<OverviewAggregate> readOverviewAggregates(String agentRollupId, AggregateQuery query)
+    List<OverviewAggregate> readOverviewAggregates(String agentRollupId, AggregateQuery query, CassandraProfile profile)
             throws Exception;
 
     // query.from() is INCLUSIVE
-    List<PercentileAggregate> readPercentileAggregates(String agentRollupId, AggregateQuery query)
+    List<PercentileAggregate> readPercentileAggregates(String agentRollupId, AggregateQuery query, CassandraProfile profile)
             throws Exception;
 
     // query.from() is INCLUSIVE
-    List<ThroughputAggregate> readThroughputAggregates(String agentRollupId, AggregateQuery query)
+    List<ThroughputAggregate> readThroughputAggregates(String agentRollupId, AggregateQuery query, CassandraProfile profile)
             throws Exception;
 
     // query.from() is non-inclusive
-    void mergeQueriesInto(String agentRollupId, AggregateQuery query, QueryCollector collector)
+    void mergeQueriesInto(String agentRollupId, AggregateQuery query, QueryCollector collector, CassandraProfile profile)
             throws Exception;
 
     // query.from() is non-inclusive
     void mergeServiceCallsInto(String agentRollupId, AggregateQuery query,
-            ServiceCallCollector collector) throws Exception;
+            ServiceCallCollector collector, CassandraProfile profile) throws Exception;
 
     // query.from() is non-inclusive
     void mergeMainThreadProfilesInto(String agentRollupId, AggregateQuery query,
-            ProfileCollector collector) throws Exception;
+            ProfileCollector collector, CassandraProfile profile) throws Exception;
 
     // query.from() is non-inclusive
     void mergeAuxThreadProfilesInto(String agentRollupId, AggregateQuery query,
-            ProfileCollector collector) throws Exception;
+            ProfileCollector collector, CassandraProfile profile) throws Exception;
 
     @Nullable
-    String readFullQueryText(String agentRollupId, String fullQueryTextSha1) throws Exception;
+    String readFullQueryText(String agentRollupId, String fullQueryTextSha1, CassandraProfile profile) throws Exception;
 
     // query.from() is non-inclusive
-    boolean hasMainThreadProfile(String agentRollupId, AggregateQuery query) throws Exception;
+    boolean hasMainThreadProfile(String agentRollupId, AggregateQuery query, CassandraProfile profile) throws Exception;
 
     // query.from() is non-inclusive
-    boolean hasAuxThreadProfile(String agentRollupId, AggregateQuery query) throws Exception;
+    boolean hasAuxThreadProfile(String agentRollupId, AggregateQuery query, CassandraProfile profile) throws Exception;
 
     // query.from() is non-inclusive
     boolean shouldHaveQueries(String agentRollupId, AggregateQuery query) throws Exception;

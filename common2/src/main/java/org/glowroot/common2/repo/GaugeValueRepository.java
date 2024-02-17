@@ -26,13 +26,13 @@ public interface GaugeValueRepository {
 
     List<Gauge> getRecentlyActiveGauges(String agentRollupId) throws Exception;
 
-    List<Gauge> getGauges(String agentRollupId, long from, long to) throws Exception;
+    List<Gauge> getGauges(String agentRollupId, long from, long to, CassandraProfile profile) throws Exception;
 
     // from is INCLUSIVE
     List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from, long to,
-            int rollupLevel) throws Exception;
+            int rollupLevel, CassandraProfile profile) throws Exception;
 
-    long getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel)
+    long getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel, CassandraProfile profile)
             throws Exception;
 
     @Value.Immutable

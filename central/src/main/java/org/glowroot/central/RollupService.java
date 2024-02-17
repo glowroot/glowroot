@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.spotify.futures.CompletableFutures;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,6 @@ import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.central.util.MoreExecutors2;
 import org.glowroot.central.util.MoreFutures;
-import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
 
@@ -77,7 +77,6 @@ class RollupService implements Runnable {
 
     @Override
     public void run() {
-        Session.setInRollupThread(true);
         int counter = 0;
         int numWorkerThreads = INITIAL_WORKER_THREADS;
         ExecutorService workerExecutor = newWorkerExecutor(numWorkerThreads);
@@ -88,7 +87,7 @@ class RollupService implements Runnable {
                 long lastXMillis = counter++ % 100 == 0 ? DAYS.toMillis(7) : MINUTES.toMillis(30);
                 Stopwatch stopwatch = Stopwatch.createStarted();
                 List<AgentRollup> agentRollups =
-                        activeAgentDao.readRecentlyActiveAgentRollups(lastXMillis);
+                        activeAgentDao.readRecentlyActiveAgentRollups(lastXMillis, CassandraProfile.rollup);
                 runInternal(agentRollups, workerExecutor);
                 long elapsedInSeconds = stopwatch.elapsed(SECONDS);
                 int oldNumWorkerThreads = numWorkerThreads;
@@ -169,7 +168,7 @@ class RollupService implements Runnable {
         try {
             // FIXME keep this here as fallback, but also resolve alerts immediately when they are
             // deleted (or when their condition is updated)
-            centralAlertingService.checkForAllDeletedAlerts();
+            centralAlertingService.checkForAllDeletedAlerts(CassandraProfile.rollup);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
@@ -251,7 +250,7 @@ class RollupService implements Runnable {
             public void run() {
                 try {
                     centralAlertingService.checkAggregateAndGaugeAndHeartbeatAlertsAsync(
-                            agentRollup.id(), agentRollup.display(), clock.currentTimeMillis());
+                            agentRollup.id(), agentRollup.display(), clock.currentTimeMillis(), CassandraProfile.rollup);
                 } catch (InterruptedException e) {
                     // probably shutdown requested (see close method above)
                 } catch (Throwable t) {

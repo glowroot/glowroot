@@ -16,6 +16,7 @@
 package org.glowroot.central;
 
 import org.glowroot.central.repo.HeartbeatDao;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.IncidentRepository;
 import org.glowroot.common2.repo.IncidentRepository.OpenIncident;
@@ -42,28 +43,28 @@ class HeartbeatAlertingService {
     }
 
     void checkHeartbeatAlert(String agentRollupId, String agentRollupDisplay,
-            AlertConfig alertConfig, HeartbeatCondition heartbeatCondition, long endTime)
+            AlertConfig alertConfig, HeartbeatCondition heartbeatCondition, long endTime, CassandraProfile profile)
             throws Exception {
         long startTime = endTime - SECONDS.toMillis(heartbeatCondition.getTimePeriodSeconds());
-        boolean currentlyTriggered = !heartbeatDao.exists(agentRollupId, startTime, endTime);
+        boolean currentlyTriggered = !heartbeatDao.exists(agentRollupId, startTime, endTime, profile);
         sendHeartbeatAlertIfNeeded(agentRollupId, agentRollupDisplay, alertConfig,
-                heartbeatCondition, endTime, currentlyTriggered);
+                heartbeatCondition, endTime, currentlyTriggered, profile);
     }
 
     private void sendHeartbeatAlertIfNeeded(String agentRollupId, String agentRollupDisplay,
             AlertConfig alertConfig, HeartbeatCondition heartbeatCondition, long endTime,
-            boolean currentlyTriggered) throws Exception {
+            boolean currentlyTriggered, CassandraProfile profile) throws Exception {
         AlertCondition alertCondition = alertConfig.getCondition();
         OpenIncident openIncident = incidentRepository.readOpenIncident(agentRollupId,
-                alertCondition, alertConfig.getSeverity());
+                alertCondition, alertConfig.getSeverity(), profile);
         if (openIncident != null && !currentlyTriggered) {
-            incidentRepository.resolveIncident(openIncident, endTime);
+            incidentRepository.resolveIncident(openIncident, endTime, profile);
             sendHeartbeatAlert(agentRollupId, agentRollupDisplay, alertConfig, heartbeatCondition,
                     endTime, true);
         } else if (openIncident == null && currentlyTriggered) {
             // the start time for the incident is the end time of the interval evaluated above
             incidentRepository.insertOpenIncident(agentRollupId, alertCondition,
-                    alertConfig.getSeverity(), alertConfig.getNotification(), endTime);
+                    alertConfig.getSeverity(), alertConfig.getNotification(), endTime, profile);
             sendHeartbeatAlert(agentRollupId, agentRollupDisplay, alertConfig, heartbeatCondition,
                     endTime, false);
         }

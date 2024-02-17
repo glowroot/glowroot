@@ -42,6 +42,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.RateLimiter;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.*;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
@@ -53,15 +54,9 @@ import org.glowroot.common.util.Versions;
 import org.glowroot.common2.config.SlackConfig.SlackWebhook;
 import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.SmtpConfig.ConnectionSecurity;
-import org.glowroot.common2.repo.AggregateRepository;
-import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
-import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
-import org.glowroot.common2.repo.IncidentRepository;
 import org.glowroot.common2.repo.IncidentRepository.OpenIncident;
-import org.glowroot.common2.repo.TraceRepository;
-import org.glowroot.common2.repo.Utils;
 import org.glowroot.common2.repo.util.HttpClient.TooManyRequestsHttpResponseException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
@@ -126,28 +121,28 @@ public class AlertingService {
         }
     }
 
-    public void checkForDeletedAlerts(String agentRollupId) throws Exception {
-        for (OpenIncident openIncident : incidentRepository.readOpenIncidents(agentRollupId)) {
+    public void checkForDeletedAlerts(String agentRollupId, CassandraProfile profile) throws Exception {
+        for (OpenIncident openIncident : incidentRepository.readOpenIncidents(agentRollupId, profile)) {
             if (isDeletedAlert(openIncident)) {
-                incidentRepository.resolveIncident(openIncident, clock.currentTimeMillis());
+                incidentRepository.resolveIncident(openIncident, clock.currentTimeMillis(), profile);
             }
         }
     }
 
-    public void checkForAllDeletedAlerts() throws Exception {
-        for (OpenIncident openIncident : incidentRepository.readAllOpenIncidents()) {
+    public void checkForAllDeletedAlerts(CassandraProfile profile) throws Exception {
+        for (OpenIncident openIncident : incidentRepository.readAllOpenIncidents(profile)) {
             if (isDeletedAlert(openIncident)) {
-                incidentRepository.resolveIncident(openIncident, clock.currentTimeMillis());
+                incidentRepository.resolveIncident(openIncident, clock.currentTimeMillis(), profile);
             }
         }
     }
 
     public void checkMetricAlert(String centralDisplay, String agentRollupId,
-            String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
-            long endTime) throws Exception {
+                                 String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
+                                 long endTime, CassandraProfile profile) throws Exception {
         long startTime = endTime - SECONDS.toMillis(metricCondition.getTimePeriodSeconds());
         Number value =
-                metricService.getMetricValue(agentRollupId, metricCondition, startTime, endTime);
+                metricService.getMetricValue(agentRollupId, metricCondition, startTime, endTime, profile);
         if (value == null) {
             // cannot calculate due to no data, e.g. error rate (but not error count, which can be
             // calculated - zero - when no data)
@@ -161,11 +156,11 @@ public class AlertingService {
         }
         AlertCondition alertCondition = alertConfig.getCondition();
         OpenIncident openIncident = incidentRepository.readOpenIncident(agentRollupId,
-                alertCondition, alertConfig.getSeverity());
+                alertCondition, alertConfig.getSeverity(), profile);
         if (openIncident != null && !currentlyTriggered) {
             // TODO don't close if no data and no heartbeat?
             resolveIncident(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
-                    metricCondition, endTime, alertCondition, openIncident);
+                    metricCondition, endTime, alertCondition, openIncident, profile);
         } else if (openIncident == null && currentlyTriggered) {
             // don't open if min transaction count is not met
             if (hasMinTransactionCount(metricCondition.getMetric())) {
@@ -174,20 +169,20 @@ public class AlertingService {
                     long transactionCount = metricService.getTransactionCount(agentRollupId,
                             metricCondition.getTransactionType(),
                             Strings.emptyToNull(metricCondition.getTransactionName()), startTime,
-                            endTime);
+                            endTime, profile);
                     if (transactionCount < minTransactionCount) {
                         return;
                     }
                 }
             }
             openIncident(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
-                    metricCondition, endTime, alertCondition);
+                    metricCondition, endTime, alertCondition, profile);
         }
     }
 
     private void openIncident(String centralDisplay, String agentRollupId,
             String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
-            long endTime, AlertCondition alertCondition) throws Exception {
+            long endTime, AlertCondition alertCondition, CassandraProfile profile) throws Exception {
         IncidentKey incidentKey = ImmutableIncidentKey.builder()
                 .agentRollupId(agentRollupId)
                 .condition(alertCondition)
@@ -200,7 +195,7 @@ public class AlertingService {
         try {
             // the start time for the incident is the end time of the interval evaluated above
             incidentRepository.insertOpenIncident(agentRollupId, alertCondition,
-                    alertConfig.getSeverity(), alertConfig.getNotification(), endTime);
+                    alertConfig.getSeverity(), alertConfig.getNotification(), endTime, profile);
             sendMetricAlert(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
                     metricCondition, endTime, false);
         } finally {
@@ -210,7 +205,7 @@ public class AlertingService {
 
     private void resolveIncident(String centralDisplay, String agentRollupId,
             String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
-            long endTime, AlertCondition alertCondition, OpenIncident openIncident)
+            long endTime, AlertCondition alertCondition, OpenIncident openIncident, CassandraProfile profile)
             throws Exception {
         IncidentKey incidentKey = ImmutableIncidentKey.builder()
                 .agentRollupId(agentRollupId)
@@ -222,7 +217,7 @@ public class AlertingService {
             return;
         }
         try {
-            incidentRepository.resolveIncident(openIncident, endTime);
+            incidentRepository.resolveIncident(openIncident, endTime, profile);
             sendMetricAlert(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
                     metricCondition, endTime, true);
         } finally {

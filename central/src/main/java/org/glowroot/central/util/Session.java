@@ -15,16 +15,12 @@
  */
 package org.glowroot.central.util;
 
-import java.lang.management.ManagementFactory;
+
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Semaphore;
-
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
@@ -37,6 +33,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,19 +42,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class Session implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(Session.class);
-
-    @SuppressWarnings("nullness:type.argument.type.incompatible")
-    private static final ThreadLocal<Boolean> inRollupThread = ThreadLocal.withInitial(() -> false);
-
-    // limit concurrent queries to avoid BusyPoolException
-    // separate read/write query limits in order to give some preference to UI requests which are
-    // primarily read queries, compared to the bulk of the concurrent queries which are primarily
-    // write queries
-    // separate rollup query limit in order to prevent rollup from hogging too many, and also to
-    // prevent rollup from not getting enough
-    private final Semaphore readQuerySemaphore;
-    private final Semaphore writeQuerySemaphore;
-    private final Semaphore rollupQuerySemaphore;
 
     private final CqlSession wrappedSession;
     private final String keyspaceName;
@@ -69,15 +53,12 @@ public class Session implements AutoCloseable {
     private final CassandraWriteMetrics cassandraWriteMetrics;
 
     public Session(CqlSession wrappedSession, String keyspaceName,
-                   @Nullable ConsistencyLevel writeConsistencyLevel, int maxConcurrentRequests, int gcGraceSeconds)
+                   @Nullable ConsistencyLevel writeConsistencyLevel, int gcGraceSeconds)
             throws Exception {
         this.wrappedSession = wrappedSession;
         this.keyspaceName = keyspaceName;
         this.writeConsistencyLevel = writeConsistencyLevel;
 
-        readQuerySemaphore = new Semaphore(maxConcurrentRequests / 4);
-        writeQuerySemaphore = new Semaphore(maxConcurrentRequests / 2);
-        rollupQuerySemaphore = new Semaphore(maxConcurrentRequests / 4);
         this.gcGraceSeconds = gcGraceSeconds;
 
         cassandraWriteMetrics = new CassandraWriteMetrics(wrappedSession, keyspaceName);
@@ -91,14 +72,6 @@ public class Session implements AutoCloseable {
                     + " : 1 }");
         }
         wrappedSession.execute(SimpleStatement.newInstance("use " + keyspaceName));
-
-        MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
-        platformMBeanServer.registerMBean(new SemaphoreStats(readQuerySemaphore),
-                ObjectName.getInstance("org.glowroot.central:type=ReadQuerySemaphore"));
-        platformMBeanServer.registerMBean(new SemaphoreStats(writeQuerySemaphore),
-                ObjectName.getInstance("org.glowroot.central:type=WriteQuerySemaphore"));
-        platformMBeanServer.registerMBean(new SemaphoreStats(rollupQuerySemaphore),
-                ObjectName.getInstance("org.glowroot.central:type=RollupQuerySemaphore"));
     }
 
     public CassandraWriteMetrics getCassandraWriteMetrics() {
@@ -109,14 +82,14 @@ public class Session implements AutoCloseable {
         return wrappedSession.prepare(query);
     }
 
-    public ResultSet read(String query) throws Exception {
+    public ResultSet read(String query, CassandraProfile profile) throws Exception {
         if (!query.startsWith("select ")) {
             throw new IllegalStateException("Unexpected read query: " + query);
         }
-        return wrappedSession.execute(SimpleStatement.newInstance(query));
+        return wrappedSession.execute(SimpleStatement.newInstance(query).setExecutionProfileName(profile.name()));
     }
 
-    public ResultSet read(Statement<?> statement) {
+    public ResultSet read(Statement<?> statement, CassandraProfile profile) {
         if (statement instanceof BoundStatement) {
             BoundStatement boundStatement = (BoundStatement) statement;
             PreparedStatement preparedStatement = boundStatement.getPreparedStatement();
@@ -125,10 +98,11 @@ public class Session implements AutoCloseable {
                 throw new IllegalStateException("Unexpected read query: " + queryString);
             }
         }
+        statement = statement.setExecutionProfileName(profile.name());
         return wrappedSession.execute(statement);
     }
 
-    public void write(Statement<?> statement) throws Exception {
+    public void write(Statement<?> statement, CassandraProfile profile) throws Exception {
         if (statement instanceof BoundStatement) {
             BoundStatement boundStatement = (BoundStatement) statement;
             PreparedStatement preparedStatement = boundStatement.getPreparedStatement();
@@ -139,10 +113,11 @@ public class Session implements AutoCloseable {
         }
         // do not use session.execute() because that calls getUninterruptibly() which can cause
         // central shutdown to timeout while waiting for executor service to shutdown
-        writeAsync(statement).toCompletableFuture().get();
+        statement = statement.setExecutionProfileName(profile.name());
+        writeAsync(statement, profile).toCompletableFuture().get();
     }
 
-    public AsyncResultSet update(Statement<?> statement) throws Exception {
+    public AsyncResultSet update(Statement<?> statement, CassandraProfile profile) throws Exception {
         if (statement instanceof BoundStatement) {
             BoundStatement boundStatement = (BoundStatement) statement;
             PreparedStatement preparedStatement = boundStatement.getPreparedStatement();
@@ -156,12 +131,13 @@ public class Session implements AutoCloseable {
         }
         // do not use session.execute() because that calls getUninterruptibly() which can cause
         // central shutdown to timeout while waiting for executor service to shutdown
-        return updateAsync(statement).toCompletableFuture().get();
+        statement = statement.setExecutionProfileName(profile.name());
+        return updateAsync(statement, profile).toCompletableFuture().get();
     }
 
-    public CompletionStage<AsyncResultSet> readAsyncWarnIfNoRows(Statement<?> statement,
+    public CompletionStage<AsyncResultSet> readAsyncWarnIfNoRows(Statement<?> statement, CassandraProfile profile,
                                                                  String warningMessage, Object... warningArguments) {
-        return readAsync(statement).thenApply(results -> {
+        return readAsync(statement, profile).thenApply(results -> {
             if (!results.currentPage().iterator().hasNext()) {
                 logger.warn(warningMessage, warningArguments);
             }
@@ -169,25 +145,21 @@ public class Session implements AutoCloseable {
         });
     }
 
-    public CompletionStage<AsyncResultSet> readAsync(Statement<?> statement) {
-        return throttleRead(() -> wrappedSession.executeAsync(statement));
+    public CompletionStage<AsyncResultSet> readAsync(Statement<?> statement, CassandraProfile profile) {
+        return wrappedSession.executeAsync(statement.setExecutionProfileName(profile.name()));
     }
 
-    public CompletionStage<AsyncResultSet> writeAsync(Statement<?> statement) {
+    public CompletionStage<AsyncResultSet> writeAsync(Statement<?> statement, CassandraProfile profile) {
         if (statement.getConsistencyLevel() == null && writeConsistencyLevel != null) {
             statement = statement.setConsistencyLevel(writeConsistencyLevel);
         }
-        final Statement<?> finalStatement = statement;
-        return throttleWrite(() -> {
-            // for now, need to record metrics in the same method because CassandraWriteMetrics
-            // relies on some thread locals
-            cassandraWriteMetrics.recordMetrics(finalStatement);
-            return wrappedSession.executeAsync(finalStatement);
-        });
+        statement = statement.setExecutionProfileName(profile.name());
+        cassandraWriteMetrics.recordMetrics(statement);
+        return wrappedSession.executeAsync(statement);
     }
 
-    private CompletionStage<AsyncResultSet> updateAsync(Statement<?> statement) {
-        return throttleWrite(() -> wrappedSession.executeAsync(statement));
+    private CompletionStage<AsyncResultSet> updateAsync(Statement<?> statement, CassandraProfile profile) {
+        return wrappedSession.executeAsync(statement.setExecutionProfileName(profile.name()));
     }
 
     public String getKeyspaceName() {
@@ -217,13 +189,6 @@ public class Session implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
-        platformMBeanServer.unregisterMBean(
-                ObjectName.getInstance("org.glowroot.central:type=ReadQuerySemaphore"));
-        platformMBeanServer.unregisterMBean(
-                ObjectName.getInstance("org.glowroot.central:type=WriteQuerySemaphore"));
-        platformMBeanServer.unregisterMBean(
-                ObjectName.getInstance("org.glowroot.central:type=RollupQuerySemaphore"));
         wrappedSession.close();
         cassandraWriteMetrics.close();
     }
@@ -301,12 +266,7 @@ public class Session implements AutoCloseable {
     }
 
     public void updateSchemaWithRetry(String query) throws InterruptedException {
-        writeQuerySemaphore.acquire();
-        try {
-            updateSchemaWithRetry(wrappedSession, query);
-        } finally {
-            writeQuerySemaphore.release();
-        }
+        updateSchemaWithRetry(wrappedSession, query);
     }
 
     private void createTableWithTracking(String createTableQuery) throws InterruptedException {
@@ -321,41 +281,6 @@ public class Session implements AutoCloseable {
         updateSchemaWithRetry(createTableQuery);
     }
 
-    public static boolean isInRollupThread() {
-        return inRollupThread.get();
-    }
-
-    public static void setInRollupThread(boolean value) {
-        inRollupThread.set(value);
-    }
-
-    private CompletionStage<AsyncResultSet> throttleRead(DoUnderThrottle doUnderThrottle) {
-        if (inRollupThread.get()) {
-            return throttle(doUnderThrottle, rollupQuerySemaphore);
-        } else {
-            return throttle(doUnderThrottle, readQuerySemaphore);
-        }
-    }
-
-    private CompletionStage<AsyncResultSet> throttleWrite(DoUnderThrottle doUnderThrottle) {
-        if (inRollupThread.get()) {
-            return throttle(doUnderThrottle, rollupQuerySemaphore);
-        } else {
-            return throttle(doUnderThrottle, writeQuerySemaphore);
-        }
-    }
-
-    private static CompletionStage<AsyncResultSet> throttle(DoUnderThrottle doUnderThrottle,
-                                                            Semaphore overallSemaphore) {
-        try {
-            overallSemaphore.acquire();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        return doUnderThrottle.execute().whenCompleteAsync((results, throwable) -> {
-            overallSemaphore.release();
-        });
-    }
 
     private static @Nullable String getTableName(String createTableQuery, String prefix) {
         if (createTableQuery.startsWith(prefix)) {
@@ -374,7 +299,7 @@ public class Session implements AutoCloseable {
         Stopwatch stopwatch = Stopwatch.createStarted();
         while (stopwatch.elapsed(SECONDS) < 60) {
             try {
-                SimpleStatement stmt = SimpleStatement.builder(query).setExecutionProfileName(CassandraProfile.SLOW.name()).build();
+                SimpleStatement stmt = SimpleStatement.builder(query).setExecutionProfileName(CassandraProfile.slow.name()).build();
                 wrappedSession.execute(stmt);
                 return;
             } catch (DriverTimeoutException e) {
@@ -427,7 +352,4 @@ public class Session implements AutoCloseable {
         return getTwcsCompactionClause("HOURS", getCompactionWindowSizeHours(expirationHours));
     }
 
-    private interface DoUnderThrottle {
-        CompletionStage<AsyncResultSet> execute();
-    }
 }

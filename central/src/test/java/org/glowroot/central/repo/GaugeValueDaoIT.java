@@ -15,27 +15,26 @@
  */
 package org.glowroot.central.repo;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.central.v09support.GaugeValueDaoWithV09Support;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.config.ImmutableCentralStorageConfig;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.glowroot.central.repo.CqlSessionBuilders.MAX_CONCURRENT_QUERIES;
 
 public class GaugeValueDaoIT {
 
@@ -52,7 +51,7 @@ public class GaugeValueDaoIT {
         clusterManager = ClusterManager.create();
         cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
         session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
-                MAX_CONCURRENT_QUERIES, 0);
+                0);
         asyncExecutor = Executors.newCachedThreadPool();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         AgentDisplayDao agentDisplayDao =
@@ -91,7 +90,7 @@ public class GaugeValueDaoIT {
 
         // check non-rolled up data
         List<GaugeValue> gaugeValues =
-                gaugeValueDao.readGaugeValues("one", "the gauge:attr1", 0, 300000, 0);
+                gaugeValueDao.readGaugeValues("one", "the gauge:attr1", 0, 300000, 0, CassandraProfile.web);
         assertThat(gaugeValues).hasSize(2);
         assertThat(gaugeValues.get(0).getValue()).isEqualTo(500);
         assertThat(gaugeValues.get(0).getWeight()).isEqualTo(1);
@@ -107,7 +106,7 @@ public class GaugeValueDaoIT {
         gaugeValueDao.rollup("one");
 
         // check rolled-up data after rollup
-        gaugeValues = gaugeValueDao.readGaugeValues("one", "the gauge:attr1", 0, 300000, 1);
+        gaugeValues = gaugeValueDao.readGaugeValues("one", "the gauge:attr1", 0, 300000, 1, CassandraProfile.web);
         assertThat(gaugeValues).hasSize(1);
         assertThat(gaugeValues.get(0).getValue()).isEqualTo(500);
         assertThat(gaugeValues.get(0).getWeight()).isEqualTo(2);
@@ -128,7 +127,7 @@ public class GaugeValueDaoIT {
 
         // check rolled-up data after rollup
         List<GaugeValue> gaugeValues =
-                gaugeValueDao.readGaugeValues("the parent::", "the gauge:attr1", 0, 300000, 1);
+                gaugeValueDao.readGaugeValues("the parent::", "the gauge:attr1", 0, 300000, 1, CassandraProfile.web);
         assertThat(gaugeValues).hasSize(1);
         assertThat(gaugeValues.get(0).getValue()).isEqualTo(500);
         assertThat(gaugeValues.get(0).getWeight()).isEqualTo(2);
@@ -150,7 +149,7 @@ public class GaugeValueDaoIT {
 
         // check rolled-up data after rollup
         List<GaugeValue> gaugeValues =
-                gaugeValueDao.readGaugeValues("the gp::", "the gauge:attr1", 0, 300000, 1);
+                gaugeValueDao.readGaugeValues("the gp::", "the gauge:attr1", 0, 300000, 1, CassandraProfile.web);
         assertThat(gaugeValues).hasSize(1);
         assertThat(gaugeValues.get(0).getValue()).isEqualTo(500);
         assertThat(gaugeValues.get(0).getWeight()).isEqualTo(2);

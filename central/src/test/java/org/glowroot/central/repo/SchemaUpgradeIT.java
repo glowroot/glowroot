@@ -15,26 +15,24 @@
  */
 package org.glowroot.central.repo;
 
-import java.net.URL;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.NoNodeAvailableException;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.google.common.base.Stopwatch;
 import com.google.common.io.Resources;
+import org.glowroot.central.util.Session;
+import org.glowroot.common.util.Clock;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import org.glowroot.central.util.Session;
-import org.glowroot.common.util.Clock;
+import java.net.URL;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.glowroot.central.repo.CqlSessionBuilders.MAX_CONCURRENT_QUERIES;
 
 public class SchemaUpgradeIT {
 
@@ -48,7 +46,7 @@ public class SchemaUpgradeIT {
         CqlSession wrappedSession = cqlSessionBuilder.build();
         updateSchemaWithRetry(wrappedSession, "drop keyspace if exists glowroot_upgrade_test");
         session = new Session(wrappedSession, "glowroot_upgrade_test", null,
-                MAX_CONCURRENT_QUERIES, 0);
+                0);
         URL url = Resources.getResource("glowroot-0.9.1-schema.cql");
         StringBuilder cql = new StringBuilder();
         for (String line : Resources.readLines(url, UTF_8)) {

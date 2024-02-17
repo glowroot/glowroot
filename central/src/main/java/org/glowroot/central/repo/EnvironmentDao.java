@@ -23,6 +23,7 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.central.util.Session;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.EnvironmentRepository;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 
@@ -51,14 +52,14 @@ public class EnvironmentDao implements EnvironmentRepository {
         BoundStatement boundStatement = insertPS.bind()
             .setString(i++, agentId)
             .setByteBuffer(i++, ByteBuffer.wrap(environment.toByteArray()));
-        session.write(boundStatement);
+        session.write(boundStatement, CassandraProfile.collector);
     }
 
     @Override
-    public @Nullable Environment read(String agentId) throws Exception {
+    public @Nullable Environment read(String agentId, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentId);
-        Row row = session.read(boundStatement).one();
+        Row row = session.read(boundStatement, profile).one();
         if (row == null) {
             return null;
         }

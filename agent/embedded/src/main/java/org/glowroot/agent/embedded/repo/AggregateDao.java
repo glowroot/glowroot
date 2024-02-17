@@ -29,6 +29,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Untainted;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.agent.collector.Collector.AggregateReader;
@@ -254,7 +255,7 @@ public class AggregateDao implements AggregateRepository {
     // query.from() is non-inclusive
     @Override
     public void mergeOverallSummaryInto(String agentRollupId, SummaryQuery query,
-            OverallSummaryCollector collector) throws Exception {
+            OverallSummaryCollector collector, CassandraProfile profile) throws Exception {
         dataSource.query(new OverallSummaryQuery(collector, query));
     }
 
@@ -263,7 +264,7 @@ public class AggregateDao implements AggregateRepository {
     // the final sorting is performed by the caller
     @Override
     public void mergeTransactionNameSummariesInto(String agentRollupId, SummaryQuery query,
-            SummarySortOrder sortOrder, int limit, TransactionNameSummaryCollector collector)
+            SummarySortOrder sortOrder, int limit, TransactionNameSummaryCollector collector, CassandraProfile profile)
             throws Exception {
         dataSource.query(new TransactionNameSummaryQuery(query, sortOrder, limit, collector));
     }
@@ -271,7 +272,7 @@ public class AggregateDao implements AggregateRepository {
     // query.from() is non-inclusive
     @Override
     public void mergeOverallErrorSummaryInto(String agentRollupId, SummaryQuery query,
-            OverallErrorSummaryCollector collector) throws Exception {
+            OverallErrorSummaryCollector collector, CassandraProfile profile) throws Exception {
         dataSource.query(new OverallErrorSummaryQuery(collector, query));
     }
 
@@ -279,7 +280,7 @@ public class AggregateDao implements AggregateRepository {
     @Override
     public void mergeTransactionNameErrorSummariesInto(String agentRollupId, SummaryQuery query,
             ErrorSummarySortOrder sortOrder, int limit,
-            TransactionNameErrorSummaryCollector collector)
+            TransactionNameErrorSummaryCollector collector, CassandraProfile profile)
             throws Exception {
         dataSource.query(new TransactionNameErrorSummaryQuery(query, sortOrder, limit,
                 collector));
@@ -288,28 +289,28 @@ public class AggregateDao implements AggregateRepository {
     // query.from() is INCLUSIVE
     @Override
     public List<OverviewAggregate> readOverviewAggregates(String agentRollupId,
-            AggregateQuery query) throws Exception {
+            AggregateQuery query, CassandraProfile profile) throws Exception {
         return dataSource.query(new OverviewAggregateQuery(query));
     }
 
     // query.from() is INCLUSIVE
     @Override
     public List<PercentileAggregate> readPercentileAggregates(String agentRollupId,
-            AggregateQuery query) throws Exception {
+            AggregateQuery query, CassandraProfile profile) throws Exception {
         return dataSource.query(new PercentileAggregateQuery(query));
     }
 
     // query.from() is INCLUSIVE
     @Override
     public List<ThroughputAggregate> readThroughputAggregates(String agentRollupId,
-            AggregateQuery query) throws Exception {
+                                                              AggregateQuery query, CassandraProfile profile) throws Exception {
         return dataSource.query(new ThroughputAggregateQuery(query));
     }
 
     // query.from() is non-inclusive
     @Override
     public void mergeQueriesInto(String agentRollupId, AggregateQuery query,
-            QueryCollector collector) throws Exception {
+            QueryCollector collector, CassandraProfile profile) throws Exception {
         // get list of capped ids first since that is done under the data source lock
         // then do the expensive part of reading and constructing the protobuf messages outside of
         // the data source lock
@@ -336,7 +337,7 @@ public class AggregateDao implements AggregateRepository {
     // query.from() is non-inclusive
     @Override
     public void mergeServiceCallsInto(String agentRollupId, AggregateQuery query,
-            ServiceCallCollector collector) throws Exception {
+            ServiceCallCollector collector, CassandraProfile profile) throws Exception {
         // get list of capped ids first since that is done under the data source lock
         // then do the expensive part of reading and constructing the protobuf messages outside of
         // the data source lock
@@ -363,26 +364,26 @@ public class AggregateDao implements AggregateRepository {
     // query.from() is non-inclusive
     @Override
     public void mergeMainThreadProfilesInto(String agentRollupId, AggregateQuery query,
-            ProfileCollector collector) throws Exception {
+            ProfileCollector collector, CassandraProfile profile) throws Exception {
         mergeProfilesInto(collector, query, "main_thread_profile_capped_id");
     }
 
     // query.from() is non-inclusive
     @Override
     public void mergeAuxThreadProfilesInto(String agentRollupId, AggregateQuery query,
-            ProfileCollector collector) throws Exception {
+            ProfileCollector collector, CassandraProfile profile) throws Exception {
         mergeProfilesInto(collector, query, "aux_thread_profile_capped_id");
     }
 
     @Override
-    public @Nullable String readFullQueryText(String agentRollupId, String fullQueryTextSha1)
+    public @Nullable String readFullQueryText(String agentRollupId, String fullQueryTextSha1, CassandraProfile profile)
             throws Exception {
         return fullQueryTextDao.getFullText(fullQueryTextSha1);
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean hasMainThreadProfile(String agentRollupId, AggregateQuery query)
+    public boolean hasMainThreadProfile(String agentRollupId, AggregateQuery query, CassandraProfile profile)
             throws Exception {
         return !dataSource.query(new CappedIdQuery("main_thread_profile_capped_id", query))
                 .isEmpty();
@@ -390,7 +391,7 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public boolean hasAuxThreadProfile(String agentRollupId, AggregateQuery query)
+    public boolean hasAuxThreadProfile(String agentRollupId, AggregateQuery query, CassandraProfile profile)
             throws Exception {
         return !dataSource.query(new CappedIdQuery("aux_thread_profile_capped_id", query))
                 .isEmpty();

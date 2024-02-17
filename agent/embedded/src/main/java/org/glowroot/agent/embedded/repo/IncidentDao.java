@@ -33,6 +33,7 @@ import org.glowroot.agent.embedded.util.ImmutableIndex;
 import org.glowroot.agent.embedded.util.Schemas.Column;
 import org.glowroot.agent.embedded.util.Schemas.ColumnType;
 import org.glowroot.agent.embedded.util.Schemas.Index;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ImmutableOpenIncident;
 import org.glowroot.common2.repo.ImmutableResolvedIncident;
 import org.glowroot.common2.repo.IncidentRepository;
@@ -73,7 +74,7 @@ class IncidentDao implements IncidentRepository {
 
     @Override
     public void insertOpenIncident(String agentRollupId, AlertCondition condition,
-            AlertSeverity severity, AlertNotification notification, long openTime)
+            AlertSeverity severity, AlertNotification notification, long openTime, CassandraProfile profile)
             throws Exception {
         dataSource.update("insert into incident (open_time, condition, severity, notification)"
                 + " values (?, ?, ?, ?)", openTime, condition.toByteArray(),
@@ -82,22 +83,22 @@ class IncidentDao implements IncidentRepository {
 
     @Override
     public @Nullable OpenIncident readOpenIncident(String agentRollupId, AlertCondition condition,
-            AlertSeverity severity) throws Exception {
+            AlertSeverity severity, CassandraProfile profile) throws Exception {
         return dataSource.query(new SingleOpenIncident(condition, severity));
     }
 
     @Override
-    public List<OpenIncident> readOpenIncidents(String agentRollupId) throws Exception {
-        return readAllOpenIncidents();
+    public List<OpenIncident> readOpenIncidents(String agentRollupId, CassandraProfile profile) throws Exception {
+        return readAllOpenIncidents(CassandraProfile.web);
     }
 
     @Override
-    public List<OpenIncident> readAllOpenIncidents() throws Exception {
+    public List<OpenIncident> readAllOpenIncidents(CassandraProfile profile) throws Exception {
         return dataSource.query(new OpenIncidentRowQuery());
     }
 
     @Override
-    public void resolveIncident(OpenIncident incident, long resolveTime) throws Exception {
+    public void resolveIncident(OpenIncident incident, long resolveTime, CassandraProfile profile) throws Exception {
         dataSource.update("update incident set resolve_time = ? where condition = ?"
                 + " and severity = ? and resolve_time is null", resolveTime,
                 incident.condition().toByteArray(),

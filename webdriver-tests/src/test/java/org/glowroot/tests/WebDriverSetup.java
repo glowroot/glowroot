@@ -15,19 +15,6 @@
  */
 package org.glowroot.tests;
 
-import java.io.EOFException;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.URL;
-import java.security.SecureRandom;
-import java.sql.Driver;
-import java.time.Duration;
-import java.util.Properties;
-
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
@@ -48,7 +35,13 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultRedirectStrategy;
 import org.apache.http.impl.client.HttpClients;
-import org.glowroot.central.util.CassandraProfile;
+import org.glowroot.agent.it.harness.Container;
+import org.glowroot.agent.it.harness.Containers;
+import org.glowroot.agent.it.harness.impl.JavaagentContainer;
+import org.glowroot.agent.it.harness.impl.LocalContainer;
+import org.glowroot.central.CentralModule;
+import org.glowroot.central.util.Session;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.junit.rules.TestWatcher;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
@@ -63,12 +56,13 @@ import org.rauschig.jarchivelib.CompressionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.impl.LocalContainer;
-import org.glowroot.central.CentralModule;
-import org.glowroot.central.util.Session;
+import java.io.*;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.URL;
+import java.security.SecureRandom;
+import java.time.Duration;
+import java.util.Properties;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -115,7 +109,7 @@ public class WebDriverSetup {
     private String remoteWebDriverSessionId;
 
     private WebDriverSetup(CentralModule centralModule, Container container, int uiPort,
-            boolean shared, WebDriver driver) throws Exception {
+                           boolean shared, WebDriver driver) throws Exception {
         this.centralModule = centralModule;
         this.container = container;
         this.uiPort = uiPort;
@@ -177,7 +171,8 @@ public class WebDriverSetup {
 
     public TestWatcher getSauceLabsTestWatcher() {
         if (!SauceLabs.useSauceLabs()) {
-            return new TestWatcher() {};
+            return new TestWatcher() {
+            };
         }
         String sauceUsername = System.getenv("SAUCE_USERNAME");
         String sauceAccessKey = System.getenv("SAUCE_ACCESS_KEY");
@@ -210,13 +205,13 @@ public class WebDriverSetup {
                     .addContactPoint(new InetSocketAddress("127.0.0.1", 9042))
                     .withLocalDatacenter("datacenter1")
                     .withConfigLoader(DriverConfigLoader.programmaticBuilder()
-                            .startProfile(CassandraProfile.SLOW.name())
+                            .startProfile(CassandraProfile.slow.name())
                             .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(60))
                             .withBoolean(DefaultDriverOption.REQUEST_WARN_IF_SET_KEYSPACE, false)
                             .endProfile()
                             .build());
             Session session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
-                    MAX_CONCURRENT_QUERIES, 0);
+                    0);
             session.updateSchemaWithRetry("drop table if exists agent_config");
             session.updateSchemaWithRetry("drop table if exists user");
             session.updateSchemaWithRetry("drop table if exists role");
@@ -279,7 +274,7 @@ public class WebDriverSetup {
         while (stopwatch.elapsed(SECONDS) < 10) {
             HttpGet request = new HttpGet("http://localhost:" + uiPort);
             try (CloseableHttpResponse response = httpClient.execute(request);
-                    InputStream content = response.getEntity().getContent()) {
+                 InputStream content = response.getEntity().getContent()) {
                 ByteStreams.exhaust(content);
                 lastException = null;
                 break;
@@ -297,15 +292,70 @@ public class WebDriverSetup {
     private static CentralModule createCentralModule(int uiPort, int grpcPort) throws Exception {
         File centralDir = new File("target");
         File propsFile = new File(centralDir, "glowroot-central.properties");
-        PrintWriter props = new PrintWriter(propsFile);
-        props.println("cassandra.keyspace=glowroot_unit_tests");
-        byte[] bytes = new byte[16];
-        new SecureRandom().nextBytes(bytes);
-        props.println("cassandra.symmetricEncryptionKey="
-                + BaseEncoding.base16().lowerCase().encode(bytes));
-        props.println("grpc.httpPort=" + grpcPort);
-        props.println("ui.port=" + uiPort);
-        props.close();
+        try (PrintWriter props = new PrintWriter(propsFile)) {
+            props.println("cassandra.keyspace=glowroot_unit_tests");
+            byte[] bytes = new byte[16];
+            new SecureRandom().nextBytes(bytes);
+            props.println("cassandra.symmetricEncryptionKey="
+                    + BaseEncoding.base16().lowerCase().encode(bytes));
+            props.println("grpc.httpPort=" + grpcPort);
+            props.println("ui.port=" + uiPort);
+        }
+        File datastaxFile = new File(centralDir, "datastax-driver.conf");
+        try (PrintWriter driver = new PrintWriter(datastaxFile)) {
+            driver.println("# https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/configuration/reference/\n" +
+                    "datastax-java-driver {\n" +
+                    "  advanced.protocol.version = V4\n" +
+                    "  basic.request {\n" +
+                    "    default-idempotence = true\n" +
+                    "    consistency = LOCAL_QUORUM\n" +
+                    "    serial-consistency = LOCAL_SERIAL\n" +
+                    "  }\n" +
+                    "  advanced.reconnection-policy.class = ConstantReconnectionPolicy\n" +
+                    "  advanced.reconnection-policy.base-delay = 1 second\n" +
+                    "  advanced.connection.max-requests-per-connection = 1024\n" +
+                    "  advanced.request.warn-if-set-keyspace = false\n" +
+                    "  advanced.throttler {\n" +
+                    "    class = PassThroughRequestThrottler\n" +
+                    "  }\n" +
+                    "  advanced.timestamp-generator.class = ServerSideTimestampGenerator\n" +
+                    "  profiles {\n" +
+                    "    slow {\n" +
+                    "      basic.request.timeout = 300 seconds\n" +
+                    "      advanced.throttler {\n" +
+                    "        class = ConcurrencyLimitingRequestThrottler\n" +
+                    "        max-concurrent-requests = 10\n" +
+                    "        max-queue-size = 10000\n" +
+                    "      }\n" +
+                    "    }\n" +
+                    "    collector {\n" +
+                    "      basic.request.timeout = 30 seconds\n" +
+                    "      advanced.throttler {\n" +
+                    "        class = ConcurrencyLimitingRequestThrottler\n" +
+                    "        max-concurrent-requests = 100\n" +
+                    "        max-queue-size = 10000\n" +
+                    "      }\n" +
+                    "    }\n" +
+                    "    rollup {\n" +
+                    "      basic.request.timeout = 2 seconds\n" +
+                    "      advanced.throttler {\n" +
+                    "        class = ConcurrencyLimitingRequestThrottler\n" +
+                    "        max-concurrent-requests = 10\n" +
+                    "        max-queue-size = 100\n" +
+                    "      }\n" +
+                    "    },\n" +
+                    "    web {\n" +
+                    "      basic.request.timeout = 2 seconds\n" +
+                    "      advanced.throttler {\n" +
+                    "        class = RateLimitingRequestThrottler\n" +
+                    "        max-requests-per-second = 50\n" +
+                    "        max-queue-size = 1000\n" +
+                    "        drain-interval = 10 milliseconds\n" +
+                    "      }\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}");
+        }
         String prior = System.getProperty("glowroot.log.dir");
         try {
             System.setProperty("glowroot.log.dir", "target");
@@ -401,7 +451,7 @@ public class WebDriverSetup {
     }
 
     private static void downloadAndExtractGeckoDriver(File directory, String downloadFilenameSuffix,
-            String downloadFilenameExt, String optionalExt, Archiver archiver) throws IOException {
+                                                      String downloadFilenameExt, String optionalExt, Archiver archiver) throws IOException {
         // using System.out to make sure user sees why there is a delay here
         System.out.print("Downloading Mozilla geckodriver " + GECKO_DRIVER_VERSION + "...");
         URL url = new URL("https://github.com/mozilla/geckodriver/releases/download/v"

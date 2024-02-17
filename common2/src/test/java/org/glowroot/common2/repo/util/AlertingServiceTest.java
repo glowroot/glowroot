@@ -23,6 +23,7 @@ import javax.mail.Message;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+import org.glowroot.common2.repo.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,12 +38,6 @@ import org.glowroot.common2.config.ImmutableHttpProxyConfig;
 import org.glowroot.common2.config.ImmutableSmtpConfig;
 import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.SmtpConfig.ConnectionSecurity;
-import org.glowroot.common2.repo.AggregateRepository;
-import org.glowroot.common2.repo.ConfigRepository;
-import org.glowroot.common2.repo.GaugeValueRepository;
-import org.glowroot.common2.repo.IncidentRepository;
-import org.glowroot.common2.repo.TraceRepository;
-import org.glowroot.common2.repo.Utils;
 import org.glowroot.common2.repo.util.AlertingService.IncidentKey;
 import org.glowroot.common2.repo.util.LockSet.LockSetImpl;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
@@ -162,7 +157,7 @@ public class AlertingServiceTest {
                 Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", TRANSACTION_X_PERCENTILE_ALERT_CONFIG,
-                TRANSACTION_X_PERCENTILE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
+                TRANSACTION_X_PERCENTILE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000, CassandraProfile.collector);
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
@@ -181,7 +176,7 @@ public class AlertingServiceTest {
                 Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", TRANSACTION_X_PERCENTILE_ALERT_CONFIG,
-                TRANSACTION_X_PERCENTILE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
+                TRANSACTION_X_PERCENTILE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000, CassandraProfile.collector);
         // then
         assertThat(mailService.getMessage()).isNull();
     }
@@ -197,7 +192,7 @@ public class AlertingServiceTest {
                 Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", UPPER_BOUND_GAUGE_ALERT_CONFIG,
-                UPPER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
+                UPPER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000, CassandraProfile.collector);
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
@@ -216,7 +211,7 @@ public class AlertingServiceTest {
                 Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", UPPER_BOUND_GAUGE_ALERT_CONFIG,
-                UPPER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
+                UPPER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000, CassandraProfile.collector);
         // then
         assertThat(mailService.getMessage()).isNull();
     }
@@ -232,7 +227,7 @@ public class AlertingServiceTest {
                 Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", LOWER_BOUND_GAUGE_ALERT_CONFIG,
-                LOWER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
+                LOWER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000, CassandraProfile.collector);
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
@@ -251,7 +246,7 @@ public class AlertingServiceTest {
                 Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", LOWER_BOUND_GAUGE_ALERT_CONFIG,
-                LOWER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
+                LOWER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000, CassandraProfile.collector);
         // then
         assertThat(mailService.getMessage()).isNull();
     }
@@ -308,7 +303,7 @@ public class AlertingServiceTest {
                 .to(120000)
                 .rollupLevel(0)
                 .build();
-        when(aggregateRepository.readPercentileAggregates(AGENT_ID, query))
+        when(aggregateRepository.readPercentileAggregates(AGENT_ID, query, CassandraProfile.collector))
                 .thenReturn(ImmutableList.of(aggregate));
     }
 
@@ -321,7 +316,7 @@ public class AlertingServiceTest {
                 .build();
         when(gaugeValueRepository.readGaugeValues(AGENT_ID,
                 "java.lang:type=GarbageCollector,name=ConcurrentMarkSweep:CollectionTime[counter]",
-                60001, 120000, 0)).thenReturn(ImmutableList.of(gaugeValue));
+                60001, 120000, 0, CassandraProfile.collector)).thenReturn(ImmutableList.of(gaugeValue));
     }
 
     private static LockSet<IncidentKey> newLockSet() {

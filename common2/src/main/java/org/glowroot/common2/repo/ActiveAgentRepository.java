@@ -21,14 +21,14 @@ import org.immutables.value.Value;
 
 public interface ActiveAgentRepository {
 
-    List<TopLevelAgentRollup> readActiveTopLevelAgentRollups(long from, long to) throws Exception;
+    List<TopLevelAgentRollup> readActiveTopLevelAgentRollups(long from, long to, CassandraProfile profile) throws Exception;
 
-    List<AgentRollup> readActiveChildAgentRollups(String topLevelId, long from, long to)
+    List<AgentRollup> readActiveChildAgentRollups(String topLevelId, long from, long to, CassandraProfile profile)
             throws Exception;
 
-    List<AgentRollup> readRecentlyActiveAgentRollups(long lastXMillis) throws Exception;
+    List<AgentRollup> readRecentlyActiveAgentRollups(long lastXMillis, CassandraProfile profile) throws Exception;
 
-    List<AgentRollup> readActiveAgentRollups(long from, long to) throws Exception;
+    List<AgentRollup> readActiveAgentRollups(long from, long to, CassandraProfile profile) throws Exception;
 
     @Value.Immutable
     interface TopLevelAgentRollup { // used for dropdown display

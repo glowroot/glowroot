@@ -16,17 +16,16 @@
 package org.glowroot.central.repo;
 
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.common2.config.ImmutableUserConfig;
 import org.glowroot.common2.config.UserConfig;
+import org.glowroot.common2.repo.CassandraProfile;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.glowroot.central.repo.CqlSessionBuilders.MAX_CONCURRENT_QUERIES;
 
 public class UserDaoIT {
 
@@ -40,7 +39,7 @@ public class UserDaoIT {
         SharedSetupRunListener.startCassandra();
         cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
         session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
-                MAX_CONCURRENT_QUERIES, 0);
+                0);
         clusterManager = ClusterManager.create();
         userDao = new UserDao(session, clusterManager);
     }
@@ -64,7 +63,7 @@ public class UserDaoIT {
                 .username("abc")
                 .passwordHash("xyz")
                 .addRoles("arole", "brole")
-                .build());
+                .build(), CassandraProfile.web);
 
         // when
         UserConfig userConfig = userDao.read("abc");

@@ -33,7 +33,6 @@ import org.glowroot.common2.repo.SyntheticResult;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.glowroot.central.repo.CqlSessionBuilders.MAX_CONCURRENT_QUERIES;
 
 public class SyntheticResultDaoIT {
 
@@ -48,8 +47,7 @@ public class SyntheticResultDaoIT {
         SharedSetupRunListener.startCassandra();
         clusterManager = ClusterManager.create();
         cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
-        session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
-                MAX_CONCURRENT_QUERIES, 0);
+        session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null, 0);
         asyncExecutor = Executors.newCachedThreadPool();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         AgentDisplayDao agentDisplayDao =

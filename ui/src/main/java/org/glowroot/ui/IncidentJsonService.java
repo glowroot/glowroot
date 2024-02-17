@@ -24,16 +24,13 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.*;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
-import org.glowroot.common2.repo.AgentDisplayRepository;
-import org.glowroot.common2.repo.ConfigRepository;
-import org.glowroot.common2.repo.IncidentRepository;
 import org.glowroot.common2.repo.IncidentRepository.OpenIncident;
 import org.glowroot.common2.repo.IncidentRepository.ResolvedIncident;
-import org.glowroot.common2.repo.SyntheticResultRepository;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
@@ -77,7 +74,7 @@ class IncidentJsonService {
         // individually for every agentRollupId that user has permission to read
         List<OpenIncident> openIncidents =
                 new BySeverityOrdering().compound(new ByOpenTimeOrdering())
-                        .sortedCopy(incidentRepository.readAllOpenIncidents());
+                        .sortedCopy(incidentRepository.readAllOpenIncidents(CassandraProfile.web));
         for (OpenIncident openIncident : openIncidents) {
             if (authentication.isPermittedForAgentRollup(openIncident.agentRollupId(),
                     "agent:incident")) {

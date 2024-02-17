@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.*;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,13 +37,8 @@ import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Version;
 import org.glowroot.common.util.Versions;
-import org.glowroot.common2.repo.AgentDisplayRepository;
-import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
-import org.glowroot.common2.repo.EnvironmentRepository;
-import org.glowroot.common2.repo.TraceAttributeNameRepository;
-import org.glowroot.common2.repo.TransactionTypeRepository;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
@@ -130,7 +126,7 @@ class LayoutService {
         if (agentRollupId.endsWith("::")) {
             glowrootVersion = "";
         } else {
-            Environment environment = environmentRepository.read(agentRollupId);
+            Environment environment = environmentRepository.read(agentRollupId, CassandraProfile.web);
             glowrootVersion = environment == null ? Version.UNKNOWN_VERSION
                     : environment.getJavaInfo().getGlowrootAgentVersion();
         }

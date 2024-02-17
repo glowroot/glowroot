@@ -31,6 +31,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.*;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.Clock;
@@ -40,12 +41,7 @@ import org.glowroot.common.util.Versions;
 import org.glowroot.common2.config.MoreConfigDefaults;
 import org.glowroot.common2.config.PagerDutyConfig.PagerDutyIntegrationKey;
 import org.glowroot.common2.config.SlackConfig.SlackWebhook;
-import org.glowroot.common2.repo.AlertingDisabledRepository;
-import org.glowroot.common2.repo.ConfigRepository;
-import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
-import org.glowroot.common2.repo.SyntheticResultRepository;
-import org.glowroot.common2.repo.Utils;
 import org.glowroot.common2.repo.util.AlertingService;
 import org.glowroot.common2.repo.util.Formatting;
 import org.glowroot.common2.repo.util.Gauges;
@@ -127,7 +123,7 @@ class AlertConfigJsonService {
             throws Exception {
         validate(configDto);
         AlertConfig alertConfig = configDto.toProto();
-        configRepository.insertAlertConfig(agentRollupId, alertConfig);
+        configRepository.insertAlertConfig(agentRollupId, alertConfig, CassandraProfile.web);
         return getAlertResponse(agentRollupId, alertConfig);
     }
 
@@ -137,7 +133,7 @@ class AlertConfigJsonService {
             @BindRequest AlertConfigDto configDto) throws Exception {
         validate(configDto);
         AlertConfig alertConfig = configDto.toProto();
-        configRepository.updateAlertConfig(agentRollupId, alertConfig, configDto.version().get());
+        configRepository.updateAlertConfig(agentRollupId, alertConfig, configDto.version().get(), CassandraProfile.web);
         return getAlertResponse(agentRollupId, alertConfig);
     }
 
@@ -145,7 +141,7 @@ class AlertConfigJsonService {
     @POST(path = "/backend/config/alerts/remove", permission = "agent:config:edit:alerts")
     void removeAlert(@BindAgentRollupId String agentRollupId,
             @BindRequest AlertConfigRequest request) throws Exception {
-        configRepository.deleteAlertConfig(agentRollupId, request.version().get());
+        configRepository.deleteAlertConfig(agentRollupId, request.version().get(), CassandraProfile.web);
     }
 
     // central supports alert configs on rollups
@@ -153,14 +149,14 @@ class AlertConfigJsonService {
     String disableAlerting(@BindAgentRollupId String agentRollupId,
             @BindRequest DisableAlertingRequest request) throws Exception {
         alertingDisableRepository.setAlertingDisabledUntilTime(agentRollupId,
-                clock.currentTimeMillis() + request.disableForNextMillis());
+                clock.currentTimeMillis() + request.disableForNextMillis(), CassandraProfile.web);
         return getAlertList(agentRollupId);
     }
 
     // central supports alert configs on rollups
     @POST(path = "/backend/config/re-enable-alerting", permission = "agent:config:edit:alerts")
     String reEnableAlerting(@BindAgentRollupId String agentRollupId) throws Exception {
-        alertingDisableRepository.setAlertingDisabledUntilTime(agentRollupId, null);
+        alertingDisableRepository.setAlertingDisabledUntilTime(agentRollupId, null, CassandraProfile.web);
         return getAlertList(agentRollupId);
     }
 
@@ -201,7 +197,7 @@ class AlertConfigJsonService {
         ImmutableAlertListResponse.Builder builder = ImmutableAlertListResponse.builder()
                 .alerts(alertListItems);
         Long disabledUntilTime =
-                alertingDisableRepository.getAlertingDisabledUntilTime(agentRollupId);
+                alertingDisableRepository.getAlertingDisabledUntilTime(agentRollupId, CassandraProfile.web);
         if (disabledUntilTime != null) {
             long disabledForNextMillis = disabledUntilTime - clock.currentTimeMillis();
             if (disabledForNextMillis > 0) {

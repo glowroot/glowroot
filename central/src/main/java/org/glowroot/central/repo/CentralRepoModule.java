@@ -38,6 +38,7 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common2.config.AllCentralAdminConfig;
 import org.glowroot.common2.config.ImmutableAllCentralAdminConfig;
 import org.glowroot.common2.repo.AllAdminConfigUtil;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.util.RollupLevelService;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -119,14 +120,14 @@ public class CentralRepoModule {
             v09AggregateLastExpirationTime = 0;
         } else {
             agentRollupIdsWithV09Data = new HashSet<>();
-            ResultSet results = session.read("select agent_id from v09_agent_check where one = 1");
+            ResultSet results = session.read("select agent_id from v09_agent_check where one = 1", CassandraProfile.slow);
             for (Row row : results) {
                 String agentId = checkNotNull(row.getString(0));
                 agentRollupIdsWithV09Data.addAll(AgentRollupIds.getAgentRollupIds(agentId));
             }
             results = session.read("select v09_last_capture_time, v09_fqt_last_expiration_time,"
                     + " v09_trace_last_expiration_time, v09_aggregate_last_expiration_time from"
-                    + " v09_last_capture_time where one = 1");
+                    + " v09_last_capture_time where one = 1", CassandraProfile.slow);
             Row row = checkNotNull(results.one());
             int i = 0;
             v09LastCaptureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();

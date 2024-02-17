@@ -28,6 +28,7 @@ import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
+import org.glowroot.common2.repo.CassandraProfile;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -64,7 +65,7 @@ public class V09AgentRollupDao {
         BoundStatement boundStatement = insertPS.bind()
             .setString(i++, v09AgentId)
             .setString(i++, v09AgentRollupId);
-        session.write(boundStatement);
+        session.write(boundStatement, CassandraProfile.collector);
         agentRollupIdsCache.invalidate(SINGLE_CACHE_KEY);
     }
 
@@ -76,7 +77,7 @@ public class V09AgentRollupDao {
         @Override
         public Map<String, String> load(String key) {
             BoundStatement boundStatement = readPS.bind();
-            ResultSet results = session.read(boundStatement);
+            ResultSet results = session.read(boundStatement, CassandraProfile.collector);
             Map<String, String> agentRollupIds = new HashMap<>();
             for (Row row : results) {
                 int i = 0;

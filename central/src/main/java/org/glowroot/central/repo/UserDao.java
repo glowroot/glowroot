@@ -30,6 +30,7 @@ import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.common2.config.ImmutableUserConfig;
 import org.glowroot.common2.config.UserConfig;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository.DuplicateUsernameException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -72,7 +73,7 @@ class UserDao {
                 .setBoolean(i++, false)
                 .setString(i++, "")
                 .setSet(i++, ImmutableSet.of("Administrator"), String.class);
-            session.write(boundStatement);
+            session.write(boundStatement, CassandraProfile.slow);
         }
 
         allUserConfigsCache = clusterManager.createSelfBoundedCache("allUserConfigsCache",
@@ -112,21 +113,21 @@ class UserDao {
         return false;
     }
 
-    void insert(UserConfig userConfig) throws Exception {
+    void insert(UserConfig userConfig, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         boundStatement = bindInsert(boundStatement, userConfig);
-        session.write(boundStatement);
+        session.write(boundStatement, profile);
         allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
     }
 
-    void insertIfNotExists(UserConfig userConfig) throws Exception {
+    void insertIfNotExists(UserConfig userConfig, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = insertIfNotExistsPS.bind();
         boundStatement = bindInsert(boundStatement, userConfig);
         // consistency level must be at least LOCAL_SERIAL
         if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
             boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
         }
-        AsyncResultSet results = session.update(boundStatement);
+        AsyncResultSet results = session.update(boundStatement, profile);
         Row row = checkNotNull(results.one());
         boolean applied = row.getBoolean("[applied]");
         if (applied) {
@@ -136,10 +137,10 @@ class UserDao {
         }
     }
 
-    void delete(String username) throws Exception {
+    void delete(String username, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = deletePS.bind()
             .setString(0, username);
-        session.write(boundStatement);
+        session.write(boundStatement, profile);
         allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
     }
 
@@ -156,7 +157,7 @@ class UserDao {
 
         @Override
         public List<UserConfig> load(String dummy) {
-            ResultSet results = session.read(readPS.bind());
+            ResultSet results = session.read(readPS.bind(), CassandraProfile.collector);
             List<UserConfig> users = new ArrayList<>();
             for (Row row : results) {
                 users.add(buildUser(row));

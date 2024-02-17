@@ -43,15 +43,13 @@ import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.common2.repo.*;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
-import org.glowroot.common2.repo.ErrorIntervalCollector;
-import org.glowroot.common2.repo.ImmutableErrorInterval;
-import org.glowroot.common2.repo.ImmutableSyntheticResult;
-import org.glowroot.common2.repo.SyntheticResult;
 import org.glowroot.common2.repo.SyntheticResult.ErrorInterval;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
+import static org.glowroot.common2.repo.CassandraProfile.*;
 
 public class SyntheticResultDaoImpl implements SyntheticResultDao {
 
@@ -171,7 +169,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         }
         boundStatement = boundStatement.setInt(i++, adjustedTTL);
         List<CompletableFuture<?>> futures = new ArrayList<>();
-        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+        futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
         futures.addAll(syntheticMonitorIdDao.insert(agentRollupId, captureTime, syntheticMonitorId,
                 syntheticMonitorDisplay));
 
@@ -191,7 +189,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
             .setUuid(i++, Uuids.timeBased())
             .setSet(i++, ImmutableSet.of(syntheticMonitorId), String.class)
             .setInt(i++, needsRollupAdjustedTTL);
-        session.write(boundStatement);
+        session.write(boundStatement, collector);
     }
 
     @Override
@@ -210,7 +208,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
             .setString(i++, syntheticMonitorId)
             .setInstant(i++, Instant.ofEpochMilli(from))
             .setInstant(i++, Instant.ofEpochMilli(to));
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, web);
         List<SyntheticResult> syntheticResults = new ArrayList<>();
         for (Row row : results) {
             i = 0;
@@ -251,7 +249,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
             .setString(i++, agentRollupId)
             .setString(i++, syntheticMonitorId)
             .setInt(i++, x);
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, rollup);
         List<SyntheticResultRollup0> syntheticResults = new ArrayList<>();
         for (Row row : results) {
             i = 0;
@@ -282,7 +280,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         long rollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
         Collection<NeedsRollup> needsRollupList = Common.getNeedsRollupList(agentRollupId,
-                rollupLevel, rollupIntervalMillis, readNeedsRollup, session, clock);
+                rollupLevel, rollupIntervalMillis, readNeedsRollup, session, clock, rollup);
         Long nextRollupIntervalMillis = null;
         if (rollupLevel + 1 < rollupConfigs.size()) {
             nextRollupIntervalMillis = rollupConfigs.get(rollupLevel + 1).intervalMillis();
@@ -307,7 +305,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
             PreparedStatement deleteNeedsRollup = this.deleteNeedsRollup.get(rollupLevel - 1);
             Common.postRollup(agentRollupId, needsRollup.getCaptureTime(), syntheticMonitorIds,
                     needsRollup.getUniquenessKeysForDeletion(), nextRollupIntervalMillis,
-                    insertNeedsRollup, deleteNeedsRollup, needsRollupAdjustedTTL, session);
+                    insertNeedsRollup, deleteNeedsRollup, needsRollupAdjustedTTL, session, rollup);
         }
     }
 
@@ -320,7 +318,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
             .setString(i++, syntheticMonitorId)
             .setInstant(i++, Instant.ofEpochMilli(from))
             .setInstant(i++, Instant.ofEpochMilli(to));
-        CompletableFuture<AsyncResultSet> future = session.readAsyncWarnIfNoRows(boundStatement,
+        CompletableFuture<AsyncResultSet> future = session.readAsyncWarnIfNoRows(boundStatement, rollup,
                 "no synthetic result table records found for agentRollupId={},"
                         + " syntheticMonitorId={}, from={}, to={}, level={}",
                 agentRollupId, syntheticMonitorId, from, to, rollupLevel).toCompletableFuture();
@@ -378,7 +376,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
                 boundStatement = boundStatement.setByteBuffer(i++, Messages.toByteBuffer(toProto(mergedErrorIntervals)));
             }
             boundStatement = boundStatement.setInt(i++, adjustedTTL);
-            return session.writeAsync(boundStatement).toCompletableFuture();
+            return session.writeAsync(boundStatement, rollup).toCompletableFuture();
         });
     }
 

@@ -20,6 +20,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Ticker;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -308,7 +309,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        long count = traceDao.readErrorMessageCount(AGENT_ID, query, "is A");
+        long count = traceDao.readErrorMessageCount(AGENT_ID, query, "is A", CassandraProfile.web);
 
         // then
         assertThat(count).isEqualTo(1);
@@ -330,7 +331,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        long count = traceDao.readErrorMessageCount(AGENT_ID, query, "is a");
+        long count = traceDao.readErrorMessageCount(AGENT_ID, query, "is a", CassandraProfile.web);
 
         // then
         assertThat(count).isEqualTo(0);
@@ -352,7 +353,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        long count = traceDao.readErrorMessageCount(AGENT_ID, query, "/(?i)is a/");
+        long count = traceDao.readErrorMessageCount(AGENT_ID, query, "/(?i)is a/", CassandraProfile.web);
 
         // then
         assertThat(count).isEqualTo(1);

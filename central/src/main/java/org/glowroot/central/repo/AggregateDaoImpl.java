@@ -45,6 +45,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.spotify.futures.CompletableFutures;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.central.repo.Common.NeedsRollup;
@@ -96,6 +97,8 @@ import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.HOURS;
+import static org.glowroot.common2.repo.CassandraProfile.collector;
+import static org.glowroot.common2.repo.CassandraProfile.rollup;
 
 public class AggregateDaoImpl implements AggregateDao {
 
@@ -495,7 +498,7 @@ public class AggregateDaoImpl implements AggregateDao {
                     .setString(i++, agentId)
                     .setSet(i++, transactionTypes, String.class)
                     .setInt(i++, needsRollupAdjustedTTL);
-                futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
             }
             // insert into aggregate_needs_rollup_1
             long intervalMillis = rollupConfigs.get(1).intervalMillis();
@@ -507,7 +510,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 .setUuid(i++, Uuids.timeBased())
                 .setSet(i++, transactionTypes, String.class)
                 .setInt(i++, needsRollupAdjustedTTL);
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
             return CompletableFutures.allAsList(futures);
         });
     }
@@ -515,9 +518,9 @@ public class AggregateDaoImpl implements AggregateDao {
     // query.from() is non-inclusive
     @Override
     public void mergeOverallSummaryInto(String agentRollupId, SummaryQuery query,
-            OverallSummaryCollector collector) {
+            OverallSummaryCollector collector, CassandraProfile profile) {
         // currently have to do aggregation client-site (don't want to require Cassandra 2.2 yet)
-        ResultSet results = executeQuery(agentRollupId, query, summaryTable);
+        ResultSet results = executeQuery(agentRollupId, query, summaryTable, profile);
         for (Row row : results) {
             int i = 0;
             // results are ordered by capture time so Math.max() is not needed here
@@ -538,12 +541,12 @@ public class AggregateDaoImpl implements AggregateDao {
     // query.from() is non-inclusive
     @Override
     public void mergeTransactionNameSummariesInto(String agentRollupId, SummaryQuery query,
-            SummarySortOrder sortOrder, int limit, TransactionNameSummaryCollector collector) {
+                                                  SummarySortOrder sortOrder, int limit, TransactionNameSummaryCollector collector, CassandraProfile profile) {
         // currently have to do group by / sort / limit client-side
         BoundStatement boundStatement =
                 checkNotNull(readTransactionPS.get(summaryTable)).get(query.rollupLevel()).bind();
         boundStatement = bindQuery(boundStatement, agentRollupId, query);
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         for (Row row : results) {
             int i = 0;
             long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
@@ -560,9 +563,9 @@ public class AggregateDaoImpl implements AggregateDao {
     // query.from() is non-inclusive
     @Override
     public void mergeOverallErrorSummaryInto(String agentRollupId, SummaryQuery query,
-            OverallErrorSummaryCollector collector) {
+            OverallErrorSummaryCollector collector, CassandraProfile profile) {
         // currently have to do aggregation client-site (don't want to require Cassandra 2.2 yet)
-        ResultSet results = executeQuery(agentRollupId, query, errorSummaryTable);
+        ResultSet results = executeQuery(agentRollupId, query, errorSummaryTable, profile);
         for (Row row : results) {
             int i = 0;
             // results are ordered by capture time so Math.max() is not needed here
@@ -581,12 +584,12 @@ public class AggregateDaoImpl implements AggregateDao {
     @Override
     public void mergeTransactionNameErrorSummariesInto(String agentRollupId, SummaryQuery query,
             ErrorSummarySortOrder sortOrder, int limit,
-            TransactionNameErrorSummaryCollector collector) {
+            TransactionNameErrorSummaryCollector collector, CassandraProfile profile) {
         // currently have to do group by / sort / limit client-side
         BoundStatement boundStatement = checkNotNull(readTransactionPS.get(errorSummaryTable))
                 .get(query.rollupLevel()).bind();
         boundStatement = bindQuery(boundStatement, agentRollupId, query);
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         for (Row row : results) {
             int i = 0;
             long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
@@ -600,8 +603,8 @@ public class AggregateDaoImpl implements AggregateDao {
     // query.from() is INCLUSIVE
     @Override
     public List<OverviewAggregate> readOverviewAggregates(String agentRollupId,
-            AggregateQuery query) {
-        ResultSet results = executeQuery(agentRollupId, query, overviewTable);
+            AggregateQuery query, CassandraProfile profile) {
+        ResultSet results = executeQuery(agentRollupId, query, overviewTable, profile);
         List<OverviewAggregate> overviewAggregates = new ArrayList<>();
         for (Row row : results) {
             int i = 0;
@@ -654,8 +657,8 @@ public class AggregateDaoImpl implements AggregateDao {
     // query.from() is INCLUSIVE
     @Override
     public List<PercentileAggregate> readPercentileAggregates(String agentRollupId,
-            AggregateQuery query) throws Exception {
-        ResultSet results = executeQuery(agentRollupId, query, histogramTable);
+            AggregateQuery query, CassandraProfile profile) throws Exception {
+        ResultSet results = executeQuery(agentRollupId, query, histogramTable, profile);
         List<PercentileAggregate> percentileAggregates = new ArrayList<>();
         for (Row row : results) {
             int i = 0;
@@ -677,8 +680,8 @@ public class AggregateDaoImpl implements AggregateDao {
     // query.from() is INCLUSIVE
     @Override
     public List<ThroughputAggregate> readThroughputAggregates(String agentRollupId,
-            AggregateQuery query) throws Exception {
-        ResultSet results = executeQuery(agentRollupId, query, throughputTable);
+            AggregateQuery query, CassandraProfile profile) throws Exception {
+        ResultSet results = executeQuery(agentRollupId, query, throughputTable, profile);
         List<ThroughputAggregate> throughputAggregates = new ArrayList<>();
         for (Row row : results) {
             int i = 0;
@@ -698,8 +701,8 @@ public class AggregateDaoImpl implements AggregateDao {
     // query.from() is non-inclusive
     @Override
     public void mergeQueriesInto(String agentRollupId, AggregateQuery query,
-            QueryCollector collector) {
-        ResultSet results = executeQuery(agentRollupId, query, queryTable);
+            QueryCollector collector, CassandraProfile profile) {
+        ResultSet results = executeQuery(agentRollupId, query, queryTable, profile);
         long captureTime = Long.MIN_VALUE;
         for (Row row : results) {
             int i = 0;
@@ -721,8 +724,8 @@ public class AggregateDaoImpl implements AggregateDao {
     // query.from() is non-inclusive
     @Override
     public void mergeServiceCallsInto(String agentRollupId, AggregateQuery query,
-            ServiceCallCollector collector) {
-        ResultSet results = executeQuery(agentRollupId, query, serviceCallTable);
+            ServiceCallCollector collector, CassandraProfile profile) {
+        ResultSet results = executeQuery(agentRollupId, query, serviceCallTable, profile);
         long captureTime = Long.MIN_VALUE;
         for (Row row : results) {
             int i = 0;
@@ -740,43 +743,44 @@ public class AggregateDaoImpl implements AggregateDao {
     // query.from() is non-inclusive
     @Override
     public void mergeMainThreadProfilesInto(String agentRollupId, AggregateQuery query,
-            ProfileCollector collector) throws Exception {
-        mergeProfilesInto(agentRollupId, query, mainThreadProfileTable, collector);
+            ProfileCollector collector, CassandraProfile profile) throws Exception {
+        mergeProfilesInto(agentRollupId, query, mainThreadProfileTable, collector, profile);
     }
 
     // query.from() is non-inclusive
     @Override
     public void mergeAuxThreadProfilesInto(String agentRollupId, AggregateQuery query,
-            ProfileCollector collector) throws Exception {
-        mergeProfilesInto(agentRollupId, query, auxThreadProfileTable, collector);
+            ProfileCollector collector, CassandraProfile profile) throws Exception {
+        mergeProfilesInto(agentRollupId, query, auxThreadProfileTable, collector, profile);
     }
 
     @Override
-    public @Nullable String readFullQueryText(String agentRollupId, String fullQueryTextSha1)
+    public @Nullable String readFullQueryText(String agentRollupId, String fullQueryTextSha1, CassandraProfile profile)
             throws Exception {
-        return fullQueryTextDao.getFullText(agentRollupId, fullQueryTextSha1);
+        return fullQueryTextDao.getFullText(agentRollupId, fullQueryTextSha1, profile);
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean hasMainThreadProfile(String agentRollupId, AggregateQuery query)
+    public boolean hasMainThreadProfile(String agentRollupId, AggregateQuery query, CassandraProfile profile)
             throws Exception {
         BoundStatement boundStatement = query.transactionName() == null
                 ? existsMainThreadProfileOverallPS.get(query.rollupLevel()).bind()
                 : existsMainThreadProfileTransactionPS.get(query.rollupLevel()).bind();
         boundStatement = bindQuery(boundStatement, agentRollupId, query);
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         return results.one() != null;
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean hasAuxThreadProfile(String agentRollupId, AggregateQuery query) {
+    public boolean hasAuxThreadProfile(String agentRollupId, AggregateQuery query, CassandraProfile profile)
+            throws Exception {
         BoundStatement boundStatement = query.transactionName() == null
                 ? existsAuxThreadProfileOverallPS.get(query.rollupLevel()).bind()
                 : existsAuxThreadProfileTransactionPS.get(query.rollupLevel()).bind();
         boundStatement = bindQuery(boundStatement, agentRollupId, query);
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, profile);
         return results.one() != null;
     }
 
@@ -850,7 +854,7 @@ public class AggregateDaoImpl implements AggregateDao {
             @Nullable String parentAgentRollupId, TTL ttl) throws Exception {
         final int rollupLevel = 0;
         List<NeedsRollupFromChildren> needsRollupFromChildrenList = Common
-                .getNeedsRollupFromChildrenList(agentRollupId, readNeedsRollupFromChild, session);
+                .getNeedsRollupFromChildrenList(agentRollupId, readNeedsRollupFromChild, session, rollup);
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         long nextRollupIntervalMillis = rollupConfigs.get(rollupLevel + 1).intervalMillis();
         for (NeedsRollupFromChildren needsRollupFromChildren : needsRollupFromChildrenList) {
@@ -877,13 +881,13 @@ public class AggregateDaoImpl implements AggregateDao {
                 // comment on postRollup
                 Common.insertNeedsRollupFromChild(agentRollupId, parentAgentRollupId,
                         insertNeedsRollupFromChild, needsRollupFromChildren, captureTime,
-                        needsRollupAdjustedTTL, session);
+                        needsRollupAdjustedTTL, session, rollup);
             }
             Common.postRollup(agentRollupId, needsRollupFromChildren.getCaptureTime(),
                     needsRollupFromChildren.getKeys().keySet(),
                     needsRollupFromChildren.getUniquenessKeysForDeletion(),
                     nextRollupIntervalMillis, insertNeedsRollup.get(rollupLevel),
-                    deleteNeedsRollupFromChild, needsRollupAdjustedTTL, session);
+                    deleteNeedsRollupFromChild, needsRollupAdjustedTTL, session, rollup);
         }
     }
 
@@ -892,7 +896,7 @@ public class AggregateDaoImpl implements AggregateDao {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         long rollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
         Collection<NeedsRollup> needsRollupList = Common.getNeedsRollupList(agentRollupId,
-                rollupLevel, rollupIntervalMillis, readNeedsRollup, session, clock);
+                rollupLevel, rollupIntervalMillis, readNeedsRollup, session, clock, rollup);
         Long nextRollupIntervalMillis = null;
         if (rollupLevel + 1 < rollupConfigs.size()) {
             nextRollupIntervalMillis = rollupConfigs.get(rollupLevel + 1).intervalMillis();
@@ -917,7 +921,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 // processed (also prior to 0.9.6), and when the corresponding old data has expired
                 Common.postRollup(agentRollupId, needsRollup.getCaptureTime(), transactionTypes,
                         needsRollup.getUniquenessKeysForDeletion(), null, null,
-                        deleteNeedsRollup.get(rollupLevel - 1), -1, session);
+                        deleteNeedsRollup.get(rollupLevel - 1), -1, session, rollup);
                 continue;
             }
             // wait for above async work to ensure rollup complete before proceeding
@@ -928,7 +932,7 @@ public class AggregateDaoImpl implements AggregateDao {
             PreparedStatement deleteNeedsRollup = this.deleteNeedsRollup.get(rollupLevel - 1);
             Common.postRollup(agentRollupId, needsRollup.getCaptureTime(), transactionTypes,
                     needsRollup.getUniquenessKeysForDeletion(), nextRollupIntervalMillis,
-                    insertNeedsRollup, deleteNeedsRollup, needsRollupAdjustedTTL, session);
+                    insertNeedsRollup, deleteNeedsRollup, needsRollupAdjustedTTL, session, rollup);
         }
     }
 
@@ -1080,7 +1084,7 @@ public class AggregateDaoImpl implements AggregateDao {
                                     .setDouble(i++, totalAllocatedBytes.doubleValue())
                                     .setLong(i++, transactionCount.get())
                                     .setInt(i++, rollup.adjustedTTL().generalTTL());
-                    return session.writeAsync(boundStatement).toCompletableFuture();
+                    return session.writeAsync(boundStatement, CassandraProfile.rollup).toCompletableFuture();
                 });
     }
 
@@ -1136,7 +1140,7 @@ public class AggregateDaoImpl implements AggregateDao {
                                     .setLong(i++, errorCount.get())
                                     .setLong(i++, transactionCount.get())
                                     .setInt(i++, rollup.adjustedTTL().generalTTL());
-                    return session.writeAsync(boundStatement).toCompletableFuture();
+                    return session.writeAsync(boundStatement, CassandraProfile.rollup).toCompletableFuture();
                 });
     }
 
@@ -1147,13 +1151,13 @@ public class AggregateDaoImpl implements AggregateDao {
                 .get(query.rollupLevel()).bind();
         boundStatement = bindQuery(boundStatement, rollup.agentRollupId(), query);
         // need to populate transactionNames synchronously before returning from this method
-        ResultSet results = session.read(boundStatement);
+        ResultSet results = session.read(boundStatement, CassandraProfile.rollup);
         Map<String, MutableSummary> summaries = new HashMap<>();
         for (Row row : results) {
             String transactionName = mergeRowIntoSummaries(row, summaries);
             transactionNames.add(transactionName);
         }
-        return insertTransactionSummaries(rollup, query, summaries);
+        return insertTransactionSummaries(rollup, query, summaries, CassandraProfile.rollup);
     }
 
     // transactionNames is passed in empty, and populated synchronously by this method
@@ -1189,11 +1193,11 @@ public class AggregateDaoImpl implements AggregateDao {
             waitList.add(entry.getValue().thenCompose(compute::apply));
         }
         return CompletableFutures.allAsList(waitList)
-                .thenCompose(ignored -> insertTransactionSummaries(rollup, query, summaries));
+                .thenCompose(ignored -> insertTransactionSummaries(rollup, query, summaries, CassandraProfile.rollup));
     }
 
     private CompletableFuture<?> insertTransactionSummaries(RollupParams rollup,
-            AggregateQuery query, Map<String, MutableSummary> summaries) {
+            AggregateQuery query, Map<String, MutableSummary> summaries, CassandraProfile profile) {
         BoundStatement boundStatement;
         List<CompletableFuture<?>> futures = new ArrayList<>();
         PreparedStatement preparedStatement =
@@ -1211,7 +1215,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 .setDouble(i++, summary.totalAllocatedBytes)
                 .setLong(i++, summary.transactionCount)
                 .setInt(i++, rollup.adjustedTTL().generalTTL());
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, profile).toCompletableFuture());
         }
         return CompletableFutures.allAsList(futures);
     }
@@ -1222,7 +1226,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 checkNotNull(readTransactionForRollupPS.get(errorSummaryTable))
                         .get(query.rollupLevel()).bind();
         boundStatement = bindQuery(boundStatement, rollup.agentRollupId(), query);
-        CompletableFuture<AsyncResultSet> future = session.readAsync(boundStatement).toCompletableFuture();
+        CompletableFuture<AsyncResultSet> future = session.readAsync(boundStatement, CassandraProfile.rollup).toCompletableFuture();
         return MoreFutures.rollupAsync(future, asyncExecutor, new MoreFutures.DoRollup() {
             @Override
             public CompletableFuture<?> execute(AsyncResultSet rows) {
@@ -1286,7 +1290,7 @@ public class AggregateDaoImpl implements AggregateDao {
                                 .setLong(i++, summary.errorCount)
                                 .setLong(i++, summary.transactionCount)
                                 .setInt(i++, rollup.adjustedTTL().generalTTL());
-                        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+                        futures.add(session.writeAsync(boundStatement, CassandraProfile.rollup).toCompletableFuture());
                     }
                     return CompletableFutures.allAsList(futures);
                 });
@@ -1426,7 +1430,7 @@ public class AggregateDaoImpl implements AggregateDao {
                                 Messages.toByteBuffer(MutableAggregate.toProto(asyncTimers)));
                     }
                     boundStatement = boundStatement.setInt(i++, rollup.adjustedTTL().generalTTL());
-                    return session.writeAsync(boundStatement).toCompletableFuture();
+                    return session.writeAsync(boundStatement, CassandraProfile.rollup).toCompletableFuture();
                 });
     }
 
@@ -1503,7 +1507,7 @@ public class AggregateDaoImpl implements AggregateDao {
                             .setLong(i++, transactionCount.get())
                             .setByteBuffer(i++, toByteBuffer(durationNanosHistogram.toProto(scratchBuffer)))
                             .setInt(i++, rollup.adjustedTTL().generalTTL());
-                    return session.writeAsync(boundStatement).toCompletableFuture();
+                    return session.writeAsync(boundStatement, CassandraProfile.rollup).toCompletableFuture();
                 });
     }
 
@@ -1580,7 +1584,7 @@ public class AggregateDaoImpl implements AggregateDao {
                         boundStatement = boundStatement.setLong(i++, errorCount.get());
                     }
                     boundStatement = boundStatement.setInt(i++, rollup.adjustedTTL().generalTTL());
-                    return session.writeAsync(boundStatement).toCompletableFuture();
+                    return session.writeAsync(boundStatement, CassandraProfile.rollup).toCompletableFuture();
                 });
     }
 
@@ -1764,7 +1768,7 @@ public class AggregateDaoImpl implements AggregateDao {
                     boundStatement = boundStatement.setInstant(i++, Instant.ofEpochMilli(query.to()))
                             .setByteBuffer(i++, toByteBuffer(profile.toProto()))
                             .setInt(i++, rollup.adjustedTTL().profileTTL());
-                    return session.writeAsync(boundStatement).toCompletableFuture();
+                    return session.writeAsync(boundStatement, CassandraProfile.rollup).toCompletableFuture();
                 });
     }
 
@@ -1777,11 +1781,11 @@ public class AggregateDaoImpl implements AggregateDao {
                     checkNotNull(readTransactionForRollupFromChildPS.get(table)).bind();
             boundStatement = bindQueryForRollupFromChild(boundStatement, childAgentRollupId, query);
             if (warnIfNoResults) {
-                futures.put(childAgentRollupId, session.readAsyncWarnIfNoRows(boundStatement,
+                futures.put(childAgentRollupId, session.readAsyncWarnIfNoRows(boundStatement, rollup,
                         "no summary table records found for agentRollupId={}, query={}",
                         childAgentRollupId, query).toCompletableFuture());
             } else {
-                futures.put(childAgentRollupId, session.readAsync(boundStatement).toCompletableFuture());
+                futures.put(childAgentRollupId, session.readAsync(boundStatement, rollup).toCompletableFuture());
             }
         }
         return futures;
@@ -1811,7 +1815,7 @@ public class AggregateDaoImpl implements AggregateDao {
             .setString(i++, transactionType)
             .setInstant(i++, Instant.ofEpochMilli(captureTime));
         boundStatement = bindAggregateForSummary(boundStatement, aggregate, i, adjustedTTL);
-        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+        futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
 
         if (aggregate.getErrorCount() > 0) {
             i = 0;
@@ -1822,7 +1826,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 .setLong(i++, aggregate.getErrorCount())
                 .setLong(i++, aggregate.getTransactionCount())
                 .setInt(i++, adjustedTTL.generalTTL());
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
         }
 
         i = 0;
@@ -1831,7 +1835,7 @@ public class AggregateDaoImpl implements AggregateDao {
             .setString(i++, transactionType)
             .setInstant(i++, Instant.ofEpochMilli(captureTime));
         boundStatement = bindAggregate(boundStatement, aggregate, i++, adjustedTTL);
-        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+        futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
 
         i = 0;
         boundStatement = getInsertOverallPS(histogramTable, rollupLevel).bind()
@@ -1842,7 +1846,7 @@ public class AggregateDaoImpl implements AggregateDao {
             .setLong(i++, aggregate.getTransactionCount())
             .setByteBuffer(i++, toByteBuffer(aggregate.getDurationNanosHistogram()))
             .setInt(i++, adjustedTTL.generalTTL());
-        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+        futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
 
         i = 0;
         boundStatement = getInsertOverallPS(throughputTable, rollupLevel).bind()
@@ -1852,7 +1856,7 @@ public class AggregateDaoImpl implements AggregateDao {
             .setLong(i++, aggregate.getTransactionCount())
             .setLong(i++, aggregate.getErrorCount())
             .setInt(i++, adjustedTTL.generalTTL());
-        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+        futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
 
         if (aggregate.hasMainThreadProfile()) {
             Profile profile = aggregate.getMainThreadProfile();
@@ -1863,7 +1867,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 .setInstant(i++, Instant.ofEpochMilli(captureTime))
                 .setByteBuffer(i++, toByteBuffer(profile))
                 .setInt(i++, adjustedTTL.profileTTL());
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
         }
         if (aggregate.hasAuxThreadProfile()) {
             Profile profile = aggregate.getAuxThreadProfile();
@@ -1874,7 +1878,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 .setInstant(i++, Instant.ofEpochMilli(captureTime))
                 .setByteBuffer(i++, toByteBuffer(profile))
                 .setInt(i++, adjustedTTL.profileTTL());
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
         }
         futures.addAll(insertQueries(getQueries(aggregate), sharedQueryTexts, rollupLevel,
                 agentRollupId, transactionType, null, captureTime, adjustedTTL));
@@ -1897,7 +1901,7 @@ public class AggregateDaoImpl implements AggregateDao {
             .setString(i++, transactionName)
             .setInstant(i++, Instant.ofEpochMilli(captureTime));
         boundStatement = bindAggregate(boundStatement, aggregate, i++, adjustedTTL);
-        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+        futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
 
         i = 0;
         boundStatement = getInsertTransactionPS(histogramTable, rollupLevel).bind()
@@ -1909,7 +1913,7 @@ public class AggregateDaoImpl implements AggregateDao {
             .setLong(i++, aggregate.getTransactionCount())
             .setByteBuffer(i++, toByteBuffer(aggregate.getDurationNanosHistogram()))
             .setInt(i++, adjustedTTL.generalTTL());
-        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+        futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
 
         i = 0;
         boundStatement = getInsertTransactionPS(throughputTable, rollupLevel).bind()
@@ -1920,7 +1924,7 @@ public class AggregateDaoImpl implements AggregateDao {
             .setLong(i++, aggregate.getTransactionCount())
             .setLong(i++, aggregate.getErrorCount())
             .setInt(i++, adjustedTTL.generalTTL());
-        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+        futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
 
         if (aggregate.hasMainThreadProfile()) {
             Profile profile = aggregate.getMainThreadProfile();
@@ -1932,7 +1936,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 .setInstant(i++, Instant.ofEpochMilli(captureTime))
                 .setByteBuffer(i++, toByteBuffer(profile))
                 .setInt(i++, adjustedTTL.profileTTL());
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
         }
         if (aggregate.hasAuxThreadProfile()) {
             Profile profile = aggregate.getAuxThreadProfile();
@@ -1944,7 +1948,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 .setInstant(i++, Instant.ofEpochMilli(captureTime))
                 .setByteBuffer(i++, toByteBuffer(profile))
                 .setInt(i++, adjustedTTL.profileTTL());
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
         }
         futures.addAll(insertQueries(getQueries(aggregate), sharedQueryTexts, rollupLevel,
                 agentRollupId, transactionType, transactionName, captureTime, adjustedTTL));
@@ -1967,7 +1971,7 @@ public class AggregateDaoImpl implements AggregateDao {
             .setInstant(i++, Instant.ofEpochMilli(captureTime))
             .setString(i++, transactionName);
         boundStatement = bindAggregateForSummary(boundStatement, aggregate, i, adjustedTTL);
-        futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+        futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
 
         if (aggregate.getErrorCount() > 0) {
             i = 0;
@@ -1979,7 +1983,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 .setLong(i++, aggregate.getErrorCount())
                 .setLong(i++, aggregate.getTransactionCount())
                 .setInt(i++, adjustedTTL.generalTTL());
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
         }
         return futures;
     }
@@ -2024,7 +2028,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 boundStatement = boundStatement.setToNull(i++);
             }
             boundStatement = boundStatement.setInt(i++, adjustedTTL.queryTTL());
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
         }
         return futures;
     }
@@ -2061,7 +2065,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 boundStatement = boundStatement.setToNull(i++);
             }
             boundStatement = boundStatement.setInt(i++, adjustedTTL.queryTTL());
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
         }
         return CompletableFutures.allAsList(futures);
     }
@@ -2091,7 +2095,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 .setDouble(i++, serviceCall.getTotalDurationNanos())
                 .setLong(i++, serviceCall.getExecutionCount())
                 .setInt(i++, adjustedTTL.serviceCallTTL());
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
         }
         return futures;
     }
@@ -2119,7 +2123,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 .setDouble(i++, serviceCall.getTotalDurationNanos())
                 .setLong(i++, serviceCall.getExecutionCount())
                 .setInt(i++, adjustedTTL.serviceCallTTL());
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
         }
         return CompletableFutures.allAsList(futures);
     }
@@ -2132,14 +2136,14 @@ public class AggregateDaoImpl implements AggregateDao {
         return checkNotNull(insertTransactionPS.get(table)).get(rollupLevel);
     }
 
-    private ResultSet executeQuery(String agentRollupId, SummaryQuery query, Table table) {
+    private ResultSet executeQuery(String agentRollupId, SummaryQuery query, Table table, CassandraProfile profile) {
         BoundStatement boundStatement =
                 checkNotNull(readOverallPS.get(table)).get(query.rollupLevel()).bind();
         boundStatement = bindQuery(boundStatement, agentRollupId, query);
-        return session.read(boundStatement);
+        return session.read(boundStatement, profile);
     }
 
-    private ResultSet executeQuery(String agentRollupId, AggregateQuery query, Table table) {
+    private ResultSet executeQuery(String agentRollupId, AggregateQuery query, Table table, CassandraProfile profile) {
         BoundStatement boundStatement;
         if (query.transactionName() == null) {
             boundStatement = checkNotNull(readOverallPS.get(table)).get(query.rollupLevel()).bind();
@@ -2148,7 +2152,7 @@ public class AggregateDaoImpl implements AggregateDao {
                     checkNotNull(readTransactionPS.get(table)).get(query.rollupLevel()).bind();
         }
         boundStatement = bindQuery(boundStatement, agentRollupId, query);
-        return session.read(boundStatement);
+        return session.read(boundStatement, profile);
     }
 
     private CompletableFuture<AsyncResultSet> executeQueryForRollup(String agentRollupId,
@@ -2163,11 +2167,11 @@ public class AggregateDaoImpl implements AggregateDao {
         }
         boundStatement = bindQuery(boundStatement, agentRollupId, query);
         if (warnIfNoResults) {
-            return session.readAsyncWarnIfNoRows(boundStatement,
+            return session.readAsyncWarnIfNoRows(boundStatement, rollup,
                     "no {} records found for agentRollupId={}, query={}", table.partialName(),
                     agentRollupId, query).toCompletableFuture();
         } else {
-            return session.readAsync(boundStatement).toCompletableFuture();
+            return session.readAsync(boundStatement, rollup).toCompletableFuture();
         }
     }
 
@@ -2181,17 +2185,17 @@ public class AggregateDaoImpl implements AggregateDao {
         }
         boundStatement = bindQueryForRollupFromChild(boundStatement, childAgentRollupId, query);
         if (warnIfNoResults) {
-            return session.readAsyncWarnIfNoRows(boundStatement,
+            return session.readAsyncWarnIfNoRows(boundStatement, rollup,
                     "no {} records found for agentRollupId={}, query={}", table.partialName(),
                     childAgentRollupId, query).toCompletableFuture();
         } else {
-            return session.readAsync(boundStatement).toCompletableFuture();
+            return session.readAsync(boundStatement, rollup).toCompletableFuture();
         }
     }
 
     private void mergeProfilesInto(String agentRollupId, AggregateQuery query, Table profileTable,
-            ProfileCollector collector) throws Exception {
-        ResultSet results = executeQuery(agentRollupId, query, profileTable);
+            ProfileCollector collector, CassandraProfile cprofile) throws Exception {
+        ResultSet results = executeQuery(agentRollupId, query, profileTable, cprofile);
         long captureTime = Long.MIN_VALUE;
         for (Row row : results) {
             captureTime = Math.max(captureTime, checkNotNull(row.getInstant(0)).toEpochMilli());
