@@ -16,19 +16,26 @@
 package org.glowroot.central.repo;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import org.glowroot.central.Main;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import org.glowroot.central.Main;
+import org.testcontainers.containers.CassandraContainer;
 
 public class MiscToolIT {
+    public static final CassandraContainer cassandra
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.15").withExposedPorts(9042);
 
     @BeforeAll
     public static void setUp() throws Exception {
-        SharedSetupRunListener.startCassandra();
-        CqlSession session = CqlSessionBuilders.newCqlSessionBuilder().build();
+        cassandra.start();
+        CqlSession session = CqlSession
+                .builder()
+                .addContactPoint(cassandra.getContactPoint())
+                .withLocalDatacenter(cassandra.getLocalDatacenter())
+                .withConfigLoader(DriverConfigLoader.fromClasspath("datastax-driver.conf")).build();
         SchemaUpgradeIT.updateSchemaWithRetry(session,
                 "drop keyspace if exists glowroot_tools_test");
         session.close();
@@ -40,11 +47,8 @@ public class MiscToolIT {
 
     @AfterAll
     public static void tearDown() throws Exception {
+        cassandra.stop();
         System.clearProperty("glowroot.cassandra.keyspace");
-        if (!SharedSetupRunListener.isStarted()) {
-            return;
-        }
-        SharedSetupRunListener.stopCassandra();
     }
 
     @Test

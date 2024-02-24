@@ -15,49 +15,29 @@
  */
 package org.glowroot.central.repo;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.spotify.futures.CompletableFutures;
-import org.glowroot.common2.repo.CassandraProfile;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.central.v09support.AggregateDaoWithV09Support;
 import org.glowroot.common.ConfigDefaults;
 import org.glowroot.common.live.ImmutableAggregateQuery;
 import org.glowroot.common.live.ImmutableSummaryQuery;
-import org.glowroot.common.live.LiveAggregateRepository.AggregateQuery;
-import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.SummaryQuery;
-import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
-import org.glowroot.common.model.MutableQuery;
-import org.glowroot.common.model.OverallErrorSummaryCollector;
+import org.glowroot.common.live.LiveAggregateRepository.*;
+import org.glowroot.common.model.*;
 import org.glowroot.common.model.OverallErrorSummaryCollector.OverallErrorSummary;
-import org.glowroot.common.model.OverallSummaryCollector;
 import org.glowroot.common.model.OverallSummaryCollector.OverallSummary;
-import org.glowroot.common.model.QueryCollector;
-import org.glowroot.common.model.Result;
-import org.glowroot.common.model.TransactionNameErrorSummaryCollector;
 import org.glowroot.common.model.TransactionNameErrorSummaryCollector.ErrorSummarySortOrder;
 import org.glowroot.common.model.TransactionNameErrorSummaryCollector.TransactionNameErrorSummary;
-import org.glowroot.common.model.TransactionNameSummaryCollector;
 import org.glowroot.common.model.TransactionNameSummaryCollector.SummarySortOrder;
 import org.glowroot.common.model.TransactionNameSummaryCollector.TransactionNameSummary;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.util.RollupLevelService;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
@@ -66,11 +46,27 @@ import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldTransactionAggregate;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 import org.glowroot.wire.api.model.Proto.OptionalInt64;
+import org.junit.jupiter.api.*;
+import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.glowroot.common2.repo.CassandraProfile.web;
 
+@Testcontainers
 public class AggregateDaoIT {
+
+    @Container
+    public final CassandraContainer cassandra
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.15").withExposedPorts(9042);
 
     private static final AdvancedConfig DEFAULT_ADVANCED_CONFIG = AdvancedConfig.newBuilder()
             .setMaxQueryAggregates(OptionalInt32.newBuilder()
@@ -79,23 +75,46 @@ public class AggregateDaoIT {
                     .setValue(ConfigDefaults.ADVANCED_MAX_SERVICE_CALL_AGGREGATES))
             .build();
 
-    private static ClusterManager clusterManager;
-    private static CqlSessionBuilder cqlSessionBuilder;
-    private static Session session;
+    private ClusterManager clusterManager;
+    private CqlSessionBuilder cqlSessionBuilder;
+    private Session session;
     private static ExecutorService asyncExecutor;
-    private static AgentConfigDao agentConfigDao;
-    private static ActiveAgentDao activeAgentDao;
-    private static FullQueryTextDao fullQueryTextDao;
-    private static AggregateDao aggregateDao;
+    private AgentConfigDao agentConfigDao;
+    private ActiveAgentDao activeAgentDao;
+    private FullQueryTextDao fullQueryTextDao;
+    private AggregateDao aggregateDao;
 
     @BeforeAll
     public static void setUp() throws Exception {
-        SharedSetupRunListener.startCassandra();
+        asyncExecutor = Executors.newCachedThreadPool();
+    }
+
+    @AfterAll
+    public static void afterAll()  {
+        if (asyncExecutor != null) {
+            asyncExecutor.shutdown();
+        }
+    }
+
+    @AfterEach
+    public void tearDown() throws Exception {
+        try (var dao = fullQueryTextDao;
+             var se = session;
+             var cm = clusterManager) {
+
+        }
+    }
+
+    @BeforeEach
+    public void before() throws Exception {
         clusterManager = ClusterManager.create();
-        cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
+        cqlSessionBuilder = CqlSession
+                .builder()
+                .addContactPoint(cassandra.getContactPoint())
+                .withLocalDatacenter(cassandra.getLocalDatacenter())
+                .withConfigLoader(DriverConfigLoader.fromClasspath("datastax-driver.conf"));
         session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
                 0);
-        asyncExecutor = Executors.newCachedThreadPool();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         AgentDisplayDao agentDisplayDao =
                 new AgentDisplayDao(session, clusterManager, asyncExecutor, 10);
@@ -114,26 +133,7 @@ public class AggregateDaoIT {
         aggregateDao = new AggregateDaoWithV09Support(ImmutableSet.of(), 0, 0, Clock.systemClock(),
                 new AggregateDaoImpl(session, activeAgentDao, transactionTypeDao, fullQueryTextDao,
                         configRepository, asyncExecutor, 0, Clock.systemClock()));
-    }
 
-    @AfterAll
-    public static void tearDown() throws Exception {
-        if (!SharedSetupRunListener.isStarted()) {
-            return;
-        }
-        try (var dao = fullQueryTextDao;
-             var se = session;
-             var cm = clusterManager) {
-            if (asyncExecutor != null) {
-                asyncExecutor.shutdown();
-            }
-        } finally {
-            SharedSetupRunListener.stopCassandra();
-        }
-    }
-
-    @BeforeEach
-    public void before() throws Exception {
         session.updateSchemaWithRetry("truncate agent_config");
     }
 

@@ -15,20 +15,24 @@
  */
 package org.glowroot.central.repo;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
-import org.glowroot.common2.repo.CassandraProfile;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.common2.config.ImmutableRoleConfig;
 import org.glowroot.common2.config.RoleConfig;
+import org.glowroot.common2.repo.CassandraProfile;
+import org.junit.jupiter.api.*;
+import org.testcontainers.containers.CassandraContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+
 public class RoleDaoIT {
+
+    public static final CassandraContainer cassandra
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.15").withExposedPorts(9042);
 
     private static CqlSessionBuilder cqlSessionBuilder;
     private static Session session;
@@ -36,24 +40,32 @@ public class RoleDaoIT {
     private static RoleDao roleDao;
 
     @BeforeAll
-    public static void setUp() throws Exception {
-        SharedSetupRunListener.startCassandra();
-        cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
+    public static void beforeClass() {
+        cassandra.start();
+    }
+
+    @AfterAll
+    public static void afterClass() {
+        cassandra.stop();
+    }
+
+    @BeforeEach
+    public void setUp() throws Exception {
+        cqlSessionBuilder = CqlSession
+                .builder()
+                .addContactPoint(cassandra.getContactPoint())
+                .withLocalDatacenter(cassandra.getLocalDatacenter())
+                .withConfigLoader(DriverConfigLoader.fromClasspath("datastax-driver.conf"));
         session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
                 0);
         clusterManager = ClusterManager.create();
         roleDao = new RoleDao(session, clusterManager);
     }
 
-    @AfterAll
-    public static void tearDown() throws Exception {
-        if (!SharedSetupRunListener.isStarted()) {
-            return;
-        }
+    @AfterEach
+    public void tearDown() throws Exception {
         try (var se = session;
              var cm = clusterManager) {
-        } finally {
-            SharedSetupRunListener.stopCassandra();
         }
     }
 

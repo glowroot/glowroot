@@ -15,7 +15,9 @@
  */
 package org.glowroot.central.repo;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.glowroot.central.util.ClusterManager;
@@ -25,9 +27,8 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.common2.config.ImmutableCentralStorageConfig;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
+import org.testcontainers.containers.CassandraContainer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,22 +38,32 @@ import java.util.concurrent.Executors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class GaugeValueDaoIT {
+    public static final CassandraContainer cassandra
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.15").withExposedPorts(9042);
 
-    private static ClusterManager clusterManager;
-    private static Session session;
+    private ClusterManager clusterManager;
+    private Session session;
     private static ExecutorService asyncExecutor;
-    private static AgentConfigDao agentConfigDao;
-    private static GaugeValueDao gaugeValueDao;
-    private static CqlSessionBuilder cqlSessionBuilder;
+    private AgentConfigDao agentConfigDao;
+    private GaugeValueDao gaugeValueDao;
+    private CqlSessionBuilder cqlSessionBuilder;
 
     @BeforeAll
-    public static void setUp() throws Exception {
-        SharedSetupRunListener.startCassandra();
+    public static void beforeAll() throws Exception {
+        cassandra.start();
+        asyncExecutor = Executors.newCachedThreadPool();
+    }
+
+    @BeforeEach
+    public void setUp() throws Exception {
         clusterManager = ClusterManager.create();
-        cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
+        cqlSessionBuilder = CqlSession
+                .builder()
+                .addContactPoint(cassandra.getContactPoint())
+                .withLocalDatacenter(cassandra.getLocalDatacenter())
+                .withConfigLoader(DriverConfigLoader.fromClasspath("datastax-driver.conf"));
         session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
                 0);
-        asyncExecutor = Executors.newCachedThreadPool();
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         AgentDisplayDao agentDisplayDao =
                 new AgentDisplayDao(session, clusterManager, asyncExecutor, 10);
@@ -67,17 +78,17 @@ public class GaugeValueDaoIT {
     }
 
     @AfterAll
-    public static void tearDown() throws Exception {
-        if (!SharedSetupRunListener.isStarted()) {
-            return;
+    public static void afterAll() throws Exception {
+        cassandra.stop();
+        if (asyncExecutor != null) {
+            asyncExecutor.shutdown();
         }
+    }
+
+    @AfterEach
+    public void tearDown() throws Exception {
         try (var se = session;
              var cm = clusterManager) {
-            if (asyncExecutor != null) {
-                asyncExecutor.shutdown();
-            }
-        } finally {
-            SharedSetupRunListener.stopCassandra();
         }
     }
 

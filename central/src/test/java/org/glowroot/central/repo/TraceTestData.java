@@ -15,10 +15,10 @@
  */
 package org.glowroot.central.repo;
 
-import java.util.UUID;
-
 import org.glowroot.common.util.Styles;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+
+import java.util.UUID;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 

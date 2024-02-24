@@ -15,48 +15,53 @@
  */
 package org.glowroot.central.repo;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
-import org.glowroot.common2.repo.CassandraProfile;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import org.glowroot.central.util.Session;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment.HostInfo;
+import org.junit.jupiter.api.*;
+import org.testcontainers.containers.CassandraContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class EnvironmentDaoIT {
+    public static final CassandraContainer cassandra
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.15").withExposedPorts(9042);
 
     private static CqlSessionBuilder cqlSessionBuilder;
     private static Session session;
     private static EnvironmentDao environmentDao;
 
     @BeforeAll
-    public static void setUp() throws Exception {
-        SharedSetupRunListener.startCassandra();
-        cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
-        session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
-                0);
-
-        environmentDao = new EnvironmentDao(session);
+    public static void beforeClass() {
+        cassandra.start();
     }
 
     @AfterAll
-    public static void tearDown() throws Exception {
-        if (!SharedSetupRunListener.isStarted()) {
-            return;
-        }
+    public static void afterClass() {
+        cassandra.stop();
+    }
+
+    @AfterEach
+    public void tearDown() throws Exception {
         try (var se = session) {
-        } finally {
-            SharedSetupRunListener.stopCassandra();
         }
     }
 
     @BeforeEach
     public void before() throws Exception {
+        cqlSessionBuilder = CqlSession
+                .builder()
+                .addContactPoint(cassandra.getContactPoint())
+                .withLocalDatacenter(cassandra.getLocalDatacenter())
+                .withConfigLoader(DriverConfigLoader.fromClasspath("datastax-driver.conf"));
+        session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
+                0);
+
+        environmentDao = new EnvironmentDao(session);
         session.updateSchemaWithRetry("truncate environment");
     }
 
@@ -67,7 +72,7 @@ public class EnvironmentDaoIT {
                 .setHostInfo(HostInfo.newBuilder()
                         .setHostname("hosty"))
                 .build();
-        environmentDao.store("a", environment);
+        environmentDao.store("a", environment).toCompletableFuture().get();
         // when
         Environment readEnvironment = environmentDao.read("a", CassandraProfile.web);
         // then

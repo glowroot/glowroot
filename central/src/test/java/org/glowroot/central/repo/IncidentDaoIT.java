@@ -15,17 +15,12 @@
  */
 package org.glowroot.central.repo;
 
-import java.util.List;
-
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
-import org.glowroot.common2.repo.CassandraProfile;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.IncidentRepository.OpenIncident;
 import org.glowroot.common2.repo.IncidentRepository.ResolvedIncident;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
@@ -33,6 +28,10 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
+import org.junit.jupiter.api.*;
+import org.testcontainers.containers.CassandraContainer;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -40,40 +39,47 @@ import static org.mockito.Mockito.when;
 
 // NOTE this is mostly a copy of IncidentDaoTest in glowroot-agent-embedded
 public class IncidentDaoIT {
+    public static final CassandraContainer cassandra
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.15").withExposedPorts(9042);
 
     private static final String AGENT_ID = "xyz";
 
-    private static CqlSessionBuilder cqlSessionBuilder;
-    private static Session session;
-    private static IncidentDao incidentDao;
+    private CqlSessionBuilder cqlSessionBuilder;
+    private Session session;
+    private IncidentDao incidentDao;
 
     @BeforeAll
-    public static void setUp() throws Exception {
-        SharedSetupRunListener.startCassandra();
-        cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
+    public static void beforeClass() {
+        cassandra.start();
+    }
+
+    @AfterAll
+    public static void afterClass() {
+        cassandra.stop();
+    }
+
+    @BeforeEach
+    public void setUp() throws Exception {
+        cqlSessionBuilder = CqlSession
+                .builder()
+                .addContactPoint(cassandra.getContactPoint())
+                .withLocalDatacenter(cassandra.getLocalDatacenter())
+                .withConfigLoader(DriverConfigLoader.fromClasspath("datastax-driver.conf"));
         session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null, 0);
 
         Clock clock = mock(Clock.class);
         when(clock.currentTimeMillis()).thenReturn(345L);
         incidentDao = new IncidentDao(session, clock);
-    }
-
-    @AfterAll
-    public static void tearDown() throws Exception {
-        if (!SharedSetupRunListener.isStarted()) {
-            return;
-        }
-        try (var se = session) {
-        } finally {
-            SharedSetupRunListener.stopCassandra();
-        }
-    }
-
-    @BeforeEach
-    public void beforeEach() throws Exception {
         session.updateSchemaWithRetry("truncate open_incident");
         session.updateSchemaWithRetry("truncate resolved_incident");
     }
+
+    @AfterEach
+    public void tearDown() throws Exception {
+        try (var se = session) {
+        }
+    }
+
 
     @Test
     public void shouldNotExist() throws Exception {
