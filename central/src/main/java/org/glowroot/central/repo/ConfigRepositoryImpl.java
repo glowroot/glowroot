@@ -126,7 +126,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public GeneralConfig getGeneralConfig(String agentRollupId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentRollupId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentRollupId);
         }
@@ -135,7 +135,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public TransactionConfig getTransactionConfig(String agentId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentId);
         }
@@ -144,7 +144,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public JvmConfig getJvmConfig(String agentId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentId);
         }
@@ -154,7 +154,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     // central supports ui config on rollups
     @Override
     public UiDefaultsConfig getUiDefaultsConfig(String agentRollupId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentRollupId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentRollupId);
         }
@@ -164,7 +164,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
     @Override
     public AdvancedConfig getAdvancedConfig(String agentRollupId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentRollupId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentRollupId);
         }
@@ -173,7 +173,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public List<GaugeConfig> getGaugeConfigs(String agentId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentId);
         }
@@ -194,7 +194,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public List<SyntheticMonitorConfig> getSyntheticMonitorConfigs(String agentRollupId)
             throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentRollupId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentRollupId);
         }
@@ -216,7 +216,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     // central supports alert configs on rollups
     @Override
     public List<AlertConfig> getAlertConfigs(String agentRollupId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentRollupId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentRollupId);
         }
@@ -252,7 +252,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public List<PluginConfig> getPluginConfigs(String agentId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentId);
         }
@@ -271,7 +271,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public List<InstrumentationConfig> getInstrumentationConfigs(String agentId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentId);
         }
@@ -291,7 +291,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public AgentConfig getAllConfig(String agentId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentId);
         } else {
@@ -466,7 +466,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public boolean isConfigReadOnly(String agentId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentId);
         }
@@ -1024,7 +1024,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         if (getSmtpConfig().host().isEmpty() && configs.size() == 1) {
             throw new CannotDeleteLastUserException();
         }
-        userDao.delete(username, profile);
+        userDao.delete(username, profile).toCompletableFuture().get();
     }
 
     @Override
@@ -1210,7 +1210,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             userDao.insert(userConfig, CassandraProfile.web);
         }
         for (String remainingUsername : remainingUserConfigs.keySet()) {
-            userDao.delete(remainingUsername, CassandraProfile.web);
+            userDao.delete(remainingUsername, CassandraProfile.web).toCompletableFuture().get();
         }
     }
 

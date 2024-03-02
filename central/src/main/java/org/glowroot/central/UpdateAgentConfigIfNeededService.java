@@ -115,38 +115,27 @@ class UpdateAgentConfigIfNeededService implements Runnable {
     }
 
     void updateAgentConfigIfNeededAndConnectedAsync(String agentId) throws InterruptedException {
-        AgentConfigAndUpdateToken agentConfigAndUpdateToken;
-        try {
-            agentConfigAndUpdateToken = agentConfigDao.readForUpdate(agentId);
-        } catch (InterruptedException e) {
-            // probably shutdown requested (see close method above)
-            throw e;
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            return;
-        }
-        if (agentConfigAndUpdateToken == null) {
-            return;
-        }
-        UUID updateToken = agentConfigAndUpdateToken.updateToken();
-        if (updateToken == null) {
-            return;
-        }
-        workerExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    boolean updated = downstreamService.updateAgentConfigIfConnected(agentId,
-                            agentConfigAndUpdateToken.config());
-                    if (updated) {
-                        agentConfigDao.markUpdated(agentId, updateToken);
-                    }
-                } catch (InterruptedException e) {
-                    // probably shutdown requested (see close method above)
-                } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
+
+        agentConfigDao.readForUpdate(agentId).thenAccept(opt -> {
+            opt.ifPresent(agentConfigAndUpdateToken -> {
+                UUID updateToken = agentConfigAndUpdateToken.updateToken();
+                if (updateToken == null) {
+                    return;
                 }
-            }
+                workerExecutor.execute(() -> {
+                    try {
+                        boolean updated = downstreamService.updateAgentConfigIfConnected(agentId,
+                                agentConfigAndUpdateToken.config());
+                        if (updated) {
+                            agentConfigDao.markUpdated(agentId, updateToken);
+                        }
+                    } catch (InterruptedException e) {
+                        // probably shutdown requested (see close method above)
+                    } catch (Exception e) {
+                        logger.error(e.getMessage(), e);
+                    }
+                });
+            });
         });
     }
 

@@ -29,8 +29,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -164,8 +167,8 @@ public class TraceDaoImpl implements TraceDao {
         this.configRepository = configRepository;
         this.clock = clock;
 
-        ResultSet results =
-                session.read("select release_version from system.local where key = 'local'", CassandraProfile.slow);
+        AsyncResultSet results =
+                session.readAsync("select release_version from system.local where key = 'local'", CassandraProfile.slow).toCompletableFuture().get();
         Row row = checkNotNull(results.one());
         String cassandraVersion = checkNotNull(row.getString(0));
         cassandra2x = cassandraVersion.startsWith("2.");
@@ -922,8 +925,8 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = readTransactionErrorCount.bind();
             boundStatement = bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
-        ResultSet results = session.read(boundStatement, CassandraProfile.web);
-        return results.one().getLong(0);
+        return session.readAsync(boundStatement, CassandraProfile.web)
+                .thenApply(results -> results.one().getLong(0)).toCompletableFuture().get();
     }
 
     @Override
@@ -956,44 +959,54 @@ public class TraceDaoImpl implements TraceDao {
             boundStatement = readTransactionErrorMessage.bind();
             boundStatement = bindTraceQuery(boundStatement, agentRollupId, query, false);
         }
-        ResultSet results = session.read(boundStatement, CassandraProfile.web);
         // rows are already in order by captureTime, so saving sort step by using linked hash map
         Map<Long, MutableLong> pointCounts = new LinkedHashMap<>();
         Map<String, MutableLong> messageCounts = new HashMap<>();
-        for (Row row : results) {
-            long captureTime = checkNotNull(row.getInstant(0)).toEpochMilli();
-            String errorMessage = checkNotNull(row.getString(1));
-            if (!matches(filter, errorMessage)) {
-                continue;
+        Function<AsyncResultSet, CompletableFuture<Void>> compute = new com.google.common.base.Function<AsyncResultSet, CompletableFuture<Void>>() {
+            @Override
+            public CompletableFuture<Void> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    long captureTime = checkNotNull(row.getInstant(0)).toEpochMilli();
+                    String errorMessage = checkNotNull(row.getString(1));
+                    if (!matches(filter, errorMessage)) {
+                        continue;
+                    }
+                    long rollupCaptureTime = CaptureTimes.getRollup(captureTime, resolutionMillis);
+                    pointCounts.computeIfAbsent(rollupCaptureTime, k -> new MutableLong()).increment();
+                    messageCounts.computeIfAbsent(errorMessage, k -> new MutableLong()).increment();
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(null);
             }
-            long rollupCaptureTime = CaptureTimes.getRollup(captureTime, resolutionMillis);
-            pointCounts.computeIfAbsent(rollupCaptureTime, k -> new MutableLong()).increment();
-            messageCounts.computeIfAbsent(errorMessage, k -> new MutableLong()).increment();
-        }
-        // pointCounts is linked hash map and is already sorted by capture time
-        List<ErrorMessagePoint> points = pointCounts.entrySet().stream()
-                .map(e -> ImmutableErrorMessagePoint.of(e.getKey(), e.getValue().value))
-                // explicit type on this line is needed for Checker Framework
-                // see https://github.com/typetools/checker-framework/issues/531
-                .collect(Collectors.<ErrorMessagePoint>toList());
-        List<ErrorMessageCount> counts = messageCounts.entrySet().stream()
-                .map(e1 -> ImmutableErrorMessageCount.of(e1.getKey(), e1.getValue().value))
-                .sorted(Comparator.comparing(ErrorMessageCount::count).reversed())
-                // explicit type on this line is needed for Checker Framework
-                // see https://github.com/typetools/checker-framework/issues/531
-                .collect(Collectors.<ErrorMessageCount>toList());
+        };
+        return session.readAsync(boundStatement, CassandraProfile.web).thenCompose(compute).thenApply((ignored) -> {
+            // pointCounts is linked hash map and is already sorted by capture time
+            List<ErrorMessagePoint> points = pointCounts.entrySet().stream()
+                    .map(e -> ImmutableErrorMessagePoint.of(e.getKey(), e.getValue().value))
+                    // explicit type on this line is needed for Checker Framework
+                    // see https://github.com/typetools/checker-framework/issues/531
+                    .collect(Collectors.<ErrorMessagePoint>toList());
+            List<ErrorMessageCount> counts = messageCounts.entrySet().stream()
+                    .map(e1 -> ImmutableErrorMessageCount.of(e1.getKey(), e1.getValue().value))
+                    .sorted(Comparator.comparing(ErrorMessageCount::count).reversed())
+                    // explicit type on this line is needed for Checker Framework
+                    // see https://github.com/typetools/checker-framework/issues/531
+                    .collect(Collectors.<ErrorMessageCount>toList());
 
-        if (counts.size() > limit) {
-            return ImmutableErrorMessageResult.builder()
-                    .addAllPoints(points)
-                    .counts(new Result<>(counts.subList(0, limit), true))
-                    .build();
-        } else {
-            return ImmutableErrorMessageResult.builder()
-                    .addAllPoints(points)
-                    .counts(new Result<>(counts, false))
-                    .build();
-        }
+            if (counts.size() > limit) {
+                return ImmutableErrorMessageResult.builder()
+                        .addAllPoints(points)
+                        .counts(new Result<>(counts.subList(0, limit), true))
+                        .build();
+            } else {
+                return ImmutableErrorMessageResult.builder()
+                        .addAllPoints(points)
+                        .counts(new Result<>(counts, false))
+                        .build();
+            }
+        }).toCompletableFuture().get();
     }
 
     @Override
@@ -1017,17 +1030,25 @@ public class TraceDaoImpl implements TraceDao {
         } else {
             errorMessagePattern = null;
         }
-        ResultSet results = session.read(boundStatement, profile);
-        long count = 0;
-        for (Row row : results) {
-            String errorMessage = checkNotNull(row.getString(1));
-            if (errorMessagePattern == null && errorMessage.contains(errorMessageFilter)
-                    || errorMessagePattern != null
+        AtomicLong count = new AtomicLong(0);
+        Function<AsyncResultSet, CompletableFuture<Long>> compute = new com.google.common.base.Function<AsyncResultSet, CompletableFuture<Long>>() {
+            @Override
+            public CompletableFuture<Long> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    String errorMessage = checkNotNull(row.getString(1));
+                    if (errorMessagePattern == null && errorMessage.contains(errorMessageFilter)
+                            || errorMessagePattern != null
                             && errorMessagePattern.matcher(errorMessage).find()) {
-                count++;
+                        count.incrementAndGet();
+                    }
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(count.get());
             }
-        }
-        return count;
+        };
+        return session.readAsync(boundStatement, profile).thenCompose(compute).toCompletableFuture().get();
     }
 
     @Override
@@ -1111,12 +1132,17 @@ public class TraceDaoImpl implements TraceDao {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentId)
             .setString(1, traceId);
-        ResultSet results = session.read(boundStatement, CassandraProfile.web);
-        Row row = results.one();
-        if (row == null) {
-            return null;
-        }
-        return Profile.parseFrom(checkNotNull(row.getByteBuffer(0)));
+        return session.readAsync(boundStatement, CassandraProfile.web).thenApply(results -> {
+            Row row = results.one();
+            if (row == null) {
+                return null;
+            }
+            try {
+                return Profile.parseFrom(checkNotNull(row.getByteBuffer(0)));
+            } catch (InvalidProtocolBufferException e) {
+                throw new RuntimeException(e);
+            }
+        }).toCompletableFuture().get();
     }
 
     @Override
@@ -1133,12 +1159,17 @@ public class TraceDaoImpl implements TraceDao {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentId)
             .setString(1, traceId);
-        ResultSet results = session.read(boundStatement, CassandraProfile.web);
-        Row row = results.one();
-        if (row == null) {
-            return null;
-        }
-        return Profile.parseFrom(checkNotNull(row.getByteBuffer(0)));
+        return session.readAsync(boundStatement, CassandraProfile.web).thenApply(results -> {
+            Row row = results.one();
+            if (row == null) {
+                return null;
+            }
+            try {
+                return Profile.parseFrom(checkNotNull(row.getByteBuffer(0)));
+            } catch (InvalidProtocolBufferException e) {
+                throw new RuntimeException(e);
+            }
+        }).toCompletableFuture().get();
     }
 
     private Trace. /*@Nullable*/ Header readHeader(String agentId, String traceId) {
@@ -1154,14 +1185,19 @@ public class TraceDaoImpl implements TraceDao {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentId)
             .setString(1, traceId);
-        ResultSet results = session.read(boundStatement, CassandraProfile.web);
-        Row row = results.one();
-        if (row == null) {
-            return null;
-        }
         try {
-            return Trace.Header.parseFrom(checkNotNull(row.getByteBuffer(0)));
-        } catch (InvalidProtocolBufferException e) {
+            return session.readAsync(boundStatement, CassandraProfile.web).thenApply(results -> {
+                Row row = results.one();
+                if (row == null) {
+                    return null;
+                }
+                try {
+                    return Trace.Header.parseFrom(checkNotNull(row.getByteBuffer(0)));
+                } catch (InvalidProtocolBufferException e) {
+                    throw new RuntimeException(e);
+                }
+            }).toCompletableFuture().get();
+        } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
     }
@@ -1179,48 +1215,59 @@ public class TraceDaoImpl implements TraceDao {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentId)
             .setString(1, traceId);
-        ResultSet results = session.read(boundStatement, profile);
         List<Trace.Entry> entries = new ArrayList<>();
-        Row row;
-        while ((row = results.one()) != null) {
-            int i = 0;
-            Trace.Entry.Builder entry = Trace.Entry.newBuilder()
-                    .setDepth(row.getInt(i++))
-                    .setStartOffsetNanos(row.getLong(i++))
-                    .setDurationNanos(row.getLong(i++))
-                    .setActive(row.getBoolean(i++));
-            if (row.isNull(i + 1)) { // shared_query_text_index
-                // message is null for trace entries added using addErrorEntry()
-                entry.setMessage(Strings.nullToEmpty(row.getString(i++)));
-                i++; // shared_query_text_index
-                i++; // query_message_prefix
-                i++; // query_message_suffix
-            } else {
-                i++; // message
-                Trace.QueryEntryMessage queryEntryMessage = Trace.QueryEntryMessage.newBuilder()
-                        .setSharedQueryTextIndex(row.getInt(i++))
-                        .setPrefix(Strings.nullToEmpty(row.getString(i++)))
-                        .setSuffix(Strings.nullToEmpty(row.getString(i++)))
-                        .build();
-                entry.setQueryEntryMessage(queryEntryMessage);
+        Function<AsyncResultSet, CompletableFuture<List<Trace.Entry>>> compute = new com.google.common.base.Function<AsyncResultSet, CompletableFuture<List<Trace.Entry>>>() {
+            @Override
+            public CompletableFuture<List<Trace.Entry>> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    Trace.Entry.Builder entry = Trace.Entry.newBuilder()
+                            .setDepth(row.getInt(i++))
+                            .setStartOffsetNanos(row.getLong(i++))
+                            .setDurationNanos(row.getLong(i++))
+                            .setActive(row.getBoolean(i++));
+                    if (row.isNull(i + 1)) { // shared_query_text_index
+                        // message is null for trace entries added using addErrorEntry()
+                        entry.setMessage(Strings.nullToEmpty(row.getString(i++)));
+                        i++; // shared_query_text_index
+                        i++; // query_message_prefix
+                        i++; // query_message_suffix
+                    } else {
+                        i++; // message
+                        Trace.QueryEntryMessage queryEntryMessage = Trace.QueryEntryMessage.newBuilder()
+                                .setSharedQueryTextIndex(row.getInt(i++))
+                                .setPrefix(Strings.nullToEmpty(row.getString(i++)))
+                                .setSuffix(Strings.nullToEmpty(row.getString(i++)))
+                                .build();
+                        entry.setQueryEntryMessage(queryEntryMessage);
+                    }
+                    ByteBuffer detailBytes = row.getByteBuffer(i++);
+                    if (detailBytes != null) {
+                        entry.addAllDetailEntry(
+                                Messages.parseDelimitedFrom(detailBytes, Trace.DetailEntry.parser()));
+                    }
+                    ByteBuffer locationBytes = row.getByteBuffer(i++);
+                    if (locationBytes != null) {
+                        entry.addAllLocationStackTraceElement(Messages.parseDelimitedFrom(locationBytes,
+                                Proto.StackTraceElement.parser()));
+                    }
+                    ByteBuffer errorBytes = row.getByteBuffer(i++);
+                    if (errorBytes != null) {
+                        try {
+                            entry.setError(Trace.Error.parseFrom(errorBytes));
+                        } catch (InvalidProtocolBufferException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    entries.add(entry.build());
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(entries);
             }
-            ByteBuffer detailBytes = row.getByteBuffer(i++);
-            if (detailBytes != null) {
-                entry.addAllDetailEntry(
-                        Messages.parseDelimitedFrom(detailBytes, Trace.DetailEntry.parser()));
-            }
-            ByteBuffer locationBytes = row.getByteBuffer(i++);
-            if (locationBytes != null) {
-                entry.addAllLocationStackTraceElement(Messages.parseDelimitedFrom(locationBytes,
-                        Proto.StackTraceElement.parser()));
-            }
-            ByteBuffer errorBytes = row.getByteBuffer(i++);
-            if (errorBytes != null) {
-                entry.setError(Trace.Error.parseFrom(errorBytes));
-            }
-            entries.add(entry.build());
-        }
-        return entries;
+        };
+        return session.readAsync(boundStatement, profile).thenCompose(compute).toCompletableFuture().get();
     }
 
     private List<Aggregate.Query> readQueriesInternal(String agentId, String traceId, CassandraProfile profile)
@@ -1228,24 +1275,32 @@ public class TraceDaoImpl implements TraceDao {
         BoundStatement boundStatement = readQueriesV2.bind()
             .setString(0, agentId)
             .setString(1, traceId);
-        ResultSet results = session.read(boundStatement, profile);
         List<Aggregate.Query> queries = new ArrayList<>();
-        Row row;
-        while ((row = results.one()) != null) {
-            int i = 0;
-            Aggregate.Query.Builder query = Aggregate.Query.newBuilder()
-                    .setType(checkNotNull(row.getString(i++)))
-                    .setSharedQueryTextIndex(row.getInt(i++))
-                    .setTotalDurationNanos(row.getDouble(i++))
-                    .setExecutionCount(row.getLong(i++));
-            long totalRows = row.getLong(i++);
-            if (!NotAvailableAware.isNA(totalRows)) {
-                query.setTotalRows(OptionalInt64.newBuilder().setValue(totalRows));
+        Function<AsyncResultSet, CompletableFuture<List<Aggregate.Query>>> compute = new com.google.common.base.Function<AsyncResultSet, CompletableFuture<List<Aggregate.Query>>>() {
+            @Override
+            public CompletableFuture<List<Aggregate.Query>> apply(AsyncResultSet results) {
+
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    Aggregate.Query.Builder query = Aggregate.Query.newBuilder()
+                            .setType(checkNotNull(row.getString(i++)))
+                            .setSharedQueryTextIndex(row.getInt(i++))
+                            .setTotalDurationNanos(row.getDouble(i++))
+                            .setExecutionCount(row.getLong(i++));
+                    long totalRows = row.getLong(i++);
+                    if (!NotAvailableAware.isNA(totalRows)) {
+                        query.setTotalRows(OptionalInt64.newBuilder().setValue(totalRows));
+                    }
+                    query.setActive(row.getBoolean(i++));
+                    queries.add(query.build());
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(queries);
             }
-            query.setActive(row.getBoolean(i++));
-            queries.add(query.build());
-        }
-        return queries;
+        };
+        return session.readAsync(boundStatement, profile).thenCompose(compute).toCompletableFuture().get();
     }
 
     private List<Trace.SharedQueryText> readSharedQueryTexts(String agentId, String traceId, CassandraProfile profile)
@@ -1263,25 +1318,33 @@ public class TraceDaoImpl implements TraceDao {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentId)
             .setString(1, traceId);
-        ResultSet results = session.read(boundStatement, profile);
         List<Trace.SharedQueryText> sharedQueryTexts = new ArrayList<>();
-        Row row;
-        while ((row = results.one()) != null) {
-            int i = 0;
-            String truncatedText = checkNotNull(row.getString(i++));
-            String truncatedEndText = row.getString(i++);
-            String fullTextSha1 = row.getString(i++);
-            Trace.SharedQueryText.Builder sharedQueryText = Trace.SharedQueryText.newBuilder();
-            if (fullTextSha1 == null) {
-                sharedQueryText.setFullText(truncatedText);
-            } else {
-                sharedQueryText.setFullTextSha1(fullTextSha1)
-                        .setTruncatedText(truncatedText)
-                        .setTruncatedEndText(checkNotNull(truncatedEndText));
+        Function<AsyncResultSet, CompletableFuture<List<Trace.SharedQueryText>>> compute = new com.google.common.base.Function<AsyncResultSet, CompletableFuture<List<Trace.SharedQueryText>>>() {
+            @Override
+            public CompletableFuture<List<Trace.SharedQueryText>> apply(AsyncResultSet results) {
+
+                for ( Row row : results.currentPage()) {
+                    int i = 0;
+                    String truncatedText = checkNotNull(row.getString(i++));
+                    String truncatedEndText = row.getString(i++);
+                    String fullTextSha1 = row.getString(i++);
+                    Trace.SharedQueryText.Builder sharedQueryText = Trace.SharedQueryText.newBuilder();
+                    if (fullTextSha1 == null) {
+                        sharedQueryText.setFullText(truncatedText);
+                    } else {
+                        sharedQueryText.setFullTextSha1(fullTextSha1)
+                                .setTruncatedText(truncatedText)
+                                .setTruncatedEndText(checkNotNull(truncatedEndText));
+                    }
+                    sharedQueryTexts.add(sharedQueryText.build());
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(sharedQueryTexts);
             }
-            sharedQueryTexts.add(sharedQueryText.build());
-        }
-        return sharedQueryTexts;
+        };
+        return session.readAsync(boundStatement, profile).thenCompose(compute).toCompletableFuture().get();
     }
 
     @Override

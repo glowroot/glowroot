@@ -149,6 +149,10 @@ public class Session implements AutoCloseable {
         return wrappedSession.executeAsync(statement.setExecutionProfileName(profile.name()));
     }
 
+    public CompletionStage<AsyncResultSet> readAsync(String statement, CassandraProfile profile) {
+        return wrappedSession.executeAsync(SimpleStatement.newInstance(statement).setExecutionProfileName(profile.name()));
+    }
+
     public CompletionStage<AsyncResultSet> writeAsync(Statement<?> statement, CassandraProfile profile) {
         if (statement.getConsistencyLevel() == null && writeConsistencyLevel != null) {
             statement = statement.setConsistencyLevel(writeConsistencyLevel);

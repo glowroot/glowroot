@@ -21,6 +21,8 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicLongArray;
 
 import com.google.common.base.Joiner;
@@ -177,17 +179,17 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public long getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel, CassandraProfile profile)
+    public CompletionStage<Long> getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel, CassandraProfile profile)
             throws Exception {
         Long gaugeId = gaugeIdDao.getGaugeId(gaugeName);
         if (gaugeId == null) {
             // not necessarily an error, gauge id not created until first store
-            return Long.MAX_VALUE;
+            return CompletableFuture.completedFuture(Long.MAX_VALUE);
         }
         Long oldestCaptureTime = dataSource.queryForOptionalLong("select top 1 capture_time from"
                 + " gauge_value_rollup_" + castUntainted(rollupLevel) + " where gauge_id = ? order"
                 + " by capture_time", gaugeId);
-        return oldestCaptureTime == null ? Long.MAX_VALUE : oldestCaptureTime;
+        return CompletableFuture.completedFuture(oldestCaptureTime == null ? Long.MAX_VALUE : oldestCaptureTime);
     }
 
     void deleteBefore(long captureTime, int rollupLevel) throws SQLException {

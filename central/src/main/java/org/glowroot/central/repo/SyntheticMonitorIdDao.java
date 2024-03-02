@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import com.datastax.oss.driver.api.core.cql.*;
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
@@ -73,12 +74,21 @@ class SyntheticMonitorIdDao {
             .setString(0, agentRollupId)
             .setInstant(1, Instant.ofEpochMilli(rolledUpFrom))
             .setInstant(2, Instant.ofEpochMilli(rolledUpTo));
-        ResultSet results = session.read(boundStatement, CassandraProfile.web);
         Map<String, String> syntheticMonitorIds = new HashMap<>();
-        for (Row row : results) {
-            syntheticMonitorIds.put(checkNotNull(row.getString(0)), checkNotNull(row.getString(1)));
-        }
-        return syntheticMonitorIds;
+        Function<AsyncResultSet, CompletableFuture<Map<String, String>>> compute = new Function<>() {
+
+            @Override
+            public CompletableFuture<Map<String, String>> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    syntheticMonitorIds.put(checkNotNull(row.getString(0)), checkNotNull(row.getString(1)));
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(syntheticMonitorIds);
+            }
+        };
+        return session.readAsync(boundStatement, CassandraProfile.web).thenCompose(compute).toCompletableFuture().get();
     }
 
     List<CompletableFuture<?>> insert(String agentRollupId, long captureTime, String syntheticMonitorId,

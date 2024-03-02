@@ -15,10 +15,6 @@
  */
 package org.glowroot.central.v09support;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-
 import org.glowroot.central.repo.AgentRollupIds;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.GaugeValueDaoImpl;
@@ -28,6 +24,12 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -40,7 +42,7 @@ public class GaugeValueDaoWithV09Support implements GaugeValueDao {
     private final GaugeValueDaoImpl delegate;
 
     public GaugeValueDaoWithV09Support(Set<String> agentRollupIdsWithV09Data,
-            long v09LastCaptureTime, Clock clock, GaugeValueDaoImpl delegate) {
+                                       long v09LastCaptureTime, Clock clock, GaugeValueDaoImpl delegate) {
         this.agentRollupIdsWithV09Data = agentRollupIdsWithV09Data;
         this.v09LastCaptureTime = v09LastCaptureTime;
         this.clock = clock;
@@ -83,7 +85,7 @@ public class GaugeValueDaoWithV09Support implements GaugeValueDao {
 
     @Override
     public List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from,
-            long to, int rollupLevel, CassandraProfile profile) throws Exception {
+                                            long to, int rollupLevel, CassandraProfile profile) throws Exception {
         QueryPlan plan = V09Support.getPlan(agentRollupIdsWithV09Data, v09LastCaptureTime,
                 agentRollupId, from, to);
         Query queryV09 = plan.queryV09();
@@ -107,15 +109,15 @@ public class GaugeValueDaoWithV09Support implements GaugeValueDao {
     }
 
     @Override
-    public long getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel, CassandraProfile profile)
+    public CompletionStage<Long> getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel, CassandraProfile profile)
             throws Exception {
-        long oldestCaptureTime =
-                delegate.getOldestCaptureTime(agentRollupId, gaugeName, rollupLevel, profile);
-        if (agentRollupIdsWithV09Data.contains(agentRollupId)) {
-            oldestCaptureTime = Math.min(oldestCaptureTime, delegate.getOldestCaptureTime(
-                    V09Support.convertToV09(agentRollupId), gaugeName, rollupLevel, profile));
-        }
-        return oldestCaptureTime;
+        return delegate.getOldestCaptureTime(agentRollupId, gaugeName, rollupLevel, profile).thenCompose(oldestCaptureTime -> {
+            if (agentRollupIdsWithV09Data.contains(agentRollupId)) {
+                return delegate.getOldestCaptureTime(
+                        V09Support.convertToV09(agentRollupId), gaugeName, rollupLevel, profile).thenApply(v9old -> Math.min(oldestCaptureTime, v9old));
+            }
+            return CompletableFuture.completedFuture(oldestCaptureTime);
+        });
     }
 
     @Override

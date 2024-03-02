@@ -189,7 +189,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
             .setUuid(i++, Uuids.timeBased())
             .setSet(i++, ImmutableSet.of(syntheticMonitorId), String.class)
             .setInt(i++, needsRollupAdjustedTTL);
-        session.write(boundStatement, collector);
+        session.writeAsync(boundStatement, collector).toCompletableFuture().get();
     }
 
     @Override
@@ -208,37 +208,45 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
             .setString(i++, syntheticMonitorId)
             .setInstant(i++, Instant.ofEpochMilli(from))
             .setInstant(i++, Instant.ofEpochMilli(to));
-        ResultSet results = session.read(boundStatement, web);
         List<SyntheticResult> syntheticResults = new ArrayList<>();
-        for (Row row : results) {
-            i = 0;
-            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
-            double totalDurationNanos = row.getDouble(i++);
-            long executionCount = row.getLong(i++);
-            ByteBuffer errorIntervalsBytes = row.getByteBuffer(i++);
-            List<ErrorInterval> errorIntervals = new ArrayList<>();
-            if (errorIntervalsBytes != null) {
-                List<Stored.ErrorInterval> storedErrorIntervals = Messages
-                        .parseDelimitedFrom(errorIntervalsBytes, Stored.ErrorInterval.parser());
-                for (Stored.ErrorInterval storedErrorInterval : storedErrorIntervals) {
-                    errorIntervals.add(ImmutableErrorInterval.builder()
-                            .from(storedErrorInterval.getFrom())
-                            .to(storedErrorInterval.getTo())
-                            .count(storedErrorInterval.getCount())
-                            .message(storedErrorInterval.getMessage())
-                            .doNotMergeToTheLeft(storedErrorInterval.getDoNotMergeToTheLeft())
-                            .doNotMergeToTheRight(storedErrorInterval.getDoNotMergeToTheRight())
+        Function<AsyncResultSet, CompletableFuture<List<SyntheticResult>>> compute = new Function<AsyncResultSet, CompletableFuture<List<SyntheticResult>>>() {
+            @Override
+            public CompletableFuture<List<SyntheticResult>> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+                    double totalDurationNanos = row.getDouble(i++);
+                    long executionCount = row.getLong(i++);
+                    ByteBuffer errorIntervalsBytes = row.getByteBuffer(i++);
+                    List<ErrorInterval> errorIntervals = new ArrayList<>();
+                    if (errorIntervalsBytes != null) {
+                        List<Stored.ErrorInterval> storedErrorIntervals = Messages
+                                .parseDelimitedFrom(errorIntervalsBytes, Stored.ErrorInterval.parser());
+                        for (Stored.ErrorInterval storedErrorInterval : storedErrorIntervals) {
+                            errorIntervals.add(ImmutableErrorInterval.builder()
+                                    .from(storedErrorInterval.getFrom())
+                                    .to(storedErrorInterval.getTo())
+                                    .count(storedErrorInterval.getCount())
+                                    .message(storedErrorInterval.getMessage())
+                                    .doNotMergeToTheLeft(storedErrorInterval.getDoNotMergeToTheLeft())
+                                    .doNotMergeToTheRight(storedErrorInterval.getDoNotMergeToTheRight())
+                                    .build());
+                        }
+                    }
+                    syntheticResults.add(ImmutableSyntheticResult.builder()
+                            .captureTime(captureTime)
+                            .totalDurationNanos(totalDurationNanos)
+                            .executionCount(executionCount)
+                            .addAllErrorIntervals(errorIntervals)
                             .build());
                 }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(syntheticResults);
             }
-            syntheticResults.add(ImmutableSyntheticResult.builder()
-                    .captureTime(captureTime)
-                    .totalDurationNanos(totalDurationNanos)
-                    .executionCount(executionCount)
-                    .addAllErrorIntervals(errorIntervals)
-                    .build());
-        }
-        return syntheticResults;
+        };
+        return session.readAsync(boundStatement, web).thenCompose(compute).toCompletableFuture().get();
     }
 
     @Override
@@ -249,20 +257,30 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
             .setString(i++, agentRollupId)
             .setString(i++, syntheticMonitorId)
             .setInt(i++, x);
-        ResultSet results = session.read(boundStatement, rollup);
+
         List<SyntheticResultRollup0> syntheticResults = new ArrayList<>();
-        for (Row row : results) {
-            i = 0;
-            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
-            double totalDurationNanos = row.getDouble(i++);
-            ByteBuffer errorIntervalsBytes = row.getByteBuffer(i++);
-            syntheticResults.add(ImmutableSyntheticResultRollup0.builder()
-                    .captureTime(captureTime)
-                    .totalDurationNanos(totalDurationNanos)
-                    .error(errorIntervalsBytes != null)
-                    .build());
-        }
-        return syntheticResults;
+
+        Function<AsyncResultSet, CompletableFuture<List<SyntheticResultRollup0>>> compute = new Function<AsyncResultSet, CompletableFuture<List<SyntheticResultRollup0>>>() {
+            @Override
+            public CompletableFuture<List<SyntheticResultRollup0>> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+                    double totalDurationNanos = row.getDouble(i++);
+                    ByteBuffer errorIntervalsBytes = row.getByteBuffer(i++);
+                    syntheticResults.add(ImmutableSyntheticResultRollup0.builder()
+                            .captureTime(captureTime)
+                            .totalDurationNanos(totalDurationNanos)
+                            .error(errorIntervalsBytes != null)
+                            .build());
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(syntheticResults);
+            }
+        };
+        return session.readAsync(boundStatement, rollup).thenCompose(compute).toCompletableFuture().get();
     }
 
     @Override

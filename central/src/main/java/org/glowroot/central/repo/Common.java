@@ -25,11 +25,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -86,38 +84,47 @@ class Common {
         long currentTimeMillis = clock.currentTimeMillis();
         BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind()
             .setString(0, agentRollupId);
-        ResultSet results = session.read(boundStatement, profile);
         Map<Long, NeedsRollup> needsRollupMap = new LinkedHashMap<>();
-        for (Row row : results) {
-            int i = 0;
-            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
-            if (!isOldEnoughToRollup(captureTime, currentTimeMillis, rollupIntervalMillis)) {
-                // normally, the last "needs rollup" capture time is in the near future, so don't
-                // roll it up since it is likely still being added to
-                //
-                // this is mostly to avoid rolling up this data twice, but also currently the UI
-                // assumes when it finds rolled up data, it doesn't check for non-rolled up data for
-                // same interval
-                //
-                // and now another reason: optimization for gauge_needs_rollup_1 relies on it being
-                // safe to not re-insert the same data up until rollupIntervalMillis after the
-                // rollup capture time
-                //
-                // safe to "break" instead of just "continue" since results are ordered by
-                // capture_time
-                break;
+        Function<AsyncResultSet, CompletableFuture<Map<Long, NeedsRollup>>> compute = new com.google.common.base.Function<AsyncResultSet, CompletableFuture<Map<Long, NeedsRollup>>>() {
+            @Override
+            public CompletableFuture<Map<Long, NeedsRollup>> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+                    if (!isOldEnoughToRollup(captureTime, currentTimeMillis, rollupIntervalMillis)) {
+                        // normally, the last "needs rollup" capture time is in the near future, so don't
+                        // roll it up since it is likely still being added to
+                        //
+                        // this is mostly to avoid rolling up this data twice, but also currently the UI
+                        // assumes when it finds rolled up data, it doesn't check for non-rolled up data for
+                        // same interval
+                        //
+                        // and now another reason: optimization for gauge_needs_rollup_1 relies on it being
+                        // safe to not re-insert the same data up until rollupIntervalMillis after the
+                        // rollup capture time
+                        //
+                        // safe to "break" instead of just "continue" since results are ordered by
+                        // capture_time
+                        break;
+                    }
+                    UUID uniqueness = row.getUuid(i++);
+                    Set<String> keys = checkNotNull(row.getSet(i++, String.class));
+                    NeedsRollup needsRollup = needsRollupMap.get(captureTime);
+                    if (needsRollup == null) {
+                        needsRollup = new NeedsRollup(captureTime);
+                        needsRollupMap.put(captureTime, needsRollup);
+                    }
+                    needsRollup.keys.addAll(keys);
+                    needsRollup.uniquenessKeysForDeletion.add(uniqueness);
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(needsRollupMap);
             }
-            UUID uniqueness = row.getUuid(i++);
-            Set<String> keys = checkNotNull(row.getSet(i++, String.class));
-            NeedsRollup needsRollup = needsRollupMap.get(captureTime);
-            if (needsRollup == null) {
-                needsRollup = new NeedsRollup(captureTime);
-                needsRollupMap.put(captureTime, needsRollup);
-            }
-            needsRollup.keys.addAll(keys);
-            needsRollup.uniquenessKeysForDeletion.add(uniqueness);
-        }
-        return needsRollupMap.values();
+        };
+        return session.readAsync(boundStatement, profile)
+                .thenCompose(compute).thenApply(Map::values).toCompletableFuture().get();
     }
 
     static List<NeedsRollupFromChildren> getNeedsRollupFromChildrenList(
@@ -125,25 +132,33 @@ class Common {
             PreparedStatement readNeedsRollupFromChild, Session session, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = readNeedsRollupFromChild.bind()
             .setString(0, agentRollupId);
-        ResultSet results = session.read(boundStatement, profile);
         Map<Long, NeedsRollupFromChildren> needsRollupFromChildrenMap = new LinkedHashMap<>();
-        for (Row row : results) {
-            int i = 0;
-            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
-            UUID uniqueness = row.getUuid(i++);
-            String childAgentRollupId = checkNotNull(row.getString(i++));
-            Set<String> keys = checkNotNull(row.getSet(i++, String.class));
-            NeedsRollupFromChildren needsRollup = needsRollupFromChildrenMap.get(captureTime);
-            if (needsRollup == null) {
-                needsRollup = new NeedsRollupFromChildren(captureTime);
-                needsRollupFromChildrenMap.put(captureTime, needsRollup);
+        Function<AsyncResultSet, CompletableFuture<Map<Long, NeedsRollupFromChildren>>> compute = new com.google.common.base.Function<AsyncResultSet, CompletableFuture<Map<Long, NeedsRollupFromChildren>>>() {
+            @Override
+            public CompletableFuture<Map<Long, NeedsRollupFromChildren>> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+                    UUID uniqueness = row.getUuid(i++);
+                    String childAgentRollupId = checkNotNull(row.getString(i++));
+                    Set<String> keys = checkNotNull(row.getSet(i++, String.class));
+                    NeedsRollupFromChildren needsRollup = needsRollupFromChildrenMap.get(captureTime);
+                    if (needsRollup == null) {
+                        needsRollup = new NeedsRollupFromChildren(captureTime);
+                        needsRollupFromChildrenMap.put(captureTime, needsRollup);
+                    }
+                    for (String key : keys) {
+                        needsRollup.keys.put(key, childAgentRollupId);
+                    }
+                    needsRollup.uniquenessKeysForDeletion.add(uniqueness);
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(needsRollupFromChildrenMap);
             }
-            for (String key : keys) {
-                needsRollup.keys.put(key, childAgentRollupId);
-            }
-            needsRollup.uniquenessKeysForDeletion.add(uniqueness);
-        }
-        return ImmutableList.copyOf(needsRollupFromChildrenMap.values());
+        };
+        return session.readAsync(boundStatement, profile).thenCompose(compute).thenApply(map -> ImmutableList.copyOf(map.values())).toCompletableFuture().get();
     }
 
     static void insertNeedsRollupFromChild(String agentRollupId, String parentAgentRollupId,
@@ -158,7 +173,7 @@ class Common {
             .setString(i++, agentRollupId)
             .setSet(i++, needsRollupFromChildren.getKeys().keySet(), String.class)
             .setInt(i++, needsRollupAdjustedTTL);
-        session.write(boundStatement, profile);
+        session.writeAsync(boundStatement, profile).toCompletableFuture().get();
     }
 
     // it is important that the insert into next needs_rollup happens after present
@@ -183,7 +198,7 @@ class Common {
                 .setSet(i++, keys, String.class)
                 .setInt(i++, needsRollupAdjustedTTL);
             // intentionally not async, see method-level comment
-            session.write(boundStatement, profile);
+            session.writeAsync(boundStatement, profile).toCompletableFuture().get();
         }
         List<CompletableFuture<?>> futures = new ArrayList<>();
         for (UUID uniqueness : uniquenessKeysForDeletion) {

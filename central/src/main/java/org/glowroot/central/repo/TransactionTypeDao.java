@@ -15,22 +15,24 @@
  */
 package org.glowroot.central.repo;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
-import com.datastax.oss.driver.api.core.cql.*;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
-import org.glowroot.common2.repo.CassandraProfile;
-import org.immutables.value.Value;
-
-import org.glowroot.central.util.Cache;
-import org.glowroot.central.util.Cache.CacheLoader;
+import org.glowroot.central.util.AsyncCache;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Styles;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.TransactionTypeRepository;
+import org.immutables.value.Value;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -44,7 +46,7 @@ class TransactionTypeDao implements TransactionTypeRepository {
 
     private final RateLimiter<TransactionTypeKey> rateLimiter = new RateLimiter<>();
 
-    private final Cache<String, List<String>> transactionTypesCache;
+    private final AsyncCache<String, List<String>> transactionTypesCache;
 
     TransactionTypeDao(Session session, ConfigRepositoryImpl configRepository,
             ClusterManager clusterManager, int targetMaxCentralUiUsers) throws Exception {
@@ -62,13 +64,13 @@ class TransactionTypeDao implements TransactionTypeRepository {
 
         // this cache is primarily used for calculating Glowroot-Agent-Rollup-Layout-Version, which
         // is performed on the user's current agent-id/agent-rollup-id
-        transactionTypesCache = clusterManager.createPerAgentCache("transactionTypesCache",
+        transactionTypesCache = clusterManager.createPerAgentAsyncCache("transactionTypesCache",
                 targetMaxCentralUiUsers, new TransactionTypeCacheLoader());
     }
 
     @Override
     public List<String> read(String agentRollupId) throws Exception {
-        return transactionTypesCache.get(agentRollupId);
+        return transactionTypesCache.get(agentRollupId).toCompletableFuture().get();
     }
 
     @CheckReturnValue
@@ -113,17 +115,26 @@ class TransactionTypeDao implements TransactionTypeRepository {
         String transactionType();
     }
 
-    private class TransactionTypeCacheLoader implements CacheLoader<String, List<String>> {
+    private class TransactionTypeCacheLoader implements AsyncCache.AsyncCacheLoader<String, List<String>> {
         @Override
-        public List<String> load(String agentRollupId) {
+        public CompletableFuture<List<String>> load(String agentRollupId) {
             BoundStatement boundStatement = readPS.bind()
                 .setString(0, agentRollupId);
-            ResultSet results = session.read(boundStatement, CassandraProfile.collector);
             List<String> transactionTypes = new ArrayList<>();
-            for (Row row : results) {
-                transactionTypes.add(checkNotNull(row.getString(0)));
-            }
-            return transactionTypes;
+            Function<AsyncResultSet, CompletableFuture<List<String>>> compute = new Function<>() {
+                @Override
+                public CompletableFuture<List<String>> apply(AsyncResultSet asyncResultSet) {
+                    for (Row row : asyncResultSet.currentPage()) {
+                        transactionTypes.add(checkNotNull(row.getString(0)));
+                    }
+                    if (asyncResultSet.hasMorePages()) {
+                        return asyncResultSet.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                    }
+                    return CompletableFuture.completedFuture(transactionTypes);
+                }
+            };
+
+            return session.readAsync(boundStatement, CassandraProfile.collector).thenCompose(compute).toCompletableFuture();
         }
     }
 }

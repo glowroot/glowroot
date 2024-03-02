@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
@@ -280,35 +281,44 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     // from is INCLUSIVE
     @Override
     public List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from,
-            long to, int rollupLevel, CassandraProfile profile) {
+            long to, int rollupLevel, CassandraProfile profile) throws Exception {
         int i = 0;
         BoundStatement boundStatement = readValuePS.get(rollupLevel).bind()
             .setString(i++, agentRollupId)
             .setString(i++, gaugeName)
             .setInstant(i++, Instant.ofEpochMilli(from))
             .setInstant(i++, Instant.ofEpochMilli(to));
-        ResultSet results = session.read(boundStatement, profile);
         List<GaugeValue> gaugeValues = new ArrayList<>();
-        for (Row row : results) {
-            i = 0;
-            gaugeValues.add(GaugeValue.newBuilder()
-                    .setCaptureTime(checkNotNull(row.getInstant(i++)).toEpochMilli())
-                    .setValue(row.getDouble(i++))
-                    .setWeight(row.getLong(i++))
-                    .build());
-        }
-        return gaugeValues;
+        Function<AsyncResultSet, CompletableFuture<List<GaugeValue>>> compute = new Function<AsyncResultSet, CompletableFuture<List<GaugeValue>>>() {
+            @Override
+            public CompletableFuture<List<GaugeValue>> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    gaugeValues.add(GaugeValue.newBuilder()
+                            .setCaptureTime(checkNotNull(row.getInstant(i++)).toEpochMilli())
+                            .setValue(row.getDouble(i++))
+                            .setWeight(row.getLong(i++))
+                            .build());
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(gaugeValues);
+            }
+        };
+        return session.readAsync(boundStatement, profile).thenCompose(compute).toCompletableFuture().get();
     }
 
     @Override
-    public long getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel, CassandraProfile profile) {
+    public CompletionStage<Long> getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel, CassandraProfile profile) {
         int i = 0;
         BoundStatement boundStatement = readOldestCaptureTimePS.get(rollupLevel).bind()
             .setString(i++, agentRollupId)
             .setString(i++, gaugeName);
-        ResultSet results = session.read(boundStatement, profile);
-        Row row = results.one();
-        return row == null ? Long.MAX_VALUE : checkNotNull(row.getInstant(0)).toEpochMilli();
+        return session.readAsync(boundStatement, profile).thenApply(results -> {
+            Row row = results.one();
+            return row == null ? Long.MAX_VALUE : checkNotNull(row.getInstant(0)).toEpochMilli();
+        });
     }
 
     @Override
@@ -437,7 +447,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                     .setString(i++, agentRollupId)
                     .setSet(i++, gaugeNames, String.class)
                     .setInt(i++, needsRollupAdjustedTTL);
-                session.write(boundStatement, CassandraProfile.collector);
+                session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture().get();
             }
             PreparedStatement insertNeedsRollup = nextRollupIntervalMillis == null ? null
                     : this.insertNeedsRollup.get(rollupLevel);
@@ -530,7 +540,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                 });
     }
 
-    private List<Integer> getTTLs() {
+    private List<Integer> getTTLs() throws Exception {
         List<Integer> rollupExpirationHours = Lists
                 .newArrayList(configRepository.getCentralStorageConfig().rollupExpirationHours());
         rollupExpirationHours.add(0, rollupExpirationHours.get(0));

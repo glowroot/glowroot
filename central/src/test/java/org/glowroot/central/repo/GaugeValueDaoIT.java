@@ -56,7 +56,7 @@ public class GaugeValueDaoIT {
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         AgentDisplayDao agentDisplayDao =
                 new AgentDisplayDao(session, clusterManager, asyncExecutor, 10);
-        agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager, 10);
+        agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager, 10, asyncExecutor);
         UserDao userDao = new UserDao(session, clusterManager);
         RoleDao roleDao = new RoleDao(session, clusterManager);
         ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(centralConfigDao,

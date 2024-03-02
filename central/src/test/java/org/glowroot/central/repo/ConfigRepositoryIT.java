@@ -71,7 +71,7 @@ public class ConfigRepositoryIT {
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         AgentDisplayDao agentDisplayDao =
                 new AgentDisplayDao(session, clusterManager, MoreExecutors.directExecutor(), 10);
-        agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager, 10);
+        agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager, 10, MoreExecutors.directExecutor());
         UserDao userDao = new UserDao(session, clusterManager);
         RoleDao roleDao = new RoleDao(session, clusterManager);
         configRepository =
@@ -102,7 +102,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateTransactionConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true).toCompletableFuture().get();
         TransactionConfig config = configRepository.getTransactionConfig(agentId);
         TransactionConfig updatedConfig = TransactionConfig.newBuilder()
                 .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(1234))
@@ -123,7 +123,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateJvmConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true).toCompletableFuture().get();
         JvmConfig config = configRepository.getJvmConfig(agentId);
         JvmConfig updatedConfig = JvmConfig.newBuilder()
                 .addMaskSystemProperty("x")
@@ -144,7 +144,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateUiConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true).toCompletableFuture().get();
         UiDefaultsConfig config = configRepository.getUiDefaultsConfig(agentId);
         UiDefaultsConfig updatedConfig = UiDefaultsConfig.newBuilder()
                 .setDefaultTransactionType("xyz")
@@ -166,7 +166,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateAdvancedConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true).toCompletableFuture().get();
         AdvancedConfig config = configRepository.getAdvancedConfig(agentId);
         AdvancedConfig updatedConfig = AdvancedConfig.newBuilder()
                 .setWeavingTimer(true)
@@ -191,7 +191,7 @@ public class ConfigRepositoryIT {
     public void shouldCrudGaugeConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true).toCompletableFuture().get();
         GaugeConfig gaugeConfig = GaugeConfig.newBuilder()
                 .setMbeanObjectName("x")
                 .addMbeanAttribute(MBeanAttribute.newBuilder()
@@ -239,7 +239,7 @@ public class ConfigRepositoryIT {
     public void shouldCrudAlertConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true).toCompletableFuture().get();
         AlertConfig alertConfig = AlertConfig.newBuilder()
                 .setCondition(AlertCondition.newBuilder()
                         .setMetricCondition(MetricCondition.newBuilder()
@@ -298,7 +298,7 @@ public class ConfigRepositoryIT {
     public void shouldCrudInstrumentationConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true).toCompletableFuture().get();
         InstrumentationConfig instrumentationConfig = InstrumentationConfig.newBuilder()
                 .setClassName("a")
                 .setMethodName("b")

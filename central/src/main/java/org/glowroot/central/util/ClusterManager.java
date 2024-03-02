@@ -88,8 +88,8 @@ public abstract class ClusterManager implements AutoCloseable {
     public abstract <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> AsyncCache<K, V> createPerAgentAsyncCache(
             String cacheName, int size, AsyncCacheLoader<K, V> loader);
 
-    public abstract <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createSelfBoundedCache(
-            String cacheName, CacheLoader<K, V> loader);
+    public abstract <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> AsyncCache<K, V> createSelfBoundedAsyncCache(
+            String cacheName, AsyncCacheLoader<K, V> loader);
 
     public abstract <K extends /*@NonNull*/ Serializable> LockSet<K> createReplicatedLockSet(
             String mapName, long expirationTime, TimeUnit expirationUnit);
@@ -153,15 +153,15 @@ public abstract class ClusterManager implements AutoCloseable {
         }
 
         @Override
-        public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createSelfBoundedCache(
-                String cacheName, CacheLoader<K, V> loader) {
+        public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> AsyncCache<K, V> createSelfBoundedAsyncCache(
+                String cacheName, AsyncCacheLoader<K, V> loader) {
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.clustering()
                     .cacheMode(CacheMode.INVALIDATION_ASYNC)
                     .statistics()
                     .enable();
             cacheManager.defineConfiguration(cacheName, configurationBuilder.build());
-            return new CacheImpl<K, V>(cacheManager.getCache(cacheName), loader);
+            return new AsyncCacheImpl<K, V>(cacheManager.getCache(cacheName), loader, executor);
         }
 
         @Override
@@ -285,9 +285,9 @@ public abstract class ClusterManager implements AutoCloseable {
         }
 
         @Override
-        public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> Cache<K, V> createSelfBoundedCache(
-                String cacheName, CacheLoader<K, V> loader) {
-            return new NonClusterCacheImpl<K, V>(loader);
+        public <K extends /*@NonNull*/ Serializable, V extends /*@NonNull*/ Object> AsyncCache<K, V> createSelfBoundedAsyncCache(
+                String cacheName, AsyncCacheLoader<K, V> loader) {
+            return new NonClusterAsyncCacheImpl<K, V>(loader);
         }
 
         @Override

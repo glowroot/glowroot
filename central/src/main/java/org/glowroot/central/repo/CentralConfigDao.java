@@ -15,26 +15,27 @@
  */
 package org.glowroot.central.repo;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.cql.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Optional;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glowroot.common2.repo.CassandraProfile;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.glowroot.central.util.Cache;
-import org.glowroot.central.util.Cache.CacheLoader;
+import org.glowroot.central.util.AsyncCache;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository.OptimisticLockException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -52,7 +53,7 @@ class CentralConfigDao {
     private final PreparedStatement deletePS;
     private final PreparedStatement readPS;
 
-    private final Cache<String, Optional<Object>> centralConfigCache;
+    private final AsyncCache<String, Optional<Object>> centralConfigCache;
 
     private final Map<String, Class<?>> keyTypes = new ConcurrentHashMap<>();
 
@@ -70,7 +71,7 @@ class CentralConfigDao {
         deletePS = session.prepare("delete from central_config where key = ?");
         readPS = session.prepare("select value from central_config where key = ?");
 
-        centralConfigCache = clusterManager.createSelfBoundedCache("centralConfigCache",
+        centralConfigCache = clusterManager.createSelfBoundedAsyncCache("centralConfigCache",
                 new CentralConfigCacheLoader());
     }
 
@@ -80,8 +81,8 @@ class CentralConfigDao {
 
     void write(String key, Object config, String priorVersion) throws Exception {
         BoundStatement boundStatement = readPS.bind()
-            .setString(0, key);
-        ResultSet results = session.read(boundStatement, CassandraProfile.web);
+                .setString(0, key);
+        AsyncResultSet results = session.readAsync(boundStatement, CassandraProfile.web).toCompletableFuture().get();
         Row row = results.one();
         if (row == null) {
             writeIfNotExists(key, config);
@@ -95,9 +96,9 @@ class CentralConfigDao {
         String newValue = mapper.writeValueAsString(config);
         int i = 0;
         boundStatement = updatePS.bind()
-            .setString(i++, newValue)
-            .setString(i++, key)
-            .setString(i++, currValue);
+                .setString(i++, newValue)
+                .setString(i++, key)
+                .setString(i++, currValue);
         // consistency level must be at least LOCAL_SERIAL
         if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
             boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
@@ -114,30 +115,35 @@ class CentralConfigDao {
 
     void writeWithoutOptimisticLocking(String key, Object config) throws Exception {
         String json = mapper.writeValueAsString(config);
+        CompletionStage<AsyncResultSet> ret;
         if (json.equals("{}")) {
             BoundStatement boundStatement = deletePS.bind()
-                .setString(0, key);
-            session.write(boundStatement, CassandraProfile.web);
+                    .setString(0, key);
+            ret = session.writeAsync(boundStatement, CassandraProfile.web);
         } else {
             BoundStatement boundStatement = insertPS.bind()
-                .setString(0, key)
-                .setString(1, json);
-            session.write(boundStatement, CassandraProfile.web);
+                    .setString(0, key)
+                    .setString(1, json);
+            ret = session.writeAsync(boundStatement, CassandraProfile.web);
         }
-        centralConfigCache.invalidate(key);
+        ret.thenRun(() -> centralConfigCache.invalidate(key)).toCompletableFuture().get();
     }
 
     @Nullable
     Object read(String key) {
-        return centralConfigCache.get(key).orNull();
+        try {
+            return centralConfigCache.get(key).get().orElse(null);
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void writeIfNotExists(String key, Object config) throws Exception {
         String initialValue = mapper.writeValueAsString(config);
         int i = 0;
         BoundStatement boundStatement = insertIfNotExistsPS.bind()
-            .setString(i++, key)
-            .setString(i++, initialValue);
+                .setString(i++, key)
+                .setString(i++, initialValue);
         // consistency level must be at least LOCAL_SERIAL
         if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
             boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
@@ -158,26 +164,22 @@ class CentralConfigDao {
         return checkNotNull(mapper.readValue(value, type));
     }
 
-    private class CentralConfigCacheLoader implements CacheLoader<String, Optional<Object>> {
+    private class CentralConfigCacheLoader implements AsyncCache.AsyncCacheLoader<String, Optional<Object>> {
         @Override
-        public Optional<Object> load(String key) {
+        public CompletableFuture<Optional<Object>> load(String key) {
             BoundStatement boundStatement = readPS.bind()
-                .setString(0, key);
-            ResultSet results = session.read(boundStatement, CassandraProfile.collector);
-            Row row = results.one();
-            if (row == null) {
-                return Optional.absent();
-            }
-            String value = row.getString(0);
-            if (value == null) {
-                return Optional.absent();
-            }
-            try {
-                return Optional.of(readValue(key, value));
-            } catch (IOException e) {
-                logger.error("error parsing config node '{}': ", key, e);
-                return Optional.absent();
-            }
+                    .setString(0, key);
+            return (CompletableFuture<Optional<Object>>) session.readAsync(boundStatement, CassandraProfile.collector)
+                    .thenApply(results -> Optional.ofNullable(results.one())
+                            .map(row -> row.getString(0))
+                            .flatMap(value -> {
+                                try {
+                                    return Optional.of(readValue(key, value));
+                                } catch (IOException e) {
+                                    logger.error("error parsing config node '{}': ", key, e);
+                                    return Optional.empty();
+                                }
+                            }));
         }
     }
 }

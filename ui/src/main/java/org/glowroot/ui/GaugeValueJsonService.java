@@ -211,7 +211,7 @@ class GaugeValueJsonService {
         }
         for (String gaugeName : request.gaugeName()) {
             long oldestCaptureTime = gaugeValueRepository.getOldestCaptureTime(agentRollupId,
-                    gaugeName, rollupLevel, CassandraProfile.web);
+                    gaugeName, rollupLevel, CassandraProfile.web).toCompletableFuture().get();
             if (oldestCaptureTime < request.to()) {
                 return false;
             }

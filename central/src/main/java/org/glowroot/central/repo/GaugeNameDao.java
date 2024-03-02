@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.ImmutableList;
@@ -70,12 +71,21 @@ class GaugeNameDao {
             .setString(0, agentRollupId)
             .setInstant(1, Instant.ofEpochMilli(rolledUpFrom))
             .setInstant(2, Instant.ofEpochMilli(rolledUpTo));
-        ResultSet results = session.read(boundStatement, profile);
         Set<String> gaugeNames = new HashSet<>();
-        for (Row row : results) {
-            gaugeNames.add(checkNotNull(row.getString(0)));
-        }
-        return gaugeNames;
+        Function<AsyncResultSet, CompletableFuture<Set<String>>> compute = new Function<>() {
+            @Override
+            public CompletableFuture<Set<String>> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    gaugeNames.add(checkNotNull(row.getString(0)));
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(gaugeNames);
+            }
+        };
+
+        return session.readAsync(boundStatement, profile).thenCompose(compute).toCompletableFuture().get();
     }
 
     List<CompletableFuture<?>> insert(String agentRollupId, long captureTime, String gaugeName)

@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 
 import com.datastax.oss.driver.api.core.cql.*;
@@ -66,17 +67,18 @@ public class AgentDisplayDao implements AgentDisplayRepository {
     }
 
     void store(String agentRollupId, String display) throws Exception {
+        CompletionStage<AsyncResultSet> ret;
         if (display.isEmpty()) {
             BoundStatement boundStatement = deletePS.bind()
                 .setString(0, agentRollupId);
-            session.write(boundStatement, CassandraProfile.collector);
+            ret = session.writeAsync(boundStatement, CassandraProfile.collector);
         } else {
             BoundStatement boundStatement = insertPS.bind()
                 .setString(0, agentRollupId)
                 .setString(1, display);
-            session.write(boundStatement, CassandraProfile.collector);
+            ret = session.writeAsync(boundStatement, CassandraProfile.collector);
         }
-        agentDisplayCache.invalidate(agentRollupId);
+        ret.thenRun(() -> agentDisplayCache.invalidate(agentRollupId)).toCompletableFuture().get();
     }
 
     @Override
@@ -96,8 +98,7 @@ public class AgentDisplayDao implements AgentDisplayRepository {
     }
 
     @Override
-    public CompletableFuture<String> readLastDisplayPartAsync(String agentRollupId)
-            throws Exception {
+    public CompletableFuture<String> readLastDisplayPartAsync(String agentRollupId) {
         return agentDisplayCache.get(agentRollupId);
     }
 

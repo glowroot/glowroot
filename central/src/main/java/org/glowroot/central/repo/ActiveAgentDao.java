@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
+import java.util.function.Function;
 
 import javax.annotation.Nullable;
 
@@ -38,6 +38,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
 
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
+import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
@@ -120,28 +121,47 @@ public class ActiveAgentDao implements ActiveAgentRepository {
                 getRollupIntervalMillis(configRepository.getRollupConfigs(), rollupLevel);
         long revisedTo = CaptureTimes.getRollup(to, rollupIntervalMillis);
 
-        Set<String> topLevelIds = new HashSet<>();
         BoundStatement boundStatement = readTopLevelPS.get(rollupLevel).bind()
             .setInstant(0, Instant.ofEpochMilli(from))
             .setInstant(1, Instant.ofEpochMilli(revisedTo));
-        ResultSet results = session.read(boundStatement, profile);
-        for (Row row : results) {
-            topLevelIds.add(checkNotNull(row.getString(0)));
-        }
-        Map<String, Future<String>> topLevelDisplayFutureMap = new HashMap<>();
-        for (String topLevelId : topLevelIds) {
-            topLevelDisplayFutureMap.put(topLevelId,
-                    agentDisplayDao.readLastDisplayPartAsync(topLevelId));
-        }
-        List<TopLevelAgentRollup> agentRollups = new ArrayList<>();
-        for (Map.Entry<String, Future<String>> entry : topLevelDisplayFutureMap.entrySet()) {
-            agentRollups.add(ImmutableTopLevelAgentRollup.builder()
-                    .id(entry.getKey())
-                    .display(entry.getValue().get())
-                    .build());
-        }
-        agentRollups.sort(Comparator.comparing(TopLevelAgentRollup::display));
-        return agentRollups;
+
+        Set<String> topLevelIds = new HashSet<>();
+        Function<AsyncResultSet, CompletableFuture<Set<String>>> compute = new Function<>() {
+            @Override
+            public CompletableFuture<Set<String>> apply(AsyncResultSet asyncResultSet) {
+                for (Row row : asyncResultSet.currentPage()) {
+                    topLevelIds.add(checkNotNull(row.getString(0)));
+                }
+                if (asyncResultSet.hasMorePages()) {
+                    return asyncResultSet.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(topLevelIds);
+            }
+        };
+
+        Map<String, CompletableFuture<String>> topLevelDisplayFutureMap = new ConcurrentHashMap<>();
+        return session.readAsync(boundStatement, profile).thenCompose(compute)
+                .thenCompose(ignored -> {
+                    for (String topLevelId : topLevelIds) {
+                        topLevelDisplayFutureMap.put(topLevelId,
+                                agentDisplayDao.readLastDisplayPartAsync(topLevelId));
+                    }
+                    return CompletableFuture.allOf(topLevelDisplayFutureMap.values().toArray(new CompletableFuture[0]));
+                }).thenApply(ignored -> {
+                    List<TopLevelAgentRollup> agentRollups = new ArrayList<>();
+                    for (Map.Entry<String, CompletableFuture<String>> entry : topLevelDisplayFutureMap.entrySet()) {
+                        try {
+                            agentRollups.add(ImmutableTopLevelAgentRollup.builder()
+                                    .id(entry.getKey())
+                                    .display(entry.getValue().get())
+                                    .build());
+                        } catch (InterruptedException | ExecutionException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    agentRollups.sort(Comparator.comparing(TopLevelAgentRollup::display));
+                    return agentRollups;
+                }).toCompletableFuture().get();
     }
 
     @Override
@@ -175,51 +195,52 @@ public class ActiveAgentDao implements ActiveAgentRepository {
     }
 
     @CheckReturnValue
-    public List<CompletableFuture<?>> insert(String agentId, long captureTime) {
-        AgentConfig agentConfig = agentConfigDao.read(agentId);
-        if (agentConfig == null) {
-            // have yet to receive collectInit()
-            return ImmutableList.of();
-        }
-        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
-        List<Integer> rollupExpirationHours =
-                configRepository.getCentralStorageConfig().rollupExpirationHours();
-
-        int index = agentId.indexOf("::");
-        String topLevelId;
-        String childAgentId;
-        if (index == -1) {
-            topLevelId = agentId;
-            childAgentId = null;
-        } else {
-            topLevelId = agentId.substring(0, index + 2);
-            childAgentId = agentId.substring(index + 2);
-        }
-        List<CompletableFuture<?>> futures = new ArrayList<>();
-        for (int rollupLevel = 0; rollupLevel < rollupConfigs.size(); rollupLevel++) {
-            long rollupIntervalMillis = getRollupIntervalMillis(rollupConfigs, rollupLevel);
-            long rollupCaptureTime = CaptureTimes.getRollup(captureTime, rollupIntervalMillis);
-            int ttl = Ints.saturatedCast(HOURS.toSeconds(rollupExpirationHours.get(rollupLevel)));
-            int adjustedTTL = Common.getAdjustedTTL(ttl, rollupCaptureTime, clock);
-
-            int i = 0;
-            BoundStatement boundStatement = insertTopLevelPS.get(rollupLevel).bind()
-                .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
-                .setString(i++, topLevelId)
-                .setInt(i++, adjustedTTL);
-            futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
-
-            if (childAgentId != null) {
-                i = 0;
-                boundStatement = insertChildPS.get(rollupLevel).bind()
-                    .setString(i++, topLevelId)
-                    .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
-                    .setString(i++, childAgentId)
-                    .setInt(i++, adjustedTTL);
-                futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
+    public CompletionStage<List<CompletableFuture<?>>> insert(String agentId, long captureTime) {
+        return agentConfigDao.readAsync(agentId).thenApply(agentConfig -> {
+            if (agentConfig == null) {
+                // have yet to receive collectInit()
+                return ImmutableList.of();
             }
-        }
-        return futures;
+            List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+            List<Integer> rollupExpirationHours =
+                    configRepository.getCentralStorageConfig().rollupExpirationHours();
+
+            int index = agentId.indexOf("::");
+            String topLevelId;
+            String childAgentId;
+            if (index == -1) {
+                topLevelId = agentId;
+                childAgentId = null;
+            } else {
+                topLevelId = agentId.substring(0, index + 2);
+                childAgentId = agentId.substring(index + 2);
+            }
+            List<CompletableFuture<?>> futures = new ArrayList<>();
+            for (int rollupLevel = 0; rollupLevel < rollupConfigs.size(); rollupLevel++) {
+                long rollupIntervalMillis = getRollupIntervalMillis(rollupConfigs, rollupLevel);
+                long rollupCaptureTime = CaptureTimes.getRollup(captureTime, rollupIntervalMillis);
+                int ttl = Ints.saturatedCast(HOURS.toSeconds(rollupExpirationHours.get(rollupLevel)));
+                int adjustedTTL = Common.getAdjustedTTL(ttl, rollupCaptureTime, clock);
+
+                int i = 0;
+                BoundStatement boundStatement = insertTopLevelPS.get(rollupLevel).bind()
+                        .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
+                        .setString(i++, topLevelId)
+                        .setInt(i++, adjustedTTL);
+                futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
+
+                if (childAgentId != null) {
+                    i = 0;
+                    boundStatement = insertChildPS.get(rollupLevel).bind()
+                            .setString(i++, topLevelId)
+                            .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
+                            .setString(i++, childAgentId)
+                            .setInt(i++, adjustedTTL);
+                    futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
+                }
+            }
+            return futures;
+        });
     }
 
     private List<AgentRollup> readActiveChildAgentRollups(String topLevelId, long from, long to,
@@ -229,44 +250,68 @@ public class ActiveAgentDao implements ActiveAgentRepository {
                 getRollupIntervalMillis(configRepository.getRollupConfigs(), rollupLevel);
         long revisedTo = CaptureTimes.getRollup(to, rollupIntervalMillis);
 
-        Set<String> allAgentRollupIds = new HashSet<>();
-        Set<String> directChildAgentRollupIds = new HashSet<>();
-        Multimap<String, String> childMultimap = HashMultimap.create();
         BoundStatement boundStatement = readChildPS.get(rollupLevel).bind()
             .setString(0, topLevelId)
             .setInstant(1, Instant.ofEpochMilli(from))
             .setInstant(2, Instant.ofEpochMilli(revisedTo));
-        ResultSet results = session.read(boundStatement, profile);
-        for (Row row : results) {
-            String agentId = topLevelId + checkNotNull(row.getString(0));
-            List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);
-            allAgentRollupIds.addAll(agentRollupIds);
-            if (agentRollupIds.size() == 2) {
-                directChildAgentRollupIds.add(agentId);
-            } else {
-                String directChildAgentId = agentRollupIds.get(agentRollupIds.size() - 2);
-                directChildAgentRollupIds.add(directChildAgentId);
-                for (int i = 1; i < agentRollupIds.size() - 1; i++) {
-                    childMultimap.put(agentRollupIds.get(i), agentRollupIds.get(i - 1));
+
+        List<String> agentIds = new ArrayList<>();
+        Function<AsyncResultSet, CompletableFuture<List<String>>> compute = new Function<AsyncResultSet, CompletableFuture<List<String>>>() {
+            @Override
+            public CompletableFuture<List<String>> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    String agentId = topLevelId + checkNotNull(row.getString(0));
+                    agentIds.add(agentId);
+                }
+                if (results.hasMorePages()) {
+                    results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(agentIds);
+            }
+        };
+        Set<String> allAgentRollupIds = new HashSet<>();
+        Set<String> directChildAgentRollupIds = new HashSet<>();
+        Multimap<String, String> childMultimap = HashMultimap.create();
+        Map<String, CompletableFuture<String>> agentDisplayFutureMap = new HashMap<>();
+        return session.readAsync(boundStatement, profile).thenCompose(compute).thenRun(() -> {
+            for (String agentId: agentIds) {
+                List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);
+                allAgentRollupIds.addAll(agentRollupIds);
+                if (agentRollupIds.size() == 2) {
+                    directChildAgentRollupIds.add(agentId);
+                } else {
+                    String directChildAgentId = agentRollupIds.get(agentRollupIds.size() - 2);
+                    directChildAgentRollupIds.add(directChildAgentId);
+                    for (int i = 1; i < agentRollupIds.size() - 1; i++) {
+                        childMultimap.put(agentRollupIds.get(i), agentRollupIds.get(i - 1));
+                    }
                 }
             }
-        }
-        Map<String, Future<String>> agentDisplayFutureMap = new HashMap<>();
-        for (String agentRollupId : allAgentRollupIds) {
-            agentDisplayFutureMap.put(agentRollupId,
-                    agentDisplayDao.readLastDisplayPartAsync(agentRollupId));
-        }
-        Map<String, String> agentDisplayMap = new HashMap<>();
-        for (Map.Entry<String, Future<String>> entry : agentDisplayFutureMap.entrySet()) {
-            agentDisplayMap.put(entry.getKey(), entry.getValue().get());
-        }
-        List<AgentRollup> agentRollups = new ArrayList<>();
-        for (String topLevelAgentRollupId : directChildAgentRollupIds) {
-            agentRollups.add(createAgentRollup(topLevelAgentRollupId, childMultimap,
-                    agentDisplayMap, stripTopLevelDisplay));
-        }
-        agentRollups.sort(Comparator.comparing(AgentRollup::display));
-        return agentRollups;
+        }).thenCompose(ignored -> {
+            for (String agentRollupId : allAgentRollupIds) {
+                agentDisplayFutureMap.put(agentRollupId,
+                        agentDisplayDao.readLastDisplayPartAsync(agentRollupId));
+            }
+            return CompletableFuture.allOf(agentDisplayFutureMap.values().toArray(new CompletableFuture[0]));
+        }).thenApply(ignored -> {
+            Map<String, String> agentDisplayMap = new HashMap<>();
+            for (Map.Entry<String, CompletableFuture<String>> entry : agentDisplayFutureMap.entrySet()) {
+                try {
+                    agentDisplayMap.put(entry.getKey(), entry.getValue().get());
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            return agentDisplayMap;
+        }).thenApply(agentDisplayMap -> {
+            List<AgentRollup> agentRollups = new ArrayList<>();
+            for (String topLevelAgentRollupId : directChildAgentRollupIds) {
+                agentRollups.add(createAgentRollup(topLevelAgentRollupId, childMultimap,
+                        agentDisplayMap, stripTopLevelDisplay));
+            }
+            agentRollups.sort(Comparator.comparing(AgentRollup::display));
+            return agentRollups;
+        }).toCompletableFuture().get();
     }
 
     private static AgentRollup createAgentRollup(String agentRollupId,

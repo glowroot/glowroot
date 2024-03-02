@@ -15,21 +15,20 @@
  */
 package org.glowroot.central.repo;
 
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.google.common.collect.Lists;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.config.ImmutableCentralStorageConfig;
 import org.glowroot.common2.repo.SyntheticResult;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,7 +52,7 @@ public class SyntheticResultDaoIT {
         AgentDisplayDao agentDisplayDao =
                 new AgentDisplayDao(session, clusterManager, asyncExecutor, 10);
         AgentConfigDao agentConfigDao =
-                new AgentConfigDao(session, agentDisplayDao, clusterManager, 10);
+                new AgentConfigDao(session, agentDisplayDao, clusterManager, 10, asyncExecutor);
         UserDao userDao = new UserDao(session, clusterManager);
         RoleDao roleDao = new RoleDao(session, clusterManager);
         ConfigRepositoryImpl configRepository =

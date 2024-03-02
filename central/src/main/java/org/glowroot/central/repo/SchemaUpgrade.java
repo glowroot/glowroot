@@ -953,7 +953,7 @@ public class SchemaUpgrade {
                     boundStatement = boundStatement.setByteBuffer(1, ByteBuffer.wrap(defaultAgentConfig.toByteArray()));
                 }
             }
-            session.write(boundStatement, slow);
+            session.writeAsync(boundStatement, slow).toCompletableFuture().get();
         }
     }
 

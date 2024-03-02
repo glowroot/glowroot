@@ -17,6 +17,9 @@ package org.glowroot.central.repo;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.cql.*;
@@ -24,7 +27,7 @@ import com.google.common.collect.ImmutableSet;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.central.util.Cache;
+import org.glowroot.central.util.AsyncCache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
@@ -46,7 +49,7 @@ class UserDao {
     private final PreparedStatement insertPS;
     private final PreparedStatement deletePS;
 
-    private final Cache<String, List<UserConfig>> allUserConfigsCache;
+    private final AsyncCache<String, List<UserConfig>> allUserConfigsCache;
 
     UserDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
@@ -73,15 +76,15 @@ class UserDao {
                 .setBoolean(i++, false)
                 .setString(i++, "")
                 .setSet(i++, ImmutableSet.of("Administrator"), String.class);
-            session.write(boundStatement, CassandraProfile.slow);
+            session.writeAsync(boundStatement, CassandraProfile.slow).toCompletableFuture().get();
         }
 
-        allUserConfigsCache = clusterManager.createSelfBoundedCache("allUserConfigsCache",
+        allUserConfigsCache = clusterManager.createSelfBoundedAsyncCache("allUserConfigsCache",
                 new AllUsersCacheLoader());
     }
 
     List<UserConfig> read() throws Exception {
-        return allUserConfigsCache.get(ALL_USERS_SINGLE_CACHE_KEY);
+        return allUserConfigsCache.get(ALL_USERS_SINGLE_CACHE_KEY).get();
     }
 
     @Nullable
@@ -116,7 +119,7 @@ class UserDao {
     void insert(UserConfig userConfig, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         boundStatement = bindInsert(boundStatement, userConfig);
-        session.write(boundStatement, profile);
+        session.writeAsync(boundStatement, profile).toCompletableFuture().get();
         allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
     }
 
@@ -137,11 +140,12 @@ class UserDao {
         }
     }
 
-    void delete(String username, CassandraProfile profile) throws Exception {
+    CompletionStage<Void> delete(String username, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = deletePS.bind()
             .setString(0, username);
-        session.write(boundStatement, profile);
-        allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
+        return session.writeAsync(boundStatement, profile).thenRun(() -> {
+            allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
+        });
     }
 
     @CheckReturnValue
@@ -153,16 +157,25 @@ class UserDao {
             .setSet(i++, userConfig.roles(), String.class);
     }
 
-    private class AllUsersCacheLoader implements CacheLoader<String, List<UserConfig>> {
+    private class AllUsersCacheLoader implements AsyncCache.AsyncCacheLoader<String, List<UserConfig>> {
 
         @Override
-        public List<UserConfig> load(String dummy) {
-            ResultSet results = session.read(readPS.bind(), CassandraProfile.collector);
+        public CompletableFuture<List<UserConfig>> load(String dummy) {
             List<UserConfig> users = new ArrayList<>();
-            for (Row row : results) {
-                users.add(buildUser(row));
-            }
-            return users;
+            Function<AsyncResultSet, CompletableFuture<List<UserConfig>>> compute = new Function<AsyncResultSet, CompletableFuture<List<UserConfig>>>() {
+                @Override
+                public CompletableFuture<List<UserConfig>> apply(AsyncResultSet results) {
+                    for (Row row : results.currentPage()) {
+                        users.add(buildUser(row));
+                    }
+                    if (results.hasMorePages()) {
+                        return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                    }
+                    return CompletableFuture.completedFuture(users);
+
+                }
+            };
+            return session.readAsync(readPS.bind(), CassandraProfile.collector).thenCompose(compute).toCompletableFuture();
         }
 
         private UserConfig buildUser(Row row) {

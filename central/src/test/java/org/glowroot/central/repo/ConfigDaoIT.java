@@ -50,7 +50,7 @@ public class ConfigDaoIT {
         asyncExecutor = Executors.newCachedThreadPool();
         AgentDisplayDao agentDisplayDao =
                 new AgentDisplayDao(session, clusterManager, MoreExecutors.directExecutor(), 10);
-        agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager, 10);
+        agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager, 10, MoreExecutors.directExecutor());
     }
 
     @AfterAll
@@ -77,9 +77,9 @@ public class ConfigDaoIT {
     public void shouldStoreAgentConfig() throws Exception {
         // given
         AgentConfig agentConfig = AgentConfig.getDefaultInstance();
-        agentConfigDao.store("a", agentConfig, false);
+        agentConfigDao.store("a", agentConfig, false).toCompletableFuture().get();
         // when
-        AgentConfig readAgentConfig = agentConfigDao.read("a");
+        AgentConfig readAgentConfig = agentConfigDao.readAsync("a").get();
         // then
         assertThat(readAgentConfig).isEqualTo(agentConfig);
     }
@@ -88,14 +88,14 @@ public class ConfigDaoIT {
     public void shouldNotOverwriteExistingAgentConfig() throws Exception {
         // given
         AgentConfig agentConfig = AgentConfig.getDefaultInstance();
-        agentConfigDao.store("a", agentConfig, false);
+        agentConfigDao.store("a", agentConfig, false).toCompletableFuture().get();
         agentConfigDao.store("a", AgentConfig.newBuilder()
                 .setTransactionConfig(TransactionConfig.newBuilder()
                         .setSlowThresholdMillis(OptionalInt32.newBuilder()
                                 .setValue(1234)))
-                .build(), false);
+                .build(), false).toCompletableFuture().get();
         // when
-        AgentConfig readAgentConfig = agentConfigDao.read("a");
+        AgentConfig readAgentConfig = agentConfigDao.readAsync("a").get();
         // then
         assertThat(readAgentConfig).isEqualTo(agentConfig);
     }

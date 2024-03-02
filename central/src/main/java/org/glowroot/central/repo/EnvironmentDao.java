@@ -16,10 +16,12 @@
 package org.glowroot.central.repo;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.CompletionStage;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.central.util.Session;
@@ -47,22 +49,28 @@ public class EnvironmentDao implements EnvironmentRepository {
         readPS = session.prepare("select environment from environment where agent_id = ?");
     }
 
-    public void store(String agentId, Environment environment) throws Exception {
+    public CompletionStage<?> store(String agentId, Environment environment) {
         int i = 0;
         BoundStatement boundStatement = insertPS.bind()
             .setString(i++, agentId)
             .setByteBuffer(i++, ByteBuffer.wrap(environment.toByteArray()));
-        session.write(boundStatement, CassandraProfile.collector);
+        return session.writeAsync(boundStatement, CassandraProfile.collector);
     }
 
     @Override
     public @Nullable Environment read(String agentId, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentId);
-        Row row = session.read(boundStatement, profile).one();
-        if (row == null) {
-            return null;
-        }
-        return Environment.parseFrom(checkNotNull(row.getByteBuffer(0)));
+        return session.readAsync(boundStatement, profile).thenApply(results  -> {
+            Row row = results.one();
+            if (row == null) {
+                return null;
+            }
+            try {
+                return Environment.parseFrom(checkNotNull(row.getByteBuffer(0)));
+            } catch (InvalidProtocolBufferException e) {
+                throw new RuntimeException(e);
+            }
+        }).toCompletableFuture().get();
     }
 }

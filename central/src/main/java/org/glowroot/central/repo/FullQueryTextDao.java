@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 
 import javax.management.MBeanServer;
@@ -132,22 +133,24 @@ class FullQueryTextDao implements AutoCloseable {
     }
 
     private @Nullable String getFullTextUsingPS(String agentRollupId, String fullTextSha1,
-            PreparedStatement readCheckPS, CassandraProfile profile) {
+            PreparedStatement readCheckPS, CassandraProfile profile) throws ExecutionException, InterruptedException {
         BoundStatement boundStatement = readCheckPS.bind()
             .setString(0, agentRollupId)
             .setString(1, fullTextSha1);
-        ResultSet results = session.read(boundStatement, profile);
-        if (results.one() == null) {
-            return null;
-        }
-        boundStatement = readPS.bind()
-            .setString(0, fullTextSha1);
-        results = session.read(boundStatement, profile);
-        Row row = results.one();
-        if (row == null) {
-            return null;
-        }
-        return row.getString(0);
+        return session.readAsync(boundStatement, profile).thenCompose(results -> {
+            if (results.one() == null) {
+                return CompletableFuture.completedFuture(null);
+            }
+            BoundStatement boundStatement2 = readPS.bind()
+                    .setString(0, fullTextSha1);
+            return session.readAsync(boundStatement2, profile).thenApply(results2 -> {
+                Row row = results2.one();
+                if (row == null) {
+                    return null;
+                }
+                return row.getString(0);
+            });
+        }).toCompletableFuture().get();
     }
 
     @CheckReturnValue

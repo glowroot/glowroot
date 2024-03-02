@@ -75,6 +75,6 @@ public class HeartbeatDao {
             .setString(i++, agentRollupId)
             .setInstant(i++, Instant.ofEpochMilli(centralCaptureFrom))
             .setInstant(i++, Instant.ofEpochMilli(centralCaptureTo));
-        return session.read(boundStatement, profile).one() != null;
+        return session.readAsync(boundStatement, profile).thenApply(results -> results.one()!=null).toCompletableFuture().get();
     }
 }

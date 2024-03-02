@@ -17,16 +17,17 @@ package org.glowroot.central.repo;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.cql.*;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.central.util.Cache;
-import org.glowroot.central.util.Cache.CacheLoader;
+import org.glowroot.central.util.AsyncCache;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.common2.config.ImmutableRoleConfig;
@@ -49,8 +50,8 @@ class RoleDao {
 
     private final PreparedStatement readOnePS;
 
-    private final Cache<String, Optional<RoleConfig>> roleConfigCache;
-    private final Cache<String, List<RoleConfig>> allRoleConfigsCache;
+    private final AsyncCache<String, Optional<RoleConfig>> roleConfigCache;
+    private final AsyncCache<String, List<RoleConfig>> allRoleConfigsCache;
 
     RoleDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
@@ -79,39 +80,40 @@ class RoleDao {
                     ImmutableSet.of("agent:*:transaction", "agent:*:error", "agent:*:jvm",
                             "agent:*:syntheticMonitor", "agent:*:incident", "agent:*:config",
                             "admin"), String.class);
-            session.write(boundStatement, CassandraProfile.slow);
+            session.writeAsync(boundStatement, CassandraProfile.slow).toCompletableFuture().get();
         }
 
-        roleConfigCache = clusterManager.createSelfBoundedCache("roleConfigCache",
+        roleConfigCache = clusterManager.createSelfBoundedAsyncCache("roleConfigCache",
                 new RoleConfigCacheLoader());
-        allRoleConfigsCache = clusterManager.createSelfBoundedCache("allRoleConfigsCache",
+        allRoleConfigsCache = clusterManager.createSelfBoundedAsyncCache("allRoleConfigsCache",
                 new AllRolesCacheLoader());
     }
 
     List<RoleConfig> read() throws Exception {
-        return allRoleConfigsCache.get(ALL_ROLES_SINGLE_CACHE_KEY);
+        return allRoleConfigsCache.get(ALL_ROLES_SINGLE_CACHE_KEY).get();
     }
 
     @Nullable
     RoleConfig read(String name) throws Exception {
-        return roleConfigCache.get(name).orNull();
+        return roleConfigCache.get(name).get().orElse(null);
     }
 
     void delete(String name, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = deletePS.bind()
             .setString(0, name);
-        session.write(boundStatement, profile);
-        roleConfigCache.invalidate(name);
-        allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
+        session.writeAsync(boundStatement, profile).thenRun(() -> {
+            roleConfigCache.invalidate(name);
+            allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
+        }).toCompletableFuture().get();
     }
 
     void insert(RoleConfig roleConfig, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = insertPS.bind();
         boundStatement = bindInsert(boundStatement, roleConfig);
-        session.write(boundStatement, profile);
-        roleConfigCache.invalidate(roleConfig.name());
-        allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
-
+        session.writeAsync(boundStatement, profile).thenRun(() -> {
+            roleConfigCache.invalidate(roleConfig.name());
+            allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
+        }).toCompletableFuture().get();
     }
 
     void insertIfNotExists(RoleConfig roleConfig, CassandraProfile profile) throws Exception {
@@ -148,32 +150,37 @@ class RoleDao {
                 .build();
     }
 
-    private class RoleConfigCacheLoader implements CacheLoader<String, Optional<RoleConfig>> {
+    private class RoleConfigCacheLoader implements AsyncCache.AsyncCacheLoader<String, Optional<RoleConfig>> {
         @Override
-        public Optional<RoleConfig> load(String name) {
+        public CompletableFuture<Optional<RoleConfig>> load(String name) {
             BoundStatement boundStatement = readOnePS.bind()
                 .setString(0, name);
-            ResultSet results = session.read(boundStatement, CassandraProfile.collector);
-            Row row = results.one();
-            if (row == null) {
-                return Optional.absent();
-            }
-            if (results.one() != null) {
-                throw new IllegalStateException("Multiple role records for name: " + name);
-            }
-            return Optional.of(buildRole(row));
+            return session.readAsync(boundStatement, CassandraProfile.collector).thenApply(results -> Optional.ofNullable(results.one()).map(row -> {
+                if (results.one() != null) {
+                    throw new IllegalStateException("Multiple role records for name: " + name);
+                }
+                return buildRole(row);
+            })).toCompletableFuture();
         }
     }
 
-    private class AllRolesCacheLoader implements CacheLoader<String, List<RoleConfig>> {
+    private class AllRolesCacheLoader implements AsyncCache.AsyncCacheLoader<String, List<RoleConfig>> {
         @Override
-        public List<RoleConfig> load(String dummy) {
-            ResultSet results = session.read(readPS.bind(), CassandraProfile.collector);
+        public CompletableFuture<List<RoleConfig>> load(String dummy) {
             List<RoleConfig> role = new ArrayList<>();
-            for (Row row : results) {
-                role.add(buildRole(row));
-            }
-            return role;
+            Function<AsyncResultSet, CompletableFuture<List<RoleConfig>>> compute = new Function<>() {
+                @Override
+                public CompletableFuture<List<RoleConfig>> apply(AsyncResultSet results) {
+                    for (Row row : results.currentPage()) {
+                        role.add(buildRole(row));
+                    }
+                    if (results.hasMorePages()) {
+                        return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                    }
+                    return CompletableFuture.completedFuture(role);
+                }
+            };
+            return session.readAsync(readPS.bind(), CassandraProfile.collector).thenCompose(compute).toCompletableFuture();
         }
     }
 }

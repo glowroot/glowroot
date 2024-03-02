@@ -15,19 +15,10 @@
  */
 package org.glowroot.central.repo;
 
-import java.nio.ByteBuffer;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.primitives.Ints;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.checkerframework.checker.nullness.qual.Nullable;
-
 import org.glowroot.central.util.Session;
 import org.glowroot.common.Constants;
 import org.glowroot.common.util.Clock;
@@ -38,6 +29,14 @@ import org.glowroot.common2.repo.IncidentRepository;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
+
+import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -91,90 +90,124 @@ public class IncidentDao implements IncidentRepository {
 
     @Override
     public void insertOpenIncident(String agentRollupId, AlertCondition condition,
-            AlertSeverity severity, AlertNotification notification, long openTime, CassandraProfile profile)
+                                   AlertSeverity severity, AlertNotification notification, long openTime, CassandraProfile profile)
             throws Exception {
         int i = 0;
         BoundStatement boundStatement = insertOpenIncidentPS.bind()
-            .setString(i++, agentRollupId)
-            .setByteBuffer(i++, ByteBuffer.wrap(condition.toByteArray()))
-            .setString(i++, severity.name().toLowerCase(Locale.ENGLISH))
-            .setByteBuffer(i++, ByteBuffer.wrap(notification.toByteArray()))
-            .setInstant(i++, Instant.ofEpochMilli(openTime));
-        session.write(boundStatement, profile);
+                .setString(i++, agentRollupId)
+                .setByteBuffer(i++, ByteBuffer.wrap(condition.toByteArray()))
+                .setString(i++, severity.name().toLowerCase(Locale.ENGLISH))
+                .setByteBuffer(i++, ByteBuffer.wrap(notification.toByteArray()))
+                .setInstant(i++, Instant.ofEpochMilli(openTime));
+        session.writeAsync(boundStatement, profile).toCompletableFuture().get();
     }
 
     @Override
     public @Nullable OpenIncident readOpenIncident(String agentRollupId, AlertCondition condition,
-            AlertSeverity severity, CassandraProfile profile) throws Exception {
+                                                   AlertSeverity severity, CassandraProfile profile) throws Exception {
         int i = 0;
         BoundStatement boundStatement = readOpenIncidentPS.bind()
-            .setString(i++, agentRollupId)
-            .setByteBuffer(i++, ByteBuffer.wrap(condition.toByteArray()))
-            .setString(i++, severity.name().toLowerCase(Locale.ENGLISH));
-        ResultSet results = session.read(boundStatement, profile);
-        Row row = results.one();
-        if (row == null) {
-            return null;
-        }
-        AlertNotification notification = AlertNotification.parseFrom(checkNotNull(row.getByteBuffer(0)));
-        long openTime = checkNotNull(row.getInstant(1)).toEpochMilli();
-        return ImmutableOpenIncident.builder()
-                .agentRollupId(agentRollupId)
-                .condition(condition)
-                .severity(severity)
-                .notification(notification)
-                .openTime(openTime)
-                .build();
+                .setString(i++, agentRollupId)
+                .setByteBuffer(i++, ByteBuffer.wrap(condition.toByteArray()))
+                .setString(i++, severity.name().toLowerCase(Locale.ENGLISH));
+        return session.readAsync(boundStatement, profile).thenApply(results -> {
+            Row row = results.one();
+            if (row == null) {
+                return null;
+            }
+            try {
+                AlertNotification notification = AlertNotification.parseFrom(checkNotNull(row.getByteBuffer(0)));
+                long openTime = checkNotNull(row.getInstant(1)).toEpochMilli();
+                return ImmutableOpenIncident.builder()
+                        .agentRollupId(agentRollupId)
+                        .condition(condition)
+                        .severity(severity)
+                        .notification(notification)
+                        .openTime(openTime)
+                        .build();
+            } catch (InvalidProtocolBufferException e) {
+                throw new RuntimeException(e);
+            }
+        }).toCompletableFuture().get();
     }
 
     @Override
     public List<OpenIncident> readOpenIncidents(String agentRollupId, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = readOpenIncidentsPS.bind()
-            .setString(0, agentRollupId);
-        ResultSet results = session.read(boundStatement, profile);
+                .setString(0, agentRollupId);
+
         List<OpenIncident> openIncidents = new ArrayList<>();
-        for (Row row : results) {
-            int i = 0;
-            AlertCondition condition = AlertCondition.parseFrom(checkNotNull(row.getByteBuffer(i++)));
-            AlertSeverity severity = AlertSeverity
-                    .valueOf(checkNotNull(row.getString(i++)).toUpperCase(Locale.ENGLISH));
-            AlertNotification notification =
-                    AlertNotification.parseFrom(checkNotNull(row.getByteBuffer(i++)));
-            long openTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
-            openIncidents.add(ImmutableOpenIncident.builder()
-                    .agentRollupId(agentRollupId)
-                    .condition(condition)
-                    .severity(severity)
-                    .notification(notification)
-                    .openTime(openTime)
-                    .build());
-        }
-        return openIncidents;
+        Function<AsyncResultSet, CompletableFuture<List<OpenIncident>>> compute = new Function<>() {
+
+            @Override
+            public CompletableFuture<List<OpenIncident>> apply(AsyncResultSet asyncResultSet) {
+                for (Row row : asyncResultSet.currentPage()) {
+                    int i = 0;
+
+                    try {
+                        AlertCondition condition = AlertCondition.parseFrom(checkNotNull(row.getByteBuffer(i++)));
+                        AlertSeverity severity = AlertSeverity
+                                .valueOf(checkNotNull(row.getString(i++)).toUpperCase(Locale.ENGLISH));
+
+                        AlertNotification notification =
+                                AlertNotification.parseFrom(checkNotNull(row.getByteBuffer(i++)));
+                        long openTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+                        openIncidents.add(ImmutableOpenIncident.builder()
+                                .agentRollupId(agentRollupId)
+                                .condition(condition)
+                                .severity(severity)
+                                .notification(notification)
+                                .openTime(openTime)
+                                .build());
+                    } catch (InvalidProtocolBufferException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                if (asyncResultSet.hasMorePages()) {
+                    return asyncResultSet.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(openIncidents);
+            }
+        };
+
+        return session.readAsync(boundStatement, profile).thenCompose(compute).toCompletableFuture().get();
     }
 
     @Override
     public List<OpenIncident> readAllOpenIncidents(CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = readAllOpenIncidentsPS.bind();
-        ResultSet results = session.read(boundStatement, profile);
         List<OpenIncident> openIncidents = new ArrayList<>();
-        for (Row row : results) {
-            int i = 0;
-            String agentRollupId = checkNotNull(row.getString(i++));
-            AlertCondition condition = AlertCondition.parseFrom(checkNotNull(row.getByteBuffer(i++)));
-            AlertSeverity severity = AlertSeverity
-                    .valueOf(checkNotNull(row.getString(i++)).toUpperCase(Locale.ENGLISH));
-            AlertNotification notification =
-                    AlertNotification.parseFrom(checkNotNull(row.getByteBuffer(i++)));
-            long openTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
-            openIncidents.add(ImmutableOpenIncident.builder()
-                    .agentRollupId(agentRollupId)
-                    .condition(condition)
-                    .severity(severity)
-                    .notification(notification)
-                    .openTime(openTime)
-                    .build());
-        }
-        return openIncidents;
+        Function<AsyncResultSet, CompletableFuture<List<OpenIncident>>> compute = new Function<AsyncResultSet, CompletableFuture<List<OpenIncident>>>() {
+            @Override
+            public CompletableFuture<List<OpenIncident>> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    try {
+                        String agentRollupId = checkNotNull(row.getString(i++));
+                        AlertCondition condition = AlertCondition.parseFrom(checkNotNull(row.getByteBuffer(i++)));
+                        AlertSeverity severity = AlertSeverity
+                                .valueOf(checkNotNull(row.getString(i++)).toUpperCase(Locale.ENGLISH));
+                        AlertNotification notification =
+                                AlertNotification.parseFrom(checkNotNull(row.getByteBuffer(i++)));
+                        long openTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+                        openIncidents.add(ImmutableOpenIncident.builder()
+                                .agentRollupId(agentRollupId)
+                                .condition(condition)
+                                .severity(severity)
+                                .notification(notification)
+                                .openTime(openTime)
+                                .build());
+                    } catch (InvalidProtocolBufferException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(openIncidents);
+            }
+        };
+        return session.readAsync(boundStatement, profile).thenCompose(compute).toCompletableFuture().get();
     }
 
     @Override
@@ -188,50 +221,62 @@ public class IncidentDao implements IncidentRepository {
         ByteBuffer notificationBytes = ByteBuffer.wrap(openIncident.notification().toByteArray());
         int i = 0;
         BoundStatement boundStatement = insertResolvedIncidentPS.bind()
-            .setInstant(i++, Instant.ofEpochMilli(resolveTime))
-            .setString(i++, openIncident.agentRollupId())
-            .setByteBuffer(i++, conditionBytes)
-            .setString(i++,
-                openIncident.severity().name().toLowerCase(Locale.ENGLISH))
-            .setByteBuffer(i++, notificationBytes)
-            .setInstant(i++, Instant.ofEpochMilli(openIncident.openTime()))
-            .setInt(i++, adjustedTTL);
-        session.write(boundStatement, profile);
-
-        i = 0;
-        boundStatement = deleteOpenIncidentPS.bind()
-            .setString(i++, openIncident.agentRollupId())
-            .setByteBuffer(i++, conditionBytes)
-            .setString(i++,
-                openIncident.severity().name().toLowerCase(Locale.ENGLISH));
-        session.write(boundStatement, profile);
+                .setInstant(i++, Instant.ofEpochMilli(resolveTime))
+                .setString(i++, openIncident.agentRollupId())
+                .setByteBuffer(i++, conditionBytes)
+                .setString(i++,
+                        openIncident.severity().name().toLowerCase(Locale.ENGLISH))
+                .setByteBuffer(i++, notificationBytes)
+                .setInstant(i++, Instant.ofEpochMilli(openIncident.openTime()))
+                .setInt(i++, adjustedTTL);
+        session.writeAsync(boundStatement, profile).thenCompose((ignore) -> {
+            int j = 0;
+            BoundStatement boundStatement2 = deleteOpenIncidentPS.bind()
+                    .setString(j++, openIncident.agentRollupId())
+                    .setByteBuffer(j++, conditionBytes)
+                    .setString(j++,
+                            openIncident.severity().name().toLowerCase(Locale.ENGLISH));
+            return session.writeAsync(boundStatement2, profile);
+        }).toCompletableFuture().get();
     }
 
     @Override
     public List<ResolvedIncident> readResolvedIncidents(long from) throws Exception {
         BoundStatement boundStatement = readRecentResolvedIncidentsPS.bind()
-            .setInstant(0, Instant.ofEpochMilli(from));
-        ResultSet results = session.read(boundStatement, CassandraProfile.web);
+                .setInstant(0, Instant.ofEpochMilli(from));
         List<ResolvedIncident> resolvedIncidents = new ArrayList<>();
-        for (Row row : results) {
-            int i = 0;
-            long resolveTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
-            String agentRollupId = checkNotNull(row.getString(i++));
-            AlertCondition condition = AlertCondition.parseFrom(checkNotNull(row.getByteBuffer(i++)));
-            AlertSeverity severity = AlertSeverity
-                    .valueOf(checkNotNull(row.getString(i++)).toUpperCase(Locale.ENGLISH));
-            AlertNotification notification =
-                    AlertNotification.parseFrom(checkNotNull(row.getByteBuffer(i++)));
-            long openTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
-            resolvedIncidents.add(ImmutableResolvedIncident.builder()
-                    .agentRollupId(agentRollupId)
-                    .openTime(openTime)
-                    .resolveTime(resolveTime)
-                    .condition(condition)
-                    .severity(severity)
-                    .notification(notification)
-                    .build());
-        }
-        return resolvedIncidents;
+        Function<AsyncResultSet, CompletableFuture<List<ResolvedIncident>>> compute = new Function<AsyncResultSet, CompletableFuture<List<ResolvedIncident>>>() {
+            @Override
+            public CompletableFuture<List<ResolvedIncident>> apply(AsyncResultSet asyncResultSet) {
+                for (Row row : asyncResultSet.currentPage()) {
+                    int i = 0;
+                    try {
+                        long resolveTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+                        String agentRollupId = checkNotNull(row.getString(i++));
+                        AlertCondition condition = AlertCondition.parseFrom(checkNotNull(row.getByteBuffer(i++)));
+                        AlertSeverity severity = AlertSeverity
+                                .valueOf(checkNotNull(row.getString(i++)).toUpperCase(Locale.ENGLISH));
+                        AlertNotification notification =
+                                AlertNotification.parseFrom(checkNotNull(row.getByteBuffer(i++)));
+                        long openTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+                        resolvedIncidents.add(ImmutableResolvedIncident.builder()
+                                .agentRollupId(agentRollupId)
+                                .openTime(openTime)
+                                .resolveTime(resolveTime)
+                                .condition(condition)
+                                .severity(severity)
+                                .notification(notification)
+                                .build());
+                    } catch (InvalidProtocolBufferException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                if (asyncResultSet.hasMorePages()) {
+                    return asyncResultSet.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(resolvedIncidents);
+            }
+        };
+        return session.readAsync(boundStatement, CassandraProfile.web).thenCompose(compute).toCompletableFuture().get();
     }
 }

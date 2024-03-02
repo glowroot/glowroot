@@ -99,7 +99,7 @@ public class AggregateDaoIT {
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         AgentDisplayDao agentDisplayDao =
                 new AgentDisplayDao(session, clusterManager, asyncExecutor, 10);
-        agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager, 10);
+        agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager, 10, asyncExecutor);
         UserDao userDao = new UserDao(session, clusterManager);
         RoleDao roleDao = new RoleDao(session, clusterManager);
         ConfigRepositoryImpl configRepository =
@@ -142,7 +142,7 @@ public class AggregateDaoIT {
 
         agentConfigDao.store("one", AgentConfig.newBuilder()
                 .setAdvancedConfig(DEFAULT_ADVANCED_CONFIG)
-                .build(), true);
+                .build(), true).toCompletableFuture().get();
 
         aggregateDao.truncateAll();
         List<Aggregate.SharedQueryText> sharedQueryText = ImmutableList
@@ -325,7 +325,7 @@ public class AggregateDaoIT {
 
         agentConfigDao.store("the parent::one", AgentConfig.newBuilder()
                 .setAdvancedConfig(DEFAULT_ADVANCED_CONFIG)
-                .build(), true);
+                .build(), true).toCompletableFuture().get();
 
         aggregateDao.truncateAll();
         List<Aggregate.SharedQueryText> sharedQueryText = ImmutableList
@@ -512,7 +512,7 @@ public class AggregateDaoIT {
 
         agentConfigDao.store("the gp::the parent::one", AgentConfig.newBuilder()
                 .setAdvancedConfig(DEFAULT_ADVANCED_CONFIG)
-                .build(), true);
+                .build(), true).toCompletableFuture().get();
 
         aggregateDao.truncateAll();
         List<Aggregate.SharedQueryText> sharedQueryText = ImmutableList

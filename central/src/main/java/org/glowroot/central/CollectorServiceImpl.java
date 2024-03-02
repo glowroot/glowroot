@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -150,27 +151,32 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                 return;
             }
         }
-        AgentConfig updatedAgentConfig;
+        final String finalAgentId = agentId;
+
         try {
-            updatedAgentConfig = SchemaUpgrade.upgradeOldAgentConfig(request.getAgentConfig());
-            updatedAgentConfig = agentConfigDao.store(agentId, updatedAgentConfig,
-                    request.getOverwriteExistingAgentConfig());
-            environmentDao.store(agentId, request.getEnvironment());
-            MoreFutures.waitForAll(activeAgentDao.insert(agentId, clock.currentTimeMillis()));
+            AgentConfig  agentConfig = SchemaUpgrade.upgradeOldAgentConfig(request.getAgentConfig());
+            agentConfigDao.store(finalAgentId, agentConfig,
+                    request.getOverwriteExistingAgentConfig()).thenCompose(updatedAgentConfig -> {
+                return environmentDao.store(finalAgentId, request.getEnvironment()).thenApply(obj -> updatedAgentConfig);
+            }).thenCompose(updatedAgentConfig -> {
+                return CompletableFuture.allOf(activeAgentDao.insert(finalAgentId, clock.currentTimeMillis()).toCompletableFuture()).thenApply((obj) -> updatedAgentConfig);
+            }).thenAccept(updatedAgentConfig -> {
+                logger.info("agent connected: {}, version {}", finalAgentId,
+                        request.getEnvironment().getJavaInfo().getGlowrootAgentVersion());
+                InitResponse.Builder response = InitResponse.newBuilder()
+                        .setGlowrootCentralVersion(version);
+                if (!updatedAgentConfig.equals(request.getAgentConfig())) {
+                    response.setAgentConfig(updatedAgentConfig);
+                }
+                responseObserver.onNext(response.build());
+                responseObserver.onCompleted();
+            });
+
         } catch (Throwable t) {
             logger.error("{} - {}", agentId, t.getMessage(), t);
             responseObserver.onError(t);
             return;
         }
-        logger.info("agent connected: {}, version {}", agentId,
-                request.getEnvironment().getJavaInfo().getGlowrootAgentVersion());
-        InitResponse.Builder response = InitResponse.newBuilder()
-                .setGlowrootCentralVersion(version);
-        if (!updatedAgentConfig.equals(request.getAgentConfig())) {
-            response.setAgentConfig(updatedAgentConfig);
-        }
-        responseObserver.onNext(response.build());
-        responseObserver.onCompleted();
     }
 
     @Override
@@ -416,7 +422,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         }
         boolean resendInit;
         try {
-            resendInit = agentConfigDao.read(postV09AgentId) == null
+            resendInit = agentConfigDao.readAsync(postV09AgentId) == null
                     || environmentDao.read(postV09AgentId, CassandraProfile.collector) == null;
         } catch (Throwable t) {
             // log as error, but not worth failing for this

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,6 +47,8 @@ import com.spotify.futures.CompletableFutures;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.common2.repo.CassandraProfile;
+import org.glowroot.wire.api.model.AggregateOuterClass;
+import org.glowroot.wire.api.model.ProfileOuterClass;
 import org.immutables.value.Value;
 
 import org.glowroot.central.repo.Common.NeedsRollup;
@@ -420,7 +423,7 @@ public class AggregateDaoImpl implements AggregateDao {
             List<OldAggregatesByType> aggregatesByTypeList,
             List<Aggregate.SharedQueryText> initialSharedQueryTexts) {
         if (aggregatesByTypeList.isEmpty()) {
-            return CompletableFutures.allAsList(activeAgentDao.insert(agentIdForMeta, captureTime));
+            return activeAgentDao.insert(agentIdForMeta, captureTime).thenCompose(CompletableFutures::allAsList).toCompletableFuture();
         }
         TTL adjustedTTL = getAdjustedTTL(getTTLs().get(0), captureTime, clock);
         List<CompletableFuture<?>> completableFutures = new ArrayList<>();
@@ -477,7 +480,8 @@ public class AggregateDaoImpl implements AggregateDao {
             }
             return CompletableFutures.allAsList(futures)
                     // wait for success before inserting "needs rollup" records
-                    .thenCompose(ignoredResult -> CompletableFutures.allAsList(activeAgentDao.insert(agentIdForMeta, captureTime)));
+                    .thenCompose(ignoredResult -> activeAgentDao.insert(agentIdForMeta, captureTime))
+                    .thenCompose(CompletableFutures::allAsList).toCompletableFuture();
         }).thenCompose(e -> {
             List<CompletableFuture<?>> futures = new ArrayList<>();
 
@@ -518,20 +522,29 @@ public class AggregateDaoImpl implements AggregateDao {
     // query.from() is non-inclusive
     @Override
     public void mergeOverallSummaryInto(String agentRollupId, SummaryQuery query,
-            OverallSummaryCollector collector, CassandraProfile profile) {
+            OverallSummaryCollector collector, CassandraProfile profile) throws Exception {
         // currently have to do aggregation client-site (don't want to require Cassandra 2.2 yet)
-        ResultSet results = executeQuery(agentRollupId, query, summaryTable, profile);
-        for (Row row : results) {
-            int i = 0;
-            // results are ordered by capture time so Math.max() is not needed here
-            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
-            double totalDurationNanos = row.getDouble(i++);
-            double totalCpuNanos = row.getDouble(i++);
-            double totalAllocatedBytes = row.getDouble(i++);
-            long transactionCount = row.getLong(i++);
-            collector.mergeSummary(totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount,
-                    captureTime);
-        }
+        Function<AsyncResultSet, CompletableFuture<Void>> compute = new Function<AsyncResultSet, CompletableFuture<Void>>() {
+            @Override
+            public CompletableFuture<Void> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    // results are ordered by capture time so Math.max() is not needed here
+                    long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+                    double totalDurationNanos = row.getDouble(i++);
+                    double totalCpuNanos = row.getDouble(i++);
+                    double totalAllocatedBytes = row.getDouble(i++);
+                    long transactionCount = row.getLong(i++);
+                    collector.mergeSummary(totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount,
+                            captureTime);
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        executeQuery(agentRollupId, query, summaryTable, profile).thenCompose(compute).toCompletableFuture().get();
     }
 
     // sortOrder and limit are only used by embedded H2 repository, while the central cassandra
@@ -541,39 +554,57 @@ public class AggregateDaoImpl implements AggregateDao {
     // query.from() is non-inclusive
     @Override
     public void mergeTransactionNameSummariesInto(String agentRollupId, SummaryQuery query,
-                                                  SummarySortOrder sortOrder, int limit, TransactionNameSummaryCollector collector, CassandraProfile profile) {
+                                                  SummarySortOrder sortOrder, int limit, TransactionNameSummaryCollector collector, CassandraProfile profile) throws Exception {
         // currently have to do group by / sort / limit client-side
         BoundStatement boundStatement =
                 checkNotNull(readTransactionPS.get(summaryTable)).get(query.rollupLevel()).bind();
         boundStatement = bindQuery(boundStatement, agentRollupId, query);
-        ResultSet results = session.read(boundStatement, profile);
-        for (Row row : results) {
-            int i = 0;
-            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
-            String transactionName = checkNotNull(row.getString(i++));
-            double totalDurationNanos = row.getDouble(i++);
-            double totalCpuNanos = row.getDouble(i++);
-            double totalAllocatedBytes = row.getDouble(i++);
-            long transactionCount = row.getLong(i++);
-            collector.collect(transactionName, totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount,
-                    captureTime);
-        }
+        Function<AsyncResultSet, CompletableFuture<Void>> compute = new Function<AsyncResultSet, CompletableFuture<Void>>() {
+            @Override
+            public CompletableFuture<Void> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+                    String transactionName = checkNotNull(row.getString(i++));
+                    double totalDurationNanos = row.getDouble(i++);
+                    double totalCpuNanos = row.getDouble(i++);
+                    double totalAllocatedBytes = row.getDouble(i++);
+                    long transactionCount = row.getLong(i++);
+                    collector.collect(transactionName, totalDurationNanos, totalCpuNanos, totalAllocatedBytes, transactionCount,
+                            captureTime);
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        session.readAsync(boundStatement, profile).thenCompose(compute).toCompletableFuture().get();
     }
 
     // query.from() is non-inclusive
     @Override
     public void mergeOverallErrorSummaryInto(String agentRollupId, SummaryQuery query,
-            OverallErrorSummaryCollector collector, CassandraProfile profile) {
+            OverallErrorSummaryCollector collector, CassandraProfile profile) throws Exception {
         // currently have to do aggregation client-site (don't want to require Cassandra 2.2 yet)
-        ResultSet results = executeQuery(agentRollupId, query, errorSummaryTable, profile);
-        for (Row row : results) {
-            int i = 0;
-            // results are ordered by capture time so Math.max() is not needed here
-            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
-            long errorCount = row.getLong(i++);
-            long transactionCount = row.getLong(i++);
-            collector.mergeErrorSummary(errorCount, transactionCount, captureTime);
-        }
+        Function<AsyncResultSet, CompletableFuture<Void>> compute = new Function<AsyncResultSet, CompletableFuture<Void>>() {
+            @Override
+            public CompletableFuture<Void> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    // results are ordered by capture time so Math.max() is not needed here
+                    long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+                    long errorCount = row.getLong(i++);
+                    long transactionCount = row.getLong(i++);
+                    collector.mergeErrorSummary(errorCount, transactionCount, captureTime);
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        executeQuery(agentRollupId, query, errorSummaryTable, profile).thenCompose(compute).toCompletableFuture().get();
     }
 
     // sortOrder and limit are only used by embedded H2 repository, while the central cassandra
@@ -584,160 +615,216 @@ public class AggregateDaoImpl implements AggregateDao {
     @Override
     public void mergeTransactionNameErrorSummariesInto(String agentRollupId, SummaryQuery query,
             ErrorSummarySortOrder sortOrder, int limit,
-            TransactionNameErrorSummaryCollector collector, CassandraProfile profile) {
+            TransactionNameErrorSummaryCollector collector, CassandraProfile profile) throws Exception {
         // currently have to do group by / sort / limit client-side
         BoundStatement boundStatement = checkNotNull(readTransactionPS.get(errorSummaryTable))
                 .get(query.rollupLevel()).bind();
         boundStatement = bindQuery(boundStatement, agentRollupId, query);
-        ResultSet results = session.read(boundStatement, profile);
-        for (Row row : results) {
-            int i = 0;
-            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
-            String transactionName = checkNotNull(row.getString(i++));
-            long errorCount = row.getLong(i++);
-            long transactionCount = row.getLong(i++);
-            collector.collect(transactionName, errorCount, transactionCount, captureTime);
-        }
+        Function<AsyncResultSet, CompletableFuture<Void>> compute = new Function<AsyncResultSet, CompletableFuture<Void>>() {
+            @Override
+            public CompletableFuture<Void> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+                    String transactionName = checkNotNull(row.getString(i++));
+                    long errorCount = row.getLong(i++);
+                    long transactionCount = row.getLong(i++);
+                    collector.collect(transactionName, errorCount, transactionCount, captureTime);
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        session.readAsync(boundStatement, profile).thenCompose(compute).toCompletableFuture().get();
     }
 
     // query.from() is INCLUSIVE
     @Override
     public List<OverviewAggregate> readOverviewAggregates(String agentRollupId,
-            AggregateQuery query, CassandraProfile profile) {
-        ResultSet results = executeQuery(agentRollupId, query, overviewTable, profile);
+            AggregateQuery query, CassandraProfile profile) throws Exception {
         List<OverviewAggregate> overviewAggregates = new ArrayList<>();
-        for (Row row : results) {
-            int i = 0;
-            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
-            double totalDurationNanos = row.getDouble(i++);
-            long transactionCount = row.getLong(i++);
-            boolean asyncTransactions = row.getBoolean(i++);
-            List<Aggregate.Timer> mainThreadRootTimers =
-                    Messages.parseDelimitedFrom(row.getByteBuffer(i++), Aggregate.Timer.parser());
-            Aggregate.ThreadStats mainThreadStats = Aggregate.ThreadStats.newBuilder()
-                    .setTotalCpuNanos(getNextThreadStat(row, i++))
-                    .setTotalBlockedNanos(getNextThreadStat(row, i++))
-                    .setTotalWaitedNanos(getNextThreadStat(row, i++))
-                    .setTotalAllocatedBytes(getNextThreadStat(row, i++))
-                    .build();
-            // reading delimited singleton list for backwards compatibility with data written
-            // prior to 0.12.0
-            List<Aggregate.Timer> list =
-                    Messages.parseDelimitedFrom(row.getByteBuffer(i++), Aggregate.Timer.parser());
-            Aggregate.Timer auxThreadRootTimer = list.isEmpty() ? null : list.get(0);
-            Aggregate.ThreadStats auxThreadStats;
-            if (auxThreadRootTimer == null) {
-                auxThreadStats = null;
-                i += 4;
-            } else {
-                auxThreadStats = Aggregate.ThreadStats.newBuilder()
-                        .setTotalCpuNanos(getNextThreadStat(row, i++))
-                        .setTotalBlockedNanos(getNextThreadStat(row, i++))
-                        .setTotalWaitedNanos(getNextThreadStat(row, i++))
-                        .setTotalAllocatedBytes(getNextThreadStat(row, i++))
-                        .build();
+        Function<AsyncResultSet, CompletableFuture<List<OverviewAggregate>>> compute = new Function<AsyncResultSet, CompletableFuture<List<OverviewAggregate>>>() {
+            @Override
+            public CompletableFuture<List<OverviewAggregate>> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+                    double totalDurationNanos = row.getDouble(i++);
+                    long transactionCount = row.getLong(i++);
+                    boolean asyncTransactions = row.getBoolean(i++);
+                    List<Aggregate.Timer> mainThreadRootTimers =
+                            Messages.parseDelimitedFrom(row.getByteBuffer(i++), Aggregate.Timer.parser());
+                    Aggregate.ThreadStats mainThreadStats = Aggregate.ThreadStats.newBuilder()
+                            .setTotalCpuNanos(getNextThreadStat(row, i++))
+                            .setTotalBlockedNanos(getNextThreadStat(row, i++))
+                            .setTotalWaitedNanos(getNextThreadStat(row, i++))
+                            .setTotalAllocatedBytes(getNextThreadStat(row, i++))
+                            .build();
+                    // reading delimited singleton list for backwards compatibility with data written
+                    // prior to 0.12.0
+                    List<Aggregate.Timer> list =
+                            Messages.parseDelimitedFrom(row.getByteBuffer(i++), Aggregate.Timer.parser());
+                    Aggregate.Timer auxThreadRootTimer = list.isEmpty() ? null : list.get(0);
+                    Aggregate.ThreadStats auxThreadStats;
+                    if (auxThreadRootTimer == null) {
+                        auxThreadStats = null;
+                        i += 4;
+                    } else {
+                        auxThreadStats = Aggregate.ThreadStats.newBuilder()
+                                .setTotalCpuNanos(getNextThreadStat(row, i++))
+                                .setTotalBlockedNanos(getNextThreadStat(row, i++))
+                                .setTotalWaitedNanos(getNextThreadStat(row, i++))
+                                .setTotalAllocatedBytes(getNextThreadStat(row, i++))
+                                .build();
+                    }
+                    List<Aggregate.Timer> asyncTimers =
+                            Messages.parseDelimitedFrom(row.getByteBuffer(i++), Aggregate.Timer.parser());
+                    ImmutableOverviewAggregate.Builder builder = ImmutableOverviewAggregate.builder()
+                            .captureTime(captureTime)
+                            .totalDurationNanos(totalDurationNanos)
+                            .transactionCount(transactionCount)
+                            .asyncTransactions(asyncTransactions)
+                            .addAllMainThreadRootTimers(mainThreadRootTimers)
+                            .mainThreadStats(mainThreadStats)
+                            .auxThreadRootTimer(auxThreadRootTimer)
+                            .auxThreadStats(auxThreadStats)
+                            .addAllAsyncTimers(asyncTimers);
+                    overviewAggregates.add(builder.build());
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(overviewAggregates);
             }
-            List<Aggregate.Timer> asyncTimers =
-                    Messages.parseDelimitedFrom(row.getByteBuffer(i++), Aggregate.Timer.parser());
-            ImmutableOverviewAggregate.Builder builder = ImmutableOverviewAggregate.builder()
-                    .captureTime(captureTime)
-                    .totalDurationNanos(totalDurationNanos)
-                    .transactionCount(transactionCount)
-                    .asyncTransactions(asyncTransactions)
-                    .addAllMainThreadRootTimers(mainThreadRootTimers)
-                    .mainThreadStats(mainThreadStats)
-                    .auxThreadRootTimer(auxThreadRootTimer)
-                    .auxThreadStats(auxThreadStats)
-                    .addAllAsyncTimers(asyncTimers);
-            overviewAggregates.add(builder.build());
-        }
-        return overviewAggregates;
+        };
+        return executeQuery(agentRollupId, query, overviewTable, profile).thenCompose(compute).toCompletableFuture().get();
     }
 
     // query.from() is INCLUSIVE
     @Override
     public List<PercentileAggregate> readPercentileAggregates(String agentRollupId,
             AggregateQuery query, CassandraProfile profile) throws Exception {
-        ResultSet results = executeQuery(agentRollupId, query, histogramTable, profile);
         List<PercentileAggregate> percentileAggregates = new ArrayList<>();
-        for (Row row : results) {
-            int i = 0;
-            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
-            double totalDurationNanos = row.getDouble(i++);
-            long transactionCount = row.getLong(i++);
-            ByteBuffer bytes = checkNotNull(row.getByteBuffer(i++));
-            Aggregate.Histogram durationNanosHistogram = Aggregate.Histogram.parseFrom(bytes);
-            percentileAggregates.add(ImmutablePercentileAggregate.builder()
-                    .captureTime(captureTime)
-                    .totalDurationNanos(totalDurationNanos)
-                    .transactionCount(transactionCount)
-                    .durationNanosHistogram(durationNanosHistogram)
-                    .build());
-        }
-        return percentileAggregates;
+        Function<AsyncResultSet, CompletableFuture<List<PercentileAggregate>>> compute = new Function<AsyncResultSet, CompletableFuture<List<PercentileAggregate>>>() {
+            @Override
+            public CompletableFuture<List<PercentileAggregate>> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+                    double totalDurationNanos = row.getDouble(i++);
+                    long transactionCount = row.getLong(i++);
+                    ByteBuffer bytes = checkNotNull(row.getByteBuffer(i++));
+                    Aggregate.Histogram durationNanosHistogram = null;
+                    try {
+                        durationNanosHistogram = Aggregate.Histogram.parseFrom(bytes);
+                    } catch (InvalidProtocolBufferException e) {
+                        throw new RuntimeException(e);
+                    }
+                    percentileAggregates.add(ImmutablePercentileAggregate.builder()
+                            .captureTime(captureTime)
+                            .totalDurationNanos(totalDurationNanos)
+                            .transactionCount(transactionCount)
+                            .durationNanosHistogram(durationNanosHistogram)
+                            .build());
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(percentileAggregates);
+            }
+        };
+        return executeQuery(agentRollupId, query, histogramTable, profile).thenCompose(compute).toCompletableFuture().get();
     }
 
     // query.from() is INCLUSIVE
     @Override
     public List<ThroughputAggregate> readThroughputAggregates(String agentRollupId,
             AggregateQuery query, CassandraProfile profile) throws Exception {
-        ResultSet results = executeQuery(agentRollupId, query, throughputTable, profile);
         List<ThroughputAggregate> throughputAggregates = new ArrayList<>();
-        for (Row row : results) {
-            int i = 0;
-            long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
-            long transactionCount = row.getLong(i++);
-            boolean hasErrorCount = !row.isNull(i);
-            long errorCount = row.getLong(i++);
-            throughputAggregates.add(ImmutableThroughputAggregate.builder()
-                    .captureTime(captureTime)
-                    .transactionCount(transactionCount)
-                    .errorCount(hasErrorCount ? errorCount : null)
-                    .build());
-        }
-        return throughputAggregates;
+        Function<AsyncResultSet, CompletableFuture<List<ThroughputAggregate>>> compute = new Function<AsyncResultSet, CompletableFuture<List<ThroughputAggregate>>>() {
+            @Override
+            public CompletableFuture<List<ThroughputAggregate>> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    long captureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
+                    long transactionCount = row.getLong(i++);
+                    boolean hasErrorCount = !row.isNull(i);
+                    long errorCount = row.getLong(i++);
+                    throughputAggregates.add(ImmutableThroughputAggregate.builder()
+                            .captureTime(captureTime)
+                            .transactionCount(transactionCount)
+                            .errorCount(hasErrorCount ? errorCount : null)
+                            .build());
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(throughputAggregates);
+            }
+        };
+        return executeQuery(agentRollupId, query, throughputTable, profile).thenCompose(compute).toCompletableFuture().get();
     }
 
     // query.from() is non-inclusive
     @Override
     public void mergeQueriesInto(String agentRollupId, AggregateQuery query,
-            QueryCollector collector, CassandraProfile profile) {
-        ResultSet results = executeQuery(agentRollupId, query, queryTable, profile);
-        long captureTime = Long.MIN_VALUE;
-        for (Row row : results) {
-            int i = 0;
-            captureTime = Math.max(captureTime, checkNotNull(row.getInstant(i++)).toEpochMilli());
-            String queryType = checkNotNull(row.getString(i++));
-            String truncatedText = checkNotNull(row.getString(i++));
-            // full_query_text_sha1 cannot be null since it is used in clustering key
-            String fullTextSha1 = Strings.emptyToNull(row.getString(i++));
-            double totalDurationNanos = row.getDouble(i++);
-            long executionCount = row.getLong(i++);
-            boolean hasTotalRows = !row.isNull(i);
-            long totalRows = row.getLong(i++);
-            collector.mergeQuery(queryType, truncatedText, fullTextSha1, totalDurationNanos,
-                    executionCount, hasTotalRows, totalRows);
-            collector.updateLastCaptureTime(captureTime);
-        }
+            QueryCollector collector, CassandraProfile profile) throws Exception {
+        Function<AsyncResultSet, CompletableFuture<Void>> compute = new Function<AsyncResultSet, CompletableFuture<Void>>() {
+            @Override
+            public CompletableFuture<Void> apply(AsyncResultSet results) {
+                long captureTime = Long.MIN_VALUE;
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    captureTime = Math.max(captureTime, checkNotNull(row.getInstant(i++)).toEpochMilli());
+                    String queryType = checkNotNull(row.getString(i++));
+                    String truncatedText = checkNotNull(row.getString(i++));
+                    // full_query_text_sha1 cannot be null since it is used in clustering key
+                    String fullTextSha1 = Strings.emptyToNull(row.getString(i++));
+                    double totalDurationNanos = row.getDouble(i++);
+                    long executionCount = row.getLong(i++);
+                    boolean hasTotalRows = !row.isNull(i);
+                    long totalRows = row.getLong(i++);
+                    collector.mergeQuery(queryType, truncatedText, fullTextSha1, totalDurationNanos,
+                            executionCount, hasTotalRows, totalRows);
+                    collector.updateLastCaptureTime(captureTime);
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        executeQuery(agentRollupId, query, queryTable, profile).thenCompose(compute).toCompletableFuture().get();
     }
 
     // query.from() is non-inclusive
     @Override
     public void mergeServiceCallsInto(String agentRollupId, AggregateQuery query,
-            ServiceCallCollector collector, CassandraProfile profile) {
-        ResultSet results = executeQuery(agentRollupId, query, serviceCallTable, profile);
-        long captureTime = Long.MIN_VALUE;
-        for (Row row : results) {
-            int i = 0;
-            captureTime = Math.max(captureTime, checkNotNull(row.getInstant(i++)).toEpochMilli());
-            String serviceCallType = checkNotNull(row.getString(i++));
-            String serviceCallText = checkNotNull(row.getString(i++));
-            double totalDurationNanos = row.getDouble(i++);
-            long executionCount = row.getLong(i++);
-            collector.mergeServiceCall(serviceCallType, serviceCallText, totalDurationNanos,
-                    executionCount);
-            collector.updateLastCaptureTime(captureTime);
-        }
+            ServiceCallCollector collector, CassandraProfile profile) throws Exception {
+        Function<AsyncResultSet, CompletableFuture<Void>> compute = new Function<AsyncResultSet, CompletableFuture<Void>>() {
+            @Override
+            public CompletableFuture<Void> apply(AsyncResultSet results) {
+                long captureTime = Long.MIN_VALUE;
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    captureTime = Math.max(captureTime, checkNotNull(row.getInstant(i++)).toEpochMilli());
+                    String serviceCallType = checkNotNull(row.getString(i++));
+                    String serviceCallText = checkNotNull(row.getString(i++));
+                    double totalDurationNanos = row.getDouble(i++);
+                    long executionCount = row.getLong(i++);
+                    collector.mergeServiceCall(serviceCallType, serviceCallText, totalDurationNanos,
+                            executionCount);
+                    collector.updateLastCaptureTime(captureTime);
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        executeQuery(agentRollupId, query, serviceCallTable, profile).thenCompose(compute).toCompletableFuture().get();
     }
 
     // query.from() is non-inclusive
@@ -768,8 +855,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 ? existsMainThreadProfileOverallPS.get(query.rollupLevel()).bind()
                 : existsMainThreadProfileTransactionPS.get(query.rollupLevel()).bind();
         boundStatement = bindQuery(boundStatement, agentRollupId, query);
-        ResultSet results = session.read(boundStatement, profile);
-        return results.one() != null;
+        return session.readAsync(boundStatement, profile).thenApply(results -> results.one() != null).toCompletableFuture().get();
     }
 
     // query.from() is non-inclusive
@@ -780,8 +866,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 ? existsAuxThreadProfileOverallPS.get(query.rollupLevel()).bind()
                 : existsAuxThreadProfileTransactionPS.get(query.rollupLevel()).bind();
         boundStatement = bindQuery(boundStatement, agentRollupId, query);
-        ResultSet results = session.read(boundStatement, profile);
-        return results.one() != null;
+        return session.readAsync(boundStatement, profile).thenApply(results -> results.one() != null).toCompletableFuture().get();
     }
 
     // query.from() is non-inclusive
@@ -1150,14 +1235,24 @@ public class AggregateDaoImpl implements AggregateDao {
         BoundStatement boundStatement = checkNotNull(readTransactionForRollupPS.get(summaryTable))
                 .get(query.rollupLevel()).bind();
         boundStatement = bindQuery(boundStatement, rollup.agentRollupId(), query);
-        // need to populate transactionNames synchronously before returning from this method
-        ResultSet results = session.read(boundStatement, CassandraProfile.rollup);
+
         Map<String, MutableSummary> summaries = new HashMap<>();
-        for (Row row : results) {
-            String transactionName = mergeRowIntoSummaries(row, summaries);
-            transactionNames.add(transactionName);
-        }
-        return insertTransactionSummaries(rollup, query, summaries, CassandraProfile.rollup);
+        Function<AsyncResultSet, CompletableFuture<Map<String, MutableSummary>>> compute = new Function<AsyncResultSet, CompletableFuture<Map<String, MutableSummary>>>() {
+            @Override
+            public CompletableFuture<Map<String, MutableSummary>> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    String transactionName = mergeRowIntoSummaries(row, summaries);
+                    transactionNames.add(transactionName);
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(summaries);
+            }
+        };
+        return session.readAsync(boundStatement, CassandraProfile.rollup)
+                .thenCompose(compute)
+                .thenCompose(map -> insertTransactionSummaries(rollup, query, map, CassandraProfile.rollup)).toCompletableFuture();
     }
 
     // transactionNames is passed in empty, and populated synchronously by this method
@@ -2136,14 +2231,14 @@ public class AggregateDaoImpl implements AggregateDao {
         return checkNotNull(insertTransactionPS.get(table)).get(rollupLevel);
     }
 
-    private ResultSet executeQuery(String agentRollupId, SummaryQuery query, Table table, CassandraProfile profile) {
+    private CompletionStage<AsyncResultSet> executeQuery(String agentRollupId, SummaryQuery query, Table table, CassandraProfile profile) {
         BoundStatement boundStatement =
                 checkNotNull(readOverallPS.get(table)).get(query.rollupLevel()).bind();
         boundStatement = bindQuery(boundStatement, agentRollupId, query);
-        return session.read(boundStatement, profile);
+        return session.readAsync(boundStatement, profile);
     }
 
-    private ResultSet executeQuery(String agentRollupId, AggregateQuery query, Table table, CassandraProfile profile) {
+    private CompletionStage<AsyncResultSet> executeQuery(String agentRollupId, AggregateQuery query, Table table, CassandraProfile profile) {
         BoundStatement boundStatement;
         if (query.transactionName() == null) {
             boundStatement = checkNotNull(readOverallPS.get(table)).get(query.rollupLevel()).bind();
@@ -2152,7 +2247,7 @@ public class AggregateDaoImpl implements AggregateDao {
                     checkNotNull(readTransactionPS.get(table)).get(query.rollupLevel()).bind();
         }
         boundStatement = bindQuery(boundStatement, agentRollupId, query);
-        return session.read(boundStatement, profile);
+        return session.readAsync(boundStatement, profile);
     }
 
     private CompletableFuture<AsyncResultSet> executeQueryForRollup(String agentRollupId,
@@ -2195,16 +2290,30 @@ public class AggregateDaoImpl implements AggregateDao {
 
     private void mergeProfilesInto(String agentRollupId, AggregateQuery query, Table profileTable,
             ProfileCollector collector, CassandraProfile cprofile) throws Exception {
-        ResultSet results = executeQuery(agentRollupId, query, profileTable, cprofile);
-        long captureTime = Long.MIN_VALUE;
-        for (Row row : results) {
-            captureTime = Math.max(captureTime, checkNotNull(row.getInstant(0)).toEpochMilli());
-            ByteBuffer bytes = checkNotNull(row.getByteBuffer(1));
-            // TODO optimize this byte copying
-            Profile profile = Profile.parseFrom(bytes);
-            collector.mergeProfile(profile);
-            collector.updateLastCaptureTime(captureTime);
-        }
+        Function<AsyncResultSet, CompletableFuture<Void>> compute = new Function<AsyncResultSet, CompletableFuture<Void>>() {
+            @Override
+            public CompletableFuture<Void> apply(AsyncResultSet results) {
+                long captureTime = Long.MIN_VALUE;
+                for (Row row : results.currentPage()) {
+                    captureTime = Math.max(captureTime, checkNotNull(row.getInstant(0)).toEpochMilli());
+                    ByteBuffer bytes = checkNotNull(row.getByteBuffer(1));
+                    // TODO optimize this byte copying
+                    Profile profile = null;
+                    try {
+                        profile = Profile.parseFrom(bytes);
+                    } catch (InvalidProtocolBufferException e) {
+                        throw new RuntimeException(e);
+                    }
+                    collector.mergeProfile(profile);
+                    collector.updateLastCaptureTime(captureTime);
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        executeQuery(agentRollupId, query, profileTable, cprofile).thenCompose(compute).toCompletableFuture().get();
     }
 
     private List<TTL> getTTLs() {

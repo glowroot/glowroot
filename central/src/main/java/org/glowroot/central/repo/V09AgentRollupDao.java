@@ -17,13 +17,13 @@ package org.glowroot.central.repo;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.*;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import org.glowroot.central.util.AsyncCache;
 import org.glowroot.central.util.Cache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
@@ -42,7 +42,7 @@ public class V09AgentRollupDao {
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
 
-    private final Cache<String, Map<String, String>> agentRollupIdsCache;
+    private final AsyncCache<String, Map<String, String>> agentRollupIdsCache;
 
     V09AgentRollupDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
@@ -56,7 +56,7 @@ public class V09AgentRollupDao {
         readPS = session.prepare(
                 "select v09_agent_id, v09_agent_rollup_id from v09_agent_rollup where one = 1");
 
-        agentRollupIdsCache = clusterManager.createSelfBoundedCache("v09AgentRollupIdCache",
+        agentRollupIdsCache = clusterManager.createSelfBoundedAsyncCache("v09AgentRollupIdCache",
                 new AgentRollupIdCacheLoader());
     }
 
@@ -65,27 +65,37 @@ public class V09AgentRollupDao {
         BoundStatement boundStatement = insertPS.bind()
             .setString(i++, v09AgentId)
             .setString(i++, v09AgentRollupId);
-        session.write(boundStatement, CassandraProfile.collector);
-        agentRollupIdsCache.invalidate(SINGLE_CACHE_KEY);
+        session.writeAsync(boundStatement, CassandraProfile.collector).thenRun(() -> {
+            agentRollupIdsCache.invalidate(SINGLE_CACHE_KEY);
+        }).toCompletableFuture().get();
     }
 
     public @Nullable String getV09AgentRollupId(String v09AgentId) throws Exception {
-        return agentRollupIdsCache.get(SINGLE_CACHE_KEY).get(v09AgentId);
+        return agentRollupIdsCache.get(SINGLE_CACHE_KEY).toCompletableFuture().get().get(v09AgentId);
     }
 
-    private class AgentRollupIdCacheLoader implements CacheLoader<String, Map<String, String>> {
+    private class AgentRollupIdCacheLoader implements AsyncCache.AsyncCacheLoader<String, Map<String, String>> {
         @Override
-        public Map<String, String> load(String key) {
+        public CompletableFuture<Map<String, String>> load(String key) {
             BoundStatement boundStatement = readPS.bind();
-            ResultSet results = session.read(boundStatement, CassandraProfile.collector);
             Map<String, String> agentRollupIds = new HashMap<>();
-            for (Row row : results) {
-                int i = 0;
-                String v09AgentId = checkNotNull(row.getString(i++));
-                String v09AgentRollupId = checkNotNull(row.getString(i++));
-                agentRollupIds.put(v09AgentId, v09AgentRollupId);
-            }
-            return agentRollupIds;
+            Function<AsyncResultSet, CompletableFuture<Map<String, String>>> compute = new Function<>() {
+
+                @Override
+                public CompletableFuture<Map<String, String>> apply(AsyncResultSet results) {
+                    for (Row row : results.currentPage()) {
+                        int i = 0;
+                        String v09AgentId = checkNotNull(row.getString(i++));
+                        String v09AgentRollupId = checkNotNull(row.getString(i++));
+                        agentRollupIds.put(v09AgentId, v09AgentRollupId);
+                    }
+                    if (results.hasMorePages()) {
+                        return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                    }
+                    return CompletableFuture.completedFuture(agentRollupIds);
+                }
+            };
+            return session.readAsync(boundStatement, CassandraProfile.collector).thenCompose(compute).toCompletableFuture();
         }
     }
 }

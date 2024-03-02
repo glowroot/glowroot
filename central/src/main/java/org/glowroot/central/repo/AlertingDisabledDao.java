@@ -57,12 +57,14 @@ public class AlertingDisabledDao implements AlertingDisabledRepository {
     public @Nullable Long getAlertingDisabledUntilTime(String agentRollupId, CassandraProfile profile) throws Exception {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentRollupId);
-        Row row = session.read(boundStatement, profile).one();
-        if (row == null) {
-            return null;
-        }
-        Instant timestamp = row.getInstant(0);
-        return timestamp == null ? null : timestamp.toEpochMilli();
+        return session.readAsync(boundStatement, profile).thenApply(results -> {
+          Row row = results.one();
+            if (row == null) {
+                return null;
+            }
+            Instant timestamp = row.getInstant(0);
+            return timestamp == null ? null : timestamp.toEpochMilli();
+        }).toCompletableFuture().get();
     }
 
     @Override
@@ -71,7 +73,7 @@ public class AlertingDisabledDao implements AlertingDisabledRepository {
         if (disabledUntilTime == null) {
             BoundStatement boundStatement = deletePS.bind()
                 .setString(0, agentRollupId);
-            session.write(boundStatement, profile);
+            session.writeAsync(boundStatement, profile).toCompletableFuture().get();
         } else {
             int i = 0;
             BoundStatement boundStatement = insertPS.bind()
@@ -79,7 +81,7 @@ public class AlertingDisabledDao implements AlertingDisabledRepository {
                 .setInstant(i++, Instant.ofEpochMilli(disabledUntilTime))
                 .setInt(i++, Ints.saturatedCast(
                     MILLISECONDS.toSeconds(disabledUntilTime - clock.currentTimeMillis())));
-            session.write(boundStatement, profile);
+            session.writeAsync(boundStatement, profile).toCompletableFuture().get();
         }
     }
 }

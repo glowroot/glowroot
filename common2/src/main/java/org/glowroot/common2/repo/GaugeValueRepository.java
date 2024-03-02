@@ -16,6 +16,7 @@
 package org.glowroot.common2.repo;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 import org.immutables.value.Value;
 
@@ -32,7 +33,7 @@ public interface GaugeValueRepository {
     List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from, long to,
             int rollupLevel, CassandraProfile profile) throws Exception;
 
-    long getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel, CassandraProfile profile)
+    CompletionStage<Long> getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel, CassandraProfile profile)
             throws Exception;
 
     @Value.Immutable
