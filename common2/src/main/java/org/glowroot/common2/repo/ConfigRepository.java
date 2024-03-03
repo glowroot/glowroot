@@ -16,6 +16,7 @@
 package org.glowroot.common2.repo;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -88,7 +89,7 @@ public interface ConfigRepository {
     UiDefaultsConfig getUiDefaultsConfig(String agentRollupId) throws Exception;
 
     // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
-    AdvancedConfig getAdvancedConfig(String agentRollupId) throws Exception;
+    CompletionStage<AdvancedConfig> getAdvancedConfig(String agentRollupId);
 
     List<GaugeConfig> getGaugeConfigs(String agentId) throws Exception;
 
@@ -105,6 +106,8 @@ public interface ConfigRepository {
 
     // central supports alert configs on rollups
     List<AlertConfig> getAlertConfigs(String agentRollupId) throws Exception;
+
+    CompletionStage<List<AlertConfig>> getAlertConfigsNonBlocking(String agentRollupId);
 
     // central supports alert configs on rollups
     @Nullable
@@ -124,7 +127,7 @@ public interface ConfigRepository {
 
     EmbeddedAdminGeneralConfig getEmbeddedAdminGeneralConfig();
 
-    CentralAdminGeneralConfig getCentralAdminGeneralConfig() throws Exception;
+    CompletionStage<CentralAdminGeneralConfig> getCentralAdminGeneralConfig();
 
     List<UserConfig> getUserConfigs() throws Exception;
 
@@ -147,13 +150,13 @@ public interface ConfigRepository {
 
     CentralWebConfig getCentralWebConfig() throws Exception;
 
-    StorageConfig getStorageConfig() throws Exception;
+    StorageConfig getStorageConfig();
 
     EmbeddedStorageConfig getEmbeddedStorageConfig();
 
     CentralStorageConfig getCentralStorageConfig() throws Exception;
 
-    SmtpConfig getSmtpConfig() throws Exception;
+    SmtpConfig getSmtpConfig();
 
     HttpProxyConfig getHttpProxyConfig() throws Exception;
 
@@ -161,7 +164,7 @@ public interface ConfigRepository {
 
     PagerDutyConfig getPagerDutyConfig() throws Exception;
 
-    SlackConfig getSlackConfig() throws Exception;
+    SlackConfig getSlackConfig();
 
     HealthchecksIoConfig getHealthchecksIoConfig();
 
@@ -284,7 +287,7 @@ public interface ConfigRepository {
 
     List<RollupConfig> getRollupConfigs();
 
-    LazySecretKey getLazySecretKey() throws Exception;
+    LazySecretKey getLazySecretKey();
 
     @Value.Immutable
     @Styles.AllParameters
@@ -318,7 +321,7 @@ public interface ConfigRepository {
     class OptimisticLockException extends Exception {}
 
     @SuppressWarnings("serial")
-    class AgentConfigNotFoundException extends Exception {
+    class AgentConfigNotFoundException extends RuntimeException {
 
         private final String agentRollupId;
 

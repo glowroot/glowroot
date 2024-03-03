@@ -146,7 +146,7 @@ public class CentralRepoModule {
             v09TraceLastExpirationTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             v09AggregateLastExpirationTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
         }
-        fullQueryTextDao = new FullQueryTextDao(session, configRepository, asyncExecutor);
+        fullQueryTextDao = new FullQueryTextDao(session, configRepository);
         AggregateDaoImpl aggregateDaoImpl = new AggregateDaoImpl(session, activeAgentDao,
                 transactionTypeDao, fullQueryTextDao, configRepository, asyncExecutor, cassandraGcGraceSeconds, clock);
         GaugeValueDaoImpl gaugeValueDaoImpl = new GaugeValueDaoImpl(session, configRepository,

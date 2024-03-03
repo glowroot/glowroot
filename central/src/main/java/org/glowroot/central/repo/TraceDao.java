@@ -20,12 +20,12 @@ import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common2.repo.TraceRepository;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public interface TraceDao extends TraceRepository {
 
     @CheckReturnValue
-    CompletableFuture<?> store(String agentId, Trace trace) throws Exception;
+    CompletionStage<?> store(String agentId, Trace trace) throws Exception;
 
     @OnlyUsedByTests
     void truncateAll() throws Exception;

@@ -179,7 +179,7 @@ public class ConfigRepositoryIT {
         // given
         String agentId = UUID.randomUUID().toString();
         agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true).toCompletableFuture().get();
-        AdvancedConfig config = configRepository.getAdvancedConfig(agentId);
+        AdvancedConfig config = configRepository.getAdvancedConfig(agentId).toCompletableFuture().get();
         AdvancedConfig updatedConfig = AdvancedConfig.newBuilder()
                 .setWeavingTimer(true)
                 .setImmediatePartialStoreThresholdSeconds(OptionalInt32.newBuilder().setValue(1))
@@ -193,7 +193,7 @@ public class ConfigRepositoryIT {
 
         // when
         configRepository.updateAdvancedConfig(agentId, updatedConfig, Versions.getVersion(config), CassandraProfile.web);
-        config = configRepository.getAdvancedConfig(agentId);
+        config = configRepository.getAdvancedConfig(agentId).toCompletableFuture().get();
 
         // then
         assertThat(config).isEqualTo(updatedConfig);

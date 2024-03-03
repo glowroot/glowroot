@@ -25,6 +25,9 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.HeartbeatCondition;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 class HeartbeatAlertingService {
@@ -42,37 +45,42 @@ class HeartbeatAlertingService {
         this.configRepository = configRepository;
     }
 
-    void checkHeartbeatAlert(String agentRollupId, String agentRollupDisplay,
-            AlertConfig alertConfig, HeartbeatCondition heartbeatCondition, long endTime, CassandraProfile profile)
-            throws Exception {
+    CompletionStage<?> checkHeartbeatAlert(String agentRollupId, String agentRollupDisplay,
+            AlertConfig alertConfig, HeartbeatCondition heartbeatCondition, long endTime, CassandraProfile profile) {
         long startTime = endTime - SECONDS.toMillis(heartbeatCondition.getTimePeriodSeconds());
-        boolean currentlyTriggered = !heartbeatDao.exists(agentRollupId, startTime, endTime, profile);
-        sendHeartbeatAlertIfNeeded(agentRollupId, agentRollupDisplay, alertConfig,
-                heartbeatCondition, endTime, currentlyTriggered, profile);
+        return heartbeatDao.exists(agentRollupId, startTime, endTime, profile).thenCompose(exists -> {
+            boolean currentlyTriggered = !exists;
+            return sendHeartbeatAlertIfNeeded(agentRollupId, agentRollupDisplay, alertConfig,
+                    heartbeatCondition, endTime, currentlyTriggered, profile);
+        });
     }
 
-    private void sendHeartbeatAlertIfNeeded(String agentRollupId, String agentRollupDisplay,
-            AlertConfig alertConfig, HeartbeatCondition heartbeatCondition, long endTime,
-            boolean currentlyTriggered, CassandraProfile profile) throws Exception {
+    private CompletionStage<?> sendHeartbeatAlertIfNeeded(String agentRollupId, String agentRollupDisplay,
+                                                          AlertConfig alertConfig, HeartbeatCondition heartbeatCondition, long endTime,
+                                                          boolean currentlyTriggered, CassandraProfile profile) {
         AlertCondition alertCondition = alertConfig.getCondition();
-        OpenIncident openIncident = incidentRepository.readOpenIncident(agentRollupId,
-                alertCondition, alertConfig.getSeverity(), profile);
-        if (openIncident != null && !currentlyTriggered) {
-            incidentRepository.resolveIncident(openIncident, endTime, profile);
-            sendHeartbeatAlert(agentRollupId, agentRollupDisplay, alertConfig, heartbeatCondition,
-                    endTime, true);
-        } else if (openIncident == null && currentlyTriggered) {
-            // the start time for the incident is the end time of the interval evaluated above
-            incidentRepository.insertOpenIncident(agentRollupId, alertCondition,
-                    alertConfig.getSeverity(), alertConfig.getNotification(), endTime, profile);
-            sendHeartbeatAlert(agentRollupId, agentRollupDisplay, alertConfig, heartbeatCondition,
-                    endTime, false);
-        }
+        return incidentRepository.readOpenIncident(agentRollupId,
+                alertCondition, alertConfig.getSeverity(), profile).thenCompose(openIncident -> {
+            if (openIncident != null && !currentlyTriggered) {
+                return incidentRepository.resolveIncident(openIncident, endTime, profile).thenCompose(ignored -> {
+                    return sendHeartbeatAlert(agentRollupId, agentRollupDisplay, alertConfig, heartbeatCondition,
+                            endTime, true);
+                }).thenAccept((ig) -> {});
+            } else if (openIncident == null && currentlyTriggered) {
+                // the start time for the incident is the end time of the interval evaluated above
+                return incidentRepository.insertOpenIncident(agentRollupId, alertCondition,
+                        alertConfig.getSeverity(), alertConfig.getNotification(), endTime, profile).thenCompose(ignored -> {
+                    return sendHeartbeatAlert(agentRollupId, agentRollupDisplay, alertConfig, heartbeatCondition,
+                            endTime, false);
+                }).thenAccept((ig) -> {});
+            }
+            return CompletableFuture.completedFuture(null);
+        });
     }
 
-    private void sendHeartbeatAlert(String agentRollupId, String agentRollupDisplay,
+    private CompletionStage<?> sendHeartbeatAlert(String agentRollupId, String agentRollupDisplay,
             AlertConfig alertConfig, HeartbeatCondition heartbeatCondition, long endTime,
-            boolean ok) throws Exception {
+            boolean ok) {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = "Heartbeat";
         StringBuilder sb = new StringBuilder();
@@ -83,9 +91,10 @@ class HeartbeatAlertingService {
             sb.append(heartbeatCondition.getTimePeriodSeconds());
             sb.append(" seconds.\n\n");
         }
-        String centralDisplay =
-                configRepository.getCentralAdminGeneralConfig().centralDisplayName();
-        alertingService.sendNotification(centralDisplay, agentRollupId, agentRollupDisplay,
-                alertConfig, endTime, subject, sb.toString(), ok);
+        return configRepository.getCentralAdminGeneralConfig().thenAccept(centralAdminGeneralConfig -> {
+            alertingService.sendNotification(centralAdminGeneralConfig.centralDisplayName(), agentRollupId, agentRollupDisplay,
+                    alertConfig, endTime, subject, sb.toString(), ok);
+
+        });
     }
 }

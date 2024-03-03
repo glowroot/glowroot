@@ -25,6 +25,7 @@ import java.util.concurrent.Executor;
 import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.base.Joiner;
 
+import com.spotify.futures.CompletableFutures;
 import org.glowroot.central.util.AsyncCache;
 import org.glowroot.central.util.AsyncCache.AsyncCacheLoader;
 import org.glowroot.central.util.ClusterManager;
@@ -82,19 +83,21 @@ public class AgentDisplayDao implements AgentDisplayRepository {
     }
 
     @Override
-    public String readFullDisplay(String agentRollupId) throws Exception {
-        return Joiner.on(" :: ").join(readDisplayParts(agentRollupId));
+    public CompletionStage<String> readFullDisplay(String agentRollupId) {
+        return readDisplayParts(agentRollupId).thenApply(value -> {
+            return Joiner.on(" :: ").join(value);
+        });
     }
 
     @Override
-    public List<String> readDisplayParts(String agentRollupId) throws Exception {
+    public CompletableFuture<List<String>> readDisplayParts(String agentRollupId) {
         List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentRollupId);
-        List<String> displayParts = new ArrayList<>();
+        List<CompletionStage<String>> completionStages = new ArrayList<>();
         for (ListIterator<String> i = agentRollupIds.listIterator(agentRollupIds.size()); i
                 .hasPrevious();) {
-            displayParts.add(readLastDisplayPartAsync(i.previous()).get());
+            completionStages.add(readLastDisplayPartAsync(i.previous()));
         }
-        return displayParts;
+        return CompletableFutures.allAsList(completionStages);
     }
 
     @Override

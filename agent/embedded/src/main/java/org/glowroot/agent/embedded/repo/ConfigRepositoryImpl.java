@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -121,8 +123,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public AgentConfig.AdvancedConfig getAdvancedConfig(String agentRollupId) {
-        return configService.getAdvancedConfig().toProto();
+    public CompletionStage<AgentConfig.AdvancedConfig> getAdvancedConfig(String agentRollupId) {
+        return CompletableFuture.completedFuture(configService.getAdvancedConfig().toProto());
     }
 
     @Override
@@ -158,12 +160,17 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<AgentConfig.AlertConfig> getAlertConfigs(String agentRollupId) throws Exception {
+    public List<AgentConfig.AlertConfig> getAlertConfigs(String agentRollupId) {
         List<AgentConfig.AlertConfig> configs = Lists.newArrayList();
         for (AlertConfig config : configService.getAlertConfigs()) {
             configs.add(config.toProto());
         }
         return configs;
+    }
+
+    @Override
+    public CompletionStage<List<AgentConfig.AlertConfig>> getAlertConfigsNonBlocking(String agentRollupId) {
+        return CompletableFuture.completedFuture(getAlertConfigs(agentRollupId));
     }
 
     @Override
@@ -229,7 +236,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public CentralAdminGeneralConfig getCentralAdminGeneralConfig() {
+    public CompletionStage<CentralAdminGeneralConfig> getCentralAdminGeneralConfig() {
         throw new UnsupportedOperationException();
     }
 
@@ -988,7 +995,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public LazySecretKey getLazySecretKey() throws Exception {
+    public LazySecretKey getLazySecretKey() {
         return lazySecretKey;
     }
 

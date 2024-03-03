@@ -15,10 +15,15 @@
  */
 package org.glowroot.central;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.spotify.futures.CompletableFutures;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,27 +101,32 @@ class UpdateAgentConfigIfNeededService implements Runnable {
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Outer update agent config loop", traceHeadline = "Outer rollup loop",
             timer = "outer rollup loop")
-    private void runInternal() throws Exception {
-        for (AgentRollup agentRollup : activeAgentDao
-                .readRecentlyActiveAgentRollups(DAYS.toMillis(7), CassandraProfile.rollup)) {
-            updateAgentConfigIfNeededAndConnected(agentRollup);
-        }
+    private void runInternal() {
+        activeAgentDao
+                .readRecentlyActiveAgentRollups(DAYS.toMillis(7), CassandraProfile.rollup).thenCompose(list -> {
+                    List<CompletionStage<?>> futures = new ArrayList<>();
+                    for (AgentRollup agentRollup : list) {
+                        futures.add(updateAgentConfigIfNeededAndConnected(agentRollup));
+                    }
+                    return CompletableFutures.allAsList(futures);
+                }).toCompletableFuture().join();
     }
 
-    private void updateAgentConfigIfNeededAndConnected(AgentRollup agentRollup)
-            throws InterruptedException {
+    private CompletionStage<?> updateAgentConfigIfNeededAndConnected(AgentRollup agentRollup) {
         if (agentRollup.children().isEmpty()) {
-            updateAgentConfigIfNeededAndConnectedAsync(agentRollup.id());
+            return updateAgentConfigIfNeededAndConnectedAsync(agentRollup.id());
         } else {
+            List<CompletionStage<?>> futures = new ArrayList<>();
             for (AgentRollup childAgentRollup : agentRollup.children()) {
-                updateAgentConfigIfNeededAndConnected(childAgentRollup);
+                futures.add(updateAgentConfigIfNeededAndConnected(childAgentRollup));
             }
+            return CompletableFutures.allAsList(futures);
         }
     }
 
-    void updateAgentConfigIfNeededAndConnectedAsync(String agentId) throws InterruptedException {
+    CompletionStage<?> updateAgentConfigIfNeededAndConnectedAsync(String agentId) {
 
-        agentConfigDao.readForUpdate(agentId).thenAccept(opt -> {
+        return agentConfigDao.readForUpdate(agentId).thenAccept(opt -> {
             opt.ifPresent(agentConfigAndUpdateToken -> {
                 UUID updateToken = agentConfigAndUpdateToken.updateToken();
                 if (updateToken == null) {

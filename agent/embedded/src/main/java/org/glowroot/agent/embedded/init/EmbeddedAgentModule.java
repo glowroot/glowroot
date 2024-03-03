@@ -21,10 +21,7 @@ import java.lang.instrument.Instrumentation;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.*;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Stopwatch;
@@ -413,39 +410,39 @@ class EmbeddedAgentModule {
     private static class ActiveAgentRepositoryImpl implements ActiveAgentRepository {
 
         @Override
-        public List<TopLevelAgentRollup> readActiveTopLevelAgentRollups(long from, long to, CassandraProfile profile) {
-            return ImmutableList.<TopLevelAgentRollup>of(ImmutableTopLevelAgentRollup.builder()
+        public CompletionStage<List<TopLevelAgentRollup>> readActiveTopLevelAgentRollups(long from, long to, CassandraProfile profile) {
+            return CompletableFuture.completedFuture(ImmutableList.<TopLevelAgentRollup>of(ImmutableTopLevelAgentRollup.builder()
                     .id("")
                     .display("")
-                    .build());
+                    .build()));
         }
 
         @Override
-        public List<AgentRollup> readActiveChildAgentRollups(String topLevelId, long from,
+        public CompletionStage<List<AgentRollup>> readActiveChildAgentRollups(String topLevelId, long from,
                 long to, CassandraProfile profile) {
-            return ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder()
+            return CompletableFuture.completedFuture(ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder()
                     .id("")
                     .display("")
                     .lastDisplayPart("")
-                    .build());
+                    .build()));
         }
 
         @Override
-        public List<AgentRollup> readRecentlyActiveAgentRollups(long lastXMillis, CassandraProfile profile) {
-            return ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder()
+        public CompletionStage<List<AgentRollup>> readRecentlyActiveAgentRollups(long lastXMillis, CassandraProfile profile) {
+            return CompletableFuture.completedFuture(ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder()
                     .id("")
                     .display("")
                     .lastDisplayPart("")
-                    .build());
+                    .build()));
         }
 
         @Override
-        public List<AgentRollup> readActiveAgentRollups(long from, long to, CassandraProfile profile) {
-            return ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder()
+        public CompletionStage<List<AgentRollup>> readActiveAgentRollups(long from, long to, CassandraProfile profile) {
+            return CompletableFuture.completedFuture(ImmutableList.<AgentRollup>of(ImmutableAgentRollup.builder()
                     .id("")
                     .display("")
                     .lastDisplayPart("")
-                    .build());
+                    .build()));
         }
     }
 }

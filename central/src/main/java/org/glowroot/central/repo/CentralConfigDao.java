@@ -130,12 +130,8 @@ class CentralConfigDao {
     }
 
     @Nullable
-    Object read(String key) {
-        try {
-            return centralConfigCache.get(key).get().orElse(null);
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
+    CompletableFuture<Object> read(String key) {
+        return centralConfigCache.get(key).thenApply(opt -> opt.orElse(null));
     }
 
     private void writeIfNotExists(String key, Object config) throws Exception {

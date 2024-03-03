@@ -49,7 +49,7 @@ public class GaugeValueDaoIT {
     private CqlSessionBuilder cqlSessionBuilder;
 
     @BeforeAll
-    public static void beforeAll() throws Exception {
+    public static void beforeAll() {
         cassandra.start();
         asyncExecutor = Executors.newCachedThreadPool();
     }
@@ -101,7 +101,7 @@ public class GaugeValueDaoIT {
 
         // check non-rolled up data
         List<GaugeValue> gaugeValues =
-                gaugeValueDao.readGaugeValues("one", "the gauge:attr1", 0, 300000, 0, CassandraProfile.web);
+                gaugeValueDao.readGaugeValues("one", "the gauge:attr1", 0, 300000, 0, CassandraProfile.web).toCompletableFuture().get();
         assertThat(gaugeValues).hasSize(2);
         assertThat(gaugeValues.get(0).getValue()).isEqualTo(500);
         assertThat(gaugeValues.get(0).getWeight()).isEqualTo(1);
@@ -112,12 +112,12 @@ public class GaugeValueDaoIT {
         List<Integer> rollupExpirationHours = Lists.newArrayList(
                 ImmutableCentralStorageConfig.builder().build().rollupExpirationHours());
         rollupExpirationHours.add(0, rollupExpirationHours.get(0));
-        gaugeValueDao.rollup("one");
-        gaugeValueDao.rollup("one");
-        gaugeValueDao.rollup("one");
+        gaugeValueDao.rollup("one").toCompletableFuture().get();
+        gaugeValueDao.rollup("one").toCompletableFuture().get();
+        gaugeValueDao.rollup("one").toCompletableFuture().get();
 
         // check rolled-up data after rollup
-        gaugeValues = gaugeValueDao.readGaugeValues("one", "the gauge:attr1", 0, 300000, 1, CassandraProfile.web);
+        gaugeValues = gaugeValueDao.readGaugeValues("one", "the gauge:attr1", 0, 300000, 1, CassandraProfile.web).toCompletableFuture().get();
         assertThat(gaugeValues).hasSize(1);
         assertThat(gaugeValues.get(0).getValue()).isEqualTo(500);
         assertThat(gaugeValues.get(0).getWeight()).isEqualTo(2);
@@ -126,19 +126,19 @@ public class GaugeValueDaoIT {
     @Test
     public void shouldRollupFromChildren() throws Exception {
         gaugeValueDao.truncateAll();
-        gaugeValueDao.store("the parent::one", createData(60013));
-        gaugeValueDao.store("the parent::one", createData(65009));
-        gaugeValueDao.store("the parent::one", createData(360000));
+        gaugeValueDao.store("the parent::one", createData(60013)).toCompletableFuture().join();
+        gaugeValueDao.store("the parent::one", createData(65009)).toCompletableFuture().join();
+        gaugeValueDao.store("the parent::one", createData(360000)).toCompletableFuture().join();
 
         // rollup
         // need to roll up children first, since gauge values initial roll up from children is
         // done on the 1-min aggregates of the children
-        gaugeValueDao.rollup("the parent::one");
-        gaugeValueDao.rollup("the parent::");
+        gaugeValueDao.rollup("the parent::one").toCompletableFuture().get();
+        gaugeValueDao.rollup("the parent::").toCompletableFuture().get();
 
         // check rolled-up data after rollup
         List<GaugeValue> gaugeValues =
-                gaugeValueDao.readGaugeValues("the parent::", "the gauge:attr1", 0, 300000, 1, CassandraProfile.web);
+                gaugeValueDao.readGaugeValues("the parent::", "the gauge:attr1", 0, 300000, 1, CassandraProfile.web).toCompletableFuture().get();
         assertThat(gaugeValues).hasSize(1);
         assertThat(gaugeValues.get(0).getValue()).isEqualTo(500);
         assertThat(gaugeValues.get(0).getWeight()).isEqualTo(2);
@@ -147,20 +147,20 @@ public class GaugeValueDaoIT {
     @Test
     public void shouldRollupFromGrandChildren() throws Exception {
         gaugeValueDao.truncateAll();
-        gaugeValueDao.store("the gp::the parent::one", createData(60013));
-        gaugeValueDao.store("the gp::the parent::one", createData(65009));
-        gaugeValueDao.store("the gp::the parent::one", createData(360000));
+        gaugeValueDao.store("the gp::the parent::one", createData(60013)).toCompletableFuture().join();
+        gaugeValueDao.store("the gp::the parent::one", createData(65009)).toCompletableFuture().join();
+        gaugeValueDao.store("the gp::the parent::one", createData(360000)).toCompletableFuture().join();
 
         // rollup
         // need to roll up children first, since gauge values initial roll up from children is
         // done on the 1-min aggregates of the children
-        gaugeValueDao.rollup("the gp::the parent::one");
-        gaugeValueDao.rollup("the gp::the parent::");
-        gaugeValueDao.rollup("the gp::");
+        gaugeValueDao.rollup("the gp::the parent::one").toCompletableFuture().get();
+        gaugeValueDao.rollup("the gp::the parent::").toCompletableFuture().get();
+        gaugeValueDao.rollup("the gp::").toCompletableFuture().get();
 
         // check rolled-up data after rollup
         List<GaugeValue> gaugeValues =
-                gaugeValueDao.readGaugeValues("the gp::", "the gauge:attr1", 0, 300000, 1, CassandraProfile.web);
+                gaugeValueDao.readGaugeValues("the gp::", "the gauge:attr1", 0, 300000, 1, CassandraProfile.web).toCompletableFuture().get();
         assertThat(gaugeValues).hasSize(1);
         assertThat(gaugeValues.get(0).getValue()).isEqualTo(500);
         assertThat(gaugeValues.get(0).getWeight()).isEqualTo(2);

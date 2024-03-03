@@ -50,10 +50,9 @@ public class GaugeValueDaoWithV09Support implements GaugeValueDao {
     }
 
     @Override
-    public void store(String agentId, List<GaugeValue> gaugeValues) throws Exception {
+    public CompletionStage<?> store(String agentId, List<GaugeValue> gaugeValues) {
         if (!agentRollupIdsWithV09Data.contains(agentId)) {
-            delegate.store(agentId, gaugeValues);
-            return;
+            return delegate.store(agentId, gaugeValues);
         }
         List<GaugeValue> gaugeValuesV09 = new ArrayList<>();
         List<GaugeValue> gaugeValuesPostV09 = new ArrayList<>();
@@ -64,28 +63,33 @@ public class GaugeValueDaoWithV09Support implements GaugeValueDao {
                 gaugeValuesPostV09.add(gaugeValue);
             }
         }
-        if (!gaugeValuesV09.isEmpty()) {
-            delegate.store(V09Support.convertToV09(agentId),
-                    AgentRollupIds.getAgentRollupIds(agentId), gaugeValuesV09);
-        }
-        if (!gaugeValuesPostV09.isEmpty()) {
-            delegate.store(agentId, gaugeValuesPostV09);
-        }
+        return CompletableFuture.completedFuture(null).thenCompose(ignored -> {
+            if (!gaugeValuesV09.isEmpty()) {
+                return delegate.store(V09Support.convertToV09(agentId),
+                        AgentRollupIds.getAgentRollupIds(agentId), gaugeValuesV09);
+            }
+            return CompletableFuture.completedFuture(null);
+        }).thenCompose(ignored -> {
+            if (!gaugeValuesPostV09.isEmpty()) {
+                return delegate.store(agentId, gaugeValuesPostV09);
+            }
+            return CompletableFuture.completedFuture(null);
+        });
     }
 
     @Override
-    public List<Gauge> getRecentlyActiveGauges(String agentRollupId) throws Exception {
+    public CompletionStage<List<Gauge>> getRecentlyActiveGauges(String agentRollupId) {
         return delegate.getRecentlyActiveGauges(agentRollupId);
     }
 
     @Override
-    public List<Gauge> getGauges(String agentRollupId, long from, long to, CassandraProfile profile) throws Exception {
+    public CompletionStage<List<Gauge>> getGauges(String agentRollupId, long from, long to, CassandraProfile profile) {
         return delegate.getGauges(agentRollupId, from, to, profile);
     }
 
     @Override
-    public List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from,
-                                            long to, int rollupLevel, CassandraProfile profile) throws Exception {
+    public CompletionStage<List<GaugeValue>> readGaugeValues(String agentRollupId, String gaugeName, long from,
+                                                             long to, int rollupLevel, CassandraProfile profile) {
         QueryPlan plan = V09Support.getPlan(agentRollupIdsWithV09Data, v09LastCaptureTime,
                 agentRollupId, from, to);
         Query queryV09 = plan.queryV09();
@@ -99,18 +103,19 @@ public class GaugeValueDaoWithV09Support implements GaugeValueDao {
             return delegate.readGaugeValues(queryV09.agentRollupId(), gaugeName, queryV09.from(),
                     queryV09.to(), rollupLevel, profile);
         } else {
-            List<GaugeValue> gaugeValues = new ArrayList<>();
-            gaugeValues.addAll(delegate.readGaugeValues(queryV09.agentRollupId(), gaugeName,
-                    queryV09.from(), queryV09.to(), rollupLevel, profile));
-            gaugeValues.addAll(delegate.readGaugeValues(queryPostV09.agentRollupId(), gaugeName,
-                    queryPostV09.from(), queryPostV09.to(), rollupLevel, profile));
-            return gaugeValues;
+            return delegate.readGaugeValues(queryV09.agentRollupId(), gaugeName,
+                            queryV09.from(), queryV09.to(), rollupLevel, profile)
+                    .thenCombine(delegate.readGaugeValues(queryPostV09.agentRollupId(), gaugeName,
+                            queryPostV09.from(), queryPostV09.to(), rollupLevel, profile), (v09, postV09) -> {
+                        List<GaugeValue> gaugeValues = new ArrayList<>(v09);
+                        gaugeValues.addAll(postV09);
+                        return gaugeValues;
+                    });
         }
     }
 
     @Override
-    public CompletionStage<Long> getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel, CassandraProfile profile)
-            throws Exception {
+    public CompletionStage<Long> getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel, CassandraProfile profile) {
         return delegate.getOldestCaptureTime(agentRollupId, gaugeName, rollupLevel, profile).thenCompose(oldestCaptureTime -> {
             if (agentRollupIdsWithV09Data.contains(agentRollupId)) {
                 return delegate.getOldestCaptureTime(
@@ -121,13 +126,15 @@ public class GaugeValueDaoWithV09Support implements GaugeValueDao {
     }
 
     @Override
-    public void rollup(String agentRollupId) throws Exception {
-        delegate.rollup(agentRollupId);
-        if (agentRollupIdsWithV09Data.contains(agentRollupId)
-                && clock.currentTimeMillis() < v09LastCaptureTime + DAYS.toMillis(30)) {
-            delegate.rollup(V09Support.convertToV09(agentRollupId),
-                    V09Support.getParentV09(agentRollupId), V09Support.isLeaf(agentRollupId), CassandraProfile.rollup);
-        }
+    public CompletionStage<?> rollup(String agentRollupId) {
+        return delegate.rollup(agentRollupId).thenCompose(v -> {
+            if (agentRollupIdsWithV09Data.contains(agentRollupId)
+                    && clock.currentTimeMillis() < v09LastCaptureTime + DAYS.toMillis(30)) {
+                return delegate.rollup(V09Support.convertToV09(agentRollupId),
+                        V09Support.getParentV09(agentRollupId), V09Support.isLeaf(agentRollupId), CassandraProfile.rollup);
+            }
+            return CompletableFuture.completedFuture(null);
+        });
     }
 
     @Override

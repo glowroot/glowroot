@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -89,9 +90,8 @@ public class IncidentDao implements IncidentRepository {
     }
 
     @Override
-    public void insertOpenIncident(String agentRollupId, AlertCondition condition,
-                                   AlertSeverity severity, AlertNotification notification, long openTime, CassandraProfile profile)
-            throws Exception {
+    public CompletionStage<?> insertOpenIncident(String agentRollupId, AlertCondition condition,
+                                   AlertSeverity severity, AlertNotification notification, long openTime, CassandraProfile profile) {
         int i = 0;
         BoundStatement boundStatement = insertOpenIncidentPS.bind()
                 .setString(i++, agentRollupId)
@@ -99,12 +99,12 @@ public class IncidentDao implements IncidentRepository {
                 .setString(i++, severity.name().toLowerCase(Locale.ENGLISH))
                 .setByteBuffer(i++, ByteBuffer.wrap(notification.toByteArray()))
                 .setInstant(i++, Instant.ofEpochMilli(openTime));
-        session.writeAsync(boundStatement, profile).toCompletableFuture().get();
+        return session.writeAsync(boundStatement, profile);
     }
 
     @Override
-    public @Nullable OpenIncident readOpenIncident(String agentRollupId, AlertCondition condition,
-                                                   AlertSeverity severity, CassandraProfile profile) throws Exception {
+    public CompletionStage<OpenIncident> readOpenIncident(String agentRollupId, AlertCondition condition,
+                                                   AlertSeverity severity, CassandraProfile profile) {
         int i = 0;
         BoundStatement boundStatement = readOpenIncidentPS.bind()
                 .setString(i++, agentRollupId)
@@ -128,11 +128,11 @@ public class IncidentDao implements IncidentRepository {
             } catch (InvalidProtocolBufferException e) {
                 throw new RuntimeException(e);
             }
-        }).toCompletableFuture().get();
+        });
     }
 
     @Override
-    public List<OpenIncident> readOpenIncidents(String agentRollupId, CassandraProfile profile) throws Exception {
+    public CompletionStage<List<OpenIncident>> readOpenIncidents(String agentRollupId, CassandraProfile profile) {
         BoundStatement boundStatement = readOpenIncidentsPS.bind()
                 .setString(0, agentRollupId);
 
@@ -170,11 +170,11 @@ public class IncidentDao implements IncidentRepository {
             }
         };
 
-        return session.readAsync(boundStatement, profile).thenCompose(compute).toCompletableFuture().get();
+        return session.readAsync(boundStatement, profile).thenCompose(compute);
     }
 
     @Override
-    public List<OpenIncident> readAllOpenIncidents(CassandraProfile profile) throws Exception {
+    public CompletionStage<List<OpenIncident>> readAllOpenIncidents(CassandraProfile profile) {
         BoundStatement boundStatement = readAllOpenIncidentsPS.bind();
         List<OpenIncident> openIncidents = new ArrayList<>();
         Function<AsyncResultSet, CompletableFuture<List<OpenIncident>>> compute = new Function<AsyncResultSet, CompletableFuture<List<OpenIncident>>>() {
@@ -207,11 +207,11 @@ public class IncidentDao implements IncidentRepository {
                 return CompletableFuture.completedFuture(openIncidents);
             }
         };
-        return session.readAsync(boundStatement, profile).thenCompose(compute).toCompletableFuture().get();
+        return session.readAsync(boundStatement, profile).thenCompose(compute);
     }
 
     @Override
-    public void resolveIncident(OpenIncident openIncident, long resolveTime, CassandraProfile profile) throws Exception {
+    public CompletionStage<?> resolveIncident(OpenIncident openIncident, long resolveTime, CassandraProfile profile) {
         int adjustedTTL = Common.getAdjustedTTL(
                 Ints.saturatedCast(
                         HOURS.toSeconds(Constants.RESOLVED_INCIDENT_EXPIRATION_HOURS)),
@@ -229,7 +229,7 @@ public class IncidentDao implements IncidentRepository {
                 .setByteBuffer(i++, notificationBytes)
                 .setInstant(i++, Instant.ofEpochMilli(openIncident.openTime()))
                 .setInt(i++, adjustedTTL);
-        session.writeAsync(boundStatement, profile).thenCompose((ignore) -> {
+        return session.writeAsync(boundStatement, profile).thenCompose((ignore) -> {
             int j = 0;
             BoundStatement boundStatement2 = deleteOpenIncidentPS.bind()
                     .setString(j++, openIncident.agentRollupId())
@@ -237,11 +237,11 @@ public class IncidentDao implements IncidentRepository {
                     .setString(j++,
                             openIncident.severity().name().toLowerCase(Locale.ENGLISH));
             return session.writeAsync(boundStatement2, profile);
-        }).toCompletableFuture().get();
+        });
     }
 
     @Override
-    public List<ResolvedIncident> readResolvedIncidents(long from) throws Exception {
+    public CompletionStage<List<ResolvedIncident>> readResolvedIncidents(long from) {
         BoundStatement boundStatement = readRecentResolvedIncidentsPS.bind()
                 .setInstant(0, Instant.ofEpochMilli(from));
         List<ResolvedIncident> resolvedIncidents = new ArrayList<>();
@@ -277,6 +277,6 @@ public class IncidentDao implements IncidentRepository {
                 return CompletableFuture.completedFuture(resolvedIncidents);
             }
         };
-        return session.readAsync(boundStatement, CassandraProfile.web).thenCompose(compute).toCompletableFuture().get();
+        return session.readAsync(boundStatement, CassandraProfile.web).thenCompose(compute);
     }
 }

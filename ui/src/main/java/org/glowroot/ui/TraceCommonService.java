@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeoutException;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -240,35 +241,35 @@ class TraceCommonService {
         return builder.build();
     }
 
-    private @Nullable HeaderPlus getStoredHeader(String agentId, String traceId,
-            RetryCountdown retryCountdown) throws Exception {
-        HeaderPlus headerPlus = traceRepository.readHeaderPlus(agentId, traceId);
+    private HeaderPlus getStoredHeader(String agentId, String traceId,
+                                                        RetryCountdown retryCountdown) throws Exception {
+        HeaderPlus headerPlus = traceRepository.readHeaderPlus(agentId, traceId).toCompletableFuture().get();
         while (headerPlus == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             MILLISECONDS.sleep(500);
-            headerPlus = traceRepository.readHeaderPlus(agentId, traceId);
+            headerPlus = traceRepository.readHeaderPlus(agentId, traceId).toCompletableFuture().get();
         }
         return headerPlus;
     }
 
     private @Nullable Entries getStoredEntries(String agentId, String traceId,
             RetryCountdown retryCountdown, CassandraProfile profile) throws Exception {
-        Entries entries = traceRepository.readEntries(agentId, traceId, profile);
+        Entries entries = traceRepository.readEntries(agentId, traceId, profile).toCompletableFuture().get();
         while (entries == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             MILLISECONDS.sleep(500);
-            entries = traceRepository.readEntries(agentId, traceId, profile);
+            entries = traceRepository.readEntries(agentId, traceId, profile).toCompletableFuture().get();
         }
         return entries;
     }
 
     private @Nullable Queries getStoredQueries(String agentId, String traceId,
             RetryCountdown retryCountdown, CassandraProfile profile) throws Exception {
-        Queries queries = traceRepository.readQueries(agentId, traceId, profile);
+        Queries queries = traceRepository.readQueries(agentId, traceId, profile).toCompletableFuture().get();
         while (queries == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             MILLISECONDS.sleep(500);
-            queries = traceRepository.readQueries(agentId, traceId, profile);
+            queries = traceRepository.readQueries(agentId, traceId, profile).toCompletableFuture().get();
         }
         return queries;
     }
@@ -276,33 +277,33 @@ class TraceCommonService {
     private @Nullable EntriesAndQueries getStoredEntriesAndQueriesForExport(String agentId,
             String traceId, RetryCountdown retryCountdown, CassandraProfile profile) throws Exception {
         EntriesAndQueries entries =
-                traceRepository.readEntriesAndQueriesForExport(agentId, traceId, profile);
+                traceRepository.readEntriesAndQueriesForExport(agentId, traceId, profile).toCompletableFuture().get();
         while (entries == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             MILLISECONDS.sleep(500);
-            entries = traceRepository.readEntriesAndQueriesForExport(agentId, traceId, profile);
+            entries = traceRepository.readEntriesAndQueriesForExport(agentId, traceId, profile).toCompletableFuture().get();
         }
         return entries;
     }
 
     private @Nullable Profile getStoredMainThreadProfile(String agentId, String traceId,
             RetryCountdown retryCountdown) throws Exception {
-        Profile profile = traceRepository.readMainThreadProfile(agentId, traceId);
+        Profile profile = traceRepository.readMainThreadProfile(agentId, traceId).toCompletableFuture().get();
         while (profile == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             MILLISECONDS.sleep(500);
-            profile = traceRepository.readMainThreadProfile(agentId, traceId);
+            profile = traceRepository.readMainThreadProfile(agentId, traceId).toCompletableFuture().get();
         }
         return profile;
     }
 
     private @Nullable Profile getStoredAuxThreadProfile(String agentId, String traceId,
             RetryCountdown retryCountdown) throws Exception {
-        Profile profile = traceRepository.readAuxThreadProfile(agentId, traceId);
+        Profile profile = traceRepository.readAuxThreadProfile(agentId, traceId).toCompletableFuture().get();
         while (profile == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             MILLISECONDS.sleep(500);
-            profile = traceRepository.readAuxThreadProfile(agentId, traceId);
+            profile = traceRepository.readAuxThreadProfile(agentId, traceId).toCompletableFuture().get();
         }
         return profile;
     }
@@ -478,7 +479,7 @@ class TraceCommonService {
         try {
             jg.writeStartObject();
             if (!agentId.isEmpty()) {
-                jg.writeStringField("agent", agentDisplayRepository.readFullDisplay(agentId));
+                jg.writeStringField("agent", agentDisplayRepository.readFullDisplay(agentId).toCompletableFuture().get());
             }
             if (active) {
                 jg.writeBooleanField("active", active);

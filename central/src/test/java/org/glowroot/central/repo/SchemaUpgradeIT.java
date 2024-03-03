@@ -26,6 +26,7 @@ import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
 import org.junit.jupiter.api.*;
 import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.utility.MountableFile;
 
 import java.net.URL;
 import java.util.concurrent.ExecutorService;
@@ -40,7 +41,11 @@ public class SchemaUpgradeIT {
     private static final String CASSANDRA_VERSION = "3.11.15";
 
     public static final CassandraContainer cassandra
-            = (CassandraContainer) new CassandraContainer("cassandra:"+CASSANDRA_VERSION).withExposedPorts(9042);
+            = (CassandraContainer) new CassandraContainer("cassandra:" + CASSANDRA_VERSION)
+            .withExposedPorts(9042)
+            .withCopyToContainer(
+                    MountableFile.forClasspathResource("/backup-0.9.1/"),
+                    "/backup-0.9.1/");
 
     private CqlSessionBuilder cqlSessionBuilder;
     private Session session;
@@ -111,23 +116,23 @@ public class SchemaUpgradeIT {
     }
 
     private void restore(String keyspace) throws Exception {
-        String cqlsh =
-                "cassandra/apache-cassandra-" + CASSANDRA_VERSION + "/bin/cqlsh";
+        String cqlsh = "/opt/cassandra/bin/cqlsh";
         if (System.getProperty("os.name").startsWith("Windows")) {
             cqlsh += ".bat";
         }
-        String backupFolder = "src/test/resources/backup-0.9.1/";
-        CqlSession session = cqlSessionBuilder.build();
-        for (TableMetadata table : session.getMetadata().getKeyspace(keyspace).get().getTables().values()) {
-            // limiting MAXBATCHSIZE to avoid "Batch too large" errors
-            org.testcontainers.containers.Container.ExecResult cqlResult = cassandra.execInContainer(cqlsh, "-e",
-                    "copy " + keyspace + "." + table.getName().asInternal() + " from '" + backupFolder
-                            + table.getName().asInternal() + ".csv' with NULL='NULL.NULL.NULL.NULL' and"
-                            + " NUMPROCESSES = 1 and MAXBATCHSIZE = 1");
-            int exitCode = cqlResult.getExitCode();
-            assertThat(exitCode).isZero();
+        String backupFolder = "/backup-0.9.1/";
+        try (CqlSession session = cqlSessionBuilder.build()) {
+            for (TableMetadata table : session.getMetadata().getKeyspace(keyspace).get().getTables().values()) {
+                // limiting MAXBATCHSIZE to avoid "Batch too large" errors
+                org.testcontainers.containers.Container.ExecResult cqlResult = cassandra.execInContainer(cqlsh, "-e",
+                        "copy " + keyspace + "." + table.getName().asInternal() + " from '" + backupFolder
+                                + table.getName().asInternal() + ".csv' with NULL='NULL.NULL.NULL.NULL' and"
+                                + " NUMPROCESSES = 1 and MAXBATCHSIZE = 1");
+                int exitCode = cqlResult.getExitCode();
+                assertThat(cqlResult.getStderr()).isEqualTo("");
+                assertThat(exitCode).isZero();
+            }
         }
-        session.close();
     }
 
     // this is used for creating the backup files
@@ -136,17 +141,17 @@ public class SchemaUpgradeIT {
         String cqlsh =
                 "cassandra/apache-cassandra-" + CASSANDRA_VERSION + "/bin/cqlsh";
         String backupFolder = "src/test/resources/backup-0.9.1/";
-        CqlSession session = cqlSessionBuilder.build();
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        for (TableMetadata table : session.getMetadata().getKeyspace(keyspace).get().getTables().values()) {
-            org.testcontainers.containers.Container.ExecResult cqlResult = cassandra.execInContainer(cqlsh, "-e",
-                    "copy " + keyspace + "." + table.getName().asInternal() + " to '" + backupFolder
-                            + table.getName().asInternal() + ".csv' with NULL='NULL.NULL.NULL.NULL' and"
-                            + " NUMPROCESSES = 1");
-            int exitCode = cqlResult.getExitCode();
-            assertThat(exitCode).isZero();
+        try (CqlSession session = cqlSessionBuilder.build()) {
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            for (TableMetadata table : session.getMetadata().getKeyspace(keyspace).get().getTables().values()) {
+                org.testcontainers.containers.Container.ExecResult cqlResult = cassandra.execInContainer(cqlsh, "-e",
+                        "copy " + keyspace + "." + table.getName().asInternal() + " to '" + backupFolder
+                                + table.getName().asInternal() + ".csv' with NULL='NULL.NULL.NULL.NULL' and"
+                                + " NUMPROCESSES = 1");
+                int exitCode = cqlResult.getExitCode();
+                assertThat(exitCode).isZero();
+            }
+            executor.shutdown();
         }
-        executor.shutdown();
-        session.close();
     }
 }

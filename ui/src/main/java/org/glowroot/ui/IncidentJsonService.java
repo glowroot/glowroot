@@ -74,7 +74,7 @@ class IncidentJsonService {
         // individually for every agentRollupId that user has permission to read
         List<OpenIncident> openIncidents =
                 new BySeverityOrdering().compound(new ByOpenTimeOrdering())
-                        .sortedCopy(incidentRepository.readAllOpenIncidents(CassandraProfile.web));
+                        .sortedCopy(incidentRepository.readAllOpenIncidents(CassandraProfile.web).toCompletableFuture().get());
         for (OpenIncident openIncident : openIncidents) {
             if (authentication.isPermittedForAgentRollup(openIncident.agentRollupId(),
                     "agent:incident")) {
@@ -82,7 +82,7 @@ class IncidentJsonService {
             }
         }
         List<ResolvedIncident> resolvedIncidents = incidentRepository
-                .readResolvedIncidents(clock.currentTimeMillis() - DAYS.toMillis(30));
+                .readResolvedIncidents(clock.currentTimeMillis() - DAYS.toMillis(30)).toCompletableFuture().get();
         for (ResolvedIncident resolvedIncident : resolvedIncidents) {
             if (authentication.isPermittedForAgentRollup(resolvedIncident.agentRollupId(),
                     "agent:incident")) {
@@ -95,7 +95,7 @@ class IncidentJsonService {
     private DisplayedIncident createDisplayedIncident(OpenIncident incident) throws Exception {
         ImmutableDisplayedIncident.Builder builder = ImmutableDisplayedIncident.builder()
                 .agentRollupDisplay(
-                        agentDisplayRepository.readFullDisplay(incident.agentRollupId()))
+                        agentDisplayRepository.readFullDisplay(incident.agentRollupId()).toCompletableFuture().get())
                 .openTime(incident.openTime())
                 .durationMillis(clock.currentTimeMillis() - incident.openTime())
                 .severity(toString(incident.severity()))
@@ -110,7 +110,7 @@ class IncidentJsonService {
     private DisplayedIncident createDisplayedIncident(ResolvedIncident incident) throws Exception {
         ImmutableDisplayedIncident.Builder builder = ImmutableDisplayedIncident.builder()
                 .agentRollupDisplay(
-                        agentDisplayRepository.readFullDisplay(incident.agentRollupId()))
+                        agentDisplayRepository.readFullDisplay(incident.agentRollupId()).toCompletableFuture().get())
                 .openTime(incident.openTime())
                 .durationMillis(incident.resolveTime() - incident.openTime())
                 .resolveTime(incident.resolveTime())

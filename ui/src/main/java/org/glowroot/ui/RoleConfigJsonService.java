@@ -141,9 +141,9 @@ class RoleConfigJsonService {
         return mapper.writeValueAsString(response.build());
     }
 
-    private List<FlattenedAgentRollup> getFlattenedAgentRollups() throws Exception {
+    private List<FlattenedAgentRollup> getFlattenedAgentRollups() {
         List<AgentRollup> agentRollups =
-                activeAgentRepository.readRecentlyActiveAgentRollups(DAYS.toMillis(7), CassandraProfile.web);
+                activeAgentRepository.readRecentlyActiveAgentRollups(DAYS.toMillis(7), CassandraProfile.web).toCompletableFuture().join();
         List<FlattenedAgentRollup> flattenedAgentRollups = Lists.newArrayList();
         for (AgentRollup agentRollup : agentRollups) {
             flattenedAgentRollups.addAll(getFlattenedAgentRollups(agentRollup, 0));

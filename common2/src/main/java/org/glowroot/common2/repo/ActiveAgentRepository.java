@@ -16,19 +16,19 @@
 package org.glowroot.common2.repo;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 import org.immutables.value.Value;
 
 public interface ActiveAgentRepository {
 
-    List<TopLevelAgentRollup> readActiveTopLevelAgentRollups(long from, long to, CassandraProfile profile) throws Exception;
+    CompletionStage<List<TopLevelAgentRollup>> readActiveTopLevelAgentRollups(long from, long to, CassandraProfile profile);
 
-    List<AgentRollup> readActiveChildAgentRollups(String topLevelId, long from, long to, CassandraProfile profile)
-            throws Exception;
+    CompletionStage<List<AgentRollup>> readActiveChildAgentRollups(String topLevelId, long from, long to, CassandraProfile profile);
 
-    List<AgentRollup> readRecentlyActiveAgentRollups(long lastXMillis, CassandraProfile profile) throws Exception;
+    CompletionStage<List<AgentRollup>> readRecentlyActiveAgentRollups(long lastXMillis, CassandraProfile profile);
 
-    List<AgentRollup> readActiveAgentRollups(long from, long to, CassandraProfile profile) throws Exception;
+    CompletionStage<List<AgentRollup>> readActiveAgentRollups(long from, long to, CassandraProfile profile);
 
     @Value.Immutable
     interface TopLevelAgentRollup { // used for dropdown display

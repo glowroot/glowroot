@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.cql.*;
@@ -27,7 +28,6 @@ import com.google.common.collect.ImmutableList;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
-import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
@@ -44,8 +44,6 @@ class GaugeNameDao {
 
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
-
-    private final RateLimiter<GaugeKey> rateLimiter = new RateLimiter<>();
 
     GaugeNameDao(Session session, ConfigRepositoryImpl configRepository, Clock clock)
             throws Exception {
@@ -64,7 +62,7 @@ class GaugeNameDao {
                 + " capture_time >= ? and capture_time <= ?");
     }
 
-    Set<String> getGaugeNames(String agentRollupId, long from, long to, CassandraProfile profile) throws Exception {
+    CompletionStage<Set<String>> getGaugeNames(String agentRollupId, long from, long to, CassandraProfile profile) {
         long rolledUpFrom = CaptureTimes.getRollup(from, DAYS.toMillis(1));
         long rolledUpTo = CaptureTimes.getRollup(to, DAYS.toMillis(1));
         BoundStatement boundStatement = readPS.bind()
@@ -85,16 +83,11 @@ class GaugeNameDao {
             }
         };
 
-        return session.readAsync(boundStatement, profile).thenCompose(compute).toCompletableFuture().get();
+        return session.readAsync(boundStatement, profile).thenCompose(compute);
     }
 
-    List<CompletableFuture<?>> insert(String agentRollupId, long captureTime, String gaugeName)
-            throws Exception {
+    List<CompletableFuture<?>> insert(String agentRollupId, long captureTime, String gaugeName) {
         long rollupCaptureTime = CaptureTimes.getRollup(captureTime, DAYS.toMillis(1));
-        GaugeKey rateLimiterKey = ImmutableGaugeKey.of(agentRollupId, rollupCaptureTime, gaugeName);
-        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
-            return ImmutableList.of();
-        }
         final int maxRollupTTL = configRepository.getCentralStorageConfig().getMaxRollupTTL();
         int i = 0;
         BoundStatement boundStatement = insertPS.bind()

@@ -15,39 +15,15 @@
  */
 package org.glowroot.central.repo;
 
-import java.io.Serializable;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.DoubleAccumulator;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import com.datastax.oss.driver.api.core.cql.*;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimaps;
-import com.google.common.collect.SetMultimap;
+import com.google.common.collect.*;
 import com.google.common.primitives.Ints;
 import com.spotify.futures.CompletableFutures;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glowroot.common2.repo.CassandraProfile;
-import org.immutables.serial.Serial;
-import org.immutables.value.Value;
-
 import org.glowroot.central.repo.Common.NeedsRollup;
 import org.glowroot.central.repo.Common.NeedsRollupFromChildren;
 import org.glowroot.central.util.ClusterManager;
@@ -57,15 +33,28 @@ import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Styles;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common2.repo.util.Gauges;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
+import org.immutables.serial.Serial;
+import org.immutables.value.Value;
+
+import java.io.Serializable;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.DoubleAccumulator;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
-import static java.util.concurrent.TimeUnit.DAYS;
-import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.*;
 
 public class GaugeValueDaoImpl implements GaugeValueDao {
 
@@ -96,8 +85,8 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     private final ConcurrentMap<NeedsRollupKey, ImmutableSet<String>> needsRollupCache1;
 
     GaugeValueDaoImpl(Session session, ConfigRepositoryImpl configRepository,
-            ClusterManager clusterManager, ExecutorService asyncExecutor,
-            int cassandraGcGraceSeconds, Clock clock)
+                      ClusterManager clusterManager, ExecutorService asyncExecutor,
+                      int cassandraGcGraceSeconds, Clock clock)
             throws Exception {
         this.session = session;
         this.configRepository = configRepository;
@@ -181,14 +170,14 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     }
 
     @Override
-    public void store(String agentId, List<GaugeValue> gaugeValues) throws Exception {
-        store(agentId, AgentRollupIds.getAgentRollupIds(agentId), gaugeValues);
+    public CompletionStage<?> store(String agentId, List<GaugeValue> gaugeValues) {
+        return store(agentId, AgentRollupIds.getAgentRollupIds(agentId), gaugeValues);
     }
 
-    public void store(String agentId, List<String> agentRollupIdsForMeta,
-            List<GaugeValue> gaugeValues) throws Exception {
+    public CompletionStage<?> store(String agentId, List<String> agentRollupIdsForMeta,
+                                    List<GaugeValue> gaugeValues) {
         if (gaugeValues.isEmpty()) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
         int ttl = getTTLs().get(0);
         long maxCaptureTime = 0;
@@ -201,11 +190,11 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
             int i = 0;
             boundStatement = boundStatement.setString(i++, agentId)
-                .setString(i++, gaugeName)
-                .setInstant(i++, Instant.ofEpochMilli(captureTime))
-                .setDouble(i++, gaugeValue.getValue())
-                .setLong(i++, gaugeValue.getWeight())
-                .setInt(i++, adjustedTTL);
+                    .setString(i++, gaugeName)
+                    .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                    .setDouble(i++, gaugeValue.getValue())
+                    .setLong(i++, gaugeValue.getWeight())
+                    .setInt(i++, adjustedTTL);
             futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
             for (String agentRollupIdForMeta : agentRollupIdsForMeta) {
                 futures.addAll(gaugeNameDao.insert(agentRollupIdForMeta, captureTime, gaugeName));
@@ -213,81 +202,83 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         }
 
         // wait for success before inserting "needs rollup" records
-        MoreFutures.waitForAll(futures);
-        futures.clear();
-
-        // insert into gauge_needs_rollup_1
-        Map<NeedsRollupKey, ImmutableSet<String>> updatesForNeedsRollupCache1 = new HashMap<>();
-        SetMultimap<Long, String> rollupCaptureTimes = getRollupCaptureTimes(gaugeValues);
-        for (Map.Entry<Long, Set<String>> entry : Multimaps.asMap(rollupCaptureTimes).entrySet()) {
-            Long captureTime = entry.getKey();
-            Set<String> gaugeNames = entry.getValue();
-            NeedsRollupKey needsRollupKey = ImmutableNeedsRollupKey.of(agentId, captureTime);
-            ImmutableSet<String> needsRollupGaugeNames = needsRollupCache1.get(needsRollupKey);
-            if (needsRollupGaugeNames == null) {
-                // first insert for this key
-                updatesForNeedsRollupCache1.put(needsRollupKey,
-                        ImmutableSet.copyOf(gaugeNames));
-            } else if (needsRollupGaugeNames.containsAll(gaugeNames)) {
-                // capture current time after getting data from cache to prevent race condition with
-                // reading the data in Common.getNeedsRollupList()
-                if (!Common.isOldEnoughToRollup(captureTime, clock.currentTimeMillis(),
-                        configRepository.getRollupConfigs().get(0).intervalMillis())) {
-                    // completely covered by prior inserts that haven't been rolled up yet so no
-                    // need to re-insert same data
-                    continue;
+        return CompletableFutures.allAsList(futures).thenCompose(ignored -> {
+            // insert into gauge_needs_rollup_1
+            Map<NeedsRollupKey, ImmutableSet<String>> updatesForNeedsRollupCache1 = new HashMap<>();
+            SetMultimap<Long, String> rollupCaptureTimes = getRollupCaptureTimes(gaugeValues);
+            for (Map.Entry<Long, Set<String>> entry : Multimaps.asMap(rollupCaptureTimes).entrySet()) {
+                Long captureTime = entry.getKey();
+                Set<String> gaugeNames = entry.getValue();
+                NeedsRollupKey needsRollupKey = ImmutableNeedsRollupKey.of(agentId, captureTime);
+                ImmutableSet<String> needsRollupGaugeNames = needsRollupCache1.get(needsRollupKey);
+                if (needsRollupGaugeNames == null) {
+                    // first insert for this key
+                    updatesForNeedsRollupCache1.put(needsRollupKey,
+                            ImmutableSet.copyOf(gaugeNames));
+                } else if (needsRollupGaugeNames.containsAll(gaugeNames)) {
+                    // capture current time after getting data from cache to prevent race condition with
+                    // reading the data in Common.getNeedsRollupList()
+                    if (!Common.isOldEnoughToRollup(captureTime, clock.currentTimeMillis(),
+                            configRepository.getRollupConfigs().get(0).intervalMillis())) {
+                        // completely covered by prior inserts that haven't been rolled up yet so no
+                        // need to re-insert same data
+                        continue;
+                    }
+                } else {
+                    // merge will maybe help prevent a few subsequent inserts
+                    Set<String> combined = new HashSet<>(needsRollupGaugeNames);
+                    combined.addAll(gaugeNames);
+                    updatesForNeedsRollupCache1.put(needsRollupKey,
+                            ImmutableSet.copyOf(gaugeNames));
                 }
-            } else {
-                // merge will maybe help prevent a few subsequent inserts
-                Set<String> combined = new HashSet<>(needsRollupGaugeNames);
-                combined.addAll(gaugeNames);
-                updatesForNeedsRollupCache1.put(needsRollupKey,
-                        ImmutableSet.copyOf(gaugeNames));
+                BoundStatement boundStatement = insertNeedsRollup.get(0).bind();
+                int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
+                int needsRollupAdjustedTTL = Common.getNeedsRollupAdjustedTTL(adjustedTTL,
+                        configRepository.getRollupConfigs());
+                int i = 0;
+                boundStatement = boundStatement.setString(i++, agentId)
+                        .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                        .setUuid(i++, Uuids.timeBased())
+                        .setSet(i++, gaugeNames, String.class)
+                        .setInt(i++, needsRollupAdjustedTTL);
+                futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
             }
-            BoundStatement boundStatement = insertNeedsRollup.get(0).bind();
-            int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
-            int needsRollupAdjustedTTL = Common.getNeedsRollupAdjustedTTL(adjustedTTL,
-                    configRepository.getRollupConfigs());
-            int i = 0;
-            boundStatement = boundStatement.setString(i++, agentId)
-                .setInstant(i++, Instant.ofEpochMilli(captureTime))
-                .setUuid(i++, Uuids.timeBased())
-                .setSet(i++, gaugeNames, String.class)
-                .setInt(i++, needsRollupAdjustedTTL);
-            futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
-        }
-        MoreFutures.waitForAll(futures);
-
-        // update the cache now that the above inserts were successful
-        needsRollupCache1.putAll(updatesForNeedsRollupCache1);
+            return CompletableFutures.allAsList(futures).thenAccept(ignore ->
+                    // update the cache now that the above inserts were successful
+                    needsRollupCache1.putAll(updatesForNeedsRollupCache1)
+            );
+        });
     }
 
     @Override
-    public List<Gauge> getRecentlyActiveGauges(String agentRollupId) throws Exception {
+    public CompletionStage<List<Gauge>> getRecentlyActiveGauges(String agentRollupId) {
         long now = clock.currentTimeMillis();
         long from = now - DAYS.toMillis(7);
         return getGauges(agentRollupId, from, now + DAYS.toMillis(365), CassandraProfile.web);
     }
 
     @Override
-    public List<Gauge> getGauges(String agentRollupId, long from, long to, CassandraProfile profile) throws Exception {
-        List<Gauge> gauges = new ArrayList<>();
-        for (String gaugeName : gaugeNameDao.getGaugeNames(agentRollupId, from, to, profile)) {
-            gauges.add(Gauges.getGauge(gaugeName));
-        }
-        return gauges;
+    public CompletionStage<List<Gauge>> getGauges(String agentRollupId, long from, long to, CassandraProfile profile) {
+
+        return gaugeNameDao.getGaugeNames(agentRollupId, from, to, profile).thenApply(gaugeNames -> {
+            List<Gauge> gauges = new ArrayList<>();
+            for (String gaugeName : gaugeNames) {
+                gauges.add(Gauges.getGauge(gaugeName));
+            }
+            return gauges;
+        });
     }
 
     // from is INCLUSIVE
     @Override
-    public List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from,
-            long to, int rollupLevel, CassandraProfile profile) throws Exception {
+    public CompletionStage<List<GaugeValue>> readGaugeValues(String agentRollupId, String gaugeName, long from,
+                                                             long to, int rollupLevel, CassandraProfile profile) {
         int i = 0;
         BoundStatement boundStatement = readValuePS.get(rollupLevel).bind()
-            .setString(i++, agentRollupId)
-            .setString(i++, gaugeName)
-            .setInstant(i++, Instant.ofEpochMilli(from))
-            .setInstant(i++, Instant.ofEpochMilli(to));
+                .setString(i++, agentRollupId)
+                .setString(i++, gaugeName)
+                .setInstant(i++, Instant.ofEpochMilli(from))
+                .setInstant(i++, Instant.ofEpochMilli(to));
         List<GaugeValue> gaugeValues = new ArrayList<>();
         Function<AsyncResultSet, CompletableFuture<List<GaugeValue>>> compute = new Function<AsyncResultSet, CompletableFuture<List<GaugeValue>>>() {
             @Override
@@ -306,15 +297,15 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                 return CompletableFuture.completedFuture(gaugeValues);
             }
         };
-        return session.readAsync(boundStatement, profile).thenCompose(compute).toCompletableFuture().get();
+        return session.readAsync(boundStatement, profile).thenCompose(compute);
     }
 
     @Override
     public CompletionStage<Long> getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel, CassandraProfile profile) {
         int i = 0;
         BoundStatement boundStatement = readOldestCaptureTimePS.get(rollupLevel).bind()
-            .setString(i++, agentRollupId)
-            .setString(i++, gaugeName);
+                .setString(i++, agentRollupId)
+                .setString(i++, gaugeName);
         return session.readAsync(boundStatement, profile).thenApply(results -> {
             Row row = results.one();
             return row == null ? Long.MAX_VALUE : checkNotNull(row.getInstant(0)).toEpochMilli();
@@ -322,8 +313,8 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     }
 
     @Override
-    public void rollup(String agentRollupId) throws Exception {
-        rollup(agentRollupId, AgentRollupIds.getParent(agentRollupId),
+    public CompletionStage<?> rollup(String agentRollupId) {
+        return rollup(agentRollupId, AgentRollupIds.getParent(agentRollupId),
                 !agentRollupId.endsWith("::"), CassandraProfile.rollup);
     }
 
@@ -331,22 +322,31 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     //
     // child agent rollups should be processed before their parent agent rollup, since initial
     // parent rollup depends on the 1-minute child rollup
-    public void rollup(String agentRollupId, @Nullable String parentAgentRollupId, boolean leaf, CassandraProfile profile)
-            throws Exception {
+    public CompletionStage<?> rollup(String agentRollupId, @Nullable String parentAgentRollupId, boolean leaf, CassandraProfile profile) {
 
         List<Integer> ttls = getTTLs();
         int rollupLevel;
+        CompletionStage<?> starting = CompletableFuture.completedFuture(null);
         if (leaf) {
             rollupLevel = 1;
         } else {
-            rollupFromChildren(agentRollupId, parentAgentRollupId, ttls.get(1), profile);
+            starting = rollupFromChildren(agentRollupId, parentAgentRollupId, ttls.get(1), profile);
             rollupLevel = 2;
         }
-        while (rollupLevel <= configRepository.getRollupConfigs().size()) {
-            int ttl = ttls.get(rollupLevel);
-            rollup(agentRollupId, parentAgentRollupId, rollupLevel, ttl, profile);
-            rollupLevel++;
-        }
+
+        Function<Integer, CompletionStage<Integer>> lambda = new Function<>() {
+            @Override
+            public CompletionStage<Integer> apply(Integer rollupLevelInner) {
+                if (rollupLevelInner <= configRepository.getRollupConfigs().size()) {
+                    return rollup(agentRollupId, parentAgentRollupId, rollupLevelInner, ttls.get(rollupLevelInner), profile)
+                            .thenApply(ignored -> rollupLevelInner+1)
+                            .thenCompose(this);
+                } else {
+                    return CompletableFuture.completedFuture(null);
+                }
+            }
+        };
+        return starting.thenApply(ignored -> rollupLevel).thenCompose(lambda);
     }
 
     private SetMultimap<Long, String> getRollupCaptureTimes(List<GaugeValue> gaugeValues) {
@@ -362,149 +362,171 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         return rollupCaptureTimes;
     }
 
-    private void rollupFromChildren(String agentRollupId, @Nullable String parentAgentRollupId,
-            int ttl, CassandraProfile profile) throws Exception {
+    private CompletionStage<?> rollupFromChildren(String agentRollupId, @Nullable String parentAgentRollupId,
+                                                  int ttl, CassandraProfile profile) {
         final int rollupLevel = 1;
-        List<NeedsRollupFromChildren> needsRollupFromChildrenList = Common
-                .getNeedsRollupFromChildrenList(agentRollupId, readNeedsRollupFromChild, session, profile);
-        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
-        long nextRollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
-        for (NeedsRollupFromChildren needsRollupFromChildren : needsRollupFromChildrenList) {
-            long captureTime = needsRollupFromChildren.getCaptureTime();
-            int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
-            List<CompletableFuture<?>> futures = new ArrayList<>();
-            for (Map.Entry<String, Collection<String>> entry : needsRollupFromChildren.getKeys()
-                    .asMap()
-                    .entrySet()) {
-                String gaugeName = entry.getKey();
-                Collection<String> childAgentRollupIds = entry.getValue();
-                futures.add(rollupOneFromChildren(rollupLevel, agentRollupId, gaugeName,
-                        childAgentRollupIds, captureTime, adjustedTTL, profile));
-            }
-            // wait for above async work to ensure rollup complete before proceeding
-            MoreFutures.waitForAll(futures);
+        return Common.getNeedsRollupFromChildrenList(agentRollupId, readNeedsRollupFromChild, session, profile).thenCompose(needsRollupFromChildrenList -> {
 
-            int needsRollupAdjustedTTL =
-                    Common.getNeedsRollupAdjustedTTL(adjustedTTL, rollupConfigs);
-            if (parentAgentRollupId != null) {
-                // insert needs to happen first before call to postRollup(), see method-level
-                // comment on postRollup
-                Common.insertNeedsRollupFromChild(agentRollupId, parentAgentRollupId,
-                        insertNeedsRollupFromChild, needsRollupFromChildren, captureTime,
-                        needsRollupAdjustedTTL, session, profile);
-            }
-            Common.postRollup(agentRollupId, needsRollupFromChildren.getCaptureTime(),
-                    needsRollupFromChildren.getKeys().keySet(),
-                    needsRollupFromChildren.getUniquenessKeysForDeletion(),
-                    nextRollupIntervalMillis, insertNeedsRollup.get(rollupLevel),
-                    deleteNeedsRollupFromChild, needsRollupAdjustedTTL, session, profile);
-        }
+            List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+            long nextRollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
+
+            int maxIndexNeedsRollupFromChildren = needsRollupFromChildrenList.size();
+            Function<Integer, CompletionStage<?>> lambda = new Function<Integer, CompletionStage<?>>() {
+                @Override
+                public CompletionStage<?> apply(Integer indexNeedsRollupFromChildren) {
+                    if (indexNeedsRollupFromChildren >= maxIndexNeedsRollupFromChildren) {
+                        return CompletableFuture.completedFuture(null);
+                    }
+                    NeedsRollupFromChildren needsRollupFromChildren = needsRollupFromChildrenList.get(indexNeedsRollupFromChildren);
+                    long captureTime = needsRollupFromChildren.getCaptureTime();
+                    int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
+
+                    List<CompletableFuture<?>> futures = new ArrayList<>();
+                    for (Map.Entry<String, Collection<String>> entry : needsRollupFromChildren.getKeys()
+                            .asMap()
+                            .entrySet()) {
+                        String gaugeName = entry.getKey();
+                        Collection<String> childAgentRollupIds = entry.getValue();
+                        futures.add(rollupOneFromChildren(rollupLevel, agentRollupId, gaugeName,
+                                childAgentRollupIds, captureTime, adjustedTTL, profile));
+                    }
+                    return CompletableFutures.allAsList(futures).thenCompose(ignored -> {
+                        int needsRollupAdjustedTTL =
+                                Common.getNeedsRollupAdjustedTTL(adjustedTTL, rollupConfigs);
+
+                        CompletionStage<?> starting = CompletableFuture.completedFuture(null);
+                        if (parentAgentRollupId != null) {
+                            // insert needs to happen first before call to postRollup(), see method-level
+                            // comment on postRollup
+                            starting = Common.insertNeedsRollupFromChild(agentRollupId, parentAgentRollupId,
+                                    insertNeedsRollupFromChild, needsRollupFromChildren, captureTime,
+                                    needsRollupAdjustedTTL, session, profile);
+                        }
+                        return starting.thenCompose(ignore -> Common.postRollup(agentRollupId, needsRollupFromChildren.getCaptureTime(),
+                                needsRollupFromChildren.getKeys().keySet(),
+                                needsRollupFromChildren.getUniquenessKeysForDeletion(),
+                                nextRollupIntervalMillis, insertNeedsRollup.get(rollupLevel),
+                                deleteNeedsRollupFromChild, needsRollupAdjustedTTL, session, profile));
+
+                    }).thenCompose(ignored -> apply(indexNeedsRollupFromChildren+1));
+
+                }
+            };
+
+            return lambda.apply(0);
+        });
     }
 
-    private void rollup(String agentRollupId, @Nullable String parentAgentRollupId, int rollupLevel,
-            int ttl, CassandraProfile profile) throws Exception {
+    private CompletionStage<?> rollup(String agentRollupId, @Nullable String parentAgentRollupId, int rollupLevel,
+                                      int ttl, CassandraProfile profile) {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         long rollupIntervalMillis = rollupConfigs.get(rollupLevel - 1).intervalMillis();
-        Collection<NeedsRollup> needsRollupList = Common.getNeedsRollupList(agentRollupId,
-                rollupLevel, rollupIntervalMillis, readNeedsRollup, session, clock, profile);
-        Long nextRollupIntervalMillis = null;
-        if (rollupLevel < rollupConfigs.size()) {
-            nextRollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
-        }
-        for (NeedsRollup needsRollup : needsRollupList) {
-            long captureTime = needsRollup.getCaptureTime();
-            long from = captureTime - rollupIntervalMillis;
-            int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
-            Set<String> gaugeNames = needsRollup.getKeys();
-            List<CompletableFuture<?>> futures = new ArrayList<>();
-            for (String gaugeName : gaugeNames) {
-                futures.add(rollupOne(rollupLevel, agentRollupId, gaugeName, from, captureTime,
-                        adjustedTTL, profile));
+        return Common.getNeedsRollupList(agentRollupId,
+                rollupLevel, rollupIntervalMillis, readNeedsRollup, session, clock, profile).thenCompose(needsRollupCollection -> {
+            List<NeedsRollup> needsRollupList = ImmutableList.copyOf(needsRollupCollection);
+            Long nextRollupIntervalMillis = null;
+            if (rollupLevel < rollupConfigs.size()) {
+                nextRollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
             }
-            if (futures.isEmpty()) {
-                // no rollups occurred, warning already logged inside rollupOne() above
-                // this can happen there is an old "needs rollup" record that was created prior to
-                // TTL was introduced in 0.9.6, and when the "last needs rollup" record wasn't
-                // processed (also prior to 0.9.6), and when the corresponding old data has expired
-                Common.postRollup(agentRollupId, needsRollup.getCaptureTime(), gaugeNames,
-                        needsRollup.getUniquenessKeysForDeletion(), null, null,
-                        deleteNeedsRollup.get(rollupLevel - 1), -1, session, profile);
-                continue;
-            }
-            // wait for above async work to ensure rollup complete before proceeding
-            MoreFutures.waitForAll(futures);
+            final Long finalNextRollupIntervalMillis = nextRollupIntervalMillis;
+            int maxIndexNeedsRollup = needsRollupList.size();
 
-            int needsRollupAdjustedTTL =
-                    Common.getNeedsRollupAdjustedTTL(adjustedTTL, rollupConfigs);
-            if (rollupLevel == 1 && parentAgentRollupId != null) {
-                // insert needs to happen first before call to postRollup(), see method-level
-                // comment on postRollup
-                int i = 0;
-                BoundStatement boundStatement = insertNeedsRollupFromChild.bind()
-                    .setString(i++, parentAgentRollupId)
-                    .setInstant(i++, Instant.ofEpochMilli(captureTime))
-                    .setUuid(i++, Uuids.timeBased())
-                    .setString(i++, agentRollupId)
-                    .setSet(i++, gaugeNames, String.class)
-                    .setInt(i++, needsRollupAdjustedTTL);
-                session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture().get();
-            }
-            PreparedStatement insertNeedsRollup = nextRollupIntervalMillis == null ? null
-                    : this.insertNeedsRollup.get(rollupLevel);
-            PreparedStatement deleteNeedsRollup = this.deleteNeedsRollup.get(rollupLevel - 1);
-            Common.postRollup(agentRollupId, needsRollup.getCaptureTime(), gaugeNames,
-                    needsRollup.getUniquenessKeysForDeletion(), nextRollupIntervalMillis,
-                    insertNeedsRollup, deleteNeedsRollup, needsRollupAdjustedTTL, session, profile);
-        }
+            Function<Integer, CompletionStage<?>> lambda = new Function<Integer, CompletionStage<?>>() {
+                @Override
+                public CompletionStage<?> apply(Integer indexNeedsRollup) {
+                    if (indexNeedsRollup >= maxIndexNeedsRollup) {
+                        return CompletableFuture.completedFuture(null);
+                    }
+                    final NeedsRollup needsRollup = needsRollupList.get(indexNeedsRollup);
+                    long captureTime = needsRollup.getCaptureTime();
+                    long from = captureTime - rollupIntervalMillis;
+                    int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
+                    Set<String> gaugeNames = needsRollup.getKeys();
+                    List<CompletableFuture<?>> futures = new ArrayList<>();
+                    for (String gaugeName : gaugeNames) {
+                        futures.add(rollupOne(rollupLevel, agentRollupId, gaugeName, from, captureTime,
+                                adjustedTTL, profile));
+                    }
+                    if (futures.isEmpty()) {
+                        // no rollups occurred, warning already logged inside rollupOne() above
+                        // this can happen there is an old "needs rollup" record that was created prior to
+                        // TTL was introduced in 0.9.6, and when the "last needs rollup" record wasn't
+                        // processed (also prior to 0.9.6), and when the corresponding old data has expired
+                        return Common.postRollup(agentRollupId, needsRollup.getCaptureTime(), gaugeNames,
+                                needsRollup.getUniquenessKeysForDeletion(), null, null,
+                                deleteNeedsRollup.get(rollupLevel - 1), -1, session, profile).thenApply(ignored -> indexNeedsRollup + 1);
+                    }
+                    return CompletableFutures.allAsList(futures).thenCompose(ignored -> {
+                        int needsRollupAdjustedTTL =
+                                Common.getNeedsRollupAdjustedTTL(adjustedTTL, rollupConfigs);
+                        CompletionStage<?> starting = CompletableFuture.completedFuture(null);
+                        if (rollupLevel == 1 && parentAgentRollupId != null) {
+                            // insert needs to happen first before call to postRollup(), see method-level
+                            // comment on postRollup
+                            int i = 0;
+                            BoundStatement boundStatement = insertNeedsRollupFromChild.bind()
+                                    .setString(i++, parentAgentRollupId)
+                                    .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                                    .setUuid(i++, Uuids.timeBased())
+                                    .setString(i++, agentRollupId)
+                                    .setSet(i++, gaugeNames, String.class)
+                                    .setInt(i++, needsRollupAdjustedTTL);
+                            starting = session.writeAsync(boundStatement, CassandraProfile.collector);
+                        }
+                        PreparedStatement insertNeedsRollup = finalNextRollupIntervalMillis == null ? null
+                                : GaugeValueDaoImpl.this.insertNeedsRollup.get(rollupLevel);
+                        PreparedStatement deleteNeedsRollup = GaugeValueDaoImpl.this.deleteNeedsRollup.get(rollupLevel - 1);
+                        return starting.thenCompose(ignored2 -> Common.postRollup(agentRollupId, needsRollup.getCaptureTime(), gaugeNames,
+                                needsRollup.getUniquenessKeysForDeletion(), finalNextRollupIntervalMillis,
+                                insertNeedsRollup, deleteNeedsRollup, needsRollupAdjustedTTL, session, profile)).thenCompose(ignored3 -> apply(indexNeedsRollup + 1));
+                    });
+                }
+            };
+            return lambda.apply(0);
+        });
     }
 
     private CompletableFuture<?> rollupOneFromChildren(int rollupLevel, String agentRollupId,
-            String gaugeName, Collection<String> childAgentRollupIds, long captureTime,
-            int adjustedTTL, CassandraProfile profile) {
+                                                       String gaugeName, Collection<String> childAgentRollupIds, long captureTime,
+                                                       int adjustedTTL, CassandraProfile profile) {
         List<CompletableFuture<AsyncResultSet>> futures = new ArrayList<>();
         for (String childAgentRollupId : childAgentRollupIds) {
             int i = 0;
             BoundStatement boundStatement = readValueForRollupFromChildPS.bind()
-                .setString(i++, childAgentRollupId)
-                .setString(i++, gaugeName)
-                .setInstant(i++, Instant.ofEpochMilli(captureTime));
+                    .setString(i++, childAgentRollupId)
+                    .setString(i++, gaugeName)
+                    .setInstant(i++, Instant.ofEpochMilli(captureTime));
             futures.add(session.readAsyncWarnIfNoRows(boundStatement, profile, "no gauge value table"
-                    + " records found for agentRollupId={}, gaugeName={}, captureTime={}, level={}",
+                            + " records found for agentRollupId={}, gaugeName={}, captureTime={}, level={}",
                     childAgentRollupId, gaugeName, captureTime, rollupLevel).toCompletableFuture());
         }
-        return MoreFutures.rollupAsync(futures, asyncExecutor, new MoreFutures.DoRollupList() {
-            @Override
-            public CompletableFuture<?> execute(List<AsyncResultSet> rows) {
+        return CompletableFutures.allAsList(futures).thenCompose(rows -> {
                 return rollupOneFromRows(rollupLevel, agentRollupId, gaugeName, captureTime,
                         adjustedTTL, rows, profile);
-            }
         });
     }
 
     // from is non-inclusive
     private CompletableFuture<?> rollupOne(int rollupLevel, String agentRollupId,
-            String gaugeName, long from, long to, int adjustedTTL, CassandraProfile profile) {
+                                           String gaugeName, long from, long to, int adjustedTTL, CassandraProfile profile) {
         int i = 0;
         BoundStatement boundStatement = readValueForRollupPS.get(rollupLevel - 1).bind()
-            .setString(i++, agentRollupId)
-            .setString(i++, gaugeName)
-            .setInstant(i++, Instant.ofEpochMilli(from))
-            .setInstant(i++, Instant.ofEpochMilli(to));
+                .setString(i++, agentRollupId)
+                .setString(i++, gaugeName)
+                .setInstant(i++, Instant.ofEpochMilli(from))
+                .setInstant(i++, Instant.ofEpochMilli(to));
         CompletableFuture<AsyncResultSet> future = session.readAsyncWarnIfNoRows(boundStatement, profile,
                 "no gauge value table records found for agentRollupId={}, gaugeName={}, from={},"
                         + " to={}, level={}",
                 agentRollupId, gaugeName, from, to, rollupLevel).toCompletableFuture();
-        return MoreFutures.rollupAsync(future, asyncExecutor, new MoreFutures.DoRollup() {
-            @Override
-            public CompletableFuture<?> execute(AsyncResultSet rows) {
+        return future.thenCompose(rows -> {
                 return rollupOneFromRows(rollupLevel, agentRollupId, gaugeName, to, adjustedTTL,
                         Lists.newArrayList(rows), profile);
-            }
         });
     }
 
-    private CompletableFuture<?> rollupOneFromRows(int rollupLevel, String agentRollupId,
-            String gaugeName, long to, int adjustedTTL, List<AsyncResultSet> results, CassandraProfile profile) {
+    private CompletionStage<?> rollupOneFromRows(int rollupLevel, String agentRollupId,
+                                                   String gaugeName, long to, int adjustedTTL, List<AsyncResultSet> results, CassandraProfile profile) {
         DoubleAccumulator totalWeightedValue = new DoubleAccumulator(Double::sum, 0.0);
         AtomicLong totalWeight = new AtomicLong(0);
 
@@ -536,11 +558,11 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                     boundStatement = boundStatement.setDouble(i++, totalWeightedValue.get() / totalWeight.get())
                             .setLong(i++, totalWeight.get())
                             .setInt(i++, adjustedTTL);
-                    return session.writeAsync(boundStatement, profile).toCompletableFuture();
+                    return session.writeAsync(boundStatement, profile);
                 });
     }
 
-    private List<Integer> getTTLs() throws Exception {
+    private List<Integer> getTTLs() {
         List<Integer> rollupExpirationHours = Lists
                 .newArrayList(configRepository.getCentralStorageConfig().rollupExpirationHours());
         rollupExpirationHours.add(0, rollupExpirationHours.get(0));
@@ -569,6 +591,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     @Styles.AllParameters
     interface NeedsRollupKey extends Serializable {
         String agentRollupId();
+
         long captureTime();
     }
 }

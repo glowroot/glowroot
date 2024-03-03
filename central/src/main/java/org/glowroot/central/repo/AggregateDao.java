@@ -17,6 +17,7 @@ package org.glowroot.central.repo;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.glowroot.agent.api.Instrumentation;
@@ -36,7 +37,7 @@ public interface AggregateDao extends AggregateRepository {
             transactionName = "Rollup aggregates", traceHeadline = "Rollup aggregates: {{0}}",
             timer = "rollup aggregates",
             alreadyInTransactionBehavior = AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION)
-    void rollup(String agentRollupId) throws Exception;
+    CompletionStage<?> rollup(String agentRollupId) throws Exception;
 
     @OnlyUsedByTests
     void truncateAll() throws Exception;

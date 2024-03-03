@@ -115,7 +115,7 @@ class ReportJsonService {
         Date from = fromToPair.from();
         Date to = fromToPair.to();
         List<FilteredAgentRollup> agentRollups = filterAndSort(
-                activeAgentRepository.readActiveAgentRollups(from.getTime(), to.getTime(), CassandraProfile.web),
+                activeAgentRepository.readActiveAgentRollups(from.getTime(), to.getTime(), CassandraProfile.web).toCompletableFuture().get(),
                 authentication);
         List<AgentRollupSmall> dropdown = Lists.newArrayList();
         for (FilteredAgentRollup agentRollup : agentRollups) {
@@ -148,7 +148,7 @@ class ReportJsonService {
                 logger.debug(e.getMessage(), e);
             }
             gauges.addAll(
-                    gaugeValueRepository.getGauges(agentRollupId, from.getTime(), to.getTime(), CassandraProfile.web));
+                    gaugeValueRepository.getGauges(agentRollupId, from.getTime(), to.getTime(), CassandraProfile.web).toCompletableFuture().get());
         }
         return mapper.writeValueAsString(ImmutableTransactionTypesAndGaugesReponse.builder()
                 .addAllTransactionTypes(transactionTypes)
@@ -328,9 +328,9 @@ class ReportJsonService {
             TimeZone timeZone, double gapMillis) throws Exception {
 
         DataSeries dataSeries =
-                new DataSeries(agentDisplayRepository.readFullDisplay(agentRollupId));
+                new DataSeries(agentDisplayRepository.readFullDisplay(agentRollupId).toCompletableFuture().get());
         List<OverviewAggregate> aggregates =
-                aggregateRepository.readOverviewAggregates(agentRollupId, query, CassandraProfile.web);
+                aggregateRepository.readOverviewAggregates(agentRollupId, query, CassandraProfile.web).toCompletableFuture().get();
         aggregates =
                 TransactionCommonService.rollUpOverviewAggregates(aggregates, rollupCaptureTimeFn);
         if (aggregates.isEmpty()) {
@@ -374,9 +374,9 @@ class ReportJsonService {
             double percentile, RollupCaptureTimeFn rollupCaptureTimeFn, ROLLUP rollup,
             TimeZone timeZone, double gapMillis) throws Exception {
         DataSeries dataSeries =
-                new DataSeries(agentDisplayRepository.readFullDisplay(agentRollupId));
+                new DataSeries(agentDisplayRepository.readFullDisplay(agentRollupId).toCompletableFuture().get());
         List<PercentileAggregate> aggregates =
-                aggregateRepository.readPercentileAggregates(agentRollupId, query, CassandraProfile.web);
+                aggregateRepository.readPercentileAggregates(agentRollupId, query, CassandraProfile.web).toCompletableFuture().get();
         aggregates = TransactionCommonService.rollUpPercentileAggregates(aggregates,
                 rollupCaptureTimeFn);
         if (aggregates.isEmpty()) {
@@ -417,9 +417,9 @@ class ReportJsonService {
             RollupCaptureTimeFn rollupCaptureTimeFn, ROLLUP rollup, TimeZone timeZone,
             double gapMillis, ThroughputAggregateFn throughputAggregateFn) throws Exception {
         DataSeries dataSeries =
-                new DataSeries(agentDisplayRepository.readFullDisplay(agentRollupId));
+                new DataSeries(agentDisplayRepository.readFullDisplay(agentRollupId).toCompletableFuture().get());
         List<ThroughputAggregate> aggregates =
-                aggregateRepository.readThroughputAggregates(agentRollupId, query, CassandraProfile.web);
+                aggregateRepository.readThroughputAggregates(agentRollupId, query, CassandraProfile.web).toCompletableFuture().get();
         aggregates = TransactionCommonService.rollUpThroughputAggregates(aggregates,
                 rollupCaptureTimeFn);
         if (aggregates.isEmpty()) {
@@ -460,11 +460,11 @@ class ReportJsonService {
             Date to, int rollupLevel, RollupCaptureTimeFn rollupCaptureTimeFn, ROLLUP rollup,
             TimeZone timeZone, double gapMillis, CassandraProfile profile) throws Exception {
         DataSeries dataSeries =
-                new DataSeries(agentDisplayRepository.readFullDisplay(agentRollupId));
+                new DataSeries(agentDisplayRepository.readFullDisplay(agentRollupId).toCompletableFuture().get());
         // from + 1 to make from non-inclusive, since data points are displayed as midpoint of
         // time range
         List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(agentRollupId,
-                gaugeName, from.getTime() + 1, to.getTime(), rollupLevel, profile);
+                gaugeName, from.getTime() + 1, to.getTime(), rollupLevel, profile).toCompletableFuture().get();
         gaugeValues = GaugeValueJsonService.rollUpGaugeValues(gaugeValues, gaugeName,
                 rollupCaptureTimeFn);
         if (gaugeValues.isEmpty()) {

@@ -74,7 +74,7 @@ public class EnvironmentDaoIT {
                 .build();
         environmentDao.store("a", environment).toCompletableFuture().get();
         // when
-        Environment readEnvironment = environmentDao.read("a", CassandraProfile.web);
+        Environment readEnvironment = environmentDao.read("a", CassandraProfile.web).toCompletableFuture().join();
         // then
         assertThat(readEnvironment).isEqualTo(environment);
     }

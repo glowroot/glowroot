@@ -82,7 +82,7 @@ class RepoAdminImpl implements RepoAdmin {
 
     @Override
     public void deleteAllData() throws Exception {
-        Environment environment = environmentDao.read("", CassandraProfile.web);
+        Environment environment = environmentDao.read("", CassandraProfile.web).toCompletableFuture().join();
         dataSource.deleteAll();
         alertingDisabledDao.reinitAfterDeletingDatabase();
         environmentDao.reinitAfterDeletingDatabase();

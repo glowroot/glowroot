@@ -112,7 +112,7 @@ class ConfigJsonService {
         Set<String> transactionTypes = Sets.newTreeSet();
         transactionTypes.addAll(transactionTypeRepository.read(agentRollupId));
         transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(agentRollupId));
-        List<Gauge> gauges = gaugeValueRepository.getRecentlyActiveGauges(agentRollupId);
+        List<Gauge> gauges = gaugeValueRepository.getRecentlyActiveGauges(agentRollupId).toCompletableFuture().get();
         ImmutableList<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
         return mapper.writeValueAsString(ImmutableUiDefaultsConfigResponse.builder()
                 .config(UiDefaultsConfigDto.create(config))
@@ -145,7 +145,7 @@ class ConfigJsonService {
     // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
     @GET(path = "/backend/config/advanced", permission = "agent:config:view:advanced")
     String getAdvancedConfig(@BindAgentRollupId String agentRollupId) throws Exception {
-        AdvancedConfig config = configRepository.getAdvancedConfig(agentRollupId);
+        AdvancedConfig config = configRepository.getAdvancedConfig(agentRollupId).toCompletableFuture().get();
         return mapper.writeValueAsString(AdvancedConfigDto.create(config));
     }
 

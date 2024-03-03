@@ -52,9 +52,8 @@ public class MoreFutures {
                 );
     }
 
-    public static CompletableFuture<?> rollupAsync(List<CompletableFuture<AsyncResultSet>> futures,
-                                                   Executor asyncExecutor, DoRollupList function) {
-        return transformAsync(CompletableFutures.allAsList(futures), asyncExecutor, function::execute);
+    public static CompletableFuture<?> rollupAsync(List<CompletableFuture<AsyncResultSet>> futures) {
+        return CompletableFutures.allAsList(futures);
     }
 
     private static <V, R> CompletableFuture<R> transformAsync(CompletableFuture<V> future,

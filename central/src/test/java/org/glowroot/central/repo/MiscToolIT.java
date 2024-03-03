@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.containers.wait.CassandraQueryWaitStrategy;
 
 public class MiscToolIT {
     public static final CassandraContainer cassandra
@@ -41,7 +42,9 @@ public class MiscToolIT {
         session.close();
 
         System.setProperty("glowroot.cassandra.keyspace", "glowroot_tools_test");
-        System.setProperty("glowroot.cassandra.localDatacenter", "datacenter1");
+        System.setProperty("glowroot.cassandra.localDatacenter", cassandra.getLocalDatacenter());
+        System.setProperty("glowroot.cassandra.contactPoints", cassandra.getContactPoint().getHostString());
+        System.setProperty("glowroot.cassandra.port", cassandra.getMappedPort(9042).toString());
         Main.main(new String[] {"create-schema"});
     }
 
@@ -61,7 +64,6 @@ public class MiscToolIT {
         Main.main(new String[] {"truncate-all-data"});
     }
 
-    @Disabled("this requires range deletes which are only supported in Cassandra 3.x")
     @Test
     public void runExecuteRangeDeletes() throws Exception {
 

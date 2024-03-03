@@ -25,16 +25,15 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.
 
 public interface GaugeValueRepository {
 
-    List<Gauge> getRecentlyActiveGauges(String agentRollupId) throws Exception;
+    CompletionStage<List<Gauge>> getRecentlyActiveGauges(String agentRollupId);
 
-    List<Gauge> getGauges(String agentRollupId, long from, long to, CassandraProfile profile) throws Exception;
+    CompletionStage<List<Gauge>> getGauges(String agentRollupId, long from, long to, CassandraProfile profile);
 
     // from is INCLUSIVE
-    List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from, long to,
-            int rollupLevel, CassandraProfile profile) throws Exception;
+    CompletionStage<List<GaugeValue>> readGaugeValues(String agentRollupId, String gaugeName, long from, long to,
+            int rollupLevel, CassandraProfile profile);
 
-    CompletionStage<Long> getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel, CassandraProfile profile)
-            throws Exception;
+    CompletionStage<Long> getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel, CassandraProfile profile);
 
     @Value.Immutable
     @Styles.AllParameters

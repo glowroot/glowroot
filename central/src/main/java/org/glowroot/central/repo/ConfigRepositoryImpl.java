@@ -23,6 +23,7 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -163,12 +164,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
     @Override
-    public AdvancedConfig getAdvancedConfig(String agentRollupId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.readAsync(agentRollupId).get();
-        if (agentConfig == null) {
-            throw new AgentConfigNotFoundException(agentRollupId);
-        }
-        return agentConfig.getAdvancedConfig();
+    public CompletionStage<AdvancedConfig> getAdvancedConfig(String agentRollupId) {
+        return agentConfigDao.readAsync(agentRollupId).thenApply(agentConfig -> {
+            if (agentConfig == null) {
+                return null;
+            }
+            return agentConfig.getAdvancedConfig();
+        });
     }
 
     @Override
@@ -221,6 +223,16 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             throw new AgentConfigNotFoundException(agentRollupId);
         }
         return agentConfig.getAlertConfigList();
+    }
+
+    @Override
+    public CompletionStage<List<AlertConfig>> getAlertConfigsNonBlocking(String agentRollupId) {
+        return agentConfigDao.readAsync(agentRollupId).thenApply(agentConfig -> {
+            if (agentConfig == null) {
+                throw new AgentConfigNotFoundException(agentRollupId);
+            }
+            return agentConfig.getAlertConfigList();
+        });
     }
 
     // central supports alert configs on rollups
@@ -305,13 +317,14 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public ImmutableCentralAdminGeneralConfig getCentralAdminGeneralConfig() throws Exception {
-        ImmutableCentralAdminGeneralConfig config =
-                (ImmutableCentralAdminGeneralConfig) centralConfigDao.read(GENERAL_KEY);
-        if (config == null) {
-            return ImmutableCentralAdminGeneralConfig.builder().build();
-        }
-        return config;
+    public CompletionStage<CentralAdminGeneralConfig> getCentralAdminGeneralConfig() {
+        return centralConfigDao.read(GENERAL_KEY).thenApply(conf -> {
+            ImmutableCentralAdminGeneralConfig config = (ImmutableCentralAdminGeneralConfig) conf;
+            if (config == null) {
+                return ImmutableCentralAdminGeneralConfig.builder().build();
+            }
+            return config;
+        });
     }
 
     @Override
@@ -360,15 +373,17 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public CentralWebConfig getCentralWebConfig() throws Exception {
-        CentralWebConfig config = (CentralWebConfig) centralConfigDao.read(WEB_KEY);
-        if (config == null) {
-            return ImmutableCentralWebConfig.builder().build();
-        }
-        return config;
+        return centralConfigDao.read(WEB_KEY).thenApply(conf -> {
+            CentralWebConfig config = (CentralWebConfig) conf;
+            if (config == null) {
+                return ImmutableCentralWebConfig.builder().build();
+            }
+            return config;
+        }).toCompletableFuture().join();
     }
 
     @Override
-    public StorageConfig getStorageConfig() throws Exception {
+    public StorageConfig getStorageConfig() {
         return getCentralStorageConfig();
     }
 
@@ -379,59 +394,71 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public CentralStorageConfig getCentralStorageConfig() {
-        CentralStorageConfig config = (CentralStorageConfig) centralConfigDao.read(STORAGE_KEY);
-        if (config == null) {
-            return ImmutableCentralStorageConfig.builder().build();
-        }
-        if (config.hasListIssues()) {
-            return withCorrectedLists(config);
-        }
-        return config;
+        return centralConfigDao.read(STORAGE_KEY).thenApply(conf -> {
+            CentralStorageConfig config = (CentralStorageConfig) conf;
+            if (config == null) {
+                return ImmutableCentralStorageConfig.builder().build();
+            }
+            if (config.hasListIssues()) {
+                return withCorrectedLists(config);
+            }
+            return config;
+        }).toCompletableFuture().join();
     }
 
     @Override
-    public SmtpConfig getSmtpConfig() throws Exception {
-        SmtpConfig config = (SmtpConfig) centralConfigDao.read(SMTP_KEY);
-        if (config == null) {
-            return ImmutableSmtpConfig.builder().build();
-        }
-        return config;
+    public SmtpConfig getSmtpConfig() {
+        return centralConfigDao.read(SMTP_KEY).thenApply(conf -> {
+            SmtpConfig config = (SmtpConfig) conf;
+            if (config == null) {
+                return ImmutableSmtpConfig.builder().build();
+            }
+            return config;
+        }).toCompletableFuture().join();
     }
 
     @Override
     public HttpProxyConfig getHttpProxyConfig() throws Exception {
-        HttpProxyConfig config = (HttpProxyConfig) centralConfigDao.read(HTTP_PROXY_KEY);
-        if (config == null) {
-            return ImmutableHttpProxyConfig.builder().build();
-        }
-        return config;
+        return centralConfigDao.read(HTTP_PROXY_KEY).thenApply(conf -> {
+            HttpProxyConfig config = (HttpProxyConfig) conf;
+            if (config == null) {
+                return ImmutableHttpProxyConfig.builder().build();
+            }
+            return config;
+        }).toCompletableFuture().join();
     }
 
     @Override
-    public LdapConfig getLdapConfig() throws Exception {
-        LdapConfig config = (LdapConfig) centralConfigDao.read(LDAP_KEY);
-        if (config == null) {
-            return ImmutableLdapConfig.builder().build();
-        }
-        return config;
+    public LdapConfig getLdapConfig() {
+        return centralConfigDao.read(LDAP_KEY).thenApply(conf -> {
+            LdapConfig config = (LdapConfig) conf;
+            if (config == null) {
+                return ImmutableLdapConfig.builder().build();
+            }
+            return config;
+        }).toCompletableFuture().join();
     }
 
     @Override
-    public PagerDutyConfig getPagerDutyConfig() throws Exception {
-        PagerDutyConfig config = (PagerDutyConfig) centralConfigDao.read(PAGER_DUTY_KEY);
-        if (config == null) {
-            return ImmutablePagerDutyConfig.builder().build();
-        }
-        return config;
+    public PagerDutyConfig getPagerDutyConfig() {
+        return centralConfigDao.read(PAGER_DUTY_KEY).thenApply(conf -> {
+            PagerDutyConfig config = (PagerDutyConfig) conf;
+            if (config == null) {
+                return ImmutablePagerDutyConfig.builder().build();
+            }
+            return config;
+        }).toCompletableFuture().join();
     }
 
     @Override
-    public SlackConfig getSlackConfig() throws Exception {
-        SlackConfig config = (SlackConfig) centralConfigDao.read(SLACK_KEY);
-        if (config == null) {
-            return ImmutableSlackConfig.builder().build();
-        }
-        return config;
+    public SlackConfig getSlackConfig() {
+        return centralConfigDao.read(SLACK_KEY).thenApply(conf -> {
+            SlackConfig config = (SlackConfig) conf;
+            if (config == null) {
+                return ImmutableSlackConfig.builder().build();
+            }
+            return config;
+        }).toCompletableFuture().join();
     }
 
     @Override
@@ -447,7 +474,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     @Override
     public AllCentralAdminConfig getAllCentralAdminConfig() throws Exception {
         ImmutableAllCentralAdminConfig.Builder builder = ImmutableAllCentralAdminConfig.builder()
-                .general(getCentralAdminGeneralConfig());
+                .general((ImmutableCentralAdminGeneralConfig) getCentralAdminGeneralConfig().toCompletableFuture().join());
         for (UserConfig userConfig : getUserConfigs()) {
             builder.addUsers(ImmutableUserConfig.copyOf(userConfig));
         }
@@ -1182,7 +1209,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public LazySecretKey getLazySecretKey() throws Exception {
+    public LazySecretKey getLazySecretKey() {
         return lazySecretKey;
     }
 

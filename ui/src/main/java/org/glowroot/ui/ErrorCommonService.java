@@ -57,7 +57,7 @@ class ErrorCommonService {
                     .rollupLevel(rollupLevel)
                     .build();
             aggregateRepository.mergeOverallErrorSummaryInto(agentRollupId, revisedQuery,
-                    collector, CassandraProfile.web);
+                    collector, CassandraProfile.web).toCompletableFuture().join();
             long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > revisedTo) {
@@ -88,7 +88,7 @@ class ErrorCommonService {
                     .rollupLevel(rollupLevel)
                     .build();
             aggregateRepository.mergeTransactionNameErrorSummariesInto(agentRollupId, revisedQuery,
-                    sortOrder, limit, collector, CassandraProfile.web);
+                    sortOrder, limit, collector, CassandraProfile.web).toCompletableFuture().join();
             long lastRolledUpTime = collector.getLastCaptureTime();
             revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
             if (revisedFrom > revisedTo) {

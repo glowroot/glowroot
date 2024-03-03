@@ -48,8 +48,6 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
 
-    private final RateLimiter<TraceAttributeNameKey> rateLimiter = new RateLimiter<>();
-
     private final AsyncCache<String, Map<String, List<String>>> traceAttributeNamesCache;
 
     TraceAttributeNameDao(Session session, ConfigRepositoryImpl configRepository,
@@ -78,11 +76,6 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
     }
 
     CompletableFuture<?> store(String agentRollupId, String transactionType, String traceAttributeName) {
-        TraceAttributeNameKey rateLimiterKey = ImmutableTraceAttributeNameKey.of(agentRollupId,
-                transactionType, traceAttributeName);
-        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
-            return CompletableFuture.completedFuture(null);
-        }
         int i = 0;
         BoundStatement boundStatement = insertPS.bind()
                 .setString(i++, agentRollupId)
@@ -90,9 +83,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
                 .setString(i++, traceAttributeName)
                 .setInt(i++, getTraceTTL());
         return session.writeAsync(boundStatement, CassandraProfile.collector).whenComplete(((asyncResultSet, throwable) -> {
-            if (throwable != null) {
-                rateLimiter.release(rateLimiterKey);
-            } else {
+            if (throwable == null) {
                 traceAttributeNamesCache.invalidate(agentRollupId);
             }
         })).toCompletableFuture();

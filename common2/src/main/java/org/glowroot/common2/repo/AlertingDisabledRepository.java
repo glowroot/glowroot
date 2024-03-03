@@ -17,13 +17,13 @@ package org.glowroot.common2.repo;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.concurrent.CompletionStage;
+
 public interface AlertingDisabledRepository {
 
     // central supports alert configs on rollups
-    @Nullable
-    Long getAlertingDisabledUntilTime(String agentRollupId, CassandraProfile profile) throws Exception;
+    CompletionStage<Long> getAlertingDisabledUntilTime(String agentRollupId, CassandraProfile profile);
 
     // central supports alert configs on rollups
-    void setAlertingDisabledUntilTime(String agentRollupId, @Nullable Long disabledUntilTime, CassandraProfile profile)
-            throws Exception;
+    CompletionStage<?> setAlertingDisabledUntilTime(String agentRollupId, @Nullable Long disabledUntilTime, CassandraProfile profile);
 }

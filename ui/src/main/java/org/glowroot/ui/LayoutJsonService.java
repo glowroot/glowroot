@@ -48,7 +48,7 @@ class LayoutJsonService {
     String getTopLevelAgentRollups(@BindRequest TopLevelAgentRollupsRequest request,
             @BindAuthentication Authentication authentication) throws Exception {
         List<TopLevelAgentRollup> topLevelAgentRollups =
-                activeAgentRepository.readActiveTopLevelAgentRollups(request.from(), request.to(), CassandraProfile.web);
+                activeAgentRepository.readActiveTopLevelAgentRollups(request.from(), request.to(), CassandraProfile.web).toCompletableFuture().get();
         List<FilteredTopLevelAgentRollup> filtered = Lists.newArrayList();
         for (TopLevelAgentRollup topLevelAgentRollup : topLevelAgentRollups) {
             HasAnyPermission hasAnyPermission =
@@ -70,7 +70,7 @@ class LayoutJsonService {
         List<FilteredChildAgentRollup> childAgentRollups =
                 filterChildAgentRollups(
                         activeAgentRepository.readActiveChildAgentRollups(
-                                request.topLevelId(), request.from(), request.to(), CassandraProfile.web),
+                                request.topLevelId(), request.from(), request.to(), CassandraProfile.web).toCompletableFuture().get(),
                         authentication);
         List<AgentRollupSmall> dropdown = Lists.newArrayList();
         for (FilteredChildAgentRollup childAgentRollup : childAgentRollups) {

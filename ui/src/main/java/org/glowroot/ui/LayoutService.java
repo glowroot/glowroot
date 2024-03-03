@@ -126,7 +126,7 @@ class LayoutService {
         if (agentRollupId.endsWith("::")) {
             glowrootVersion = "";
         } else {
-            Environment environment = environmentRepository.read(agentRollupId, CassandraProfile.web);
+            Environment environment = environmentRepository.read(agentRollupId, CassandraProfile.web).toCompletableFuture().get();
             glowrootVersion = environment == null ? Version.UNKNOWN_VERSION
                     : environment.getJavaInfo().getGlowrootAgentVersion();
         }
@@ -141,7 +141,7 @@ class LayoutService {
         transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(agentRollupId));
         transactionTypes.addAll(liveTraceRepository.getTransactionTypes(agentRollupId));
         transactionTypes.add(uiConfig.getDefaultTransactionType());
-        List<String> displayParts = agentDisplayRepository.readDisplayParts(agentRollupId);
+        List<String> displayParts = agentDisplayRepository.readDisplayParts(agentRollupId).get();
         String topLevelId = getTopLevelId(agentRollupId);
         String childDisplay;
         if (topLevelId.equals(agentRollupId)) {

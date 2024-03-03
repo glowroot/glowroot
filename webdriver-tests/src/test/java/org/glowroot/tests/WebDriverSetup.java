@@ -30,6 +30,7 @@ import com.saucelabs.common.SauceOnDemandAuthentication;
 import com.saucelabs.common.SauceOnDemandSessionIdProvider;
 import com.saucelabs.junit.SauceOnDemandTestWatcher;
 import kr.motd.maven.os.Detector;
+import org.apache.commons.io.FileUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -55,6 +56,7 @@ import org.rauschig.jarchivelib.ArchiverFactory;
 import org.rauschig.jarchivelib.CompressionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.CassandraContainer;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -69,8 +71,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class WebDriverSetup {
 
-    protected static final boolean useCentral =
-            Boolean.getBoolean("glowroot.internal.webdriver.useCentral");
+    protected static final boolean useCentral = true;
+            //Boolean.getBoolean("glowroot.internal.webdriver.useCentral");
 
     // travis build is currently failing with jbrowser driver
     private static final boolean USE_JBROWSER_DRIVER = false;
@@ -78,7 +80,7 @@ public class WebDriverSetup {
     private static final String GECKO_DRIVER_VERSION = "0.33.0";
 
     private static final Logger logger = LoggerFactory.getLogger(WebDriverSetup.class);
-    private static final int MAX_CONCURRENT_QUERIES = 1024;
+
 
     static {
         // shorter time so aggregates and gauges will be collected during BasicSmokeIT
@@ -86,14 +88,14 @@ public class WebDriverSetup {
         System.setProperty("glowroot.internal.gaugeCollectionIntervalMillis", "1000");
     }
 
-    public static WebDriverSetup create() throws Exception {
+    public static WebDriverSetup create(CassandraContainer cassandra) throws Exception {
         if (!SharedSetupRunListener.useSharedSetup()) {
-            return createSetup(false);
+            return createSetup(false, cassandra);
         }
         WebDriverSetup sharedSetup = SharedSetupRunListener.getSharedSetup();
         if (sharedSetup == null) {
-            sharedSetup = createSetup(true);
-            SharedSetupRunListener.setSharedSetup(sharedSetup);
+            sharedSetup = createSetup(true, cassandra);
+            SharedSetupRunListener.setSharedSetup(sharedSetup, cassandra);
         } else {
             sharedSetup.resetDriver();
         }
@@ -117,11 +119,11 @@ public class WebDriverSetup {
         this.driver = driver;
     }
 
-    public void close() throws Exception {
-        close(false);
+    public void close(CassandraContainer cassandra) throws Exception {
+        close(false, cassandra);
     }
 
-    public void close(boolean evenIfShared) throws Exception {
+    public void close(boolean evenIfShared, CassandraContainer cassandra) throws Exception {
         if (shared && !evenIfShared) {
             // this is the shared setup and will be closed at the end of the run
             return;
@@ -132,7 +134,7 @@ public class WebDriverSetup {
         container.close();
         if (useCentral) {
             centralModule.shutdown(false);
-            CassandraWrapper.stop();
+            try (CassandraContainer cas = cassandra) {}
         }
     }
 
@@ -194,32 +196,27 @@ public class WebDriverSetup {
         }
     }
 
-    private static WebDriverSetup createSetup(boolean shared) throws Exception {
+    private static WebDriverSetup createSetup(boolean shared, CassandraContainer cassandra) throws Exception {
         int uiPort = getAvailablePort();
         File testDir = Files.createTempDir();
         CentralModule centralModule;
         Container container;
         if (useCentral) {
-            CassandraWrapper.start();
+            cassandra.start();
             CqlSessionBuilder cqlSessionBuilder = CqlSession.builder()
-                    .addContactPoint(new InetSocketAddress("127.0.0.1", 9042))
-                    .withLocalDatacenter("datacenter1")
-                    .withConfigLoader(DriverConfigLoader.programmaticBuilder()
-                            .startProfile(CassandraProfile.slow.name())
-                            .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(60))
-                            .withBoolean(DefaultDriverOption.REQUEST_WARN_IF_SET_KEYSPACE, false)
-                            .endProfile()
-                            .build());
-            Session session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
-                    0);
-            session.updateSchemaWithRetry("drop table if exists agent_config");
-            session.updateSchemaWithRetry("drop table if exists user");
-            session.updateSchemaWithRetry("drop table if exists role");
-            session.updateSchemaWithRetry("drop table if exists central_config");
-            session.updateSchemaWithRetry("drop table if exists agent");
-            session.close();
+                    .addContactPoint(cassandra.getContactPoint())
+                    .withLocalDatacenter(cassandra.getLocalDatacenter())
+                    .withConfigLoader(DriverConfigLoader.fromClasspath("datastax-driver.conf"));
+            try (Session session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
+                    0)) {
+                session.updateSchemaWithRetry("drop table if exists agent_config");
+                session.updateSchemaWithRetry("drop table if exists user");
+                session.updateSchemaWithRetry("drop table if exists role");
+                session.updateSchemaWithRetry("drop table if exists central_config");
+                session.updateSchemaWithRetry("drop table if exists agent");
+            }
             int grpcPort = getAvailablePort();
-            centralModule = createCentralModule(uiPort, grpcPort);
+            centralModule = createCentralModule(uiPort, grpcPort, cassandra.getContactPoint().getHostString(), cassandra.getLocalDatacenter(), cassandra.getContactPoint().getPort());
             container = createContainerReportingToCentral(grpcPort, testDir);
         } else {
             centralModule = null;
@@ -289,10 +286,13 @@ public class WebDriverSetup {
         return container;
     }
 
-    private static CentralModule createCentralModule(int uiPort, int grpcPort) throws Exception {
+    private static CentralModule createCentralModule(int uiPort, int grpcPort, String contactPoints, String localDatacenter, int port) throws Exception {
         File centralDir = new File("target");
         File propsFile = new File(centralDir, "glowroot-central.properties");
         try (PrintWriter props = new PrintWriter(propsFile)) {
+            props.println("cassandra.contactPoints="+contactPoints);
+            props.println("cassandra.localDatacenter="+localDatacenter);
+            props.println("cassandra.port="+port);
             props.println("cassandra.keyspace=glowroot_unit_tests");
             byte[] bytes = new byte[16];
             new SecureRandom().nextBytes(bytes);
@@ -302,59 +302,8 @@ public class WebDriverSetup {
             props.println("ui.port=" + uiPort);
         }
         File datastaxFile = new File(centralDir, "datastax-driver.conf");
-        try (PrintWriter driver = new PrintWriter(datastaxFile)) {
-            driver.println("# https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/configuration/reference/\n" +
-                    "datastax-java-driver {\n" +
-                    "  advanced.protocol.version = V4\n" +
-                    "  basic.request {\n" +
-                    "    default-idempotence = true\n" +
-                    "    consistency = LOCAL_QUORUM\n" +
-                    "    serial-consistency = LOCAL_SERIAL\n" +
-                    "  }\n" +
-                    "  advanced.reconnection-policy.class = ConstantReconnectionPolicy\n" +
-                    "  advanced.reconnection-policy.base-delay = 1 second\n" +
-                    "  advanced.connection.max-requests-per-connection = 1024\n" +
-                    "  advanced.request.warn-if-set-keyspace = false\n" +
-                    "  advanced.throttler {\n" +
-                    "    class = PassThroughRequestThrottler\n" +
-                    "  }\n" +
-                    "  advanced.timestamp-generator.class = ServerSideTimestampGenerator\n" +
-                    "  profiles {\n" +
-                    "    slow {\n" +
-                    "      basic.request.timeout = 300 seconds\n" +
-                    "      advanced.throttler {\n" +
-                    "        class = ConcurrencyLimitingRequestThrottler\n" +
-                    "        max-concurrent-requests = 10\n" +
-                    "        max-queue-size = 10000\n" +
-                    "      }\n" +
-                    "    }\n" +
-                    "    collector {\n" +
-                    "      basic.request.timeout = 30 seconds\n" +
-                    "      advanced.throttler {\n" +
-                    "        class = ConcurrencyLimitingRequestThrottler\n" +
-                    "        max-concurrent-requests = 100\n" +
-                    "        max-queue-size = 10000\n" +
-                    "      }\n" +
-                    "    }\n" +
-                    "    rollup {\n" +
-                    "      basic.request.timeout = 2 seconds\n" +
-                    "      advanced.throttler {\n" +
-                    "        class = ConcurrencyLimitingRequestThrottler\n" +
-                    "        max-concurrent-requests = 10\n" +
-                    "        max-queue-size = 100\n" +
-                    "      }\n" +
-                    "    },\n" +
-                    "    web {\n" +
-                    "      basic.request.timeout = 2 seconds\n" +
-                    "      advanced.throttler {\n" +
-                    "        class = RateLimitingRequestThrottler\n" +
-                    "        max-requests-per-second = 50\n" +
-                    "        max-queue-size = 1000\n" +
-                    "        drain-interval = 10 milliseconds\n" +
-                    "      }\n" +
-                    "    }\n" +
-                    "  }\n" +
-                    "}");
+        try (InputStream is = WebDriverSetup.class.getClassLoader().getResourceAsStream("datastax-driver.conf")) {
+            FileUtils.copyInputStreamToFile(is, datastaxFile);
         }
         String prior = System.getProperty("glowroot.log.dir");
         try {

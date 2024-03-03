@@ -104,7 +104,7 @@ class JvmJsonService {
 
     @GET(path = "/backend/jvm/environment", permission = "agent:jvm:environment")
     String getEnvironment(@BindAgentId String agentId) throws Exception {
-        Environment environment = environmentRepository.read(agentId, CassandraProfile.web);
+        Environment environment = environmentRepository.read(agentId, CassandraProfile.web).toCompletableFuture().join();
         if (environment == null) {
             return "{}";
         }
@@ -269,7 +269,7 @@ class JvmJsonService {
         if (!liveJvmService.isAvailable(agentId)) {
             return "{\"agentNotConnected\":true}";
         }
-        Environment environment = environmentRepository.read(agentId, CassandraProfile.web);
+        Environment environment = environmentRepository.read(agentId, CassandraProfile.web).toCompletableFuture().join();
         checkNotNull(environment);
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
@@ -537,7 +537,7 @@ class JvmJsonService {
     }
 
     private String getAgentVersion(String agentId) throws Exception {
-        Environment environment = environmentRepository.read(agentId, CassandraProfile.web);
+        Environment environment = environmentRepository.read(agentId, CassandraProfile.web).toCompletableFuture().join();
         return environment == null ? Version.UNKNOWN_VERSION
                 : environment.getJavaInfo().getGlowrootAgentVersion();
     }

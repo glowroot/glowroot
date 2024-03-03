@@ -197,7 +197,7 @@ class AlertConfigJsonService {
         ImmutableAlertListResponse.Builder builder = ImmutableAlertListResponse.builder()
                 .alerts(alertListItems);
         Long disabledUntilTime =
-                alertingDisableRepository.getAlertingDisabledUntilTime(agentRollupId, CassandraProfile.web);
+                alertingDisableRepository.getAlertingDisabledUntilTime(agentRollupId, CassandraProfile.web).toCompletableFuture().join();
         if (disabledUntilTime != null) {
             long disabledForNextMillis = disabledUntilTime - clock.currentTimeMillis();
             if (disabledForNextMillis > 0) {
@@ -209,7 +209,7 @@ class AlertConfigJsonService {
 
     private List<Gauge> getGaugeDropdownItems(String agentRollupId)
             throws Exception {
-        List<Gauge> gauges = gaugeValueRepository.getRecentlyActiveGauges(agentRollupId);
+        List<Gauge> gauges = gaugeValueRepository.getRecentlyActiveGauges(agentRollupId).toCompletableFuture().get();
         return new GaugeOrdering().immutableSortedCopy(gauges);
     }
 

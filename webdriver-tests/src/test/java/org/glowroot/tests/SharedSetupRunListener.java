@@ -18,12 +18,14 @@ package org.glowroot.tests;
 import org.junit.runner.Description;
 import org.junit.runner.Result;
 import org.junit.runner.notification.RunListener;
+import org.testcontainers.containers.CassandraContainer;
 
 public class SharedSetupRunListener extends RunListener {
 
     private static volatile boolean useSharedSetup;
     private static volatile WebDriverSetup sharedSetup;
 
+    private static volatile CassandraContainer cassandra;
     public static boolean useSharedSetup() {
         return useSharedSetup;
     }
@@ -32,8 +34,9 @@ public class SharedSetupRunListener extends RunListener {
         return sharedSetup;
     }
 
-    public static void setSharedSetup(WebDriverSetup setup) {
+    public static void setSharedSetup(WebDriverSetup setup, CassandraContainer cass) {
         sharedSetup = setup;
+        cassandra = cass;
     }
 
     @Override
@@ -44,7 +47,7 @@ public class SharedSetupRunListener extends RunListener {
     @Override
     public void testRunFinished(Result result) throws Exception {
         if (sharedSetup != null) {
-            sharedSetup.close(true);
+            sharedSetup.close(true, cassandra);
             sharedSetup = null;
         }
     }

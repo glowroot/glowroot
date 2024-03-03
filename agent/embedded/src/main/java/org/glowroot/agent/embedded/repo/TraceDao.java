@@ -23,6 +23,7 @@ import java.sql.Types;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Strings;
@@ -194,18 +195,18 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public long readSlowCount(String agentRollupId, TraceQuery query) throws Exception {
+    public CompletionStage<Long> readSlowCount(String agentRollupId, TraceQuery query) throws Exception {
         String transactionName = query.transactionName();
         if (transactionName == null) {
-            return dataSource.queryForLong(
+            return CompletableFuture.completedFuture(dataSource.queryForLong(
                     "select count(*) from trace where transaction_type = ? and capture_time > ?"
                             + " and capture_time <= ? and slow = ?",
-                    query.transactionType(), query.from(), query.to(), true);
+                    query.transactionType(), query.from(), query.to(), true));
         } else {
-            return dataSource.queryForLong(
+            return CompletableFuture.completedFuture(dataSource.queryForLong(
                     "select count(*) from trace where transaction_type = ? and transaction_name = ?"
                             + " and capture_time > ? and capture_time <= ? and slow = ?",
-                    query.transactionType(), transactionName, query.from(), query.to(), true);
+                    query.transactionType(), transactionName, query.from(), query.to(), true));
         }
     }
 
@@ -216,18 +217,18 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public long readErrorCount(String agentRollupId, TraceQuery query) throws Exception {
+    public CompletionStage<Long> readErrorCount(String agentRollupId, TraceQuery query) throws Exception {
         String transactionName = query.transactionName();
         if (transactionName == null) {
-            return dataSource.queryForLong(
+            return CompletableFuture.completedFuture(dataSource.queryForLong(
                     "select count(*) from trace where transaction_type = ? and capture_time > ?"
                             + " and capture_time <= ? and error = ?",
-                    query.transactionType(), query.from(), query.to(), true);
+                    query.transactionType(), query.from(), query.to(), true));
         } else {
-            return dataSource.queryForLong(
+            return CompletableFuture.completedFuture(dataSource.queryForLong(
                     "select count(*) from trace where transaction_type = ? and transaction_name = ?"
                             + " and capture_time > ? and capture_time <= ? and error = ?",
-                    query.transactionType(), transactionName, query.from(), query.to(), true);
+                    query.transactionType(), transactionName, query.from(), query.to(), true));
         }
     }
 
@@ -238,83 +239,95 @@ public class TraceDao implements TraceRepository {
     }
 
     @Override
-    public ErrorMessageResult readErrorMessages(String agentRollupId, TraceQuery query,
-            ErrorMessageFilter filter, long resolutionMillis, int limit) throws Exception {
-        List<ErrorMessagePoint> points =
-                dataSource.query(new ErrorPointQuery(query, filter, resolutionMillis));
-        List<ErrorMessageCount> counts =
-                dataSource.query(new ErrorMessageCountQuery(query, filter, limit + 1));
-        // one extra record over the limit is fetched above to identify if the limit was hit
-        return ImmutableErrorMessageResult.builder()
-                .addAllPoints(points)
-                .counts(Result.create(counts, limit))
-                .build();
-    }
-
-    @Override
-    public long readErrorMessageCount(String agentRollupId, TraceQuery query,
-            String errorMessageFilter, CassandraProfile profile) throws Exception {
-        if (errorMessageFilter.startsWith("/") && errorMessageFilter.endsWith("/")) {
-            Pattern errorMessagePattern = Pattern
-                    .compile(errorMessageFilter.substring(1, errorMessageFilter.length() - 1));
-            return dataSource.query(new ErrorCountQueryForPattern(query, errorMessagePattern));
-        } else {
-            return dataSource.query(new ErrorCountQuery(query, errorMessageFilter));
+    public CompletionStage<ErrorMessageResult> readErrorMessages(String agentRollupId, TraceQuery query,
+            ErrorMessageFilter filter, long resolutionMillis, int limit) {
+        try {
+            List<ErrorMessagePoint> points =
+                    dataSource.query(new ErrorPointQuery(query, filter, resolutionMillis));
+            List<ErrorMessageCount> counts =
+                    dataSource.query(new ErrorMessageCountQuery(query, filter, limit + 1));
+            // one extra record over the limit is fetched above to identify if the limit was hit
+            return CompletableFuture.completedFuture(ImmutableErrorMessageResult.builder()
+                    .addAllPoints(points)
+                    .counts(Result.create(counts, limit))
+                    .build());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
-    public @Nullable HeaderPlus readHeaderPlus(String agentId, String traceId) throws Exception {
-        return dataSource.queryAtMostOne(new TraceHeaderQuery(traceId));
+    public CompletionStage<Long> readErrorMessageCount(String agentRollupId, TraceQuery query,
+            String errorMessageFilter, CassandraProfile profile) {
+        try {
+            if (errorMessageFilter.startsWith("/") && errorMessageFilter.endsWith("/")) {
+                Pattern errorMessagePattern = Pattern
+                        .compile(errorMessageFilter.substring(1, errorMessageFilter.length() - 1));
+                return CompletableFuture.completedFuture(dataSource.query(new ErrorCountQueryForPattern(query, errorMessagePattern)));
+            } else {
+                return CompletableFuture.completedFuture(dataSource.query(new ErrorCountQuery(query, errorMessageFilter)));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public @Nullable Entries readEntries(String agentId, String traceId, CassandraProfile profile) throws Exception {
-        return dataSource.query(new EntriesQuery(traceId));
+    public CompletionStage<HeaderPlus> readHeaderPlus(String agentId, String traceId) {
+        try {
+            return CompletableFuture.completedFuture(dataSource.queryAtMostOne(new TraceHeaderQuery(traceId)));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public @Nullable Queries readQueries(String agentId, String traceId, CassandraProfile profile) throws Exception {
-        return dataSource.query(new QueriesQuery(traceId));
+    public CompletionStage<Entries> readEntries(String agentId, String traceId, CassandraProfile profile) throws Exception {
+        return CompletableFuture.completedFuture(dataSource.query(new EntriesQuery(traceId)));
+    }
+
+    @Override
+    public CompletionStage<Queries> readQueries(String agentId, String traceId, CassandraProfile profile) throws Exception {
+        return CompletableFuture.completedFuture(dataSource.query(new QueriesQuery(traceId)));
     }
 
     // since this is only used by export, SharedQueryTexts are always returned with fullTrace
     // (never with truncatedText/truncatedEndText/fullTraceSha1)
     @Override
-    public @Nullable EntriesAndQueries readEntriesAndQueriesForExport(String agentId,
+    public CompletableFuture<EntriesAndQueries> readEntriesAndQueriesForExport(String agentId,
             String traceId, CassandraProfile profile) throws Exception {
         EntriesAndQueries entriesAndQueries = dataSource.query(new EntriesAndQueriesQuery(traceId));
         if (entriesAndQueries == null) {
-            return null;
+            return CompletableFuture.completedFuture(null);
         }
-        return ImmutableEntriesAndQueries.builder()
+        return CompletableFuture.completedFuture(ImmutableEntriesAndQueries.builder()
                 .copyFrom(entriesAndQueries)
                 .sharedQueryTexts(
                         getSharedQueryTextsForExport(entriesAndQueries.sharedQueryTexts()))
-                .build();
+                .build());
     }
 
     @Override
-    public @Nullable Profile readMainThreadProfile(String agentId, String traceId)
+    public CompletionStage<Profile> readMainThreadProfile(String agentId, String traceId)
             throws Exception {
         Long cappedId = dataSource.queryForOptionalLong(
                 "select main_thread_profile_capped_id from trace where id = ?", traceId);
         if (cappedId == null) {
             // trace must have just expired while user was viewing it, or data source is closing
-            return null;
+            return CompletableFuture.completedFuture(null);
         }
-        return traceCappedDatabase.readMessage(cappedId, Profile.parser());
+        return CompletableFuture.completedFuture(traceCappedDatabase.readMessage(cappedId, Profile.parser()));
     }
 
     @Override
-    public @Nullable Profile readAuxThreadProfile(String agentId, String traceId) throws Exception {
+    public CompletionStage<Profile> readAuxThreadProfile(String agentId, String traceId) throws Exception {
         Long cappedId = dataSource.queryForOptionalLong(
                 "select aux_thread_profile_capped_id from trace where id = ?", traceId);
         if (cappedId == null) {
             // trace must have just expired while user was viewing it, or data source is closing
-            return null;
+            return CompletableFuture.completedFuture(null);
         }
-        return traceCappedDatabase.readMessage(cappedId, Profile.parser());
+        return CompletableFuture.completedFuture(traceCappedDatabase.readMessage(cappedId, Profile.parser()));
     }
 
     void deleteBefore(long captureTime) throws SQLException {

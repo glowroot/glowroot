@@ -16,7 +16,9 @@
 package org.glowroot.central.repo;
 
 import java.time.Instant;
+import java.util.concurrent.CompletionStage;
 
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
@@ -54,7 +56,7 @@ public class AlertingDisabledDao implements AlertingDisabledRepository {
     }
 
     @Override
-    public @Nullable Long getAlertingDisabledUntilTime(String agentRollupId, CassandraProfile profile) throws Exception {
+    public CompletionStage<Long> getAlertingDisabledUntilTime(String agentRollupId, CassandraProfile profile) {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentRollupId);
         return session.readAsync(boundStatement, profile).thenApply(results -> {
@@ -64,16 +66,15 @@ public class AlertingDisabledDao implements AlertingDisabledRepository {
             }
             Instant timestamp = row.getInstant(0);
             return timestamp == null ? null : timestamp.toEpochMilli();
-        }).toCompletableFuture().get();
+        });
     }
 
     @Override
-    public void setAlertingDisabledUntilTime(String agentRollupId, @Nullable Long disabledUntilTime, CassandraProfile profile)
-            throws Exception {
+    public CompletionStage<?> setAlertingDisabledUntilTime(String agentRollupId, @Nullable Long disabledUntilTime, CassandraProfile profile) {
         if (disabledUntilTime == null) {
             BoundStatement boundStatement = deletePS.bind()
                 .setString(0, agentRollupId);
-            session.writeAsync(boundStatement, profile).toCompletableFuture().get();
+            return session.writeAsync(boundStatement, profile);
         } else {
             int i = 0;
             BoundStatement boundStatement = insertPS.bind()
@@ -81,7 +82,7 @@ public class AlertingDisabledDao implements AlertingDisabledRepository {
                 .setInstant(i++, Instant.ofEpochMilli(disabledUntilTime))
                 .setInt(i++, Ints.saturatedCast(
                     MILLISECONDS.toSeconds(disabledUntilTime - clock.currentTimeMillis())));
-            session.writeAsync(boundStatement, profile).toCompletableFuture().get();
+            return session.writeAsync(boundStatement, profile);
         }
     }
 }

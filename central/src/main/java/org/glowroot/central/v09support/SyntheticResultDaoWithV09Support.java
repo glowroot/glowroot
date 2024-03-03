@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -95,17 +97,19 @@ public class SyntheticResultDaoWithV09Support implements SyntheticResultDao {
     }
 
     @Override
-    public List<SyntheticResultRollup0> readLastFromRollup0(String agentRollupId,
-            String syntheticMonitorId, int x) throws Exception {
+    public CompletionStage<List<SyntheticResultRollup0>> readLastFromRollup0(String agentRollupId,
+                                                                             String syntheticMonitorId, int x) {
         return delegate.readLastFromRollup0(agentRollupId, syntheticMonitorId, x);
     }
 
     @Override
-    public void rollup(String agentRollupId) throws Exception {
-        delegate.rollup(agentRollupId);
-        if (agentRollupIdsWithV09Data.contains(agentRollupId)
-                && clock.currentTimeMillis() < v09LastCaptureTime + DAYS.toMillis(30)) {
-            delegate.rollup(V09Support.convertToV09(agentRollupId));
-        }
+    public CompletionStage<?> rollup(String agentRollupId) {
+        return delegate.rollup(agentRollupId).thenCompose(ignored -> {
+            if (agentRollupIdsWithV09Data.contains(agentRollupId)
+                    && clock.currentTimeMillis() < v09LastCaptureTime + DAYS.toMillis(30)) {
+                return delegate.rollup(V09Support.convertToV09(agentRollupId));
+            }
+            return CompletableFuture.completedFuture(null);
+        });
     }
 }

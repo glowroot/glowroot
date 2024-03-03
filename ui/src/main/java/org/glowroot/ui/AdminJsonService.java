@@ -496,7 +496,7 @@ class AdminJsonService {
             String agentDisplay;
             if (central) {
                 centralDisplay =
-                        configRepository.getCentralAdminGeneralConfig().centralDisplayName();
+                        configRepository.getCentralAdminGeneralConfig().toCompletableFuture().join().centralDisplayName();
                 agentDisplay = "";
             } else {
                 centralDisplay = "";
@@ -730,7 +730,7 @@ class AdminJsonService {
 
     private String getCentralAdminGeneralConfig() throws Exception {
         return mapper.writeValueAsString(CentralAdminGeneralConfigDto
-                .create(configRepository.getCentralAdminGeneralConfig()));
+                .create(configRepository.getCentralAdminGeneralConfig().toCompletableFuture().join()));
     }
 
     private String getEmbeddedWebConfig(boolean portChangeFailed) throws Exception {

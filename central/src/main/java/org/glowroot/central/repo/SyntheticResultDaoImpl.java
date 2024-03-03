@@ -15,26 +15,16 @@
  */
 package org.glowroot.central.repo;
 
-import java.nio.ByteBuffer;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.DoubleAccumulator;
-import java.util.function.Function;
-
-import com.datastax.oss.driver.api.core.cql.*;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
+import com.spotify.futures.CompletableFutures;
 import org.checkerframework.checker.nullness.qual.Nullable;
-
 import org.glowroot.central.repo.Common.NeedsRollup;
 import org.glowroot.central.repo.proto.Stored;
 import org.glowroot.central.util.Messages;
@@ -43,9 +33,25 @@ import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
-import org.glowroot.common2.repo.*;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
+import org.glowroot.common2.repo.ErrorIntervalCollector;
+import org.glowroot.common2.repo.ImmutableErrorInterval;
+import org.glowroot.common2.repo.ImmutableSyntheticResult;
+import org.glowroot.common2.repo.SyntheticResult;
 import org.glowroot.common2.repo.SyntheticResult.ErrorInterval;
+
+import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.DoubleAccumulator;
+import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -72,7 +78,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     private final PreparedStatement readLastFromRollup0;
 
     SyntheticResultDaoImpl(Session session, ConfigRepositoryImpl configRepository,
-            Executor asyncExecutor, int cassandraGcGraceSeconds, Clock clock) throws Exception {
+                           Executor asyncExecutor, int cassandraGcGraceSeconds, Clock clock) throws Exception {
         this.session = session;
         this.configRepository = configRepository;
         this.asyncExecutor = asyncExecutor;
@@ -141,8 +147,8 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     // rollups that have their own synthetic monitors defined
     @Override
     public void store(String agentRollupId, String syntheticMonitorId,
-            String syntheticMonitorDisplay, long captureTime, long durationNanos,
-            @Nullable String errorMessage) throws Exception {
+                      String syntheticMonitorDisplay, long captureTime, long durationNanos,
+                      @Nullable String errorMessage) throws Exception {
         int ttl = getTTLs().get(0);
         long maxCaptureTime = 0;
         BoundStatement boundStatement = insertResultPS.get(0).bind();
@@ -150,10 +156,10 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
         int i = 0;
         boundStatement = boundStatement.setString(i++, agentRollupId)
-            .setString(i++, syntheticMonitorId)
-            .setInstant(i++, Instant.ofEpochMilli(captureTime))
-            .setDouble(i++, durationNanos)
-            .setLong(i++, 1);
+                .setString(i++, syntheticMonitorId)
+                .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                .setDouble(i++, durationNanos)
+                .setLong(i++, 1);
         if (errorMessage == null) {
             boundStatement = boundStatement.setToNull(i++);
         } else {
@@ -184,11 +190,11 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
                 Common.getNeedsRollupAdjustedTTL(adjustedTTL, configRepository.getRollupConfigs());
         i = 0;
         boundStatement = insertNeedsRollup.get(0).bind()
-            .setString(i++, agentRollupId)
-            .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
-            .setUuid(i++, Uuids.timeBased())
-            .setSet(i++, ImmutableSet.of(syntheticMonitorId), String.class)
-            .setInt(i++, needsRollupAdjustedTTL);
+                .setString(i++, agentRollupId)
+                .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
+                .setUuid(i++, Uuids.timeBased())
+                .setSet(i++, ImmutableSet.of(syntheticMonitorId), String.class)
+                .setInt(i++, needsRollupAdjustedTTL);
         session.writeAsync(boundStatement, collector).toCompletableFuture().get();
     }
 
@@ -201,13 +207,13 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     // from is INCLUSIVE
     @Override
     public List<SyntheticResult> readSyntheticResults(String agentRollupId,
-            String syntheticMonitorId, long from, long to, int rollupLevel) throws Exception {
+                                                      String syntheticMonitorId, long from, long to, int rollupLevel) throws Exception {
         int i = 0;
         BoundStatement boundStatement = readResultPS.get(rollupLevel).bind()
-            .setString(i++, agentRollupId)
-            .setString(i++, syntheticMonitorId)
-            .setInstant(i++, Instant.ofEpochMilli(from))
-            .setInstant(i++, Instant.ofEpochMilli(to));
+                .setString(i++, agentRollupId)
+                .setString(i++, syntheticMonitorId)
+                .setInstant(i++, Instant.ofEpochMilli(from))
+                .setInstant(i++, Instant.ofEpochMilli(to));
         List<SyntheticResult> syntheticResults = new ArrayList<>();
         Function<AsyncResultSet, CompletableFuture<List<SyntheticResult>>> compute = new Function<AsyncResultSet, CompletableFuture<List<SyntheticResult>>>() {
             @Override
@@ -250,13 +256,13 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     }
 
     @Override
-    public List<SyntheticResultRollup0> readLastFromRollup0(String agentRollupId,
-            String syntheticMonitorId, int x) throws Exception {
+    public CompletionStage<List<SyntheticResultRollup0>> readLastFromRollup0(String agentRollupId,
+                                                                             String syntheticMonitorId, int x) {
         int i = 0;
         BoundStatement boundStatement = readLastFromRollup0.bind()
-            .setString(i++, agentRollupId)
-            .setString(i++, syntheticMonitorId)
-            .setInt(i++, x);
+                .setString(i++, agentRollupId)
+                .setString(i++, syntheticMonitorId)
+                .setInt(i++, x);
 
         List<SyntheticResultRollup0> syntheticResults = new ArrayList<>();
 
@@ -280,51 +286,79 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
                 return CompletableFuture.completedFuture(syntheticResults);
             }
         };
-        return session.readAsync(boundStatement, rollup).thenCompose(compute).toCompletableFuture().get();
+        return session.readAsync(boundStatement, rollup).thenCompose(compute);
     }
 
     @Override
-    public void rollup(String agentRollupId) throws Exception {
+    public CompletionStage<?> rollup(String agentRollupId) {
         List<Integer> ttls = getTTLs();
         int rollupLevel = 1;
-        while (rollupLevel < configRepository.getRollupConfigs().size()) {
-            int ttl = ttls.get(rollupLevel);
-            rollup(agentRollupId, rollupLevel, ttl);
-            rollupLevel++;
-        }
+        CompletionStage<?> starting = CompletableFuture.completedFuture(null);
+
+        Function<Integer, CompletionStage<Integer>> lambda = new Function<>() {
+            @Override
+            public CompletionStage<Integer> apply(Integer rollupLevelInner) {
+                if (rollupLevelInner < configRepository.getRollupConfigs().size()) {
+                    int ttl = ttls.get(rollupLevelInner);
+                    return rollup(agentRollupId, rollupLevelInner, ttl)
+                            .thenApply(ignored -> rollupLevelInner + 1)
+                            .thenCompose(this);
+                } else {
+                    return CompletableFuture.completedFuture(null);
+                }
+            }
+        };
+        return starting.thenApply(ignored -> rollupLevel).thenCompose(lambda);
     }
 
-    private void rollup(String agentRollupId, int rollupLevel, int ttl) throws Exception {
+    private CompletionStage<?> rollup(String agentRollupId, int rollupLevel, int ttl) {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         long rollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
-        Collection<NeedsRollup> needsRollupList = Common.getNeedsRollupList(agentRollupId,
-                rollupLevel, rollupIntervalMillis, readNeedsRollup, session, clock, rollup);
-        Long nextRollupIntervalMillis = null;
-        if (rollupLevel + 1 < rollupConfigs.size()) {
-            nextRollupIntervalMillis = rollupConfigs.get(rollupLevel + 1).intervalMillis();
-        }
-        for (NeedsRollup needsRollup : needsRollupList) {
-            long captureTime = needsRollup.getCaptureTime();
-            long from = captureTime - rollupIntervalMillis;
-            int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
-            Set<String> syntheticMonitorIds = needsRollup.getKeys();
-            List<CompletableFuture<?>> futures = new ArrayList<>();
-            for (String syntheticMonitorId : syntheticMonitorIds) {
-                futures.add(rollupOne(rollupLevel, agentRollupId, syntheticMonitorId, from,
-                        captureTime, adjustedTTL));
-            }
-            // wait for above async work to ensure rollup complete before proceeding
-            MoreFutures.waitForAll(futures);
+        return Common.getNeedsRollupList(agentRollupId,
+                        rollupLevel, rollupIntervalMillis, readNeedsRollup, session, clock, rollup)
+                .thenCompose(needsRollupCollection -> {
+                    Long nextRollupIntervalMillis = null;
+                    if (rollupLevel + 1 < rollupConfigs.size()) {
+                        nextRollupIntervalMillis = rollupConfigs.get(rollupLevel + 1).intervalMillis();
+                    }
+                    final Long finalNextRollupIntervalMillis = nextRollupIntervalMillis;
+                    List<NeedsRollup> needsRollupList = new ArrayList<>(needsRollupCollection);
+                    int maxIndexNeedsRollupList = needsRollupList.size();
 
-            int needsRollupAdjustedTTL =
-                    Common.getNeedsRollupAdjustedTTL(adjustedTTL, rollupConfigs);
-            PreparedStatement insertNeedsRollup = nextRollupIntervalMillis == null ? null
-                    : this.insertNeedsRollup.get(rollupLevel);
-            PreparedStatement deleteNeedsRollup = this.deleteNeedsRollup.get(rollupLevel - 1);
-            Common.postRollup(agentRollupId, needsRollup.getCaptureTime(), syntheticMonitorIds,
-                    needsRollup.getUniquenessKeysForDeletion(), nextRollupIntervalMillis,
-                    insertNeedsRollup, deleteNeedsRollup, needsRollupAdjustedTTL, session, rollup);
-        }
+                    Function<Integer, CompletionStage<?>> lambda = new Function<Integer, CompletionStage<?>>() {
+                        @Override
+                        public CompletionStage<?> apply(Integer indexNeedsRollup) {
+                            if (indexNeedsRollup >= maxIndexNeedsRollupList) {
+                                return CompletableFuture.completedFuture(null);
+                            }
+                            NeedsRollup needsRollup = needsRollupList.get(indexNeedsRollup);
+                            long captureTime = needsRollup.getCaptureTime();
+                            long from = captureTime - rollupIntervalMillis;
+                            int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
+                            Set<String> syntheticMonitorIds = needsRollup.getKeys();
+                            List<CompletionStage<?>> futures = new ArrayList<>();
+                            for (String syntheticMonitorId : syntheticMonitorIds) {
+                                futures.add(rollupOne(rollupLevel, agentRollupId, syntheticMonitorId, from,
+                                        captureTime, adjustedTTL));
+                            }
+                            // wait for above async work to ensure rollup complete before proceeding
+                            return CompletableFutures.allAsList(futures).thenCompose(ignored -> {
+                                int needsRollupAdjustedTTL =
+                                        Common.getNeedsRollupAdjustedTTL(adjustedTTL, rollupConfigs);
+                                PreparedStatement insertNeedsRollup = finalNextRollupIntervalMillis == null ? null
+                                        : SyntheticResultDaoImpl.this.insertNeedsRollup.get(rollupLevel);
+                                PreparedStatement deleteNeedsRollup = SyntheticResultDaoImpl.this.deleteNeedsRollup.get(rollupLevel - 1);
+                                return Common.postRollup(agentRollupId, needsRollup.getCaptureTime(), syntheticMonitorIds,
+                                                needsRollup.getUniquenessKeysForDeletion(), finalNextRollupIntervalMillis,
+                                                insertNeedsRollup, deleteNeedsRollup, needsRollupAdjustedTTL, session, rollup)
+                                        .thenCompose(ignore -> apply(indexNeedsRollup + 1));
+
+                            });
+                        }
+                    };
+
+                    return lambda.apply(0);
+                });
     }
 
     // from is non-inclusive
@@ -332,10 +366,10 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
                                            String syntheticMonitorId, long from, long to, int adjustedTTL) {
         int i = 0;
         BoundStatement boundStatement = readResultForRollupPS.get(rollupLevel - 1).bind()
-            .setString(i++, agentRollupId)
-            .setString(i++, syntheticMonitorId)
-            .setInstant(i++, Instant.ofEpochMilli(from))
-            .setInstant(i++, Instant.ofEpochMilli(to));
+                .setString(i++, agentRollupId)
+                .setString(i++, syntheticMonitorId)
+                .setInstant(i++, Instant.ofEpochMilli(from))
+                .setInstant(i++, Instant.ofEpochMilli(to));
         CompletableFuture<AsyncResultSet> future = session.readAsyncWarnIfNoRows(boundStatement, rollup,
                 "no synthetic result table records found for agentRollupId={},"
                         + " syntheticMonitorId={}, from={}, to={}, level={}",
@@ -350,7 +384,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
     }
 
     private CompletableFuture<?> rollupOneFromRows(int rollupLevel, String agentRollupId,
-            String syntheticMonitorId, long to, int adjustedTTL, AsyncResultSet results) {
+                                                   String syntheticMonitorId, long to, int adjustedTTL, AsyncResultSet results) {
         DoubleAccumulator totalDurationNanos = new DoubleAccumulator(Double::sum, 0.0);
         AtomicLong executionCount = new AtomicLong(0);
         ErrorIntervalCollector errorIntervalCollector = new ErrorIntervalCollector();

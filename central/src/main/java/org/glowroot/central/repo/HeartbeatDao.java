@@ -19,9 +19,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.spotify.futures.CompletableFutures;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
@@ -54,27 +56,26 @@ public class HeartbeatDao {
                 + " and central_capture_time > ? and central_capture_time <= ? limit 1");
     }
 
-    public void store(String agentId) throws Exception {
+    public CompletionStage<?> store(String agentId) {
         List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);
-        List<CompletableFuture<?>> futures = new ArrayList<>();
+        List<CompletionStage<?>> futures = new ArrayList<>();
         for (String agentRollupId : agentRollupIds) {
             int i = 0;
             BoundStatement boundStatement = insertPS.bind()
                 .setString(i++, agentRollupId)
                 .setInstant(i++, Instant.ofEpochMilli(clock.currentTimeMillis()))
                 .setInt(i++, TTL);
-            futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, CassandraProfile.collector));
         }
-        MoreFutures.waitForAll(futures);
+        return CompletableFutures.allAsList(futures);
     }
 
-    public boolean exists(String agentRollupId, long centralCaptureFrom, long centralCaptureTo, CassandraProfile profile)
-            throws Exception {
+    public CompletionStage<Boolean> exists(String agentRollupId, long centralCaptureFrom, long centralCaptureTo, CassandraProfile profile) {
         int i = 0;
         BoundStatement boundStatement = existsPS.bind()
             .setString(i++, agentRollupId)
             .setInstant(i++, Instant.ofEpochMilli(centralCaptureFrom))
             .setInstant(i++, Instant.ofEpochMilli(centralCaptureTo));
-        return session.readAsync(boundStatement, profile).thenApply(results -> results.one()!=null).toCompletableFuture().get();
+        return session.readAsync(boundStatement, profile).thenApply(results -> results.one()!=null);
     }
 }

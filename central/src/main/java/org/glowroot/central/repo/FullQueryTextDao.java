@@ -48,8 +48,6 @@ class FullQueryTextDao implements AutoCloseable {
 
     private final Session session;
     private final ConfigRepositoryImpl configRepository;
-    private final Executor asyncExecutor;
-
     private final PreparedStatement insertCheckV2PS;
     private final PreparedStatement readCheckV2PS;
     private final PreparedStatement readCheckV1PS;
@@ -58,13 +56,11 @@ class FullQueryTextDao implements AutoCloseable {
     private final PreparedStatement readPS;
     private final PreparedStatement readTtlPS;
 
-    private final RateLimiter<String> rateLimiter = new RateLimiter<>(100000, true);
 
-    FullQueryTextDao(Session session, ConfigRepositoryImpl configRepository, Executor asyncExecutor)
+    FullQueryTextDao(Session session, ConfigRepositoryImpl configRepository)
             throws Exception {
         this.session = session;
         this.configRepository = configRepository;
-        this.asyncExecutor = asyncExecutor;
 
         session.createTableWithSTCS("create table if not exists full_query_text_check (agent_rollup"
                 + " varchar, full_query_text_sha1 varchar, primary key (agent_rollup,"
@@ -90,18 +86,15 @@ class FullQueryTextDao implements AutoCloseable {
         readTtlPS = session.prepare(
                 "select TTL(full_query_text) from full_query_text where full_query_text_sha1 = ?");
 
-        MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
-        platformMBeanServer.registerMBean(rateLimiter.getLocalCacheStats(), ObjectName
-                .getInstance("org.glowroot.central:type=FullQueryTextRateLimiter"));
     }
 
-    @Nullable
-    String getFullText(String agentRollupId, String fullTextSha1, CassandraProfile profile) throws Exception {
-        String fullText = getFullTextUsingPS(agentRollupId, fullTextSha1, readCheckV2PS, profile);
-        if (fullText != null) {
-            return fullText;
-        }
-        return getFullTextUsingPS(agentRollupId, fullTextSha1, readCheckV1PS, profile);
+    CompletionStage<String> getFullText(String agentRollupId, String fullTextSha1, CassandraProfile profile) {
+        return getFullTextUsingPS(agentRollupId, fullTextSha1, readCheckV2PS, profile).thenCompose(fullText -> {
+            if (fullText != null) {
+                return CompletableFuture.completedFuture(fullText);
+            }
+            return getFullTextUsingPS(agentRollupId, fullTextSha1, readCheckV1PS, profile);
+        });
     }
 
     List<CompletableFuture<?>> store(List<String> agentRollupIds, String fullTextSha1, String fullText) {
@@ -115,25 +108,12 @@ class FullQueryTextDao implements AutoCloseable {
                 .setInt(i, getTTL());
             futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
         }
-        if (!rateLimiter.tryAcquire(fullTextSha1)) {
-            return futures;
-        }
-        try {
-            futures.add(storeInternal(fullTextSha1, fullText)
-                    .whenComplete((ret, throwable) -> {
-                        if (throwable != null) {
-                            rateLimiter.release(fullTextSha1);
-                        }
-                    }).toCompletableFuture());
-        } catch (RuntimeException t) {
-            rateLimiter.release(fullTextSha1);
-            throw t;
-        }
+        futures.add(storeInternal(fullTextSha1, fullText).toCompletableFuture());
         return futures;
     }
 
-    private @Nullable String getFullTextUsingPS(String agentRollupId, String fullTextSha1,
-            PreparedStatement readCheckPS, CassandraProfile profile) throws ExecutionException, InterruptedException {
+    private CompletionStage<String> getFullTextUsingPS(String agentRollupId, String fullTextSha1,
+            PreparedStatement readCheckPS, CassandraProfile profile) {
         BoundStatement boundStatement = readCheckPS.bind()
             .setString(0, agentRollupId)
             .setString(1, fullTextSha1);
@@ -150,7 +130,7 @@ class FullQueryTextDao implements AutoCloseable {
                 }
                 return row.getString(0);
             });
-        }).toCompletableFuture().get();
+        });
     }
 
     @CheckReturnValue
@@ -203,9 +183,6 @@ class FullQueryTextDao implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
-        platformMBeanServer.unregisterMBean(ObjectName
-                .getInstance("org.glowroot.central:type=FullQueryTextRateLimiter"));
     }
 
     @Value.Immutable

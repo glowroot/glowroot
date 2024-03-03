@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.cql.*;
@@ -76,16 +77,16 @@ class Common {
         return Math.max(needsRollupAdjustedTTL, 60);
     }
 
-    static Collection<NeedsRollup> getNeedsRollupList(String agentRollupId, int rollupLevel,
-                                                      long rollupIntervalMillis, List<PreparedStatement> readNeedsRollup, Session session,
-                                                      Clock clock, CassandraProfile profile) throws Exception {
+    static CompletionStage<Collection<NeedsRollup>> getNeedsRollupList(String agentRollupId, int rollupLevel,
+                                                                       long rollupIntervalMillis, List<PreparedStatement> readNeedsRollup, Session session,
+                                                                       Clock clock, CassandraProfile profile) {
         // capture current time before reading data to prevent race condition with optimization
         // that prevents duplicate needs rollup data which is also based on current time
         long currentTimeMillis = clock.currentTimeMillis();
         BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind()
             .setString(0, agentRollupId);
         Map<Long, NeedsRollup> needsRollupMap = new LinkedHashMap<>();
-        Function<AsyncResultSet, CompletableFuture<Map<Long, NeedsRollup>>> compute = new com.google.common.base.Function<AsyncResultSet, CompletableFuture<Map<Long, NeedsRollup>>>() {
+        Function<AsyncResultSet, CompletableFuture<Map<Long, NeedsRollup>>> compute = new Function<AsyncResultSet, CompletableFuture<Map<Long, NeedsRollup>>>() {
             @Override
             public CompletableFuture<Map<Long, NeedsRollup>> apply(AsyncResultSet results) {
                 for (Row row : results.currentPage()) {
@@ -124,16 +125,16 @@ class Common {
             }
         };
         return session.readAsync(boundStatement, profile)
-                .thenCompose(compute).thenApply(Map::values).toCompletableFuture().get();
+                .thenCompose(compute).thenApply(Map::values);
     }
 
-    static List<NeedsRollupFromChildren> getNeedsRollupFromChildrenList(
+    static CompletionStage<List<NeedsRollupFromChildren>> getNeedsRollupFromChildrenList(
             String agentRollupId,
-            PreparedStatement readNeedsRollupFromChild, Session session, CassandraProfile profile) throws Exception {
+            PreparedStatement readNeedsRollupFromChild, Session session, CassandraProfile profile) {
         BoundStatement boundStatement = readNeedsRollupFromChild.bind()
             .setString(0, agentRollupId);
         Map<Long, NeedsRollupFromChildren> needsRollupFromChildrenMap = new LinkedHashMap<>();
-        Function<AsyncResultSet, CompletableFuture<Map<Long, NeedsRollupFromChildren>>> compute = new com.google.common.base.Function<AsyncResultSet, CompletableFuture<Map<Long, NeedsRollupFromChildren>>>() {
+        Function<AsyncResultSet, CompletableFuture<Map<Long, NeedsRollupFromChildren>>> compute = new Function<AsyncResultSet, CompletableFuture<Map<Long, NeedsRollupFromChildren>>>() {
             @Override
             public CompletableFuture<Map<Long, NeedsRollupFromChildren>> apply(AsyncResultSet results) {
                 for (Row row : results.currentPage()) {
@@ -158,13 +159,13 @@ class Common {
                 return CompletableFuture.completedFuture(needsRollupFromChildrenMap);
             }
         };
-        return session.readAsync(boundStatement, profile).thenCompose(compute).thenApply(map -> ImmutableList.copyOf(map.values())).toCompletableFuture().get();
+        return session.readAsync(boundStatement, profile).thenCompose(compute).thenApply(map -> ImmutableList.copyOf(map.values()));
     }
 
-    static void insertNeedsRollupFromChild(String agentRollupId, String parentAgentRollupId,
+    static CompletionStage<?> insertNeedsRollupFromChild(String agentRollupId, String parentAgentRollupId,
             PreparedStatement insertNeedsRollupFromChild,
             NeedsRollupFromChildren needsRollupFromChildren, long captureTime,
-            int needsRollupAdjustedTTL, Session session, CassandraProfile profile) throws Exception {
+            int needsRollupAdjustedTTL, Session session, CassandraProfile profile) {
         int i = 0;
         BoundStatement boundStatement = insertNeedsRollupFromChild.bind()
             .setString(i++, parentAgentRollupId)
@@ -173,7 +174,7 @@ class Common {
             .setString(i++, agentRollupId)
             .setSet(i++, needsRollupFromChildren.getKeys().keySet(), String.class)
             .setInt(i++, needsRollupAdjustedTTL);
-        session.writeAsync(boundStatement, profile).toCompletableFuture().get();
+        return session.writeAsync(boundStatement, profile);
     }
 
     // it is important that the insert into next needs_rollup happens after present
@@ -182,10 +183,11 @@ class Common {
     // present rollup has completed
     // if insert after deleting present rollup then possible for error to occur in between
     // and insert would never happen
-    static void postRollup(String agentRollupId, long captureTime, Set<String> keys,
+    static CompletionStage<?> postRollup(String agentRollupId, long captureTime, Set<String> keys,
             Set<UUID> uniquenessKeysForDeletion, @Nullable Long nextRollupIntervalMillis,
             @Nullable PreparedStatement insertNeedsRollup, PreparedStatement deleteNeedsRollup,
-            int needsRollupAdjustedTTL, Session session, CassandraProfile profile) throws Exception {
+            int needsRollupAdjustedTTL, Session session, CassandraProfile profile) {
+        CompletionStage<?> starting = CompletableFuture.completedFuture(null);
         if (nextRollupIntervalMillis != null) {
             checkNotNull(insertNeedsRollup);
             long rollupCaptureTime = CaptureTimes.getRollup(captureTime,
@@ -198,18 +200,20 @@ class Common {
                 .setSet(i++, keys, String.class)
                 .setInt(i++, needsRollupAdjustedTTL);
             // intentionally not async, see method-level comment
-            session.writeAsync(boundStatement, profile).toCompletableFuture().get();
+            starting = session.writeAsync(boundStatement, profile);
         }
-        List<CompletableFuture<?>> futures = new ArrayList<>();
-        for (UUID uniqueness : uniquenessKeysForDeletion) {
-            int i = 0;
-            BoundStatement boundStatement = deleteNeedsRollup.bind()
-                .setString(i++, agentRollupId)
-                .setInstant(i++, Instant.ofEpochMilli(captureTime))
-                .setUuid(i++, uniqueness);
-            futures.add(session.writeAsync(boundStatement, profile).toCompletableFuture());
-        }
-        MoreFutures.waitForAll(futures);
+        return starting.thenCompose(ignored -> {
+            List<CompletableFuture<?>> futures = new ArrayList<>();
+            for (UUID uniqueness : uniquenessKeysForDeletion) {
+                int i = 0;
+                BoundStatement boundStatement = deleteNeedsRollup.bind()
+                    .setString(i++, agentRollupId)
+                    .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                    .setUuid(i++, uniqueness);
+                futures.add(session.writeAsync(boundStatement, profile).toCompletableFuture());
+            }
+            return CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]));
+        });
     }
 
     static boolean isOldEnoughToRollup(long captureTime, long currentTimeMillis,

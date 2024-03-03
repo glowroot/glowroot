@@ -15,38 +15,28 @@
  */
 package org.glowroot.central.v09support;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glowroot.common2.repo.CassandraProfile;
-import org.immutables.value.Value;
-
 import org.glowroot.central.repo.AgentRollupIds;
 import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.AggregateDaoImpl;
 import org.glowroot.common.live.ImmutableAggregateQuery;
 import org.glowroot.common.live.ImmutableSummaryQuery;
-import org.glowroot.common.live.LiveAggregateRepository.AggregateQuery;
-import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
-import org.glowroot.common.live.LiveAggregateRepository.SummaryQuery;
-import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
-import org.glowroot.common.model.OverallErrorSummaryCollector;
-import org.glowroot.common.model.OverallSummaryCollector;
-import org.glowroot.common.model.ProfileCollector;
-import org.glowroot.common.model.QueryCollector;
-import org.glowroot.common.model.ServiceCallCollector;
-import org.glowroot.common.model.TransactionNameErrorSummaryCollector;
+import org.glowroot.common.live.LiveAggregateRepository.*;
+import org.glowroot.common.model.*;
 import org.glowroot.common.model.TransactionNameErrorSummaryCollector.ErrorSummarySortOrder;
-import org.glowroot.common.model.TransactionNameSummaryCollector;
 import org.glowroot.common.model.TransactionNameSummaryCollector.SummarySortOrder;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
+import org.immutables.value.Value;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -60,8 +50,8 @@ public class AggregateDaoWithV09Support implements AggregateDao {
     private final AggregateDaoImpl delegate;
 
     public AggregateDaoWithV09Support(Set<String> agentRollupIdsWithV09Data,
-            long v09LastCaptureTime, long v09FqtLastExpirationTime, Clock clock,
-            AggregateDaoImpl delegate) {
+                                      long v09LastCaptureTime, long v09FqtLastExpirationTime, Clock clock,
+                                      AggregateDaoImpl delegate) {
         this.agentRollupIdsWithV09Data = agentRollupIdsWithV09Data;
         this.v09LastCaptureTime = v09LastCaptureTime;
         this.v09FqtLastExpirationTime = v09FqtLastExpirationTime;
@@ -71,8 +61,8 @@ public class AggregateDaoWithV09Support implements AggregateDao {
 
     @Override
     public CompletableFuture<?> store(String agentId, long captureTime,
-                                   List<OldAggregatesByType> aggregatesByTypeList,
-                                   List<Aggregate.SharedQueryText> initialSharedQueryTexts) {
+                                      List<OldAggregatesByType> aggregatesByTypeList,
+                                      List<Aggregate.SharedQueryText> initialSharedQueryTexts) {
         if (captureTime <= v09LastCaptureTime
                 && agentRollupIdsWithV09Data.contains(agentId)) {
             return delegate.store(V09Support.convertToV09(agentId),
@@ -86,109 +76,109 @@ public class AggregateDaoWithV09Support implements AggregateDao {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeOverallSummaryInto(String agentRollupId, SummaryQuery query,
-            OverallSummaryCollector collector, CassandraProfile profile) throws Exception {
-        splitMergeIfNeeded(agentRollupId, query,
+    public CompletionStage<?> mergeOverallSummaryInto(String agentRollupId, SummaryQuery query,
+                                                      OverallSummaryCollector collector, CassandraProfile profile) {
+        return splitMergeIfNeeded(agentRollupId, query,
                 (id, q) -> delegate.mergeOverallSummaryInto(id, q, collector, profile));
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeTransactionNameSummariesInto(String agentRollupId, SummaryQuery query,
-                                                  SummarySortOrder sortOrder, int limit, TransactionNameSummaryCollector collector, CassandraProfile profile)
-            throws Exception {
-        splitMergeIfNeeded(agentRollupId, query, (id, q) -> delegate
+    public CompletionStage<?> mergeTransactionNameSummariesInto(String agentRollupId, SummaryQuery query,
+                                                                SummarySortOrder sortOrder, int limit, TransactionNameSummaryCollector collector, CassandraProfile profile) {
+        return splitMergeIfNeeded(agentRollupId, query, (id, q) -> delegate
                 .mergeTransactionNameSummariesInto(id, q, sortOrder, limit, collector, profile));
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeOverallErrorSummaryInto(String agentRollupId, SummaryQuery query,
-            OverallErrorSummaryCollector collector, CassandraProfile profile) throws Exception {
-        splitMergeIfNeeded(agentRollupId, query,
+    public CompletionStage<?> mergeOverallErrorSummaryInto(String agentRollupId, SummaryQuery query,
+                                                           OverallErrorSummaryCollector collector, CassandraProfile profile) {
+        return splitMergeIfNeeded(agentRollupId, query,
                 (id, q) -> delegate.mergeOverallErrorSummaryInto(id, q, collector, profile));
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeTransactionNameErrorSummariesInto(String agentRollupId, SummaryQuery query,
-            ErrorSummarySortOrder sortOrder, int limit,
-            TransactionNameErrorSummaryCollector collector, CassandraProfile profile) throws Exception {
-        splitMergeIfNeeded(agentRollupId, query, (id, q) -> delegate
+    public CompletionStage<?> mergeTransactionNameErrorSummariesInto(String agentRollupId, SummaryQuery query,
+                                                                     ErrorSummarySortOrder sortOrder, int limit,
+                                                                     TransactionNameErrorSummaryCollector collector, CassandraProfile profile) {
+        return splitMergeIfNeeded(agentRollupId, query, (id, q) -> delegate
                 .mergeTransactionNameErrorSummariesInto(id, q, sortOrder, limit, collector, profile));
     }
 
     // query.from() is INCLUSIVE
     @Override
-    public List<OverviewAggregate> readOverviewAggregates(String agentRollupId,
-            AggregateQuery query, CassandraProfile profile) throws Exception {
+    public CompletionStage<List<OverviewAggregate>> readOverviewAggregates(String agentRollupId,
+                                                                           AggregateQuery query, CassandraProfile profile) {
         return splitListIfNeeded(agentRollupId, query,
                 (id, q) -> delegate.readOverviewAggregates(id, q, profile));
     }
 
     // query.from() is INCLUSIVE
     @Override
-    public List<PercentileAggregate> readPercentileAggregates(String agentRollupId,
-            AggregateQuery query, CassandraProfile profile) throws Exception {
+    public CompletionStage<List<PercentileAggregate>> readPercentileAggregates(String agentRollupId,
+                                                                               AggregateQuery query, CassandraProfile profile) {
         return splitListIfNeeded(agentRollupId, query,
                 (id, q) -> delegate.readPercentileAggregates(id, q, profile));
     }
 
     // query.from() is INCLUSIVE
     @Override
-    public List<ThroughputAggregate> readThroughputAggregates(String agentRollupId,
-            AggregateQuery query, CassandraProfile profile) throws Exception {
+    public CompletionStage<List<ThroughputAggregate>> readThroughputAggregates(String agentRollupId,
+                                                                               AggregateQuery query, CassandraProfile profile) {
         return splitListIfNeeded(agentRollupId, query,
                 (id, q) -> delegate.readThroughputAggregates(id, q, profile));
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeQueriesInto(String agentRollupId, AggregateQuery query,
-            QueryCollector collector, CassandraProfile profile) throws Exception {
-        splitMergeIfNeeded(agentRollupId, query,
+    public CompletionStage<?> mergeQueriesInto(String agentRollupId, AggregateQuery query,
+                                 QueryCollector collector, CassandraProfile profile) {
+        return splitMergeIfNeeded(agentRollupId, query,
                 (id, q) -> delegate.mergeQueriesInto(id, q, collector, profile));
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeServiceCallsInto(String agentRollupId, AggregateQuery query,
-            ServiceCallCollector collector, CassandraProfile profile) throws Exception {
-        splitMergeIfNeeded(agentRollupId, query,
+    public CompletionStage<?> mergeServiceCallsInto(String agentRollupId, AggregateQuery query,
+                                      ServiceCallCollector collector, CassandraProfile profile) {
+        return splitMergeIfNeeded(agentRollupId, query,
                 (id, q) -> delegate.mergeServiceCallsInto(id, q, collector, profile));
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeMainThreadProfilesInto(String agentRollupId, AggregateQuery query,
-            ProfileCollector collector, CassandraProfile profile) throws Exception {
-        splitMergeIfNeeded(agentRollupId, query,
+    public CompletionStage<?> mergeMainThreadProfilesInto(String agentRollupId, AggregateQuery query,
+                                            ProfileCollector collector, CassandraProfile profile) {
+        return splitMergeIfNeeded(agentRollupId, query,
                 (id, q) -> delegate.mergeMainThreadProfilesInto(id, q, collector, profile));
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeAuxThreadProfilesInto(String agentRollupId, AggregateQuery query,
-            ProfileCollector collector, CassandraProfile profile) throws Exception {
-        splitMergeIfNeeded(agentRollupId, query,
+    public CompletionStage<?> mergeAuxThreadProfilesInto(String agentRollupId, AggregateQuery query,
+                                           ProfileCollector collector, CassandraProfile profile) {
+        return splitMergeIfNeeded(agentRollupId, query,
                 (id, q) -> delegate.mergeAuxThreadProfilesInto(id, q, collector, profile));
     }
 
     @Override
-    public @Nullable String readFullQueryText(String agentRollupId, String fullQueryTextSha1, CassandraProfile profile)
-            throws Exception {
-        String value = delegate.readFullQueryText(agentRollupId, fullQueryTextSha1, profile);
-        if (value == null && clock.currentTimeMillis() < v09FqtLastExpirationTime
-                && agentRollupIdsWithV09Data.contains(agentRollupId)) {
-            value = delegate.readFullQueryText(V09Support.convertToV09(agentRollupId),
-                    fullQueryTextSha1, profile);
-        }
-        return value;
+    public CompletionStage<String> readFullQueryText(String agentRollupId, String fullQueryTextSha1, CassandraProfile profile) {
+        return delegate.readFullQueryText(agentRollupId, fullQueryTextSha1, profile).thenCompose(value -> {
+            if (value == null && clock.currentTimeMillis() < v09FqtLastExpirationTime
+                    && agentRollupIdsWithV09Data.contains(agentRollupId)) {
+                return delegate.readFullQueryText(V09Support.convertToV09(agentRollupId),
+                        fullQueryTextSha1, profile);
+            } else {
+                return CompletableFuture.completedFuture(value);
+            }
+        });
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean hasMainThreadProfile(String agentRollupId, AggregateQuery query, CassandraProfile profile)
+    public CompletionStage<Boolean> hasMainThreadProfile(String agentRollupId, AggregateQuery query, CassandraProfile profile)
             throws Exception {
         return splitCheckIfNeeded(agentRollupId, query,
                 (id, q) -> delegate.hasMainThreadProfile(id, q, profile));
@@ -196,15 +186,14 @@ public class AggregateDaoWithV09Support implements AggregateDao {
 
     // query.from() is non-inclusive
     @Override
-    public boolean hasAuxThreadProfile(String agentRollupId, AggregateQuery query, CassandraProfile profile)
-            throws Exception {
+    public CompletionStage<Boolean> hasAuxThreadProfile(String agentRollupId, AggregateQuery query, CassandraProfile profile) {
         return splitCheckIfNeeded(agentRollupId, query,
                 (id, q) -> delegate.hasAuxThreadProfile(id, q, profile));
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean shouldHaveQueries(String agentRollupId, AggregateQuery query)
+    public CompletionStage<Boolean> shouldHaveQueries(String agentRollupId, AggregateQuery query)
             throws Exception {
         return splitCheckIfNeeded(agentRollupId, query,
                 (id, q) -> delegate.shouldHaveQueries(id, q));
@@ -212,7 +201,7 @@ public class AggregateDaoWithV09Support implements AggregateDao {
 
     // query.from() is non-inclusive
     @Override
-    public boolean shouldHaveServiceCalls(String agentRollupId, AggregateQuery query)
+    public CompletionStage<Boolean> shouldHaveServiceCalls(String agentRollupId, AggregateQuery query)
             throws Exception {
         return splitCheckIfNeeded(agentRollupId, query,
                 (id, q) -> delegate.shouldHaveServiceCalls(id, q));
@@ -220,45 +209,51 @@ public class AggregateDaoWithV09Support implements AggregateDao {
 
     // query.from() is non-inclusive
     @Override
-    public boolean shouldHaveMainThreadProfile(String agentRollupId, AggregateQuery query)
-            throws Exception {
+    public CompletionStage<Boolean> shouldHaveMainThreadProfile(String agentRollupId, AggregateQuery query) {
         return splitCheckIfNeeded(agentRollupId, query,
                 (id, q) -> delegate.shouldHaveMainThreadProfile(id, q));
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean shouldHaveAuxThreadProfile(String agentRollupId, AggregateQuery query)
-            throws Exception {
+    public CompletionStage<Boolean> shouldHaveAuxThreadProfile(String agentRollupId, AggregateQuery query) {
         return splitCheckIfNeeded(agentRollupId, query,
                 (id, q) -> delegate.shouldHaveAuxThreadProfile(id, q));
     }
 
     @Override
-    public void rollup(String agentRollupId) throws Exception {
-        delegate.rollup(agentRollupId);
-        if (agentRollupIdsWithV09Data.contains(agentRollupId)
-                && clock.currentTimeMillis() < v09LastCaptureTime + DAYS.toMillis(30)) {
-            delegate.rollup(V09Support.convertToV09(agentRollupId), agentRollupId,
-                    V09Support.getParentV09(agentRollupId), V09Support.isLeaf(agentRollupId));
-        }
+    public CompletionStage<?> rollup(String agentRollupId) {
+        return delegate.rollup(agentRollupId).thenCompose(ignored -> {
+            if (agentRollupIdsWithV09Data.contains(agentRollupId)
+                    && clock.currentTimeMillis() < v09LastCaptureTime + DAYS.toMillis(30)) {
+                return delegate.rollup(V09Support.convertToV09(agentRollupId), agentRollupId,
+                        V09Support.getParentV09(agentRollupId), V09Support.isLeaf(agentRollupId));
+            }
+            return CompletableFuture.completedFuture(null);
+        });
     }
 
-    private void splitMergeIfNeeded(String agentRollupId, SummaryQuery query,
-            DelegateMergeAction<SummaryQuery> action) throws Exception {
+    private CompletionStage<?> splitMergeIfNeeded(String agentRollupId, SummaryQuery query,
+                                                  DelegateMergeAction<SummaryQuery> action) {
         SummaryQueryPlan plan = getPlan(agentRollupId, query);
         SummaryQuery queryV09 = plan.queryV09();
-        if (queryV09 != null) {
-            action.merge(V09Support.convertToV09(agentRollupId), queryV09);
-        }
-        SummaryQuery queryPostV09 = plan.queryPostV09();
-        if (queryPostV09 != null) {
-            action.merge(agentRollupId, queryPostV09);
-        }
+        return CompletableFuture.completedFuture(null).thenCompose(ignored -> {
+            if (queryV09 != null) {
+                return action.merge(V09Support.convertToV09(agentRollupId), queryV09);
+            }
+            return CompletableFuture.completedFuture(null);
+        }).thenCompose(ignored -> {
+            SummaryQuery queryPostV09 = plan.queryPostV09();
+            if (queryPostV09 != null) {
+                return action.merge(agentRollupId, queryPostV09);
+            }
+            return CompletableFuture.completedFuture(null);
+        });
     }
 
-    private <T> List<T> splitListIfNeeded(String agentRollupId, AggregateQuery query,
-            DelegateListAction<T> action) throws Exception {
+
+    private <T> CompletionStage<List<T>> splitListIfNeeded(String agentRollupId, AggregateQuery query,
+                                                           DelegateListAction<T> action) {
         AggregateQueryPlan plan = getPlan(agentRollupId, query);
         AggregateQuery queryV09 = plan.queryV09();
         AggregateQuery queryPostV09 = plan.queryPostV09();
@@ -269,35 +264,60 @@ public class AggregateDaoWithV09Support implements AggregateDao {
             checkNotNull(queryV09);
             return action.list(V09Support.convertToV09(agentRollupId), queryV09);
         } else {
-            List<T> list = new ArrayList<>();
-            list.addAll(action.list(V09Support.convertToV09(agentRollupId), queryV09));
-            list.addAll(action.list(agentRollupId, queryPostV09));
-            return list;
+            return action.list(V09Support.convertToV09(agentRollupId), queryV09).thenCompose(v09List -> {
+                return action.list(agentRollupId, queryPostV09).thenApply(postV09List -> {
+                    List<T> list = new ArrayList<>();
+                    list.addAll(v09List);
+                    list.addAll(postV09List);
+                    return list;
+                });
+            });
         }
     }
 
-    private void splitMergeIfNeeded(String agentRollupId, AggregateQuery query,
-            DelegateMergeAction<AggregateQuery> action) throws Exception {
+    private CompletionStage<?> splitMergeIfNeeded(String agentRollupId, AggregateQuery query,
+                                    DelegateMergeAction<AggregateQuery> action) {
         AggregateQueryPlan plan = getPlan(agentRollupId, query);
         AggregateQuery queryV09 = plan.queryV09();
+        return CompletableFuture.completedFuture(null).thenCompose(ignored -> {
+            if (queryV09 != null) {
+                return action.merge(V09Support.convertToV09(agentRollupId), queryV09);
+            }
+            return CompletableFuture.completedFuture(null);
+        }).thenCompose(ignored -> {
+            AggregateQuery queryPostV09 = plan.queryPostV09();
+            if (queryPostV09 != null) {
+                return action.merge(agentRollupId, queryPostV09);
+            }
+            return CompletableFuture.completedFuture(null);
+        });
+    }
+
+    private CompletionStage<Boolean> splitCheckIfNeeded(String agentRollupId, AggregateQuery query,
+                                                        DelegateBooleanAction action) {
+        AggregateQueryPlan plan = getPlan(agentRollupId, query);
+        AggregateQuery queryV09 = plan.queryV09();
+
         if (queryV09 != null) {
-            action.merge(V09Support.convertToV09(agentRollupId), queryV09);
+            return action.check(V09Support.convertToV09(agentRollupId), queryV09).thenCompose(v09Support -> {
+                if (v09Support) {
+                    return CompletableFuture.completedFuture(true);
+                }
+                AggregateQuery queryPostV09 = plan.queryPostV09();
+                if (queryPostV09 != null) {
+                    return action.check(agentRollupId, queryPostV09);
+                } else {
+                    return CompletableFuture.completedFuture(false);
+                }
+
+            });
         }
         AggregateQuery queryPostV09 = plan.queryPostV09();
         if (queryPostV09 != null) {
-            action.merge(agentRollupId, queryPostV09);
+            return action.check(agentRollupId, queryPostV09);
         }
-    }
+        return CompletableFuture.completedFuture(false);
 
-    private boolean splitCheckIfNeeded(String agentRollupId, AggregateQuery query,
-            DelegateBooleanAction action) throws Exception {
-        AggregateQueryPlan plan = getPlan(agentRollupId, query);
-        AggregateQuery queryV09 = plan.queryV09();
-        if (queryV09 != null && action.check(V09Support.convertToV09(agentRollupId), queryV09)) {
-            return true;
-        }
-        AggregateQuery queryPostV09 = plan.queryPostV09();
-        return queryPostV09 != null && action.check(agentRollupId, queryPostV09);
     }
 
     private SummaryQueryPlan getPlan(String agentRollupId, SummaryQuery query) {
@@ -354,6 +374,7 @@ public class AggregateDaoWithV09Support implements AggregateDao {
     interface SummaryQueryPlan {
         @Nullable
         SummaryQuery queryV09();
+
         @Nullable
         SummaryQuery queryPostV09();
     }
@@ -362,19 +383,20 @@ public class AggregateDaoWithV09Support implements AggregateDao {
     interface AggregateQueryPlan {
         @Nullable
         AggregateQuery queryV09();
+
         @Nullable
         AggregateQuery queryPostV09();
     }
 
     private interface DelegateMergeAction<Q> {
-        void merge(String agentRollupId, Q query) throws Exception;
+        CompletionStage<?> merge(String agentRollupId, Q query);
     }
 
     private interface DelegateListAction<T> {
-        List<T> list(String agentRollupId, AggregateQuery query) throws Exception;
+        CompletionStage<List<T>> list(String agentRollupId, AggregateQuery query);
     }
 
     private interface DelegateBooleanAction {
-        boolean check(String agentRollupId, AggregateQuery query) throws Exception;
+        CompletionStage<Boolean> check(String agentRollupId, AggregateQuery query);
     }
 }

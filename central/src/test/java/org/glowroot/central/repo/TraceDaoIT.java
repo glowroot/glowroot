@@ -41,6 +41,7 @@ import org.testcontainers.containers.CassandraContainer;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -117,7 +118,7 @@ public class TraceDaoIT {
     @ValueSource(booleans = {false, true})
     public void shouldReadTrace(boolean partial) throws Exception {
         Trace trace = TraceTestData.createTrace(partial);
-        CompletableFuture<Void> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
+        CompletionStage<Void> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
             try {
                 TraceQuery query = ImmutableTraceQuery.builder()
                         .transactionType("unit test")
@@ -131,23 +132,20 @@ public class TraceDaoIT {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        }).thenAccept(queryResult -> {
-            try {
-                // when
-                Trace.Header header2 = traceDao
-                        .readHeaderPlus(AGENT_ID, queryResult.records().get(0).traceId())
-                        .header();
+        }).thenCompose(queryResult -> {
+            // when
+            return traceDao
+                    .readHeaderPlus(AGENT_ID, queryResult.records().get(0).traceId());
+        }).thenAccept(headerPlus -> {
+            Trace.Header header2 = headerPlus.header();
 
-                // then
-                assertThat(header2.getPartial()).isEqualTo(trace.getHeader().getPartial());
-                assertThat(header2.getStartTime()).isEqualTo(trace.getHeader().getStartTime());
-                assertThat(header2.getCaptureTime()).isEqualTo(trace.getHeader().getCaptureTime());
-                assertThat(header2.getDurationNanos()).isEqualTo(trace.getHeader().getDurationNanos());
-                assertThat(header2.getHeadline()).isEqualTo("test headline");
-                assertThat(header2.getUser()).isEqualTo(trace.getHeader().getUser());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            // then
+            assertThat(header2.getPartial()).isEqualTo(trace.getHeader().getPartial());
+            assertThat(header2.getStartTime()).isEqualTo(trace.getHeader().getStartTime());
+            assertThat(header2.getCaptureTime()).isEqualTo(trace.getHeader().getCaptureTime());
+            assertThat(header2.getDurationNanos()).isEqualTo(trace.getHeader().getDurationNanos());
+            assertThat(header2.getHeadline()).isEqualTo("test headline");
+            assertThat(header2.getUser()).isEqualTo(trace.getHeader().getUser());
         });
         assertThat(cf).succeedsWithin(Duration.ofMillis(60_000));
     }
@@ -157,7 +155,7 @@ public class TraceDaoIT {
     public void shouldReadTraceWithDurationNanosQualifier(boolean partial) throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(partial);
-        CompletableFuture<Void> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
+        CompletionStage<Void> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
             try {
                 TraceQuery query = ImmutableTraceQuery.builder()
                         .transactionType("unit test")
@@ -187,7 +185,7 @@ public class TraceDaoIT {
     public void shouldNotReadTraceWithHighDurationNanosQualifier(boolean partial) throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(partial);
-        CompletableFuture<Void> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
+        CompletionStage<Void> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
             try {
                 TraceQuery query = ImmutableTraceQuery.builder()
                         .transactionType("unit test")
@@ -216,7 +214,7 @@ public class TraceDaoIT {
     public void shouldNotReadTraceWithLowDurationNanosQualifier(boolean partial) throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(partial);
-        CompletableFuture<?> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
+        CompletionStage<?> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
             try {
                 TraceQuery query = ImmutableTraceQuery.builder()
                         .transactionType("unit test")
@@ -245,7 +243,7 @@ public class TraceDaoIT {
     public void shouldReadTraceWithAttributeQualifier(boolean partial) throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(partial);
-        CompletableFuture<?> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
+        CompletionStage<?> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
             try {
                 TraceQuery query = ImmutableTraceQuery.builder()
                         .transactionType("unit test")
@@ -276,7 +274,7 @@ public class TraceDaoIT {
     public void shouldReadTraceWithAttributeQualifier2(boolean partial) throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(partial);
-        CompletableFuture<?> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
+        CompletionStage<?> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
             try {
                 TraceQuery query = ImmutableTraceQuery.builder()
                         .transactionType("unit test")
@@ -307,7 +305,7 @@ public class TraceDaoIT {
     public void shouldReadTraceWithAttributeQualifier3(boolean partial) throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(partial);
-        CompletableFuture<?> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
+        CompletionStage<?> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
             try {
                 TraceQuery query = ImmutableTraceQuery.builder()
                         .transactionType("unit test")
@@ -338,7 +336,7 @@ public class TraceDaoIT {
     public void shouldNotReadTraceWithNonMatchingAttributeQualifier(boolean partial) throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(partial);
-        CompletableFuture<?> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
+        CompletionStage<?> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
             try {
                 TraceQuery query = ImmutableTraceQuery.builder()
                         .transactionType("unit test")
@@ -369,7 +367,7 @@ public class TraceDaoIT {
     public void shouldNotReadTraceWithNonMatchingAttributeQualifier2(boolean partial) throws Exception {
         // given
         Trace trace = TraceTestData.createTrace(partial);
-        CompletableFuture<?> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
+        CompletionStage<?> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
             try {
                 TraceQuery query = ImmutableTraceQuery.builder()
                         .transactionType("unit test")
@@ -405,7 +403,7 @@ public class TraceDaoIT {
                         .setError(Trace.Error.newBuilder()
                                 .setMessage("this is A test")))
                 .build();
-        CompletableFuture<?> cf = traceDao.store(AGENT_ID, trace).thenAccept(res -> {
+        CompletionStage<?> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
             try {
                 TraceQuery query = ImmutableTraceQuery.builder()
                         .transactionType("unit test")
@@ -414,15 +412,13 @@ public class TraceDaoIT {
                         .build();
 
                 // when
-                long count = traceDao.readErrorMessageCount(AGENT_ID, query, "is A", CassandraProfile.web);
-
-                // then
-                assertThat(count).isEqualTo(1);
-            } catch (RuntimeException e) {
-                throw e;
+                return traceDao.readErrorMessageCount(AGENT_ID, query, "is A", CassandraProfile.web);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+        }).thenAccept(count -> {
+            // then
+            assertThat(count).isEqualTo(1);
         });
         assertThat(cf).succeedsWithin(Duration.ofMillis(60_000));
     }
@@ -437,7 +433,7 @@ public class TraceDaoIT {
                         .setError(Trace.Error.newBuilder()
                                 .setMessage("this is A test")))
                 .build();
-        CompletableFuture<?> cf = traceDao.store(AGENT_ID, trace).thenAccept(res -> {
+        CompletionStage<?> cf = traceDao.store(AGENT_ID, trace).thenCompose(res -> {
             try {
                 TraceQuery query = ImmutableTraceQuery.builder()
                         .transactionType("unit test")
@@ -446,15 +442,13 @@ public class TraceDaoIT {
                         .build();
 
                 // when
-                long count = traceDao.readErrorMessageCount(AGENT_ID, query, "/(?i)is a/", CassandraProfile.web);
-
-                // then
-                assertThat(count).isEqualTo(1);
-            } catch (RuntimeException e) {
-                throw e;
+                return traceDao.readErrorMessageCount(AGENT_ID, query, "/(?i)is a/", CassandraProfile.web);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+        }).thenAccept(count -> {
+            // then
+            assertThat(count).isEqualTo(1);
         });
         assertThat(cf).succeedsWithin(Duration.ofMillis(60_000));
     }

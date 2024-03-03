@@ -58,7 +58,7 @@ public class EnvironmentDao implements EnvironmentRepository {
     }
 
     @Override
-    public @Nullable Environment read(String agentId, CassandraProfile profile) throws Exception {
+    public CompletionStage<Environment> read(String agentId, CassandraProfile profile) {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentId);
         return session.readAsync(boundStatement, profile).thenApply(results  -> {
@@ -71,6 +71,6 @@ public class EnvironmentDao implements EnvironmentRepository {
             } catch (InvalidProtocolBufferException e) {
                 throw new RuntimeException(e);
             }
-        }).toCompletableFuture().get();
+        });
     }
 }

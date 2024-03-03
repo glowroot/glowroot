@@ -79,8 +79,12 @@ class GaugeNameDao {
         rowInsertedInThePastDay.put(key, true);
     }
 
-    Set<String> readAllGaugeNames(long from, long to) throws Exception {
-        return dataSource.query(new GaugeNameQuery(from, to));
+    Set<String> readAllGaugeNames(long from, long to) {
+        try {
+            return dataSource.query(new GaugeNameQuery(from, to));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     void deleteBefore(long captureTime) throws SQLException {

@@ -37,6 +37,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
 
+import com.spotify.futures.CompletableFutures;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
@@ -114,8 +115,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
     }
 
     @Override
-    public List<TopLevelAgentRollup> readActiveTopLevelAgentRollups(long from, long to, CassandraProfile profile)
-            throws Exception {
+    public CompletionStage<List<TopLevelAgentRollup>> readActiveTopLevelAgentRollups(long from, long to, CassandraProfile profile) {
         int rollupLevel = rollupLevelService.getRollupLevelForView(from, to, DataKind.GENERAL);
         long rollupIntervalMillis =
                 getRollupIntervalMillis(configRepository.getRollupConfigs(), rollupLevel);
@@ -161,37 +161,43 @@ public class ActiveAgentDao implements ActiveAgentRepository {
                     }
                     agentRollups.sort(Comparator.comparing(TopLevelAgentRollup::display));
                     return agentRollups;
-                }).toCompletableFuture().get();
+                });
     }
 
     @Override
-    public List<AgentRollup> readActiveChildAgentRollups(String topLevelId, long from, long to, CassandraProfile profile)
-            throws Exception {
+    public CompletionStage<List<AgentRollup>> readActiveChildAgentRollups(String topLevelId, long from, long to, CassandraProfile profile) {
         return readActiveChildAgentRollups(topLevelId, from, to, true, profile);
     }
 
     @Override
-    public List<AgentRollup> readRecentlyActiveAgentRollups(long lastXMillis, CassandraProfile profile) throws Exception {
+    public CompletionStage<List<AgentRollup>> readRecentlyActiveAgentRollups(long lastXMillis, CassandraProfile profile) {
         long now = clock.currentTimeMillis();
         return readActiveAgentRollups(now - lastXMillis, now, profile);
     }
 
     @Override
-    public List<AgentRollup> readActiveAgentRollups(long from, long to, CassandraProfile profile) throws Exception {
-        List<TopLevelAgentRollup> topLevelAgentRollups = readActiveTopLevelAgentRollups(from, to, profile);
-        List<AgentRollup> agentRollups = new ArrayList<>();
-        for (TopLevelAgentRollup topLevelAgentRollup : topLevelAgentRollups) {
-            ImmutableAgentRollup.Builder builder = ImmutableAgentRollup.builder()
-                    .id(topLevelAgentRollup.id())
-                    .display(topLevelAgentRollup.display())
-                    .lastDisplayPart(topLevelAgentRollup.display());
-            if (topLevelAgentRollup.id().endsWith("::")) {
-                builder.addAllChildren(
-                        readActiveChildAgentRollups(topLevelAgentRollup.id(), from, to, false, profile));
+    public CompletionStage<List<AgentRollup>> readActiveAgentRollups(long from, long to, CassandraProfile profile) {
+        return readActiveTopLevelAgentRollups(from, to, profile).thenCompose(topLevelAgentRollups -> {
+            List<AgentRollup> agentRollups = new ArrayList<>();
+            List<CompletionStage<AgentRollup>> futures = new ArrayList<>();
+            for (TopLevelAgentRollup topLevelAgentRollup : topLevelAgentRollups) {
+                CompletionStage<AgentRollup> future = CompletableFuture.completedFuture(null).thenCompose(ignored -> {
+                    ImmutableAgentRollup.Builder builder = ImmutableAgentRollup.builder()
+                            .id(topLevelAgentRollup.id())
+                            .display(topLevelAgentRollup.display())
+                            .lastDisplayPart(topLevelAgentRollup.display());
+                    if (topLevelAgentRollup.id().endsWith("::")) {
+                        return readActiveChildAgentRollups(topLevelAgentRollup.id(), from, to, false, profile).thenApply(list -> {
+                            builder.addAllChildren(list);
+                            return builder.build();
+                        });
+                    }
+                    return CompletableFuture.completedFuture(builder.build());
+                });
+                futures.add(future);
             }
-            agentRollups.add(builder.build());
-        }
-        return agentRollups;
+            return CompletableFutures.allAsList(futures);
+        });
     }
 
     @CheckReturnValue
@@ -243,8 +249,8 @@ public class ActiveAgentDao implements ActiveAgentRepository {
         });
     }
 
-    private List<AgentRollup> readActiveChildAgentRollups(String topLevelId, long from, long to,
-            boolean stripTopLevelDisplay, CassandraProfile profile) throws Exception {
+    private CompletionStage<List<AgentRollup>> readActiveChildAgentRollups(String topLevelId, long from, long to,
+            boolean stripTopLevelDisplay, CassandraProfile profile) {
         int rollupLevel = rollupLevelService.getRollupLevelForView(from, to, DataKind.GENERAL);
         long rollupIntervalMillis =
                 getRollupIntervalMillis(configRepository.getRollupConfigs(), rollupLevel);
@@ -311,7 +317,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
             }
             agentRollups.sort(Comparator.comparing(AgentRollup::display));
             return agentRollups;
-        }).toCompletableFuture().get();
+        });
     }
 
     private static AgentRollup createAgentRollup(String agentRollupId,

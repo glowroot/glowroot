@@ -114,9 +114,9 @@ public class SyntheticResultDaoIT {
         List<Integer> rollupExpirationHours = Lists.newArrayList(
                 ImmutableCentralStorageConfig.builder().build().rollupExpirationHours());
         rollupExpirationHours.add(0, rollupExpirationHours.get(0));
-        syntheticResultDao.rollup("one");
-        syntheticResultDao.rollup("one");
-        syntheticResultDao.rollup("one");
+        syntheticResultDao.rollup("one").toCompletableFuture().join();
+        syntheticResultDao.rollup("one").toCompletableFuture().join();
+        syntheticResultDao.rollup("one").toCompletableFuture().join();
 
         // check rolled-up data after rollup
         syntheticResults = syntheticResultDao.readSyntheticResults("one", "11223344", 0, 300000, 1);
