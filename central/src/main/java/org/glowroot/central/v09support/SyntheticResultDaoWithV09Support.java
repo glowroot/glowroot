@@ -15,21 +15,20 @@
  */
 package org.glowroot.central.v09support;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
-
 import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.central.repo.SyntheticResultDaoImpl;
 import org.glowroot.central.v09support.V09Support.Query;
 import org.glowroot.central.v09support.V09Support.QueryPlan;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.SyntheticResult;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -42,7 +41,7 @@ public class SyntheticResultDaoWithV09Support implements SyntheticResultDao {
     private final SyntheticResultDaoImpl delegate;
 
     public SyntheticResultDaoWithV09Support(Set<String> agentRollupIdsWithV09Data,
-            long v09LastCaptureTime, Clock clock, SyntheticResultDaoImpl delegate) {
+                                            long v09LastCaptureTime, Clock clock, SyntheticResultDaoImpl delegate) {
         this.agentRollupIdsWithV09Data = agentRollupIdsWithV09Data;
         this.v09LastCaptureTime = v09LastCaptureTime;
         this.clock = clock;
@@ -52,15 +51,15 @@ public class SyntheticResultDaoWithV09Support implements SyntheticResultDao {
     // synthetic result records are not rolled up to their parent, but are stored directly for
     // rollups that have their own synthetic monitors defined
     @Override
-    public void store(String agentRollupId, String syntheticMonitorId,
-            String syntheticMonitorDisplay, long captureTime, long durationNanos,
-            @Nullable String errorMessage) throws Exception {
+    public CompletionStage<?> store(String agentRollupId, String syntheticMonitorId,
+                      String syntheticMonitorDisplay, long captureTime, long durationNanos,
+                      @Nullable String errorMessage) throws Exception {
         if (captureTime <= v09LastCaptureTime
                 && agentRollupIdsWithV09Data.contains(agentRollupId)) {
-            delegate.store(V09Support.convertToV09(agentRollupId), syntheticMonitorId,
+            return delegate.store(V09Support.convertToV09(agentRollupId), syntheticMonitorId,
                     syntheticMonitorDisplay, captureTime, durationNanos, errorMessage);
         } else {
-            delegate.store(agentRollupId, syntheticMonitorId, syntheticMonitorDisplay, captureTime,
+            return delegate.store(agentRollupId, syntheticMonitorId, syntheticMonitorDisplay, captureTime,
                     durationNanos, errorMessage);
         }
     }
@@ -72,8 +71,8 @@ public class SyntheticResultDaoWithV09Support implements SyntheticResultDao {
     }
 
     @Override
-    public List<SyntheticResult> readSyntheticResults(String agentRollupId,
-            String syntheticMonitorId, long from, long to, int rollupLevel) throws Exception {
+    public CompletionStage<List<SyntheticResult>> readSyntheticResults(String agentRollupId,
+                                                                       String syntheticMonitorId, long from, long to, int rollupLevel) {
         QueryPlan plan = V09Support.getPlan(agentRollupIdsWithV09Data, v09LastCaptureTime,
                 agentRollupId, from, to);
         Query queryV09 = plan.queryV09();
@@ -87,12 +86,14 @@ public class SyntheticResultDaoWithV09Support implements SyntheticResultDao {
             return delegate.readSyntheticResults(queryV09.agentRollupId(), syntheticMonitorId,
                     queryV09.from(), queryV09.to(), rollupLevel);
         } else {
-            List<SyntheticResult> list = new ArrayList<>();
-            list.addAll(delegate.readSyntheticResults(queryV09.agentRollupId(), syntheticMonitorId,
-                    queryV09.from(), queryV09.to(), rollupLevel));
-            list.addAll(delegate.readSyntheticResults(queryPostV09.agentRollupId(),
-                    syntheticMonitorId, queryPostV09.from(), queryPostV09.to(), rollupLevel));
-            return list;
+            return delegate.readSyntheticResults(queryV09.agentRollupId(), syntheticMonitorId,
+                    queryV09.from(), queryV09.to(), rollupLevel).thenCombine(delegate.readSyntheticResults(queryPostV09.agentRollupId(),
+                    syntheticMonitorId, queryPostV09.from(), queryPostV09.to(), rollupLevel), (list1, list2) -> {
+                List<SyntheticResult> list = new ArrayList<>();
+                list.addAll(list1);
+                list.addAll(list2);
+                return list;
+            });
         }
     }
 

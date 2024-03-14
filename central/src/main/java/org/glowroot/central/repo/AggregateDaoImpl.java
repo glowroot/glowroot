@@ -229,12 +229,12 @@ public class AggregateDaoImpl implements AggregateDao {
 
         int count = configRepository.getRollupConfigs().size();
         List<Integer> rollupExpirationHours =
-                configRepository.getCentralStorageConfig().rollupExpirationHours();
+                configRepository.getCentralStorageConfig().toCompletableFuture().join().rollupExpirationHours();
         List<Integer> queryAndServiceCallRollupExpirationHours =
-                configRepository.getCentralStorageConfig()
+                configRepository.getCentralStorageConfig().toCompletableFuture().join()
                         .queryAndServiceCallRollupExpirationHours();
         List<Integer> profileRollupExpirationHours =
-                configRepository.getCentralStorageConfig().profileRollupExpirationHours();
+                configRepository.getCentralStorageConfig().toCompletableFuture().join().profileRollupExpirationHours();
 
         allTables = ImmutableList.of(summaryTable, errorSummaryTable, overviewTable,
                 histogramTable, throughputTable, queryTable, serviceCallTable,
@@ -383,24 +383,23 @@ public class AggregateDaoImpl implements AggregateDao {
 
     @CheckReturnValue
     @Override
-    public CompletableFuture<?> store(String agentId, long captureTime,
-                                      List<OldAggregatesByType> aggregatesByTypeList,
-                                      List<Aggregate.SharedQueryText> initialSharedQueryTexts) {
+    public CompletionStage<?> store(String agentId, long captureTime,
+                                    List<OldAggregatesByType> aggregatesByTypeList,
+                                    List<Aggregate.SharedQueryText> initialSharedQueryTexts) {
         List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);
         return store(agentId, agentRollupIds, agentId, agentRollupIds, captureTime, aggregatesByTypeList,
                 initialSharedQueryTexts);
     }
 
     @CheckReturnValue
-    public CompletableFuture<?> store(String agentId, List<String> agentRollupIds,
-                                      String agentIdForMeta, List<String> agentRollupIdsForMeta, long captureTime,
-                                      List<OldAggregatesByType> aggregatesByTypeList,
-                                      List<Aggregate.SharedQueryText> initialSharedQueryTexts) {
+    public CompletionStage<?> store(String agentId, List<String> agentRollupIds,
+                                    String agentIdForMeta, List<String> agentRollupIdsForMeta, long captureTime,
+                                    List<OldAggregatesByType> aggregatesByTypeList,
+                                    List<Aggregate.SharedQueryText> initialSharedQueryTexts) {
         if (aggregatesByTypeList.isEmpty()) {
-            return activeAgentDao.insert(agentIdForMeta, captureTime).thenCompose(CompletableFutures::allAsList).toCompletableFuture();
+            return activeAgentDao.insert(agentIdForMeta, captureTime);
         }
-        TTL adjustedTTL = getAdjustedTTL(getTTLs().get(0), captureTime, clock);
-        List<CompletableFuture<?>> completableFutures = new ArrayList<>();
+        List<CompletionStage<?>> completableFutures = new ArrayList<>();
         List<Aggregate.SharedQueryText> sharedQueryTexts = new ArrayList<>();
         for (Aggregate.SharedQueryText sharedQueryText : initialSharedQueryTexts) {
             String fullTextSha1 = sharedQueryText.getFullTextSha1();
@@ -409,7 +408,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 if (fullText.length() > Constants.AGGREGATE_QUERY_TEXT_TRUNCATE) {
                     // relying on agent side to rate limit (re-)sending the same full text
                     fullTextSha1 = SHA_1.hashString(fullText, UTF_8).toString();
-                    completableFutures.addAll(fullQueryTextDao.store(agentRollupIds, fullTextSha1, fullText));
+                    completableFutures.add(fullQueryTextDao.store(agentRollupIds, fullTextSha1, fullText));
                     sharedQueryText = Aggregate.SharedQueryText.newBuilder()
                             .setTruncatedText(fullText.substring(0,
                                     Constants.AGGREGATE_QUERY_TEXT_TRUNCATE))
@@ -420,76 +419,79 @@ public class AggregateDaoImpl implements AggregateDao {
             sharedQueryTexts.add(sharedQueryText);
         }
 
-        // wait for success before proceeding in order to ensure cannot end up with orphaned
-        // fullTextSha1
-        return CompletableFutures.allAsList(completableFutures).thenCompose(ignored -> {
-            List<CompletableFuture<?>> futures = new ArrayList<>();
+        return getTTLs().thenCompose(ttls -> {
+            TTL adjustedTTL = getAdjustedTTL(ttls.get(0), captureTime, clock);
 
-            for (OldAggregatesByType aggregatesByType : aggregatesByTypeList) {
-                String transactionType = aggregatesByType.getTransactionType();
-                Aggregate overallAggregate = aggregatesByType.getOverallAggregate();
-                List<CompletableFuture<?>> futures1 = new ArrayList<>(
-                        storeOverallAggregate(agentId, transactionType, captureTime,
-                                overallAggregate, sharedQueryTexts, adjustedTTL));
-                for (OldTransactionAggregate transactionAggregate : aggregatesByType
-                        .getTransactionAggregateList()) {
-                    futures1.addAll(storeTransactionAggregate(agentId, transactionType,
-                            transactionAggregate.getTransactionName(), captureTime,
-                            transactionAggregate.getAggregate(), sharedQueryTexts, adjustedTTL));
-                }
-                // wait for success before proceeding in order to ensure cannot end up with
-                // "no overview table records found" during a transactionName rollup, since
-                // transactionName rollups are based on finding transactionName in summary table
-                futures.add(CompletableFutures.allAsList(futures1).thenCompose(ignoredResult -> {
-                    List<CompletableFuture<?>> futuresInner = new ArrayList<>();
+            // wait for success before proceeding in order to ensure cannot end up with orphaned
+            // fullTextSha1
+            return CompletableFutures.allAsList(completableFutures).thenCompose(ignored -> {
+                List<CompletableFuture<?>> futures = new ArrayList<>();
+
+                for (OldAggregatesByType aggregatesByType : aggregatesByTypeList) {
+                    String transactionType = aggregatesByType.getTransactionType();
+                    Aggregate overallAggregate = aggregatesByType.getOverallAggregate();
+                    List<CompletableFuture<?>> futures1 = new ArrayList<>(
+                            storeOverallAggregate(agentId, transactionType, captureTime,
+                                    overallAggregate, sharedQueryTexts, adjustedTTL));
                     for (OldTransactionAggregate transactionAggregate : aggregatesByType
                             .getTransactionAggregateList()) {
-                        futuresInner.addAll(storeTransactionNameSummary(agentId, transactionType,
+                        futures1.addAll(storeTransactionAggregate(agentId, transactionType,
                                 transactionAggregate.getTransactionName(), captureTime,
-                                transactionAggregate.getAggregate(), adjustedTTL));
+                                transactionAggregate.getAggregate(), sharedQueryTexts, adjustedTTL));
                     }
-                    futuresInner.addAll(transactionTypeDao.store(agentRollupIdsForMeta, transactionType));
-                    return CompletableFutures.allAsList(futuresInner);
-                }));
-            }
-            return CompletableFutures.allAsList(futures)
-                    // wait for success before inserting "needs rollup" records
-                    .thenCompose(ignoredResult -> activeAgentDao.insert(agentIdForMeta, captureTime))
-                    .thenCompose(CompletableFutures::allAsList).toCompletableFuture();
-        }).thenCompose(e -> {
-            List<CompletableFuture<?>> futures = new ArrayList<>();
+                    // wait for success before proceeding in order to ensure cannot end up with
+                    // "no overview table records found" during a transactionName rollup, since
+                    // transactionName rollups are based on finding transactionName in summary table
+                    futures.add(CompletableFutures.allAsList(futures1).thenCompose(ignoredResult -> {
+                        List<CompletionStage<?>> futuresInner = new ArrayList<>();
+                        for (OldTransactionAggregate transactionAggregate : aggregatesByType
+                                .getTransactionAggregateList()) {
+                            futuresInner.addAll(storeTransactionNameSummary(agentId, transactionType,
+                                    transactionAggregate.getTransactionName(), captureTime,
+                                    transactionAggregate.getAggregate(), adjustedTTL));
+                        }
+                        futuresInner.add(transactionTypeDao.store(agentRollupIdsForMeta, transactionType));
+                        return CompletableFutures.allAsList(futuresInner);
+                    }));
+                }
+                return CompletableFutures.allAsList(futures)
+                        // wait for success before inserting "needs rollup" records
+                        .thenCompose(ignoredResult -> activeAgentDao.insert(agentIdForMeta, captureTime));
+            }).thenCompose(e -> {
+                List<CompletionStage<?>> futures = new ArrayList<>();
 
-            List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
-            // TODO report checker framework issue that occurs without this suppression
-            @SuppressWarnings("assignment.type.incompatible")
-            Set<String> transactionTypes = aggregatesByTypeList.stream()
-                    .map(OldAggregatesByType::getTransactionType).collect(Collectors.toSet());
+                List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+                // TODO report checker framework issue that occurs without this suppression
+                @SuppressWarnings("assignment.type.incompatible")
+                Set<String> transactionTypes = aggregatesByTypeList.stream()
+                        .map(OldAggregatesByType::getTransactionType).collect(Collectors.toSet());
 
-            int needsRollupAdjustedTTL =
-                    Common.getNeedsRollupAdjustedTTL(adjustedTTL.generalTTL(), rollupConfigs);
-            if (agentRollupIds.size() > 1) {
+                int needsRollupAdjustedTTL =
+                        Common.getNeedsRollupAdjustedTTL(adjustedTTL.generalTTL(), rollupConfigs);
+                if (agentRollupIds.size() > 1) {
+                    int i = 0;
+                    BoundStatement boundStatement = insertNeedsRollupFromChild.bind()
+                            .setString(i++, agentRollupIds.get(1))
+                            .setInstant(i++, Instant.ofEpochMilli(captureTime))
+                            .setUuid(i++, Uuids.timeBased())
+                            .setString(i++, agentId)
+                            .setSet(i++, transactionTypes, String.class)
+                            .setInt(i++, needsRollupAdjustedTTL);
+                    futures.add(session.writeAsync(boundStatement, collector));
+                }
+                // insert into aggregate_needs_rollup_1
+                long intervalMillis = rollupConfigs.get(1).intervalMillis();
+                long rollupCaptureTime = CaptureTimes.getRollup(captureTime, intervalMillis);
                 int i = 0;
-                BoundStatement boundStatement = insertNeedsRollupFromChild.bind()
-                        .setString(i++, agentRollupIds.get(1))
-                        .setInstant(i++, Instant.ofEpochMilli(captureTime))
-                        .setUuid(i++, Uuids.timeBased())
+                BoundStatement boundStatement = insertNeedsRollup.get(0).bind()
                         .setString(i++, agentId)
+                        .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
+                        .setUuid(i++, Uuids.timeBased())
                         .setSet(i++, transactionTypes, String.class)
                         .setInt(i++, needsRollupAdjustedTTL);
-                futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
-            }
-            // insert into aggregate_needs_rollup_1
-            long intervalMillis = rollupConfigs.get(1).intervalMillis();
-            long rollupCaptureTime = CaptureTimes.getRollup(captureTime, intervalMillis);
-            int i = 0;
-            BoundStatement boundStatement = insertNeedsRollup.get(0).bind()
-                    .setString(i++, agentId)
-                    .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
-                    .setUuid(i++, Uuids.timeBased())
-                    .setSet(i++, transactionTypes, String.class)
-                    .setInt(i++, needsRollupAdjustedTTL);
-            futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
-            return CompletableFutures.allAsList(futures);
+                futures.add(session.writeAsync(boundStatement, collector));
+                return CompletableFutures.allAsList(futures);
+            });
         });
     }
 
@@ -876,22 +878,23 @@ public class AggregateDaoImpl implements AggregateDao {
 
     public CompletionStage<?> rollup(String agentRollupId, String agentRollupIdForMeta,
                                      @Nullable String parentAgentRollupId, boolean leaf) {
-        List<TTL> ttls = getTTLs();
-        CompletionStage<?> future = CompletableFuture.completedFuture(null);
-        if (!leaf) {
-            future = rollupFromChildren(agentRollupId, agentRollupIdForMeta, parentAgentRollupId,
-                    ttls.get(0));
-        }
-        return future.thenCompose(ignored -> {
-
-            List<CompletionStage<?>> futures = new ArrayList<>();
-            int rollupLevel = 1;
-            while (rollupLevel < configRepository.getRollupConfigs().size()) {
-                TTL ttl = ttls.get(rollupLevel);
-                futures.add(rollup(agentRollupId, agentRollupIdForMeta, rollupLevel, ttl));
-                rollupLevel++;
+        return getTTLs().thenCompose(ttls -> {
+            CompletionStage<?> future = CompletableFuture.completedFuture(null);
+            if (!leaf) {
+                future = rollupFromChildren(agentRollupId, agentRollupIdForMeta, parentAgentRollupId,
+                        ttls.get(0));
             }
-            return CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]));
+            return future.thenCompose(ignored -> {
+
+                List<CompletionStage<?>> futures = new ArrayList<>();
+                int rollupLevel = 1;
+                while (rollupLevel < configRepository.getRollupConfigs().size()) {
+                    TTL ttl = ttls.get(rollupLevel);
+                    futures.add(rollup(agentRollupId, agentRollupIdForMeta, rollupLevel, ttl));
+                    rollupLevel++;
+                }
+                return CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]));
+            });
         });
     }
 
@@ -2290,27 +2293,30 @@ public class AggregateDaoImpl implements AggregateDao {
         return executeQuery(agentRollupId, query, profileTable, cprofile).thenCompose(compute);
     }
 
-    private List<TTL> getTTLs() {
-        List<Integer> rollupExpirationHours =
-                configRepository.getCentralStorageConfig().rollupExpirationHours();
-        List<Integer> queryAndServiceCallRollupExpirationHours =
-                configRepository.getCentralStorageConfig()
-                        .queryAndServiceCallRollupExpirationHours();
-        List<Integer> profileRollupExpirationHours =
-                configRepository.getCentralStorageConfig().profileRollupExpirationHours();
-        List<TTL> ttls = new ArrayList<>();
-        for (int i = 0; i < rollupExpirationHours.size(); i++) {
-            ttls.add(ImmutableTTL.builder()
-                    .generalTTL(Ints.saturatedCast(HOURS.toSeconds(rollupExpirationHours.get(i))))
-                    .queryTTL(Ints.saturatedCast(
-                            HOURS.toSeconds(queryAndServiceCallRollupExpirationHours.get(i))))
-                    .serviceCallTTL(Ints.saturatedCast(
-                            HOURS.toSeconds(queryAndServiceCallRollupExpirationHours.get(i))))
-                    .profileTTL(Ints
-                            .saturatedCast(HOURS.toSeconds(profileRollupExpirationHours.get(i))))
-                    .build());
-        }
-        return ttls;
+    private CompletionStage<List<TTL>> getTTLs() {
+        return configRepository.getCentralStorageConfig().thenApply(centralStorageConfig -> {
+            List<Integer> rollupExpirationHours =
+                    centralStorageConfig.rollupExpirationHours();
+            List<Integer> queryAndServiceCallRollupExpirationHours =
+                    centralStorageConfig
+                            .queryAndServiceCallRollupExpirationHours();
+            List<Integer> profileRollupExpirationHours =
+                    centralStorageConfig.profileRollupExpirationHours();
+            List<TTL> ttls = new ArrayList<>();
+            for (int i = 0; i < rollupExpirationHours.size(); i++) {
+                ttls.add(ImmutableTTL.builder()
+                        .generalTTL(Ints.saturatedCast(HOURS.toSeconds(rollupExpirationHours.get(i))))
+                        .queryTTL(Ints.saturatedCast(
+                                HOURS.toSeconds(queryAndServiceCallRollupExpirationHours.get(i))))
+                        .serviceCallTTL(Ints.saturatedCast(
+                                HOURS.toSeconds(queryAndServiceCallRollupExpirationHours.get(i))))
+                        .profileTTL(Ints
+                                .saturatedCast(HOURS.toSeconds(profileRollupExpirationHours.get(i))))
+                        .build());
+            }
+            return ttls;
+
+        });
     }
 
     private CompletionStage<RollupParams> getRollupParams(String agentRollupId, String agentRollupIdForMeta,

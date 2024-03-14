@@ -30,7 +30,7 @@ import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
 public interface AggregateDao extends AggregateRepository {
 
     @CheckReturnValue
-    CompletableFuture<?> store(String agentId, long captureTime, List<OldAggregatesByType> aggregatesByTypeList,
+    CompletionStage<?> store(String agentId, long captureTime, List<OldAggregatesByType> aggregatesByTypeList,
                             List<Aggregate.SharedQueryText> initialSharedQueryTexts);
 
     @Instrumentation.Transaction(transactionType = "Background",

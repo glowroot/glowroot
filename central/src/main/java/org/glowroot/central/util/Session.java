@@ -118,6 +118,10 @@ public class Session implements AutoCloseable {
     }
 
     public AsyncResultSet update(Statement<?> statement, CassandraProfile profile) throws Exception {
+        return updateAsync(statement, profile).toCompletableFuture().get();
+    }
+
+    public CompletionStage<AsyncResultSet> updateAsync(Statement<?> statement, CassandraProfile profile) {
         if (statement instanceof BoundStatement) {
             BoundStatement boundStatement = (BoundStatement) statement;
             PreparedStatement preparedStatement = boundStatement.getPreparedStatement();
@@ -132,7 +136,7 @@ public class Session implements AutoCloseable {
         // do not use session.execute() because that calls getUninterruptibly() which can cause
         // central shutdown to timeout while waiting for executor service to shutdown
         statement = statement.setExecutionProfileName(profile.name());
-        return updateAsync(statement, profile).toCompletableFuture().get();
+        return wrappedSession.executeAsync(statement.setExecutionProfileName(profile.name()));
     }
 
     public CompletionStage<AsyncResultSet> readAsyncWarnIfNoRows(Statement<?> statement, CassandraProfile profile,
@@ -160,10 +164,6 @@ public class Session implements AutoCloseable {
         statement = statement.setExecutionProfileName(profile.name());
         cassandraWriteMetrics.recordMetrics(statement);
         return wrappedSession.executeAsync(statement);
-    }
-
-    private CompletionStage<AsyncResultSet> updateAsync(Statement<?> statement, CassandraProfile profile) {
-        return wrappedSession.executeAsync(statement.setExecutionProfileName(profile.name()));
     }
 
     public String getKeyspaceName() {

@@ -22,12 +22,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
+import org.glowroot.common2.config.CentralStorageConfig;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
@@ -96,21 +98,19 @@ public class Tools {
     public boolean deleteOldData(List<String> args) throws Exception {
         String partialTableName = args.get(0);
         int rollupLevel = Integer.parseInt(args.get(1));
+        CentralStorageConfig centralStorageConfig = repos.getConfigRepository().getCentralStorageConfig().toCompletableFuture().join();
         List<Integer> expirationHours;
         if (partialTableName.equals("query") || partialTableName.equals("service_call")) {
-            expirationHours = repos.getConfigRepository().getCentralStorageConfig()
-                    .queryAndServiceCallRollupExpirationHours();
+            expirationHours = centralStorageConfig.queryAndServiceCallRollupExpirationHours();
         } else if (partialTableName.equals("profile")) {
-            expirationHours = repos.getConfigRepository().getCentralStorageConfig()
-                    .profileRollupExpirationHours();
+            expirationHours = centralStorageConfig.profileRollupExpirationHours();
         } else if (partialTableName.equals("overview")
                 || partialTableName.equals("histogram")
                 || partialTableName.equals("throughput")
                 || partialTableName.equals("summary")
                 || partialTableName.equals("error_summary")
                 || partialTableName.equals("gauge_value")) {
-            expirationHours = repos.getConfigRepository().getCentralStorageConfig()
-                    .rollupExpirationHours();
+            expirationHours = centralStorageConfig.rollupExpirationHours();
         } else {
             throw new Exception("Unexpected partial table name: " + partialTableName);
         }

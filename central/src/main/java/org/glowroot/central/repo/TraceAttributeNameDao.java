@@ -25,7 +25,6 @@ import com.google.common.collect.Multimaps;
 import com.google.common.primitives.Ints;
 import org.glowroot.central.util.AsyncCache;
 import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common2.repo.CassandraProfile;
@@ -35,6 +34,7 @@ import org.immutables.value.Value;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -75,31 +75,31 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
         return traceAttributeNamesCache.get(agentRollupId).get();
     }
 
-    CompletableFuture<?> store(String agentRollupId, String transactionType, String traceAttributeName) {
-        int i = 0;
-        BoundStatement boundStatement = insertPS.bind()
-                .setString(i++, agentRollupId)
-                .setString(i++, transactionType)
-                .setString(i++, traceAttributeName)
-                .setInt(i++, getTraceTTL());
-        return session.writeAsync(boundStatement, CassandraProfile.collector).whenComplete(((asyncResultSet, throwable) -> {
-            if (throwable == null) {
-                traceAttributeNamesCache.invalidate(agentRollupId);
-            }
-        })).toCompletableFuture();
+    CompletionStage<?> store(String agentRollupId, String transactionType, String traceAttributeName) {
+        return getTraceTTL().thenCompose(ttl -> {
+            int i = 0;
+            BoundStatement boundStatement = insertPS.bind()
+                    .setString(i++, agentRollupId)
+                    .setString(i++, transactionType)
+                    .setString(i++, traceAttributeName)
+                    .setInt(i++, ttl);
+            return session.writeAsync(boundStatement, CassandraProfile.collector).whenComplete(((asyncResultSet, throwable) -> {
+                if (throwable == null) {
+                    traceAttributeNamesCache.invalidate(agentRollupId);
+                }
+            }));
+        });
     }
 
-    private int getTraceTTL() {
-        try {
-            int ttl = configRepository.getCentralStorageConfig().getTraceTTL();
+    private CompletionStage<Integer> getTraceTTL() {
+        return configRepository.getCentralStorageConfig().thenApply(centralStorageConfig -> {
+            int ttl = centralStorageConfig.getTraceTTL();
             if (ttl == 0) {
                 return 0;
             }
             // adding 1 day to account for rateLimiter
             return Ints.saturatedCast(ttl + DAYS.toSeconds(1));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        });
     }
 
     @Value.Immutable

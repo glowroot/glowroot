@@ -51,7 +51,7 @@ class GaugeNameDao {
         this.configRepository = configRepository;
         this.clock = clock;
 
-        int maxRollupHours = configRepository.getCentralStorageConfig().getMaxRollupHours();
+        int maxRollupHours = configRepository.getCentralStorageConfig().toCompletableFuture().join().getMaxRollupHours();
         session.createTableWithTWCS("create table if not exists gauge_name (agent_rollup_id"
                 + " varchar, capture_time timestamp, gauge_name varchar, primary key"
                 + " (agent_rollup_id, capture_time, gauge_name))", maxRollupHours);
@@ -86,16 +86,18 @@ class GaugeNameDao {
         return session.readAsync(boundStatement, profile).thenCompose(compute);
     }
 
-    List<CompletableFuture<?>> insert(String agentRollupId, long captureTime, String gaugeName) {
+    CompletionStage<?> insert(String agentRollupId, long captureTime, String gaugeName) {
         long rollupCaptureTime = CaptureTimes.getRollup(captureTime, DAYS.toMillis(1));
-        final int maxRollupTTL = configRepository.getCentralStorageConfig().getMaxRollupTTL();
-        int i = 0;
-        BoundStatement boundStatement = insertPS.bind()
-            .setString(i++, agentRollupId)
-            .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
-            .setString(i++, gaugeName)
-            .setInt(i++, Common.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
-        return ImmutableList.of(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
+        return configRepository.getCentralStorageConfig().thenCompose(centralStorageConfig -> {
+            int maxRollupTTL = centralStorageConfig.getMaxRollupTTL();
+            int i = 0;
+            BoundStatement boundStatement = insertPS.bind()
+                    .setString(i++, agentRollupId)
+                    .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
+                    .setString(i++, gaugeName)
+                    .setInt(i++, Common.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
+            return session.writeAsync(boundStatement, CassandraProfile.collector);
+        });
     }
 
     @Value.Immutable

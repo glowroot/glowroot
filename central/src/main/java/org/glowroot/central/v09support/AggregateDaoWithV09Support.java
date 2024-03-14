@@ -60,7 +60,7 @@ public class AggregateDaoWithV09Support implements AggregateDao {
     }
 
     @Override
-    public CompletableFuture<?> store(String agentId, long captureTime,
+    public CompletionStage<?> store(String agentId, long captureTime,
                                       List<OldAggregatesByType> aggregatesByTypeList,
                                       List<Aggregate.SharedQueryText> initialSharedQueryTexts) {
         if (captureTime <= v09LastCaptureTime

@@ -67,7 +67,7 @@ public class AgentDisplayDao implements AgentDisplayRepository {
                 targetMaxActiveAgentsInPast7Days * 10, new AgentDisplayCacheLoader());
     }
 
-    void store(String agentRollupId, String display) throws Exception {
+    CompletionStage<?> store(String agentRollupId, String display) {
         CompletionStage<AsyncResultSet> ret;
         if (display.isEmpty()) {
             BoundStatement boundStatement = deletePS.bind()
@@ -79,7 +79,7 @@ public class AgentDisplayDao implements AgentDisplayRepository {
                 .setString(1, display);
             ret = session.writeAsync(boundStatement, CassandraProfile.collector);
         }
-        ret.thenRun(() -> agentDisplayCache.invalidate(agentRollupId)).toCompletableFuture().get();
+        return ret.thenRun(() -> agentDisplayCache.invalidate(agentRollupId));
     }
 
     @Override

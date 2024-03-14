@@ -29,7 +29,7 @@ public interface SyntheticResultDao extends SyntheticResultRepository {
 
     // synthetic result records are not rolled up to their parent, but are stored directly for
     // rollups that have their own synthetic monitors defined
-    void store(String agentRollupId, String syntheticMonitorId, String syntheticMonitorDisplay,
+    CompletionStage<?> store(String agentRollupId, String syntheticMonitorId, String syntheticMonitorDisplay,
             long captureTime, long durationNanos, @Nullable String errorMessage) throws Exception;
 
     CompletionStage<List<SyntheticResultRollup0>> readLastFromRollup0(String agentRollupId,

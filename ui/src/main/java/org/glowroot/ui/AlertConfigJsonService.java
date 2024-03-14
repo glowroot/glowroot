@@ -101,7 +101,7 @@ class AlertConfigJsonService {
             @BindRequest AlertConfigRequest request) throws Exception {
         Optional<String> version = request.version();
         if (version.isPresent()) {
-            AlertConfig alertConfig = configRepository.getAlertConfig(agentRollupId, version.get());
+            AlertConfig alertConfig = configRepository.getAlertConfig(agentRollupId, version.get()).toCompletableFuture().join();
             if (alertConfig == null) {
                 throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
             }
@@ -133,7 +133,7 @@ class AlertConfigJsonService {
             @BindRequest AlertConfigDto configDto) throws Exception {
         validate(configDto);
         AlertConfig alertConfig = configDto.toProto();
-        configRepository.updateAlertConfig(agentRollupId, alertConfig, configDto.version().get(), CassandraProfile.web);
+        configRepository.updateAlertConfig(agentRollupId, alertConfig, configDto.version().get(), CassandraProfile.web).toCompletableFuture().join();
         return getAlertResponse(agentRollupId, alertConfig);
     }
 
@@ -141,7 +141,7 @@ class AlertConfigJsonService {
     @POST(path = "/backend/config/alerts/remove", permission = "agent:config:edit:alerts")
     void removeAlert(@BindAgentRollupId String agentRollupId,
             @BindRequest AlertConfigRequest request) throws Exception {
-        configRepository.deleteAlertConfig(agentRollupId, request.version().get(), CassandraProfile.web);
+        configRepository.deleteAlertConfig(agentRollupId, request.version().get(), CassandraProfile.web).toCompletableFuture().join();
     }
 
     // central supports alert configs on rollups
@@ -149,14 +149,14 @@ class AlertConfigJsonService {
     String disableAlerting(@BindAgentRollupId String agentRollupId,
             @BindRequest DisableAlertingRequest request) throws Exception {
         alertingDisableRepository.setAlertingDisabledUntilTime(agentRollupId,
-                clock.currentTimeMillis() + request.disableForNextMillis(), CassandraProfile.web);
+                clock.currentTimeMillis() + request.disableForNextMillis(), CassandraProfile.web).toCompletableFuture().join();
         return getAlertList(agentRollupId);
     }
 
     // central supports alert configs on rollups
     @POST(path = "/backend/config/re-enable-alerting", permission = "agent:config:edit:alerts")
     String reEnableAlerting(@BindAgentRollupId String agentRollupId) throws Exception {
-        alertingDisableRepository.setAlertingDisabledUntilTime(agentRollupId, null, CassandraProfile.web);
+        alertingDisableRepository.setAlertingDisabledUntilTime(agentRollupId, null, CassandraProfile.web).toCompletableFuture().join();
         return getAlertList(agentRollupId);
     }
 
@@ -172,8 +172,8 @@ class AlertConfigJsonService {
         builder.addAllGauges(getGaugeDropdownItems(agentRollupId))
                 .addAllSyntheticMonitors(getSyntheticMonitorDropdownItems(agentRollupId))
                 .addAllPagerDutyIntegrationKeys(
-                        configRepository.getPagerDutyConfig().integrationKeys());
-        for (SlackWebhook webhook : configRepository.getSlackConfig().webhooks()) {
+                        configRepository.getPagerDutyConfig().toCompletableFuture().join().integrationKeys());
+        for (SlackWebhook webhook : configRepository.getSlackConfig().toCompletableFuture().join().webhooks()) {
             builder.addSlackWebhooks(ImmutableSlackWebhookItem.builder()
                     .id(webhook.id())
                     .display(webhook.display())
@@ -184,7 +184,7 @@ class AlertConfigJsonService {
 
     private String getAlertList(String agentRollupId) throws Exception {
         List<AlertListItem> alertListItems = Lists.newArrayList();
-        List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(agentRollupId);
+        List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(agentRollupId).toCompletableFuture().join();
         for (AlertConfig alertConfig : alertConfigs) {
             alertListItems.add(ImmutableAlertListItem.builder()
                     .version(Versions.getVersion(alertConfig))
@@ -213,14 +213,13 @@ class AlertConfigJsonService {
         return new GaugeOrdering().immutableSortedCopy(gauges);
     }
 
-    private List<SyntheticMonitorItem> getSyntheticMonitorDropdownItems(String agentRollupId)
-            throws Exception {
+    private List<SyntheticMonitorItem> getSyntheticMonitorDropdownItems(String agentRollupId) {
         if (!central) {
             return ImmutableList.of();
         }
         List<SyntheticMonitorItem> items = Lists.newArrayList();
         for (SyntheticMonitorConfig config : configRepository
-                .getSyntheticMonitorConfigs(agentRollupId)) {
+                .getSyntheticMonitorConfigs(agentRollupId).toCompletableFuture().join()) {
             items.add(ImmutableSyntheticMonitorItem.of(config.getId(),
                     MoreConfigDefaults.getDisplayOrDefault(config)));
         }
@@ -351,7 +350,7 @@ class AlertConfigJsonService {
             SyntheticResultRepository syntheticResultRepository) throws Exception {
         SyntheticMonitorConfig syntheticMonitorConfig =
                 configRepository.getSyntheticMonitorConfig(agentRollupId,
-                        condition.getSyntheticMonitorId());
+                        condition.getSyntheticMonitorId()).toCompletableFuture().join();
         String syntheticMonitorDisplay;
         if (syntheticMonitorConfig == null) {
             syntheticMonitorDisplay = syntheticResultRepository

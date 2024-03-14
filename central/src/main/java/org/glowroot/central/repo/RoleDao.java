@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
@@ -89,49 +90,51 @@ class RoleDao {
                 new AllRolesCacheLoader());
     }
 
-    List<RoleConfig> read() throws Exception {
-        return allRoleConfigsCache.get(ALL_ROLES_SINGLE_CACHE_KEY).get();
+    CompletionStage<List<RoleConfig>> read() {
+        return allRoleConfigsCache.get(ALL_ROLES_SINGLE_CACHE_KEY);
     }
 
-    @Nullable
-    RoleConfig read(String name) throws Exception {
-        return roleConfigCache.get(name).get().orElse(null);
+    @CheckReturnValue
+    CompletionStage<RoleConfig> read(String name) {
+        return roleConfigCache.get(name).thenApply(opt -> opt.orElse(null));
     }
 
-    void delete(String name, CassandraProfile profile) throws Exception {
+    CompletionStage<?> delete(String name, CassandraProfile profile) {
         BoundStatement boundStatement = deletePS.bind()
             .setString(0, name);
-        session.writeAsync(boundStatement, profile).thenRun(() -> {
+        return session.writeAsync(boundStatement, profile).thenRun(() -> {
             roleConfigCache.invalidate(name);
             allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
-        }).toCompletableFuture().get();
+        });
     }
 
-    void insert(RoleConfig roleConfig, CassandraProfile profile) throws Exception {
+    CompletionStage<?> insert(RoleConfig roleConfig, CassandraProfile profile) {
         BoundStatement boundStatement = insertPS.bind();
         boundStatement = bindInsert(boundStatement, roleConfig);
-        session.writeAsync(boundStatement, profile).thenRun(() -> {
+        return session.writeAsync(boundStatement, profile).thenRun(() -> {
             roleConfigCache.invalidate(roleConfig.name());
             allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
-        }).toCompletableFuture().get();
+        });
     }
 
-    void insertIfNotExists(RoleConfig roleConfig, CassandraProfile profile) throws Exception {
+    CompletionStage<?> insertIfNotExists(RoleConfig roleConfig, CassandraProfile profile) {
         BoundStatement boundStatement = insertIfNotExistsPS.bind();
         boundStatement = bindInsert(boundStatement, roleConfig);
         // consistency level must be at least LOCAL_SERIAL
         if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
             boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
         }
-        AsyncResultSet results = session.update(boundStatement, profile);
-        Row row = checkNotNull(results.one());
-        boolean applied = row.getBoolean("[applied]");
-        if (applied) {
-            roleConfigCache.invalidate(roleConfig.name());
-            allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
-        } else {
-            throw new DuplicateRoleNameException();
-        }
+        return session.updateAsync(boundStatement, profile).thenCompose(results -> {
+            Row row = checkNotNull(results.one());
+            boolean applied = row.getBoolean("[applied]");
+            if (applied) {
+                roleConfigCache.invalidate(roleConfig.name());
+                allRoleConfigsCache.invalidate(ALL_ROLES_SINGLE_CACHE_KEY);
+                return CompletableFuture.completedFuture(null);
+            } else {
+                return CompletableFuture.failedFuture(new DuplicateRoleNameException());
+            }
+        });
     }
 
     @CheckReturnValue

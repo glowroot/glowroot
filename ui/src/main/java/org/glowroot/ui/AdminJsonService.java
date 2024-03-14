@@ -162,7 +162,7 @@ class AdminJsonService {
             throw new JsonServiceException(BAD_REQUEST, "cannot change anonymous password");
         }
         UserConfig userConfig = configRepository
-                .getUserConfigCaseInsensitive(authentication.caseAmbiguousUsername());
+                .getUserConfigCaseInsensitive(authentication.caseAmbiguousUsername()).toCompletableFuture().join();
         checkNotNull(userConfig, "user no longer exists");
         if (!PasswordHash.validatePassword(changePassword.currentPassword(),
                 userConfig.passwordHash())) {
@@ -171,7 +171,7 @@ class AdminJsonService {
         ImmutableUserConfig updatedUserConfig = ImmutableUserConfig.builder().copyFrom(userConfig)
                 .passwordHash(PasswordHash.createHash(changePassword.newPassword()))
                 .build();
-        configRepository.updateUserConfig(updatedUserConfig, userConfig.version(), CassandraProfile.web);
+        configRepository.updateUserConfig(updatedUserConfig, userConfig.version(), CassandraProfile.web).toCompletableFuture().join();
         return "";
     }
 
@@ -196,7 +196,7 @@ class AdminJsonService {
     @GET(path = "/backend/admin/storage", permission = "admin:view:storage")
     String getStorageConfig() throws Exception {
         if (central) {
-            CentralStorageConfig config = configRepository.getCentralStorageConfig();
+            CentralStorageConfig config = configRepository.getCentralStorageConfig().toCompletableFuture().join();
             return mapper.writeValueAsString(CentralStorageConfigDto.create(config));
         } else {
             EmbeddedStorageConfig config = configRepository.getEmbeddedStorageConfig();
@@ -206,7 +206,7 @@ class AdminJsonService {
 
     @GET(path = "/backend/admin/smtp", permission = "admin:view:smtp")
     String getSmtpConfig() throws Exception {
-        SmtpConfig config = configRepository.getSmtpConfig();
+        SmtpConfig config = configRepository.getSmtpConfig().toCompletableFuture().join();
         String localServerName = InetAddress.getLocalHost().getHostName();
         return mapper.writeValueAsString(ImmutableSmtpConfigResponse.builder()
                 .config(SmtpConfigDto.create(config))
@@ -216,32 +216,32 @@ class AdminJsonService {
 
     @GET(path = "/backend/admin/http-proxy", permission = "admin:view:httpProxy")
     String getHttpProxyConfig() throws Exception {
-        HttpProxyConfig config = configRepository.getHttpProxyConfig();
+        HttpProxyConfig config = configRepository.getHttpProxyConfig().toCompletableFuture().join();
         return mapper.writeValueAsString(HttpProxyConfigDto.create(config));
     }
 
     @GET(path = "/backend/admin/ldap", permission = "admin:view:ldap")
     String getLdapConfig() throws Exception {
         List<String> allGlowrootRoles = Lists.newArrayList();
-        for (RoleConfig roleConfig : configRepository.getRoleConfigs()) {
+        for (RoleConfig roleConfig : configRepository.getRoleConfigs().toCompletableFuture().join()) {
             allGlowrootRoles.add(roleConfig.name());
         }
         allGlowrootRoles = Ordering.natural().sortedCopy(allGlowrootRoles);
         return mapper.writeValueAsString(ImmutableLdapConfigResponse.builder()
-                .config(LdapConfigDto.create(configRepository.getLdapConfig()))
+                .config(LdapConfigDto.create(configRepository.getLdapConfig().toCompletableFuture().join()))
                 .allGlowrootRoles(allGlowrootRoles)
                 .build());
     }
 
     @GET(path = "/backend/admin/pager-duty", permission = "admin:view:pagerDuty")
     String getPagerDutyConfig() throws Exception {
-        PagerDutyConfig config = configRepository.getPagerDutyConfig();
+        PagerDutyConfig config = configRepository.getPagerDutyConfig().toCompletableFuture().join();
         return mapper.writeValueAsString(PagerDutyConfigDto.create(config));
     }
 
     @GET(path = "/backend/admin/slack", permission = "admin:view:slack")
     String getSlackConfig() throws Exception {
-        SlackConfig config = configRepository.getSlackConfig();
+        SlackConfig config = configRepository.getSlackConfig().toCompletableFuture().join();
         return mapper.writeValueAsString(SlackConfigDto.create(config));
     }
 
@@ -279,7 +279,7 @@ class AdminJsonService {
                     mapper.readValue(content, ImmutableCentralAdminGeneralConfigDto.class);
             CentralAdminGeneralConfig config = configDto.convert();
             try {
-                configRepository.updateCentralAdminGeneralConfig(config, configDto.version(), CassandraProfile.web);
+                configRepository.updateCentralAdminGeneralConfig(config, configDto.version(), CassandraProfile.web).toCompletableFuture().join();
             } catch (OptimisticLockException e) {
                 throw new JsonServiceException(PRECONDITION_FAILED, e);
             }
@@ -289,7 +289,7 @@ class AdminJsonService {
                     mapper.readValue(content, ImmutableEmbeddedAdminGeneralConfigDto.class);
             EmbeddedAdminGeneralConfig config = configDto.convert();
             try {
-                configRepository.updateEmbeddedAdminGeneralConfig(config, configDto.version(), CassandraProfile.web);
+                configRepository.updateEmbeddedAdminGeneralConfig(config, configDto.version(), CassandraProfile.web).toCompletableFuture().join();
             } catch (OptimisticLockException e) {
                 throw new JsonServiceException(PRECONDITION_FAILED, e);
             }
@@ -304,7 +304,7 @@ class AdminJsonService {
                     mapper.readValue(content, ImmutableCentralWebConfigDto.class);
             CentralWebConfig config = configDto.convert();
             try {
-                configRepository.updateCentralWebConfig(config, configDto.version());
+                configRepository.updateCentralWebConfig(config, configDto.version()).toCompletableFuture().join();
             } catch (OptimisticLockException e) {
                 throw new JsonServiceException(PRECONDITION_FAILED, e);
             }
@@ -357,7 +357,7 @@ class AdminJsonService {
                     mapper.readValue(content, ImmutableCentralStorageConfigDto.class);
             try {
                 configRepository.updateCentralStorageConfig(configDto.convert(),
-                        configDto.version());
+                        configDto.version()).toCompletableFuture().join();
             } catch (OptimisticLockException e) {
                 throw new JsonServiceException(PRECONDITION_FAILED, e);
             }
@@ -379,7 +379,7 @@ class AdminJsonService {
     String updateSmtpConfig(@BindRequest SmtpConfigDto configDto) throws Exception {
         try {
             configRepository.updateSmtpConfig(configDto.convert(configRepository),
-                    configDto.version());
+                    configDto.version()).toCompletableFuture().join();
         } catch (SymmetricEncryptionKeyMissingException e) {
             return "{\"symmetricEncryptionKeyMissing\":true}";
         } catch (OptimisticLockException e) {
@@ -392,7 +392,7 @@ class AdminJsonService {
     String updateHttpProxyConfig(@BindRequest HttpProxyConfigDto configDto) throws Exception {
         try {
             configRepository.updateHttpProxyConfig(configDto.convert(configRepository),
-                    configDto.version());
+                    configDto.version()).toCompletableFuture().join();
         } catch (SymmetricEncryptionKeyMissingException e) {
             return "{\"symmetricEncryptionKeyMissing\":true}";
         } catch (OptimisticLockException e) {
@@ -405,7 +405,7 @@ class AdminJsonService {
     String updateLdapConfig(@BindRequest LdapConfigDto configDto) throws Exception {
         try {
             configRepository.updateLdapConfig(configDto.convert(configRepository),
-                    configDto.version());
+                    configDto.version()).toCompletableFuture().join();
         } catch (SymmetricEncryptionKeyMissingException e) {
             return "{\"symmetricEncryptionKeyMissing\":true}";
         } catch (OptimisticLockException e) {
@@ -417,7 +417,7 @@ class AdminJsonService {
     @POST(path = "/backend/admin/pager-duty", permission = "admin:edit:pagerDuty")
     String updatePagerDutyConfig(@BindRequest PagerDutyConfigDto configDto) throws Exception {
         try {
-            configRepository.updatePagerDutyConfig(configDto.convert(), configDto.version());
+            configRepository.updatePagerDutyConfig(configDto.convert(), configDto.version()).toCompletableFuture().join();
         } catch (DuplicatePagerDutyIntegrationKeyException e) {
             return "{\"duplicateIntegrationKey\":true}";
         } catch (DuplicatePagerDutyIntegrationKeyDisplayException e) {
@@ -431,7 +431,7 @@ class AdminJsonService {
     @POST(path = "/backend/admin/slack", permission = "admin:edit:slack")
     String updateSlackConfig(@BindRequest SlackConfigDto configDto) throws Exception {
         try {
-            configRepository.updateSlackConfig(configDto.convert(), configDto.version());
+            configRepository.updateSlackConfig(configDto.convert(), configDto.version()).toCompletableFuture().join();
         } catch (DuplicateSlackWebhookUrlException e) {
             return "{\"duplicateWebhookUrl\":true}";
         } catch (DuplicateSlackWebhookDisplayException e) {
@@ -757,7 +757,7 @@ class AdminJsonService {
 
     private String getCentralWebConfig() throws Exception {
         return mapper.writeValueAsString(ImmutableCentralWebConfigResponse.builder()
-                .config(CentralWebConfigDto.create(configRepository.getCentralWebConfig()))
+                .config(CentralWebConfigDto.create(configRepository.getCentralWebConfig().toCompletableFuture().join()))
                 .build());
     }
 
@@ -1032,7 +1032,7 @@ class AdminJsonService {
                         Encryption.encrypt(newPassword(), configRepository.getLazySecretKey()));
             } else {
                 // keep existing password
-                builder.encryptedPassword(configRepository.getSmtpConfig().encryptedPassword());
+                builder.encryptedPassword(configRepository.getSmtpConfig().toCompletableFuture().join().encryptedPassword());
             }
             return builder.build();
         }
@@ -1082,7 +1082,7 @@ class AdminJsonService {
             } else {
                 // keep existing password
                 builder.encryptedPassword(
-                        configRepository.getHttpProxyConfig().encryptedPassword());
+                        configRepository.getHttpProxyConfig().toCompletableFuture().join().encryptedPassword());
             }
             return builder.build();
         }
@@ -1140,7 +1140,7 @@ class AdminJsonService {
                         Encryption.encrypt(newPassword(), configRepository.getLazySecretKey()));
             } else {
                 // keep existing password
-                builder.encryptedPassword(configRepository.getLdapConfig().encryptedPassword());
+                builder.encryptedPassword(configRepository.getLdapConfig().toCompletableFuture().join().encryptedPassword());
             }
             return builder.build();
         }

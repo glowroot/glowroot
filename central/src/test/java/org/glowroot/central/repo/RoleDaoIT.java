@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RoleDaoIT {
 
     public static final CassandraContainer cassandra
-            = (CassandraContainer) new CassandraContainer("cassandra:3.11.15").withExposedPorts(9042);
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     private static CqlSessionBuilder cqlSessionBuilder;
     private static Session session;
@@ -76,9 +76,9 @@ public class RoleDaoIT {
                 .central(true)
                 .name("abc")
                 .addPermissions("*:*")
-                .build(), CassandraProfile.web);
+                .build(), CassandraProfile.web).toCompletableFuture().join();
         // when
-        RoleConfig roleConfig = roleDao.read("abc");
+        RoleConfig roleConfig = roleDao.read("abc").toCompletableFuture().join();
         // then
         assertThat(roleConfig.name()).isEqualTo("abc");
         assertThat(roleConfig.permissions()).containsExactly("*:*");

@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class UserDaoIT {
 
     public static final CassandraContainer cassandra
-            = (CassandraContainer) new CassandraContainer("cassandra:3.11.15").withExposedPorts(9042);
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     private CqlSessionBuilder cqlSessionBuilder;
     private Session session;
@@ -75,10 +75,10 @@ public class UserDaoIT {
                 .username("abc")
                 .passwordHash("xyz")
                 .addRoles("arole", "brole")
-                .build(), CassandraProfile.web);
+                .build(), CassandraProfile.web).toCompletableFuture().join();
 
         // when
-        UserConfig userConfig = userDao.read("abc");
+        UserConfig userConfig = userDao.read("abc").toCompletableFuture().join();
 
         // then
         assertThat(userConfig.username()).isEqualTo("abc");

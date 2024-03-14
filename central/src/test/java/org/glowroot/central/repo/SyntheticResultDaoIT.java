@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class SyntheticResultDaoIT {
 
     public static final CassandraContainer cassandra
-            = (CassandraContainer) new CassandraContainer("cassandra:3.11.15").withExposedPorts(9042);
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     private ClusterManager clusterManager;
     private CqlSessionBuilder cqlSessionBuilder;
@@ -91,13 +91,13 @@ public class SyntheticResultDaoIT {
     @Test
     public void shouldRollup() throws Exception {
         syntheticResultDao.truncateAll();
-        syntheticResultDao.store("one", "11223344", "login page", 60001, SECONDS.toNanos(1), null);
-        syntheticResultDao.store("one", "11223344", "login page", 120002, SECONDS.toNanos(3), null);
-        syntheticResultDao.store("one", "11223344", "login page", 360000, SECONDS.toNanos(7), null);
+        syntheticResultDao.store("one", "11223344", "login page", 60001, SECONDS.toNanos(1), null).toCompletableFuture().join();
+        syntheticResultDao.store("one", "11223344", "login page", 120002, SECONDS.toNanos(3), null).toCompletableFuture().join();
+        syntheticResultDao.store("one", "11223344", "login page", 360000, SECONDS.toNanos(7), null).toCompletableFuture().join();
 
         // check non-rolled up data
         List<SyntheticResult> syntheticResults =
-                syntheticResultDao.readSyntheticResults("one", "11223344", 0, 300000, 0);
+                syntheticResultDao.readSyntheticResults("one", "11223344", 0, 300000, 0).toCompletableFuture().join();
         assertThat(syntheticResults).hasSize(2);
         SyntheticResult result1 = syntheticResults.get(0);
         SyntheticResult result2 = syntheticResults.get(1);
@@ -119,7 +119,7 @@ public class SyntheticResultDaoIT {
         syntheticResultDao.rollup("one").toCompletableFuture().join();
 
         // check rolled-up data after rollup
-        syntheticResults = syntheticResultDao.readSyntheticResults("one", "11223344", 0, 300000, 1);
+        syntheticResults = syntheticResultDao.readSyntheticResults("one", "11223344", 0, 300000, 1).toCompletableFuture().join();
         assertThat(syntheticResults).hasSize(1);
         result1 = syntheticResults.get(0);
         assertThat(result1.captureTime()).isEqualTo(300000);

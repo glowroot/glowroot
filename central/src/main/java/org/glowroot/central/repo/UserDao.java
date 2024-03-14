@@ -83,64 +83,71 @@ class UserDao {
                 new AllUsersCacheLoader());
     }
 
-    List<UserConfig> read() throws Exception {
-        return allUserConfigsCache.get(ALL_USERS_SINGLE_CACHE_KEY).get();
+    CompletionStage<List<UserConfig>> read() {
+        return allUserConfigsCache.get(ALL_USERS_SINGLE_CACHE_KEY);
     }
 
-    @Nullable
-    UserConfig read(String username) throws Exception {
-        for (UserConfig userConfig : read()) {
-            if (userConfig.username().equals(username)) {
-                return userConfig;
+    CompletionStage<UserConfig> read(String username) {
+        return read().thenApply(users -> {
+            for (UserConfig userConfig : users) {
+                if (userConfig.username().equals(username)) {
+                    return userConfig;
+                }
             }
-        }
-        return null;
+            return null;
+        });
     }
 
-    @Nullable
-    UserConfig readCaseInsensitive(String username) throws Exception {
-        for (UserConfig userConfig : read()) {
-            if (userConfig.username().equalsIgnoreCase(username)) {
-                return userConfig;
+    CompletionStage<UserConfig> readCaseInsensitive(String username) {
+        return read().thenApply(users -> {
+            for (UserConfig userConfig : users) {
+                if (userConfig.username().equalsIgnoreCase(username)) {
+                    return userConfig;
+                }
             }
-        }
-        return null;
+            return null;
+        });
     }
 
-    boolean namedUsersExist() throws Exception {
-        for (UserConfig userConfig : read()) {
-            if (!userConfig.username().equalsIgnoreCase("anonymous")) {
-                return true;
+    CompletionStage<Boolean> namedUsersExist() {
+        return read().thenApply(users -> {
+            for (UserConfig userConfig : users) {
+                if (!userConfig.username().equalsIgnoreCase("anonymous")) {
+                    return true;
+                }
             }
-        }
-        return false;
+            return false;
+        });
     }
 
-    void insert(UserConfig userConfig, CassandraProfile profile) throws Exception {
+    CompletionStage<Void> insert(UserConfig userConfig, CassandraProfile profile) {
         BoundStatement boundStatement = insertPS.bind();
         boundStatement = bindInsert(boundStatement, userConfig);
-        session.writeAsync(boundStatement, profile).toCompletableFuture().get();
-        allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
+        return session.writeAsync(boundStatement, profile).thenRun(() -> {
+            allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
+        });
     }
 
-    void insertIfNotExists(UserConfig userConfig, CassandraProfile profile) throws Exception {
+    CompletionStage<?> insertIfNotExists(UserConfig userConfig, CassandraProfile profile) {
         BoundStatement boundStatement = insertIfNotExistsPS.bind();
         boundStatement = bindInsert(boundStatement, userConfig);
         // consistency level must be at least LOCAL_SERIAL
         if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
             boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
         }
-        AsyncResultSet results = session.update(boundStatement, profile);
-        Row row = checkNotNull(results.one());
-        boolean applied = row.getBoolean("[applied]");
-        if (applied) {
-            allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
-        } else {
-            throw new DuplicateUsernameException();
-        }
+        return session.updateAsync(boundStatement, profile).thenCompose(results -> {
+            Row row = checkNotNull(results.one());
+            boolean applied = row.getBoolean("[applied]");
+            if (applied) {
+                allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
+                return CompletableFuture.completedFuture(null);
+            } else {
+                return CompletableFuture.failedFuture(new DuplicateUsernameException());
+            }
+        });
     }
 
-    CompletionStage<Void> delete(String username, CassandraProfile profile) throws Exception {
+    CompletionStage<Void> delete(String username, CassandraProfile profile) {
         BoundStatement boundStatement = deletePS.bind()
             .setString(0, username);
         return session.writeAsync(boundStatement, profile).thenRun(() -> {

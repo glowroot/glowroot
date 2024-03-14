@@ -19,6 +19,7 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.spotify.futures.CompletableFutures;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.glowroot.central.util.AsyncCache;
 import org.glowroot.central.util.ClusterManager;
@@ -32,6 +33,7 @@ import org.immutables.value.Value;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -67,35 +69,37 @@ class TransactionTypeDao implements TransactionTypeRepository {
     }
 
     @Override
-    public List<String> read(String agentRollupId) throws Exception {
-        return transactionTypesCache.get(agentRollupId).toCompletableFuture().get();
+    public CompletionStage<List<String>> read(String agentRollupId) {
+        return transactionTypesCache.get(agentRollupId);
     }
 
     @CheckReturnValue
-    List<CompletableFuture<?>> store(List<String> agentRollups, String transactionType) {
-        List<CompletableFuture<?>> futures = new ArrayList<>();
-        for (String agentRollupId : agentRollups) {
-            CompletableFuture<?> future;
-            try {
-                int i = 0;
-                BoundStatement boundStatement = insertPS.bind()
-                        .setString(i++, agentRollupId)
-                        .setString(i++, transactionType)
-                // intentionally not accounting for rateLimiter in TTL
-                        .setInt(i++,
-                            configRepository.getCentralStorageConfig().getMaxRollupTTL());
-                future = session.writeAsync(boundStatement, CassandraProfile.collector).whenComplete((results, throwable) -> {
-                    if (throwable == null) {
-                        transactionTypesCache.invalidate(agentRollupId);
-                    }
-                }).toCompletableFuture();
-            } catch (Exception e) {
-                transactionTypesCache.invalidate(agentRollupId);
-                throw e;
+    CompletionStage<?> store(List<String> agentRollups, String transactionType) {
+        return configRepository.getCentralStorageConfig().thenCompose(centralStorageConfig -> {
+            List<CompletionStage<?>> futures = new ArrayList<>();
+            for (String agentRollupId : agentRollups) {
+                CompletionStage<?> future;
+                try {
+                    int i = 0;
+                    BoundStatement boundStatement = insertPS.bind()
+                            .setString(i++, agentRollupId)
+                            .setString(i++, transactionType)
+                            // intentionally not accounting for rateLimiter in TTL
+                            .setInt(i++,
+                                    centralStorageConfig.getMaxRollupTTL());
+                    future = session.writeAsync(boundStatement, CassandraProfile.collector).whenComplete((results, throwable) -> {
+                        if (throwable == null) {
+                            transactionTypesCache.invalidate(agentRollupId);
+                        }
+                    });
+                } catch (Exception e) {
+                    transactionTypesCache.invalidate(agentRollupId);
+                    future = CompletableFuture.failedFuture(e);
+                }
+                futures.add(future);
             }
-            futures.add(future);
-        }
-        return futures;
+            return CompletableFutures.allAsList(futures);
+        });
     }
 
     @Value.Immutable

@@ -40,7 +40,7 @@ import static org.mockito.Mockito.when;
 // NOTE this is mostly a copy of IncidentDaoTest in glowroot-agent-embedded
 public class IncidentDaoIT {
     public static final CassandraContainer cassandra
-            = (CassandraContainer) new CassandraContainer("cassandra:3.11.15").withExposedPorts(9042);
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     private static final String AGENT_ID = "xyz";
 

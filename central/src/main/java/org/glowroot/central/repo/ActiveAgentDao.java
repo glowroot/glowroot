@@ -15,31 +15,17 @@
  */
 package org.glowroot.central.repo;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.*;
-import java.util.function.Function;
-
-import javax.annotation.Nullable;
-
-import com.datastax.oss.driver.api.core.cql.*;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
-
 import com.spotify.futures.CompletableFutures;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
-import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
@@ -50,7 +36,15 @@ import org.glowroot.common2.repo.ImmutableAgentRollup;
 import org.glowroot.common2.repo.ImmutableTopLevelAgentRollup;
 import org.glowroot.common2.repo.util.RollupLevelService;
 import org.glowroot.common2.repo.util.RollupLevelService.DataKind;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+
+import javax.annotation.Nullable;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -73,8 +67,8 @@ public class ActiveAgentDao implements ActiveAgentRepository {
     private final ImmutableList<PreparedStatement> readChildPS;
 
     ActiveAgentDao(Session session, AgentDisplayDao agentDisplayDao, AgentConfigDao agentConfigDao,
-            ConfigRepositoryImpl configRepository, RollupLevelService rollupLevelService,
-            Clock clock) throws Exception {
+                   ConfigRepositoryImpl configRepository, RollupLevelService rollupLevelService,
+                   Clock clock) throws Exception {
         this.session = session;
         this.agentDisplayDao = agentDisplayDao;
         this.agentConfigDao = agentConfigDao;
@@ -84,7 +78,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
 
         int count = configRepository.getRollupConfigs().size();
         List<Integer> rollupExpirationHours =
-                configRepository.getCentralStorageConfig().rollupExpirationHours();
+                configRepository.getCentralStorageConfig().toCompletableFuture().join().rollupExpirationHours();
 
         List<PreparedStatement> insertTopLevelPS = new ArrayList<>();
         List<PreparedStatement> readTopLevelPS = new ArrayList<>();
@@ -99,8 +93,8 @@ public class ActiveAgentDao implements ActiveAgentRepository {
             readTopLevelPS.add(session.prepare("select top_level_id from active_top_level_rollup_"
                     + i + " where one = 1 and capture_time >= ? and capture_time <= ?"));
             session.createTableWithTWCS("create table if not exists active_child_rollup_" + i
-                    + " (top_level_id varchar, capture_time timestamp, child_agent_id varchar,"
-                    + " primary key (top_level_id, capture_time, child_agent_id))",
+                            + " (top_level_id varchar, capture_time timestamp, child_agent_id varchar,"
+                            + " primary key (top_level_id, capture_time, child_agent_id))",
                     rollupExpirationHours.get(i));
             insertChildPS.add(session.prepare("insert into active_child_rollup_" + i
                     + " (top_level_id, capture_time, child_agent_id) values (?, ?, ?) using"
@@ -122,8 +116,8 @@ public class ActiveAgentDao implements ActiveAgentRepository {
         long revisedTo = CaptureTimes.getRollup(to, rollupIntervalMillis);
 
         BoundStatement boundStatement = readTopLevelPS.get(rollupLevel).bind()
-            .setInstant(0, Instant.ofEpochMilli(from))
-            .setInstant(1, Instant.ofEpochMilli(revisedTo));
+                .setInstant(0, Instant.ofEpochMilli(from))
+                .setInstant(1, Instant.ofEpochMilli(revisedTo));
 
         Set<String> topLevelIds = new HashSet<>();
         Function<AsyncResultSet, CompletableFuture<Set<String>>> compute = new Function<>() {
@@ -201,65 +195,68 @@ public class ActiveAgentDao implements ActiveAgentRepository {
     }
 
     @CheckReturnValue
-    public CompletionStage<List<CompletableFuture<?>>> insert(String agentId, long captureTime) {
-        return agentConfigDao.readAsync(agentId).thenApply(agentConfig -> {
+    public CompletionStage<?> insert(String agentId, long captureTime) {
+        return agentConfigDao.readAsync(agentId).thenCompose(agentConfig -> {
             if (agentConfig == null) {
                 // have yet to receive collectInit()
-                return ImmutableList.of();
+                return CompletableFuture.completedFuture(ImmutableList.of());
             }
             List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
-            List<Integer> rollupExpirationHours =
-                    configRepository.getCentralStorageConfig().rollupExpirationHours();
+            return configRepository.getCentralStorageConfig().thenCompose(centralStorageConfig -> {
+                List<Integer> rollupExpirationHours = centralStorageConfig.rollupExpirationHours();
 
-            int index = agentId.indexOf("::");
-            String topLevelId;
-            String childAgentId;
-            if (index == -1) {
-                topLevelId = agentId;
-                childAgentId = null;
-            } else {
-                topLevelId = agentId.substring(0, index + 2);
-                childAgentId = agentId.substring(index + 2);
-            }
-            List<CompletableFuture<?>> futures = new ArrayList<>();
-            for (int rollupLevel = 0; rollupLevel < rollupConfigs.size(); rollupLevel++) {
-                long rollupIntervalMillis = getRollupIntervalMillis(rollupConfigs, rollupLevel);
-                long rollupCaptureTime = CaptureTimes.getRollup(captureTime, rollupIntervalMillis);
-                int ttl = Ints.saturatedCast(HOURS.toSeconds(rollupExpirationHours.get(rollupLevel)));
-                int adjustedTTL = Common.getAdjustedTTL(ttl, rollupCaptureTime, clock);
 
-                int i = 0;
-                BoundStatement boundStatement = insertTopLevelPS.get(rollupLevel).bind()
-                        .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
-                        .setString(i++, topLevelId)
-                        .setInt(i++, adjustedTTL);
-                futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
+                int index = agentId.indexOf("::");
+                String topLevelId;
+                String childAgentId;
+                if (index == -1) {
+                    topLevelId = agentId;
+                    childAgentId = null;
+                } else {
+                    topLevelId = agentId.substring(0, index + 2);
+                    childAgentId = agentId.substring(index + 2);
+                }
+                List<CompletableFuture<?>> futures = new ArrayList<>();
+                for (int rollupLevel = 0; rollupLevel < rollupConfigs.size(); rollupLevel++) {
+                    long rollupIntervalMillis = getRollupIntervalMillis(rollupConfigs, rollupLevel);
+                    long rollupCaptureTime = CaptureTimes.getRollup(captureTime, rollupIntervalMillis);
+                    int ttl = Ints.saturatedCast(HOURS.toSeconds(rollupExpirationHours.get(rollupLevel)));
+                    int adjustedTTL = Common.getAdjustedTTL(ttl, rollupCaptureTime, clock);
 
-                if (childAgentId != null) {
-                    i = 0;
-                    boundStatement = insertChildPS.get(rollupLevel).bind()
-                            .setString(i++, topLevelId)
+                    int i = 0;
+                    BoundStatement boundStatement = insertTopLevelPS.get(rollupLevel).bind()
                             .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
-                            .setString(i++, childAgentId)
+                            .setString(i++, topLevelId)
                             .setInt(i++, adjustedTTL);
                     futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
+
+                    if (childAgentId != null) {
+                        i = 0;
+                        boundStatement = insertChildPS.get(rollupLevel).bind()
+                                .setString(i++, topLevelId)
+                                .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
+                                .setString(i++, childAgentId)
+                                .setInt(i++, adjustedTTL);
+                        futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
+                    }
                 }
-            }
-            return futures;
+                return CompletableFutures.allAsList(futures);
+
+            });
         });
     }
 
     private CompletionStage<List<AgentRollup>> readActiveChildAgentRollups(String topLevelId, long from, long to,
-            boolean stripTopLevelDisplay, CassandraProfile profile) {
+                                                                           boolean stripTopLevelDisplay, CassandraProfile profile) {
         int rollupLevel = rollupLevelService.getRollupLevelForView(from, to, DataKind.GENERAL);
         long rollupIntervalMillis =
                 getRollupIntervalMillis(configRepository.getRollupConfigs(), rollupLevel);
         long revisedTo = CaptureTimes.getRollup(to, rollupIntervalMillis);
 
         BoundStatement boundStatement = readChildPS.get(rollupLevel).bind()
-            .setString(0, topLevelId)
-            .setInstant(1, Instant.ofEpochMilli(from))
-            .setInstant(2, Instant.ofEpochMilli(revisedTo));
+                .setString(0, topLevelId)
+                .setInstant(1, Instant.ofEpochMilli(from))
+                .setInstant(2, Instant.ofEpochMilli(revisedTo));
 
         List<String> agentIds = new ArrayList<>();
         Function<AsyncResultSet, CompletableFuture<List<String>>> compute = new Function<AsyncResultSet, CompletableFuture<List<String>>>() {
@@ -280,7 +277,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
         Multimap<String, String> childMultimap = HashMultimap.create();
         Map<String, CompletableFuture<String>> agentDisplayFutureMap = new HashMap<>();
         return session.readAsync(boundStatement, profile).thenCompose(compute).thenRun(() -> {
-            for (String agentId: agentIds) {
+            for (String agentId : agentIds) {
                 List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);
                 allAgentRollupIds.addAll(agentRollupIds);
                 if (agentRollupIds.size() == 2) {
@@ -321,8 +318,8 @@ public class ActiveAgentDao implements ActiveAgentRepository {
     }
 
     private static AgentRollup createAgentRollup(String agentRollupId,
-            Multimap<String, String> childMultimap, Map<String, String> agentDisplayMap,
-            boolean stripTopLevelDisplay) {
+                                                 Multimap<String, String> childMultimap, Map<String, String> agentDisplayMap,
+                                                 boolean stripTopLevelDisplay) {
         Collection<String> childAgentRollupIds = childMultimap.get(agentRollupId);
         List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentRollupId);
         List<String> displayParts = new ArrayList<>();
@@ -357,7 +354,7 @@ public class ActiveAgentDao implements ActiveAgentRepository {
     }
 
     private static @Nullable AgentRollup getAgentRollup(List<AgentRollup> agentRollups,
-            String topLevelAgentRollupId) {
+                                                        String topLevelAgentRollupId) {
         for (AgentRollup agentRollup : agentRollups) {
             if (agentRollup.id().equals(topLevelAgentRollupId)) {
                 return agentRollup;

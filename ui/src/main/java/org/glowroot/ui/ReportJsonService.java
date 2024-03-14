@@ -139,7 +139,7 @@ class ReportJsonService {
         Set<String> transactionTypes = Sets.newTreeSet();
         Set<Gauge> gauges = Sets.newHashSet();
         for (String agentRollupId : request.agentRollupIds()) {
-            transactionTypes.addAll(transactionTypeRepository.read(agentRollupId));
+            transactionTypes.addAll(transactionTypeRepository.read(agentRollupId).toCompletableFuture().join());
             transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(agentRollupId));
             try {
                 transactionTypes.add(configRepository.getUiDefaultsConfig(agentRollupId)

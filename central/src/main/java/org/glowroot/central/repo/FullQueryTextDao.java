@@ -15,34 +15,26 @@
  */
 package org.glowroot.central.repo;
 
-import java.lang.management.ManagementFactory;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.google.common.collect.Iterables;
+import com.google.common.primitives.Ints;
+import com.spotify.futures.CompletableFutures;
+import edu.umd.cs.findbugs.annotations.CheckReturnValue;
+import org.glowroot.central.util.Session;
+import org.glowroot.common.util.Styles;
+import org.glowroot.common2.repo.CassandraProfile;
+import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
+import org.immutables.value.Value;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-
-import com.datastax.oss.driver.api.core.cql.*;
-import com.google.common.collect.Iterables;
-import com.google.common.primitives.Ints;
-import edu.umd.cs.findbugs.annotations.CheckReturnValue;
-import org.checkerframework.checker.nullness.qual.Nullable;
-import org.glowroot.common2.repo.CassandraProfile;
-import org.immutables.value.Value;
-
-import org.glowroot.central.util.RateLimiter;
-import org.glowroot.central.util.Session;
-import org.glowroot.common.util.Styles;
-import org.glowroot.common2.config.CentralStorageConfig;
-import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
-
-import static java.util.concurrent.TimeUnit.DAYS;
-import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.*;
 
 class FullQueryTextDao implements AutoCloseable {
 
@@ -97,26 +89,28 @@ class FullQueryTextDao implements AutoCloseable {
         });
     }
 
-    List<CompletableFuture<?>> store(List<String> agentRollupIds, String fullTextSha1, String fullText) {
-        // relying on agent side to rate limit (re-)sending the same full text
-        List<CompletableFuture<?>> futures = new ArrayList<>();
-        for (String agentRollupId : agentRollupIds) {
-            int i = 0;
-            BoundStatement boundStatement = insertCheckV2PS.bind()
-                .setString(i++, agentRollupId)
-                .setString(i++, fullTextSha1)
-                .setInt(i, getTTL());
-            futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
-        }
-        futures.add(storeInternal(fullTextSha1, fullText).toCompletableFuture());
-        return futures;
+    CompletionStage<?> store(List<String> agentRollupIds, String fullTextSha1, String fullText) {
+        return getTTL().thenCompose(ttl -> {
+            // relying on agent side to rate limit (re-)sending the same full text
+            List<CompletionStage<?>> futures = new ArrayList<>();
+            for (String agentRollupId : agentRollupIds) {
+                int i = 0;
+                BoundStatement boundStatement = insertCheckV2PS.bind()
+                        .setString(i++, agentRollupId)
+                        .setString(i++, fullTextSha1)
+                        .setInt(i, ttl);
+                futures.add(session.writeAsync(boundStatement, CassandraProfile.collector).toCompletableFuture());
+            }
+            futures.add(storeInternal(fullTextSha1, fullText));
+            return CompletableFutures.allAsList(futures);
+        });
     }
 
     private CompletionStage<String> getFullTextUsingPS(String agentRollupId, String fullTextSha1,
-            PreparedStatement readCheckPS, CassandraProfile profile) {
+                                                       PreparedStatement readCheckPS, CassandraProfile profile) {
         BoundStatement boundStatement = readCheckPS.bind()
-            .setString(0, agentRollupId)
-            .setString(1, fullTextSha1);
+                .setString(0, agentRollupId)
+                .setString(1, fullTextSha1);
         return session.readAsync(boundStatement, profile).thenCompose(results -> {
             if (results.one() == null) {
                 return CompletableFuture.completedFuture(null);
@@ -134,24 +128,26 @@ class FullQueryTextDao implements AutoCloseable {
     }
 
     @CheckReturnValue
-    private CompletableFuture<AsyncResultSet> storeInternal(String fullTextSha1, String fullText) {
+    private CompletionStage<?> storeInternal(String fullTextSha1, String fullText) {
         BoundStatement boundStatement = readTtlPS.bind()
-            .setString(0, fullTextSha1);
-        return session.readAsync(boundStatement, CassandraProfile.collector).thenCompose(results -> {
-            Row row = results.one();
-            int ttl = getTTL();
-            if (row == null) {
-                return insertAndCompleteFuture(fullTextSha1, fullText, ttl, CassandraProfile.collector);
-            }
-            int existingTTL = row.getInt(0);
-            if (existingTTL != 0 && ttl > existingTTL + DAYS.toSeconds(1)) {
-                // only overwrite if bumping TTL at least 1 day
-                // also, never overwrite with smaller TTL
-                return insertAndCompleteFuture(fullTextSha1, fullText, ttl, CassandraProfile.collector);
-            } else {
-                return CompletableFuture.completedFuture(null);
-            }
-        }).toCompletableFuture();
+                .setString(0, fullTextSha1);
+        return getTTL().thenCompose(ttl -> {
+            return session.readAsync(boundStatement, CassandraProfile.collector).thenCompose(results -> {
+                Row row = results.one();
+
+                if (row == null) {
+                    return insertAndCompleteFuture(fullTextSha1, fullText, ttl, CassandraProfile.collector);
+                }
+                int existingTTL = row.getInt(0);
+                if (existingTTL != 0 && ttl > existingTTL + DAYS.toSeconds(1)) {
+                    // only overwrite if bumping TTL at least 1 day
+                    // also, never overwrite with smaller TTL
+                    return insertAndCompleteFuture(fullTextSha1, fullText, ttl, CassandraProfile.collector);
+                } else {
+                    return CompletableFuture.completedFuture(null);
+                }
+            });
+        });
     }
 
     private CompletionStage<AsyncResultSet> insertAndCompleteFuture(
@@ -164,21 +160,22 @@ class FullQueryTextDao implements AutoCloseable {
         return session.writeAsync(boundStatement, profile);
     }
 
-    private int getTTL() {
-        CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
-        int queryRollupExpirationHours =
-                Iterables.getLast(storageConfig.queryAndServiceCallRollupExpirationHours());
-        int expirationHours =
-                Math.max(queryRollupExpirationHours, storageConfig.traceExpirationHours());
-        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
-        RollupConfig lastRollupConfig = Iterables.getLast(rollupConfigs);
-        // adding largest rollup interval to account for query being retained longer by rollups
-        long ttl = MILLISECONDS.toSeconds(lastRollupConfig.intervalMillis())
-                // adding 2 days to account for worst case client side rate limiter + server side
-                // rate limiter
-                + DAYS.toSeconds(2)
-                + HOURS.toSeconds(expirationHours);
-        return Ints.saturatedCast(ttl);
+    private CompletionStage<Integer> getTTL() {
+        return configRepository.getCentralStorageConfig().thenApply(storageConfig -> {
+            int queryRollupExpirationHours =
+                    Iterables.getLast(storageConfig.queryAndServiceCallRollupExpirationHours());
+            int expirationHours =
+                    Math.max(queryRollupExpirationHours, storageConfig.traceExpirationHours());
+            List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+            RollupConfig lastRollupConfig = Iterables.getLast(rollupConfigs);
+            // adding largest rollup interval to account for query being retained longer by rollups
+            long ttl = MILLISECONDS.toSeconds(lastRollupConfig.intervalMillis())
+                    // adding 2 days to account for worst case client side rate limiter + server side
+                    // rate limiter
+                    + DAYS.toSeconds(2)
+                    + HOURS.toSeconds(expirationHours);
+            return Ints.saturatedCast(ttl);
+        });
     }
 
     @Override
@@ -189,6 +186,7 @@ class FullQueryTextDao implements AutoCloseable {
     @Styles.AllParameters
     interface FullQueryTextKey {
         String agentId();
+
         String fullTextSha1();
     }
 }

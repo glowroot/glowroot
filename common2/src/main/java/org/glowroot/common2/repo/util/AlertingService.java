@@ -117,10 +117,14 @@ public class AlertingService {
         return incidentRepository.readOpenIncidents(agentRollupId, profile).thenCompose(openIncidents -> {
             List<CompletionStage<?>> futures = new ArrayList<>();
             for (OpenIncident openIncident : openIncidents) {
-                if (isDeletedAlert(openIncident)) {
-                    futures.add(incidentRepository.resolveIncident(openIncident, clock.currentTimeMillis(),
-                            profile));
-                }
+                futures.add(isDeletedAlert(openIncident).thenCompose(isDeletedAlert -> {
+                    if (isDeletedAlert) {
+                        return incidentRepository.resolveIncident(openIncident, clock.currentTimeMillis(),
+                                profile);
+                    } else {
+                        return CompletableFuture.completedFuture(null);
+                    }
+                }));
             }
             return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         });
@@ -130,9 +134,14 @@ public class AlertingService {
         return incidentRepository.readAllOpenIncidents(profile).thenCompose(openIncidents -> {
             List<CompletionStage<?>> futures = new ArrayList<>(openIncidents.size());
             for (OpenIncident openIncident : openIncidents) {
-                if (isDeletedAlert(openIncident)) {
-                    futures.add(incidentRepository.resolveIncident(openIncident, clock.currentTimeMillis(), profile));
-                }
+                futures.add(isDeletedAlert(openIncident).thenCompose(isDeletedAlert -> {
+                    if (isDeletedAlert) {
+                        return incidentRepository.resolveIncident(openIncident, clock.currentTimeMillis(),
+                                profile);
+                    } else {
+                        return CompletableFuture.completedFuture(null);
+                    }
+                }));
             }
             return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         });
@@ -229,26 +238,30 @@ public class AlertingService {
         });
     }
 
-    private boolean isDeletedAlert(OpenIncident openIncident) {
-        for (AlertConfig alertConfig : getAlertConfigsLeniently(openIncident.agentRollupId())) {
-            if (alertConfig.getCondition().equals(openIncident.condition())
-                    && alertConfig.getSeverity() == openIncident.severity()) {
-                return false;
+    private CompletionStage<Boolean> isDeletedAlert(OpenIncident openIncident) {
+        return getAlertConfigsLeniently(openIncident.agentRollupId()).thenApply(alertConfigs -> {
+            for (AlertConfig alertConfig : alertConfigs) {
+                if (alertConfig.getCondition().equals(openIncident.condition())
+                        && alertConfig.getSeverity() == openIncident.severity()) {
+                    return false;
+                }
             }
-        }
-        return true;
+            return true;
+        });
     }
 
-    private List<AlertConfig> getAlertConfigsLeniently(String agentRollupId) {
-        try {
-            return configRepository.getAlertConfigs(agentRollupId);
-        } catch (AgentConfigNotFoundException e) {
-            // be lenient if agent_config table is messed up
-            logger.debug(e.getMessage(), e);
-            return ImmutableList.of();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    private CompletionStage<List<AlertConfig>> getAlertConfigsLeniently(String agentRollupId) {
+        return configRepository.getAlertConfigs(agentRollupId).handle((configs, t) -> {
+            if (t != null) {
+                if (t instanceof AgentConfigNotFoundException) {
+                    // be lenient if agent_config table is messed up
+                    logger.debug(t.getMessage(), t);
+                    return ImmutableList.of();
+                }
+                throw new RuntimeException(t);
+            }
+            return configs;
+        });
     }
 
     private void sendMetricAlert(String centralDisplay, String agentRollupId,
@@ -336,7 +349,7 @@ public class AlertingService {
         AlertNotification alertNotification = alertConfig.getNotification();
         EmailNotification emailNotification = alertNotification.getEmailNotification();
         if (emailNotification.getEmailAddressCount() > 0) {
-            SmtpConfig smtpConfig = configRepository.getSmtpConfig();
+            SmtpConfig smtpConfig = configRepository.getSmtpConfig().toCompletableFuture().join();
             if (smtpConfig.host().isEmpty()) {
                 if (smtpHostWarningRateLimiter.tryAcquire()) {
                     logger.warn("not sending alert due to missing SMTP host configuration"
@@ -357,7 +370,7 @@ public class AlertingService {
         SlackNotification slackNotification = alertNotification.getSlackNotification();
         if (!slackNotification.getSlackWebhookId().isEmpty()) {
             String slackWebhookUrl = null;
-            for (SlackWebhook webhook : configRepository.getSlackConfig().webhooks()) {
+            for (SlackWebhook webhook : configRepository.getSlackConfig().toCompletableFuture().join().webhooks()) {
                 if (webhook.id().equals(slackNotification.getSlackWebhookId())) {
                     slackWebhookUrl = webhook.url();
                     break;

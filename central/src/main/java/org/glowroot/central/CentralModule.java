@@ -190,7 +190,7 @@ public class CentralModule {
                 startupLogger.info("glowroot central schema created");
             } else {
                 schemaUpgrade.updateToMoreRecentCassandraOptions(
-                        repos.getConfigRepository().getCentralStorageConfig());
+                        repos.getConfigRepository().getCentralStorageConfig().toCompletableFuture().join());
             }
 
             HttpClient httpClient = new HttpClient(repos.getConfigRepository());
@@ -223,7 +223,7 @@ public class CentralModule {
                     updateAgentConfigIfNeededService;
             repos.getConfigRepository().addAgentConfigListener(new AgentConfigListener() {
                 @Override
-                public void onChange(String agentId) throws Exception {
+                public void onChange(String agentId) {
                     // TODO report checker framework issue that occurs without checkNotNull
                     checkNotNull(updateAgentConfigIfNeededServiceEffectivelyFinal)
                             .updateAgentConfigIfNeededAndConnectedAsync(agentId);

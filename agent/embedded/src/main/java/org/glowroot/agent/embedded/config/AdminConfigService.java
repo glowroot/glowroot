@@ -261,7 +261,7 @@ public class AdminConfigService {
         userConfigs = ImmutableList.copyOf(configs);
     }
 
-    public void updateRoleConfigs(List<RoleConfig> configs) throws Exception {
+    public void updateRoleConfigs(List<RoleConfig> configs) {
         adminConfigFile.writeConfig("roles", configs);
         roleConfigs = ImmutableList.copyOf(configs);
     }

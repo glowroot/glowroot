@@ -17,6 +17,7 @@ package org.glowroot.central.repo;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.cql.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.central.util.AsyncCache;
@@ -79,42 +80,54 @@ class CentralConfigDao {
         keyTypes.put(key, clazz);
     }
 
-    void write(String key, Object config, String priorVersion) throws Exception {
-        BoundStatement boundStatement = readPS.bind()
+    CompletionStage<?> write(String key, Object config, String priorVersion) {
+        BoundStatement bdstmt = readPS.bind()
                 .setString(0, key);
-        AsyncResultSet results = session.readAsync(boundStatement, CassandraProfile.web).toCompletableFuture().get();
-        Row row = results.one();
-        if (row == null) {
-            writeIfNotExists(key, config);
-            return;
-        }
-        String currValue = checkNotNull(row.getString(0));
-        Object currConfig = readValue(key, currValue);
-        if (!Versions.getJsonVersion(currConfig).equals(priorVersion)) {
-            throw new OptimisticLockException();
-        }
-        String newValue = mapper.writeValueAsString(config);
-        int i = 0;
-        boundStatement = updatePS.bind()
-                .setString(i++, newValue)
-                .setString(i++, key)
-                .setString(i++, currValue);
-        // consistency level must be at least LOCAL_SERIAL
-        if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
-            boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
-        }
-        AsyncResultSet asyncresults = session.update(boundStatement, CassandraProfile.web);
-        row = checkNotNull(asyncresults.one());
-        boolean applied = row.getBoolean("[applied]");
-        if (applied) {
-            centralConfigCache.invalidate(key);
-        } else {
-            throw new OptimisticLockException();
-        }
+        return session.readAsync(bdstmt, CassandraProfile.web).thenCompose(results -> {
+            Row rw = results.one();
+            if (rw == null) {
+                return writeIfNotExists(key, config);
+            }
+            String currValue = checkNotNull(rw.getString(0));
+
+            try {
+                Object currConfig = readValue(key, currValue);
+                if (!Versions.getJsonVersion(currConfig).equals(priorVersion)) {
+                    return CompletableFuture.failedFuture(new OptimisticLockException());
+                }
+                String newValue = mapper.writeValueAsString(config);
+                int i = 0;
+                BoundStatement boundStatement = updatePS.bind()
+                        .setString(i++, newValue)
+                        .setString(i++, key)
+                        .setString(i++, currValue);
+                // consistency level must be at least LOCAL_SERIAL
+                if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
+                    boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+                }
+                return session.updateAsync(boundStatement, CassandraProfile.web).thenCompose(asyncresults -> {
+                    Row row = checkNotNull(asyncresults.one());
+                    boolean applied = row.getBoolean("[applied]");
+                    if (applied) {
+                        centralConfigCache.invalidate(key);
+                    } else {
+                        return CompletableFuture.failedFuture(new OptimisticLockException());
+                    }
+                    return CompletableFuture.completedFuture(null);
+                });
+            } catch (JsonProcessingException e) {
+                return CompletableFuture.failedFuture(e);
+            }
+        });
     }
 
-    void writeWithoutOptimisticLocking(String key, Object config) throws Exception {
-        String json = mapper.writeValueAsString(config);
+    CompletionStage<?> writeWithoutOptimisticLocking(String key, Object config) {
+        String json = null;
+        try {
+            json = mapper.writeValueAsString(config);
+        } catch (JsonProcessingException e) {
+            return CompletableFuture.failedFuture(e);
+        }
         CompletionStage<AsyncResultSet> ret;
         if (json.equals("{}")) {
             BoundStatement boundStatement = deletePS.bind()
@@ -126,16 +139,20 @@ class CentralConfigDao {
                     .setString(1, json);
             ret = session.writeAsync(boundStatement, CassandraProfile.web);
         }
-        ret.thenRun(() -> centralConfigCache.invalidate(key)).toCompletableFuture().get();
+        return ret.thenRun(() -> centralConfigCache.invalidate(key));
     }
 
-    @Nullable
     CompletableFuture<Object> read(String key) {
         return centralConfigCache.get(key).thenApply(opt -> opt.orElse(null));
     }
 
-    private void writeIfNotExists(String key, Object config) throws Exception {
-        String initialValue = mapper.writeValueAsString(config);
+    private CompletionStage<?> writeIfNotExists(String key, Object config) {
+        String initialValue = null;
+        try {
+            initialValue = mapper.writeValueAsString(config);
+        } catch (JsonProcessingException e) {
+            return CompletableFuture.failedFuture(e);
+        }
         int i = 0;
         BoundStatement boundStatement = insertIfNotExistsPS.bind()
                 .setString(i++, key)
@@ -144,17 +161,19 @@ class CentralConfigDao {
         if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
             boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
         }
-        AsyncResultSet results = session.update(boundStatement, CassandraProfile.web);
-        Row row = checkNotNull(results.one());
-        boolean applied = row.getBoolean("[applied]");
-        if (applied) {
-            centralConfigCache.invalidate(key);
-        } else {
-            throw new OptimisticLockException();
-        }
+        return session.updateAsync(boundStatement, CassandraProfile.web).thenCompose(results -> {
+            Row row = checkNotNull(results.one());
+            boolean applied = row.getBoolean("[applied]");
+            if (applied) {
+                centralConfigCache.invalidate(key);
+            } else {
+                return CompletableFuture.failedFuture(new OptimisticLockException());
+            }
+            return CompletableFuture.completedFuture(null);
+        });
     }
 
-    private Object readValue(String key, String value) throws IOException {
+    private Object readValue(String key, String value) throws JsonProcessingException {
         Class<?> type = checkNotNull(keyTypes.get(key));
         // config is non-null b/c text "null" is never stored
         return checkNotNull(mapper.readValue(value, type));

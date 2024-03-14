@@ -84,7 +84,7 @@ class EmbeddedCollector implements Collector {
         aggregateDao.store(aggregateReader);
         alertingService.checkForDeletedAlerts(AGENT_ID, CassandraProfile.web);
         if (!isCurrentlyDisabled().toCompletableFuture().join()) {
-            for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID)) {
+            for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID).toCompletableFuture().join()) {
                 AlertCondition alertCondition = alertConfig.getCondition();
                 if (isAggregateMetricCondition(alertCondition)) {
                     try {
@@ -119,7 +119,7 @@ class EmbeddedCollector implements Collector {
         }
         alertingService.checkForDeletedAlerts(AGENT_ID, CassandraProfile.web);
         if (!isCurrentlyDisabled().toCompletableFuture().join()) {
-            for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID)) {
+            for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID).toCompletableFuture().join()) {
                 AlertCondition alertCondition = alertConfig.getCondition();
                 if (isGaugeMetricCondition(alertCondition)) {
                     try {

@@ -62,7 +62,7 @@ public class AggregateDaoIT {
 
     @Container
     public final CassandraContainer cassandra
-            = (CassandraContainer) new CassandraContainer("cassandra:3.11.15").withExposedPorts(9042);
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     private static final AdvancedConfig DEFAULT_ADVANCED_CONFIG = AdvancedConfig.newBuilder()
             .setMaxQueryAggregates(OptionalInt32.newBuilder()

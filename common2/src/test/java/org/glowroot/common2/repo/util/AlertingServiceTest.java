@@ -148,8 +148,8 @@ public class AlertingServiceTest {
         mailService = new MockMailService();
         httpClient = new HttpClient(configRepository);
         when(configRepository.getLazySecretKey()).thenReturn(LAZY_SECRET_KEY);
-        when(configRepository.getSmtpConfig()).thenReturn(SMTP_CONFIG);
-        when(configRepository.getHttpProxyConfig()).thenReturn(HTTP_PROXY_CONFIG);
+        when(configRepository.getSmtpConfig()).thenReturn(CompletableFuture.completedFuture(SMTP_CONFIG));
+        when(configRepository.getHttpProxyConfig()).thenReturn(CompletableFuture.completedFuture(HTTP_PROXY_CONFIG));
     }
 
     @Test

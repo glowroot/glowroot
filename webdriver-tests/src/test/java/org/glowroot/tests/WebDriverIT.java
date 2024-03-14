@@ -51,7 +51,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public abstract class WebDriverIT {
 
     public static final CassandraContainer cassandra
-            = (CassandraContainer) new CassandraContainer("cassandra:3.11.15").withExposedPorts(9042);
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     protected static final String agentId;
 

@@ -97,21 +97,20 @@ public interface ConfigRepository {
     GaugeConfig getGaugeConfig(String agentId, String version) throws Exception;
 
     // central supports synthetic monitor configs on rollups
-    List<SyntheticMonitorConfig> getSyntheticMonitorConfigs(String agentRollupId) throws Exception;
+    CompletionStage<List<SyntheticMonitorConfig>> getSyntheticMonitorConfigs(String agentRollupId);
 
     // central supports synthetic monitor configs on rollups
-    @Nullable
-    SyntheticMonitorConfig getSyntheticMonitorConfig(String agentRollupId,
+    CompletionStage<SyntheticMonitorConfig> getSyntheticMonitorConfig(String agentRollupId,
             String syntheticMonitorId) throws Exception;
 
     // central supports alert configs on rollups
-    List<AlertConfig> getAlertConfigs(String agentRollupId) throws Exception;
+    CompletionStage<List<AlertConfig>> getAlertConfigs(String agentRollupId);
 
     CompletionStage<List<AlertConfig>> getAlertConfigsNonBlocking(String agentRollupId);
 
     // central supports alert configs on rollups
     @Nullable
-    AlertConfig getAlertConfig(String agentRollupId, String version) throws Exception;
+    CompletionStage<AlertConfig> getAlertConfig(String agentRollupId, String version);
 
     List<PluginConfig> getPluginConfigs(String agentId) throws Exception;
 
@@ -129,150 +128,146 @@ public interface ConfigRepository {
 
     CompletionStage<CentralAdminGeneralConfig> getCentralAdminGeneralConfig();
 
-    List<UserConfig> getUserConfigs() throws Exception;
+    CompletionStage<List<UserConfig>> getUserConfigs();
 
-    @Nullable
-    UserConfig getUserConfig(String username) throws Exception;
+    CompletionStage<UserConfig> getUserConfig(String username);
 
-    @Nullable
-    UserConfig getUserConfigCaseInsensitive(String username) throws Exception;
+    CompletionStage<UserConfig> getUserConfigCaseInsensitive(String username);
 
-    boolean namedUsersExist() throws Exception;
+    CompletionStage<Boolean> namedUsersExist();
 
-    List<RoleConfig> getRoleConfigs() throws Exception;
+    CompletionStage<List<RoleConfig>> getRoleConfigs();
 
-    @Nullable
-    RoleConfig getRoleConfig(String name) throws Exception;
+    CompletionStage<RoleConfig> getRoleConfig(String name);
 
-    WebConfig getWebConfig() throws Exception;
+    CompletionStage<? extends WebConfig> getWebConfig();
 
     EmbeddedWebConfig getEmbeddedWebConfig();
 
-    CentralWebConfig getCentralWebConfig() throws Exception;
+    CompletionStage<CentralWebConfig> getCentralWebConfig();
 
     StorageConfig getStorageConfig();
 
     EmbeddedStorageConfig getEmbeddedStorageConfig();
 
-    CentralStorageConfig getCentralStorageConfig() throws Exception;
+    CompletionStage<CentralStorageConfig> getCentralStorageConfig();
 
-    SmtpConfig getSmtpConfig();
+    CompletionStage<SmtpConfig> getSmtpConfig();
 
-    HttpProxyConfig getHttpProxyConfig() throws Exception;
+    CompletionStage<HttpProxyConfig> getHttpProxyConfig() throws Exception;
 
-    LdapConfig getLdapConfig() throws Exception;
+    CompletionStage<LdapConfig> getLdapConfig() throws Exception;
 
-    PagerDutyConfig getPagerDutyConfig() throws Exception;
+    CompletionStage<PagerDutyConfig> getPagerDutyConfig() throws Exception;
 
-    SlackConfig getSlackConfig();
+    CompletionStage<SlackConfig> getSlackConfig();
 
     HealthchecksIoConfig getHealthchecksIoConfig();
 
     AllEmbeddedAdminConfig getAllEmbeddedAdminConfig();
 
-    AllCentralAdminConfig getAllCentralAdminConfig() throws Exception;
+    CompletionStage<AllCentralAdminConfig> getAllCentralAdminConfig();
 
-    boolean isConfigReadOnly(String agentId) throws Exception;
+    CompletionStage<Boolean> isConfigReadOnly(String agentId);
 
-    void updateGeneralConfig(String agentId, GeneralConfig config, String priorVersion, CassandraProfile profile)
+    CompletionStage<?> updateGeneralConfig(String agentId, GeneralConfig config, String priorVersion, CassandraProfile profile)
             throws Exception;
 
-    void updateTransactionConfig(String agentId, TransactionConfig config, String priorVersion, CassandraProfile profile)
+    CompletionStage<?> updateTransactionConfig(String agentId, TransactionConfig config, String priorVersion, CassandraProfile profile)
             throws Exception;
 
-    void insertGaugeConfig(String agentId, GaugeConfig config, CassandraProfile profile) throws Exception;
+    CompletionStage<?> insertGaugeConfig(String agentId, GaugeConfig config, CassandraProfile profile) throws Exception;
 
-    void updateGaugeConfig(String agentId, GaugeConfig config, String priorVersion, CassandraProfile profile)
+    CompletionStage<?> updateGaugeConfig(String agentId, GaugeConfig config, String priorVersion, CassandraProfile profile)
             throws Exception;
 
-    void deleteGaugeConfig(String agentId, String version, CassandraProfile profile) throws Exception;
+    CompletionStage<?> deleteGaugeConfig(String agentId, String version, CassandraProfile profile) throws Exception;
 
-    void updateJvmConfig(String agentId, JvmConfig config, String priorVersion, CassandraProfile profile) throws Exception;
+    CompletionStage<?> updateJvmConfig(String agentId, JvmConfig config, String priorVersion, CassandraProfile profile) throws Exception;
 
     // central supports synthetic monitor configs on rollups
-    void insertSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config, CassandraProfile profile)
+    CompletionStage<?> insertSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config, CassandraProfile profile)
             throws Exception;
 
     // central supports synthetic monitor configs on rollups
-    void updateSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config,
+    CompletionStage<?> updateSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config,
             String priorVersion, CassandraProfile profile) throws Exception;
 
     // central supports synthetic monitor configs on rollups
-    void deleteSyntheticMonitorConfig(String agentRollupId, String syntheticMonitorId, CassandraProfile profile)
+    CompletionStage<?> deleteSyntheticMonitorConfig(String agentRollupId, String syntheticMonitorId, CassandraProfile profile)
             throws Exception;
 
     // central supports alert configs on rollups
-    void insertAlertConfig(String agentRollupId, AlertConfig config, CassandraProfile profile) throws Exception;
+    CompletionStage<?> insertAlertConfig(String agentRollupId, AlertConfig config, CassandraProfile profile) throws Exception;
 
     // central supports alert configs on rollups
-    void updateAlertConfig(String agentRollupId, AlertConfig config, String priorVersion, CassandraProfile profile)
-            throws Exception;
+    CompletionStage<?> updateAlertConfig(String agentRollupId, AlertConfig config, String priorVersion, CassandraProfile profile);
 
     // central supports alert configs on rollups
-    void deleteAlertConfig(String agentRollupId, String version, CassandraProfile profile) throws Exception;
+    CompletionStage<?> deleteAlertConfig(String agentRollupId, String version, CassandraProfile profile);
 
     // central supports ui config on rollups
-    void updateUiDefaultsConfig(String agentRollupId, UiDefaultsConfig config, String priorVersion, CassandraProfile profile)
+    CompletionStage<?> updateUiDefaultsConfig(String agentRollupId, UiDefaultsConfig config, String priorVersion, CassandraProfile profile)
             throws Exception;
 
     // only plugin id and property names and values are used
-    void updatePluginConfig(String agentId, PluginConfig config, String priorVersion, CassandraProfile profile)
+    CompletionStage<?> updatePluginConfig(String agentId, PluginConfig config, String priorVersion, CassandraProfile profile)
             throws Exception;
 
-    void insertInstrumentationConfig(String agentId, InstrumentationConfig config, CassandraProfile profile) throws Exception;
+    CompletionStage<?> insertInstrumentationConfig(String agentId, InstrumentationConfig config, CassandraProfile profile) throws Exception;
 
-    void updateInstrumentationConfig(String agentId, InstrumentationConfig config,
+    CompletionStage<?> updateInstrumentationConfig(String agentId, InstrumentationConfig config,
             String priorVersion, CassandraProfile profile) throws Exception;
 
-    void deleteInstrumentationConfigs(String agentId, List<String> versions, CassandraProfile profile) throws Exception;
+    CompletionStage<?> deleteInstrumentationConfigs(String agentId, List<String> versions, CassandraProfile profile) throws Exception;
 
-    void insertInstrumentationConfigs(String agentId, List<InstrumentationConfig> configs, CassandraProfile profile)
+    CompletionStage<?> insertInstrumentationConfigs(String agentId, List<InstrumentationConfig> configs, CassandraProfile profile)
             throws Exception;
 
     // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
-    void updateAdvancedConfig(String agentRollupId, AdvancedConfig config, String priorVersion, CassandraProfile profile)
+    CompletionStage<?> updateAdvancedConfig(String agentRollupId, AdvancedConfig config, String priorVersion, CassandraProfile profile)
             throws Exception;
 
-    void updateAllConfig(String agentId, AgentConfig config, @Nullable String priorVersion, CassandraProfile profile)
+    CompletionStage<?> updateAllConfig(String agentId, AgentConfig config, @Nullable String priorVersion, CassandraProfile profile)
             throws Exception;
 
-    void updateEmbeddedAdminGeneralConfig(EmbeddedAdminGeneralConfig config, String priorVersion, CassandraProfile profile)
+    CompletionStage<?> updateEmbeddedAdminGeneralConfig(EmbeddedAdminGeneralConfig config, String priorVersion, CassandraProfile profile)
             throws Exception;
 
-    void updateCentralAdminGeneralConfig(CentralAdminGeneralConfig config, String priorVersion, CassandraProfile profile)
+    CompletionStage<?> updateCentralAdminGeneralConfig(CentralAdminGeneralConfig config, String priorVersion, CassandraProfile profile)
             throws Exception;
 
-    void insertUserConfig(UserConfig config, CassandraProfile profile) throws Exception;
+    CompletionStage<?> insertUserConfig(UserConfig config, CassandraProfile profile) throws Exception;
 
-    void updateUserConfig(UserConfig config, String priorVersion, CassandraProfile profile) throws Exception;
+    CompletionStage<?> updateUserConfig(UserConfig config, String priorVersion, CassandraProfile profile) throws Exception;
 
-    void deleteUserConfig(String username, CassandraProfile profile) throws Exception;
+    CompletionStage<?> deleteUserConfig(String username, CassandraProfile profile) throws Exception;
 
-    void insertRoleConfig(RoleConfig config, CassandraProfile profile) throws Exception;
+    CompletionStage<?> insertRoleConfig(RoleConfig config, CassandraProfile profile) throws Exception;
 
-    void updateRoleConfig(RoleConfig config, String priorVersion, CassandraProfile profile) throws Exception;
+    CompletionStage<?> updateRoleConfig(RoleConfig config, String priorVersion, CassandraProfile profile) throws Exception;
 
-    void deleteRoleConfig(String name, CassandraProfile profile) throws Exception;
+    CompletionStage<?> deleteRoleConfig(String name, CassandraProfile profile);
 
     void updateEmbeddedWebConfig(EmbeddedWebConfig config, String priorVersion) throws Exception;
 
-    void updateCentralWebConfig(CentralWebConfig config, String priorVersion) throws Exception;
+    CompletionStage<?> updateCentralWebConfig(CentralWebConfig config, String priorVersion) throws Exception;
 
     void updateEmbeddedStorageConfig(EmbeddedStorageConfig config, String priorVersion)
             throws Exception;
 
-    void updateCentralStorageConfig(CentralStorageConfig config, String priorVersion)
+    CompletionStage<?> updateCentralStorageConfig(CentralStorageConfig config, String priorVersion)
             throws Exception;
 
-    void updateSmtpConfig(SmtpConfig config, String priorVersion) throws Exception;
+    CompletionStage<?> updateSmtpConfig(SmtpConfig config, String priorVersion) throws Exception;
 
-    void updateHttpProxyConfig(HttpProxyConfig config, String priorVersion) throws Exception;
+    CompletionStage<?> updateHttpProxyConfig(HttpProxyConfig config, String priorVersion) throws Exception;
 
-    void updateLdapConfig(LdapConfig config, String priorVersion) throws Exception;
+    CompletionStage<?> updateLdapConfig(LdapConfig config, String priorVersion) throws Exception;
 
-    void updatePagerDutyConfig(PagerDutyConfig config, String priorVersion) throws Exception;
+    CompletionStage<?> updatePagerDutyConfig(PagerDutyConfig config, String priorVersion) throws Exception;
 
-    void updateSlackConfig(SlackConfig config, String priorVersion) throws Exception;
+    CompletionStage<?> updateSlackConfig(SlackConfig config, String priorVersion) throws Exception;
 
     void updateHealthchecksIoConfig(HealthchecksIoConfig healthchecksIoConfig, String priorVersion)
             throws Exception;
@@ -318,7 +313,7 @@ public interface ConfigRepository {
     }
 
     @SuppressWarnings("serial")
-    class OptimisticLockException extends Exception {}
+    class OptimisticLockException extends RuntimeException {}
 
     @SuppressWarnings("serial")
     class AgentConfigNotFoundException extends RuntimeException {
@@ -342,16 +337,16 @@ public interface ConfigRepository {
     class CannotDeleteLastUserException extends Exception {}
 
     @SuppressWarnings("serial")
-    class RoleNotFoundException extends Exception {}
+    class RoleNotFoundException extends RuntimeException {}
 
     @SuppressWarnings("serial")
-    class CannotDeleteLastRoleException extends Exception {}
+    class CannotDeleteLastRoleException extends RuntimeException {}
 
     @SuppressWarnings("serial")
-    class DuplicateMBeanObjectNameException extends Exception {}
+    class DuplicateMBeanObjectNameException extends RuntimeException {}
 
     @SuppressWarnings("serial")
-    class DuplicateSyntheticMonitorDisplayException extends Exception {}
+    class DuplicateSyntheticMonitorDisplayException extends RuntimeException {}
 
     @SuppressWarnings("serial")
     class DuplicateUsernameException extends Exception {}
@@ -372,8 +367,8 @@ public interface ConfigRepository {
     class DuplicateSlackWebhookDisplayException extends Exception {}
 
     @SuppressWarnings("serial")
-    class SyntheticNotFoundException extends Exception {}
+    class SyntheticNotFoundException extends RuntimeException {}
 
     @SuppressWarnings("serial")
-    class AlertNotFoundException extends Exception {}
+    class AlertNotFoundException extends RuntimeException {}
 }

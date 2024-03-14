@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.CompletionException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
@@ -132,12 +133,20 @@ class LayoutService {
         }
         boolean configReadOnly;
         try {
-            configReadOnly = configRepository.isConfigReadOnly(agentRollupId);
+            try {
+                configReadOnly = configRepository.isConfigReadOnly(agentRollupId).toCompletableFuture().join();
+            } catch (CompletionException ce) {
+                if (ce.getCause() instanceof AgentConfigNotFoundException) {
+                    throw (AgentConfigNotFoundException) ce.getCause();
+                } else {
+                    throw ce;
+                }
+            }
         } catch (AgentConfigNotFoundException e) {
             configReadOnly = false;
         }
         Set<String> transactionTypes = Sets.newTreeSet();
-        transactionTypes.addAll(transactionTypeRepository.read(agentRollupId));
+        transactionTypes.addAll(transactionTypeRepository.read(agentRollupId).toCompletableFuture().join());
         transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(agentRollupId));
         transactionTypes.addAll(liveTraceRepository.getTransactionTypes(agentRollupId));
         transactionTypes.add(uiConfig.getDefaultTransactionType());
@@ -185,7 +194,7 @@ class LayoutService {
         boolean showNavbarError = permissions.error().hasSomeAccess();
         boolean showNavbarJvm = permissions.jvm().hasSomeAccess();
         boolean showNavbarIncident =
-                permissions.incident() && !configRepository.getAlertConfigs(AGENT_ID).isEmpty();
+                permissions.incident() && !configRepository.getAlertConfigs(AGENT_ID).toCompletableFuture().join().isEmpty();
         // for now (for simplicity) reporting requires permission for ALL reportable metrics
         // (currently transaction:overview, error:overview and jvm:gauges)
         boolean showNavbarReport = permissions.transaction().overview()
@@ -194,7 +203,7 @@ class LayoutService {
         // a couple of special cases for embedded ui
         UiDefaultsConfig uiConfig = configRepository.getUiDefaultsConfig(AGENT_ID);
         Set<String> transactionTypes = Sets.newTreeSet();
-        transactionTypes.addAll(transactionTypeRepository.read(AGENT_ID));
+        transactionTypes.addAll(transactionTypeRepository.read(AGENT_ID).toCompletableFuture().join());
         transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(AGENT_ID));
         transactionTypes.add(uiConfig.getDefaultTransactionType());
         String agentDisplay = getEmbeddedAgentDisplayName();
@@ -287,8 +296,8 @@ class LayoutService {
                 .central(central)
                 .offlineViewer(offlineViewer)
                 .glowrootVersion(version)
-                .loginEnabled(!offlineViewer && (configRepository.namedUsersExist()
-                        || !configRepository.getLdapConfig().host().isEmpty()))
+                .loginEnabled(!offlineViewer && (configRepository.namedUsersExist().toCompletableFuture().join()
+                        || !configRepository.getLdapConfig().toCompletableFuture().join().host().isEmpty()))
                 .addAllRollupConfigs(configRepository.getRollupConfigs())
                 .addAllRollupExpirationMillis(rollupExpirationMillis)
                 .addAllQueryAndServiceCallRollupExpirationMillis(

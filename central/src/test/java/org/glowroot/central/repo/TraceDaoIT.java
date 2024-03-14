@@ -52,7 +52,7 @@ import static org.mockito.Mockito.*;
 public class TraceDaoIT {
 
     public static final CassandraContainer cassandra
-            = (CassandraContainer) new CassandraContainer("cassandra:3.11.15").withExposedPorts(9042);
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     private static final String AGENT_ID = "xyz";
 
@@ -104,9 +104,10 @@ public class TraceDaoIT {
     @BeforeEach
     public void beforeEachTest() throws Exception {
         when(configRepository.getCentralStorageConfig())
-                .thenReturn(ImmutableCentralStorageConfig.builder().build());
+                .thenReturn(CompletableFuture.completedFuture(ImmutableCentralStorageConfig.builder().build()));
         when(clock.currentTimeMillis()).thenReturn(200L);
         doReturn(CompletableFuture.completedFuture(null)).when(traceAttributeNameDao).store(any(), any(), any());
+        doReturn(CompletableFuture.completedFuture(null)).when(transactionTypeDao).store(any(), any());
         traceDao = new TraceDaoWithV09Support(ImmutableSet.of(), 0, 0, clock,
                 new TraceDaoImpl(session, transactionTypeDao,
                         fullQueryTextDao, traceAttributeNameDao,

@@ -27,7 +27,7 @@ import org.testcontainers.containers.wait.CassandraQueryWaitStrategy;
 
 public class MiscToolIT {
     public static final CassandraContainer cassandra
-            = (CassandraContainer) new CassandraContainer("cassandra:3.11.15").withExposedPorts(9042);
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     @BeforeAll
     public static void setUp() throws Exception {

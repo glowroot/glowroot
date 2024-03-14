@@ -246,7 +246,7 @@ class RollupService implements Runnable {
     }
 
     @FunctionalInterface
-    interface AgentRollupConsumer {
-        void accept(AgentRollup agentRollup);
+    interface AgentRollupComposer {
+        CompletionStage<?> accept(AgentRollup agentRollup);
     }
 }

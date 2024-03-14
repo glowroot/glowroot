@@ -16,8 +16,9 @@
 package org.glowroot.common2.repo;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 public interface TransactionTypeRepository {
 
-    List<String> read(String agentRollupId) throws Exception;
+    CompletionStage<List<String>> read(String agentRollupId);
 }

@@ -380,7 +380,7 @@ class EmbeddedAgentModule {
     }
 
     private static void addAlertPermission(ConfigRepositoryImpl configRepository) throws Exception {
-        for (RoleConfig config : configRepository.getRoleConfigs()) {
+        for (RoleConfig config : configRepository.getRoleConfigs().toCompletableFuture().join()) {
             if (config.isPermitted(SimplePermission.create("agent:transaction:overview"))
                     || config.isPermitted(SimplePermission.create("agent:error:overview"))
                     || config.isPermitted(SimplePermission.create("agent:jvm:gauges"))) {
@@ -388,7 +388,7 @@ class EmbeddedAgentModule {
                         .copyFrom(config)
                         .addPermissions("agent:alert")
                         .build();
-                configRepository.updateRoleConfig(updatedConfig, Versions.getJsonVersion(config), CassandraProfile.web);
+                configRepository.updateRoleConfig(updatedConfig, Versions.getJsonVersion(config), CassandraProfile.web).toCompletableFuture().join();
             }
         }
     }

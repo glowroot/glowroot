@@ -98,7 +98,7 @@ public class RepoAdminImpl implements RepoAdmin {
 
     @Override
     public int updateCassandraTwcsWindowSizes() throws Exception {
-        CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
+        CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig().toCompletableFuture().join();
         List<String> tableNames = new ArrayList<>();
         for (TableMetadata table : session.getTables()) {
             Map<String, String> compaction = (Map<String, String>) table.getOptions()
