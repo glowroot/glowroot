@@ -111,7 +111,6 @@ jobs:
           restore-keys: |
             deploy-
       - name: Build
-        uses: coactions/setup-xvfb@v1
-        with:
-          run: .github/scripts/build.sh deploy
+        shell: bash
+        run: xvfb-run .github/scripts/build.sh deploy
         if: runner.os == 'Linux'
