@@ -327,7 +327,7 @@ public class ExecutorAspect {
             methodName = "doStart", methodParameterTypes = {}, nestingGroup = "executor-execute")
     public static class JettyDoStartAdvice {}
 
-    @Pointcut(className = "javax.servlet.AsyncContext", methodName = "start",
+    @Pointcut(className = "javax.servlet.AsyncContext|jakarta.servlet.AsyncContext", methodName = "start",
             methodParameterTypes = {"java.lang.Runnable"})
     public static class StartAdvice {
         @OnBefore
@@ -512,7 +512,8 @@ public class ExecutorAspect {
             return;
         } else if (runnable instanceof RunnableEtcMixin) {
             onBeforeCommon(context, (RunnableEtcMixin) runnable);
-        } else if (runnable != null && runnable.getClass().getName().contains("$$Lambda$")) {
+        } else if (runnable != null &&
+                (runnable.getClass().getName().contains("$$Lambda/") /* jdk21+ */ || runnable.getClass().getName().contains("$$Lambda$")) /* jdk8-20 */) {
             wrapRunnable(runnableHolder, context);
         }
     }

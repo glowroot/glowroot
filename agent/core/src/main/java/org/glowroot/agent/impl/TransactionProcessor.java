@@ -89,9 +89,9 @@ public class TransactionProcessor {
         this.clock = clock;
         this.aggregateIntervalMillis = aggregateIntervalMillis;
         processingExecutor = Executors
-                .newSingleThreadExecutor(ThreadFactories.create("Glowroot-Aggregate-Processing"));
+                .newFixedThreadPool(1, ThreadFactories.create("Glowroot-Aggregate-Processing"));
         flushingExecutor = Executors
-                .newSingleThreadExecutor(ThreadFactories.create("Glowroot-Aggregate-Flushing"));
+                .newFixedThreadPool(1, ThreadFactories.create("Glowroot-Aggregate-Flushing"));
         activeIntervalCollector =
                 new AggregateIntervalCollector(clock.currentTimeMillis(), aggregateIntervalMillis,
                         configService.getAdvancedConfig().maxTransactionAggregates(),
