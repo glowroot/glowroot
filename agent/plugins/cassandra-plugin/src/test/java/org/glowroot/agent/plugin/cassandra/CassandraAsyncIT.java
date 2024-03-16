@@ -28,10 +28,8 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SimpleStatement;
 import com.google.common.collect.Lists;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.glowroot.agent.it.harness.Containers;
+import org.junit.jupiter.api.*;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
@@ -39,17 +37,33 @@ import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.testcontainers.containers.CassandraContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ExtendWith(CassandraExtension.class)
 public class CassandraAsyncIT {
+    public static final CassandraContainer cassandra
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     private static Container container;
 
+
     @BeforeAll
-    public static void setUp() throws Exception {
-        container = CassandraExtension.getContainer();
+    public static void beforeAll() {
+        cassandra.start();
+    }
+    @AfterAll
+    public static void afterAll() {
+        try {
+            container.close();
+        } catch (Exception e) {
+        }
+        cassandra.stop();
+    }
+
+    @BeforeEach
+    public void setUp() throws Exception {
+        container = Containers.create();
     }
 
     @AfterEach

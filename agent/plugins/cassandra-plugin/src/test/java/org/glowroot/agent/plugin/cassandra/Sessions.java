@@ -16,17 +16,30 @@
 package org.glowroot.agent.plugin.cassandra;
 
 import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.List;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SocketOptions;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import com.github.dockerjava.api.DockerClient;
+import org.testcontainers.DockerClientFactory;
 
 class Sessions {
 
-    static Session createSession() throws Exception {
-        Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1")
+    private static int getCassandraPort() {
+        DockerClient client = DockerClientFactory.instance().client();
+        int cassandraPort = Arrays.stream(client.listContainersCmd().exec()
+                .stream().filter(container -> container.getImage().contains("cassandra")).findFirst().get()
+                .getPorts()).filter(port -> port.getPrivatePort() == 9042).map(p -> p.getPublicPort()).findFirst().get();
+        return cassandraPort;
+    }
+
+    static Session createSession() {
+        Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").withPort(getCassandraPort())
                 // long read timeout is sometimes needed on slow travis ci machines
                 .withSocketOptions(new SocketOptions().setReadTimeoutMillis(30000))
                 .withQueryOptions(getQueryOptions())

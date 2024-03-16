@@ -1,12 +1,12 @@
 /**
  * Copyright 2015-2018 the original author or authors.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,38 +15,48 @@
  */
 package org.glowroot.agent.plugin.cassandra;
 
-import java.util.Iterator;
-import java.util.List;
-
-import com.datastax.driver.core.BatchStatement;
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.SimpleStatement;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
+import com.datastax.driver.core.*;
+import com.github.dockerjava.api.DockerClient;
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
+import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.*;
+import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.CassandraContainer;
+
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ExtendWith(CassandraExtension.class)
 public class CassandraSyncIT {
+    public static final CassandraContainer cassandra
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     private static Container container;
 
     @BeforeAll
-    static void setUp() throws Exception {
-        container = CassandraExtension.getContainer();
+    public static void beforeAll() {
+        cassandra.start();
+    }
+
+    @AfterAll
+    public static void afterAll() {
+        try {
+            container.close();
+        } catch (Exception e) {
+        }
+        cassandra.stop();
+    }
+
+    @BeforeEach
+    public void setUp() throws Exception {
+        container = Containers.create();
     }
 
     @AfterEach
@@ -194,7 +204,7 @@ public class CassandraSyncIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText())
-                        .isEqualTo("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
+                .isEqualTo("INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?)");
         assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cassandra query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
@@ -226,12 +236,12 @@ public class CassandraSyncIT {
         assertThat(entry.getMessage()).isEmpty();
         assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
                 .getFullText()).isEqualTo("[batch] INSERT INTO test.users (id,  fname, lname)"
-                        + " VALUES (100, 'f100', 'l100'),"
-                        + " INSERT INTO test.users (id,  fname, lname)"
-                        + " VALUES (101, 'f101', 'l101'),"
-                        + " 10 x INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?),"
-                        + " INSERT INTO test.users (id,  fname, lname)"
-                        + " VALUES (300, 'f300', 'l300')");
+                + " VALUES (100, 'f100', 'l100'),"
+                + " INSERT INTO test.users (id,  fname, lname)"
+                + " VALUES (101, 'f101', 'l101'),"
+                + " 10 x INSERT INTO test.users (id,  fname, lname) VALUES (?, ?, ?),"
+                + " INSERT INTO test.users (id,  fname, lname)"
+                + " VALUES (300, 'f300', 'l300')");
         assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("cassandra query: ");
         assertThat(entry.getQueryEntryMessage().getSuffix()).isEmpty();
 
