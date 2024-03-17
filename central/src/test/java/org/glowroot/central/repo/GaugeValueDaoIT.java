@@ -95,9 +95,9 @@ public class GaugeValueDaoIT {
     @Test
     public void shouldRollup() throws Exception {
         gaugeValueDao.truncateAll();
-        gaugeValueDao.store("one", createData(60013));
-        gaugeValueDao.store("one", createData(65009));
-        gaugeValueDao.store("one", createData(360000));
+        gaugeValueDao.store("one", createData(60013)).toCompletableFuture().get();
+        gaugeValueDao.store("one", createData(65009)).toCompletableFuture().get();
+        gaugeValueDao.store("one", createData(360000)).toCompletableFuture().get();
 
         // check non-rolled up data
         List<GaugeValue> gaugeValues =
