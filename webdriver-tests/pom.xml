@@ -18,7 +18,7 @@
 
   <properties>
     <selenium.version>4.8.1</selenium.version>
-    <jetty.version>11.0.15</jetty.version>
+    <jetty.version>11.0.20</jetty.version>
   </properties>
 
   <dependencies>
@@ -163,13 +163,13 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>2.0.9</version>
+      <version>2.0.12</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jul-to-slf4j</artifactId>
-      <version>2.0.9</version>
+      <version>2.0.12</version>
       <scope>test</scope>
     </dependency>
     <dependency>
