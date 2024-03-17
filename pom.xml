@@ -101,7 +101,7 @@
     <immutables.version>2.10.1</immutables.version>
     <checker.version>3.18.1</checker.version>
     <jmh.version>1.33</jmh.version>
-    <junit.version>5.9.3</junit.version>
+    <junit.version>5.10.2</junit.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss Z</maven.build.timestamp.format>
@@ -180,7 +180,7 @@
       </dependency>
       <dependency>
         <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-api</artifactId>
+        <artifactId>junit-jupiter</artifactId>
         <version>${junit.version}</version>
       </dependency>
       <dependency>
