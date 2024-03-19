@@ -53,7 +53,7 @@ public class TraceDaoIT {
 
     public static final CassandraContainer cassandra
             = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
-
+    private static final int MAX_CONCURRENT_REQUESTS = 1024;
     private static final String AGENT_ID = "xyz";
 
     private CqlSessionBuilder cqlSessionBuilder;
@@ -89,7 +89,7 @@ public class TraceDaoIT {
                 .withLocalDatacenter(cassandra.getLocalDatacenter())
                 .withConfigLoader(DriverConfigLoader.fromClasspath("datastax-driver.conf"));
         session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
-                0);
+                MAX_CONCURRENT_REQUESTS, 0);
 
         clusterManager = ClusterManager.create();
     }

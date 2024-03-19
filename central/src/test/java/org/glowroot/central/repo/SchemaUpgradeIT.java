@@ -46,7 +46,7 @@ public class SchemaUpgradeIT {
             .withCopyToContainer(
                     MountableFile.forClasspathResource("/backup-0.9.1/"),
                     "/backup-0.9.1/");
-
+    private static final int MAX_CONCURRENT_REQUESTS = 1024;
     private CqlSessionBuilder cqlSessionBuilder;
     private Session session;
 
@@ -70,7 +70,7 @@ public class SchemaUpgradeIT {
         CqlSession wrappedSession = cqlSessionBuilder.build();
         updateSchemaWithRetry(wrappedSession, "drop keyspace if exists glowroot_upgrade_test");
         session = new Session(wrappedSession, "glowroot_upgrade_test", null,
-                0);
+                MAX_CONCURRENT_REQUESTS, 0);
         URL url = Resources.getResource("glowroot-0.9.1-schema.cql");
         StringBuilder cql = new StringBuilder();
         for (String line : Resources.readLines(url, UTF_8)) {

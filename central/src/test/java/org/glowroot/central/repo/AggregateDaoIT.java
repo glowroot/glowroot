@@ -63,6 +63,7 @@ public class AggregateDaoIT {
     @Container
     public final CassandraContainer cassandra
             = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
+    private static final int MAX_CONCURRENT_REQUESTS = 1024;
 
     private static final AdvancedConfig DEFAULT_ADVANCED_CONFIG = AdvancedConfig.newBuilder()
             .setMaxQueryAggregates(OptionalInt32.newBuilder()
@@ -110,7 +111,7 @@ public class AggregateDaoIT {
                 .withLocalDatacenter(cassandra.getLocalDatacenter())
                 .withConfigLoader(DriverConfigLoader.fromClasspath("datastax-driver.conf"));
         session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
-                0);
+                MAX_CONCURRENT_REQUESTS, 0);
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         AgentDisplayDao agentDisplayDao =
                 new AgentDisplayDao(session, clusterManager, asyncExecutor, 10);
