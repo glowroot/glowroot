@@ -46,6 +46,8 @@ class TransactionTypeDao implements TransactionTypeRepository {
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
 
+    private final RateLimiter<TransactionTypeKey> rateLimiter = new RateLimiter<>();
+
     private final AsyncCache<String, List<String>> transactionTypesCache;
 
     TransactionTypeDao(Session session, ConfigRepositoryImpl configRepository,
@@ -78,6 +80,11 @@ class TransactionTypeDao implements TransactionTypeRepository {
         return configRepository.getCentralStorageConfig().thenCompose(centralStorageConfig -> {
             List<CompletionStage<?>> futures = new ArrayList<>();
             for (String agentRollupId : agentRollups) {
+                TransactionTypeKey rateLimiterKey =
+                        ImmutableTransactionTypeKey.of(agentRollupId, transactionType);
+                if (!rateLimiter.tryAcquire(rateLimiterKey)) {
+                    continue;
+                }
                 CompletionStage<?> future;
                 try {
                     int i = 0;
@@ -88,11 +95,14 @@ class TransactionTypeDao implements TransactionTypeRepository {
                             .setInt(i++,
                                     centralStorageConfig.getMaxRollupTTL());
                     future = session.writeAsync(boundStatement, CassandraProfile.collector).whenComplete((results, throwable) -> {
-                        if (throwable == null) {
+                        if (throwable != null) {
+                            rateLimiter.release(rateLimiterKey);
+                        } else {
                             transactionTypesCache.invalidate(agentRollupId);
                         }
                     });
                 } catch (Exception e) {
+                    rateLimiter.release(rateLimiterKey);
                     transactionTypesCache.invalidate(agentRollupId);
                     future = CompletableFuture.failedFuture(e);
                 }

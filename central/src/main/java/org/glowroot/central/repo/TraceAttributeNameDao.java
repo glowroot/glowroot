@@ -25,6 +25,7 @@ import com.google.common.collect.Multimaps;
 import com.google.common.primitives.Ints;
 import org.glowroot.central.util.AsyncCache;
 import org.glowroot.central.util.ClusterManager;
+import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Styles;
 import org.glowroot.common2.repo.CassandraProfile;
@@ -48,6 +49,7 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
 
+    private final RateLimiter<TraceAttributeNameKey> rateLimiter = new RateLimiter<>();
     private final AsyncCache<String, Map<String, List<String>>> traceAttributeNamesCache;
 
     TraceAttributeNameDao(Session session, ConfigRepositoryImpl configRepository,
@@ -76,6 +78,11 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
     }
 
     CompletionStage<?> store(String agentRollupId, String transactionType, String traceAttributeName) {
+        TraceAttributeNameKey rateLimiterKey = ImmutableTraceAttributeNameKey.of(agentRollupId,
+                transactionType, traceAttributeName);
+        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
+            return CompletableFuture.completedFuture(null);
+        }
         return getTraceTTL().thenCompose(ttl -> {
             int i = 0;
             BoundStatement boundStatement = insertPS.bind()
@@ -84,7 +91,9 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
                     .setString(i++, traceAttributeName)
                     .setInt(i++, ttl);
             return session.writeAsync(boundStatement, CassandraProfile.collector).whenComplete(((asyncResultSet, throwable) -> {
-                if (throwable == null) {
+                if (throwable != null) {
+                    rateLimiter.release(rateLimiterKey);
+                } else {
                     traceAttributeNamesCache.invalidate(agentRollupId);
                 }
             }));
