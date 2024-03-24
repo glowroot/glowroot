@@ -15,20 +15,9 @@
  */
 package org.glowroot.central;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutorService;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.spotify.futures.CompletableFutures;
-import org.glowroot.common2.repo.CassandraProfile;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.ActiveAgentDao;
 import org.glowroot.central.repo.AggregateDao;
@@ -37,11 +26,18 @@ import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.central.util.MoreExecutors2;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
+import org.glowroot.common2.repo.CassandraProfile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static java.util.concurrent.TimeUnit.DAYS;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutorService;
+
+import static java.util.concurrent.TimeUnit.*;
 
 class RollupService implements Runnable {
 
@@ -59,8 +55,8 @@ class RollupService implements Runnable {
     private volatile boolean closed;
 
     RollupService(ActiveAgentDao activeAgentDao, AggregateDao aggregateDao,
-            GaugeValueDao gaugeValueDao, SyntheticResultDao syntheticResultDao,
-            CentralAlertingService centralAlertingService, Clock clock) {
+                  GaugeValueDao gaugeValueDao, SyntheticResultDao syntheticResultDao,
+                  CentralAlertingService centralAlertingService, Clock clock) {
         this.activeAgentDao = activeAgentDao;
         this.aggregateDao = aggregateDao;
         this.gaugeValueDao = gaugeValueDao;
@@ -112,18 +108,22 @@ class RollupService implements Runnable {
         // randomize order so that multiple central collector nodes will be less likely to perform
         // duplicative work
         for (AgentRollup agentRollup : shuffle(agentRollups)) {
-            futures.add(rollupAggregates(agentRollup).toCompletableFuture());
-            futures.add(rollupGauges(agentRollup).toCompletableFuture());
-            futures.add(rollupSyntheticMonitors(agentRollup).toCompletableFuture());
-            // checking aggregate and gauge alerts after rollup since their calculation can depend
-            // on rollups depending on time period length (and alerts on rollups are not checked
-            // anywhere else)
-            //
-            // agent (not rollup) alerts are also checked right after receiving the respective data
-            // (aggregate/gauge/heartbeat) from the agent, but need to also check these once a
-            // minute in case no data has been received from the agent recently
-            futures.add(
-                    checkAggregateAndGaugeAndHeartbeatAlertsAsync(agentRollup).toCompletableFuture());
+            CompletableFuture<?> fut = rollupAggregates(agentRollup)
+                    .thenCompose(ignore -> {
+                        return rollupGauges(agentRollup);
+                    }).thenCompose(ignore -> {
+                        return rollupSyntheticMonitors(agentRollup);
+                    }).thenCompose(ignore -> {
+                        // checking aggregate and gauge alerts after rollup since their calculation can depend
+                        // on rollups depending on time period length (and alerts on rollups are not checked
+                        // anywhere else)
+                        //
+                        // agent (not rollup) alerts are also checked right after receiving the respective data
+                        // (aggregate/gauge/heartbeat) from the agent, but need to also check these once a
+                        // minute in case no data has been received from the agent recently
+                        return checkAggregateAndGaugeAndHeartbeatAlertsAsync(agentRollup);
+                    }).toCompletableFuture();
+            futures.add(fut);
         }
         // none of the futures should fail since they all catch and log exception at the end
         CompletableFutures.allAsList(futures).thenCompose(ignore -> {
