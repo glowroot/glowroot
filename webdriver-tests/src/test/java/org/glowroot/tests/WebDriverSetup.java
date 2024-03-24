@@ -70,7 +70,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class WebDriverSetup {
-    private static final int MAX_CONCURRENT_REQUESTS = 1024;
 
     protected static final boolean useCentral = true;
             //Boolean.getBoolean("glowroot.internal.webdriver.useCentral");
@@ -209,7 +208,7 @@ public class WebDriverSetup {
                     .withLocalDatacenter(cassandra.getLocalDatacenter())
                     .withConfigLoader(DriverConfigLoader.fromClasspath("datastax-driver.conf"));
             try (Session session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
-                    MAX_CONCURRENT_REQUESTS, 0)) {
+                    0)) {
                 session.updateSchemaWithRetry("drop table if exists agent_config");
                 session.updateSchemaWithRetry("drop table if exists user");
                 session.updateSchemaWithRetry("drop table if exists role");

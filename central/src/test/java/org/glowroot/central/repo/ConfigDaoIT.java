@@ -40,7 +40,6 @@ public class ConfigDaoIT {
     @Container
     public final CassandraContainer cassandra
             = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
-    private static final int MAX_CONCURRENT_REQUESTS = 1024;
 
     private static ExecutorService asyncExecutor;
     private ClusterManager clusterManager;
@@ -68,7 +67,7 @@ public class ConfigDaoIT {
                 .addContactPoint(cassandra.getContactPoint())
                 .withLocalDatacenter(cassandra.getLocalDatacenter())
                 .withConfigLoader(DriverConfigLoader.fromClasspath("datastax-driver.conf"));
-        session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null, MAX_CONCURRENT_REQUESTS, 0);
+        session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null, 0);
         AgentDisplayDao agentDisplayDao =
                 new AgentDisplayDao(session, clusterManager, MoreExecutors.directExecutor(), 10);
         agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager, 10, MoreExecutors.directExecutor());

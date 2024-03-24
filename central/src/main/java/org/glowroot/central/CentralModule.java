@@ -635,21 +635,6 @@ public class CentralModule {
             }
             builder.cassandraSymmetricEncryptionKey(cassandraSymmetricEncryptionKey);
         }
-        String cassandraConnectionMaxRequests =
-                properties.get("glowroot.cassandra.connectionMaxRequests");
-        if (!Strings.isNullOrEmpty(cassandraConnectionMaxRequests)) {
-            builder.cassandraConnectionMaxRequests(Integer.parseInt(cassandraConnectionMaxRequests));
-        }
-        String cassandraThrottlerMaxConcurrentRequests =
-                properties.get("glowroot.cassandra.throttlerMaxConcurrentRequests");
-        if (!Strings.isNullOrEmpty(cassandraThrottlerMaxConcurrentRequests)) {
-            builder.cassandraThrottlerMaxConcurrentRequests(Integer.parseInt(cassandraThrottlerMaxConcurrentRequests));
-        }
-        String cassandraThrottlerMaxQueueSize =
-                properties.get("glowroot.cassandra.throttlerMaxQueueSize");
-        if (!Strings.isNullOrEmpty(cassandraThrottlerMaxQueueSize)) {
-            builder.cassandraThrottlerMaxQueueSize(Integer.parseInt(cassandraThrottlerMaxQueueSize));
-        }
         String cassandraGcGraceSeconds =
                 properties.get("glowroot.cassandra.gcGraceSeconds");
         if (!Strings.isNullOrEmpty(cassandraGcGraceSeconds)) {
@@ -840,11 +825,6 @@ public class CentralModule {
                     session = new Session(
                             createCluster(centralConfig).build(),
                             keyspace, writeConsistencyLevelOverride,
-                            // max concurrent requests before throwing BusyConnectionException is "max
-                            // concurrent requests" + "max queue size" (which are set to
-                            // cassandraThrottlerMaxConcurrentRequests and cassandraThrottlerMaxQueueSize * 2
-                            // respectively)
-                            centralConfig.cassandraThrottlerMaxConcurrentRequests() + centralConfig.cassandraThrottlerMaxQueueSize(),
                             centralConfig.cassandraGcGraceSeconds());
                 }
                 String cassandraVersion = verifyCassandraVersion(session);
@@ -1070,25 +1050,6 @@ public class CentralModule {
             //
             // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
             return (int) HOURS.toSeconds(4);
-        }
-
-        @Value.Default
-        int cassandraConnectionMaxRequests() {
-            // https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/pooling/#tuning
-            return 1024;
-        }
-
-        @Value.Default
-        int cassandraThrottlerMaxConcurrentRequests() {
-            // max simultaneous requests
-            // https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/throttling/
-            return 1024;
-        }
-
-        @Value.Default
-        int cassandraThrottlerMaxQueueSize() {
-            // https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/throttling/
-            return 8192;
         }
 
         @Value.Default
