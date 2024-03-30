@@ -101,10 +101,6 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.base.MoreObjects$ToStringHelper$ValueHolder");
         types.add("com.google.common.base.Objects");
         types.add("com.google.common.base.Optional");
-        types.add("com.google.common.base.PatternCompiler");
-        types.add("com.google.common.base.Platform");
-        types.add("com.google.common.base.Platform$1");
-        types.add("com.google.common.base.Platform$JdkPatternCompiler");
         types.add("com.google.common.base.Preconditions");
         types.add("com.google.common.base.StandardSystemProperty");
         types.add("com.google.common.base.Strings");
@@ -125,7 +121,6 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.Hashing");
         types.add("com.google.common.collect.ImmutableAsList");
         types.add("com.google.common.collect.ImmutableBiMap");
-        types.add("com.google.common.collect.ImmutableBiMapFauxverideShim");
         types.add("com.google.common.collect.ImmutableCollection");
         types.add("com.google.common.collect.ImmutableCollection$Builder");
         types.add("com.google.common.collect.ImmutableEntry");
@@ -161,8 +156,8 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.Iterables");
         types.add("com.google.common.collect.Iterators");
         types.add("com.google.common.collect.Iterators$1");
-        types.add("com.google.common.collect.Iterators$9");
         types.add("com.google.common.collect.Iterators$ArrayItr");
+        types.add("com.google.common.collect.Iterators$SingletonIterator");
         types.add("com.google.common.collect.JdkBackedImmutableMap");
         types.add("com.google.common.collect.JdkBackedImmutableSet");
         types.add("com.google.common.collect.Lists");
@@ -182,6 +177,7 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.RegularImmutableAsList");
         types.add("com.google.common.collect.RegularImmutableList");
         types.add("com.google.common.collect.RegularImmutableMap");
+        types.add("com.google.common.collect.RegularImmutableMap$BucketOverflowException");
         types.add("com.google.common.collect.RegularImmutableMap$KeySet");
         types.add("com.google.common.collect.RegularImmutableMap$Values");
         types.add("com.google.common.collect.RegularImmutableSet");
