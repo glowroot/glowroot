@@ -18,7 +18,7 @@
 
   <properties>
     <selenium.version>4.8.1</selenium.version>
-    <jetty.version>11.0.20</jetty.version>
+    <jetty.version>12.0.7</jetty.version>
   </properties>
 
   <dependencies>
@@ -284,21 +284,21 @@
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-jetty-client</artifactId>
+      <artifactId>jetty-websocket-jetty-client</artifactId>
       <version>${jetty.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-jetty-common</artifactId>
+      <artifactId>jetty-websocket-jetty-common</artifactId>
       <version>${jetty.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-jetty-api</artifactId>
+      <artifactId>jetty-websocket-jetty-api</artifactId>
       <version>${jetty.version}</version>
       <scope>test</scope>
     </dependency>
