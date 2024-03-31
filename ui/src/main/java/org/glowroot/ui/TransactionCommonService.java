@@ -289,6 +289,7 @@ class TransactionCommonService {
                 return CompletableFuture.completedFuture(Lists.newArrayList());
             }).thenApply(orderedNonRolledUpAggregates -> {
                 if (liveResult != null) {
+                    orderedNonRolledUpAggregates = Lists.newArrayList(orderedNonRolledUpAggregates);
                     orderedNonRolledUpAggregates.addAll(liveResult.get());
                 }
                 List<ThroughputAggregate> aggregatesInner = Lists.newArrayList(finalAggregates);
