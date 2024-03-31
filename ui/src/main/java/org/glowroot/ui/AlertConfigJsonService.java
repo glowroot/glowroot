@@ -123,7 +123,7 @@ class AlertConfigJsonService {
             throws Exception {
         validate(configDto);
         AlertConfig alertConfig = configDto.toProto();
-        configRepository.insertAlertConfig(agentRollupId, alertConfig, CassandraProfile.web);
+        configRepository.insertAlertConfig(agentRollupId, alertConfig, CassandraProfile.web).toCompletableFuture().join();
         return getAlertResponse(agentRollupId, alertConfig);
     }
 
@@ -140,7 +140,7 @@ class AlertConfigJsonService {
     // central supports alert configs on rollups
     @POST(path = "/backend/config/alerts/remove", permission = "agent:config:edit:alerts")
     void removeAlert(@BindAgentRollupId String agentRollupId,
-            @BindRequest AlertConfigRequest request) throws Exception {
+            @BindRequest AlertConfigRequest request) {
         configRepository.deleteAlertConfig(agentRollupId, request.version().get(), CassandraProfile.web).toCompletableFuture().join();
     }
 
