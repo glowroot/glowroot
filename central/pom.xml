@@ -91,7 +91,7 @@
         <dependency>
             <groupId>org.infinispan</groupId>
             <artifactId>infinispan-core</artifactId>
-            <version>14.0.24.Final</version>
+            <version>14.0.27.Final</version>
         </dependency>
         <!-- jgroups-kubernetes specifies that it requires 4.2.x -->
         <dependency>
