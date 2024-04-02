@@ -611,6 +611,10 @@ public class CentralModule {
         if (!Strings.isNullOrEmpty(cassandraLocalDatacenter)) {
             builder.cassandraLocalDatacenter(cassandraLocalDatacenter);
         }
+        String cassandraConfigurationFile = properties.get("glowroot.cassandra.configurationFile");
+        if (!Strings.isNullOrEmpty(cassandraConfigurationFile)) {
+            builder.cassandraConfigurationFile(cassandraConfigurationFile);
+        }
         String cassandraConsistencyLevel = properties.get("glowroot.cassandra.consistencyLevel");
         if (!Strings.isNullOrEmpty(cassandraConsistencyLevel)) {
             int index = cassandraConsistencyLevel.indexOf('/');
@@ -742,11 +746,6 @@ public class CentralModule {
                         "jgroups.initialNodes=" + initialNodes);
             }
         }
-        // upgrade from 0.12.3 to 0.13.0
-        if (props.containsKey("cassandra.pool.maxRequestsPerConnection")) {
-            upgradePropertyNames.put("cassandra.pool.maxRequestsPerConnection",
-                    "cassandra.maxConcurrentQueries");
-        }
         if (!upgradePropertyNames.isEmpty()) {
             PropertiesFiles.upgradeIfNeeded(propFile, upgradePropertyNames);
             props = PropertiesFiles.load(propFile);
@@ -870,6 +869,18 @@ public class CentralModule {
     }
 
     private static CqlSessionBuilder createCluster(CentralConfiguration centralConfig) {
+        boolean loadCassandraConfigurationFileFromClasspath = false;
+        String configFileName = centralConfig.cassandraConfigurationFile();
+        if (new File(centralConfig.cassandraConfigurationFile()).exists()) {
+            startupLogger.info("loading cassandra configuration from absolute path {}",
+                    centralConfig.cassandraConfigurationFile());
+        }
+        if (CentralModule.class.getResource(centralConfig.cassandraConfigurationFile()) == null) {
+            startupLogger.warn("unable to find resource {} from classpath, switching to default 'datastax-driver.conf'",
+                    centralConfig.cassandraConfigurationFile());
+            loadCassandraConfigurationFileFromClasspath = true;
+            configFileName = "datastax-driver.conf";
+        }
         CqlSessionBuilder builder = CqlSession.builder()
                 .addContactPoints(
                         centralConfig.cassandraContactPoint()
@@ -877,9 +888,11 @@ public class CentralModule {
                                 .map(addr -> new InetSocketAddress(addr, centralConfig.cassandraPort()))
                                 .collect(Collectors.toList()))
                 // cassandra driver v4.x requires localdatacenter name to be defined
-                // see https://docs.datastax.com/en/developer/java-driver/4.16/manual/core/load_balancing/
+                // see https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/load_balancing/
                 .withLocalDatacenter(centralConfig.cassandraLocalDatacenter())
-                .withConfigLoader(DriverConfigLoader.fromClasspath("datastax-driver.conf"));
+                .withConfigLoader(loadCassandraConfigurationFileFromClasspath ?
+                        DriverConfigLoader.fromClasspath(configFileName):
+                        DriverConfigLoader.fromFile(new File(configFileName)));
         String cassandraUsername = centralConfig.cassandraUsername();
         if (!cassandraUsername.isEmpty()) {
             // empty password is strange but valid
@@ -1012,6 +1025,11 @@ public class CentralModule {
         @Value.Default
         String cassandraLocalDatacenter() {
             return "datacenter1";
+        }
+
+        @Value.Default
+        String cassandraConfigurationFile() {
+            return "datastax-driver.conf";
         }
 
         @Value.Default
