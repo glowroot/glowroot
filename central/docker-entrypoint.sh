@@ -44,6 +44,9 @@ fi
 if [ "$CASSANDRA_KEYSPACE" ]; then
   sed -i "s/^cassandra.keyspace=.*$/cassandra.keyspace=$CASSANDRA_KEYSPACE/" glowroot-central.properties
 fi
+if [ "$CASSANDRA_LOCALDATACENTER" ]; then
+  sed -i "s/^cassandra.localDatacenter=.*$/cassandra.localDatacenter=$CASSANDRA_LOCALDATACENTER/" glowroot-central.properties
+fi
 if [ "$CASSANDRA_CONSISTENCY_LEVEL" ]; then
   sed -i "s/^cassandra.consistencyLevel=.*$/cassandra.consistencyLevel=$CASSANDRA_CONSISTENCY_LEVEL/" glowroot-central.properties
 fi
