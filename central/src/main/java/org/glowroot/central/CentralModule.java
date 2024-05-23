@@ -874,8 +874,7 @@ public class CentralModule {
         if (new File(centralConfig.cassandraConfigurationFile()).exists()) {
             startupLogger.info("loading cassandra configuration from absolute path {}",
                     centralConfig.cassandraConfigurationFile());
-        }
-        if (CentralModule.class.getResource(centralConfig.cassandraConfigurationFile()) == null) {
+        } else if (CentralModule.class.getResource(centralConfig.cassandraConfigurationFile()) == null) {
             startupLogger.warn("unable to find resource {} from classpath, switching to default 'datastax-driver.conf'",
                     centralConfig.cassandraConfigurationFile());
             loadCassandraConfigurationFileFromClasspath = true;
