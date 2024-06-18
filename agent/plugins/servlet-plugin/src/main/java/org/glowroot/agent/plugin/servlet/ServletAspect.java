@@ -87,6 +87,11 @@ public class ServletAspect {
             if (messageSupplier != null && responseInvoker.hasGetStatusMethod()) {
                 messageSupplier.setResponseCode(responseInvoker.getStatus(res));
             }
+            HttpServletResponse response = (HttpServletResponse) res;
+            String transactionNameOverride = response.getHeader("Glowroot-Transaction-Name");
+            if (transactionNameOverride != null) {
+                context.setTransactionName(transactionNameOverride, Priority.CORE_MAX);
+            }
             FastThreadLocal.Holder</*@Nullable*/ String> errorMessageHolder =
                     SendError.getErrorMessageHolder();
             String errorMessage = errorMessageHolder.get();
@@ -144,6 +149,7 @@ public class ServletAspect {
             ServletMessageSupplier messageSupplier;
             HttpSession session = request.getSession(false);
             String requestUri = Strings.nullToEmpty(request.getRequestURI());
+            String transactionName = requestUri;
             // don't convert null to empty, since null means no query string, while empty means
             // url ended with ? but nothing after that
             String requestQueryString = request.getQueryString();
@@ -188,7 +194,7 @@ public class ServletAspect {
             } else {
                 transactionType = "Web";
             }
-            TraceEntry traceEntry = context.startTransaction(transactionType, requestUri,
+            TraceEntry traceEntry = context.startTransaction(transactionType, transactionName,
                     messageSupplier, timerName);
             if (setWithCoreMaxPriority) {
                 context.setTransactionType(transactionType, Priority.CORE_MAX);
