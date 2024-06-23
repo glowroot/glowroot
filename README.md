@@ -4,7 +4,7 @@ Glowroot
 ## Requirements
 
 * Java 8+ for agent
-* Java 11+ for glowroot-central
+* Java 17+ for glowroot-central
 
 ## Quick start
 
