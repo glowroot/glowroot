@@ -88,7 +88,7 @@ public class ServletAspect {
                 messageSupplier.setResponseCode(responseInvoker.getStatus(res));
             }
             HttpServletResponse response = (HttpServletResponse) res;
-            String transactionNameOverride = response.getHeader("Glowroot-Transaction-Name");
+            String transactionNameOverride = response.getHeader("Http-Route");
             if (transactionNameOverride != null) {
                 context.setTransactionName(transactionNameOverride, Priority.CORE_MAX);
             }
