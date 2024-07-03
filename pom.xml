@@ -5,7 +5,7 @@
 
   <groupId>org.glowroot</groupId>
   <artifactId>glowroot-parent</artifactId>
-  <version>0.14.3-beta.1</version>
+  <version>0.14.3-beta.2-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Glowroot Parent Project</name>
@@ -336,7 +336,7 @@
       <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
-        <version>1.6.8</version>
+        <version>1.6.14</version>
         <extensions>true</extensions>
         <configuration>
           <serverId>ossrh</serverId>
