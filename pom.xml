@@ -5,7 +5,7 @@
 
   <groupId>org.glowroot</groupId>
   <artifactId>glowroot-parent</artifactId>
-  <version>0.14.3-SNAPSHOT</version>
+  <version>0.14.3-beta.5</version>
   <packaging>pom</packaging>
 
   <name>Glowroot Parent Project</name>
@@ -91,9 +91,9 @@
   </scm>
 
   <properties>
-    <grpc.version>1.60.0</grpc.version>
-    <protobuf.version>3.22.5</protobuf.version>
-    <protoc.version>3.22.5</protoc.version>
+    <grpc.version>1.64.0</grpc.version>
+    <protobuf.version>3.25.3</protobuf.version>
+    <protoc.version>3.25.3</protoc.version>
     <!-- need to stick to netty version that is used by grpc version above -->
     <netty.version>4.1.100.Final</netty.version>
     <logback.version>1.2.13</logback.version>
@@ -336,7 +336,7 @@
       <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
-        <version>1.6.8</version>
+        <version>1.6.14</version>
         <extensions>true</extensions>
         <configuration>
           <serverId>ossrh</serverId>
