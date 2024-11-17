@@ -102,11 +102,11 @@ class KafkaWrapper {
         System.out.print("Downloading Kafka " + KAFKA_VERSION + "...");
         URL url = new URL("https://archive.apache.org/dist/kafka/" + KAFKA_VERSION + "/kafka_"
                 + SCALA_VERSION + "-" + KAFKA_VERSION + ".tgz");
-        InputStream in = url.openStream();
         File archiveFile = File.createTempFile("kafka_" + SCALA_VERSION + "-" + KAFKA_VERSION + "-",
                 ".tar.gz");
-        Files.asByteSink(archiveFile).writeFrom(in);
-        in.close();
+        try (InputStream in = url.openStream()) {
+            Files.asByteSink(archiveFile).writeFrom(in);
+        }
         Archiver archiver = ArchiverFactory.createArchiver(ArchiveFormat.TAR, CompressionType.GZIP);
         archiver.extract(archiveFile, baseDir);
         archiveFile.delete();
