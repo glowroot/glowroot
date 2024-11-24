@@ -89,12 +89,12 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>2.0.13</version>
+      <version>2.0.16</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jul-to-slf4j</artifactId>
-      <version>2.0.13</version>
+      <version>2.0.16</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -136,13 +136,13 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.4.14</version>
+      <version>1.5.12</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.4.14</version>
+      <version>1.5.12</version>
     </dependency>
     <dependency>
       <groupId>javax.annotation</groupId>
@@ -198,8 +198,8 @@
             </goals>
             <configuration>
               <skip>${glowroot.ui.skip}</skip>
-              <nodeVersion>v20.12.0</nodeVersion>
-              <npmVersion>10.5.0</npmVersion>
+              <nodeVersion>v20.18.0</nodeVersion>
+              <npmVersion>10.9.1</npmVersion>
             </configuration>
           </execution>
           <execution>
