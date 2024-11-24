@@ -942,7 +942,7 @@ public class AggregateDaoImpl implements AggregateDao {
                                         .entrySet()) {
                                     String transactionType = entry.getKey();
                                     Collection<String> childAgentRollupIds = entry.getValue();
-                                    futures.addAll(rollupOneFromChildren(rollupParams, transactionType,
+                                    futures.add(rollupOneFromChildren(rollupParams, transactionType,
                                             childAgentRollupIds, captureTime));
                                 }
                                 return CompletableFutures.allAsList(futures);
@@ -1031,7 +1031,7 @@ public class AggregateDaoImpl implements AggregateDao {
         });
     }
 
-    private List<CompletionStage<?>> rollupOneFromChildren(RollupParams rollup, String transactionType,
+    private CompletionStage<?> rollupOneFromChildren(RollupParams rollup, String transactionType,
                                                            Collection<String> childAgentRollupIds, long captureTime) {
 
         ImmutableAggregateQuery query = ImmutableAggregateQuery.builder()
@@ -1040,26 +1040,28 @@ public class AggregateDaoImpl implements AggregateDao {
                 .to(captureTime)
                 .rollupLevel(rollup.rollupLevel()) // rolling up from same level (which is always 0)
                 .build();
-        List<CompletionStage<?>> futures = new ArrayList<>();
-
-        futures.add(rollupOverallSummaryFromChildren(rollup, query, childAgentRollupIds));
-        futures.add(rollupErrorSummaryFromChildren(rollup, query, childAgentRollupIds));
 
         // key is transaction name, value child agent rollup id
         Multimap<String, String> transactionNames = ArrayListMultimap.create();
-        futures.add(rollupTransactionSummaryFromChildren(rollup, query, childAgentRollupIds,
-                transactionNames));
-        futures.add(rollupTransactionErrorSummaryFromChildren(rollup, query, childAgentRollupIds));
-
         ScratchBuffer scratchBuffer = new ScratchBuffer();
-        futures.addAll(
-                rollupOtherPartsFromChildren(rollup, query, childAgentRollupIds, scratchBuffer));
 
-        for (Map.Entry<String, Collection<String>> entry : transactionNames.asMap().entrySet()) {
-            futures.addAll(rollupOtherPartsFromChildren(rollup,
-                    query.withTransactionName(entry.getKey()), entry.getValue(), scratchBuffer));
-        }
-        return futures;
+        return rollupOverallSummaryFromChildren(rollup, query, childAgentRollupIds).thenCompose(ignored -> {
+            return rollupErrorSummaryFromChildren(rollup, query, childAgentRollupIds);
+        }).thenCompose(ignored -> {
+            return rollupTransactionSummaryFromChildren(rollup, query, childAgentRollupIds,
+                    transactionNames);
+        }).thenCompose(ignored -> {
+            return rollupTransactionErrorSummaryFromChildren(rollup, query, childAgentRollupIds);
+        }).thenCompose(ignored -> {
+            return CompletableFutures.allAsList(rollupOtherPartsFromChildren(rollup, query, childAgentRollupIds, scratchBuffer));
+        }).thenCompose(ignored -> {
+            List<CompletionStage<?>> futures = new ArrayList<>();
+            for (Map.Entry<String, Collection<String>> entry : transactionNames.asMap().entrySet()) {
+                futures.addAll(rollupOtherPartsFromChildren(rollup,
+                        query.withTransactionName(entry.getKey()), entry.getValue(), scratchBuffer));
+            }
+            return CompletableFutures.allAsList(futures);
+        });
     }
 
     private List<CompletionStage<?>> rollupOne(RollupParams rollup, String transactionType, long from,
