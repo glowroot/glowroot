@@ -561,7 +561,7 @@ class AdminJsonService {
         StringBuilder sb = new StringBuilder();
         try (JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))) {
             jg.writeStartObject();
-            jg.writeStringField("content", responseContent);
+            jg.writeStringField("content", "received http status 200 OK response");
             jg.writeEndObject();
         }
         return sb.toString();
