@@ -85,7 +85,7 @@ jobs:
 
           # gpg_key_id is needed for signing the rpm for the yum repository (see glowroot-central/pom.xml)
           gpg_key_id=$(gpg --list-keys --with-colons | grep ^pub | cut -d':' -f5 | tail -c 8)
-          mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-central \
+          mvn clean install -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-central \
                            -Pjavadoc \
                            -Prelease \
                            -Dglowroot.build.commit=$(git rev-parse HEAD) \
