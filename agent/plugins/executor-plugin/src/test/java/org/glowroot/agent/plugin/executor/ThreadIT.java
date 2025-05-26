@@ -63,6 +63,14 @@ public class ThreadIT {
     }
 
     @Test
+    public void shouldCaptureThreadWithLambda() throws Exception {
+        // when
+        Trace trace = container.execute(DoExecuteThreadWithLambda.class);
+        // then
+        checkTrace(trace, false, false);
+    }
+
+    @Test
     public void shouldCaptureThreadWithName() throws Exception {
         // when
         Trace trace = container.execute(DoExecuteThreadWithName.class);
@@ -199,6 +207,28 @@ public class ThreadIT {
             thread3.join();
         }
     }
+
+    public static class DoExecuteThreadWithLambda implements AppUnderTest, TransactionMarker {
+
+        @Override
+        public void executeApp() throws Exception {
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            Thread thread1 = new Thread(() -> new CreateTraceEntry().traceEntryMarker());
+            Thread thread2 = new Thread(() -> new CreateTraceEntry().traceEntryMarker());
+            Thread thread3 = new Thread(() -> new CreateTraceEntry().traceEntryMarker());
+            thread1.start();
+            thread2.start();
+            thread3.start();
+            thread1.join();
+            thread2.join();
+            thread3.join();
+        }
+    }
+
 
     public static class DoExecuteThreadWithName implements AppUnderTest, TransactionMarker {
 
