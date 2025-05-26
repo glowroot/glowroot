@@ -512,8 +512,7 @@ public class ExecutorAspect {
             return;
         } else if (runnable instanceof RunnableEtcMixin) {
             onBeforeCommon(context, (RunnableEtcMixin) runnable);
-        } else if (runnable != null &&
-                (runnable.getClass().getName().contains("$$Lambda/") /* jdk21+ */ || runnable.getClass().getName().contains("$$Lambda$")) /* jdk8-20 */) {
+        } else if (isLambda(runnable)) {
             wrapRunnable(runnableHolder, context);
         }
     }
@@ -523,7 +522,7 @@ public class ExecutorAspect {
         Callable<T> callable = callableHolder.get();
         if (callable instanceof RunnableEtcMixin) {
             onBeforeCommon(context, (RunnableEtcMixin) callable);
-        } else if (callable != null && callable.getClass().getName().contains("$$Lambda$")) {
+        } else if (isLambda(callable)) {
             wrapCallable(callableHolder, context);
         }
     }
@@ -541,12 +540,20 @@ public class ExecutorAspect {
             if (runnable instanceof RunnableEtcMixin) {
                 onBeforeCommon(context, (RunnableEtcMixin) runnable);
                 return true;
-            } else if (runnable != null && runnable.getClass().getName().contains("$$Lambda$")) {
+            } else if (isLambda(runnable)) {
                 wrapRunnable(runnableHolder, context);
                 return true;
             }
         }
         return false;
+    }
+
+    private static boolean isLambda(Object object) {
+        if (object == null) {
+            return false;
+        }
+        String name = object.getClass().getName();
+        return name.contains("$$Lambda/") /* jdk21+ */ || name.contains("$$Lambda$"); /* jdk8-20 */
     }
 
     private static void onBeforeCommon(ThreadContext context, RunnableEtcMixin runnableEtc) {
