@@ -196,7 +196,7 @@
             <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.15.10</version>
+            <version>1.17.5</version>
         </dependency>
         <dependency>
             <!-- this is to resolve maven enforcer RequireUpperBoundDeps error -->
