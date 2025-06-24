@@ -255,7 +255,7 @@ class AdminJsonService {
     String getAllAdmin() throws Exception {
         Object config;
         if (central) {
-            config = configRepository.getAllCentralAdminConfig();
+            config = configRepository.getAllCentralAdminConfig().toCompletableFuture().get();
         } else {
             config = configRepository.getAllEmbeddedAdminConfig();
         }
