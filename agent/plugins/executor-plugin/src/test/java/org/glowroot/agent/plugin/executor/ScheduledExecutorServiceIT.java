@@ -74,6 +74,14 @@ public class ScheduledExecutorServiceIT {
         checkTrace(trace);
     }
 
+    @Test
+    public void shouldCaptureScheduledCallableLambda() throws Exception {
+        // when
+        Trace trace = container.execute(DoScheduledCallableLambda.class);
+        // then
+        checkTrace(trace);
+    }
+
     private static ScheduledExecutorService createScheduledExecutorService() {
         return Executors.newSingleThreadScheduledExecutor();
     }
@@ -134,6 +142,28 @@ public class ScheduledExecutorServiceIT {
                     latch.countDown();
                     return null;
                 }
+            }, 100, MILLISECONDS);
+            latch.await();
+            executor.shutdown();
+            executor.awaitTermination(10, SECONDS);
+        }
+    }
+
+    public static class DoScheduledCallableLambda implements AppUnderTest, TransactionMarker {
+
+        @Override
+        public void executeApp() throws Exception {
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            ScheduledExecutorService executor = createScheduledExecutorService();
+            final CountDownLatch latch = new CountDownLatch(1);
+            executor.schedule(() -> {
+                    new CreateTraceEntry().traceEntryMarker();
+                    latch.countDown();
+                    return null;
             }, 100, MILLISECONDS);
             latch.await();
             executor.shutdown();
