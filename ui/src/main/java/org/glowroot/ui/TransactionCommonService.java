@@ -227,6 +227,7 @@ class TransactionCommonService {
                 }
             }).thenApply(orderedNonRolledUpAggregates -> {
                 if (liveResult != null) {
+                    orderedNonRolledUpAggregates = Lists.newArrayList(orderedNonRolledUpAggregates);
                     orderedNonRolledUpAggregates.addAll(liveResult.get());
                 }
                 List<PercentileAggregate> aggregatesInner = Lists.newArrayList(finalAggregates);
