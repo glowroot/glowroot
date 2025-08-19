@@ -218,6 +218,10 @@ public class AggregateIntervalCollector {
     void clear() {
         typeCollectors.clear();
     }
+    
+    int size() {
+        return typeCollectors.size();
+    }
 
     // can be called without lock
     private @Nullable AggregateCollector getAggregateCollector(String transactionType,
