@@ -61,11 +61,11 @@ public class ServletAspect {
         final ThreadContext.ServletRequestInfo servletRequestInfo = context.getServletRequestInfo();
         //Environments where both javax & jakarta servlet classes are loaded can exist. Check the type
         //before casting.
-//        if(servletRequestInfo instanceof ServletMessageSupplier) {
+        if(servletRequestInfo instanceof ServletMessageSupplier) {
             return (ServletMessageSupplier) servletRequestInfo;
-//        }else{
-//            return null;
-//        }
+        }else{
+            return null;
+        }
     }
 
     @Pointcut(className = "javax.servlet.Servlet", methodName = "service",
