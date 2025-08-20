@@ -28,6 +28,8 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 import org.glowroot.agent.plugin.servlet.bclglowrootbcl.RequestClassMeta;
 import org.glowroot.agent.plugin.servlet.bclglowrootbcl.ServletMessageSupplier;
 
+import static org.glowroot.agent.plugin.servlet.ServletAspect.getServletMessageSupplier;
+
 public class RequestParameterAspect {
 
     private static final Logger logger = Logger.getLogger(RequestParameterAspect.class);
@@ -46,7 +48,7 @@ public class RequestParameterAspect {
             // could prevent a servlet from choosing to read the underlying stream instead of using
             // the getParameter* methods) see SRV.3.1.1 "When Parameters Are Available"
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+                    getServletMessageSupplier(context);
             if (messageSupplier == null || messageSupplier.isRequestParametersCaptured()) {
                 return;
             }

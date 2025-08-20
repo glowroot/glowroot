@@ -32,8 +32,21 @@ import java.security.Principal;
 import java.util.Collections;
 import java.util.Map;
 
+import static org.glowroot.agent.plugin.jakartaservlet.ServletAspect.getServletMessageSupplier;
+
 // this plugin is careful not to rely on request or session objects being thread-safe
 public class ServletAspect {
+
+    static ServletMessageSupplier getServletMessageSupplier(ThreadContext context) {
+        final ThreadContext.ServletRequestInfo servletRequestInfo = context.getServletRequestInfo();
+        //Environments where both javax & jakarta servlet classes are loaded can exist. Check the type
+        //before casting.
+        if(servletRequestInfo instanceof ServletMessageSupplier) {
+            return (ServletMessageSupplier) servletRequestInfo;
+        }else{
+            return null;
+        }
+    }
 
     @Pointcut(className = "jakarta.servlet.Servlet", methodName = "service",
             methodParameterTypes = {"jakarta.servlet.ServletRequest",
@@ -61,7 +74,7 @@ public class ServletAspect {
                 return;
             }
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+                    getServletMessageSupplier(context);
             if (messageSupplier != null && responseInvoker.hasGetStatusMethod()) {
                 messageSupplier.setResponseCode(responseInvoker.getStatus(res));
             }
@@ -89,7 +102,7 @@ public class ServletAspect {
                 return;
             }
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+                    getServletMessageSupplier(context);
             if (messageSupplier != null) {
                 // container will set this unless headers are already flushed
                 messageSupplier.setResponseCode(500);
@@ -294,7 +307,7 @@ public class ServletAspect {
         @OnAfter
         public static void onAfter(ThreadContext context, @BindParameter int statusCode) {
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+                    getServletMessageSupplier(context);
             if (messageSupplier != null) {
                 messageSupplier.setResponseCode(statusCode);
             }
@@ -325,7 +338,7 @@ public class ServletAspect {
                 @BindParameter @Nullable String location,
                 @BindClassMeta ResponseInvoker responseInvoker) {
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+                    getServletMessageSupplier(context);
             if (messageSupplier != null) {
                 messageSupplier.setResponseCode(302);
                 if (responseInvoker.hasGetHeaderMethod()) {
@@ -348,7 +361,7 @@ public class ServletAspect {
         @OnAfter
         public static void onAfter(ThreadContext context, @BindParameter int statusCode) {
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+                    getServletMessageSupplier(context);
             if (messageSupplier != null) {
                 messageSupplier.setResponseCode(statusCode);
             }
@@ -390,7 +403,7 @@ public class ServletAspect {
             }
             if (ServletPluginProperties.captureSessionAttributeNamesContainsId()) {
                 ServletMessageSupplier messageSupplier =
-                        (ServletMessageSupplier) context.getServletRequestInfo();
+                        getServletMessageSupplier(context);
                 if (messageSupplier != null) {
                     messageSupplier.putSessionAttributeChangedValue(
                             ServletPluginProperties.HTTP_SESSION_ID_ATTR, session.getId());
