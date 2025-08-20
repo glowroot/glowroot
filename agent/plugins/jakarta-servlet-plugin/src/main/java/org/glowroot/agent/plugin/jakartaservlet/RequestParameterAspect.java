@@ -27,6 +27,8 @@ import org.glowroot.agent.plugin.jakartaservlet.bclglowrootbcl.ServletMessageSup
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 
+import static org.glowroot.agent.plugin.jakartaservlet.ServletAspect.getServletMessageSupplier;
+
 public class RequestParameterAspect {
 
     private static final Logger logger = Logger.getLogger(RequestParameterAspect.class);
@@ -34,6 +36,8 @@ public class RequestParameterAspect {
     @Pointcut(className = "jakarta.servlet.ServletRequest", methodName = "getParameter*",
             methodParameterTypes = {".."}, nestingGroup = "servlet-inner-call")
     public static class GetParameterAdvice {
+
+
         @OnReturn
         public static void onReturn(ThreadContext context, @BindReceiver Object req,
                 @BindClassMeta RequestClassMeta requestClassMeta) {
@@ -44,8 +48,8 @@ public class RequestParameterAspect {
             // only now is it safe to get parameters (if parameters are retrieved before this, it
             // could prevent a servlet from choosing to read the underlying stream instead of using
             // the getParameter* methods) see SRV.3.1.1 "When Parameters Are Available"
-            ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+
+            ServletMessageSupplier messageSupplier = getServletMessageSupplier(context);
             if (messageSupplier == null || messageSupplier.isRequestParametersCaptured()) {
                 return;
             }
