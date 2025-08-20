@@ -30,6 +30,8 @@ import org.glowroot.agent.plugin.servlet.bclglowrootbcl.ServletPluginProperties;
 import org.glowroot.agent.plugin.servlet.bclglowrootbcl.Strings;
 import org.glowroot.agent.plugin.servlet.bclglowrootbcl.ServletPluginProperties.SessionAttributePath;
 
+import static org.glowroot.agent.plugin.servlet.ServletAspect.getServletMessageSupplier;
+
 public class SessionAspect {
 
     @Pointcut(className = "javax.servlet.http.HttpSession", methodName = "setAttribute|putValue",
@@ -47,7 +49,7 @@ public class SessionAspect {
             // name is non-null per HttpSession.setAttribute() javadoc, but value may be null
             // (which per the javadoc is the same as calling removeAttribute())
             ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+                    getServletMessageSupplier(context);
             if (messageSupplier != null) {
                 updateUserIfApplicable(context, name, value);
                 updateSessionAttributesIfApplicable(messageSupplier, name, value);
