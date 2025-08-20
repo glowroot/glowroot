@@ -22,6 +22,7 @@ import java.security.ProtectionDomain;
 import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.regex.Pattern;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
@@ -31,6 +32,9 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
 
     private static final boolean ALLOW_WEAVING_AGENT_CLASSES =
             Boolean.getBoolean("glowroot.internal.allowWeavingAgentClasses");
+
+    private static final Pattern EXCLUDE_CLASSES_FROM_WEAVING_PATTERN =
+            Pattern.compile(System.getProperty("glowroot.weaving.excludeClasses", ""));
 
     private static final Logger logger = LoggerFactory.getLogger(WeavingClassFileTransformer.class);
 
@@ -146,6 +150,12 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
         if (className.equals("load/C4") && loader != null && loader.getClass().getName()
                 .equals("oracle.classloader.util.ClassLoadEnvironment$DependencyLoader")) {
             // special case to avoid weaving error when running OC4J
+            return true;
+        }
+
+
+        if (EXCLUDE_CLASSES_FROM_WEAVING_PATTERN.matcher(className).matches()){
+            //Let the user exclude troublesome classes.
             return true;
         }
         return false;
