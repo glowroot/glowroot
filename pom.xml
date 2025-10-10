@@ -422,7 +422,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.6.3</version>
+          <version>3.12.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-plugin-plugin</artifactId>
@@ -430,7 +430,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-remote-resources-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.3.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
@@ -438,11 +438,11 @@
         </plugin>
         <plugin>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.5.3</version>
+          <version>3.6.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-site-plugin</artifactId>
-          <version>3.12.1</version>
+          <version>3.21.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-source-plugin</artifactId>
@@ -450,7 +450,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.5.4</version>
           <configuration>
             <systemPropertyVariables>
               <glowroot.test.fileLoggingOnly>true</glowroot.test.fileLoggingOnly>
