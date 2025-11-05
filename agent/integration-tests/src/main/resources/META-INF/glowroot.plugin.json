@@ -171,6 +171,254 @@
       "captureKind": "trace-entry",
       "timerName": "lambda",
       "traceEntryMessageTemplate": "lambda: {{0}} => {{_}}"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteChild",
+      "methodName": "execute",
+      "methodParameterTypes": [],
+      "captureKind": "transaction",
+      "transactionType": "Background",
+      "transactionNameTemplate": "Concrete Execute",
+      "timerName": "concrete execute"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteChild",
+      "methodName": "processSpecific",
+      "methodParameterTypes": ["java.lang.String"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "Concrete ProcessSpecific: {{0}}",
+      "timerName": "concrete process specific"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteChild",
+      "methodName": "process",
+      "methodParameterTypes": ["java.lang.String"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "Concrete Process: {{0}}",
+      "timerName": "concrete process"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteChild",
+      "methodName": "transform",
+      "methodParameterTypes": ["java.lang.String"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "Concrete Transform: {{0}}",
+      "timerName": "concrete transform"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteChild",
+      "methodName": "validateAndProcess",
+      "methodParameterTypes": ["java.lang.String"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "Concrete ValidateAndProcess: {{0}}",
+      "timerName": "concrete validate"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.GenericParentA+",
+      "methodName": "transform",
+      "methodParameterTypes": ["java.lang.Object"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "Generic Transform: {{0}}",
+      "timerName": "generic transform"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteTwoTypes",
+      "methodName": "execute",
+      "methodParameterTypes": [],
+      "captureKind": "transaction",
+      "transactionType": "Background",
+      "transactionNameTemplate": "ConcreteTwoTypes Execute",
+      "timerName": "concrete two types execute"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteTwoTypes",
+      "methodName": "processFirst",
+      "methodParameterTypes": ["java.lang.String"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "ConcreteTwoTypes ProcessFirst: {{0}}",
+      "timerName": "concrete two types process first"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteTwoTypes",
+      "methodName": "processSecond",
+      "methodParameterTypes": ["java.lang.Integer"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "ConcreteTwoTypes ProcessSecond: {{0}}",
+      "timerName": "concrete two types process second"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteTwoTypes",
+      "methodName": "transformFirstToSecond",
+      "methodParameterTypes": ["java.lang.String"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "ConcreteTwoTypes TransformFirstToSecond: {{0}} => {{_}}",
+      "timerName": "concrete two types transform"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteThreeTypes",
+      "methodName": "execute",
+      "methodParameterTypes": [],
+      "captureKind": "transaction",
+      "transactionType": "Background",
+      "transactionNameTemplate": "ConcreteThreeTypes Execute",
+      "timerName": "concrete three types execute"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteThreeTypes",
+      "methodName": "processFirst",
+      "methodParameterTypes": ["java.lang.String"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "ConcreteThreeTypes ProcessFirst: {{0}}",
+      "timerName": "concrete three types process first"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteThreeTypes",
+      "methodName": "processSecond",
+      "methodParameterTypes": ["java.lang.Integer"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "ConcreteThreeTypes ProcessSecond: {{0}}",
+      "timerName": "concrete three types process second"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteThreeTypes",
+      "methodName": "processThird",
+      "methodParameterTypes": ["java.lang.Boolean"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "ConcreteThreeTypes ProcessThird: {{0}}",
+      "timerName": "concrete three types process third"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteThreeTypes",
+      "methodName": "transformTtoR",
+      "methodParameterTypes": ["java.lang.String"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "ConcreteThreeTypes TransformTtoR: {{0}} => {{_}}",
+      "timerName": "concrete three types transform t to r"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteBounded",
+      "methodName": "execute",
+      "methodParameterTypes": [],
+      "captureKind": "transaction",
+      "transactionType": "Background",
+      "transactionNameTemplate": "ConcreteBounded Execute",
+      "timerName": "concrete bounded execute"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteBounded",
+      "methodName": "processNumber",
+      "methodParameterTypes": ["java.lang.Double"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "ConcreteBounded ProcessNumber: {{0}}",
+      "timerName": "concrete bounded process number"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteBounded",
+      "methodName": "multiplyByTwo",
+      "methodParameterTypes": ["java.lang.Double"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "ConcreteBounded MultiplyByTwo: {{0}} => {{_}}",
+      "timerName": "concrete bounded multiply"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteMultipleBounds",
+      "methodName": "execute",
+      "methodParameterTypes": [],
+      "captureKind": "transaction",
+      "transactionType": "Background",
+      "transactionNameTemplate": "ConcreteMultipleBounds Execute",
+      "timerName": "concrete multiple bounds execute"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteMultipleBounds",
+      "methodName": "compareValues",
+      "methodParameterTypes": ["java.lang.Integer", "java.lang.Integer"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "ConcreteMultipleBounds CompareValues: {{0}} vs {{1}}",
+      "timerName": "concrete multiple bounds compare"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteMultipleBounds",
+      "methodName": "findMax",
+      "methodParameterTypes": ["java.lang.Integer", "java.lang.Integer"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "ConcreteMultipleBounds FindMax: {{0}}, {{1}} => {{_}}",
+      "timerName": "concrete multiple bounds find max"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteNested",
+      "methodName": "execute",
+      "methodParameterTypes": [],
+      "captureKind": "transaction",
+      "transactionType": "Background",
+      "transactionNameTemplate": "ConcreteNested Execute",
+      "timerName": "concrete nested execute"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteNested",
+      "methodName": "processList",
+      "methodParameterTypes": ["java.util.List"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "ConcreteNested ProcessList",
+      "timerName": "concrete nested process list"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteNested",
+      "methodName": "filterList",
+      "methodParameterTypes": ["java.util.List"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "ConcreteNested FilterList",
+      "timerName": "concrete nested filter list"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteNested",
+      "methodName": "findInList",
+      "methodParameterTypes": ["java.util.List", "java.lang.String"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "ConcreteNested FindInList: {{1}} => {{_}}",
+      "timerName": "concrete nested find in list"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteKeyValue",
+      "methodName": "execute",
+      "methodParameterTypes": [],
+      "captureKind": "transaction",
+      "transactionType": "Background",
+      "transactionNameTemplate": "ConcreteKeyValue Execute",
+      "timerName": "concrete key value execute"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteKeyValue",
+      "methodName": "get",
+      "methodParameterTypes": ["java.lang.String"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "ConcreteKeyValue Get: {{0}} => {{_}}",
+      "timerName": "concrete key value get"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteKeyValue",
+      "methodName": "put",
+      "methodParameterTypes": ["java.lang.String", "java.lang.Integer"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "ConcreteKeyValue Put: {{0}} = {{1}}",
+      "timerName": "concrete key value put"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.ConcreteKeyValue",
+      "methodName": "processEntry",
+      "methodParameterTypes": ["java.lang.String", "java.lang.Integer"],
+      "captureKind": "trace-entry",
+      "traceEntryMessageTemplate": "ConcreteKeyValue ProcessEntry: {{0}} = {{1}}",
+      "timerName": "concrete key value process entry"
+    },
+    {
+      "className": "org.glowroot.agent.tests.app.NonGenericChildWithGenericMethods",
+      "methodName": "execute",
+      "methodParameterTypes": [],
+      "captureKind": "transaction",
+      "transactionType": "Background",
+      "transactionNameTemplate": "MethodLevelGeneric Execute",
+      "timerName": "method level generic execute"
     }
   ],
   "aspects": [
@@ -184,6 +432,10 @@
     "org.glowroot.agent.tests.plugin.MixinAspect",
     "org.glowroot.agent.tests.plugin.BeanDescriptorAspect",
     "org.glowroot.agent.tests.plugin.SimpleAspect",
-    "org.glowroot.agent.tests.plugin.AlreadyInTransactionBehaviorAspect"
+    "org.glowroot.agent.tests.plugin.AlreadyInTransactionBehaviorAspect",
+    "org.glowroot.agent.tests.plugin.AbstractGenericMethodAspect",
+    "org.glowroot.agent.tests.plugin.InheritedGenericMethodAspect",
+    "org.glowroot.agent.tests.plugin.MultiGenericMethodAspect",
+    "org.glowroot.agent.tests.plugin.MethodLevelGenericAspect"
   ]
 }

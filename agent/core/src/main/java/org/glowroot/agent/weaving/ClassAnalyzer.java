@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2023 the original author or authors.
+ * Copyright 2015-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,6 +100,7 @@ class ClassAnalyzer {
         analyzedClassBuilder = ImmutableAnalyzedClass.builder()
                 .modifiers(thinClass.access())
                 .name(className)
+                .genericClassInfo(thinClass.genericClassInfo())
                 .superName(superClassName)
                 .addAllInterfaceNames(interfaceNames);
         boolean ejbRemote = false;
@@ -412,7 +413,7 @@ class ClassAnalyzer {
             return ImmutableList.of();
         }
         for (AnalyzedMethod analyzedMethod : analyzedClass.analyzedMethods()) {
-            matchingAdvisorSets.remove(AnalyzedMethodKey.wrap(analyzedMethod));
+            matchingAdvisorSets.remove(AnalyzedMethodKey.wrap(analyzedMethod, this.thinClass, analyzedClass));
         }
         if (matchingAdvisorSets.isEmpty()) {
             return ImmutableList.of();
@@ -453,7 +454,7 @@ class ClassAnalyzer {
         Map<AnalyzedMethodKey, Set<Advice>> matchingAdvisorSets = Maps.newHashMap();
         for (AnalyzedClass superAnalyzedClass : superAnalyzedClasses) {
             for (AnalyzedMethod superAnalyzedMethod : superAnalyzedClass.analyzedMethods()) {
-                AnalyzedMethodKey key = AnalyzedMethodKey.wrap(superAnalyzedMethod);
+                AnalyzedMethodKey key = AnalyzedMethodKey.wrap(superAnalyzedMethod, this.thinClass, superAnalyzedClass);
                 Set<Advice> matchingAdvisorSet = matchingAdvisorSets.get(key);
                 if (matchingAdvisorSet == null) {
                     matchingAdvisorSet = Sets.newHashSet();
@@ -479,7 +480,7 @@ class ClassAnalyzer {
                 if (Modifier.isAbstract(superAnalyzedMethod.modifiers())) {
                     continue;
                 }
-                AnalyzedMethodKey key = AnalyzedMethodKey.wrap(superAnalyzedMethod);
+                AnalyzedMethodKey key = AnalyzedMethodKey.wrap(superAnalyzedMethod, this.thinClass, superAnalyzedClass);
                 Set<Advice> matchingAdvisorSet = matchingAdvisorSets.get(key);
                 if (matchingAdvisorSet == null) {
                     continue;
@@ -808,11 +809,39 @@ class ClassAnalyzer {
         @Value.Auxiliary
         abstract @Nullable AnalyzedMethod analyzedMethod();
 
-        private static AnalyzedMethodKey wrap(AnalyzedMethod analyzedMethod) {
+        private static AnalyzedMethodKey wrap(AnalyzedMethod analyzedMethod, ThinClass thinClass, AnalyzedClass superAnalyzedClass) {
+            AnalyzedMethod copyAnalyzedMethod;
+            if(superAnalyzedClass.genericClassInfo() != null) {
+                String resolvedSignature = GenericTypeResolver.resolveMethodSignature(
+                        analyzedMethod.signature(),
+                        thinClass,
+                        superAnalyzedClass
+                );
+
+                List<String> resolvedParameterTypes = GenericTypeResolver.resolveParameterTypes(
+                        analyzedMethod,
+                        thinClass,
+                        superAnalyzedClass
+                );
+
+                String returnType = GenericTypeResolver.resolveReturnType(
+                        analyzedMethod,
+                        thinClass,
+                        superAnalyzedClass
+                );
+                copyAnalyzedMethod = ImmutableAnalyzedMethod.builder()
+                        .copyFrom(analyzedMethod)
+                        .signatureResolved(resolvedSignature)
+                        .parameterTypesResolved(resolvedParameterTypes)
+                        .returnTypeResolved(returnType)
+                        .build();
+            } else {
+                copyAnalyzedMethod = analyzedMethod;
+            }
             return ImmutableAnalyzedMethodKey.builder()
-                    .name(analyzedMethod.name())
-                    .addAllParameterTypes(analyzedMethod.parameterTypes())
-                    .analyzedMethod(analyzedMethod)
+                    .name(copyAnalyzedMethod.name())
+                    .addAllParameterTypes(copyAnalyzedMethod.parameterTypes())
+                    .analyzedMethod(copyAnalyzedMethod)
                     .build();
         }
     }

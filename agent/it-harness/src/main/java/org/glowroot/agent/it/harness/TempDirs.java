@@ -58,7 +58,8 @@ public class TempDirs {
             if (!file.delete()) {
                 throw new IOException("Could not delete directory: " + file.getCanonicalPath());
             }
-        } else if (!file.delete()) {
+        //TODO::RSA:: may be windows issue
+        } else if (file.exists() && !file.delete()) {
             throw new IOException("Could not delete file: " + file.getCanonicalPath());
         }
     }

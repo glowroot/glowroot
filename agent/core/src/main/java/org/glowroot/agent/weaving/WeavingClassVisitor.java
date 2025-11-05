@@ -18,6 +18,7 @@ package org.glowroot.agent.weaving;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -632,20 +633,40 @@ class WeavingClassVisitor extends ClassVisitor {
             exceptions[i] = ClassNames.toInternalName(inheritedMethod.exceptions().get(i));
         }
         List<Advice> advisors = removeSuperseded(inheritedMethod.advisors());
+
+        // Use resolved types for the overridden method signature to handle specialized generics
+        String signature4Child = inheritedMethod.signatureResolved() != null
+                ? inheritedMethod.signatureResolved()
+                : inheritedMethod.signature();
+        String returnType4Child = inheritedMethod.returnTypeResolved() != null
+                ? inheritedMethod.returnTypeResolved()
+                : inheritedMethod.returnType();
+
         MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, inheritedMethod.name(),
-                inheritedMethod.getDesc(), inheritedMethod.signature(), exceptions);
+                inheritedMethod.getDescResolved(), signature4Child, exceptions);
         mv = visitMethodWithAdvice(mv, ACC_PUBLIC, inheritedMethod.name(),
-                inheritedMethod.getDesc(), advisors);
+                inheritedMethod.getDescResolved(), advisors);
         checkNotNull(mv);
         GeneratorAdapter mg = new GeneratorAdapter(mv, ACC_PUBLIC, inheritedMethod.name(),
-                inheritedMethod.getDesc());
+                inheritedMethod.getDescResolved());
+
         mg.visitCode();
         mg.loadThis();
         mg.loadArgs();
         Type superType = Type.getObjectType(ClassNames.toInternalName(superName));
         // method is called invokeConstructor, but should really be called invokeSpecial
+        // Use the original (unresolved) descriptor for the super call since the parent class
+        // method has the generic signature
         Method method = new Method(inheritedMethod.name(), inheritedMethod.getDesc());
         mg.invokeConstructor(superType, method);
+
+        // Cast the return value if types differ (generic specialization case)
+        Type superReturnType = Type.getReturnType(inheritedMethod.getDesc());
+        Type resolvedReturnType = AnalyzedMethod.getType(returnType4Child);
+        if (!Objects.equals(superReturnType, resolvedReturnType)) {
+            mg.checkCast(resolvedReturnType);
+        }
+
         mg.returnValue();
         mg.endMethod();
     }

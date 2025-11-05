@@ -30,11 +30,17 @@ abstract class AnalyzedMethod {
     abstract String name();
     // these are class names
     abstract ImmutableList<String> parameterTypes();
+    @Value.Auxiliary
+    abstract @Nullable ImmutableList<String> parameterTypesResolved();
     abstract String returnType();
+    @Value.Auxiliary
+    abstract @Nullable String returnTypeResolved();
     abstract int modifiers();
 
     // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
     abstract @Nullable String signature();
+    @Value.Auxiliary
+    abstract @Nullable String signatureResolved();
     // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
     abstract ImmutableList<String> exceptions();
 
@@ -46,12 +52,24 @@ abstract class AnalyzedMethod {
 
     // this is only used for the rare case of WeavingClassVisitor.overrideAndWeaveInheritedMethod()
     String getDesc() {
-        List<String> parameterTypes = parameterTypes();
+        return getDesc(parameterTypes(), returnType());
+    }
+    String getDescResolved() {
+        // Use resolved types for the overridden method signature to handle specialized generics
+        List<String> parameterTypes = parameterTypesResolved() != null
+                ? parameterTypesResolved()
+                : parameterTypes();
+        String returnType = returnTypeResolved() != null
+                ? returnTypeResolved()
+                : returnType();
+        return getDesc(parameterTypes, returnType);
+    }
+    private String getDesc(List<String> parameterTypes, String returnType) {
         Type[] types = new Type[parameterTypes.size()];
         for (int i = 0; i < parameterTypes.size(); i++) {
             types[i] = getType(parameterTypes.get(i));
         }
-        return Type.getMethodDescriptor(getType(returnType()), types);
+        return Type.getMethodDescriptor(getType(returnType), types);
     }
 
     // TODO there is a bit more to overriding, see
