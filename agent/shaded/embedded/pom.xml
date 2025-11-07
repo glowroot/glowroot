@@ -61,6 +61,8 @@
                 the glowroot-ui to not work -->
               <include>org.glowroot:glowroot-agent-api</include>
               <include>com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer</include>
+              <include>com.googlecode.owasp-java-html-sanitizer:java8-shim</include>
+              <include>com.googlecode.owasp-java-html-sanitizer:java10-shim</include>
               <include>com.h2database:h2</include>
               <include>com.ning:compress-lzf</include>
               <include>com.sun.mail:mailapi</include>
@@ -72,6 +74,18 @@
           <filters>
             <filter>
               <artifact>com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer</artifact>
+              <excludes>
+                <exclude>META-INF/MANIFEST.MF</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.googlecode.owasp-java-html-sanitizer:java8-shim</artifact>
+              <excludes>
+                <exclude>META-INF/MANIFEST.MF</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.googlecode.owasp-java-html-sanitizer:java10-shim</artifact>
               <excludes>
                 <exclude>META-INF/MANIFEST.MF</exclude>
               </excludes>
@@ -177,6 +191,10 @@
             <relocation>
               <pattern>org.owasp.html</pattern>
               <shadedPattern>org.glowroot.agent.embedded.shaded.org.owasp.html</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.owasp.shim</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.shaded.org.owasp.shim</shadedPattern>
             </relocation>
             <relocation>
               <!-- shade thread names to make it easy to identify glowroot threads -->
