@@ -163,7 +163,7 @@ public class GenericTypeResolver {
 
     private static Map<String, String> buildTypeMapping(ThinClassVisitor.ThinClass analyzedThinClass,
                                                         AnalyzedClass superAnalyzedClass) {
-        Map<String, String> typeMapping = new HashMap<>();
+        Map<String, String> typeMapping = new LinkedHashMap<>();  // Changed from HashMap
 
         if (analyzedThinClass == null || superAnalyzedClass == null) {
             return typeMapping;
