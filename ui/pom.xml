@@ -188,7 +188,7 @@
       <plugin>
         <groupId>com.github.eirslett</groupId>
         <artifactId>frontend-maven-plugin</artifactId>
-        <version>1.15.1</version>
+        <version>1.15.4</version>
         <executions>
           <execution>
             <id>install-node-and-npm</id>
@@ -198,8 +198,8 @@
             </goals>
             <configuration>
               <skip>${glowroot.ui.skip}</skip>
-              <nodeVersion>v20.18.0</nodeVersion>
-              <npmVersion>10.9.1</npmVersion>
+              <nodeVersion>v22.21.1</nodeVersion>
+              <npmVersion>10.9.4</npmVersion>
             </configuration>
           </execution>
           <execution>
