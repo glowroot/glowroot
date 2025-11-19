@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 import java.util.jar.JarEntry;
@@ -31,7 +32,6 @@ import com.google.common.io.Files;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.agent.config.ImmutablePluginDescriptor;
 import org.glowroot.agent.config.ImmutablePropertyDescriptor;
@@ -39,8 +39,8 @@ import org.glowroot.agent.config.PluginDescriptor;
 import org.glowroot.agent.config.PropertyDescriptor;
 import org.glowroot.agent.dist.PluginConfig.PropertyConfig;
 import org.glowroot.common.config.PropertyValue;
+import org.jspecify.annotations.Nullable;
 
-import static com.google.common.base.Charsets.UTF_8;
 
 class PluginJsonTransformer {
 
@@ -69,7 +69,7 @@ class PluginJsonTransformer {
         if (!metaInfDir.exists() && !metaInfDir.mkdirs()) {
             throw new IOException("Could not create directory: " + metaInfDir.getAbsolutePath());
         }
-        Files.write(pluginsJson, file, UTF_8);
+        Files.write(pluginsJson, file, StandardCharsets.UTF_8);
     }
 
     private static List<PluginDescriptor> getPluginDescriptors(Set<Artifact> artifacts)
@@ -96,7 +96,7 @@ class PluginJsonTransformer {
             if (!jsonFile.exists()) {
                 return null;
             }
-            return Files.toString(jsonFile, UTF_8);
+            return Files.toString(jsonFile, StandardCharsets.UTF_8);
         }
 
         try (JarInputStream jarIn = new JarInputStream(new FileInputStream(artifact.getFile()))) {
@@ -109,7 +109,7 @@ class PluginJsonTransformer {
                 if (!name.equals("META-INF/glowroot.plugin.json")) {
                     continue;
                 }
-                try (InputStreamReader in = new InputStreamReader(jarIn, UTF_8)) {
+                try (InputStreamReader in = new InputStreamReader(jarIn, StandardCharsets.UTF_8)) {
                     String content = CharStreams.toString(in);
                     return content;
                 }
