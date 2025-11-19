@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21.0.8_9-jdk-noble AS builder
+FROM eclipse-temurin:21.0.9_10-jdk-noble AS builder
 
 COPY target/glowroot-central-*.zip /tmp/glowroot-central.zip
 RUN useradd --no-log-init -r -g root glowroot
@@ -7,7 +7,7 @@ RUN unzip -d /tmp /tmp/glowroot-central.zip \
     && chown -R glowroot:root /tmp/glowroot-central \
     && chmod -R g+rw /tmp/glowroot-central
 
-FROM eclipse-temurin:21.0.8_9-jdk-noble
+FROM eclipse-temurin:21.0.9_10-jdk-noble
 
 COPY docker-entrypoint.sh /usr/local/bin/
 COPY glowroot-central.sh /usr/local/bin/
