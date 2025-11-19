@@ -275,6 +275,10 @@
               <shadedPattern>org.glowroot.agent.shaded.org.slf4j</shadedPattern>
             </relocation>
             <relocation>
+              <pattern>org.jspecify</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.jspecify</shadedPattern>
+            </relocation>
+            <relocation>
               <!-- this shades guava's internal use of java util logging which is needed to prevent
                 java util logging from being initialized early (e.g. in the case of wildfly which
                 wants to do some setup before jul is initialized) -->
