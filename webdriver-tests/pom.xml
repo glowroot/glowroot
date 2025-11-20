@@ -206,9 +206,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.datastax.oss</groupId>
+      <groupId>org.apache.cassandra</groupId>
       <artifactId>java-driver-core</artifactId>
-      <version>4.17.0</version>
+      <version>4.19.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
