@@ -29,6 +29,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.CaptureTimes;
@@ -72,7 +73,7 @@ class GaugeValueJsonService {
                     configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
         }
         Map<String, List<GaugeValue>> origGaugeValues =
-                getGaugeValues(agentRollupId, request, rollupLevel, dataPointIntervalMillis);
+                getGaugeValues(agentRollupId, request, rollupLevel, dataPointIntervalMillis, CassandraProfile.web);
         Map<String, List<GaugeValue>> gaugeValues = origGaugeValues;
         if (isEmpty(gaugeValues)
                 && noHarmFallingBackToLargestAggregate(agentRollupId, rollupLevel, request)) {
@@ -81,7 +82,7 @@ class GaugeValueJsonService {
             dataPointIntervalMillis =
                     configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
             gaugeValues =
-                    getGaugeValues(agentRollupId, request, rollupLevel, dataPointIntervalMillis);
+                    getGaugeValues(agentRollupId, request, rollupLevel, dataPointIntervalMillis, CassandraProfile.web);
             long lastCaptureTime = 0;
             for (List<GaugeValue> list : gaugeValues.values()) {
                 if (!list.isEmpty()) {
@@ -105,7 +106,7 @@ class GaugeValueJsonService {
                     .add(convertToDataSeriesWithGaps(entry.getKey(), entry.getValue(), gapMillis));
         }
         List<Gauge> gauges =
-                gaugeValueRepository.getGauges(agentRollupId, request.from(), request.to());
+                gaugeValueRepository.getGauges(agentRollupId, request.from(), request.to(), CassandraProfile.web).toCompletableFuture().get();
         List<Gauge> sortedGauges = new GaugeOrdering().immutableSortedCopy(gauges);
         sortedGauges = addCounterSuffixesIfAndWhereNeeded(sortedGauges);
         StringBuilder sb = new StringBuilder();
@@ -124,22 +125,22 @@ class GaugeValueJsonService {
 
     private Map<String, List<GaugeValue>> getGaugeValues(String agentRollupId,
             GaugeValueRequest request,
-            int rollupLevel, long dataPointIntervalMillis) throws Exception {
+            int rollupLevel, long dataPointIntervalMillis, CassandraProfile profile) throws Exception {
         long revisedFrom = request.from() - dataPointIntervalMillis;
         long revisedTo = request.to() + dataPointIntervalMillis;
         Map<String, List<GaugeValue>> map = Maps.newLinkedHashMap();
         for (String gaugeName : request.gaugeName()) {
             List<GaugeValue> gaugeValues =
-                    getGaugeValues(agentRollupId, revisedFrom, revisedTo, gaugeName, rollupLevel);
+                    getGaugeValues(agentRollupId, revisedFrom, revisedTo, gaugeName, rollupLevel, profile);
             map.put(gaugeName, gaugeValues);
         }
         return map;
     }
 
     private List<GaugeValue> getGaugeValues(String agentRollupId, long from, long to,
-            String gaugeName, int rollupLevel) throws Exception {
+            String gaugeName, int rollupLevel, CassandraProfile profile) throws Exception {
         List<GaugeValue> gaugeValues = gaugeValueRepository.readGaugeValues(agentRollupId,
-                gaugeName, from, to, rollupLevel);
+                gaugeName, from, to, rollupLevel, profile).toCompletableFuture().get();
         if (rollupLevel == 0) {
             return gaugeValues;
         }
@@ -150,7 +151,7 @@ class GaugeValueJsonService {
         List<GaugeValue> orderedNonRolledUpGaugeValues = Lists.newArrayList();
         int lowestLevel = agentRollupId.endsWith("::") ? 1 : 0;
         orderedNonRolledUpGaugeValues.addAll(gaugeValueRepository.readGaugeValues(agentRollupId,
-                gaugeName, nonRolledUpFrom, to, lowestLevel));
+                gaugeName, nonRolledUpFrom, to, lowestLevel, profile).toCompletableFuture().get());
         gaugeValues = Lists.newArrayList(gaugeValues);
         long fixedIntervalMillis =
                 configRepository.getRollupConfigs().get(rollupLevel - 1).intervalMillis();
@@ -210,7 +211,7 @@ class GaugeValueJsonService {
         }
         for (String gaugeName : request.gaugeName()) {
             long oldestCaptureTime = gaugeValueRepository.getOldestCaptureTime(agentRollupId,
-                    gaugeName, rollupLevel);
+                    gaugeName, rollupLevel, CassandraProfile.web).toCompletableFuture().get();
             if (oldestCaptureTime < request.to()) {
                 return false;
             }

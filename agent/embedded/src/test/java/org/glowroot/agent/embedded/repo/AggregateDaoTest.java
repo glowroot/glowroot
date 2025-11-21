@@ -18,11 +18,13 @@ package org.glowroot.agent.embedded.repo;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,7 +81,7 @@ public class AggregateDaoTest {
                 new CappedDatabase(cappedFile, 1000000, scheduledExecutor, Ticker.systemTicker());
         ConfigRepositoryImpl configRepository = mock(ConfigRepositoryImpl.class);
         when(configRepository.getAdvancedConfig(AGENT_ID))
-                .thenReturn(AdvancedConfig.getDefaultInstance());
+                .thenReturn(CompletableFuture.completedFuture(AdvancedConfig.getDefaultInstance()));
         ImmutableList<RollupConfig> rollupConfigs = ImmutableList.<RollupConfig>of(
                 ImmutableRollupConfig.of(1000, 0), ImmutableRollupConfig.of(15000, 3600000),
                 ImmutableRollupConfig.of(900000000, 8 * 3600000));
@@ -118,9 +120,9 @@ public class AggregateDaoTest {
                 .build();
         TransactionNameSummaryCollector collector = new TransactionNameSummaryCollector();
         List<OverviewAggregate> overallAggregates =
-                aggregateDao.readOverviewAggregates(AGENT_ID, aggregateQuery);
+                aggregateDao.readOverviewAggregates(AGENT_ID, aggregateQuery, CassandraProfile.web).toCompletableFuture().join();
         aggregateDao.mergeTransactionNameSummariesInto(AGENT_ID, summaryQuery,
-                SummarySortOrder.TOTAL_TIME, 10, collector);
+                SummarySortOrder.TOTAL_TIME, 10, collector, CassandraProfile.web);
         Result<TransactionNameSummary> queryResult =
                 collector.getResult(SummarySortOrder.TOTAL_TIME, 10);
 

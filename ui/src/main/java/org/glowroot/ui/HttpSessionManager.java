@@ -119,7 +119,7 @@ class HttpSessionManager {
     }
 
     void deleteSessionCookie(CommonResponse response) throws Exception {
-        Cookie cookie = new DefaultCookie(configRepository.getWebConfig().sessionCookieName(), "");
+        Cookie cookie = new DefaultCookie(configRepository.getWebConfig().toCompletableFuture().join().sessionCookieName(), "");
         cookie.setHttpOnly(true);
         cookie.setMaxAge(0);
         cookie.setPath("/");
@@ -140,7 +140,7 @@ class HttpSessionManager {
         }
         long currentTimeMillis = clock.currentTimeMillis();
         long timeoutMillis =
-                MINUTES.toMillis(configRepository.getWebConfig().sessionTimeoutMinutes());
+                MINUTES.toMillis(configRepository.getWebConfig().toCompletableFuture().join().sessionTimeoutMinutes());
         if (session.isTimedOut(currentTimeMillis, timeoutMillis)) {
             return getAnonymousAuthentication();
         }
@@ -162,7 +162,7 @@ class HttpSessionManager {
         }
         Set<Cookie> cookies = ServerCookieDecoder.STRICT.decode(cookieHeader);
         for (Cookie cookie : cookies) {
-            if (cookie.name().equals(configRepository.getWebConfig().sessionCookieName())) {
+            if (cookie.name().equals(configRepository.getWebConfig().toCompletableFuture().join().sessionCookieName())) {
                 return cookie.value();
             }
         }
@@ -197,7 +197,7 @@ class HttpSessionManager {
                 .getLayoutJson(session.createAuthentication(central, configRepository));
         CommonResponse response = new CommonResponse(OK, MediaType.JSON_UTF_8, layoutJson);
         Cookie cookie =
-                new DefaultCookie(configRepository.getWebConfig().sessionCookieName(), sessionId);
+                new DefaultCookie(configRepository.getWebConfig().toCompletableFuture().join().sessionCookieName(), sessionId);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
         response.setHeader(HttpHeaderNames.SET_COOKIE, ServerCookieEncoder.STRICT.encode(cookie));
@@ -219,7 +219,7 @@ class HttpSessionManager {
     }
 
     private @Nullable UserConfig getUserConfigCaseInsensitive(String username) throws Exception {
-        for (UserConfig userConfig : configRepository.getUserConfigs()) {
+        for (UserConfig userConfig : configRepository.getUserConfigs().toCompletableFuture().join()) {
             if (userConfig.username().equalsIgnoreCase(username)) {
                 return userConfig;
             }
@@ -230,7 +230,7 @@ class HttpSessionManager {
     private void purgeExpiredSessions() throws Exception {
         long currentTimeMillis = clock.currentTimeMillis();
         long timeoutMillis =
-                MINUTES.toMillis(configRepository.getWebConfig().sessionTimeoutMinutes());
+                MINUTES.toMillis(configRepository.getWebConfig().toCompletableFuture().join().sessionTimeoutMinutes());
         Iterator<Map.Entry<String, ImmutableSession>> i = sessionMap.entrySet().iterator();
         while (i.hasNext()) {
             Session session = i.next().getValue();
@@ -243,7 +243,7 @@ class HttpSessionManager {
 
     private Set<String> authenticateAgainstLdapAndGetGlowrootRoles(String username, String password)
             throws Exception {
-        LdapConfig ldapConfig = configRepository.getLdapConfig();
+        LdapConfig ldapConfig = configRepository.getLdapConfig().toCompletableFuture().join();
         String host = ldapConfig.host();
         if (host.isEmpty()) {
             throw new AuthenticationException("LDAP is not configured");
@@ -358,7 +358,7 @@ class HttpSessionManager {
                 return !permission.startsWith("agent:config:edit:");
             }
             List<String> permissionParts = Splitter.on(':').splitToList(permission);
-            for (RoleConfig roleConfig : configRepository().getRoleConfigs()) {
+            for (RoleConfig roleConfig : configRepository().getRoleConfigs().toCompletableFuture().join()) {
                 if (roles().contains(roleConfig.name())
                         && roleConfig.hasAnyPermissionImpliedBy(permissionParts)) {
                     return true;
@@ -374,7 +374,7 @@ class HttpSessionManager {
                 return !permission.startsWith("agent:config:edit:");
             }
             List<String> permissionParts = Splitter.on(':').splitToList(permission);
-            for (RoleConfig roleConfig : configRepository().getRoleConfigs()) {
+            for (RoleConfig roleConfig : configRepository().getRoleConfigs().toCompletableFuture().join()) {
                 if (roles().contains(roleConfig.name())
                         && roleConfig.isPermittedForSomeAgentRollup(permissionParts)) {
                     return true;
@@ -388,7 +388,7 @@ class HttpSessionManager {
                 return HasAnyPermission.YES;
             }
             boolean onlyInChild = false;
-            for (RoleConfig roleConfig : configRepository().getRoleConfigs()) {
+            for (RoleConfig roleConfig : configRepository().getRoleConfigs().toCompletableFuture().join()) {
                 if (!roles().contains(roleConfig.name())) {
                     continue;
                 }
@@ -404,7 +404,7 @@ class HttpSessionManager {
         }
 
         private boolean isPermitted(SimplePermission permission) throws Exception {
-            for (RoleConfig roleConfig : configRepository().getRoleConfigs()) {
+            for (RoleConfig roleConfig : configRepository().getRoleConfigs().toCompletableFuture().join()) {
                 if (roles().contains(roleConfig.name()) && roleConfig.isPermitted(permission)) {
                     return true;
                 }

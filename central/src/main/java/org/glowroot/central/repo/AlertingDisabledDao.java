@@ -16,7 +16,9 @@
 package org.glowroot.central.repo;
 
 import java.time.Instant;
+import java.util.concurrent.CompletionStage;
 
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
@@ -26,6 +28,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.AlertingDisabledRepository;
+import org.glowroot.common2.repo.CassandraProfile;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -53,24 +56,25 @@ public class AlertingDisabledDao implements AlertingDisabledRepository {
     }
 
     @Override
-    public @Nullable Long getAlertingDisabledUntilTime(String agentRollupId) throws Exception {
+    public CompletionStage<Long> getAlertingDisabledUntilTime(String agentRollupId, CassandraProfile profile) {
         BoundStatement boundStatement = readPS.bind()
             .setString(0, agentRollupId);
-        Row row = session.read(boundStatement).one();
-        if (row == null) {
-            return null;
-        }
-        Instant timestamp = row.getInstant(0);
-        return timestamp == null ? null : timestamp.toEpochMilli();
+        return session.readAsync(boundStatement, profile).thenApply(results -> {
+          Row row = results.one();
+            if (row == null) {
+                return null;
+            }
+            Instant timestamp = row.getInstant(0);
+            return timestamp == null ? null : timestamp.toEpochMilli();
+        });
     }
 
     @Override
-    public void setAlertingDisabledUntilTime(String agentRollupId, @Nullable Long disabledUntilTime)
-            throws Exception {
+    public CompletionStage<?> setAlertingDisabledUntilTime(String agentRollupId, @Nullable Long disabledUntilTime, CassandraProfile profile) {
         if (disabledUntilTime == null) {
             BoundStatement boundStatement = deletePS.bind()
                 .setString(0, agentRollupId);
-            session.write(boundStatement);
+            return session.writeAsync(boundStatement, profile);
         } else {
             int i = 0;
             BoundStatement boundStatement = insertPS.bind()
@@ -78,7 +82,7 @@ public class AlertingDisabledDao implements AlertingDisabledRepository {
                 .setInstant(i++, Instant.ofEpochMilli(disabledUntilTime))
                 .setInt(i++, Ints.saturatedCast(
                     MILLISECONDS.toSeconds(disabledUntilTime - clock.currentTimeMillis())));
-            session.write(boundStatement);
+            return session.writeAsync(boundStatement, profile);
         }
     }
 }

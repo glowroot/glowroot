@@ -69,13 +69,17 @@ class AdminConfigFile {
         return ConfigFileUtil.getConfig(rootObjectNode, key, typeReference);
     }
 
-    void writeConfig(String key, Object config) throws IOException {
+    void writeConfig(String key, Object config) {
         if (readOnly) {
             throw new IllegalStateException("Running with config.readOnly=true so config updates"
                     + " are not allowed");
         }
         rootObjectNode.replace(key, mapper.valueToTree(config));
-        ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder, false);
+        try {
+            ConfigFileUtil.writeToFileIfNeeded(file, rootObjectNode, keyOrder, false);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     void writeConfigsOnStartup(Map<String, Object> configs) throws IOException {

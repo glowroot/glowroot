@@ -32,6 +32,7 @@ import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import com.google.common.primitives.Doubles;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.common.live.ImmutableAggregateQuery;
@@ -102,12 +103,12 @@ class TransactionJsonService {
         AggregateQuery query = toChartQuery(request, DataKind.GENERAL);
         long liveCaptureTime = clock.currentTimeMillis();
         List<OverviewAggregate> overviewAggregates =
-                transactionCommonService.getOverviewAggregates(agentRollupId, query, autoRefresh);
+                transactionCommonService.getOverviewAggregates(agentRollupId, query, autoRefresh).toCompletableFuture().get();
         if (overviewAggregates.isEmpty() && fallBackToLargestAggregates(query)) {
             // fall back to largest aggregates in case expiration settings have recently changed
             query = withLargestRollupLevel(query);
             overviewAggregates = transactionCommonService.getOverviewAggregates(agentRollupId,
-                    query, autoRefresh);
+                    query, autoRefresh).toCompletableFuture().get();
             if (!overviewAggregates.isEmpty() && ignoreFallBackData(query,
                     Iterables.getLast(overviewAggregates).captureTime())) {
                 // this is probably data from before the requested time period
@@ -152,12 +153,12 @@ class TransactionJsonService {
         AggregateQuery query = toChartQuery(request, DataKind.GENERAL);
         long liveCaptureTime = clock.currentTimeMillis();
         List<PercentileAggregate> percentileAggregates =
-                transactionCommonService.getPercentileAggregates(agentRollupId, query, autoRefresh);
+                transactionCommonService.getPercentileAggregates(agentRollupId, query, autoRefresh).toCompletableFuture().get();
         if (percentileAggregates.isEmpty() && fallBackToLargestAggregates(query)) {
             // fall back to largest aggregates in case expiration settings have recently changed
             query = withLargestRollupLevel(query);
             percentileAggregates = transactionCommonService.getPercentileAggregates(agentRollupId,
-                    query, autoRefresh);
+                    query, autoRefresh).toCompletableFuture().get();
             if (!percentileAggregates.isEmpty() && ignoreFallBackData(query,
                     Iterables.getLast(percentileAggregates).captureTime())) {
                 // this is probably data from before the requested time period
@@ -193,12 +194,12 @@ class TransactionJsonService {
         AggregateQuery query = toChartQuery(request, DataKind.GENERAL);
         long liveCaptureTime = clock.currentTimeMillis();
         List<ThroughputAggregate> throughputAggregates =
-                transactionCommonService.getThroughputAggregates(agentRollupId, query, autoRefresh);
+                transactionCommonService.getThroughputAggregates(agentRollupId, query, autoRefresh).toCompletableFuture().get();
         if (throughputAggregates.isEmpty() && fallBackToLargestAggregates(query)) {
             // fall back to largest aggregates in case expiration settings have recently changed
             query = withLargestRollupLevel(query);
             throughputAggregates = transactionCommonService.getThroughputAggregates(agentRollupId,
-                    query, autoRefresh);
+                    query, autoRefresh).toCompletableFuture().get();
             if (!throughputAggregates.isEmpty() && ignoreFallBackData(query,
                     Iterables.getLast(throughputAggregates).captureTime())) {
                 // this is probably data from before the requested time period
@@ -239,12 +240,12 @@ class TransactionJsonService {
             @BindRequest TransactionDataRequest request) throws Exception {
         AggregateQuery query = toQuery(request, DataKind.QUERY);
         QueryCollector queryCollector =
-                transactionCommonService.getMergedQueries(agentRollupId, query);
+                transactionCommonService.getMergedQueries(agentRollupId, query).toCompletableFuture().join();
         List<MutableQuery> queries = queryCollector.getSortedAndTruncatedQueries();
         if (queries.isEmpty() && fallBackToLargestAggregates(query)) {
             // fall back to largest aggregates in case expiration settings have recently changed
             query = withLargestRollupLevel(query);
-            queryCollector = transactionCommonService.getMergedQueries(agentRollupId, query);
+            queryCollector = transactionCommonService.getMergedQueries(agentRollupId, query).toCompletableFuture().join();
             queries = queryCollector.getSortedAndTruncatedQueries();
             if (ignoreFallBackData(query, queryCollector.getLastCaptureTime())) {
                 // this is probably data from before the requested time period
@@ -262,7 +263,7 @@ class TransactionJsonService {
                     .totalRows(loopQuery.hasTotalRows() ? loopQuery.getTotalRows() : null)
                     .build());
         }
-        if (queryList.isEmpty() && aggregateRepository.shouldHaveQueries(agentRollupId, query)) {
+        if (queryList.isEmpty() && aggregateRepository.shouldHaveQueries(agentRollupId, query).toCompletableFuture().get()) {
             return "{\"overwritten\":true}";
         }
         StringBuilder sb = new StringBuilder();
@@ -279,7 +280,7 @@ class TransactionJsonService {
     String getQueryText(@BindAgentRollupId String agentRollupId,
             @BindRequest FullQueryTextRequest request) throws Exception {
         String fullQueryText =
-                transactionCommonService.readFullQueryText(agentRollupId, request.fullTextSha1());
+                transactionCommonService.readFullQueryText(agentRollupId, request.fullTextSha1(), CassandraProfile.web).toCompletableFuture().get();
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
@@ -301,14 +302,14 @@ class TransactionJsonService {
             @BindRequest TransactionDataRequest request) throws Exception {
         AggregateQuery query = toQuery(request, DataKind.SERVICE_CALL);
         ServiceCallCollector serviceCallCollector =
-                transactionCommonService.getMergedServiceCalls(agentRollupId, query);
+                transactionCommonService.getMergedServiceCalls(agentRollupId, query).toCompletableFuture().join();
         List<MutableServiceCall> serviceCalls =
                 serviceCallCollector.getSortedAndTruncatedServiceCalls();
         if (serviceCalls.isEmpty() && fallBackToLargestAggregates(query)) {
             // fall back to largest aggregates in case expiration settings have recently changed
             query = withLargestRollupLevel(query);
             serviceCallCollector =
-                    transactionCommonService.getMergedServiceCalls(agentRollupId, query);
+                    transactionCommonService.getMergedServiceCalls(agentRollupId, query).toCompletableFuture().join();
             serviceCalls = serviceCallCollector.getSortedAndTruncatedServiceCalls();
             if (ignoreFallBackData(query, serviceCallCollector.getLastCaptureTime())) {
                 // this is probably data from before the requested time period
@@ -332,7 +333,7 @@ class TransactionJsonService {
             }
         });
         if (serviceCallList.isEmpty()
-                && aggregateRepository.shouldHaveServiceCalls(agentRollupId, query)) {
+                && aggregateRepository.shouldHaveServiceCalls(agentRollupId, query).toCompletableFuture().get()) {
             return "{\"overwritten\":true}";
         }
         StringBuilder sb = new StringBuilder();
@@ -430,13 +431,13 @@ class TransactionJsonService {
                         DataKind.GENERAL))
                 .build();
         OverallSummaryCollector overallSummaryCollector =
-                transactionCommonService.readOverallSummary(agentRollupId, query, autoRefresh);
+                transactionCommonService.readOverallSummary(agentRollupId, query, autoRefresh).toCompletableFuture().join();
         OverallSummary overallSummary = overallSummaryCollector.getOverallSummary();
         if (overallSummary.transactionCount() == 0 && fallBackToLargestAggregate(query)) {
             // fall back to largest aggregates in case expiration settings have recently changed
             query = withLargestRollupLevel(query);
             overallSummaryCollector =
-                    transactionCommonService.readOverallSummary(agentRollupId, query, autoRefresh);
+                    transactionCommonService.readOverallSummary(agentRollupId, query, autoRefresh).toCompletableFuture().join();
             overallSummary = overallSummaryCollector.getOverallSummary();
             if (ignoreFallBackData(query, overallSummaryCollector.getLastCaptureTime())) {
                 // this is probably data from before the requested time period
@@ -450,7 +451,7 @@ class TransactionJsonService {
         }
         Result<TransactionNameSummary> queryResult = transactionCommonService
                 .readTransactionNameSummaries(agentRollupId, query, request.sortOrder(),
-                        request.limit(), autoRefresh);
+                        request.limit(), autoRefresh, CassandraProfile.web).toCompletableFuture().join();
         StringBuilder sb = new StringBuilder();
         JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb));
         try {
@@ -580,11 +581,11 @@ class TransactionJsonService {
     private boolean isProfileOverwritten(TransactionProfileRequest request, String agentRollupId,
             AggregateQuery query) throws Exception {
         if (request.auxiliary()
-                && aggregateRepository.shouldHaveAuxThreadProfile(agentRollupId, query)) {
+                && aggregateRepository.shouldHaveAuxThreadProfile(agentRollupId, query).toCompletableFuture().get()) {
             return true;
         }
         if (!request.auxiliary()
-                && aggregateRepository.shouldHaveMainThreadProfile(agentRollupId, query)) {
+                && aggregateRepository.shouldHaveMainThreadProfile(agentRollupId, query).toCompletableFuture().get()) {
             return true;
         }
         return false;

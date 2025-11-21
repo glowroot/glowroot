@@ -1,12 +1,12 @@
 /**
  * Copyright 2018 the original author or authors.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 package org.glowroot.agent.plugin.kafka;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
 
 import com.google.common.base.Stopwatch;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -32,25 +28,45 @@ import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.LongSerializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
-
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
+import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.testcontainers.containers.KafkaContainer;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ExtendWith(KafkaExtension.class)
 public class KafkaPluginIT {
+
+    public static final KafkaContainer kafka
+            = (KafkaContainer) new KafkaContainer("5.2.5").withExposedPorts(9093);
 
     private static Container container;
 
     @BeforeAll
-    public static void setUp() {
-        container = KafkaExtension.getContainer();
+    public static void beforeAll() {
+        kafka.start();
+    }
+
+    @AfterAll
+    public static void afterAll() {
+        try {
+            container.close();
+        } catch (Exception e) {
+        }
+        kafka.stop();
+    }
+
+    @BeforeEach
+    public void setUp() throws Exception {
+        container = Containers.create();
     }
 
     @AfterEach

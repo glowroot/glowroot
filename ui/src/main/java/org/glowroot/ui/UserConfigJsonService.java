@@ -17,6 +17,7 @@ package org.glowroot.ui;
 
 import java.security.GeneralSecurityException;
 import java.util.List;
+import java.util.concurrent.CompletionException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
@@ -25,6 +26,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +70,7 @@ class UserConfigJsonService {
             return getUserConfigInternal(username.get());
         } else {
             List<UserConfigDto> responses = Lists.newArrayList();
-            List<UserConfig> userConfigs = configRepository.getUserConfigs();
+            List<UserConfig> userConfigs = configRepository.getUserConfigs().toCompletableFuture().join();
             userConfigs = orderingByName.immutableSortedCopy(userConfigs);
             for (UserConfig userConfig : userConfigs) {
                 responses.add(UserConfigDto.create(userConfig));
@@ -81,7 +83,7 @@ class UserConfigJsonService {
     String getAllRoleNames() throws Exception {
         return mapper.writeValueAsString(ImmutableAllRolesResponse.builder()
                 .allRoles(getAllRoleNamesInternal())
-                .ldapAvailable(!configRepository.getLdapConfig().host().isEmpty())
+                .ldapAvailable(!configRepository.getLdapConfig().toCompletableFuture().join().host().isEmpty())
                 .build());
     }
 
@@ -89,7 +91,13 @@ class UserConfigJsonService {
     String addUser(@BindRequest UserConfigDto userConfigDto) throws Exception {
         UserConfig userConfig = userConfigDto.convert(null);
         try {
-            configRepository.insertUserConfig(userConfig);
+            try {
+                configRepository.insertUserConfig(userConfig, CassandraProfile.web).toCompletableFuture().join();
+            } catch(CompletionException e) {
+                if (e.getCause() instanceof DuplicateUsernameException) {
+                    throw (DuplicateUsernameException) e.getCause();
+                }
+            }
         } catch (DuplicateUsernameException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
@@ -100,14 +108,14 @@ class UserConfigJsonService {
 
     @POST(path = "/backend/admin/users/update", permission = "admin:edit:user")
     String updateUser(@BindRequest UserConfigDto userConfigDto) throws Exception {
-        UserConfig existingUserConfig = configRepository.getUserConfig(userConfigDto.username());
+        UserConfig existingUserConfig = configRepository.getUserConfig(userConfigDto.username()).toCompletableFuture().join();
         if (existingUserConfig == null) {
             throw new UserNotFoundException();
         }
         UserConfig userConfig = userConfigDto.convert(existingUserConfig);
         String version = userConfigDto.version().get();
         try {
-            configRepository.updateUserConfig(userConfig, version);
+            configRepository.updateUserConfig(userConfig, version, CassandraProfile.web).toCompletableFuture().join();
         } catch (DuplicateUsernameException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
@@ -119,7 +127,7 @@ class UserConfigJsonService {
     @POST(path = "/backend/admin/users/remove", permission = "admin:edit:user")
     String removeUser(@BindRequest UserConfigRequest request) throws Exception {
         try {
-            configRepository.deleteUserConfig(request.username().get());
+            configRepository.deleteUserConfig(request.username().get(), CassandraProfile.web).toCompletableFuture().join();
         } catch (CannotDeleteLastUserException e) {
             logger.debug(e.getMessage(), e);
             return "{\"errorCannotDeleteLastUser\":true}";
@@ -128,20 +136,20 @@ class UserConfigJsonService {
     }
 
     private String getUserConfigInternal(String username) throws Exception {
-        UserConfig userConfig = configRepository.getUserConfig(username);
+        UserConfig userConfig = configRepository.getUserConfig(username).toCompletableFuture().join();
         if (userConfig == null) {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
         }
         return mapper.writeValueAsString(ImmutableUserConfigResponse.builder()
                 .config(UserConfigDto.create(userConfig))
                 .allRoles(getAllRoleNamesInternal())
-                .ldapAvailable(!configRepository.getLdapConfig().host().isEmpty())
+                .ldapAvailable(!configRepository.getLdapConfig().toCompletableFuture().join().host().isEmpty())
                 .build());
     }
 
-    private List<String> getAllRoleNamesInternal() throws Exception {
+    private List<String> getAllRoleNamesInternal() {
         List<String> roleNames = Lists.newArrayList();
-        for (RoleConfig roleConfig : configRepository.getRoleConfigs()) {
+        for (RoleConfig roleConfig : configRepository.getRoleConfigs().toCompletableFuture().join()) {
             roleNames.add(roleConfig.name());
         }
         return roleNames;

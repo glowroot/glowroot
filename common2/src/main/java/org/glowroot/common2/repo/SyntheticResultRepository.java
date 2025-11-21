@@ -17,6 +17,7 @@ package org.glowroot.common2.repo;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 
 public interface SyntheticResultRepository {
 
@@ -24,6 +25,6 @@ public interface SyntheticResultRepository {
             throws Exception;
 
     // from is INCLUSIVE
-    public List<SyntheticResult> readSyntheticResults(String agentRollupId,
-            String syntheticMonitorId, long from, long to, int rollupLevel) throws Exception;
+    public CompletionStage<List<SyntheticResult>> readSyntheticResults(String agentRollupId,
+                                                                       String syntheticMonitorId, long from, long to, int rollupLevel) throws Exception;
 }

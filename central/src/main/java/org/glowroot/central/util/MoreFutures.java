@@ -52,22 +52,14 @@ public class MoreFutures {
                 );
     }
 
-    public static CompletableFuture<?> rollupAsync(List<CompletableFuture<AsyncResultSet>> futures,
-                                                   Executor asyncExecutor, DoRollupList function) {
-        return transformAsync(CompletableFutures.allAsList(futures), asyncExecutor, function::execute);
+    public static CompletableFuture<?> rollupAsync(List<CompletableFuture<AsyncResultSet>> futures) {
+        return CompletableFutures.allAsList(futures);
     }
 
     private static <V, R> CompletableFuture<R> transformAsync(CompletableFuture<V> future,
                                                               Executor asyncExecutor, Function<V, CompletableFuture<R>> function) {
-        boolean inRollupThread = Session.isInRollupThread();
         return future.thenComposeAsync(input -> {
-                boolean priorInRollupThread = Session.isInRollupThread();
-                Session.setInRollupThread(inRollupThread);
-                try {
-                    return function.apply(input);
-                } finally {
-                    Session.setInRollupThread(priorInRollupThread);
-                }
+                return function.apply(input);
             },
             // calls to Session.readAsync() inside of the function could block due to the
             // per-thread concurrent limit, so this needs to be executed in its own thread, not

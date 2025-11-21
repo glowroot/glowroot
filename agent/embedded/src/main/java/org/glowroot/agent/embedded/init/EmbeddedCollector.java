@@ -18,7 +18,9 @@ package org.glowroot.agent.embedded.init;
 import java.io.File;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
+import org.glowroot.common2.repo.CassandraProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,9 +82,9 @@ class EmbeddedCollector implements Collector {
     @Override
     public void collectAggregates(AggregateReader aggregateReader) throws Exception {
         aggregateDao.store(aggregateReader);
-        alertingService.checkForDeletedAlerts(AGENT_ID);
-        if (!isCurrentlyDisabled()) {
-            for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID)) {
+        alertingService.checkForDeletedAlerts(AGENT_ID, CassandraProfile.web);
+        if (!isCurrentlyDisabled().toCompletableFuture().join()) {
+            for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID).toCompletableFuture().join()) {
                 AlertCondition alertCondition = alertConfig.getCondition();
                 if (isAggregateMetricCondition(alertCondition)) {
                     try {
@@ -90,10 +92,7 @@ class EmbeddedCollector implements Collector {
                                 configRepository.getEmbeddedAdminGeneralConfig()
                                         .agentDisplayNameOrDefault(),
                                 alertConfig, alertCondition.getMetricCondition(),
-                                aggregateReader.captureTime());
-                    } catch (InterruptedException e) {
-                        // probably shutdown requested
-                        throw e;
+                                aggregateReader.captureTime(), CassandraProfile.collector).toCompletableFuture().join();
                     } catch (Exception e) {
                         logger.error(e.getMessage(), e);
                     }
@@ -118,19 +117,16 @@ class EmbeddedCollector implements Collector {
         for (GaugeValue gaugeValue : gaugeValues) {
             maxCaptureTime = Math.max(maxCaptureTime, gaugeValue.getCaptureTime());
         }
-        alertingService.checkForDeletedAlerts(AGENT_ID);
-        if (!isCurrentlyDisabled()) {
-            for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID)) {
+        alertingService.checkForDeletedAlerts(AGENT_ID, CassandraProfile.web);
+        if (!isCurrentlyDisabled().toCompletableFuture().join()) {
+            for (AlertConfig alertConfig : configRepository.getAlertConfigs(AGENT_ID).toCompletableFuture().join()) {
                 AlertCondition alertCondition = alertConfig.getCondition();
                 if (isGaugeMetricCondition(alertCondition)) {
                     try {
                         alertingService.checkMetricAlert("", AGENT_ID,
                                 configRepository.getEmbeddedAdminGeneralConfig()
                                         .agentDisplayNameOrDefault(),
-                                alertConfig, alertCondition.getMetricCondition(), maxCaptureTime);
-                    } catch (InterruptedException e) {
-                        // probably shutdown requested
-                        throw e;
+                                alertConfig, alertCondition.getMetricCondition(), maxCaptureTime, CassandraProfile.collector).toCompletableFuture().join();
                     } catch (Exception e) {
                         logger.error(e.getMessage(), e);
                     }
@@ -149,9 +145,10 @@ class EmbeddedCollector implements Collector {
         // do nothing, already logging locally through ConsoleAppender and RollingFileAppender
     }
 
-    private boolean isCurrentlyDisabled() throws Exception {
-        Long disabledUntilTime = alertingDisabledDao.getAlertingDisabledUntilTime(AGENT_ID);
-        return disabledUntilTime != null && disabledUntilTime > clock.currentTimeMillis();
+    private CompletionStage<Boolean> isCurrentlyDisabled() {
+        return alertingDisabledDao.getAlertingDisabledUntilTime(AGENT_ID, CassandraProfile.web).thenApply(disabledUntilTime -> {
+            return disabledUntilTime != null && disabledUntilTime > clock.currentTimeMillis();
+        });
     }
 
     private static boolean isAggregateMetricCondition(AlertCondition alertCondition) {

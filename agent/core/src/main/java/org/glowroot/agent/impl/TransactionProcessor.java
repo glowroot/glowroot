@@ -15,31 +15,28 @@
  */
 package org.glowroot.agent.impl;
 
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import javax.annotation.concurrent.GuardedBy;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.glowroot.agent.collector.Collector;
 import org.glowroot.agent.config.ConfigService;
 import org.glowroot.agent.util.RateLimitedLogger;
 import org.glowroot.agent.util.ThreadFactories;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.concurrent.GuardedBy;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TransactionProcessor {
@@ -50,6 +47,8 @@ public class TransactionProcessor {
     private static final int TRANSACTION_PENDING_LIMIT = 1000;
     // back pressure on writing captured data to disk/network
     private static final int AGGREGATE_PENDING_LIMIT = 5;
+
+    final Object monitor = new Object();
 
     private volatile AggregateIntervalCollector activeIntervalCollector;
 
@@ -82,16 +81,16 @@ public class TransactionProcessor {
     private volatile boolean closed;
 
     public TransactionProcessor(Collector collector, TraceCollector traceCollector,
-            ConfigService configService, long aggregateIntervalMillis, Clock clock) {
+                                ConfigService configService, long aggregateIntervalMillis, Clock clock) {
         this.collector = collector;
         this.traceCollector = traceCollector;
         this.configService = configService;
         this.clock = clock;
         this.aggregateIntervalMillis = aggregateIntervalMillis;
         processingExecutor = Executors
-                .newSingleThreadExecutor(ThreadFactories.create("Glowroot-Aggregate-Processing"));
+                .newFixedThreadPool(1, ThreadFactories.create("Glowroot-Aggregate-Processing"));
         flushingExecutor = Executors
-                .newSingleThreadExecutor(ThreadFactories.create("Glowroot-Aggregate-Flushing"));
+                .newFixedThreadPool(1, ThreadFactories.create("Glowroot-Aggregate-Flushing"));
         activeIntervalCollector =
                 new AggregateIntervalCollector(clock.currentTimeMillis(), aggregateIntervalMillis,
                         configService.getAdvancedConfig().maxTransactionAggregates(),
@@ -112,7 +111,7 @@ public class TransactionProcessor {
 
     // from is non-inclusive
     public List<AggregateIntervalCollector> getOrderedIntervalCollectorsInRange(long from,
-            long to) {
+                                                                                long to) {
         List<AggregateIntervalCollector> intervalCollectors = Lists.newArrayList();
         for (AggregateIntervalCollector intervalCollector : getOrderedAllIntervalCollectors()) {
             long captureTime = intervalCollector.getCaptureTime();
@@ -142,6 +141,9 @@ public class TransactionProcessor {
                 tail.next = newTail;
                 tail = newTail;
                 queueLength++;
+                synchronized (monitor) {
+                    monitor.notifyAll();
+                }
             } else {
                 exceededLimit = true;
             }
@@ -173,6 +175,9 @@ public class TransactionProcessor {
     @OnlyUsedByTests
     public void close() throws InterruptedException {
         closed = true;
+        synchronized (monitor) {
+            monitor.notifyAll();
+        }
         processingExecutor.shutdown();
         if (!processingExecutor.awaitTermination(10, SECONDS)) {
             throw new IllegalStateException("Could not terminate executor");
@@ -190,7 +195,12 @@ public class TransactionProcessor {
         public void run() {
             while (!closed) {
                 try {
-                    processOne();
+                    boolean hasNext = processOne();
+                    if (!hasNext) {
+                        synchronized (monitor) {
+                            monitor.wait(Math.min(100, aggregateIntervalMillis));
+                        }
+                    }
                 } catch (Throwable e) {
                     // log and continue processing
                     logger.error(e.getMessage(), e);
@@ -198,16 +208,13 @@ public class TransactionProcessor {
             }
         }
 
-        private void processOne() throws InterruptedException {
+        private boolean processOne() {
             PendingTransaction pendingTransaction = head.next;
             if (pendingTransaction == null) {
                 if (clock.currentTimeMillis() > activeIntervalCollector.getCaptureTime()) {
                     maybeEndOfInterval();
-                } else {
-                    // TODO benchmark other alternatives to sleep (e.g. wait/notify)
-                    MILLISECONDS.sleep(1);
                 }
-                return;
+                return false;
             }
             // remove transaction from list of active transactions
             // used to do this at the very end of Transaction.end(), but moved to here to remove the
@@ -222,12 +229,15 @@ public class TransactionProcessor {
 
             transaction.removeFromActiveTransactions();
 
+            boolean hasNext = false;
             // remove head
             synchronized (queueLock) {
                 PendingTransaction next = pendingTransaction.next;
                 head.next = next;
                 if (next == null) {
                     tail = head;
+                } else {
+                    hasNext = true;
                 }
                 queueLength--;
             }
@@ -235,6 +245,7 @@ public class TransactionProcessor {
                 flushAndResetActiveIntervalCollector(pendingTransaction.captureTime);
             }
             activeIntervalCollector.add(transaction);
+            return hasNext;
         }
 
         private void maybeEndOfInterval() {

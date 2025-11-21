@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.14.1-beta.3-SNAPSHOT</version>
+    <version>0.14.5-beta.3-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -24,7 +24,7 @@
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -60,6 +60,9 @@
                 @org.glowroot.agent.api.Instrumentation.TraceEntry annotations that are present in
                 the glowroot-ui to not work -->
               <include>org.glowroot:glowroot-agent-api</include>
+              <include>com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer</include>
+              <include>com.googlecode.owasp-java-html-sanitizer:java8-shim</include>
+              <include>com.googlecode.owasp-java-html-sanitizer:java10-shim</include>
               <include>com.h2database:h2</include>
               <include>com.ning:compress-lzf</include>
               <include>com.sun.mail:mailapi</include>
@@ -69,6 +72,24 @@
             </includes>
           </artifactSet>
           <filters>
+            <filter>
+              <artifact>com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer</artifact>
+              <excludes>
+                <exclude>META-INF/MANIFEST.MF</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.googlecode.owasp-java-html-sanitizer:java8-shim</artifact>
+              <excludes>
+                <exclude>META-INF/MANIFEST.MF</exclude>
+              </excludes>
+            </filter>
+            <filter>
+              <artifact>com.googlecode.owasp-java-html-sanitizer:java10-shim</artifact>
+              <excludes>
+                <exclude>META-INF/MANIFEST.MF</exclude>
+              </excludes>
+            </filter>
             <filter>
               <artifact>com.h2database:h2</artifact>
               <excludes>
@@ -81,8 +102,7 @@
                 <exclude>META-INF/gfprobe-provider.xml</exclude>
                 <exclude>META-INF/javamail.charset.map</exclude>
                 <exclude>META-INF/mailcap</exclude>
-                <exclude>META-INF/LICENSE.md</exclude>
-                <exclude>META-INF/NOTICE.md</exclude>
+                <exclude>META-INF/LICENSE.txt</exclude>
                 <!-- pom.xml is only present in sources jar -->
                 <exclude>pom.xml</exclude>
               </excludes>
@@ -94,19 +114,17 @@
                   glowroot.javamail.address.map and glowroot.javamail.providers -->
                 <exclude>META-INF/javamail.address.map</exclude>
                 <exclude>META-INF/javamail.providers</exclude>
-                <exclude>META-INF/LICENSE.md</exclude>
-                <exclude>META-INF/NOTICE.md</exclude>
+                <exclude>META-INF/LICENSE.txt</exclude>
                 <!-- pom.xml is only present in sources jar -->
                 <exclude>pom.xml</exclude>
               </excludes>
             </filter>
             <filter>
-              <artifact>com.sun.activation:jakarta.activation</artifact>
+              <artifact>com.sun.activation:javax.activation</artifact>
               <excludes>
                 <exclude>META-INF/mailcap.default</exclude>
                 <exclude>META-INF/mimetypes.default</exclude>
-                <exclude>META-INF/LICENSE.md</exclude>
-                <exclude>META-INF/NOTICE.md</exclude>
+                <exclude>META-INF/LICENSE.txt</exclude>
               </excludes>
             </filter>
           </filters>
@@ -169,6 +187,14 @@
                 <exclude>org.h2.res.*</exclude>
                 <exclude>org.h2.server.web.res.*</exclude>
               </excludes>
+            </relocation>
+            <relocation>
+              <pattern>org.owasp.html</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.shaded.org.owasp.html</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.owasp.shim</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.shaded.org.owasp.shim</shadedPattern>
             </relocation>
             <relocation>
               <!-- shade thread names to make it easy to identify glowroot threads -->

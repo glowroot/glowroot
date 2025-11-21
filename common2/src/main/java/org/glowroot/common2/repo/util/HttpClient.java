@@ -72,7 +72,7 @@ public class HttpClient {
     }
 
     public void get(String url) throws Exception {
-        postOrGet(url, null, null, configRepository.getHttpProxyConfig(), null);
+        postOrGet(url, null, null, configRepository.getHttpProxyConfig().toCompletableFuture().join(), null);
     }
 
     // optional passwordOverride can be passed in to test HTTP proxy from
@@ -84,7 +84,7 @@ public class HttpClient {
     }
 
     void post(String url, byte[] content, String contentType) throws Exception {
-        postOrGet(url, content, contentType, configRepository.getHttpProxyConfig(), null);
+        postOrGet(url, content, contentType, configRepository.getHttpProxyConfig().toCompletableFuture().join(), null);
     }
 
     private String postOrGet(String url, byte /*@Nullable*/ [] content,

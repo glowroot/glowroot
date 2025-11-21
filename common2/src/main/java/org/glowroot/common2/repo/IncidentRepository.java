@@ -16,6 +16,7 @@
 package org.glowroot.common2.repo;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
@@ -26,21 +27,21 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 
 public interface IncidentRepository {
 
-    void insertOpenIncident(String agentRollupId, AlertCondition condition, AlertSeverity severity,
-            AlertNotification notification, long openTime) throws Exception;
+    CompletionStage<?> insertOpenIncident(String agentRollupId, AlertCondition condition, AlertSeverity severity,
+                                          AlertNotification notification, long openTime, CassandraProfile profile);
 
-    @Nullable
-    OpenIncident readOpenIncident(String agentRollupId, AlertCondition condition,
-            AlertSeverity severity) throws Exception;
 
-    List<OpenIncident> readOpenIncidents(String agentRollupId) throws Exception;
+    CompletionStage<OpenIncident> readOpenIncident(String agentRollupId, AlertCondition condition,
+            AlertSeverity severity, CassandraProfile profile);
+
+    CompletionStage<List<OpenIncident>> readOpenIncidents(String agentRollupId, CassandraProfile profile);
 
     // this is used by UI
-    List<OpenIncident> readAllOpenIncidents() throws Exception;
+    CompletionStage<List<OpenIncident>> readAllOpenIncidents(CassandraProfile profile);
 
-    void resolveIncident(OpenIncident openIncident, long resolveTime) throws Exception;
+    CompletionStage<?> resolveIncident(OpenIncident openIncident, long resolveTime, CassandraProfile profile);
 
-    List<ResolvedIncident> readResolvedIncidents(long from) throws Exception;
+    CompletionStage<List<ResolvedIncident>> readResolvedIncidents(long from);
 
     @Value.Immutable
     interface OpenIncident {

@@ -61,7 +61,7 @@ class CollectorLogbackAppender extends UnsynchronizedAppenderBase<ILoggingEvent>
     CollectorLogbackAppender(CollectorProxy collector) {
         this.collector = collector;
         flushingExecutor =
-                Executors.newSingleThreadExecutor(ThreadFactories.create("Glowroot-Log-Flushing"));
+                Executors.newFixedThreadPool(1, ThreadFactories.create("Glowroot-Log-Flushing"));
     }
 
     @Override

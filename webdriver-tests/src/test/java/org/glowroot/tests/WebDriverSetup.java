@@ -15,19 +15,6 @@
  */
 package org.glowroot.tests;
 
-import java.io.EOFException;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.URL;
-import java.security.SecureRandom;
-import java.sql.Driver;
-import java.time.Duration;
-import java.util.Properties;
-
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
@@ -43,12 +30,19 @@ import com.saucelabs.common.SauceOnDemandAuthentication;
 import com.saucelabs.common.SauceOnDemandSessionIdProvider;
 import com.saucelabs.junit.SauceOnDemandTestWatcher;
 import kr.motd.maven.os.Detector;
+import org.apache.commons.io.FileUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultRedirectStrategy;
 import org.apache.http.impl.client.HttpClients;
-import org.glowroot.central.util.CassandraProfile;
+import org.glowroot.agent.it.harness.Container;
+import org.glowroot.agent.it.harness.Containers;
+import org.glowroot.agent.it.harness.impl.JavaagentContainer;
+import org.glowroot.agent.it.harness.impl.LocalContainer;
+import org.glowroot.central.CentralModule;
+import org.glowroot.central.util.Session;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.junit.rules.TestWatcher;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
@@ -62,21 +56,23 @@ import org.rauschig.jarchivelib.ArchiverFactory;
 import org.rauschig.jarchivelib.CompressionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.CassandraContainer;
 
-import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
-import org.glowroot.agent.it.harness.impl.JavaagentContainer;
-import org.glowroot.agent.it.harness.impl.LocalContainer;
-import org.glowroot.central.CentralModule;
-import org.glowroot.central.util.Session;
+import java.io.*;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.URL;
+import java.security.SecureRandom;
+import java.time.Duration;
+import java.util.Properties;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class WebDriverSetup {
 
-    protected static final boolean useCentral =
-            Boolean.getBoolean("glowroot.internal.webdriver.useCentral");
+    protected static final boolean useCentral = true;
+            //Boolean.getBoolean("glowroot.internal.webdriver.useCentral");
 
     // travis build is currently failing with jbrowser driver
     private static final boolean USE_JBROWSER_DRIVER = false;
@@ -84,7 +80,7 @@ public class WebDriverSetup {
     private static final String GECKO_DRIVER_VERSION = "0.33.0";
 
     private static final Logger logger = LoggerFactory.getLogger(WebDriverSetup.class);
-    private static final int MAX_CONCURRENT_QUERIES = 1024;
+
 
     static {
         // shorter time so aggregates and gauges will be collected during BasicSmokeIT
@@ -92,14 +88,14 @@ public class WebDriverSetup {
         System.setProperty("glowroot.internal.gaugeCollectionIntervalMillis", "1000");
     }
 
-    public static WebDriverSetup create() throws Exception {
+    public static WebDriverSetup create(CassandraContainer cassandra) throws Exception {
         if (!SharedSetupRunListener.useSharedSetup()) {
-            return createSetup(false);
+            return createSetup(false, cassandra);
         }
         WebDriverSetup sharedSetup = SharedSetupRunListener.getSharedSetup();
         if (sharedSetup == null) {
-            sharedSetup = createSetup(true);
-            SharedSetupRunListener.setSharedSetup(sharedSetup);
+            sharedSetup = createSetup(true, cassandra);
+            SharedSetupRunListener.setSharedSetup(sharedSetup, cassandra);
         } else {
             sharedSetup.resetDriver();
         }
@@ -115,7 +111,7 @@ public class WebDriverSetup {
     private String remoteWebDriverSessionId;
 
     private WebDriverSetup(CentralModule centralModule, Container container, int uiPort,
-            boolean shared, WebDriver driver) throws Exception {
+                           boolean shared, WebDriver driver) throws Exception {
         this.centralModule = centralModule;
         this.container = container;
         this.uiPort = uiPort;
@@ -123,11 +119,11 @@ public class WebDriverSetup {
         this.driver = driver;
     }
 
-    public void close() throws Exception {
-        close(false);
+    public void close(CassandraContainer cassandra) throws Exception {
+        close(false, cassandra);
     }
 
-    public void close(boolean evenIfShared) throws Exception {
+    public void close(boolean evenIfShared, CassandraContainer cassandra) throws Exception {
         if (shared && !evenIfShared) {
             // this is the shared setup and will be closed at the end of the run
             return;
@@ -138,7 +134,7 @@ public class WebDriverSetup {
         container.close();
         if (useCentral) {
             centralModule.shutdown(false);
-            CassandraWrapper.stop();
+            try (CassandraContainer cas = cassandra) {}
         }
     }
 
@@ -177,7 +173,8 @@ public class WebDriverSetup {
 
     public TestWatcher getSauceLabsTestWatcher() {
         if (!SauceLabs.useSauceLabs()) {
-            return new TestWatcher() {};
+            return new TestWatcher() {
+            };
         }
         String sauceUsername = System.getenv("SAUCE_USERNAME");
         String sauceAccessKey = System.getenv("SAUCE_ACCESS_KEY");
@@ -199,32 +196,27 @@ public class WebDriverSetup {
         }
     }
 
-    private static WebDriverSetup createSetup(boolean shared) throws Exception {
+    private static WebDriverSetup createSetup(boolean shared, CassandraContainer cassandra) throws Exception {
         int uiPort = getAvailablePort();
         File testDir = Files.createTempDir();
         CentralModule centralModule;
         Container container;
         if (useCentral) {
-            CassandraWrapper.start();
+            cassandra.start();
             CqlSessionBuilder cqlSessionBuilder = CqlSession.builder()
-                    .addContactPoint(new InetSocketAddress("127.0.0.1", 9042))
-                    .withLocalDatacenter("datacenter1")
-                    .withConfigLoader(DriverConfigLoader.programmaticBuilder()
-                            .startProfile(CassandraProfile.SLOW.name())
-                            .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(60))
-                            .withBoolean(DefaultDriverOption.REQUEST_WARN_IF_SET_KEYSPACE, false)
-                            .endProfile()
-                            .build());
-            Session session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
-                    MAX_CONCURRENT_QUERIES, 0);
-            session.updateSchemaWithRetry("drop table if exists agent_config");
-            session.updateSchemaWithRetry("drop table if exists user");
-            session.updateSchemaWithRetry("drop table if exists role");
-            session.updateSchemaWithRetry("drop table if exists central_config");
-            session.updateSchemaWithRetry("drop table if exists agent");
-            session.close();
+                    .addContactPoint(cassandra.getContactPoint())
+                    .withLocalDatacenter(cassandra.getLocalDatacenter())
+                    .withConfigLoader(DriverConfigLoader.fromClasspath("datastax-driver.conf"));
+            try (Session session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
+                    0)) {
+                session.updateSchemaWithRetry("drop table if exists agent_config");
+                session.updateSchemaWithRetry("drop table if exists user");
+                session.updateSchemaWithRetry("drop table if exists role");
+                session.updateSchemaWithRetry("drop table if exists central_config");
+                session.updateSchemaWithRetry("drop table if exists agent");
+            }
             int grpcPort = getAvailablePort();
-            centralModule = createCentralModule(uiPort, grpcPort);
+            centralModule = createCentralModule(uiPort, grpcPort, cassandra.getContactPoint().getHostString(), cassandra.getLocalDatacenter(), cassandra.getContactPoint().getPort());
             container = createContainerReportingToCentral(grpcPort, testDir);
         } else {
             centralModule = null;
@@ -279,7 +271,7 @@ public class WebDriverSetup {
         while (stopwatch.elapsed(SECONDS) < 10) {
             HttpGet request = new HttpGet("http://localhost:" + uiPort);
             try (CloseableHttpResponse response = httpClient.execute(request);
-                    InputStream content = response.getEntity().getContent()) {
+                 InputStream content = response.getEntity().getContent()) {
                 ByteStreams.exhaust(content);
                 lastException = null;
                 break;
@@ -294,18 +286,25 @@ public class WebDriverSetup {
         return container;
     }
 
-    private static CentralModule createCentralModule(int uiPort, int grpcPort) throws Exception {
+    private static CentralModule createCentralModule(int uiPort, int grpcPort, String contactPoints, String localDatacenter, int port) throws Exception {
         File centralDir = new File("target");
         File propsFile = new File(centralDir, "glowroot-central.properties");
-        PrintWriter props = new PrintWriter(propsFile);
-        props.println("cassandra.keyspace=glowroot_unit_tests");
-        byte[] bytes = new byte[16];
-        new SecureRandom().nextBytes(bytes);
-        props.println("cassandra.symmetricEncryptionKey="
-                + BaseEncoding.base16().lowerCase().encode(bytes));
-        props.println("grpc.httpPort=" + grpcPort);
-        props.println("ui.port=" + uiPort);
-        props.close();
+        try (PrintWriter props = new PrintWriter(propsFile)) {
+            props.println("cassandra.contactPoints="+contactPoints);
+            props.println("cassandra.localDatacenter="+localDatacenter);
+            props.println("cassandra.port="+port);
+            props.println("cassandra.keyspace=glowroot_unit_tests");
+            byte[] bytes = new byte[16];
+            new SecureRandom().nextBytes(bytes);
+            props.println("cassandra.symmetricEncryptionKey="
+                    + BaseEncoding.base16().lowerCase().encode(bytes));
+            props.println("grpc.httpPort=" + grpcPort);
+            props.println("ui.port=" + uiPort);
+        }
+        File datastaxFile = new File(centralDir, "datastax-driver.conf");
+        try (InputStream is = WebDriverSetup.class.getClassLoader().getResourceAsStream("datastax-driver.conf")) {
+            FileUtils.copyInputStreamToFile(is, datastaxFile);
+        }
         String prior = System.getProperty("glowroot.log.dir");
         try {
             System.setProperty("glowroot.log.dir", "target");
@@ -401,7 +400,7 @@ public class WebDriverSetup {
     }
 
     private static void downloadAndExtractGeckoDriver(File directory, String downloadFilenameSuffix,
-            String downloadFilenameExt, String optionalExt, Archiver archiver) throws IOException {
+                                                      String downloadFilenameExt, String optionalExt, Archiver archiver) throws IOException {
         // using System.out to make sure user sees why there is a delay here
         System.out.print("Downloading Mozilla geckodriver " + GECKO_DRIVER_VERSION + "...");
         URL url = new URL("https://github.com/mozilla/geckodriver/releases/download/v"

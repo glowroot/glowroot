@@ -17,6 +17,7 @@ package org.glowroot.agent.embedded.repo;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import com.google.common.collect.ImmutableList;
 
@@ -25,13 +26,13 @@ import org.glowroot.common2.repo.AgentDisplayRepository;
 public class AgentDisplayRepositoryImpl implements AgentDisplayRepository {
 
     @Override
-    public String readFullDisplay(String agentRollupId) {
-        return "";
+    public CompletionStage<String> readFullDisplay(String agentRollupId) {
+        return CompletableFuture.completedFuture("");
     }
 
     @Override
-    public List<String> readDisplayParts(String agentRollupId) {
-        return ImmutableList.of("");
+    public CompletableFuture<List<String>> readDisplayParts(String agentRollupId) {
+        return CompletableFuture.completedFuture(ImmutableList.of(""));
     }
 
     @Override

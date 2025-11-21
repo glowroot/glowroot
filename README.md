@@ -4,11 +4,11 @@ Glowroot
 ## Requirements
 
 * Java 8+ for agent
-* Java 11+ for glowroot-central
+* Java 17+ for glowroot-central
 
 ## Quick start
 
-1. Download and unzip [glowroot-0.14.1-beta.2-dist.zip](https://github.com/glowroot/glowroot/releases/download/v0.14.1-beta.2/glowroot-0.14.1-beta.2-dist.zip)
+1. Download and unzip [glowroot-0.14.5-beta.2-dist.zip](https://github.com/glowroot/glowroot/releases/download/v0.14.5-beta.2/glowroot-0.14.5-beta.2-dist.zip)
 2. Add `-javaagent:path/to/glowroot.jar` to your application's JVM args [[where are my application server's JVM args?](https://github.com/glowroot/glowroot/wiki/Where-are-my-application-server's-JVM-args%3F)]
 3. Check that the user account that runs the JVM has write access to the glowroot folder
 4. Start your application

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.CompletionException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
@@ -26,6 +27,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.*;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,13 +38,8 @@ import org.glowroot.common.live.LiveTraceRepository;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Version;
 import org.glowroot.common.util.Versions;
-import org.glowroot.common2.repo.AgentDisplayRepository;
-import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
-import org.glowroot.common2.repo.EnvironmentRepository;
-import org.glowroot.common2.repo.TraceAttributeNameRepository;
-import org.glowroot.common2.repo.TransactionTypeRepository;
 import org.glowroot.ui.HttpSessionManager.Authentication;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
@@ -130,22 +127,30 @@ class LayoutService {
         if (agentRollupId.endsWith("::")) {
             glowrootVersion = "";
         } else {
-            Environment environment = environmentRepository.read(agentRollupId);
+            Environment environment = environmentRepository.read(agentRollupId, CassandraProfile.web).toCompletableFuture().get();
             glowrootVersion = environment == null ? Version.UNKNOWN_VERSION
                     : environment.getJavaInfo().getGlowrootAgentVersion();
         }
         boolean configReadOnly;
         try {
-            configReadOnly = configRepository.isConfigReadOnly(agentRollupId);
+            try {
+                configReadOnly = configRepository.isConfigReadOnly(agentRollupId).toCompletableFuture().join();
+            } catch (CompletionException ce) {
+                if (ce.getCause() instanceof AgentConfigNotFoundException) {
+                    throw (AgentConfigNotFoundException) ce.getCause();
+                } else {
+                    throw ce;
+                }
+            }
         } catch (AgentConfigNotFoundException e) {
             configReadOnly = false;
         }
         Set<String> transactionTypes = Sets.newTreeSet();
-        transactionTypes.addAll(transactionTypeRepository.read(agentRollupId));
+        transactionTypes.addAll(transactionTypeRepository.read(agentRollupId).toCompletableFuture().join());
         transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(agentRollupId));
         transactionTypes.addAll(liveTraceRepository.getTransactionTypes(agentRollupId));
         transactionTypes.add(uiConfig.getDefaultTransactionType());
-        List<String> displayParts = agentDisplayRepository.readDisplayParts(agentRollupId);
+        List<String> displayParts = agentDisplayRepository.readDisplayParts(agentRollupId).get();
         String topLevelId = getTopLevelId(agentRollupId);
         String childDisplay;
         if (topLevelId.equals(agentRollupId)) {
@@ -189,7 +194,7 @@ class LayoutService {
         boolean showNavbarError = permissions.error().hasSomeAccess();
         boolean showNavbarJvm = permissions.jvm().hasSomeAccess();
         boolean showNavbarIncident =
-                permissions.incident() && !configRepository.getAlertConfigs(AGENT_ID).isEmpty();
+                permissions.incident() && !configRepository.getAlertConfigs(AGENT_ID).toCompletableFuture().join().isEmpty();
         // for now (for simplicity) reporting requires permission for ALL reportable metrics
         // (currently transaction:overview, error:overview and jvm:gauges)
         boolean showNavbarReport = permissions.transaction().overview()
@@ -198,7 +203,7 @@ class LayoutService {
         // a couple of special cases for embedded ui
         UiDefaultsConfig uiConfig = configRepository.getUiDefaultsConfig(AGENT_ID);
         Set<String> transactionTypes = Sets.newTreeSet();
-        transactionTypes.addAll(transactionTypeRepository.read(AGENT_ID));
+        transactionTypes.addAll(transactionTypeRepository.read(AGENT_ID).toCompletableFuture().join());
         transactionTypes.addAll(liveAggregateRepository.getTransactionTypes(AGENT_ID));
         transactionTypes.add(uiConfig.getDefaultTransactionType());
         String agentDisplay = getEmbeddedAgentDisplayName();
@@ -291,8 +296,8 @@ class LayoutService {
                 .central(central)
                 .offlineViewer(offlineViewer)
                 .glowrootVersion(version)
-                .loginEnabled(!offlineViewer && (configRepository.namedUsersExist()
-                        || !configRepository.getLdapConfig().host().isEmpty()))
+                .loginEnabled(!offlineViewer && (configRepository.namedUsersExist().toCompletableFuture().join()
+                        || !configRepository.getLdapConfig().toCompletableFuture().join().host().isEmpty()))
                 .addAllRollupConfigs(configRepository.getRollupConfigs())
                 .addAllRollupExpirationMillis(rollupExpirationMillis)
                 .addAllQueryAndServiceCallRollupExpirationMillis(

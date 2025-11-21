@@ -42,6 +42,7 @@ public class ThreadStatsComponent {
     private final long startingBlockedMillis;
     private final long startingWaitedMillis;
     private final long startingAllocatedBytes;
+    private final boolean isVirtualThread;
 
     private final @Nullable ThreadAllocatedBytes threadAllocatedBytes;
 
@@ -54,13 +55,13 @@ public class ThreadStatsComponent {
         threadId = Thread.currentThread().getId();
         ThreadInfo threadInfo = threadMXBean.getThreadInfo(threadId, 0);
         // thread info for current thread cannot be null
-        checkNotNull(threadInfo);
+        isVirtualThread = threadInfo == null;
         if (IS_THREAD_CPU_TIME_SUPPORTED) {
             startingCpuNanos = threadMXBean.getCurrentThreadCpuTime();
         } else {
             startingCpuNanos = -1;
         }
-        if (IS_THREAD_CONTENTION_MONITORING_SUPPORTED) {
+        if (IS_THREAD_CONTENTION_MONITORING_SUPPORTED && !isVirtualThread) {
             startingBlockedMillis = threadInfo.getBlockedTime();
             startingWaitedMillis = threadInfo.getWaitedTime();
         } else {
@@ -124,11 +125,11 @@ public class ThreadStatsComponent {
         long blockedMillis;
         long waitedMillis;
         ThreadInfo threadInfo = threadMXBean.getThreadInfo(threadId, 0);
-        if (threadInfo == null) {
+        if (threadInfo == null && !isVirtualThread) {
             // thread must have just recently terminated
             return new ThreadStats(0, 0, 0, 0);
         }
-        if (IS_THREAD_CONTENTION_MONITORING_SUPPORTED) {
+        if (IS_THREAD_CONTENTION_MONITORING_SUPPORTED && !isVirtualThread) {
             waitedMillis = getWaitedMillisInternal(threadInfo);
             blockedMillis = getBlockedMillisInternal(threadInfo);
         } else {

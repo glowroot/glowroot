@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.14.1-beta.3-SNAPSHOT</version>
+    <version>0.14.5-beta.3-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -23,7 +23,7 @@
         see details at https://github.com/pires/netty-tcnative-alpine#archived -->
       <artifactId>netty-tcnative-boringssl-static</artifactId>
       <classifier>linux-x86_64</classifier>
-      <!-- need to stick to version known to work with gRPC 1.56.0,
+      <!-- need to stick to version known to work with gRPC 1.60.0,
         see table at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
       <version>2.0.61.Final</version>
     </dependency>

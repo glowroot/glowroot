@@ -15,7 +15,8 @@
  */
 package org.glowroot.agent.dist;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
+
+import org.jspecify.annotations.Nullable;
 
 public class PluginConfig {
 

@@ -85,7 +85,7 @@ class CentralConnection {
             List<File> confDirs, AtomicBoolean inConnectionFailure) throws SSLException {
         ParsedCollectorAddress parsedCollectorAddress = parseCollectorAddress(collectorAddress);
         channelExecutor =
-                Executors.newSingleThreadExecutor(ThreadFactories.create("Glowroot-GRPC-Executor"));
+                Executors.newFixedThreadPool(1, ThreadFactories.create("Glowroot-GRPC-Executor"));
         NettyChannelBuilder builder;
         if (parsedCollectorAddress.targets().size() == 1) {
             CollectorTarget target = parsedCollectorAddress.targets().get(0);

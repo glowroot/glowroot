@@ -18,6 +18,7 @@ package org.glowroot.ui;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
@@ -27,6 +28,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +77,7 @@ class RoleConfigJsonService {
             return getRoleConfigInternal(name.get());
         } else {
             List<RoleConfigListDto> responses = Lists.newArrayList();
-            List<RoleConfig> roleConfigs = configRepository.getRoleConfigs();
+            List<RoleConfig> roleConfigs = configRepository.getRoleConfigs().toCompletableFuture().join();
             roleConfigs = orderingByName.immutableSortedCopy(roleConfigs);
             for (RoleConfig roleConfig : roleConfigs) {
                 responses.add(RoleConfigListDto.create(roleConfig));
@@ -93,11 +95,14 @@ class RoleConfigJsonService {
     String addRole(@BindRequest RoleConfigDto roleConfigDto) throws Exception {
         RoleConfig roleConfig = roleConfigDto.convert(central);
         try {
-            configRepository.insertRoleConfig(roleConfig);
-        } catch (DuplicateRoleNameException e) {
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
-            throw new JsonServiceException(CONFLICT, "name");
+            configRepository.insertRoleConfig(roleConfig, CassandraProfile.web).toCompletableFuture().join();
+        } catch (CompletionException e) {
+            if (e.getCause() instanceof DuplicateRoleNameException) {
+                // log exception at debug level
+                logger.debug(e.getMessage(), e);
+                throw new JsonServiceException(CONFLICT, "name");
+            }
+            throw (Exception) e.getCause();
         }
         return getRoleConfigInternal(roleConfig.name());
     }
@@ -107,11 +112,14 @@ class RoleConfigJsonService {
         RoleConfig roleConfig = roleConfigDto.convert(central);
         String version = roleConfigDto.version().get();
         try {
-            configRepository.updateRoleConfig(roleConfig, version);
-        } catch (DuplicateRoleNameException e) {
-            // log exception at debug level
-            logger.debug(e.getMessage(), e);
-            throw new JsonServiceException(CONFLICT, "name");
+            configRepository.updateRoleConfig(roleConfig, version, CassandraProfile.web).toCompletableFuture().join();
+        } catch (CompletionException e) {
+            if (e.getCause() instanceof DuplicateRoleNameException) {
+                // log exception at debug level
+                logger.debug(e.getMessage(), e);
+                throw new JsonServiceException(CONFLICT, "name");
+            }
+            throw (Exception) e.getCause();
         }
         return getRoleConfigInternal(roleConfig.name());
     }
@@ -119,7 +127,14 @@ class RoleConfigJsonService {
     @POST(path = "/backend/admin/roles/remove", permission = "admin:edit:role")
     String removeRole(@BindRequest RoleConfigRequest request) throws Exception {
         try {
-            configRepository.deleteRoleConfig(request.name().get());
+            try {
+                configRepository.deleteRoleConfig(request.name().get(), CassandraProfile.web).toCompletableFuture().join();
+            } catch (CompletionException e) {
+                if (e.getCause() instanceof CannotDeleteLastRoleException) {
+                    throw (CannotDeleteLastRoleException) e.getCause();
+                }
+                throw e;
+            }
         } catch (CannotDeleteLastRoleException e) {
             logger.debug(e.getMessage(), e);
             return "{\"errorCannotDeleteLastRole\":true}";
@@ -128,7 +143,7 @@ class RoleConfigJsonService {
     }
 
     private String getRoleConfigInternal(String name) throws Exception {
-        RoleConfig roleConfig = configRepository.getRoleConfig(name);
+        RoleConfig roleConfig = configRepository.getRoleConfig(name).toCompletableFuture().join();
         if (roleConfig == null) {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
         }
@@ -140,9 +155,9 @@ class RoleConfigJsonService {
         return mapper.writeValueAsString(response.build());
     }
 
-    private List<FlattenedAgentRollup> getFlattenedAgentRollups() throws Exception {
+    private List<FlattenedAgentRollup> getFlattenedAgentRollups() {
         List<AgentRollup> agentRollups =
-                activeAgentRepository.readRecentlyActiveAgentRollups(DAYS.toMillis(7));
+                activeAgentRepository.readRecentlyActiveAgentRollups(DAYS.toMillis(7), CassandraProfile.web).toCompletableFuture().join();
         List<FlattenedAgentRollup> flattenedAgentRollups = Lists.newArrayList();
         for (AgentRollup agentRollup : agentRollups) {
             flattenedAgentRollups.addAll(getFlattenedAgentRollups(agentRollup, 0));

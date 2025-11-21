@@ -19,6 +19,7 @@ import java.util.List;
 
 import com.google.common.net.MediaType;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +78,7 @@ class TraceDetailHttpService implements HttpService {
             String traceId, boolean checkLiveTraces) throws Exception {
         if (traceComponent.equals("entries")) {
             String entriesJson =
-                    traceCommonService.getEntriesJson(agentId, traceId, checkLiveTraces);
+                    traceCommonService.getEntriesJson(agentId, traceId, checkLiveTraces, CassandraProfile.web);
             if (entriesJson == null) {
                 // this includes trace was found but the trace had no entries
                 // caller should check trace.entry_count

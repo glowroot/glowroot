@@ -30,6 +30,7 @@ import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -187,7 +188,7 @@ class InstrumentationConfigJsonService {
     String addInstrumentationConfig(@BindAgentId String agentId,
             @BindRequest InstrumentationConfigDto configDto) throws Exception {
         InstrumentationConfig config = configDto.convert();
-        configRepository.insertInstrumentationConfig(agentId, config);
+        configRepository.insertInstrumentationConfig(agentId, config, CassandraProfile.web).toCompletableFuture().join();
         return getInstrumentationConfigInternal(agentId, Versions.getVersion(config));
     }
 
@@ -197,7 +198,7 @@ class InstrumentationConfigJsonService {
             @BindRequest InstrumentationConfigDto configDto) throws Exception {
         InstrumentationConfig config = configDto.convert();
         String version = configDto.version().get();
-        configRepository.updateInstrumentationConfig(agentId, config, version);
+        configRepository.updateInstrumentationConfig(agentId, config, version, CassandraProfile.web).toCompletableFuture().join();
         return getInstrumentationConfigInternal(agentId, Versions.getVersion(config));
     }
 
@@ -205,7 +206,7 @@ class InstrumentationConfigJsonService {
             permission = "agent:config:edit:instrumentation")
     void removeInstrumentationConfig(@BindAgentId String agentId,
             @BindRequest InstrumentationDeleteRequest request) throws Exception {
-        configRepository.deleteInstrumentationConfigs(agentId, request.versions());
+        configRepository.deleteInstrumentationConfigs(agentId, request.versions(), CassandraProfile.web).toCompletableFuture().join();
     }
 
     @POST(path = "/backend/config/instrumentation/import",
@@ -216,7 +217,7 @@ class InstrumentationConfigJsonService {
         for (InstrumentationConfigDto configDto : request.configs()) {
             configs.add(configDto.convert());
         }
-        configRepository.insertInstrumentationConfigs(agentId, configs);
+        configRepository.insertInstrumentationConfigs(agentId, configs, CassandraProfile.web).toCompletableFuture().join();
     }
 
     @POST(path = "/backend/config/reweave", permission = "agent:config:edit:instrumentation")

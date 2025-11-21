@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.14.1-beta.3-SNAPSHOT</version>
+    <version>0.14.5-beta.3-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -46,7 +46,7 @@
       <!-- need to include https support for proguard step, but then it is stripped out after -->
       <groupId>io.netty</groupId>
       <artifactId>netty-tcnative-boringssl-static</artifactId>
-      <!-- need to stick to version known to work with gRPC 1.56.0,
+      <!-- need to stick to version known to work with gRPC 1.60.0,
         see table at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
       <version>2.0.61.Final</version>
     </dependency>
@@ -65,7 +65,7 @@
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -116,7 +116,9 @@
             <filter>
               <artifact>com.google.guava:guava</artifact>
               <excludes>
+                <exclude>META-INF/LICENSE</exclude>
                 <exclude>META-INF/beans.xml</exclude>
+                <exclude>META-INF/proguard/**</exclude>
               </excludes>
             </filter>
             <filter>
@@ -179,6 +181,7 @@
               <artifact>com.fasterxml.jackson.core:jackson-annotations</artifact>
               <excludes>
                 <exclude>META-INF/LICENSE</exclude>
+                <exclude>META-INF/NOTICE</exclude>
               </excludes>
             </filter>
             <filter>
@@ -270,6 +273,10 @@
             <relocation>
               <pattern>org.slf4j</pattern>
               <shadedPattern>org.glowroot.agent.shaded.org.slf4j</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.jspecify</pattern>
+              <shadedPattern>org.glowroot.agent.shaded.org.jspecify</shadedPattern>
             </relocation>
             <relocation>
               <!-- this shades guava's internal use of java util logging which is needed to prevent
@@ -391,6 +398,139 @@
               public static **[] values();
               public
               static ** valueOf(java.lang.String);
+              }
+            </option>
+            <!-- needed for guava 33.1.0-jre / base -->
+            <option>
+              -keep class sun.misc.SharedSecrets {
+              *** getJavaLangAccess(...);
+              }
+            </option>
+            <option>
+              -keep class sun.misc.JavaLangAccess {
+              *** getStackTraceElement(...);
+              *** getStackTraceDepth(...);
+              }
+            </option>
+            <option>
+              -keepnames class org.glowroot.agent.shaded.com.google.common.base.internal.Finalizer {
+              *** startFinalizer(...);
+              }
+            </option>
+            <option>
+              -keepclassmembers class org.glowroot.agent.shaded.com.google.common.base.internal.Finalizer {
+              *** startFinalizer(...);
+              }
+            </option>
+            <option>
+              -keepnames class org.glowroot.agent.shaded.com.google.common.base.FinalizableReference {
+              void finalizeReferent();
+              }
+            </option>
+            <option>
+              -keepclassmembers class org.glowroot.agent.shaded.com.google.common.base.FinalizableReference {
+              void finalizeReferent();
+              }
+            </option>
+            <!-- needed for guava 33.1.0-jre / cache -->
+            <option>
+              -keepclassmembers class org.glowroot.agent.shaded.com.google.common.cache.Striped64 {
+              *** base;
+              *** busy;
+              }
+            </option>
+            <option>
+              <![CDATA[
+              -keepclassmembers class org.glowroot.agent.shaded.com.google.common.cache.Striped64$Cell {
+              <fields>;
+              }
+              ]]>
+            </option>
+            <!-- needed for guava 33.1.0-jre / collect -->
+            <option>
+              -keepclassmembernames class org.glowroot.agent.shaded.com.google.common.collect.ImmutableMultimap {
+              *** map;
+              *** size;
+              }
+            </option>
+            <option>
+              -keepclassmembernames class org.glowroot.agent.shaded.com.google.common.collect.ConcurrentHashMultiset {
+              *** countMap;
+              }
+            </option>
+            <option>
+              -keepclassmembernames class org.glowroot.agent.shaded.com.google.common.collect.ImmutableSetMultimap {
+              *** emptySet;
+              }
+            </option>
+            <option>
+              -keepclassmembernames class org.glowroot.agent.shaded.com.google.common.collect.AbstractSortedMultiset {
+              *** comparator;
+              }
+            </option>
+            <option>
+              -keepclassmembernames class org.glowroot.agent.shaded.com.google.common.collect.TreeMultiset {
+              *** range;
+              *** rootReference;
+              *** header;
+              }
+            </option>
+            <!-- needed for guava 33.1.0-jre / concurrent -->
+            <option>
+              -keepclassmembers class org.glowroot.agent.shaded.com.google.common.util.concurrent.AbstractFuture** {
+              *** waiters;
+              *** value;
+              *** listeners;
+              *** thread;
+              *** next;
+              }
+            </option>
+            <option>
+              -keepclassmembers class org.glowroot.agent.shaded.com.google.common.util.concurrent.AtomicDouble {
+              *** value;
+              }
+            </option>
+            <option>
+              -keepclassmembers class org.glowroot.agent.shaded.com.google.common.util.concurrent.AggregateFutureState {
+              *** remaining;
+              *** seenExceptions;
+              }
+            </option>
+            <option>
+              <![CDATA[
+              -keep,allowshrinking,allowobfuscation class org.glowroot.agent.shaded.com.google.common.util.concurrent.AbstractFuture** {
+              <fields>;
+              }
+              ]]>
+            </option>
+            <option>
+              -keep class org.glowroot.agent.shaded.com.google.appengine.api.ThreadManager {
+              static *** currentRequestThreadFactory(...);
+              }
+            </option>
+            <option>
+              -keep class org.glowroot.agent.shaded.com.google.apphosting.api.ApiProxy {
+              static *** getCurrentEnvironment (...);
+              }
+            </option>
+            <!-- needed for guava 33.1.0-jre / hash -->
+            <option>
+              -keepclassmembers class org.glowroot.agent.shaded.com.google.common.hash.Striped64 {
+              *** base;
+              *** busy;
+              }
+            </option>
+            <option>
+              <![CDATA[
+              -keepclassmembers class org.glowroot.agent.shaded.com.google.common.hash.Striped64$Cell {
+              <fields>;
+              }
+              ]]>
+            </option>
+            <!-- needed for guava 33.1.0-jre / io -->
+            <option>
+              -keep class java.lang.Throwable {
+              *** addSuppressed(...);
               }
             </option>
           </options>

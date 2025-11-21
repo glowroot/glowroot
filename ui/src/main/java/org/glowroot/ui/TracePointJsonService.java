@@ -76,7 +76,7 @@ class TracePointJsonService {
                 .from(request.from())
                 .to(request.to())
                 .build();
-        long traceCount = traceRepository.readSlowCount(agentRollupId, query);
+        long traceCount = traceRepository.readSlowCount(agentRollupId, query).toCompletableFuture().get();
         boolean includeActiveTraces = shouldIncludeActiveTraces(request);
         if (includeActiveTraces) {
             traceCount += liveTraceRepository.getMatchingTraceCount(request.transactionType(),
@@ -88,7 +88,7 @@ class TracePointJsonService {
     @GET(path = "/backend/error/trace-count", permission = "agent:error:traces")
     String getErrorTraceCount(@BindAgentRollupId String agentRollupId,
             @BindRequest TraceQuery query) throws Exception {
-        return Long.toString(traceRepository.readErrorCount(agentRollupId, query));
+        return Long.toString(traceRepository.readErrorCount(agentRollupId, query).toCompletableFuture().get());
     }
 
     @GET(path = "/backend/transaction/points", permission = "agent:transaction:traces")
@@ -201,10 +201,10 @@ class TracePointJsonService {
             }
             Result<TracePoint> queryResult;
             if (traceKind == TraceKind.SLOW) {
-                queryResult = traceRepository.readSlowPoints(agentRollupId, query, filter, limit).get();
+                queryResult = traceRepository.readSlowPoints(agentRollupId, query, filter, limit).toCompletableFuture().get();
             } else {
                 // TraceKind.ERROR
-                queryResult = traceRepository.readErrorPoints(agentRollupId, query, filter, limit).get();
+                queryResult = traceRepository.readErrorPoints(agentRollupId, query, filter, limit).toCompletableFuture().get();
             }
             // create single merged and limited list of points
             List<TracePoint> orderedPoints = Lists.newArrayList(queryResult.records());

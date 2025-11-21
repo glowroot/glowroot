@@ -82,7 +82,7 @@ public class TraceCollector {
         this.clock = clock;
         this.ticker = ticker;
         dedicatedExecutor = Executors
-                .newSingleThreadExecutor(ThreadFactories.create("Glowroot-Trace-Collector"));
+                .newFixedThreadPool(1, ThreadFactories.create("Glowroot-Trace-Collector"));
         dedicatedExecutor.execute(new TraceCollectorLoop());
         configService.addConfigListener(new UpdateLocalConfig(configService));
     }

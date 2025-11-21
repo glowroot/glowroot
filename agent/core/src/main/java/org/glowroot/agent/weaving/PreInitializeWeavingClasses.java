@@ -91,7 +91,6 @@ public class PreInitializeWeavingClasses {
         List<String> types = Lists.newArrayList();
         types.add("com.google.common.base.Absent");
         types.add("com.google.common.base.Charsets");
-        types.add("com.google.common.base.ExtraObjectsMethodsForWeb");
         types.add("com.google.common.base.Function");
         types.add("com.google.common.base.Joiner");
         types.add("com.google.common.base.MoreObjects");
@@ -99,12 +98,11 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.base.MoreObjects$ToStringHelper");
         types.add("com.google.common.base.MoreObjects$ToStringHelper$UnconditionalValueHolder");
         types.add("com.google.common.base.MoreObjects$ToStringHelper$ValueHolder");
-        types.add("com.google.common.base.Objects");
         types.add("com.google.common.base.Optional");
         types.add("com.google.common.base.PatternCompiler");
+        types.add("com.google.common.base.Platform$JdkPatternCompiler");
         types.add("com.google.common.base.Platform");
         types.add("com.google.common.base.Platform$1");
-        types.add("com.google.common.base.Platform$JdkPatternCompiler");
         types.add("com.google.common.base.Preconditions");
         types.add("com.google.common.base.StandardSystemProperty");
         types.add("com.google.common.base.Strings");
@@ -125,10 +123,8 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.Hashing");
         types.add("com.google.common.collect.ImmutableAsList");
         types.add("com.google.common.collect.ImmutableBiMap");
-        types.add("com.google.common.collect.ImmutableBiMapFauxverideShim");
         types.add("com.google.common.collect.ImmutableCollection");
         types.add("com.google.common.collect.ImmutableCollection$Builder");
-        types.add("com.google.common.collect.ImmutableEntry");
         types.add("com.google.common.collect.ImmutableEnumMap");
         types.add("com.google.common.collect.ImmutableEnumSet");
         types.add("com.google.common.collect.ImmutableList");
@@ -161,8 +157,8 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.Iterables");
         types.add("com.google.common.collect.Iterators");
         types.add("com.google.common.collect.Iterators$1");
-        types.add("com.google.common.collect.Iterators$9");
         types.add("com.google.common.collect.Iterators$ArrayItr");
+        types.add("com.google.common.collect.Iterators$SingletonIterator");
         types.add("com.google.common.collect.JdkBackedImmutableMap");
         types.add("com.google.common.collect.JdkBackedImmutableSet");
         types.add("com.google.common.collect.Lists");
@@ -182,6 +178,7 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.collect.RegularImmutableAsList");
         types.add("com.google.common.collect.RegularImmutableList");
         types.add("com.google.common.collect.RegularImmutableMap");
+        types.add("com.google.common.collect.RegularImmutableMap$BucketOverflowException");
         types.add("com.google.common.collect.RegularImmutableMap$KeySet");
         types.add("com.google.common.collect.RegularImmutableMap$Values");
         types.add("com.google.common.collect.RegularImmutableSet");
@@ -197,14 +194,10 @@ public class PreInitializeWeavingClasses {
         types.add("com.google.common.io.ByteSource");
         types.add("com.google.common.io.ByteStreams");
         types.add("com.google.common.io.ByteStreams$1");
-        types.add("com.google.common.io.Closeables");
         types.add("com.google.common.io.Closer");
-        types.add("com.google.common.io.Closer$LoggingSuppressor");
-        types.add("com.google.common.io.Closer$SuppressingSuppressor");
         types.add("com.google.common.io.Closer$Suppressor");
         types.add("com.google.common.io.Files");
         types.add("com.google.common.io.Files$1");
-        types.add("com.google.common.io.Files$2");
         types.add("com.google.common.io.Files$FileByteSink");
         types.add("com.google.common.io.FileWriteMode");
         types.add("com.google.common.io.LineProcessor");
@@ -443,6 +436,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.Symbol");
         types.add("org.objectweb.asm.SymbolTable");
         types.add("org.objectweb.asm.SymbolTable$Entry");
+        types.add("org.objectweb.asm.SymbolTable$LabelEntry");
         types.add("org.objectweb.asm.Type");
         types.add("org.objectweb.asm.TypePath");
         types.add("org.objectweb.asm.TypeReference");

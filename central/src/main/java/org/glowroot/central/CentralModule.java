@@ -24,7 +24,6 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.security.CodeSource;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Pattern;
@@ -32,18 +31,14 @@ import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
 
-import com.datastax.oss.driver.internal.core.session.throttling.ConcurrencyLimitingRequestThrottler;
 import jakarta.servlet.ServletContext;
 
 import ch.qos.logback.classic.LoggerContext;
 import com.datastax.oss.driver.api.core.*;
-import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
-import com.datastax.oss.driver.internal.core.connection.ConstantReconnectionPolicy;
-import com.datastax.oss.driver.internal.core.time.ServerSideTimestampGenerator;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
@@ -61,6 +56,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
 import org.glowroot.central.util.*;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
@@ -194,7 +190,7 @@ public class CentralModule {
                 startupLogger.info("glowroot central schema created");
             } else {
                 schemaUpgrade.updateToMoreRecentCassandraOptions(
-                        repos.getConfigRepository().getCentralStorageConfig());
+                        repos.getConfigRepository().getCentralStorageConfig().toCompletableFuture().join());
             }
 
             HttpClient httpClient = new HttpClient(repos.getConfigRepository());
@@ -227,7 +223,7 @@ public class CentralModule {
                     updateAgentConfigIfNeededService;
             repos.getConfigRepository().addAgentConfigListener(new AgentConfigListener() {
                 @Override
-                public void onChange(String agentId) throws Exception {
+                public void onChange(String agentId) {
                     // TODO report checker framework issue that occurs without checkNotNull
                     checkNotNull(updateAgentConfigIfNeededServiceEffectivelyFinal)
                             .updateAgentConfigIfNeededAndConnectedAsync(agentId);
@@ -615,6 +611,10 @@ public class CentralModule {
         if (!Strings.isNullOrEmpty(cassandraLocalDatacenter)) {
             builder.cassandraLocalDatacenter(cassandraLocalDatacenter);
         }
+        String cassandraConfigurationFile = properties.get("glowroot.cassandra.configurationFile");
+        if (!Strings.isNullOrEmpty(cassandraConfigurationFile)) {
+            builder.cassandraConfigurationFile(cassandraConfigurationFile);
+        }
         String cassandraConsistencyLevel = properties.get("glowroot.cassandra.consistencyLevel");
         if (!Strings.isNullOrEmpty(cassandraConsistencyLevel)) {
             int index = cassandraConsistencyLevel.indexOf('/');
@@ -638,21 +638,6 @@ public class CentralModule {
                         + " it must be a 32 character hex string");
             }
             builder.cassandraSymmetricEncryptionKey(cassandraSymmetricEncryptionKey);
-        }
-        String cassandraConnectionMaxRequests =
-                properties.get("glowroot.cassandra.connectionMaxRequests");
-        if (!Strings.isNullOrEmpty(cassandraConnectionMaxRequests)) {
-            builder.cassandraConnectionMaxRequests(Integer.parseInt(cassandraConnectionMaxRequests));
-        }
-        String cassandraThrottlerMaxConcurrentRequests =
-                properties.get("glowroot.cassandra.throttlerMaxConcurrentRequests");
-        if (!Strings.isNullOrEmpty(cassandraThrottlerMaxConcurrentRequests)) {
-            builder.cassandraThrottlerMaxConcurrentRequests(Integer.parseInt(cassandraThrottlerMaxConcurrentRequests));
-        }
-        String cassandraThrottlerMaxQueueSize =
-                properties.get("glowroot.cassandra.throttlerMaxQueueSize");
-        if (!Strings.isNullOrEmpty(cassandraThrottlerMaxQueueSize)) {
-            builder.cassandraThrottlerMaxQueueSize(Integer.parseInt(cassandraThrottlerMaxQueueSize));
         }
         String cassandraGcGraceSeconds =
                 properties.get("glowroot.cassandra.gcGraceSeconds");
@@ -761,11 +746,6 @@ public class CentralModule {
                         "jgroups.initialNodes=" + initialNodes);
             }
         }
-        // upgrade from 0.12.3 to 0.13.0
-        if (props.containsKey("cassandra.pool.maxRequestsPerConnection")) {
-            upgradePropertyNames.put("cassandra.pool.maxRequestsPerConnection",
-                    "cassandra.maxConcurrentQueries");
-        }
         if (!upgradePropertyNames.isEmpty()) {
             PropertiesFiles.upgradeIfNeeded(propFile, upgradePropertyNames);
             props = PropertiesFiles.load(propFile);
@@ -844,11 +824,6 @@ public class CentralModule {
                     session = new Session(
                             createCluster(centralConfig).build(),
                             keyspace, writeConsistencyLevelOverride,
-                            // max concurrent requests before throwing BusyConnectionException is "max
-                            // concurrent requests" + "max queue size" (which are set to
-                            // cassandraThrottlerMaxConcurrentRequests and cassandraThrottlerMaxQueueSize * 2
-                            // respectively)
-                            centralConfig.cassandraThrottlerMaxConcurrentRequests() + centralConfig.cassandraThrottlerMaxQueueSize(),
                             centralConfig.cassandraGcGraceSeconds());
                 }
                 String cassandraVersion = verifyCassandraVersion(session);
@@ -894,6 +869,17 @@ public class CentralModule {
     }
 
     private static CqlSessionBuilder createCluster(CentralConfiguration centralConfig) {
+        boolean loadCassandraConfigurationFileFromClasspath = false;
+        String configFileName = centralConfig.cassandraConfigurationFile();
+        if (new File(centralConfig.cassandraConfigurationFile()).exists()) {
+            startupLogger.info("loading cassandra configuration from absolute path {}",
+                    centralConfig.cassandraConfigurationFile());
+        } else if (CentralModule.class.getResource(centralConfig.cassandraConfigurationFile()) == null) {
+            startupLogger.warn("unable to find resource {} from classpath, switching to default 'datastax-driver.conf'",
+                    centralConfig.cassandraConfigurationFile());
+            loadCassandraConfigurationFileFromClasspath = true;
+            configFileName = "datastax-driver.conf";
+        }
         CqlSessionBuilder builder = CqlSession.builder()
                 .addContactPoints(
                         centralConfig.cassandraContactPoint()
@@ -901,28 +887,11 @@ public class CentralModule {
                                 .map(addr -> new InetSocketAddress(addr, centralConfig.cassandraPort()))
                                 .collect(Collectors.toList()))
                 // cassandra driver v4.x requires localdatacenter name to be defined
-                // see https://docs.datastax.com/en/developer/java-driver/4.16/manual/core/load_balancing/
+                // see https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/load_balancing/
                 .withLocalDatacenter(centralConfig.cassandraLocalDatacenter())
-                .withConfigLoader(DriverConfigLoader.programmaticBuilder()
-                        // let driver know that only idempotent queries are used so it will retry on timeout
-                        .withBoolean(DefaultDriverOption.REQUEST_DEFAULT_IDEMPOTENCE, true)
-                        // aggressive reconnect policy seems ok since not many clients
-                        .withString(DefaultDriverOption.RECONNECTION_POLICY_CLASS, ConstantReconnectionPolicy.class.getName())
-                        .withDuration(DefaultDriverOption.RECONNECTION_BASE_DELAY, Duration.ofMillis(1000))
-                        .withString(DefaultDriverOption.REQUEST_CONSISTENCY, centralConfig.cassandraReadConsistencyLevel().name())
-                        .withString(DefaultDriverOption.REQUEST_SERIAL_CONSISTENCY, centralConfig.cassandraWriteConsistencyLevel().name())
-                        // CONNECTION_MAX_REQUESTS see https://docs.datastax.com/en/developer/java-driver/4.16/manual/core/pooling/#tuning
-                        .withInt(DefaultDriverOption.CONNECTION_MAX_REQUESTS, centralConfig.cassandraConnectionMaxRequests())
-                        // REQUEST_THROTTLER_CLASS see https://docs.datastax.com/en/developer/java-driver/4.16/manual/core/throttling/
-                        .withClass(DefaultDriverOption.REQUEST_THROTTLER_CLASS, ConcurrencyLimitingRequestThrottler.class)
-                        .withInt(DefaultDriverOption.REQUEST_THROTTLER_MAX_CONCURRENT_REQUESTS, centralConfig.cassandraThrottlerMaxConcurrentRequests())
-                        .withInt(DefaultDriverOption.REQUEST_THROTTLER_MAX_QUEUE_SIZE, centralConfig.cassandraThrottlerMaxQueueSize())
-                        .withString(DefaultDriverOption.TIMESTAMP_GENERATOR_CLASS, ServerSideTimestampGenerator.class.getName())
-                        .startProfile(CassandraProfile.SLOW.name())
-                        .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(30))
-                        .withBoolean(DefaultDriverOption.REQUEST_WARN_IF_SET_KEYSPACE, false)
-                        .endProfile()
-                        .build());
+                .withConfigLoader(loadCassandraConfigurationFileFromClasspath ?
+                        DriverConfigLoader.fromClasspath(configFileName):
+                        DriverConfigLoader.fromFile(new File(configFileName)));
         String cassandraUsername = centralConfig.cassandraUsername();
         if (!cassandraUsername.isEmpty()) {
             // empty password is strange but valid
@@ -940,7 +909,7 @@ public class CentralModule {
 
     private static String verifyCassandraVersion(Session session) throws Exception {
         ResultSet results =
-                session.read("select release_version from system.local where key = 'local'");
+                session.read("select release_version from system.local where key = 'local'", CassandraProfile.slow);
         Row row = checkNotNull(results.one());
         String cassandraVersion = checkNotNull(row.getString(0));
         if (cassandraVersion.startsWith("2.0") || cassandraVersion.startsWith("1.")
@@ -1058,6 +1027,11 @@ public class CentralModule {
         }
 
         @Value.Default
+        String cassandraConfigurationFile() {
+            return "datastax-driver.conf";
+        }
+
+        @Value.Default
         ConsistencyLevel cassandraReadConsistencyLevel() {
             return ConsistencyLevel.QUORUM;
         }
@@ -1093,25 +1067,6 @@ public class CentralModule {
             //
             // it seems any value over max_hint_window_in_ms (which defaults to 3 hours) is good
             return (int) HOURS.toSeconds(4);
-        }
-
-        @Value.Default
-        int cassandraConnectionMaxRequests() {
-            // https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/pooling/#tuning
-            return 1024;
-        }
-
-        @Value.Default
-        int cassandraThrottlerMaxConcurrentRequests() {
-            // max simultaneous requests
-            // https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/throttling/
-            return 1024;
-        }
-
-        @Value.Default
-        int cassandraThrottlerMaxQueueSize() {
-            // https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/throttling/
-            return 8192;
         }
 
         @Value.Default

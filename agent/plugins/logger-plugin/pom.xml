@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.14.1-beta.3-SNAPSHOT</version>
+    <version>0.14.5-beta.3-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -18,8 +18,8 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <logback.version>1.2.6</logback.version>
-    <slf4j.version>1.7.32</slf4j.version>
+    <logback.version>1.2.13</logback.version>
+    <slf4j.version>1.7.36</slf4j.version>
     <log4j.version>1.2.17</log4j.version>
     <!-- need to update instrumentation for 2.12.1+ !! -->
     <log4j2x.version>2.12.0</log4j2x.version>
@@ -37,7 +37,7 @@
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

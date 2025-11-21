@@ -108,12 +108,12 @@ class ErrorJsonService {
                 .build();
         long liveCaptureTime = clock.currentTimeMillis();
         List<ThroughputAggregate> throughputAggregates = transactionCommonService
-                .getThroughputAggregates(agentRollupId, aggregateQuery, autoRefresh);
+                .getThroughputAggregates(agentRollupId, aggregateQuery, autoRefresh).toCompletableFuture().get();
         if (throughputAggregates.isEmpty() && fallBackToLargestAggregates(aggregateQuery)) {
             // fall back to largest aggregates in case expiration settings have recently changed
             aggregateQuery = withLargestRollupLevel(aggregateQuery);
             throughputAggregates = transactionCommonService.getThroughputAggregates(agentRollupId,
-                    aggregateQuery, autoRefresh);
+                    aggregateQuery, autoRefresh).toCompletableFuture().get();
             if (!throughputAggregates.isEmpty() && ignoreFallBackData(aggregateQuery,
                     Iterables.getLast(throughputAggregates).captureTime())) {
                 // this is probably data from before the requested time period
@@ -135,7 +135,7 @@ class ErrorJsonService {
             long maxCaptureTime = Iterables.getLast(throughputAggregates).captureTime();
             ErrorMessageResult result = traceRepository.readErrorMessages(agentRollupId,
                     ImmutableTraceQuery.builder().copyFrom(query).to(maxCaptureTime).build(),
-                    filter, dataPointIntervalMillis, request.errorMessageLimit());
+                    filter, dataPointIntervalMillis, request.errorMessageLimit()).toCompletableFuture().get();
             List<ErrorPoint> errorPoints = Lists.newArrayList();
             for (ErrorMessagePoint traceErrorPoint : result.points()) {
                 long captureTime = traceErrorPoint.captureTime();

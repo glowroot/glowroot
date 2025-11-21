@@ -119,10 +119,6 @@ class PreInitializeStorageShutdownClasses {
 
     private static List<String> getGuavaUsedTypes() {
         List<String> types = Lists.newArrayList();
-        types.add("com.google.common.base.PatternCompiler");
-        types.add("com.google.common.base.Platform");
-        types.add("com.google.common.base.Platform$1");
-        types.add("com.google.common.base.Platform$JdkPatternCompiler");
         types.add("com.google.common.base.StandardSystemProperty");
         types.add("com.google.common.base.Ticker");
         types.add("com.google.common.base.Ticker$1");

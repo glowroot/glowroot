@@ -19,8 +19,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 
+import java.util.concurrent.CompletionStage;
+
 public interface EnvironmentRepository {
 
-    @Nullable
-    Environment read(String agentId) throws Exception;
+
+    CompletionStage<Environment> read(String agentId, CassandraProfile profile);
 }

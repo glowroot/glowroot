@@ -16,13 +16,14 @@
 package org.glowroot.common2.repo;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 public interface AgentDisplayRepository {
 
-    String readFullDisplay(String agentRollupId) throws Exception;
+    CompletionStage<String> readFullDisplay(String agentRollupId);
 
-    List<String> readDisplayParts(String agentRollupId) throws Exception;
+    CompletableFuture<List<String>> readDisplayParts(String agentRollupId);
 
-    CompletionStage<String> readLastDisplayPartAsync(String agentRollupId) throws Exception;
+    CompletionStage<String> readLastDisplayPartAsync(String agentRollupId);
 }

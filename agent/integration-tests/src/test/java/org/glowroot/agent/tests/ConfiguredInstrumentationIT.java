@@ -66,7 +66,14 @@ public class ConfiguredInstrumentationIT {
 
     @AfterAll
     public static void tearDown() throws Exception {
-        container.close();
+        try {
+            // close container before deleting test dir, so that any pending data is flushed
+            if (container != null) {
+                container.close();
+            }
+        } catch (Throwable t) {
+            // ignore
+        }
         TempDirs.deleteRecursively(testDir);
     }
 

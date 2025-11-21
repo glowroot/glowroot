@@ -16,6 +16,7 @@
 package org.glowroot.central.repo;
 
 import java.util.List;
+import java.util.concurrent.CompletionStage;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
@@ -28,17 +29,17 @@ public interface SyntheticResultDao extends SyntheticResultRepository {
 
     // synthetic result records are not rolled up to their parent, but are stored directly for
     // rollups that have their own synthetic monitors defined
-    void store(String agentRollupId, String syntheticMonitorId, String syntheticMonitorDisplay,
+    CompletionStage<?> store(String agentRollupId, String syntheticMonitorId, String syntheticMonitorDisplay,
             long captureTime, long durationNanos, @Nullable String errorMessage) throws Exception;
 
-    List<SyntheticResultRollup0> readLastFromRollup0(String agentRollupId,
-            String syntheticMonitorId, int x) throws Exception;
+    CompletionStage<List<SyntheticResultRollup0>> readLastFromRollup0(String agentRollupId,
+                                                                      String syntheticMonitorId, int x);
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Rollup synthetic results",
             traceHeadline = "Rollup synthetic results: {{0}}", timer = "rollup synthetic results",
             alreadyInTransactionBehavior = AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION)
-    void rollup(String agentRollupId) throws Exception;
+    CompletionStage<?> rollup(String agentRollupId) throws Exception;
 
     @Value.Immutable
     public interface SyntheticResultRollup0 {

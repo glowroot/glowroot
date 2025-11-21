@@ -20,6 +20,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -33,6 +35,7 @@ import org.glowroot.agent.embedded.util.ImmutableIndex;
 import org.glowroot.agent.embedded.util.Schemas.Column;
 import org.glowroot.agent.embedded.util.Schemas.ColumnType;
 import org.glowroot.agent.embedded.util.Schemas.Index;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ImmutableOpenIncident;
 import org.glowroot.common2.repo.ImmutableResolvedIncident;
 import org.glowroot.common2.repo.IncidentRepository;
@@ -72,41 +75,62 @@ class IncidentDao implements IncidentRepository {
     }
 
     @Override
-    public void insertOpenIncident(String agentRollupId, AlertCondition condition,
-            AlertSeverity severity, AlertNotification notification, long openTime)
-            throws Exception {
-        dataSource.update("insert into incident (open_time, condition, severity, notification)"
-                + " values (?, ?, ?, ?)", openTime, condition.toByteArray(),
-                severity.name().toLowerCase(Locale.ENGLISH), notification.toByteArray());
+    public CompletionStage<?> insertOpenIncident(String agentRollupId, AlertCondition condition,
+                                                 AlertSeverity severity, AlertNotification notification, long openTime, CassandraProfile profile) {
+        try {
+            dataSource.update("insert into incident (open_time, condition, severity, notification)"
+                    + " values (?, ?, ?, ?)", openTime, condition.toByteArray(),
+                    severity.name().toLowerCase(Locale.ENGLISH), notification.toByteArray());
+            return CompletableFuture.completedFuture(null);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public @Nullable OpenIncident readOpenIncident(String agentRollupId, AlertCondition condition,
-            AlertSeverity severity) throws Exception {
-        return dataSource.query(new SingleOpenIncident(condition, severity));
+    public CompletionStage<OpenIncident> readOpenIncident(String agentRollupId, AlertCondition condition,
+            AlertSeverity severity, CassandraProfile profile) {
+        try {
+            return CompletableFuture.completedFuture(dataSource.query(new SingleOpenIncident(condition, severity)));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public List<OpenIncident> readOpenIncidents(String agentRollupId) throws Exception {
-        return readAllOpenIncidents();
+    public CompletionStage<List<OpenIncident>> readOpenIncidents(String agentRollupId, CassandraProfile profile) {
+        return readAllOpenIncidents(CassandraProfile.web);
     }
 
     @Override
-    public List<OpenIncident> readAllOpenIncidents() throws Exception {
-        return dataSource.query(new OpenIncidentRowQuery());
+    public CompletionStage<List<OpenIncident>> readAllOpenIncidents(CassandraProfile profile) {
+        try {
+            return CompletableFuture.completedFuture(dataSource.query(new OpenIncidentRowQuery()));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public void resolveIncident(OpenIncident incident, long resolveTime) throws Exception {
-        dataSource.update("update incident set resolve_time = ? where condition = ?"
-                + " and severity = ? and resolve_time is null", resolveTime,
-                incident.condition().toByteArray(),
-                incident.severity().name().toLowerCase(Locale.ENGLISH));
+    public CompletionStage<?> resolveIncident(OpenIncident incident, long resolveTime, CassandraProfile profile) {
+        try {
+            dataSource.update("update incident set resolve_time = ? where condition = ?"
+                    + " and severity = ? and resolve_time is null", resolveTime,
+                    incident.condition().toByteArray(),
+                    incident.severity().name().toLowerCase(Locale.ENGLISH));
+            return CompletableFuture.completedFuture(null);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public List<ResolvedIncident> readResolvedIncidents(long from) throws Exception {
-        return dataSource.query(new ResolvedIncidentRowQuery(from));
+    public CompletionStage<List<ResolvedIncident>> readResolvedIncidents(long from) {
+        try {
+            return CompletableFuture.completedFuture(dataSource.query(new ResolvedIncidentRowQuery(from)));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     void deleteResolvedIncidentsBefore(long resolvedTime) throws Exception {

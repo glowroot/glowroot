@@ -15,10 +15,16 @@
  */
 package org.glowroot.central;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.spotify.futures.CompletableFutures;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,57 +101,51 @@ class UpdateAgentConfigIfNeededService implements Runnable {
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Outer update agent config loop", traceHeadline = "Outer rollup loop",
             timer = "outer rollup loop")
-    private void runInternal() throws Exception {
-        for (AgentRollup agentRollup : activeAgentDao
-                .readRecentlyActiveAgentRollups(DAYS.toMillis(7))) {
-            updateAgentConfigIfNeededAndConnected(agentRollup);
-        }
-    }
-
-    private void updateAgentConfigIfNeededAndConnected(AgentRollup agentRollup)
-            throws InterruptedException {
-        if (agentRollup.children().isEmpty()) {
-            updateAgentConfigIfNeededAndConnectedAsync(agentRollup.id());
-        } else {
-            for (AgentRollup childAgentRollup : agentRollup.children()) {
-                updateAgentConfigIfNeededAndConnected(childAgentRollup);
-            }
-        }
-    }
-
-    void updateAgentConfigIfNeededAndConnectedAsync(String agentId) throws InterruptedException {
-        AgentConfigAndUpdateToken agentConfigAndUpdateToken;
-        try {
-            agentConfigAndUpdateToken = agentConfigDao.readForUpdate(agentId);
-        } catch (InterruptedException e) {
-            // probably shutdown requested (see close method above)
-            throw e;
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            return;
-        }
-        if (agentConfigAndUpdateToken == null) {
-            return;
-        }
-        UUID updateToken = agentConfigAndUpdateToken.updateToken();
-        if (updateToken == null) {
-            return;
-        }
-        workerExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    boolean updated = downstreamService.updateAgentConfigIfConnected(agentId,
-                            agentConfigAndUpdateToken.config());
-                    if (updated) {
-                        agentConfigDao.markUpdated(agentId, updateToken);
+    private void runInternal() {
+        activeAgentDao
+                .readRecentlyActiveAgentRollups(DAYS.toMillis(7), CassandraProfile.rollup).thenCompose(list -> {
+                    List<CompletionStage<?>> futures = new ArrayList<>();
+                    for (AgentRollup agentRollup : list) {
+                        futures.add(updateAgentConfigIfNeededAndConnected(agentRollup));
                     }
-                } catch (InterruptedException e) {
-                    // probably shutdown requested (see close method above)
-                } catch (Exception e) {
-                    logger.error(e.getMessage(), e);
-                }
+                    return CompletableFutures.allAsList(futures);
+                }).toCompletableFuture().join();
+    }
+
+    private CompletionStage<?> updateAgentConfigIfNeededAndConnected(AgentRollup agentRollup) {
+        if (agentRollup.children().isEmpty()) {
+            return updateAgentConfigIfNeededAndConnectedAsync(agentRollup.id());
+        } else {
+            List<CompletionStage<?>> futures = new ArrayList<>();
+            for (AgentRollup childAgentRollup : agentRollup.children()) {
+                futures.add(updateAgentConfigIfNeededAndConnected(childAgentRollup));
             }
+            return CompletableFutures.allAsList(futures);
+        }
+    }
+
+    CompletionStage<?> updateAgentConfigIfNeededAndConnectedAsync(String agentId) {
+
+        return agentConfigDao.readForUpdate(agentId).thenAccept(opt -> {
+            opt.ifPresent(agentConfigAndUpdateToken -> {
+                UUID updateToken = agentConfigAndUpdateToken.updateToken();
+                if (updateToken == null) {
+                    return;
+                }
+                workerExecutor.execute(() -> {
+                    try {
+                        boolean updated = downstreamService.updateAgentConfigIfConnected(agentId,
+                                agentConfigAndUpdateToken.config());
+                        if (updated) {
+                            agentConfigDao.markUpdated(agentId, updateToken);
+                        }
+                    } catch (InterruptedException e) {
+                        // probably shutdown requested (see close method above)
+                    } catch (Exception e) {
+                        logger.error(e.getMessage(), e);
+                    }
+                });
+            });
         });
     }
 

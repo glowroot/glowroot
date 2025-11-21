@@ -192,7 +192,7 @@ public class CappedDatabase {
     }
 
     public <T extends /*@NonNull*/ MessageLite> List<T> readMessages(long cappedId,
-            Parser<T> parser) throws IOException {
+            Parser<T> parser) {
         if (out.isOverwritten(cappedId)) {
             return ImmutableList.of();
         }
@@ -207,25 +207,25 @@ public class CappedDatabase {
         // it's important to wrap CappedBlockInputStream in a BufferedInputStream to prevent
         // lots of small reads from the underlying RandomAccessFile
         final int bufferSize = 32768;
-        InputStream input = newLZFInputStream(
-                new BufferedInputStream(new CappedBlockInputStream(cappedId), bufferSize));
-        SizeLimitBypassingParser<T> sizeLimitBypassingParser =
-                new SizeLimitBypassingParser<T>(parser);
-        List<T> messages = Lists.newArrayList();
-        try {
+        try (InputStream input = newLZFInputStream(
+                new BufferedInputStream(new CappedBlockInputStream(cappedId), bufferSize))) {
+            SizeLimitBypassingParser<T> sizeLimitBypassingParser =
+                    new SizeLimitBypassingParser<T>(parser);
+            List<T> messages = Lists.newArrayList();
+
             T message;
             while ((message = sizeLimitBypassingParser.parseDelimitedFrom(input)) != null) {
                 messages.add(message);
             }
+            return messages;
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
         } catch (Exception e) {
             if (!out.isOverwritten(cappedId)) {
                 logger.error(e.getMessage(), e);
             }
             return ImmutableList.of();
-        } finally {
-            input.close();
         }
-        return messages;
     }
 
     @OnlyUsedByTests

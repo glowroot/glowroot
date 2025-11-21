@@ -45,6 +45,7 @@ import org.glowroot.wire.api.model.DownstreamServiceOuterClass.MBeanMeta;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
+import static org.glowroot.common2.repo.CassandraProfile.web;
 
 @JsonService
 class GaugeConfigJsonService {
@@ -141,7 +142,7 @@ class GaugeConfigJsonService {
             throws Exception {
         GaugeConfig gaugeConfig = gaugeConfigDto.convert();
         try {
-            configRepository.insertGaugeConfig(agentId, gaugeConfig);
+            configRepository.insertGaugeConfig(agentId, gaugeConfig, web).toCompletableFuture().join();
         } catch (DuplicateMBeanObjectNameException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
@@ -156,7 +157,7 @@ class GaugeConfigJsonService {
         GaugeConfig gaugeConfig = gaugeConfigDto.convert();
         String version = gaugeConfigDto.version().get();
         try {
-            configRepository.updateGaugeConfig(agentId, gaugeConfig, version);
+            configRepository.updateGaugeConfig(agentId, gaugeConfig, version, web).toCompletableFuture().join();
         } catch (DuplicateMBeanObjectNameException e) {
             // log exception at debug level
             logger.debug(e.getMessage(), e);
@@ -168,7 +169,7 @@ class GaugeConfigJsonService {
     @POST(path = "/backend/config/gauges/remove", permission = "agent:config:edit:gauges")
     void removeGauge(@BindAgentId String agentId, @BindRequest GaugeConfigRequest request)
             throws Exception {
-        configRepository.deleteGaugeConfig(agentId, request.version().get());
+        configRepository.deleteGaugeConfig(agentId, request.version().get(), web).toCompletableFuture().join();
     }
 
     private String getGaugeResponse(String agentId, GaugeConfig gaugeConfig) throws Exception {

@@ -10,16 +10,16 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Set up JDK 11 for build
-        uses: actions/setup-java@v3
+      - name: Set up JDK 17 for build
+        uses: actions/setup-java@v4
         with:
           distribution: adopt
-          java-version: 11
+          java-version: 17
 
       - name: Restore cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.m2/repository
@@ -85,7 +85,7 @@ jobs:
 
           # gpg_key_id is needed for signing the rpm for the yum repository (see glowroot-central/pom.xml)
           gpg_key_id=$(gpg --list-keys --with-colons | grep ^pub | cut -d':' -f5 | tail -c 8)
-          mvn clean deploy -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-central \
+          mvn clean install -pl :glowroot-parent,:glowroot-agent-api,:glowroot-agent-plugin-api,:glowroot-agent-it-harness,:glowroot-agent,:glowroot-central \
                            -Pjavadoc \
                            -Prelease \
                            -Dglowroot.build.commit=$(git rev-parse HEAD) \
@@ -137,7 +137,7 @@ jobs:
         run: |
           aws s3 sync central/target/yum s3://glowroot.org/yum
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: ${{github.repository}}.wiki
 

@@ -17,12 +17,14 @@ package org.glowroot.common2.repo.util;
 
 import java.text.DecimalFormat;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import javax.crypto.SecretKey;
 import javax.mail.Message;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+import org.glowroot.common2.repo.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,12 +39,6 @@ import org.glowroot.common2.config.ImmutableHttpProxyConfig;
 import org.glowroot.common2.config.ImmutableSmtpConfig;
 import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.SmtpConfig.ConnectionSecurity;
-import org.glowroot.common2.repo.AggregateRepository;
-import org.glowroot.common2.repo.ConfigRepository;
-import org.glowroot.common2.repo.GaugeValueRepository;
-import org.glowroot.common2.repo.IncidentRepository;
-import org.glowroot.common2.repo.TraceRepository;
-import org.glowroot.common2.repo.Utils;
 import org.glowroot.common2.repo.util.AlertingService.IncidentKey;
 import org.glowroot.common2.repo.util.LockSet.LockSetImpl;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
@@ -54,8 +50,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.
 import org.glowroot.wire.api.model.Proto.OptionalDouble;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class AlertingServiceTest {
 
@@ -140,6 +135,12 @@ public class AlertingServiceTest {
     public void beforeEachTest() throws Exception {
         configRepository = mock(ConfigRepository.class);
         incidentRepository = mock(IncidentRepository.class);
+        doReturn(CompletableFuture.completedFuture(null))
+                .when(incidentRepository)
+                .insertOpenIncident(anyString(), any(), any(), any(), anyLong(), any());
+        doReturn(CompletableFuture.completedFuture(null))
+                .when(incidentRepository)
+                .readOpenIncident(anyString(), any(), any(), any());
         aggregateRepository = mock(AggregateRepository.class);
         gaugeValueRepository = mock(GaugeValueRepository.class);
         traceRepository = mock(TraceRepository.class);
@@ -147,8 +148,8 @@ public class AlertingServiceTest {
         mailService = new MockMailService();
         httpClient = new HttpClient(configRepository);
         when(configRepository.getLazySecretKey()).thenReturn(LAZY_SECRET_KEY);
-        when(configRepository.getSmtpConfig()).thenReturn(SMTP_CONFIG);
-        when(configRepository.getHttpProxyConfig()).thenReturn(HTTP_PROXY_CONFIG);
+        when(configRepository.getSmtpConfig()).thenReturn(CompletableFuture.completedFuture(SMTP_CONFIG));
+        when(configRepository.getHttpProxyConfig()).thenReturn(CompletableFuture.completedFuture(HTTP_PROXY_CONFIG));
     }
 
     @Test
@@ -162,7 +163,7 @@ public class AlertingServiceTest {
                 Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", TRANSACTION_X_PERCENTILE_ALERT_CONFIG,
-                TRANSACTION_X_PERCENTILE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
+                TRANSACTION_X_PERCENTILE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000, CassandraProfile.collector).toCompletableFuture().join();
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
@@ -181,7 +182,7 @@ public class AlertingServiceTest {
                 Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", TRANSACTION_X_PERCENTILE_ALERT_CONFIG,
-                TRANSACTION_X_PERCENTILE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
+                TRANSACTION_X_PERCENTILE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000, CassandraProfile.collector).toCompletableFuture().join();
         // then
         assertThat(mailService.getMessage()).isNull();
     }
@@ -197,7 +198,7 @@ public class AlertingServiceTest {
                 Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", UPPER_BOUND_GAUGE_ALERT_CONFIG,
-                UPPER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
+                UPPER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000, CassandraProfile.collector).toCompletableFuture().join();
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
@@ -216,7 +217,7 @@ public class AlertingServiceTest {
                 Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", UPPER_BOUND_GAUGE_ALERT_CONFIG,
-                UPPER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
+                UPPER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000, CassandraProfile.collector).toCompletableFuture().join();
         // then
         assertThat(mailService.getMessage()).isNull();
     }
@@ -232,7 +233,7 @@ public class AlertingServiceTest {
                 Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", LOWER_BOUND_GAUGE_ALERT_CONFIG,
-                LOWER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
+                LOWER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000, CassandraProfile.collector).toCompletableFuture().join();
         // then
         assertThat(mailService.getMessage()).isNotNull();
         assertThat(((String) mailService.getMessage().getContent()).trim())
@@ -251,7 +252,7 @@ public class AlertingServiceTest {
                 Clock.systemClock());
         // when
         alertingService.checkMetricAlert("", "", "", LOWER_BOUND_GAUGE_ALERT_CONFIG,
-                LOWER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000);
+                LOWER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000, CassandraProfile.collector).toCompletableFuture().join();
         // then
         assertThat(mailService.getMessage()).isNull();
     }
@@ -308,8 +309,8 @@ public class AlertingServiceTest {
                 .to(120000)
                 .rollupLevel(0)
                 .build();
-        when(aggregateRepository.readPercentileAggregates(AGENT_ID, query))
-                .thenReturn(ImmutableList.of(aggregate));
+        when(aggregateRepository.readPercentileAggregates(AGENT_ID, query, CassandraProfile.collector))
+                .thenReturn(CompletableFuture.completedFuture(ImmutableList.of(aggregate)));
     }
 
     private void setupForGauge(double value) throws Exception {
@@ -321,7 +322,7 @@ public class AlertingServiceTest {
                 .build();
         when(gaugeValueRepository.readGaugeValues(AGENT_ID,
                 "java.lang:type=GarbageCollector,name=ConcurrentMarkSweep:CollectionTime[counter]",
-                60001, 120000, 0)).thenReturn(ImmutableList.of(gaugeValue));
+                60001, 120000, 0, CassandraProfile.collector)).thenReturn(CompletableFuture.completedFuture(ImmutableList.of(gaugeValue)));
     }
 
     private static LockSet<IncidentKey> newLockSet() {

@@ -44,10 +44,14 @@ import org.openqa.selenium.WebDriver;
 
 import org.glowroot.agent.it.harness.Container;
 import org.glowroot.tests.util.Utils;
+import org.testcontainers.containers.CassandraContainer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public abstract class WebDriverIT {
+
+    public static final CassandraContainer cassandra
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     protected static final String agentId;
 
@@ -78,7 +82,7 @@ public abstract class WebDriverIT {
 
     @BeforeAll
     public static void setUpBase() throws Exception {
-        setup = WebDriverSetup.create();
+        setup = WebDriverSetup.create(cassandra);
         container = setup.getContainer();
         httpClient = HttpClients.createDefault();
     }
@@ -90,7 +94,7 @@ public abstract class WebDriverIT {
         }
         if (setup != null) {
             try {
-                setup.close();
+                setup.close(cassandra);
             } catch (RuntimeException re) {
                 re.printStackTrace();
             }

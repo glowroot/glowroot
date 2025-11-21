@@ -20,6 +20,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicLongArray;
 
 import com.google.common.base.Strings;
@@ -29,6 +31,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Untainted;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.agent.collector.Collector.AggregateReader;
@@ -253,177 +256,222 @@ public class AggregateDao implements AggregateRepository {
 
     // query.from() is non-inclusive
     @Override
-    public void mergeOverallSummaryInto(String agentRollupId, SummaryQuery query,
-            OverallSummaryCollector collector) throws Exception {
-        dataSource.query(new OverallSummaryQuery(collector, query));
+    public CompletionStage<?> mergeOverallSummaryInto(String agentRollupId, SummaryQuery query,
+            OverallSummaryCollector collector, CassandraProfile profile) {
+        try {
+            dataSource.query(new OverallSummaryQuery(collector, query));
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // query.from() is non-inclusive
     // the sortOrder is only used so that the limit includes the most-likely candidates
     // the final sorting is performed by the caller
     @Override
-    public void mergeTransactionNameSummariesInto(String agentRollupId, SummaryQuery query,
-            SummarySortOrder sortOrder, int limit, TransactionNameSummaryCollector collector)
-            throws Exception {
-        dataSource.query(new TransactionNameSummaryQuery(query, sortOrder, limit, collector));
+    public CompletionStage<?> mergeTransactionNameSummariesInto(String agentRollupId, SummaryQuery query,
+            SummarySortOrder sortOrder, int limit, TransactionNameSummaryCollector collector, CassandraProfile profile) {
+        try {
+            dataSource.query(new TransactionNameSummaryQuery(query, sortOrder, limit, collector));
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeOverallErrorSummaryInto(String agentRollupId, SummaryQuery query,
-            OverallErrorSummaryCollector collector) throws Exception {
-        dataSource.query(new OverallErrorSummaryQuery(collector, query));
+    public CompletionStage<?> mergeOverallErrorSummaryInto(String agentRollupId, SummaryQuery query,
+            OverallErrorSummaryCollector collector, CassandraProfile profile) {
+        try {
+            dataSource.query(new OverallErrorSummaryQuery(collector, query));
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeTransactionNameErrorSummariesInto(String agentRollupId, SummaryQuery query,
+    public CompletionStage<?> mergeTransactionNameErrorSummariesInto(String agentRollupId, SummaryQuery query,
             ErrorSummarySortOrder sortOrder, int limit,
-            TransactionNameErrorSummaryCollector collector)
-            throws Exception {
-        dataSource.query(new TransactionNameErrorSummaryQuery(query, sortOrder, limit,
-                collector));
+            TransactionNameErrorSummaryCollector collector, CassandraProfile profile) {
+        try {
+            dataSource.query(new TransactionNameErrorSummaryQuery(query, sortOrder, limit,
+                    collector));
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // query.from() is INCLUSIVE
     @Override
-    public List<OverviewAggregate> readOverviewAggregates(String agentRollupId,
-            AggregateQuery query) throws Exception {
-        return dataSource.query(new OverviewAggregateQuery(query));
+    public CompletionStage<List<OverviewAggregate>> readOverviewAggregates(String agentRollupId,
+            AggregateQuery query, CassandraProfile profile) {
+        try {
+            return CompletableFuture.completedFuture(dataSource.query(new OverviewAggregateQuery(query)));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // query.from() is INCLUSIVE
     @Override
-    public List<PercentileAggregate> readPercentileAggregates(String agentRollupId,
-            AggregateQuery query) throws Exception {
-        return dataSource.query(new PercentileAggregateQuery(query));
+    public CompletionStage<List<PercentileAggregate>> readPercentileAggregates(String agentRollupId,
+            AggregateQuery query, CassandraProfile profile) {
+        try {
+            return CompletableFuture.completedFuture(dataSource.query(new PercentileAggregateQuery(query)));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // query.from() is INCLUSIVE
     @Override
-    public List<ThroughputAggregate> readThroughputAggregates(String agentRollupId,
-            AggregateQuery query) throws Exception {
-        return dataSource.query(new ThroughputAggregateQuery(query));
-    }
-
-    // query.from() is non-inclusive
-    @Override
-    public void mergeQueriesInto(String agentRollupId, AggregateQuery query,
-            QueryCollector collector) throws Exception {
-        // get list of capped ids first since that is done under the data source lock
-        // then do the expensive part of reading and constructing the protobuf messages outside of
-        // the data source lock
-        List<CappedId> cappedIds = dataSource.query(new CappedIdQuery("queries_capped_id", query));
-        long captureTime = Long.MIN_VALUE;
-        for (CappedId cappedId : cappedIds) {
-            captureTime = Math.max(captureTime, cappedId.captureTime());
-            List<Stored.QueriesByType> queries = rollupCappedDatabases.get(query.rollupLevel())
-                    .readMessages(cappedId.cappedId(), Stored.QueriesByType.parser());
-            for (Stored.QueriesByType toBeMergedQueries : queries) {
-                for (Stored.Query toBeMergedQuery : toBeMergedQueries.getQueryList()) {
-                    collector.mergeQuery(toBeMergedQueries.getType(),
-                            toBeMergedQuery.getTruncatedText(),
-                            Strings.emptyToNull(toBeMergedQuery.getFullTextSha1()),
-                            toBeMergedQuery.getTotalDurationNanos(),
-                            toBeMergedQuery.getExecutionCount(), toBeMergedQuery.hasTotalRows(),
-                            toBeMergedQuery.getTotalRows().getValue());
-                }
-            }
-            collector.updateLastCaptureTime(captureTime);
+    public CompletionStage<List<ThroughputAggregate>> readThroughputAggregates(String agentRollupId,
+                                                              AggregateQuery query, CassandraProfile profile) {
+        try {
+            return CompletableFuture.completedFuture(dataSource.query(new ThroughputAggregateQuery(query)));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeServiceCallsInto(String agentRollupId, AggregateQuery query,
-            ServiceCallCollector collector) throws Exception {
+    public CompletionStage<?> mergeQueriesInto(String agentRollupId, AggregateQuery query,
+            QueryCollector collector, CassandraProfile profile) {
         // get list of capped ids first since that is done under the data source lock
         // then do the expensive part of reading and constructing the protobuf messages outside of
         // the data source lock
-        List<CappedId> cappedIds =
-                dataSource.query(new CappedIdQuery("service_calls_capped_id", query));
-        long captureTime = Long.MIN_VALUE;
-        for (CappedId cappedId : cappedIds) {
-            captureTime = Math.max(captureTime, cappedId.captureTime());
-            List<Stored.ServiceCallsByType> serviceCalls =
-                    rollupCappedDatabases.get(query.rollupLevel()).readMessages(cappedId.cappedId(),
-                            Stored.ServiceCallsByType.parser());
-            for (Stored.ServiceCallsByType toBeMergedServiceCalls : serviceCalls) {
-                for (Stored.ServiceCall toBeMergedQuery : toBeMergedServiceCalls
-                        .getServiceCallList()) {
-                    collector.mergeServiceCall(toBeMergedServiceCalls.getType(),
-                            toBeMergedQuery.getText(), toBeMergedQuery.getTotalDurationNanos(),
-                            toBeMergedQuery.getExecutionCount());
+        try {
+            List<CappedId> cappedIds = dataSource.query(new CappedIdQuery("queries_capped_id", query));
+            long captureTime = Long.MIN_VALUE;
+            for (CappedId cappedId : cappedIds) {
+                captureTime = Math.max(captureTime, cappedId.captureTime());
+                List<Stored.QueriesByType> queries = rollupCappedDatabases.get(query.rollupLevel())
+                        .readMessages(cappedId.cappedId(), Stored.QueriesByType.parser());
+                for (Stored.QueriesByType toBeMergedQueries : queries) {
+                    for (Stored.Query toBeMergedQuery : toBeMergedQueries.getQueryList()) {
+                        collector.mergeQuery(toBeMergedQueries.getType(),
+                                toBeMergedQuery.getTruncatedText(),
+                                Strings.emptyToNull(toBeMergedQuery.getFullTextSha1()),
+                                toBeMergedQuery.getTotalDurationNanos(),
+                                toBeMergedQuery.getExecutionCount(), toBeMergedQuery.hasTotalRows(),
+                                toBeMergedQuery.getTotalRows().getValue());
+                    }
                 }
+                collector.updateLastCaptureTime(captureTime);
             }
-            collector.updateLastCaptureTime(captureTime);
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeMainThreadProfilesInto(String agentRollupId, AggregateQuery query,
-            ProfileCollector collector) throws Exception {
+    public CompletionStage<?> mergeServiceCallsInto(String agentRollupId, AggregateQuery query,
+            ServiceCallCollector collector, CassandraProfile profile) {
+        // get list of capped ids first since that is done under the data source lock
+        // then do the expensive part of reading and constructing the protobuf messages outside of
+        // the data source lock
+        try {
+            List<CappedId> cappedIds =
+                    dataSource.query(new CappedIdQuery("service_calls_capped_id", query));
+            long captureTime = Long.MIN_VALUE;
+            for (CappedId cappedId : cappedIds) {
+                captureTime = Math.max(captureTime, cappedId.captureTime());
+                List<Stored.ServiceCallsByType> serviceCalls =
+                        rollupCappedDatabases.get(query.rollupLevel()).readMessages(cappedId.cappedId(),
+                                Stored.ServiceCallsByType.parser());
+                for (Stored.ServiceCallsByType toBeMergedServiceCalls : serviceCalls) {
+                    for (Stored.ServiceCall toBeMergedQuery : toBeMergedServiceCalls
+                            .getServiceCallList()) {
+                        collector.mergeServiceCall(toBeMergedServiceCalls.getType(),
+                                toBeMergedQuery.getText(), toBeMergedQuery.getTotalDurationNanos(),
+                                toBeMergedQuery.getExecutionCount());
+                    }
+                }
+                collector.updateLastCaptureTime(captureTime);
+            }
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // query.from() is non-inclusive
+    @Override
+    public CompletionStage<?> mergeMainThreadProfilesInto(String agentRollupId, AggregateQuery query,
+            ProfileCollector collector, CassandraProfile profile) {
         mergeProfilesInto(collector, query, "main_thread_profile_capped_id");
+        return CompletableFuture.completedFuture(null);
     }
 
     // query.from() is non-inclusive
     @Override
-    public void mergeAuxThreadProfilesInto(String agentRollupId, AggregateQuery query,
-            ProfileCollector collector) throws Exception {
+    public CompletionStage<?> mergeAuxThreadProfilesInto(String agentRollupId, AggregateQuery query,
+            ProfileCollector collector, CassandraProfile profile) {
         mergeProfilesInto(collector, query, "aux_thread_profile_capped_id");
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public @Nullable String readFullQueryText(String agentRollupId, String fullQueryTextSha1)
-            throws Exception {
-        return fullQueryTextDao.getFullText(fullQueryTextSha1);
-    }
-
-    // query.from() is non-inclusive
-    @Override
-    public boolean hasMainThreadProfile(String agentRollupId, AggregateQuery query)
-            throws Exception {
-        return !dataSource.query(new CappedIdQuery("main_thread_profile_capped_id", query))
-                .isEmpty();
+    public CompletionStage<String> readFullQueryText(String agentRollupId, String fullQueryTextSha1, CassandraProfile profile) {
+        try {
+            return CompletableFuture.completedFuture(fullQueryTextDao.getFullText(fullQueryTextSha1));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean hasAuxThreadProfile(String agentRollupId, AggregateQuery query)
+    public CompletionStage<Boolean> hasMainThreadProfile(String agentRollupId, AggregateQuery query, CassandraProfile profile)
             throws Exception {
-        return !dataSource.query(new CappedIdQuery("aux_thread_profile_capped_id", query))
-                .isEmpty();
+        return CompletableFuture.completedFuture(!dataSource.query(new CappedIdQuery("main_thread_profile_capped_id", query))
+                .isEmpty());
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean shouldHaveMainThreadProfile(String agentRollupId, AggregateQuery query)
+    public CompletionStage<Boolean> hasAuxThreadProfile(String agentRollupId, AggregateQuery query, CassandraProfile profile)
             throws Exception {
-        return dataSource
-                .query(new ShouldHaveSomethingQuery(query, "main_thread_profile_capped_id"));
+        return CompletableFuture.completedFuture(!dataSource.query(new CappedIdQuery("aux_thread_profile_capped_id", query))
+                .isEmpty());
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean shouldHaveAuxThreadProfile(String agentRollupId, AggregateQuery query)
+    public CompletionStage<Boolean> shouldHaveMainThreadProfile(String agentRollupId, AggregateQuery query)
             throws Exception {
-        return dataSource
-                .query(new ShouldHaveSomethingQuery(query, "aux_thread_profile_capped_id"));
+        return CompletableFuture.completedFuture(dataSource
+                .query(new ShouldHaveSomethingQuery(query, "main_thread_profile_capped_id")));
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean shouldHaveQueries(String agentRollupId, AggregateQuery query)
+    public CompletionStage<Boolean> shouldHaveAuxThreadProfile(String agentRollupId, AggregateQuery query)
             throws Exception {
-        return dataSource.query(new ShouldHaveSomethingQuery(query, "queries_capped_id"));
+        return CompletableFuture.completedFuture(dataSource
+                .query(new ShouldHaveSomethingQuery(query, "aux_thread_profile_capped_id")));
     }
 
     // query.from() is non-inclusive
     @Override
-    public boolean shouldHaveServiceCalls(String agentRollupId, AggregateQuery query)
+    public CompletionStage<Boolean> shouldHaveQueries(String agentRollupId, AggregateQuery query)
             throws Exception {
-        return dataSource.query(new ShouldHaveSomethingQuery(query, "service_calls_capped_id"));
+        return CompletableFuture.completedFuture(dataSource.query(new ShouldHaveSomethingQuery(query, "queries_capped_id")));
+    }
+
+    // query.from() is non-inclusive
+    @Override
+    public CompletionStage<Boolean> shouldHaveServiceCalls(String agentRollupId, AggregateQuery query)
+            throws Exception {
+        return CompletableFuture.completedFuture(dataSource.query(new ShouldHaveSomethingQuery(query, "service_calls_capped_id")));
     }
 
     void deleteBefore(long captureTime, int rollupLevel) throws SQLException {
@@ -444,20 +492,24 @@ public class AggregateDao implements AggregateRepository {
     }
 
     private void mergeProfilesInto(ProfileCollector collector, AggregateQuery query,
-            @Untainted String cappedIdColumnName) throws Exception {
+            @Untainted String cappedIdColumnName) {
         // get list of capped ids first since that is done under the data source lock
         // then do the expensive part of reading and constructing the protobuf messages outside of
         // the data source lock
-        List<CappedId> cappedIds = dataSource.query(new CappedIdQuery(cappedIdColumnName, query));
-        long captureTime = Long.MIN_VALUE;
-        for (CappedId cappedId : cappedIds) {
-            captureTime = Math.max(captureTime, cappedId.captureTime());
-            Profile profile = rollupCappedDatabases.get(query.rollupLevel())
-                    .readMessage(cappedId.cappedId(), Profile.parser());
-            if (profile != null) {
-                collector.mergeProfile(profile);
-                collector.updateLastCaptureTime(captureTime);
+        try {
+            List<CappedId> cappedIds = dataSource.query(new CappedIdQuery(cappedIdColumnName, query));
+            long captureTime = Long.MIN_VALUE;
+            for (CappedId cappedId : cappedIds) {
+                captureTime = Math.max(captureTime, cappedId.captureTime());
+                Profile profile = rollupCappedDatabases.get(query.rollupLevel())
+                        .readMessage(cappedId.cappedId(), Profile.parser());
+                if (profile != null) {
+                    collector.mergeProfile(profile);
+                    collector.updateLastCaptureTime(captureTime);
+                }
             }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -568,8 +620,8 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private int getMaxQueryAggregates() {
-        AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(AGENT_ID);
+    private int getMaxQueryAggregates() throws Exception {
+        AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(AGENT_ID).toCompletableFuture().get();
         if (advancedConfig.hasMaxQueryAggregates()) {
             return advancedConfig.getMaxQueryAggregates().getValue();
         } else {
@@ -577,8 +629,8 @@ public class AggregateDao implements AggregateRepository {
         }
     }
 
-    private int getMaxServiceCallAggregates() {
-        AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(AGENT_ID);
+    private int getMaxServiceCallAggregates() throws Exception {
+        AdvancedConfig advancedConfig = configRepository.getAdvancedConfig(AGENT_ID).toCompletableFuture().get();
         if (advancedConfig.hasMaxServiceCallAggregates()) {
             return advancedConfig.getMaxServiceCallAggregates().getValue();
         } else {

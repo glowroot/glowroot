@@ -114,7 +114,7 @@ class GaugeCollector extends ScheduledRunnable {
         collectionExecutor = Executors.newSingleThreadScheduledExecutor(
                 ThreadFactories.create("Glowroot-Gauge-Collection"));
         flushingExecutor = Executors
-                .newSingleThreadExecutor(ThreadFactories.create("Glowroot-Gauge-Flushing"));
+                .newFixedThreadPool(1, ThreadFactories.create("Glowroot-Gauge-Flushing"));
         lazyPlatformMBeanServer.addInitListener(new InitListener() {
             @Override
             public void postInit(MBeanServer mbeanServer) {

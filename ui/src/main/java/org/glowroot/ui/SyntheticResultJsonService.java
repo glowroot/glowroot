@@ -134,7 +134,7 @@ class SyntheticResultJsonService {
         boolean displayNoSyntheticMonitorsConfigured;
         if (allSyntheticMonitors.isEmpty()) {
             displayNoSyntheticMonitorsConfigured =
-                    configRepository.getSyntheticMonitorConfigs(agentRollupId).isEmpty();
+                    configRepository.getSyntheticMonitorConfigs(agentRollupId).toCompletableFuture().join().isEmpty();
         } else {
             displayNoSyntheticMonitorsConfigured = false;
         }
@@ -174,7 +174,7 @@ class SyntheticResultJsonService {
         if (to > clock.currentTimeMillis()) {
             // so that new synthetic monitors will show up right away
             List<SyntheticMonitorConfig> configs =
-                    configRepository.getSyntheticMonitorConfigs(agentRollupId);
+                    configRepository.getSyntheticMonitorConfigs(agentRollupId).toCompletableFuture().join();
             for (SyntheticMonitorConfig config : configs) {
                 if (!syntheticMonitorIds.containsKey(config.getId())) {
                     syntheticMonitors.add(ImmutableSyntheticMonitor.of(config.getId(),
@@ -188,7 +188,7 @@ class SyntheticResultJsonService {
     private List<SyntheticResult> getSyntheticResults(String agentRollupId, long from, long to,
             String syntheticMonitorId, int rollupLevel) throws Exception {
         List<SyntheticResult> syntheticResults = syntheticResultRepository
-                .readSyntheticResults(agentRollupId, syntheticMonitorId, from, to, rollupLevel);
+                .readSyntheticResults(agentRollupId, syntheticMonitorId, from, to, rollupLevel).toCompletableFuture().join();
         if (rollupLevel == 0) {
             return syntheticResults;
         }
@@ -199,7 +199,7 @@ class SyntheticResultJsonService {
         List<SyntheticResult> orderedNonRolledUpSyntheticResults = Lists.newArrayList();
         orderedNonRolledUpSyntheticResults
                 .addAll(syntheticResultRepository.readSyntheticResults(agentRollupId,
-                        syntheticMonitorId, nonRolledUpFrom, to, 0));
+                        syntheticMonitorId, nonRolledUpFrom, to, 0).toCompletableFuture().join());
         syntheticResults = Lists.newArrayList(syntheticResults);
         long fixedIntervalMillis =
                 configRepository.getRollupConfigs().get(rollupLevel).intervalMillis();

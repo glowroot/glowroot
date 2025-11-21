@@ -18,6 +18,8 @@ package org.glowroot.agent.embedded.repo;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -29,6 +31,7 @@ import org.glowroot.agent.embedded.util.DataSource.JdbcUpdate;
 import org.glowroot.agent.embedded.util.ImmutableColumn;
 import org.glowroot.agent.embedded.util.Schemas.Column;
 import org.glowroot.agent.embedded.util.Schemas.ColumnType;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.EnvironmentRepository;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 
@@ -58,8 +61,12 @@ public class EnvironmentDao implements EnvironmentRepository {
     }
 
     @Override
-    public @Nullable Environment read(String agentId) throws Exception {
-        return dataSource.queryAtMostOne(new EnvironmentRowMapper());
+    public CompletionStage<Environment> read(String agentId, CassandraProfile profile) {
+        try {
+            return CompletableFuture.completedFuture(dataSource.queryAtMostOne(new EnvironmentRowMapper()));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     void reinitAfterDeletingDatabase() throws Exception {

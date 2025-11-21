@@ -15,45 +15,56 @@
  */
 package org.glowroot.central.repo;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.common2.config.ImmutableUserConfig;
 import org.glowroot.common2.config.UserConfig;
+import org.glowroot.common2.repo.CassandraProfile;
+import org.junit.jupiter.api.*;
+import org.testcontainers.containers.CassandraContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.glowroot.central.repo.CqlSessionBuilders.MAX_CONCURRENT_QUERIES;
 
 public class UserDaoIT {
 
-    private static CqlSessionBuilder cqlSessionBuilder;
-    private static Session session;
-    private static ClusterManager clusterManager;
-    private static UserDao userDao;
+    public static final CassandraContainer cassandra
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
+
+    private CqlSessionBuilder cqlSessionBuilder;
+    private Session session;
+    private ClusterManager clusterManager;
+    private UserDao userDao;
 
     @BeforeAll
-    public static void setUp() throws Exception {
-        SharedSetupRunListener.startCassandra();
-        cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
+    public static void beforeClass() {
+        cassandra.start();
+    }
+
+    @AfterAll
+    public static void afterClass() {
+        cassandra.stop();
+    }
+
+    @BeforeEach
+    public void setUp() throws Exception {
+        cqlSessionBuilder = CqlSession
+                .builder()
+                .addContactPoint(cassandra.getContactPoint())
+                .withLocalDatacenter(cassandra.getLocalDatacenter())
+                .withConfigLoader(DriverConfigLoader.fromClasspath("datastax-driver.conf"));
         session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
-                MAX_CONCURRENT_QUERIES, 0);
+                0);
         clusterManager = ClusterManager.create();
         userDao = new UserDao(session, clusterManager);
     }
 
-    @AfterAll
-    public static void tearDown() throws Exception {
-        if (!SharedSetupRunListener.isStarted()) {
-            return;
-        }
+    @AfterEach
+    public void tearDown() throws Exception {
         try (var se = session;
              var cm = clusterManager) {
-        } finally {
-            SharedSetupRunListener.stopCassandra();
         }
     }
 
@@ -64,10 +75,10 @@ public class UserDaoIT {
                 .username("abc")
                 .passwordHash("xyz")
                 .addRoles("arole", "brole")
-                .build());
+                .build(), CassandraProfile.web).toCompletableFuture().join();
 
         // when
-        UserConfig userConfig = userDao.read("abc");
+        UserConfig userConfig = userDao.read("abc").toCompletableFuture().join();
 
         // then
         assertThat(userConfig.username()).isEqualTo("abc");

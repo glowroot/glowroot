@@ -16,35 +16,42 @@
 package org.glowroot.central.repo;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import org.glowroot.central.Main;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import org.glowroot.central.Main;
+import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.containers.wait.CassandraQueryWaitStrategy;
 
 public class MiscToolIT {
+    public static final CassandraContainer cassandra
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     @BeforeAll
     public static void setUp() throws Exception {
-        SharedSetupRunListener.startCassandra();
-        CqlSession session = CqlSessionBuilders.newCqlSessionBuilder().build();
+        cassandra.start();
+        CqlSession session = CqlSession
+                .builder()
+                .addContactPoint(cassandra.getContactPoint())
+                .withLocalDatacenter(cassandra.getLocalDatacenter())
+                .withConfigLoader(DriverConfigLoader.fromClasspath("datastax-driver.conf")).build();
         SchemaUpgradeIT.updateSchemaWithRetry(session,
                 "drop keyspace if exists glowroot_tools_test");
         session.close();
 
         System.setProperty("glowroot.cassandra.keyspace", "glowroot_tools_test");
-        System.setProperty("glowroot.cassandra.localDatacenter", "datacenter1");
+        System.setProperty("glowroot.cassandra.localDatacenter", cassandra.getLocalDatacenter());
+        System.setProperty("glowroot.cassandra.contactPoints", cassandra.getContactPoint().getHostString());
+        System.setProperty("glowroot.cassandra.port", cassandra.getMappedPort(9042).toString());
         Main.main(new String[] {"create-schema"});
     }
 
     @AfterAll
     public static void tearDown() throws Exception {
+        cassandra.stop();
         System.clearProperty("glowroot.cassandra.keyspace");
-        if (!SharedSetupRunListener.isStarted()) {
-            return;
-        }
-        SharedSetupRunListener.stopCassandra();
     }
 
     @Test
@@ -57,7 +64,6 @@ public class MiscToolIT {
         Main.main(new String[] {"truncate-all-data"});
     }
 
-    @Disabled("this requires range deletes which are only supported in Cassandra 3.x")
     @Test
     public void runExecuteRangeDeletes() throws Exception {
 

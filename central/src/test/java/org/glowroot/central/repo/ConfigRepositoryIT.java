@@ -15,115 +15,106 @@
  */
 package org.glowroot.central.repo;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.MoreExecutors;
+import org.glowroot.central.util.ClusterManager;
+import org.glowroot.central.util.Session;
+import org.glowroot.common.util.Versions;
+import org.glowroot.common2.config.*;
+import org.glowroot.common2.config.SmtpConfig.ConnectionSecurity;
+import org.glowroot.common2.repo.CassandraProfile;
+import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.*;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.EmailNotification;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.MethodModifier;
+import org.glowroot.wire.api.model.Proto.OptionalInt32;
+import org.junit.jupiter.api.*;
+import org.testcontainers.containers.CassandraContainer;
+
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.datastax.oss.driver.api.core.CqlSessionBuilder;
-import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.MoreExecutors;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
-import org.glowroot.central.util.ClusterManager;
-import org.glowroot.central.util.Session;
-import org.glowroot.common.util.Versions;
-import org.glowroot.common2.config.CentralStorageConfig;
-import org.glowroot.common2.config.CentralWebConfig;
-import org.glowroot.common2.config.HttpProxyConfig;
-import org.glowroot.common2.config.ImmutableCentralStorageConfig;
-import org.glowroot.common2.config.ImmutableCentralWebConfig;
-import org.glowroot.common2.config.ImmutableHttpProxyConfig;
-import org.glowroot.common2.config.ImmutableLdapConfig;
-import org.glowroot.common2.config.ImmutableRoleConfig;
-import org.glowroot.common2.config.ImmutableSmtpConfig;
-import org.glowroot.common2.config.ImmutableUserConfig;
-import org.glowroot.common2.config.LdapConfig;
-import org.glowroot.common2.config.RoleConfig;
-import org.glowroot.common2.config.SmtpConfig;
-import org.glowroot.common2.config.SmtpConfig.ConnectionSecurity;
-import org.glowroot.common2.config.UserConfig;
-import org.glowroot.common2.repo.ConfigRepository;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.MetricCondition;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.EmailNotification;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.MethodModifier;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.MBeanAttribute;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
-import org.glowroot.wire.api.model.Proto.OptionalInt32;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.glowroot.central.repo.CqlSessionBuilders.MAX_CONCURRENT_QUERIES;
 
 public class ConfigRepositoryIT {
+    public static final CassandraContainer cassandra
+            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
-    private static ClusterManager clusterManager;
-    private static CqlSessionBuilder cqlSessionBuilder;
-    private static Session session;
+    private ClusterManager clusterManager;
+    private CqlSessionBuilder cqlSessionBuilder;
+    private Session session;
     private static ExecutorService asyncExecutor;
-    private static ConfigRepository configRepository;
-    private static AgentConfigDao agentConfigDao;
+    private ConfigRepository configRepository;
+    private AgentConfigDao agentConfigDao;
 
     @BeforeAll
-    public static void setUp() throws Exception {
-        SharedSetupRunListener.startCassandra();
+    public static void beforeAll() throws Exception {
+        cassandra.start();
+        asyncExecutor = Executors.newCachedThreadPool();
+    }
+
+    @BeforeEach
+    public void setUp() throws Exception {
         clusterManager = ClusterManager.create();
-        cqlSessionBuilder = CqlSessionBuilders.newCqlSessionBuilder();
+        cqlSessionBuilder = CqlSession
+                .builder()
+                .addContactPoint(cassandra.getContactPoint())
+                .withLocalDatacenter(cassandra.getLocalDatacenter())
+                .withConfigLoader(DriverConfigLoader.fromClasspath("datastax-driver.conf"));
         session = new Session(cqlSessionBuilder.build(), "glowroot_unit_tests", null,
-                MAX_CONCURRENT_QUERIES, 0);
+                0);
         session.updateSchemaWithRetry("drop table if exists agent_config");
         session.updateSchemaWithRetry("drop table if exists user");
         session.updateSchemaWithRetry("drop table if exists role");
         session.updateSchemaWithRetry("drop table if exists central_config");
         session.updateSchemaWithRetry("drop table if exists agent");
-        asyncExecutor = Executors.newCachedThreadPool();
-
         CentralConfigDao centralConfigDao = new CentralConfigDao(session, clusterManager);
         AgentDisplayDao agentDisplayDao =
                 new AgentDisplayDao(session, clusterManager, MoreExecutors.directExecutor(), 10);
-        agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager, 10);
+        agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager, 10, MoreExecutors.directExecutor());
         UserDao userDao = new UserDao(session, clusterManager);
         RoleDao roleDao = new RoleDao(session, clusterManager);
         configRepository =
                 new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao, roleDao, "");
+
     }
 
     @AfterAll
-    public static void tearDown() throws Exception {
-        if (!SharedSetupRunListener.isStarted()) {
-            return;
+    public static void afterAll() {
+        cassandra.stop();
+        if (asyncExecutor != null) {
+            asyncExecutor.shutdown();
         }
+    }
+
+    @AfterEach
+    public void tearDown() throws Exception {
         try (var se = session;
              var cm = clusterManager) {
-            if (asyncExecutor != null) {
-                asyncExecutor.shutdown();
-            }
             // remove bad data so other tests don't have issue
             se.updateSchemaWithRetry("drop table if exists agent_config");
             se.updateSchemaWithRetry("drop table if exists user");
             se.updateSchemaWithRetry("drop table if exists role");
             se.updateSchemaWithRetry("drop table if exists central_config");
-        } finally {
-            SharedSetupRunListener.stopCassandra();
         }
+
     }
 
     @Test
     public void shouldUpdateTransactionConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true).toCompletableFuture().get();
         TransactionConfig config = configRepository.getTransactionConfig(agentId);
         TransactionConfig updatedConfig = TransactionConfig.newBuilder()
                 .setSlowThresholdMillis(OptionalInt32.newBuilder().setValue(1234))
@@ -133,7 +124,7 @@ public class ConfigRepositoryIT {
 
         // when
         configRepository.updateTransactionConfig(agentId, updatedConfig,
-                Versions.getVersion(config));
+                Versions.getVersion(config), CassandraProfile.web).toCompletableFuture().join();
         config = configRepository.getTransactionConfig(agentId);
 
         // then
@@ -144,7 +135,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateJvmConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true).toCompletableFuture().get();
         JvmConfig config = configRepository.getJvmConfig(agentId);
         JvmConfig updatedConfig = JvmConfig.newBuilder()
                 .addMaskSystemProperty("x")
@@ -154,7 +145,7 @@ public class ConfigRepositoryIT {
 
         // when
         configRepository.updateJvmConfig(agentId, updatedConfig,
-                Versions.getVersion(config));
+                Versions.getVersion(config), CassandraProfile.web).toCompletableFuture().join();
         config = configRepository.getJvmConfig(agentId);
 
         // then
@@ -165,7 +156,7 @@ public class ConfigRepositoryIT {
     public void shouldUpdateUiConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true).toCompletableFuture().get();
         UiDefaultsConfig config = configRepository.getUiDefaultsConfig(agentId);
         UiDefaultsConfig updatedConfig = UiDefaultsConfig.newBuilder()
                 .setDefaultTransactionType("xyz")
@@ -176,7 +167,7 @@ public class ConfigRepositoryIT {
 
         // when
         configRepository.updateUiDefaultsConfig(agentId, updatedConfig,
-                Versions.getVersion(config));
+                Versions.getVersion(config), CassandraProfile.web).toCompletableFuture().join();
         config = configRepository.getUiDefaultsConfig(agentId);
 
         // then
@@ -187,8 +178,8 @@ public class ConfigRepositoryIT {
     public void shouldUpdateAdvancedConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
-        AdvancedConfig config = configRepository.getAdvancedConfig(agentId);
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true).toCompletableFuture().get();
+        AdvancedConfig config = configRepository.getAdvancedConfig(agentId).toCompletableFuture().get();
         AdvancedConfig updatedConfig = AdvancedConfig.newBuilder()
                 .setWeavingTimer(true)
                 .setImmediatePartialStoreThresholdSeconds(OptionalInt32.newBuilder().setValue(1))
@@ -201,8 +192,8 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.updateAdvancedConfig(agentId, updatedConfig, Versions.getVersion(config));
-        config = configRepository.getAdvancedConfig(agentId);
+        configRepository.updateAdvancedConfig(agentId, updatedConfig, Versions.getVersion(config), CassandraProfile.web).toCompletableFuture().join();
+        config = configRepository.getAdvancedConfig(agentId).toCompletableFuture().get();
 
         // then
         assertThat(config).isEqualTo(updatedConfig);
@@ -212,7 +203,7 @@ public class ConfigRepositoryIT {
     public void shouldCrudGaugeConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true).toCompletableFuture().get();
         GaugeConfig gaugeConfig = GaugeConfig.newBuilder()
                 .setMbeanObjectName("x")
                 .addMbeanAttribute(MBeanAttribute.newBuilder()
@@ -221,7 +212,7 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.insertGaugeConfig(agentId, gaugeConfig);
+        configRepository.insertGaugeConfig(agentId, gaugeConfig, CassandraProfile.web).toCompletableFuture().join();
         List<GaugeConfig> gaugeConfigs = configRepository.getGaugeConfigs(agentId);
 
         // then
@@ -239,7 +230,7 @@ public class ConfigRepositoryIT {
 
         // when
         configRepository.updateGaugeConfig(agentId, updatedGaugeConfig,
-                Versions.getVersion(gaugeConfig));
+                Versions.getVersion(gaugeConfig), CassandraProfile.web).toCompletableFuture().join();
         gaugeConfigs = configRepository.getGaugeConfigs(agentId);
 
         // then
@@ -249,7 +240,7 @@ public class ConfigRepositoryIT {
         // and further
 
         // when
-        configRepository.deleteGaugeConfig(agentId, Versions.getVersion(updatedGaugeConfig));
+        configRepository.deleteGaugeConfig(agentId, Versions.getVersion(updatedGaugeConfig), CassandraProfile.web).toCompletableFuture().join();
         gaugeConfigs = configRepository.getGaugeConfigs(agentId);
 
         // then
@@ -260,7 +251,7 @@ public class ConfigRepositoryIT {
     public void shouldCrudAlertConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true).toCompletableFuture().get();
         AlertConfig alertConfig = AlertConfig.newBuilder()
                 .setCondition(AlertCondition.newBuilder()
                         .setMetricCondition(MetricCondition.newBuilder()
@@ -274,8 +265,8 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.insertAlertConfig(agentId, alertConfig);
-        List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(agentId);
+        configRepository.insertAlertConfig(agentId, alertConfig, CassandraProfile.web).toCompletableFuture().join();
+        List<AlertConfig> alertConfigs = configRepository.getAlertConfigs(agentId).toCompletableFuture().join();
 
         // then
         assertThat(alertConfigs).hasSize(1);
@@ -298,8 +289,8 @@ public class ConfigRepositoryIT {
 
         // when
         configRepository.updateAlertConfig(agentId, updatedAlertConfig,
-                Versions.getVersion(alertConfig));
-        alertConfigs = configRepository.getAlertConfigs(agentId);
+                Versions.getVersion(alertConfig), CassandraProfile.web).toCompletableFuture().join();
+        alertConfigs = configRepository.getAlertConfigs(agentId).toCompletableFuture().join();
 
         // then
         assertThat(alertConfigs).hasSize(1);
@@ -308,8 +299,8 @@ public class ConfigRepositoryIT {
         // and further
 
         // when
-        configRepository.deleteAlertConfig(agentId, Versions.getVersion(updatedAlertConfig));
-        alertConfigs = configRepository.getAlertConfigs(agentId);
+        configRepository.deleteAlertConfig(agentId, Versions.getVersion(updatedAlertConfig), CassandraProfile.web).toCompletableFuture().join();
+        alertConfigs = configRepository.getAlertConfigs(agentId).toCompletableFuture().join();
 
         // then
         assertThat(alertConfigs).isEmpty();
@@ -319,7 +310,7 @@ public class ConfigRepositoryIT {
     public void shouldCrudInstrumentationConfig() throws Exception {
         // given
         String agentId = UUID.randomUUID().toString();
-        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true);
+        agentConfigDao.store(agentId, AgentConfig.getDefaultInstance(), true).toCompletableFuture().get();
         InstrumentationConfig instrumentationConfig = InstrumentationConfig.newBuilder()
                 .setClassName("a")
                 .setMethodName("b")
@@ -335,7 +326,7 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.insertInstrumentationConfig(agentId, instrumentationConfig);
+        configRepository.insertInstrumentationConfig(agentId, instrumentationConfig, CassandraProfile.web).toCompletableFuture().join();
         List<InstrumentationConfig> instrumentationConfigs =
                 configRepository.getInstrumentationConfigs(agentId);
 
@@ -362,7 +353,7 @@ public class ConfigRepositoryIT {
 
         // when
         configRepository.updateInstrumentationConfig(agentId, updatedInstrumentationConfig,
-                Versions.getVersion(instrumentationConfig));
+                Versions.getVersion(instrumentationConfig), CassandraProfile.web).toCompletableFuture().join();
         instrumentationConfigs = configRepository.getInstrumentationConfigs(agentId);
 
         // then
@@ -373,7 +364,7 @@ public class ConfigRepositoryIT {
 
         // when
         configRepository.deleteInstrumentationConfigs(agentId,
-                ImmutableList.of(Versions.getVersion(updatedInstrumentationConfig)));
+                ImmutableList.of(Versions.getVersion(updatedInstrumentationConfig)), CassandraProfile.web).toCompletableFuture().join();
         instrumentationConfigs = configRepository.getInstrumentationConfigs(agentId);
 
         // then
@@ -389,8 +380,8 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.insertUserConfig(userConfig);
-        List<UserConfig> userConfigs = configRepository.getUserConfigs();
+        configRepository.insertUserConfig(userConfig, CassandraProfile.web).toCompletableFuture().join();
+        List<UserConfig> userConfigs = configRepository.getUserConfigs().toCompletableFuture().join();
 
         // then
         assertThat(userConfigs).hasSize(2);
@@ -402,7 +393,7 @@ public class ConfigRepositoryIT {
         String username = "auser";
 
         // when
-        UserConfig readUserConfig = configRepository.getUserConfig(username);
+        UserConfig readUserConfig = configRepository.getUserConfig(username).toCompletableFuture().join();
 
         // then
         assertThat(readUserConfig).isNotNull();
@@ -416,8 +407,8 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.updateUserConfig(updatedUserConfig, userConfig.version());
-        userConfigs = configRepository.getUserConfigs();
+        configRepository.updateUserConfig(updatedUserConfig, userConfig.version(), CassandraProfile.web).toCompletableFuture().join();
+        userConfigs = configRepository.getUserConfigs().toCompletableFuture().join();
 
         // then
         assertThat(userConfigs).hasSize(2);
@@ -426,8 +417,8 @@ public class ConfigRepositoryIT {
         // and further
 
         // when
-        configRepository.deleteUserConfig(updatedUserConfig.username());
-        userConfigs = configRepository.getUserConfigs();
+        configRepository.deleteUserConfig(updatedUserConfig.username(), CassandraProfile.web).toCompletableFuture().join();
+        userConfigs = configRepository.getUserConfigs().toCompletableFuture().join();
 
         // then
         assertThat(userConfigs).hasSize(1);
@@ -445,8 +436,8 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.insertRoleConfig(roleConfig);
-        List<RoleConfig> roleConfigs = configRepository.getRoleConfigs();
+        configRepository.insertRoleConfig(roleConfig, CassandraProfile.web).toCompletableFuture().join();
+        List<RoleConfig> roleConfigs = configRepository.getRoleConfigs().toCompletableFuture().join();
 
         // then
         assertThat(roleConfigs).hasSize(2);
@@ -464,8 +455,8 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.updateRoleConfig(updatedRoleConfig, roleConfig.version());
-        roleConfigs = configRepository.getRoleConfigs();
+        configRepository.updateRoleConfig(updatedRoleConfig, roleConfig.version(), CassandraProfile.web).toCompletableFuture().join();
+        roleConfigs = configRepository.getRoleConfigs().toCompletableFuture().join();
 
         // then
         assertThat(roleConfigs).hasSize(2);
@@ -474,8 +465,8 @@ public class ConfigRepositoryIT {
         // and further
 
         // when
-        configRepository.deleteRoleConfig(updatedRoleConfig.name());
-        roleConfigs = configRepository.getRoleConfigs();
+        configRepository.deleteRoleConfig(updatedRoleConfig.name(), CassandraProfile.web).toCompletableFuture().join();
+        roleConfigs = configRepository.getRoleConfigs().toCompletableFuture().join();
 
         // then
         assertThat(roleConfigs).hasSize(1);
@@ -485,15 +476,15 @@ public class ConfigRepositoryIT {
     @Test
     public void shouldUpdateWebConfig() throws Exception {
         // given
-        CentralWebConfig config = configRepository.getCentralWebConfig();
+        CentralWebConfig config = configRepository.getCentralWebConfig().toCompletableFuture().join();
         CentralWebConfig updatedConfig = ImmutableCentralWebConfig.builder()
                 .sessionTimeoutMinutes(31)
                 .sessionCookieName("GLOWROOT_SESSION_ID2")
                 .build();
 
         // when
-        configRepository.updateCentralWebConfig(updatedConfig, config.version());
-        config = configRepository.getCentralWebConfig();
+        configRepository.updateCentralWebConfig(updatedConfig, config.version()).toCompletableFuture().join();
+        config = configRepository.getCentralWebConfig().toCompletableFuture().join();
 
         // then
         assertThat(config).isEqualTo(updatedConfig);
@@ -502,7 +493,7 @@ public class ConfigRepositoryIT {
     @Test
     public void shouldUpdateCentralStorageConfig() throws Exception {
         // given
-        CentralStorageConfig config = configRepository.getCentralStorageConfig();
+        CentralStorageConfig config = configRepository.getCentralStorageConfig().toCompletableFuture().join();
         CentralStorageConfig updatedConfig = ImmutableCentralStorageConfig.builder()
                 .addRollupExpirationHours(1)
                 .addRollupExpirationHours(2)
@@ -520,8 +511,8 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.updateCentralStorageConfig(updatedConfig, config.version());
-        config = configRepository.getCentralStorageConfig();
+        configRepository.updateCentralStorageConfig(updatedConfig, config.version()).toCompletableFuture().join();
+        config = configRepository.getCentralStorageConfig().toCompletableFuture().join();
 
         // then
         assertThat(config).isEqualTo(updatedConfig);
@@ -530,7 +521,7 @@ public class ConfigRepositoryIT {
     @Test
     public void shouldUpdateSmtpConfig() throws Exception {
         // given
-        SmtpConfig config = configRepository.getSmtpConfig();
+        SmtpConfig config = configRepository.getSmtpConfig().toCompletableFuture().join();
         SmtpConfig updatedConfig = ImmutableSmtpConfig.builder()
                 .host("a")
                 .port(555)
@@ -544,8 +535,8 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.updateSmtpConfig(updatedConfig, config.version());
-        config = configRepository.getSmtpConfig();
+        configRepository.updateSmtpConfig(updatedConfig, config.version()).toCompletableFuture().join();
+        config = configRepository.getSmtpConfig().toCompletableFuture().join();
 
         // then
         assertThat(config).isEqualTo(updatedConfig);
@@ -554,7 +545,7 @@ public class ConfigRepositoryIT {
     @Test
     public void shouldUpdateHttpProxyConfig() throws Exception {
         // given
-        HttpProxyConfig config = configRepository.getHttpProxyConfig();
+        HttpProxyConfig config = configRepository.getHttpProxyConfig().toCompletableFuture().join();
         HttpProxyConfig updatedConfig = ImmutableHttpProxyConfig.builder()
                 .host("a")
                 .port(555)
@@ -563,8 +554,8 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.updateHttpProxyConfig(updatedConfig, config.version());
-        config = configRepository.getHttpProxyConfig();
+        configRepository.updateHttpProxyConfig(updatedConfig, config.version()).toCompletableFuture().join();
+        config = configRepository.getHttpProxyConfig().toCompletableFuture().join();
 
         // then
         assertThat(config).isEqualTo(updatedConfig);
@@ -573,7 +564,7 @@ public class ConfigRepositoryIT {
     @Test
     public void shouldUpdateLdapConfig() throws Exception {
         // given
-        LdapConfig config = configRepository.getLdapConfig();
+        LdapConfig config = configRepository.getLdapConfig().toCompletableFuture().join();
         LdapConfig updatedConfig = ImmutableLdapConfig.builder()
                 .host("a")
                 .port(1234)
@@ -586,8 +577,8 @@ public class ConfigRepositoryIT {
                 .build();
 
         // when
-        configRepository.updateLdapConfig(updatedConfig, config.version());
-        config = configRepository.getLdapConfig();
+        configRepository.updateLdapConfig(updatedConfig, config.version()).toCompletableFuture().join();
+        config = configRepository.getLdapConfig().toCompletableFuture().join();
 
         // then
         assertThat(config).isEqualTo(updatedConfig);

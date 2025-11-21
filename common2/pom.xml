@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.14.1-beta.3-SNAPSHOT</version>
+    <version>0.14.5-beta.3-SNAPSHOT</version>
   </parent>
 
   <artifactId>glowroot-common2</artifactId>
@@ -81,8 +81,8 @@
     <dependency>
       <!-- this is no longer included in JDK starting with Java 9 -->
       <groupId>com.sun.activation</groupId>
-      <artifactId>jakarta.activation</artifactId>
-      <version>1.2.2</version>
+      <artifactId>javax.activation</artifactId>
+      <version>1.2.0</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
@@ -117,7 +117,7 @@
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

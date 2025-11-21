@@ -44,6 +44,7 @@ public class JarFileShadingIT {
         acceptableEntries.add("META-INF/MANIFEST\\.MF");
         acceptableEntries.add("META-INF/LICENSE");
         acceptableEntries.add("META-INF/NOTICE");
+        acceptableEntries.add("META-INF/thirdparty-LICENSE");
         JarFile jarFile = new JarFile(glowrootCoreJarFile);
         List<String> unacceptableEntries = Lists.newArrayList();
         for (Enumeration<JarEntry> e = jarFile.entries(); e.hasMoreElements();) {

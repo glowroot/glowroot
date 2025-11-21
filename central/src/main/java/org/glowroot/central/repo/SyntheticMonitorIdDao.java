@@ -15,20 +15,23 @@
  */
 package org.glowroot.central.repo;
 
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-
-import com.datastax.oss.driver.api.core.cql.*;
-import com.google.common.collect.ImmutableList;
-import org.immutables.value.Value;
-
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.google.common.base.Function;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.CassandraProfile;
+import org.immutables.value.Value;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -50,7 +53,7 @@ class SyntheticMonitorIdDao {
         this.configRepository = configRepository;
         this.clock = clock;
 
-        int maxRollupHours = configRepository.getCentralStorageConfig().getMaxRollupHours();
+        int maxRollupHours = configRepository.getCentralStorageConfig().toCompletableFuture().join().getMaxRollupHours();
         session.createTableWithTWCS("create table if not exists synthetic_monitor_id"
                 + " (agent_rollup_id varchar, capture_time timestamp, synthetic_monitor_id varchar,"
                 + " synthetic_monitor_display varchar, primary key (agent_rollup_id, capture_time,"
@@ -69,45 +72,50 @@ class SyntheticMonitorIdDao {
         long rolledUpFrom = CaptureTimes.getRollup(from, DAYS.toMillis(1));
         long rolledUpTo = CaptureTimes.getRollup(to, DAYS.toMillis(1));
         BoundStatement boundStatement = readPS.bind()
-            .setString(0, agentRollupId)
-            .setInstant(1, Instant.ofEpochMilli(rolledUpFrom))
-            .setInstant(2, Instant.ofEpochMilli(rolledUpTo));
-        ResultSet results = session.read(boundStatement);
+                .setString(0, agentRollupId)
+                .setInstant(1, Instant.ofEpochMilli(rolledUpFrom))
+                .setInstant(2, Instant.ofEpochMilli(rolledUpTo));
         Map<String, String> syntheticMonitorIds = new HashMap<>();
-        for (Row row : results) {
-            syntheticMonitorIds.put(checkNotNull(row.getString(0)), checkNotNull(row.getString(1)));
-        }
-        return syntheticMonitorIds;
+        Function<AsyncResultSet, CompletableFuture<Map<String, String>>> compute = new Function<>() {
+
+            @Override
+            public CompletableFuture<Map<String, String>> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    syntheticMonitorIds.put(checkNotNull(row.getString(0)), checkNotNull(row.getString(1)));
+                }
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                }
+                return CompletableFuture.completedFuture(syntheticMonitorIds);
+            }
+        };
+        return session.readAsync(boundStatement, CassandraProfile.web).thenCompose(compute).toCompletableFuture().get();
     }
 
-    List<CompletableFuture<?>> insert(String agentRollupId, long captureTime, String syntheticMonitorId,
-                                      String syntheticMonitorDisplay) {
+    CompletionStage<?> insert(String agentRollupId, long captureTime, String syntheticMonitorId,
+                              String syntheticMonitorDisplay) {
         long rollupCaptureTime = CaptureTimes.getRollup(captureTime, DAYS.toMillis(1));
-        SyntheticMonitorKey rateLimiterKey = ImmutableSyntheticMonitorKey.builder()
-                .agentRollupId(agentRollupId)
-                .captureTime(rollupCaptureTime)
-                .syntheticMonitorId(syntheticMonitorId)
-                .syntheticMonitorDisplay(syntheticMonitorDisplay)
-                .build();
-        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
-            return ImmutableList.of();
-        }
-        int i = 0;
-        BoundStatement boundStatement = insertPS.bind()
-            .setString(i++, agentRollupId)
-            .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
-            .setString(i++, syntheticMonitorId)
-            .setString(i++, syntheticMonitorDisplay);
-        int maxRollupTTL = configRepository.getCentralStorageConfig().getMaxRollupTTL();
-        boundStatement = boundStatement.setInt(i++, Common.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
-        return ImmutableList.of(session.writeAsync(boundStatement).toCompletableFuture());
+        return configRepository.getCentralStorageConfig().thenCompose(centralStorageConfig -> {
+            int i = 0;
+            BoundStatement boundStatement = insertPS.bind()
+                    .setString(i++, agentRollupId)
+                    .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
+                    .setString(i++, syntheticMonitorId)
+                    .setString(i++, syntheticMonitorDisplay);
+            int maxRollupTTL = centralStorageConfig.getMaxRollupTTL();
+            boundStatement = boundStatement.setInt(i++, Common.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
+            return session.writeAsync(boundStatement, CassandraProfile.collector);
+        });
     }
 
     @Value.Immutable
     interface SyntheticMonitorKey {
         String agentRollupId();
+
         long captureTime();
+
         String syntheticMonitorId();
+
         String syntheticMonitorDisplay();
     }
 }

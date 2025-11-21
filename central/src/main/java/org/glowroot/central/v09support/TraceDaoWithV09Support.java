@@ -15,37 +15,29 @@
  */
 package org.glowroot.central.v09support;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-
 import com.google.common.collect.Ordering;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.immutables.value.Value;
-
 import org.glowroot.central.repo.AgentRollupIds;
 import org.glowroot.central.repo.TraceDao;
 import org.glowroot.central.repo.TraceDaoImpl;
 import org.glowroot.common.live.ImmutableTracePoint;
-import org.glowroot.common.live.LiveTraceRepository.Entries;
-import org.glowroot.common.live.LiveTraceRepository.EntriesAndQueries;
-import org.glowroot.common.live.LiveTraceRepository.Queries;
-import org.glowroot.common.live.LiveTraceRepository.TracePoint;
-import org.glowroot.common.live.LiveTraceRepository.TracePointFilter;
+import org.glowroot.common.live.LiveTraceRepository.*;
 import org.glowroot.common.model.Result;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ImmutableErrorMessageCount;
 import org.glowroot.common2.repo.ImmutableErrorMessageResult;
 import org.glowroot.common2.repo.ImmutableTraceQuery;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
+import org.immutables.value.Value;
+
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -61,7 +53,7 @@ public class TraceDaoWithV09Support implements TraceDao {
     private final Map<String, String> convertToPostV09AgentIds;
 
     public TraceDaoWithV09Support(Set<String> agentRollupIdsWithV09Data, long v09LastCaptureTime,
-            long v09FqtLastExpirationTime, Clock clock, TraceDaoImpl delegate) {
+                                  long v09FqtLastExpirationTime, Clock clock, TraceDaoImpl delegate) {
         this.agentRollupIdsWithV09Data = agentRollupIdsWithV09Data;
         this.v09LastCaptureTime = v09LastCaptureTime;
         this.v09FqtLastExpirationTime = v09FqtLastExpirationTime;
@@ -78,7 +70,7 @@ public class TraceDaoWithV09Support implements TraceDao {
 
     @CheckReturnValue
     @Override
-    public CompletableFuture<?> store(String agentId, Trace trace) {
+    public CompletionStage<?> store(String agentId, Trace trace) {
         if (trace.getHeader().getCaptureTime() <= v09LastCaptureTime
                 && agentRollupIdsWithV09Data.contains(agentId)) {
             return delegate.store(V09Support.convertToV09(agentId),
@@ -89,117 +81,148 @@ public class TraceDaoWithV09Support implements TraceDao {
     }
 
     @Override
-    public long readSlowCount(String agentRollupId, TraceQuery query) throws Exception {
+    public CompletionStage<Long> readSlowCount(String agentRollupId, TraceQuery query) {
         return splitCountIfNeeded(agentRollupId, query, (id, q) -> delegate.readSlowCount(id, q));
     }
 
     @Override
-    public CompletableFuture<Result<TracePoint>> readSlowPoints(String agentRollupId, TraceQuery query,
-                                                               TracePointFilter filter, int limit) throws Exception {
-        // TODO avoid .get()
-        return CompletableFuture.completedFuture(splitResultIfNeeded(agentRollupId, query, limit,
-                (id, q) -> delegate.readSlowPoints(id, q, filter, limit).get()));
+    public CompletionStage<Result<TracePoint>> readSlowPoints(String agentRollupId, TraceQuery query,
+                                                              TracePointFilter filter, int limit) {
+        return splitResultIfNeeded(agentRollupId, query, limit,
+                (id, q) -> delegate.readSlowPoints(id, q, filter, limit));
     }
 
     @Override
-    public long readErrorCount(String agentRollupId, TraceQuery query) throws Exception {
+    public CompletionStage<Long> readErrorCount(String agentRollupId, TraceQuery query) {
         return splitCountIfNeeded(agentRollupId, query, (id, q) -> delegate.readErrorCount(id, q));
     }
 
     @Override
-    public CompletableFuture<Result<TracePoint>> readErrorPoints(String agentRollupId, TraceQuery query,
-            TracePointFilter filter, int limit) throws Exception {
-        // TODO avoid .get()
-        return CompletableFuture.completedFuture(splitResultIfNeeded(agentRollupId, query, limit,
-                (id, q) -> delegate.readErrorPoints(id, q, filter, limit).get()));
+    public CompletionStage<Result<TracePoint>> readErrorPoints(String agentRollupId, TraceQuery query,
+                                                               TracePointFilter filter, int limit) throws Exception {
+        return splitResultIfNeeded(agentRollupId, query, limit,
+                (id, q) -> delegate.readErrorPoints(id, q, filter, limit));
     }
 
     @Override
-    public ErrorMessageResult readErrorMessages(String agentRollupId, TraceQuery query,
-            ErrorMessageFilter filter, long resolutionMillis, int limit) throws Exception {
+    public CompletionStage<ErrorMessageResult> readErrorMessages(String agentRollupId, TraceQuery query,
+                                                                 ErrorMessageFilter filter, long resolutionMillis, int limit) {
         return splitErrorMessageResultIfNeeded(agentRollupId, query, limit,
                 (id, q) -> delegate.readErrorMessages(id, q, filter, resolutionMillis, limit));
     }
 
     @Override
-    public long readErrorMessageCount(String agentRollupId, TraceQuery query,
-            String errorMessageFilter) throws Exception {
+    public CompletionStage<Long> readErrorMessageCount(String agentRollupId, TraceQuery query,
+                                                       String errorMessageFilter, CassandraProfile profile) {
         return splitCountIfNeeded(agentRollupId, query,
-                (id, q) -> delegate.readErrorMessageCount(id, q, errorMessageFilter));
+                (id, q) -> delegate.readErrorMessageCount(id, q, errorMessageFilter, profile));
     }
 
     @Override
-    public @Nullable HeaderPlus readHeaderPlus(String agentId, String traceId) throws Exception {
-        HeaderPlus headerPlus = delegate.readHeaderPlus(agentId, traceId);
-        if (headerPlus == null && checkV09(agentId, traceId)) {
-            headerPlus = delegate.readHeaderPlus(V09Support.convertToV09(agentId), traceId);
-        }
-        return headerPlus;
+    public CompletionStage<HeaderPlus> readHeaderPlus(String agentId, String traceId) {
+        return delegate.readHeaderPlus(agentId, traceId).thenCompose(headerPlus -> {
+            if (headerPlus != null) {
+                return CompletableFuture.completedFuture(headerPlus);
+            }
+            return checkV09(agentId, traceId).thenCompose(checkV09 -> {
+                if (checkV09) {
+                    return delegate.readHeaderPlus(V09Support.convertToV09(agentId), traceId);
+                }
+                return CompletableFuture.completedFuture(headerPlus);
+            });
+        });
     }
 
     @Override
-    public Entries readEntries(String agentId, String traceId) throws Exception {
-        Entries entries = delegate.readEntries(agentId, traceId);
-        if (entries.entries().isEmpty() && checkV09(agentId, traceId)) {
-            return delegate.readEntries(V09Support.convertToV09(agentId), traceId);
-        }
-        return entries;
+    public CompletionStage<Entries> readEntries(String agentId, String traceId, CassandraProfile profile) {
+        return delegate.readEntries(agentId, traceId, profile).thenCompose(entries -> {
+            if (!entries.entries().isEmpty()) {
+                return CompletableFuture.completedFuture(entries);
+            }
+            return checkV09(agentId, traceId).thenCompose(checkV09 -> {
+                if (checkV09) {
+                    return delegate.readEntries(V09Support.convertToV09(agentId), traceId, profile);
+                }
+                return CompletableFuture.completedFuture(entries);
+            });
+        });
     }
 
     @Override
-    public Queries readQueries(String agentId, String traceId) throws Exception {
-        Queries queries = delegate.readQueries(agentId, traceId);
-        if (queries.queries().isEmpty() && checkV09(agentId, traceId)) {
-            return delegate.readQueries(V09Support.convertToV09(agentId), traceId);
-        }
-        return queries;
+    public CompletionStage<Queries> readQueries(String agentId, String traceId, CassandraProfile profile) {
+        return delegate.readQueries(agentId, traceId, profile).thenCompose(queries -> {
+            if (!queries.queries().isEmpty()) {
+                return CompletableFuture.completedFuture(queries);
+            }
+            return checkV09(agentId, traceId).thenCompose(checkV09 -> {
+                if (checkV09) {
+                    return delegate.readQueries(V09Support.convertToV09(agentId), traceId, profile);
+                }
+                return CompletableFuture.completedFuture(queries);
+            });
+        });
     }
 
     @Override
-    public EntriesAndQueries readEntriesAndQueriesForExport(String agentId, String traceId)
-            throws Exception {
-        EntriesAndQueries entriesAndQueries =
-                delegate.readEntriesAndQueriesForExport(agentId, traceId);
-        if (entriesAndQueries.entries().isEmpty()
-                && clock.currentTimeMillis() < v09FqtLastExpirationTime
-                && checkV09(agentId, traceId)) {
-            return delegate.readEntriesAndQueriesForExport(V09Support.convertToV09(agentId),
-                    traceId);
-        }
-        return entriesAndQueries;
+    public CompletionStage<EntriesAndQueries> readEntriesAndQueriesForExport(String agentId, String traceId, CassandraProfile profile) {
+        return delegate.readEntriesAndQueriesForExport(agentId, traceId, profile).thenCompose(entriesAndQueries -> {
+            if (!entriesAndQueries.entries().isEmpty()) {
+                return CompletableFuture.completedFuture(entriesAndQueries);
+            }
+            return checkV09(agentId, traceId).thenCompose(checkV09 -> {
+                if (clock.currentTimeMillis() < v09FqtLastExpirationTime
+                        && checkV09) {
+                    return delegate.readEntriesAndQueriesForExport(V09Support.convertToV09(agentId), traceId, profile);
+                }
+                return CompletableFuture.completedFuture(entriesAndQueries);
+            });
+        });
     }
 
     @Override
-    public @Nullable Profile readMainThreadProfile(String agentId, String traceId)
-            throws Exception {
-        Profile profile = delegate.readMainThreadProfile(agentId, traceId);
-        if (profile == null && checkV09(agentId, traceId)) {
-            profile = delegate.readMainThreadProfile(V09Support.convertToV09(agentId), traceId);
-        }
-        return profile;
+    public CompletionStage<Profile> readMainThreadProfile(String agentId, String traceId) {
+        return delegate.readMainThreadProfile(agentId, traceId).thenCompose(profile -> {
+            if (profile != null) {
+                return CompletableFuture.completedFuture(profile);
+            }
+            return checkV09(agentId, traceId).thenCompose(checkV09 -> {
+                if (checkV09) {
+                    return delegate.readMainThreadProfile(V09Support.convertToV09(agentId), traceId);
+                }
+                return CompletableFuture.completedFuture(profile);
+            });
+        });
     }
 
     @Override
-    public @Nullable Profile readAuxThreadProfile(String agentId, String traceId) throws Exception {
-        Profile profile = delegate.readAuxThreadProfile(agentId, traceId);
-        if (profile == null && checkV09(agentId, traceId)) {
-            profile = delegate.readAuxThreadProfile(V09Support.convertToV09(agentId), traceId);
-        }
-        return profile;
+    public CompletionStage<Profile> readAuxThreadProfile(String agentId, String traceId) {
+        return delegate.readAuxThreadProfile(agentId, traceId).thenCompose(profile -> {
+            if (profile != null) {
+                return CompletableFuture.completedFuture(profile);
+            }
+            return checkV09(agentId, traceId).thenCompose(checkV09 -> {
+                if (checkV09) {
+                    return delegate.readAuxThreadProfile(V09Support.convertToV09(agentId), traceId);
+                }
+                return CompletableFuture.completedFuture(profile);
+            });
+        });
     }
 
-    private boolean checkV09(String agentId, String traceId) throws Exception {
+    private CompletionStage<Boolean> checkV09(String agentId, String traceId) {
         if (!agentRollupIdsWithV09Data.contains(agentId)) {
-            return false;
+            return CompletableFuture.completedFuture(false);
         }
-        HeaderPlus headerPlusV09 =
-                delegate.readHeaderPlus(V09Support.convertToV09(agentId), traceId);
-        return headerPlusV09 != null
-                && headerPlusV09.header().getCaptureTime() <= v09LastCaptureTime;
+        return delegate.readHeaderPlus(V09Support.convertToV09(agentId), traceId).thenApply(headerPlusV09 -> {
+            if (headerPlusV09 == null) {
+                return false;
+            }
+            return headerPlusV09.header().getCaptureTime() <= v09LastCaptureTime;
+        });
     }
 
-    private Result<TracePoint> splitResultIfNeeded(String agentRollupId, TraceQuery query,
-            int limit, DelegateResultAction action) throws Exception {
+    private CompletionStage<Result<TracePoint>> splitResultIfNeeded(String agentRollupId, TraceQuery query,
+                                                                    int limit, DelegateResultAction action) {
         TraceQueryPlan plan = getPlan(agentRollupId, query);
         TraceQuery queryV09 = plan.queryV09();
         TraceQuery queryPostV09 = plan.queryPostV09();
@@ -208,24 +231,24 @@ public class TraceDaoWithV09Support implements TraceDao {
             return action.result(agentRollupId, queryPostV09);
         } else if (queryPostV09 == null) {
             checkNotNull(queryV09);
-            return convertFromV09(action.result(V09Support.convertToV09(agentRollupId), queryV09));
+            return action.result(V09Support.convertToV09(agentRollupId), queryV09).thenApply(this::convertFromV09);
         } else {
-            Result<TracePoint> resultV09 =
-                    convertFromV09(action.result(V09Support.convertToV09(agentRollupId), queryV09));
-            Result<TracePoint> resultPostV09 = action.result(agentRollupId, queryPostV09);
-            List<TracePoint> tracePoints = new ArrayList<>();
-            tracePoints.addAll(resultV09.records());
-            tracePoints.addAll(resultPostV09.records());
-            if (tracePoints.size() > limit) {
-                tracePoints = TraceDaoImpl
-                        .applyLimitByDurationNanosAndThenSortByCaptureTime(tracePoints, limit);
-                return new Result<>(tracePoints, true);
-            } else {
-                tracePoints = Ordering.from(Comparator.comparingLong(TracePoint::captureTime))
-                        .sortedCopy(tracePoints);
-                return new Result<>(tracePoints,
-                        resultV09.moreAvailable() || resultPostV09.moreAvailable());
-            }
+            return action.result(V09Support.convertToV09(agentRollupId), queryV09).thenApply(this::convertFromV09)
+                    .thenCombine(action.result(agentRollupId, queryPostV09), (resultV09, resultPostV09) -> {
+                        List<TracePoint> tracePoints = new ArrayList<>();
+                        tracePoints.addAll(resultV09.records());
+                        tracePoints.addAll(resultPostV09.records());
+                        if (tracePoints.size() > limit) {
+                            tracePoints = TraceDaoImpl
+                                    .applyLimitByDurationNanosAndThenSortByCaptureTime(tracePoints, limit);
+                            return new Result<>(tracePoints, true);
+                        } else {
+                            tracePoints = Ordering.from(Comparator.comparingLong(TracePoint::captureTime))
+                                    .sortedCopy(tracePoints);
+                            return new Result<>(tracePoints,
+                                    resultV09.moreAvailable() || resultPostV09.moreAvailable());
+                        }
+                    });
         }
     }
 
@@ -246,69 +269,75 @@ public class TraceDaoWithV09Support implements TraceDao {
         return new Result<>(tracePoints, resultV09.moreAvailable());
     }
 
-    private ErrorMessageResult splitErrorMessageResultIfNeeded(String agentRollupId,
-            TraceQuery query, int limit, DelegateErrorMessageResultAction action) throws Exception {
+    private CompletionStage<ErrorMessageResult> splitErrorMessageResultIfNeeded(String agentRollupId,
+                                                                                TraceQuery query, int limit, DelegateErrorMessageResultAction action) {
         TraceQueryPlan plan = getPlan(agentRollupId, query);
         TraceQuery queryV09 = plan.queryV09();
         TraceQuery queryPostV09 = plan.queryPostV09();
-        if (queryV09 == null) {
-            checkNotNull(queryPostV09);
-            return action.result(agentRollupId, queryPostV09);
-        } else if (queryPostV09 == null) {
-            checkNotNull(queryV09);
-            return action.result(V09Support.convertToV09(agentRollupId), queryV09);
-        } else {
-            ErrorMessageResult resultV09 =
-                    action.result(V09Support.convertToV09(agentRollupId), queryV09);
-            ErrorMessageResult resultPostV09 = action.result(agentRollupId, queryPostV09);
-            List<ErrorMessagePoint> points = new ArrayList<>();
-            points.addAll(resultV09.points());
-            points.addAll(resultPostV09.points());
-            Map<String, MutableLong> messageCounts = new HashMap<>();
-            Result<ErrorMessageCount> countsV09 = resultV09.counts();
-            Result<ErrorMessageCount> countsPostV09 = resultPostV09.counts();
-            for (ErrorMessageCount errorMessageCount : countsV09.records()) {
-                messageCounts.computeIfAbsent(errorMessageCount.message(), k -> new MutableLong())
-                        .add(errorMessageCount.count());
-            }
-            for (ErrorMessageCount errorMessageCount : countsPostV09.records()) {
-                messageCounts.computeIfAbsent(errorMessageCount.message(), k -> new MutableLong())
-                        .add(errorMessageCount.count());
-            }
-            List<ErrorMessageCount> counts = messageCounts.entrySet().stream()
-                    .map(e1 -> ImmutableErrorMessageCount.of(e1.getKey(), e1.getValue().value))
-                    .sorted(Comparator.comparing(ErrorMessageCount::count).reversed())
-                    // explicit type on this line is needed for Checker Framework
-                    // see https://github.com/typetools/checker-framework/issues/531
-                    .collect(Collectors.<ErrorMessageCount>toList());
-            if (counts.size() > limit) {
-                return ImmutableErrorMessageResult.builder()
-                        .addAllPoints(points)
-                        .counts(new Result<>(counts.subList(0, limit), true))
-                        .build();
+        return CompletableFuture.completedFuture(null).thenCompose(ignored -> {
+            if (queryV09 == null) {
+                checkNotNull(queryPostV09);
+                return action.result(agentRollupId, queryPostV09);
+            } else if (queryPostV09 == null) {
+                checkNotNull(queryV09);
+                return action.result(V09Support.convertToV09(agentRollupId), queryV09);
             } else {
-                return ImmutableErrorMessageResult.builder()
-                        .addAllPoints(points)
-                        .counts(new Result<>(counts,
-                                countsV09.moreAvailable() || countsPostV09.moreAvailable()))
-                        .build();
+                return action.result(V09Support.convertToV09(agentRollupId), queryV09).thenCompose(resultV09 -> {
+
+                    return action.result(agentRollupId, queryPostV09).thenApply(resultPostV09 -> {
+                        List<ErrorMessagePoint> points = new ArrayList<>();
+                        points.addAll(resultV09.points());
+                        points.addAll(resultPostV09.points());
+                        Map<String, MutableLong> messageCounts = new HashMap<>();
+                        Result<ErrorMessageCount> countsV09 = resultV09.counts();
+                        Result<ErrorMessageCount> countsPostV09 = resultPostV09.counts();
+                        for (ErrorMessageCount errorMessageCount : countsV09.records()) {
+                            messageCounts.computeIfAbsent(errorMessageCount.message(), k -> new MutableLong())
+                                    .add(errorMessageCount.count());
+                        }
+                        for (ErrorMessageCount errorMessageCount : countsPostV09.records()) {
+                            messageCounts.computeIfAbsent(errorMessageCount.message(), k -> new MutableLong())
+                                    .add(errorMessageCount.count());
+                        }
+                        List<ErrorMessageCount> counts = messageCounts.entrySet().stream()
+                                .map(e1 -> ImmutableErrorMessageCount.of(e1.getKey(), e1.getValue().value))
+                                .sorted(Comparator.comparing(ErrorMessageCount::count).reversed())
+                                // explicit type on this line is needed for Checker Framework
+                                // see https://github.com/typetools/checker-framework/issues/531
+                                .collect(Collectors.<ErrorMessageCount>toList());
+                        if (counts.size() > limit) {
+                            return ImmutableErrorMessageResult.builder()
+                                    .addAllPoints(points)
+                                    .counts(new Result<>(counts.subList(0, limit), true))
+                                    .build();
+                        } else {
+                            return ImmutableErrorMessageResult.builder()
+                                    .addAllPoints(points)
+                                    .counts(new Result<>(counts,
+                                            countsV09.moreAvailable() || countsPostV09.moreAvailable()))
+                                    .build();
+                        }
+
+                    });
+                });
             }
-        }
+        });
     }
 
-    private long splitCountIfNeeded(String agentRollupId, TraceQuery query,
-            DelegateCountAction action) throws Exception {
+    private CompletionStage<Long> splitCountIfNeeded(String agentRollupId, TraceQuery query,
+                                                     DelegateCountAction action) {
         TraceQueryPlan plan = getPlan(agentRollupId, query);
         TraceQuery queryV09 = plan.queryV09();
-        long count = 0;
+        CompletionStage<Long> countQueryV09 = CompletableFuture.completedFuture(0L);
         if (queryV09 != null) {
-            count += action.count(V09Support.convertToV09(agentRollupId), queryV09);
+            countQueryV09 = action.count(V09Support.convertToV09(agentRollupId), queryV09);
         }
         TraceQuery queryPostV09 = plan.queryPostV09();
+        CompletionStage<Long> countQueryPostV09 = CompletableFuture.completedFuture(0L);
         if (queryPostV09 != null) {
-            count += action.count(agentRollupId, queryPostV09);
+            countQueryPostV09 = action.count(agentRollupId, queryPostV09);
         }
-        return count;
+        return countQueryV09.thenCombine(countQueryPostV09, Long::sum);
     }
 
     private TraceQueryPlan getPlan(String agentRollupId, TraceQuery query) {
@@ -343,24 +372,26 @@ public class TraceDaoWithV09Support implements TraceDao {
     interface TraceQueryPlan {
         @Nullable
         TraceQuery queryV09();
+
         @Nullable
         TraceQuery queryPostV09();
     }
 
     private interface DelegateCountAction {
-        long count(String agentRollupId, TraceQuery query) throws Exception;
+        CompletionStage<Long> count(String agentRollupId, TraceQuery query);
     }
 
     private interface DelegateResultAction {
-        Result<TracePoint> result(String agentRollupId, TraceQuery query) throws Exception;
+        CompletionStage<Result<TracePoint>> result(String agentRollupId, TraceQuery query);
     }
 
     private interface DelegateErrorMessageResultAction {
-        ErrorMessageResult result(String agentRollupId, TraceQuery query) throws Exception;
+        CompletionStage<ErrorMessageResult> result(String agentRollupId, TraceQuery query);
     }
 
     private static class MutableLong {
         private long value;
+
         private void add(long v) {
             value += v;
         }

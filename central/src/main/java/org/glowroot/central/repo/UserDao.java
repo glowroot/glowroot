@@ -17,6 +17,9 @@ package org.glowroot.central.repo;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.cql.*;
@@ -24,12 +27,13 @@ import com.google.common.collect.ImmutableSet;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import org.glowroot.central.util.Cache;
+import org.glowroot.central.util.AsyncCache;
 import org.glowroot.central.util.Cache.CacheLoader;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.common2.config.ImmutableUserConfig;
 import org.glowroot.common2.config.UserConfig;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository.DuplicateUsernameException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -45,7 +49,7 @@ class UserDao {
     private final PreparedStatement insertPS;
     private final PreparedStatement deletePS;
 
-    private final Cache<String, List<UserConfig>> allUserConfigsCache;
+    private final AsyncCache<String, List<UserConfig>> allUserConfigsCache;
 
     UserDao(Session session, ClusterManager clusterManager) throws Exception {
         this.session = session;
@@ -72,75 +76,83 @@ class UserDao {
                 .setBoolean(i++, false)
                 .setString(i++, "")
                 .setSet(i++, ImmutableSet.of("Administrator"), String.class);
-            session.write(boundStatement);
+            session.writeAsync(boundStatement, CassandraProfile.slow).toCompletableFuture().get();
         }
 
-        allUserConfigsCache = clusterManager.createSelfBoundedCache("allUserConfigsCache",
+        allUserConfigsCache = clusterManager.createSelfBoundedAsyncCache("allUserConfigsCache",
                 new AllUsersCacheLoader());
     }
 
-    List<UserConfig> read() throws Exception {
+    CompletionStage<List<UserConfig>> read() {
         return allUserConfigsCache.get(ALL_USERS_SINGLE_CACHE_KEY);
     }
 
-    @Nullable
-    UserConfig read(String username) throws Exception {
-        for (UserConfig userConfig : read()) {
-            if (userConfig.username().equals(username)) {
-                return userConfig;
+    CompletionStage<UserConfig> read(String username) {
+        return read().thenApply(users -> {
+            for (UserConfig userConfig : users) {
+                if (userConfig.username().equals(username)) {
+                    return userConfig;
+                }
             }
-        }
-        return null;
+            return null;
+        });
     }
 
-    @Nullable
-    UserConfig readCaseInsensitive(String username) throws Exception {
-        for (UserConfig userConfig : read()) {
-            if (userConfig.username().equalsIgnoreCase(username)) {
-                return userConfig;
+    CompletionStage<UserConfig> readCaseInsensitive(String username) {
+        return read().thenApply(users -> {
+            for (UserConfig userConfig : users) {
+                if (userConfig.username().equalsIgnoreCase(username)) {
+                    return userConfig;
+                }
             }
-        }
-        return null;
+            return null;
+        });
     }
 
-    boolean namedUsersExist() throws Exception {
-        for (UserConfig userConfig : read()) {
-            if (!userConfig.username().equalsIgnoreCase("anonymous")) {
-                return true;
+    CompletionStage<Boolean> namedUsersExist() {
+        return read().thenApply(users -> {
+            for (UserConfig userConfig : users) {
+                if (!userConfig.username().equalsIgnoreCase("anonymous")) {
+                    return true;
+                }
             }
-        }
-        return false;
+            return false;
+        });
     }
 
-    void insert(UserConfig userConfig) throws Exception {
+    CompletionStage<Void> insert(UserConfig userConfig, CassandraProfile profile) {
         BoundStatement boundStatement = insertPS.bind();
         boundStatement = bindInsert(boundStatement, userConfig);
-        session.write(boundStatement);
-        allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
+        return session.writeAsync(boundStatement, profile).thenRun(() -> {
+            allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
+        });
     }
 
-    void insertIfNotExists(UserConfig userConfig) throws Exception {
+    CompletionStage<?> insertIfNotExists(UserConfig userConfig, CassandraProfile profile) {
         BoundStatement boundStatement = insertIfNotExistsPS.bind();
         boundStatement = bindInsert(boundStatement, userConfig);
         // consistency level must be at least LOCAL_SERIAL
         if (boundStatement.getSerialConsistencyLevel() != ConsistencyLevel.SERIAL) {
             boundStatement = boundStatement.setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
         }
-        AsyncResultSet results = session.update(boundStatement);
-        Row row = checkNotNull(results.one());
-        boolean applied = row.getBoolean("[applied]");
-        if (applied) {
-            allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
-        } else {
-            throw new DuplicateUsernameException();
-        }
+        return session.updateAsync(boundStatement, profile).thenCompose(results -> {
+            Row row = checkNotNull(results.one());
+            boolean applied = row.getBoolean("[applied]");
+            if (applied) {
+                allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
+                return CompletableFuture.completedFuture(null);
+            } else {
+                return CompletableFuture.failedFuture(new DuplicateUsernameException());
+            }
+        });
     }
 
-    void delete(String username) throws Exception {
+    CompletionStage<Void> delete(String username, CassandraProfile profile) {
         BoundStatement boundStatement = deletePS.bind()
             .setString(0, username);
-        session.write(boundStatement);
-        allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
+        return session.writeAsync(boundStatement, profile).thenRun(() -> {
+            allUserConfigsCache.invalidate(ALL_USERS_SINGLE_CACHE_KEY);
+        });
     }
 
     @CheckReturnValue
@@ -152,16 +164,25 @@ class UserDao {
             .setSet(i++, userConfig.roles(), String.class);
     }
 
-    private class AllUsersCacheLoader implements CacheLoader<String, List<UserConfig>> {
+    private class AllUsersCacheLoader implements AsyncCache.AsyncCacheLoader<String, List<UserConfig>> {
 
         @Override
-        public List<UserConfig> load(String dummy) {
-            ResultSet results = session.read(readPS.bind());
+        public CompletableFuture<List<UserConfig>> load(String dummy) {
             List<UserConfig> users = new ArrayList<>();
-            for (Row row : results) {
-                users.add(buildUser(row));
-            }
-            return users;
+            Function<AsyncResultSet, CompletableFuture<List<UserConfig>>> compute = new Function<AsyncResultSet, CompletableFuture<List<UserConfig>>>() {
+                @Override
+                public CompletableFuture<List<UserConfig>> apply(AsyncResultSet results) {
+                    for (Row row : results.currentPage()) {
+                        users.add(buildUser(row));
+                    }
+                    if (results.hasMorePages()) {
+                        return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                    }
+                    return CompletableFuture.completedFuture(users);
+
+                }
+            };
+            return session.readAsync(readPS.bind(), CassandraProfile.collector).thenCompose(compute).toCompletableFuture();
         }
 
         private UserConfig buildUser(Row row) {

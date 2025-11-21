@@ -20,6 +20,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.google.common.base.Ticker;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -99,7 +100,7 @@ public class TraceDaoTest {
 
         // when
         Trace.Header header2 = traceDao
-                .readHeaderPlus(AGENT_ID, queryResult.records().get(0).traceId())
+                .readHeaderPlus(AGENT_ID, queryResult.records().get(0).traceId()).toCompletableFuture().get()
                 .header();
 
         // then
@@ -308,7 +309,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        long count = traceDao.readErrorMessageCount(AGENT_ID, query, "is A");
+        long count = traceDao.readErrorMessageCount(AGENT_ID, query, "is A", CassandraProfile.web).toCompletableFuture().get();
 
         // then
         assertThat(count).isEqualTo(1);
@@ -330,7 +331,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        long count = traceDao.readErrorMessageCount(AGENT_ID, query, "is a");
+        long count = traceDao.readErrorMessageCount(AGENT_ID, query, "is a", CassandraProfile.web).toCompletableFuture().get();
 
         // then
         assertThat(count).isEqualTo(0);
@@ -352,7 +353,7 @@ public class TraceDaoTest {
                 .build();
 
         // when
-        long count = traceDao.readErrorMessageCount(AGENT_ID, query, "/(?i)is a/");
+        long count = traceDao.readErrorMessageCount(AGENT_ID, query, "/(?i)is a/", CassandraProfile.web).toCompletableFuture().get();
 
         // then
         assertThat(count).isEqualTo(1);
@@ -366,6 +367,6 @@ public class TraceDaoTest {
         // when
         traceDao.deleteBefore(100);
         // then
-        assertThat(traceDao.readHeaderPlus(AGENT_ID, traceReader.traceId())).isNull();
+        assertThat(traceDao.readHeaderPlus(AGENT_ID, traceReader.traceId()).toCompletableFuture().get()).isNull();
     }
 }

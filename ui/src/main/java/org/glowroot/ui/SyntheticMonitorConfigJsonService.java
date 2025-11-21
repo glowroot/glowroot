@@ -31,6 +31,7 @@ import com.google.common.collect.Ordering;
 import com.google.common.io.CharStreams;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.common.util.ObjectMappers;
@@ -79,7 +80,7 @@ class SyntheticMonitorConfigJsonService {
         Optional<String> id = request.id();
         if (id.isPresent()) {
             SyntheticMonitorConfig config =
-                    configRepository.getSyntheticMonitorConfig(agentRollupId, id.get());
+                    configRepository.getSyntheticMonitorConfig(agentRollupId, id.get()).toCompletableFuture().join();
             if (config == null) {
                 throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
             }
@@ -87,7 +88,7 @@ class SyntheticMonitorConfigJsonService {
         } else {
             List<SyntheticMonitorConfigListDto> configDtos = Lists.newArrayList();
             List<SyntheticMonitorConfig> configs =
-                    configRepository.getSyntheticMonitorConfigs(agentRollupId);
+                    configRepository.getSyntheticMonitorConfigs(agentRollupId).toCompletableFuture().join();
             configs = orderingByDisplay.immutableSortedCopy(configs);
             for (SyntheticMonitorConfig config : configs) {
                 configDtos.add(SyntheticMonitorConfigListDto.create(config));
@@ -119,7 +120,7 @@ class SyntheticMonitorConfigJsonService {
                     .setId(id)
                     .build();
         }
-        configRepository.insertSyntheticMonitorConfig(agentRollupId, config);
+        configRepository.insertSyntheticMonitorConfig(agentRollupId, config, CassandraProfile.web).toCompletableFuture().join();
         return mapper.writeValueAsString(SyntheticMonitorConfigDto.create(config));
     }
 
@@ -139,7 +140,7 @@ class SyntheticMonitorConfigJsonService {
             return errorResponse;
         }
         configRepository.updateSyntheticMonitorConfig(agentRollupId, config,
-                configDto.version().get());
+                configDto.version().get(), CassandraProfile.web).toCompletableFuture().join();
         return mapper.writeValueAsString(SyntheticMonitorConfigDto.create(config));
     }
 
@@ -148,7 +149,7 @@ class SyntheticMonitorConfigJsonService {
             permission = "agent:config:edit:syntheticMonitors")
     void removeSyntheticMonitor(@BindAgentRollupId String agentRollupId,
             @BindRequest SyntheticMonitorConfigRequest request) throws Exception {
-        configRepository.deleteSyntheticMonitorConfig(agentRollupId, request.id().get());
+        configRepository.deleteSyntheticMonitorConfig(agentRollupId, request.id().get(), CassandraProfile.web).toCompletableFuture().join();
     }
 
     private static @Nullable String validate(SyntheticMonitorConfig config) throws Exception {

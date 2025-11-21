@@ -18,6 +18,8 @@ package org.glowroot.agent.embedded.repo;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -29,6 +31,7 @@ import org.glowroot.agent.embedded.util.ImmutableColumn;
 import org.glowroot.agent.embedded.util.Schemas.Column;
 import org.glowroot.agent.embedded.util.Schemas.ColumnType;
 import org.glowroot.common2.repo.AlertingDisabledRepository;
+import org.glowroot.common2.repo.CassandraProfile;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -46,14 +49,22 @@ public class AlertingDisabledDao implements AlertingDisabledRepository {
     }
 
     @Override
-    public @Nullable Long getAlertingDisabledUntilTime(String agentRollupId) throws Exception {
-        return dataSource.queryForOptionalLong("select disabled_until_time from alerting_disabled");
+    public CompletionStage<Long> getAlertingDisabledUntilTime(String agentRollupId, CassandraProfile profile) {
+        try {
+            return CompletableFuture.completedFuture(dataSource.queryForOptionalLong("select disabled_until_time from alerting_disabled"));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public void setAlertingDisabledUntilTime(String agentRollupId, @Nullable Long disabledUntilTime)
-            throws SQLException {
-        dataSource.update(new AlertingDisabledBinder(disabledUntilTime));
+    public CompletionStage<?> setAlertingDisabledUntilTime(String agentRollupId, @Nullable Long disabledUntilTime, CassandraProfile profile) {
+        try {
+            dataSource.update(new AlertingDisabledBinder(disabledUntilTime));
+            return CompletableFuture.completedFuture(null);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     void reinitAfterDeletingDatabase() throws Exception {

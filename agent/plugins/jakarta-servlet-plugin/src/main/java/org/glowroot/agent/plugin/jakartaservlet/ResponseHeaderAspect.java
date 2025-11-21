@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+import static org.glowroot.agent.plugin.jakartaservlet.ServletAspect.getServletMessageSupplier;
+
 public class ResponseHeaderAspect {
 
     @Pointcut(className = "jakarta.servlet.ServletResponse", methodName = "setContentLength",
@@ -41,8 +43,7 @@ public class ResponseHeaderAspect {
             if (!ServletPluginProperties.captureContentLengthResponseHeader()) {
                 return;
             }
-            ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+            final ServletMessageSupplier messageSupplier = getServletMessageSupplier(context);
             if (messageSupplier != null) {
                 messageSupplier.setResponseIntHeader("Content-Length", value);
             }
@@ -62,8 +63,7 @@ public class ResponseHeaderAspect {
             if (!ServletPluginProperties.captureContentLengthResponseHeader()) {
                 return;
             }
-            ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+            final ServletMessageSupplier messageSupplier = getServletMessageSupplier(context);
             if (messageSupplier != null) {
                 messageSupplier.setResponseLongHeader("Content-Length", value);
             }
@@ -89,8 +89,7 @@ public class ResponseHeaderAspect {
             if (!ServletPluginProperties.captureContentTypeResponseHeader()) {
                 return;
             }
-            ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+            final ServletMessageSupplier messageSupplier = getServletMessageSupplier(context);
             if (messageSupplier != null) {
                 if (responseInvoker.hasGetContentTypeMethod()) {
                     String contentType = responseInvoker.getContentType(response);
@@ -116,8 +115,7 @@ public class ResponseHeaderAspect {
             if (!ServletPluginProperties.captureContentTypeResponseHeader()) {
                 return;
             }
-            ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+            final ServletMessageSupplier messageSupplier = getServletMessageSupplier(context);
             if (messageSupplier != null && responseInvoker.hasGetContentTypeMethod()) {
                 String contentType = responseInvoker.getContentType(response);
                 messageSupplier.setResponseHeader("Content-Type", contentType);
@@ -147,8 +145,7 @@ public class ResponseHeaderAspect {
             if (!captureContentLanguage && !captureContentType) {
                 return;
             }
-            ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+            final ServletMessageSupplier messageSupplier = getServletMessageSupplier(context);
             if (messageSupplier != null) {
                 if (captureContentLanguage) {
                     messageSupplier.setResponseHeader("Content-Language", locale.toString());
@@ -180,8 +177,7 @@ public class ResponseHeaderAspect {
             if (!captureResponseHeader(name)) {
                 return;
             }
-            ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+            final ServletMessageSupplier messageSupplier = getServletMessageSupplier(context);
             if (messageSupplier != null) {
                 messageSupplier.setResponseHeader(name, value);
             }
@@ -207,8 +203,7 @@ public class ResponseHeaderAspect {
             if (!captureResponseHeader(name)) {
                 return;
             }
-            ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+            final ServletMessageSupplier messageSupplier = getServletMessageSupplier(context);
             if (messageSupplier != null) {
                 messageSupplier.setResponseDateHeader(name, value);
             }
@@ -233,8 +228,7 @@ public class ResponseHeaderAspect {
             if (!captureResponseHeader(name)) {
                 return;
             }
-            ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+            final ServletMessageSupplier messageSupplier = getServletMessageSupplier(context);
             if (messageSupplier != null) {
                 messageSupplier.setResponseIntHeader(name, value);
             }
@@ -260,8 +254,7 @@ public class ResponseHeaderAspect {
             if (!captureResponseHeader(name)) {
                 return;
             }
-            ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+            final ServletMessageSupplier messageSupplier = getServletMessageSupplier(context);
             if (messageSupplier != null) {
                 messageSupplier.addResponseHeader(name, value);
             }
@@ -287,8 +280,7 @@ public class ResponseHeaderAspect {
             if (!captureResponseHeader(name)) {
                 return;
             }
-            ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+            final ServletMessageSupplier messageSupplier = getServletMessageSupplier(context);
             if (messageSupplier != null) {
                 messageSupplier.addResponseDateHeader(name, value);
             }
@@ -313,8 +305,7 @@ public class ResponseHeaderAspect {
             if (!captureResponseHeader(name)) {
                 return;
             }
-            ServletMessageSupplier messageSupplier =
-                    (ServletMessageSupplier) context.getServletRequestInfo();
+            final ServletMessageSupplier messageSupplier = getServletMessageSupplier(context);
             if (messageSupplier != null) {
                 messageSupplier.addResponseIntHeader(name, value);
             }

@@ -15,32 +15,11 @@
  */
 package org.glowroot.central;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.annotation.concurrent.GuardedBy;
-
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Ticker;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.machinepublishers.jbrowserdriver.JBrowserDriver;
-import com.machinepublishers.jbrowserdriver.ProxyConfig;
-import com.machinepublishers.jbrowserdriver.RequestHeaders;
-import com.machinepublishers.jbrowserdriver.Settings;
-import com.machinepublishers.jbrowserdriver.UserAgent;
+import com.machinepublishers.jbrowserdriver.*;
 import com.machinepublishers.jbrowserdriver.UserAgent.Family;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -55,29 +34,16 @@ import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.BasicAuthCache;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.*;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.immutables.value.Value;
-import org.openqa.selenium.WebDriver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.agent.api.Instrumentation.AlreadyInTransactionBehavior;
-import org.glowroot.central.RollupService.AgentRollupConsumer;
-import org.glowroot.central.repo.ActiveAgentDao;
-import org.glowroot.central.repo.AlertingDisabledDao;
-import org.glowroot.central.repo.ConfigRepositoryImpl;
-import org.glowroot.central.repo.IncidentDao;
-import org.glowroot.central.repo.SyntheticResultDao;
+import org.glowroot.central.RollupService.AgentRollupComposer;
+import org.glowroot.central.repo.*;
 import org.glowroot.central.repo.SyntheticResultDao.SyntheticResultRollup0;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.MoreExecutors2;
@@ -88,8 +54,8 @@ import org.glowroot.common.util.Version;
 import org.glowroot.common2.config.HttpProxyConfig;
 import org.glowroot.common2.config.MoreConfigDefaults;
 import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
-import org.glowroot.common2.repo.IncidentRepository.OpenIncident;
 import org.glowroot.common2.repo.util.AlertingService;
 import org.glowroot.common2.repo.util.Compilations;
 import org.glowroot.common2.repo.util.Encryption;
@@ -98,11 +64,24 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition.SyntheticMonitorCondition;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig.SyntheticMonitorKind;
+import org.immutables.value.Value;
+import org.openqa.selenium.WebDriver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.concurrent.GuardedBy;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.DAYS;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.*;
+import static org.glowroot.common2.repo.CassandraProfile.rollup;
 
 class SyntheticMonitorService implements Runnable {
 
@@ -166,9 +145,9 @@ class SyntheticMonitorService implements Runnable {
     private volatile boolean closed;
 
     SyntheticMonitorService(ActiveAgentDao activeAgentDao, ConfigRepositoryImpl configRepository,
-            AlertingDisabledDao alertingDisabledDao, IncidentDao incidentDao,
-            AlertingService alertingService, SyntheticResultDao syntheticResponseDao,
-            ClusterManager clusterManager, Ticker ticker, Clock clock, String version)
+                            AlertingDisabledDao alertingDisabledDao, IncidentDao incidentDao,
+                            AlertingService alertingService, SyntheticResultDao syntheticResponseDao,
+                            ClusterManager clusterManager, Ticker ticker, Clock clock, String version)
             throws Exception {
         this.activeAgentDao = activeAgentDao;
         this.configRepository = configRepository;
@@ -204,7 +183,7 @@ class SyntheticMonitorService implements Runnable {
                 .build();
         asyncHttpClient.start();
         syncHttpClientHolder =
-                createSyncHttpClientHolder(shortVersion, configRepository.getHttpProxyConfig());
+                createSyncHttpClientHolder(shortVersion, configRepository.getHttpProxyConfig().toCompletableFuture().join());
         // these parameters are from com.machinepublishers.jbrowserdriver.UserAgent.CHROME
         // with added GlowrootCentral/<version> for identification purposes
         userAgent = new UserAgent(Family.WEBKIT, "Google Inc.", "Win32", "Windows NT 6.1",
@@ -266,73 +245,76 @@ class SyntheticMonitorService implements Runnable {
             transactionName = "Outer synthetic monitor loop",
             traceHeadline = "Outer synthetic monitor loop",
             timer = "outer synthetic monitor loop")
-    private void runInternal() throws Exception {
-        for (AgentRollup agentRollup : activeAgentDao
-                .readRecentlyActiveAgentRollups(DAYS.toMillis(7))) {
-            consumeAgentRollups(agentRollup, this::runSyntheticMonitors);
-        }
+    private void runInternal() {
+        activeAgentDao
+                .readRecentlyActiveAgentRollups(DAYS.toMillis(7), rollup).thenCompose(list -> {
+
+                    Function<Iterator<AgentRollup>, CompletionStage<?>> lambda = new Function<Iterator<AgentRollup>, CompletionStage<?>>() {
+                        @Override
+                        public CompletionStage<?> apply(Iterator<AgentRollup> agentRollupIterator) {
+                            if (!agentRollupIterator.hasNext()) {
+                                return CompletableFuture.completedFuture(null);
+                            }
+                            AgentRollup agentRollup = agentRollupIterator.next();
+                            return composeAgentRollups(agentRollup, SyntheticMonitorService.this::runSyntheticMonitors).thenCompose(ig -> {
+                                return apply(agentRollupIterator);
+                            });
+                        }
+                    };
+                    return lambda.apply(list.iterator());
+                }).toCompletableFuture().join();
     }
 
-    private void runSyntheticMonitors(AgentRollup agentRollup) throws InterruptedException {
-        List<SyntheticMonitorConfig> syntheticMonitorConfigs;
-        try {
-            syntheticMonitorConfigs = configRepository.getSyntheticMonitorConfigs(agentRollup.id());
-        } catch (InterruptedException e) {
-            // probably shutdown requested
-            throw e;
-        } catch (AgentConfigNotFoundException e) {
-            // be lenient if agent_config table is messed up
-            logger.debug(e.getMessage(), e);
-            return;
-        } catch (Exception e) {
-            logger.error("{} - {}", agentRollup.id(), e.getMessage(), e);
-            return;
-        }
-        if (syntheticMonitorConfigs.isEmpty()) {
-            return;
-        }
-        for (SyntheticMonitorConfig syntheticMonitorConfig : syntheticMonitorConfigs) {
-            List<AlertConfig> alertConfigs;
-            try {
-                alertConfigs = configRepository.getAlertConfigsForSyntheticMonitorId(
-                        agentRollup.id(), syntheticMonitorConfig.getId());
-            } catch (InterruptedException e) {
-                // probably shutdown requested
-                throw e;
-            } catch (AgentConfigNotFoundException e) {
-                // be lenient if agent_config table is messed up
-                logger.debug(e.getMessage(), e);
-                return;
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-                continue;
+    private CompletionStage<?> runSyntheticMonitors(AgentRollup agentRollup) {
+        return configRepository.getSyntheticMonitorConfigs(agentRollup.id()).thenCompose(syntheticMonitorConfigs -> {
+            if (syntheticMonitorConfigs.isEmpty()) {
+                return CompletableFuture.completedFuture(null);
             }
-            String uniqueId = syntheticMonitorConfig.getId() + agentRollup.id();
-            if (executionRateLimiter.putIfAbsent(uniqueId, true) != null) {
-                // was run in the last 30 seconds (probably on a different cluster node)
-                continue;
-            }
-            workerExecutor.execute(() -> {
-                try {
-                    switch (syntheticMonitorConfig.getKind()) {
-                        case PING:
-                            runPing(agentRollup, syntheticMonitorConfig, alertConfigs);
-                            break;
-                        case JAVA:
-                            runJava(agentRollup, syntheticMonitorConfig, alertConfigs);
-                            break;
-                        default:
-                            throw new IllegalStateException("Unexpected synthetic kind: "
-                                    + syntheticMonitorConfig.getKind());
+            List<CompletionStage<?>> stages = new ArrayList<>();
+            for (SyntheticMonitorConfig syntheticMonitorConfig : syntheticMonitorConfigs) {
+                CompletionStage<Void> fut = configRepository.getAlertConfigsForSyntheticMonitorId(
+                        agentRollup.id(), syntheticMonitorConfig.getId()).thenAccept(alertConfigs -> {
+
+                    String uniqueId = syntheticMonitorConfig.getId() + agentRollup.id();
+                    if (executionRateLimiter.putIfAbsent(uniqueId, true) != null) {
+                        // was run in the last 30 seconds (probably on a different cluster node)
+                        return;
                     }
-                } catch (InterruptedException e) {
-                    // probably shutdown requested (see close method above)
-                    logger.debug(e.getMessage(), e);
-                } catch (Throwable t) {
-                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
-                }
-            });
-        }
+                    workerExecutor.execute(() -> {
+                        try {
+                            switch (syntheticMonitorConfig.getKind()) {
+                                case PING:
+                                    runPing(agentRollup, syntheticMonitorConfig, alertConfigs, rollup);
+                                    break;
+                                case JAVA:
+                                    runJava(agentRollup, syntheticMonitorConfig, alertConfigs);
+                                    break;
+                                default:
+                                    throw new IllegalStateException("Unexpected synthetic kind: "
+                                            + syntheticMonitorConfig.getKind());
+                            }
+                        } catch (InterruptedException e) {
+                            // probably shutdown requested (see close method above)
+                            logger.debug(e.getMessage(), e);
+                        } catch (Throwable t) {
+                            logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                        }
+                    });
+                }).handle((v, t) -> {
+                    if (t != null) {
+                        if (t instanceof AgentConfigNotFoundException) {
+                            // be lenient if agent_config table is messed up
+                            logger.debug(t.getMessage(), t);
+                            return null;
+                        }
+                        logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                    }
+                    return null;
+                });
+                stages.add(fut);
+            }
+            return CompletableFuture.allOf(stages.toArray(new CompletableFuture<?>[0]));
+        });
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
@@ -340,16 +322,16 @@ class SyntheticMonitorService implements Runnable {
             timer = "synthetic monitor",
             alreadyInTransactionBehavior = AlreadyInTransactionBehavior.CAPTURE_NEW_TRANSACTION)
     private void runPing(AgentRollup agentRollup, SyntheticMonitorConfig syntheticMonitorConfig,
-            List<AlertConfig> alertConfigs) throws Exception {
+                         List<AlertConfig> alertConfigs, CassandraProfile profile) throws Exception {
         runSyntheticMonitor(agentRollup, syntheticMonitorConfig, alertConfigs,
-                () -> runPing(syntheticMonitorConfig.getPingUrl()));
+                () -> runPing(syntheticMonitorConfig.getPingUrl()), rollup);
     }
 
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Synthetic monitor", traceHeadline = "Synthetic monitor: {{0.id}}",
             timer = "synthetic monitor")
     private void runJava(AgentRollup agentRollup, SyntheticMonitorConfig syntheticMonitorConfig,
-            List<AlertConfig> alertConfigs) throws Exception {
+                         List<AlertConfig> alertConfigs) throws Exception {
         Matcher matcher = encryptedPattern.matcher(syntheticMonitorConfig.getJavaSource());
         StringBuffer sb = new StringBuffer();
         while (matcher.find()) {
@@ -360,7 +342,7 @@ class SyntheticMonitorService implements Runnable {
         }
         matcher.appendTail(sb);
         runSyntheticMonitor(agentRollup, syntheticMonitorConfig, alertConfigs,
-                () -> runJava(sb.toString()));
+                () -> runJava(sb.toString()), rollup);
     }
 
     private FutureWithStartTick runJava(String javaSource) throws Exception {
@@ -375,7 +357,7 @@ class SyntheticMonitorService implements Runnable {
         }
         if (testMethod.getParameterTypes()[0] == CloseableHttpClient.class) {
             synchronized (syncHttpClientHolderLock) {
-                HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig();
+                HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig().toCompletableFuture().join();
                 if (!syncHttpClientHolder.httpProxyConfig().equals(httpProxyConfig)) {
                     syncHttpClientHolder =
                             createSyncHttpClientHolder(shortVersion, httpProxyConfig);
@@ -390,11 +372,11 @@ class SyntheticMonitorService implements Runnable {
     }
 
     private FutureWithStartTick runWebDriverJava(Constructor<?> defaultConstructor,
-            Method testMethod) throws Exception {
+                                                 Method testMethod) throws Exception {
         Settings.Builder settings = Settings.builder()
                 .requestHeaders(REQUEST_HEADERS)
                 .userAgent(userAgent);
-        HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig();
+        HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig().toCompletableFuture().join();
         if (!httpProxyConfig.host().isEmpty()) {
             int proxyPort = MoreObjects.firstNonNull(httpProxyConfig.port(), 80);
             settings.proxy(new ProxyConfig(ProxyConfig.Type.HTTP, httpProxyConfig.host(),
@@ -406,7 +388,7 @@ class SyntheticMonitorService implements Runnable {
     }
 
     private FutureWithStartTick runJava(Constructor<?> defaultConstructor, Method testMethod,
-            Object testArg) {
+                                        Object testArg) {
         long startTick = ticker.read();
         FutureWithStartTick future = new FutureWithStartTick(startTick);
         subWorkerExecutor.execute(() -> {
@@ -421,7 +403,7 @@ class SyntheticMonitorService implements Runnable {
     }
 
     public SyntheticRunResult runJava(Constructor<?> defaultConstructor, Method testMethod,
-            Object testArg, long startTick) throws Exception {
+                                      Object testArg, long startTick) throws Exception {
         try {
             return runJavaInternal(defaultConstructor, testMethod, testArg, startTick);
         } catch (InterruptedException e) {
@@ -436,7 +418,7 @@ class SyntheticMonitorService implements Runnable {
     }
 
     private SyntheticRunResult runJavaInternal(Constructor<?> defaultConstructor, Method testMethod,
-            Object testArg, long startTick) throws Exception {
+                                               Object testArg, long startTick) throws Exception {
         long captureTime;
         long durationNanos;
         try {
@@ -474,7 +456,7 @@ class SyntheticMonitorService implements Runnable {
                 // wait an extra second to make sure no edge case where
                 // SocketTimeoutException occurs with elapsed time < PING_TIMEOUT_MILLIS
                 .setSocketTimeout(PING_TIMEOUT_MILLIS + 1000);
-        HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig();
+        HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig().toCompletableFuture().join();
         if (!httpProxyConfig.host().isEmpty()) {
             int proxyPort = MoreObjects.firstNonNull(httpProxyConfig.port(), 80);
             config.setProxy(new HttpHost(httpProxyConfig.host(), proxyPort));
@@ -499,8 +481,8 @@ class SyntheticMonitorService implements Runnable {
     }
 
     private void runSyntheticMonitor(AgentRollup agentRollup,
-            SyntheticMonitorConfig syntheticMonitorConfig, List<AlertConfig> alertConfigs,
-            Callable<FutureWithStartTick> callable) throws Exception {
+                                     SyntheticMonitorConfig syntheticMonitorConfig, List<AlertConfig> alertConfigs,
+                                     Callable<FutureWithStartTick> callable, CassandraProfile profile) throws Exception {
         SyntheticMonitorUniqueKey uniqueKey = ImmutableSyntheticMonitorUniqueKey
                 .of(agentRollup.id(), syntheticMonitorConfig.getId());
         if (!activeSyntheticMonitors.add(uniqueKey)) {
@@ -511,7 +493,7 @@ class SyntheticMonitorService implements Runnable {
         future.whenComplete((v, t) -> activeSyntheticMonitors.remove(uniqueKey));
         OnRunComplete onRunComplete = new OnRunComplete(agentRollup, syntheticMonitorConfig);
         if (alertConfigs.isEmpty()) {
-            future.thenAccept(onRunComplete);
+            future.thenCompose(onRunComplete);
             return;
         }
         int maxAlertThresholdMillis = 0;
@@ -544,30 +526,42 @@ class SyntheticMonitorService implements Runnable {
             success = false;
             errorMessage = null;
         }
-        if (!isCurrentlyDisabled(agentRollup.id())) {
-            if (success) {
-                for (AlertConfig alertConfig : alertConfigs) {
-                    AlertCondition alertCondition = alertConfig.getCondition();
-                    SyntheticMonitorCondition condition =
-                            alertCondition.getSyntheticMonitorCondition();
-                    boolean currentlyTriggered =
-                            durationNanos >= MILLISECONDS.toNanos(condition.getThresholdMillis());
-                    sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfig,
-                            condition, captureTime, currentlyTriggered, null);
+        final boolean finalSuccess = success;
+        long finalDurationNanos = durationNanos;
+        long finalCaptureTime = captureTime;
+        String finalErrorMessage = errorMessage;
+        CompletableFuture.completedFuture(null).thenCompose(ignore -> {
+            return isCurrentlyDisabled(agentRollup.id()).thenCompose(disabled -> {
+                if (!disabled) {
+                    if (finalSuccess) {
+                        List<CompletionStage<?>> allFutures = new ArrayList<>(alertConfigs.size());
+                        for (AlertConfig alertConfig : alertConfigs) {
+                            AlertCondition alertCondition = alertConfig.getCondition();
+                            SyntheticMonitorCondition condition =
+                                    alertCondition.getSyntheticMonitorCondition();
+                            boolean currentlyTriggered =
+                                    finalDurationNanos >= MILLISECONDS.toNanos(condition.getThresholdMillis());
+                            allFutures.add(sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfig,
+                                    condition, finalCaptureTime, currentlyTriggered, null, profile));
+                        }
+                        return CompletableFuture.allOf(allFutures.toArray(new CompletableFuture<?>[0]));
+                    } else {
+                        return sendAlertOnErrorIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfigs,
+                                finalErrorMessage, finalCaptureTime, profile).thenAccept(ig -> {});
+                    }
                 }
-            } else {
-                sendAlertOnErrorIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfigs,
-                        errorMessage, captureTime);
-            }
-        }
-        // need to run at end to ensure new synthetic response doesn't get stored before consecutive
-        // count is checked in sendAlertOnErrorIfStatusChanged()
-        future.thenAccept(onRunComplete);
+                // need to run at end to ensure new synthetic response doesn't get stored before consecutive
+                // count is checked in sendAlertOnErrorIfStatusChanged()
+                future.thenCompose(onRunComplete);
+                return CompletableFuture.completedFuture(null);
+            });
+
+        });
     }
 
-    private boolean isCurrentlyDisabled(String agentRollupId) throws Exception {
-        Long disabledUntilTime = alertingDisabledDao.getAlertingDisabledUntilTime(agentRollupId);
-        return disabledUntilTime != null && disabledUntilTime > clock.currentTimeMillis();
+    private CompletionStage<Boolean> isCurrentlyDisabled(String agentRollupId) {
+        return alertingDisabledDao.getAlertingDisabledUntilTime(agentRollupId, rollup).thenApply(
+                disabledUntilTime -> disabledUntilTime != null && disabledUntilTime > clock.currentTimeMillis());
     }
 
     private static String getBestMessageForSyntheticFailure(Throwable throwable) {
@@ -582,19 +576,19 @@ class SyntheticMonitorService implements Runnable {
         }
     }
 
-    private class OnRunComplete implements Consumer<SyntheticRunResult> {
+    private class OnRunComplete implements Function<SyntheticRunResult, CompletionStage<SyntheticRunResult>> {
 
         private final AgentRollup agentRollup;
         private final SyntheticMonitorConfig syntheticMonitorConfig;
 
         private OnRunComplete(AgentRollup agentRollup,
-                SyntheticMonitorConfig syntheticMonitorConfig) {
+                              SyntheticMonitorConfig syntheticMonitorConfig) {
             this.agentRollup = agentRollup;
             this.syntheticMonitorConfig = syntheticMonitorConfig;
         }
 
         @Override
-        public void accept(SyntheticRunResult syntheticRunResult) {
+        public CompletionStage<SyntheticRunResult> apply(SyntheticRunResult syntheticRunResult) {
             String errorMessage = null;
             long durationNanos = syntheticRunResult.durationNanos();
             Throwable t = syntheticRunResult.throwable();
@@ -606,76 +600,86 @@ class SyntheticMonitorService implements Runnable {
                 errorMessage = getBestMessageForSyntheticFailure(t);
             }
             try {
-                syntheticResponseDao.store(agentRollup.id(), syntheticMonitorConfig.getId(),
+                return syntheticResponseDao.store(agentRollup.id(), syntheticMonitorConfig.getId(),
                         MoreConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig),
-                        syntheticRunResult.captureTime(), durationNanos, errorMessage);
-            } catch (InterruptedException e) {
-                // probably shutdown requested (see close method above)
-                logger.debug(e.getMessage(), e);
-                return;
+                        syntheticRunResult.captureTime(), durationNanos, errorMessage).thenApply(ignore -> syntheticRunResult);
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
+                return CompletableFuture.completedFuture(null);
             }
         }
     }
 
-    private void sendAlertOnErrorIfStatusChanged(AgentRollup agentRollup,
-            SyntheticMonitorConfig syntheticMonitorConfig, List<AlertConfig> alertConfigs,
-            @Nullable String errorMessage, long captureTime) throws Exception {
+    private CompletionStage<?> sendAlertOnErrorIfStatusChanged(AgentRollup agentRollup,
+                                                 SyntheticMonitorConfig syntheticMonitorConfig, List<AlertConfig> alertConfigs,
+                                                 @Nullable String errorMessage, long captureTime, CassandraProfile profile) {
+        List<CompletionStage<?>> futures = Lists.newArrayList();
         for (AlertConfig alertConfig : alertConfigs) {
             AlertCondition alertCondition = alertConfig.getCondition();
             SyntheticMonitorCondition condition = alertCondition.getSyntheticMonitorCondition();
-            sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfig, condition,
-                    captureTime, true, errorMessage);
+            futures.add(sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfig, condition,
+                    captureTime, true, errorMessage, profile));
         }
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]));
     }
 
-    private void sendAlertIfStatusChanged(AgentRollup agentRollup,
-            SyntheticMonitorConfig syntheticMonitorConfig, AlertConfig alertConfig,
-            SyntheticMonitorCondition condition, long endTime, boolean currentlyTriggered,
-            @Nullable String errorMessage) throws Exception {
+    private CompletionStage<?> sendAlertIfStatusChanged(AgentRollup agentRollup,
+                                                        SyntheticMonitorConfig syntheticMonitorConfig, AlertConfig alertConfig,
+                                                        SyntheticMonitorCondition condition, long endTime, boolean currentlyTriggered,
+                                                        @Nullable String errorMessage, CassandraProfile profile) {
         AlertCondition alertCondition = alertConfig.getCondition();
-        OpenIncident openIncident = incidentDao.readOpenIncident(agentRollup.id(), alertCondition,
-                alertConfig.getSeverity());
-        if (openIncident != null && !currentlyTriggered) {
-            incidentDao.resolveIncident(openIncident, endTime);
-            sendAlert(agentRollup.id(), agentRollup.display(), syntheticMonitorConfig,
-                    alertConfig, condition, endTime, true, null);
-        } else if (openIncident == null && currentlyTriggered
-                && consecutiveCountHit(agentRollup.id(), syntheticMonitorConfig, condition)) {
-            // the start time for the incident is the end time of the interval evaluated above
-            incidentDao.insertOpenIncident(agentRollup.id(), alertCondition,
-                    alertConfig.getSeverity(), alertConfig.getNotification(), endTime);
-            sendAlert(agentRollup.id(), agentRollup.display(), syntheticMonitorConfig,
-                    alertConfig, condition, endTime, false, errorMessage);
-        }
+        return incidentDao.readOpenIncident(agentRollup.id(), alertCondition,
+                alertConfig.getSeverity(), profile).thenCompose(openIncident -> {
+            if (openIncident != null && !currentlyTriggered) {
+                return incidentDao.resolveIncident(openIncident, endTime, rollup).thenCompose(v -> {
+                    return sendAlert(agentRollup.id(), agentRollup.display(), syntheticMonitorConfig,
+                            alertConfig, condition, endTime, true, null);
+                }).thenAccept(ig -> {});
+            } else if (openIncident == null && currentlyTriggered) {
+                return consecutiveCountHit(agentRollup.id(), syntheticMonitorConfig, condition)
+                        .thenCompose(consCountHit -> {
+                            if (consCountHit) {
+                                return incidentDao.insertOpenIncident(agentRollup.id(), alertCondition,
+                                                alertConfig.getSeverity(), alertConfig.getNotification(), endTime, profile)
+                                        .thenCompose(v -> {
+                                            return sendAlert(agentRollup.id(), agentRollup.display(), syntheticMonitorConfig,
+                                                    alertConfig, condition, endTime, false, errorMessage).thenAccept(ig -> {});
+                                        });
+                            } else {
+                                return CompletableFuture.completedFuture(null);
+                            }
+                        });
+            } else {
+                return CompletableFuture.completedFuture(null);
+            }
+        });
     }
 
-    private boolean consecutiveCountHit(String agentRollupId,
-            SyntheticMonitorConfig syntheticMonitorConfig, SyntheticMonitorCondition condition)
-            throws Exception {
+    private CompletionStage<Boolean> consecutiveCountHit(String agentRollupId,
+                                                         SyntheticMonitorConfig syntheticMonitorConfig, SyntheticMonitorCondition condition) {
         int consecutiveCount = condition.getConsecutiveCount();
         if (consecutiveCount == 1) {
-            return true;
+            return CompletableFuture.completedFuture(true);
         }
-        List<SyntheticResultRollup0> syntheticResults = syntheticResponseDao.readLastFromRollup0(
-                agentRollupId, syntheticMonitorConfig.getId(), consecutiveCount - 1);
-        if (syntheticResults.size() < consecutiveCount - 1) {
-            return false;
-        }
-        for (SyntheticResultRollup0 syntheticResult : syntheticResults) {
-            if (!syntheticResult.error() && syntheticResult.totalDurationNanos() < MILLISECONDS
-                    .toNanos(condition.getThresholdMillis())) {
+        return syntheticResponseDao.readLastFromRollup0(
+                agentRollupId, syntheticMonitorConfig.getId(), consecutiveCount - 1).thenApply(syntheticResults -> {
+            if (syntheticResults.size() < consecutiveCount - 1) {
                 return false;
             }
-        }
-        return true;
+            for (SyntheticResultRollup0 syntheticResult : syntheticResults) {
+                if (!syntheticResult.error() && syntheticResult.totalDurationNanos() < MILLISECONDS
+                        .toNanos(condition.getThresholdMillis())) {
+                    return false;
+                }
+            }
+            return true;
+        });
     }
 
-    private void sendAlert(String agentRollupId, String agentRollupDisplay,
-            SyntheticMonitorConfig syntheticMonitorConfig, AlertConfig alertConfig,
-            SyntheticMonitorCondition condition, long endTime, boolean ok,
-            @Nullable String errorMessage) throws Exception {
+    private CompletionStage<?> sendAlert(String agentRollupId, String agentRollupDisplay,
+                           SyntheticMonitorConfig syntheticMonitorConfig, AlertConfig alertConfig,
+                           SyntheticMonitorCondition condition, long endTime, boolean ok,
+                           @Nullable String errorMessage) {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         String subject = MoreConfigDefaults.getDisplayOrDefault(syntheticMonitorConfig);
         StringBuilder sb = new StringBuilder();
@@ -689,13 +693,14 @@ class SyntheticMonitorService implements Runnable {
             sb.append(" resulted in error: ");
             sb.append(errorMessage);
         }
-        alertingService.sendNotification(
-                configRepository.getCentralAdminGeneralConfig().centralDisplayName(), agentRollupId,
-                agentRollupDisplay, alertConfig, endTime, subject, sb.toString(), ok);
+        return configRepository.getCentralAdminGeneralConfig().thenAccept(centralAdminGeneralConfig -> {
+            alertingService.sendNotification(centralAdminGeneralConfig.centralDisplayName(), agentRollupId,
+                    agentRollupDisplay, alertConfig, endTime, subject, sb.toString(), ok);
+        });
     }
 
     private HttpClientContext getHttpClientContext() throws Exception {
-        HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig();
+        HttpProxyConfig httpProxyConfig = configRepository.getHttpProxyConfig().toCompletableFuture().join();
         if (httpProxyConfig.host().isEmpty() || httpProxyConfig.username().isEmpty()) {
             return HttpClientContext.create();
         }
@@ -724,7 +729,7 @@ class SyntheticMonitorService implements Runnable {
     }
 
     private static SyncHttpClientHolder createSyncHttpClientHolder(String shortVersion,
-            HttpProxyConfig httpProxyConfig) {
+                                                                   HttpProxyConfig httpProxyConfig) {
         HttpClientBuilder builder = HttpClients.custom()
                 .setUserAgent("GlowrootCentral" + shortVersion)
                 .setDefaultHeaders(
@@ -739,12 +744,23 @@ class SyntheticMonitorService implements Runnable {
         return ImmutableSyncHttpClientHolder.of(httpClient, httpProxyConfig);
     }
 
-    private static void consumeAgentRollups(AgentRollup agentRollup,
-            AgentRollupConsumer agentRollupConsumer) throws Exception {
-        for (AgentRollup childAgentRollup : agentRollup.children()) {
-            consumeAgentRollups(childAgentRollup, agentRollupConsumer);
-        }
-        agentRollupConsumer.accept(agentRollup);
+    private static CompletionStage<?> composeAgentRollups(AgentRollup agentRollup,
+                                                          AgentRollupComposer agentRollupComposer) {
+        Function<Iterator<AgentRollup>, CompletionStage<?>> lambda = new Function<Iterator<AgentRollup>, CompletionStage<?>>() {
+            @Override
+            public CompletionStage<?> apply(Iterator<AgentRollup> agentRollupIterator) {
+                if (!agentRollupIterator.hasNext()) {
+                    return CompletableFuture.completedFuture(null);
+                }
+                AgentRollup agentRollup = agentRollupIterator.next();
+                return composeAgentRollups(agentRollup, agentRollupComposer).thenCompose(ig -> {
+                    return apply(agentRollupIterator);
+                });
+            }
+        };
+        return lambda.apply(agentRollup.children().iterator()).thenCompose(ig -> {
+            return agentRollupComposer.accept(agentRollup);
+        });
     }
 
     @SuppressWarnings("return.type.incompatible")
@@ -756,6 +772,7 @@ class SyntheticMonitorService implements Runnable {
     @Styles.AllParameters
     interface SyncHttpClientHolder {
         CloseableHttpClient syncHttpClient();
+
         HttpProxyConfig httpProxyConfig();
     }
 
@@ -763,6 +780,7 @@ class SyntheticMonitorService implements Runnable {
     @Styles.AllParameters
     interface SyntheticMonitorUniqueKey {
         String agentRollupId();
+
         String syntheticMonitorId();
     }
 
@@ -778,7 +796,9 @@ class SyntheticMonitorService implements Runnable {
     @Value.Immutable
     interface SyntheticRunResult {
         long captureTime();
+
         long durationNanos();
+
         @Nullable
         Throwable throwable();
     }

@@ -74,6 +74,14 @@ public class ExecutorWithLambdasIT {
         checkTrace(trace);
     }
 
+    @Test
+    public void shouldCaptureNestedSubmit() throws Exception {
+        // when
+        Trace trace = container.execute(DoNestedSubmitCallableWithLambda.class);
+        // then
+        checkTrace(trace);
+    }
+
     private static void checkTrace(Trace trace) {
         Trace.Header header = trace.getHeader();
         assertThat(header.hasAuxThreadRootTimer()).isTrue();
@@ -173,6 +181,52 @@ public class ExecutorWithLambdasIT {
         private void innerRun() {
             new CreateTraceEntry().traceEntryMarker();
             latch.countDown();
+        }
+    }
+
+    public static class DoNestedSubmitCallableWithLambda
+            implements AppUnderTest, TransactionMarker {
+
+        private ThreadPoolExecutor executor;
+        private CountDownLatch latch;
+
+        @Override
+        public void executeApp() throws Exception {
+            executor =
+                    new ThreadPoolExecutor(1, 1, 60, MILLISECONDS, Queues.newLinkedBlockingQueue());
+            // need to pre-create threads, otherwise lambda execution will be captured by the
+            // initial thread run, and won't really test lambda execution capture
+            executor.prestartAllCoreThreads();
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            MoreExecutors.directExecutor().execute(this::outerRun);
+        }
+
+        private void outerRun() {
+            latch = new CountDownLatch(3);
+            executor.submit(this::innerRun);
+            executor.submit(this::innerRun);
+            executor.submit(this::innerRun);
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            executor.shutdown();
+            try {
+                executor.awaitTermination(10, SECONDS);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        private Void innerRun() {
+            new CreateTraceEntry().traceEntryMarker();
+            latch.countDown();
+            return null;
         }
     }
 

@@ -33,11 +33,11 @@ public class AllAdminConfigUtil {
             throws Exception {
         LazySecretKey lazySecretKey = configRepository.getLazySecretKey();
         updateEncryptedPassword((ObjectNode) rootNode.get("smtp"),
-                configRepository.getSmtpConfig().encryptedPassword(), lazySecretKey);
+                configRepository.getSmtpConfig().toCompletableFuture().join().encryptedPassword(), lazySecretKey);
         updateEncryptedPassword((ObjectNode) rootNode.get("httpProxy"),
-                configRepository.getHttpProxyConfig().encryptedPassword(), lazySecretKey);
+                configRepository.getHttpProxyConfig().toCompletableFuture().join().encryptedPassword(), lazySecretKey);
         updateEncryptedPassword((ObjectNode) rootNode.get("ldap"),
-                configRepository.getLdapConfig().encryptedPassword(), lazySecretKey);
+                configRepository.getLdapConfig().toCompletableFuture().join().encryptedPassword(), lazySecretKey);
         JsonNode usersNode = rootNode.get("users");
         if (usersNode instanceof ArrayNode) {
             for (JsonNode user : usersNode) {

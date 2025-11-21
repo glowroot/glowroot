@@ -22,11 +22,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
+import org.glowroot.common2.config.CentralStorageConfig;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,8 +74,8 @@ public class Tools {
                 .username(username)
                 .passwordHash(PasswordHash.createHash(password))
                 .addRoles("Administrator")
-                .build());
-        repos.getUserDao().delete("anonymous");
+                .build(), CassandraProfile.slow);
+        repos.getUserDao().delete("anonymous", CassandraProfile.slow).toCompletableFuture().get();
         return true;
     }
 
@@ -94,21 +98,19 @@ public class Tools {
     public boolean deleteOldData(List<String> args) throws Exception {
         String partialTableName = args.get(0);
         int rollupLevel = Integer.parseInt(args.get(1));
+        CentralStorageConfig centralStorageConfig = repos.getConfigRepository().getCentralStorageConfig().toCompletableFuture().join();
         List<Integer> expirationHours;
         if (partialTableName.equals("query") || partialTableName.equals("service_call")) {
-            expirationHours = repos.getConfigRepository().getCentralStorageConfig()
-                    .queryAndServiceCallRollupExpirationHours();
+            expirationHours = centralStorageConfig.queryAndServiceCallRollupExpirationHours();
         } else if (partialTableName.equals("profile")) {
-            expirationHours = repos.getConfigRepository().getCentralStorageConfig()
-                    .profileRollupExpirationHours();
+            expirationHours = centralStorageConfig.profileRollupExpirationHours();
         } else if (partialTableName.equals("overview")
                 || partialTableName.equals("histogram")
                 || partialTableName.equals("throughput")
                 || partialTableName.equals("summary")
                 || partialTableName.equals("error_summary")
                 || partialTableName.equals("gauge_value")) {
-            expirationHours = repos.getConfigRepository().getCentralStorageConfig()
-                    .rollupExpirationHours();
+            expirationHours = centralStorageConfig.rollupExpirationHours();
         } else {
             throw new Exception("Unexpected partial table name: " + partialTableName);
         }
@@ -214,35 +216,47 @@ public class Tools {
 
     private Set<TtPartitionKey> getPartitionKeys(int rollupLevel, String thresholdComparator,
             Instant threshold) throws Exception {
-        ResultSet results = session.read("select agent_rollup, transaction_type, capture_time"
-                + " from aggregate_tt_summary_rollup_" + rollupLevel);
         Multimap<String, String> transactionTypes = HashMultimap.create();
-        for (Row row : results) {
-            int i = 0;
-            String agentRollupId = checkNotNull(row.getString(i++));
-            String transactionType = checkNotNull(row.getString(i++));
-            Instant captureTime = checkNotNull(row.getInstant(i++));
-            if (thresholdComparator.equals("<")) {
-                if (captureTime.toEpochMilli() < threshold.toEpochMilli()) {
-                    transactionTypes.put(agentRollupId, transactionType);
+        Function<AsyncResultSet, CompletableFuture<Multimap<String, String>>> compute = new Function<AsyncResultSet, CompletableFuture<Multimap<String, String>>>() {
+            @Override
+            public CompletableFuture<Multimap<String, String>> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    String agentRollupId = checkNotNull(row.getString(i++));
+                    String transactionType = checkNotNull(row.getString(i++));
+                    Instant captureTime = checkNotNull(row.getInstant(i++));
+                    if (thresholdComparator.equals("<")) {
+                        if (captureTime.toEpochMilli() < threshold.toEpochMilli()) {
+                            transactionTypes.put(agentRollupId, transactionType);
+                        }
+                    } else if (thresholdComparator.equals(">")) {
+                        if (captureTime.toEpochMilli() > threshold.toEpochMilli()) {
+                            transactionTypes.put(agentRollupId, transactionType);
+                        }
+                    } else {
+                        throw new IllegalStateException(
+                                "Unexpected threshold comparator: " + thresholdComparator);
+                    }
                 }
-            } else if (thresholdComparator.equals(">")) {
-                if (captureTime.toEpochMilli() > threshold.toEpochMilli()) {
-                    transactionTypes.put(agentRollupId, transactionType);
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
                 }
-            } else {
-                throw new IllegalStateException(
-                        "Unexpected threshold comparator: " + thresholdComparator);
+                return CompletableFuture.completedFuture(transactionTypes);
             }
-        }
-        Set<TtPartitionKey> ttPartitionKeys = new HashSet<>();
-        for (Map.Entry<String, String> entry : transactionTypes.entries()) {
-            ttPartitionKeys.add(ImmutableTtPartitionKey.builder()
-                    .agentRollupId(entry.getKey())
-                    .transactionType(entry.getValue())
-                    .build());
-        }
-        return ttPartitionKeys;
+        };
+        return session.readAsync("select agent_rollup, transaction_type, capture_time"
+                + " from aggregate_tt_summary_rollup_" + rollupLevel, CassandraProfile.slow)
+                .thenCompose(compute)
+                .thenApply(ignored -> {
+                    Set<TtPartitionKey> ttPartitionKeys = new HashSet<>();
+                    for (Map.Entry<String, String> entry : transactionTypes.entries()) {
+                        ttPartitionKeys.add(ImmutableTtPartitionKey.builder()
+                                .agentRollupId(entry.getKey())
+                                .transactionType(entry.getValue())
+                                .build());
+                    }
+                    return ttPartitionKeys;
+                }).toCompletableFuture().get();
     }
 
     private Set<TnPartitionKey> getPartitionKeys(int rollupLevel,
@@ -258,11 +272,20 @@ public class Tools {
                 .setString(i++, ttPartitionKey.agentRollupId())
                 .setString(i++, ttPartitionKey.transactionType())
                 .setInstant(i++, threshold);
-            ResultSet results = session.read(boundStatement);
             Set<String> transactionNames = new HashSet<>();
-            for (Row row : results) {
-                transactionNames.add(checkNotNull(row.getString(0)));
-            }
+            Function<AsyncResultSet, CompletableFuture<Set<String>>> compute = new Function<AsyncResultSet, CompletableFuture<Set<String>>>() {
+                @Override
+                public CompletableFuture<Set<String>> apply(AsyncResultSet results) {
+                    for (Row row : results.currentPage()) {
+                        transactionNames.add(checkNotNull(row.getString(0)));
+                    }
+                    if (results.hasMorePages()) {
+                        return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                    }
+                    return CompletableFuture.completedFuture(transactionNames);
+                }
+            };
+            session.readAsync(boundStatement, CassandraProfile.slow).thenCompose(compute).toCompletableFuture().get();
             for (String transactionName : transactionNames) {
                 tnPartitionKeys.add(ImmutableTnPartitionKey.builder()
                         .agentRollupId(ttPartitionKey.agentRollupId())
@@ -276,35 +299,48 @@ public class Tools {
 
     private Set<GaugeValuePartitionKey> getGaugeValuePartitionKeys(int rollupLevel,
             String thresholdComparator, Instant threshold) throws Exception {
-        ResultSet results = session.read("select agent_rollup, gauge_name, capture_time from"
-                + " gauge_value_rollup_" + rollupLevel);
+
         Multimap<String, String> gaugeNames = HashMultimap.create();
-        for (Row row : results) {
-            int i = 0;
-            String agentRollupId = checkNotNull(row.getString(i++));
-            String gaugeName = checkNotNull(row.getString(i++));
-            Instant captureTime = checkNotNull(row.getInstant(i++));
-            if (thresholdComparator.equals("<")) {
-                if (captureTime.toEpochMilli() < threshold.toEpochMilli()) {
-                    gaugeNames.put(agentRollupId, gaugeName);
+        Function<AsyncResultSet, CompletableFuture<Multimap<String, String>>> compute = new Function<AsyncResultSet, CompletableFuture<Multimap<String, String>>>() {
+            @Override
+            public CompletableFuture<Multimap<String, String>> apply(AsyncResultSet results) {
+                for (Row row : results.currentPage()) {
+                    int i = 0;
+                    String agentRollupId = checkNotNull(row.getString(i++));
+                    String gaugeName = checkNotNull(row.getString(i++));
+                    Instant captureTime = checkNotNull(row.getInstant(i++));
+                    if (thresholdComparator.equals("<")) {
+                        if (captureTime.toEpochMilli() < threshold.toEpochMilli()) {
+                            gaugeNames.put(agentRollupId, gaugeName);
+                        }
+                    } else if (thresholdComparator.equals(">")) {
+                        if (captureTime.toEpochMilli() > threshold.toEpochMilli()) {
+                            gaugeNames.put(agentRollupId, gaugeName);
+                        }
+                    } else {
+                        throw new IllegalStateException(
+                                "Unexpected threshold comparator: " + thresholdComparator);
+                    }
                 }
-            } else if (thresholdComparator.equals(">")) {
-                if (captureTime.toEpochMilli() > threshold.toEpochMilli()) {
-                    gaugeNames.put(agentRollupId, gaugeName);
+                if (results.hasMorePages()) {
+                    return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
                 }
-            } else {
-                throw new IllegalStateException(
-                        "Unexpected threshold comparator: " + thresholdComparator);
+                return CompletableFuture.completedFuture(gaugeNames);
             }
-        }
-        Set<GaugeValuePartitionKey> partitionKeys = new HashSet<>();
-        for (Map.Entry<String, String> entry : gaugeNames.entries()) {
-            partitionKeys.add(ImmutableGaugeValuePartitionKey.builder()
-                    .agentRollupId(entry.getKey())
-                    .gaugeName(entry.getValue())
-                    .build());
-        }
-        return partitionKeys;
+        };
+        return session.readAsync("select agent_rollup, gauge_name, capture_time from"
+                + " gauge_value_rollup_" + rollupLevel, CassandraProfile.slow)
+                .thenCompose(compute)
+                .thenApply(ignored -> {
+                    Set<GaugeValuePartitionKey> partitionKeys = new HashSet<>();
+                    for (Map.Entry<String, String> entry : gaugeNames.entries()) {
+                        partitionKeys.add(ImmutableGaugeValuePartitionKey.builder()
+                                .agentRollupId(entry.getKey())
+                                .gaugeName(entry.getValue())
+                                .build());
+                    }
+                    return partitionKeys;
+                }).toCompletableFuture().get();
     }
 
     private void executeDeletesTt(int rollupLevel, String partialName, String thresholdComparator,
@@ -321,7 +357,7 @@ public class Tools {
                 .setString(i++, partitionKey.agentRollupId())
                 .setString(i++, partitionKey.transactionType())
                 .setInstant(i++, threshold);
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, CassandraProfile.slow).toCompletableFuture());
             count++;
         }
         MoreFutures.waitForAll(futures);
@@ -343,7 +379,7 @@ public class Tools {
                 .setString(i++, partitionKey.transactionType())
                 .setString(i++, partitionKey.transactionName())
                 .setInstant(i++, threshold);
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, CassandraProfile.slow).toCompletableFuture());
             count++;
         }
         MoreFutures.waitForAll(futures);
@@ -364,7 +400,7 @@ public class Tools {
                 .setString(i++, partitionKey.agentRollupId())
                 .setString(i++, partitionKey.gaugeName())
                 .setInstant(i++, threshold);
-            futures.add(session.writeAsync(boundStatement).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, CassandraProfile.slow).toCompletableFuture());
             count++;
         }
         MoreFutures.waitForAll(futures);

@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -67,6 +69,7 @@ import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.StorageConfig;
 import org.glowroot.common2.config.UserConfig;
 import org.glowroot.common2.config.WebConfig;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigValidation;
 import org.glowroot.common2.repo.util.LazySecretKey;
@@ -120,8 +123,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public AgentConfig.AdvancedConfig getAdvancedConfig(String agentRollupId) {
-        return configService.getAdvancedConfig().toProto();
+    public CompletionStage<AgentConfig.AdvancedConfig> getAdvancedConfig(String agentRollupId) {
+        return CompletableFuture.completedFuture(configService.getAdvancedConfig().toProto());
     }
 
     @Override
@@ -145,36 +148,41 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public List<AgentConfig.SyntheticMonitorConfig> getSyntheticMonitorConfigs(
+    public CompletionStage<List<AgentConfig.SyntheticMonitorConfig>> getSyntheticMonitorConfigs(
             String agentRollupId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public AgentConfig. /*@Nullable*/ SyntheticMonitorConfig getSyntheticMonitorConfig(
+    public CompletionStage<AgentConfig. /*@Nullable*/ SyntheticMonitorConfig> getSyntheticMonitorConfig(
             String agentRollupId, String syntheticMonitorId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public List<AgentConfig.AlertConfig> getAlertConfigs(String agentRollupId) throws Exception {
+    public CompletionStage<List<AgentConfig.AlertConfig>> getAlertConfigs(String agentRollupId) {
         List<AgentConfig.AlertConfig> configs = Lists.newArrayList();
         for (AlertConfig config : configService.getAlertConfigs()) {
             configs.add(config.toProto());
         }
-        return configs;
+        return CompletableFuture.completedFuture(configs);
     }
 
     @Override
-    public AgentConfig. /*@Nullable*/ AlertConfig getAlertConfig(String agentRollupId,
+    public CompletionStage<List<AgentConfig.AlertConfig>> getAlertConfigsNonBlocking(String agentRollupId) {
+        return getAlertConfigs(agentRollupId);
+    }
+
+    @Override
+    public CompletionStage<AgentConfig. /*@Nullable*/ AlertConfig> getAlertConfig(String agentRollupId,
             String alertVersion) {
         for (AlertConfig alertConfig : configService.getAlertConfigs()) {
             AgentConfig.AlertConfig config = alertConfig.toProto();
             if (Versions.getVersion(config).equals(alertVersion)) {
-                return config;
+                return CompletableFuture.completedFuture(config);
             }
         }
-        return null;
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -228,63 +236,63 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public CentralAdminGeneralConfig getCentralAdminGeneralConfig() {
+    public CompletionStage<CentralAdminGeneralConfig> getCentralAdminGeneralConfig() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public List<UserConfig> getUserConfigs() {
-        return adminConfigService.getUserConfigs();
+    public CompletionStage<List<UserConfig>> getUserConfigs() {
+        return CompletableFuture.completedFuture(adminConfigService.getUserConfigs());
     }
 
     @Override
-    public @Nullable UserConfig getUserConfig(String username) {
-        for (UserConfig config : getUserConfigs()) {
+    public CompletionStage<UserConfig> getUserConfig(String username) {
+        for (UserConfig config : getUserConfigs().toCompletableFuture().join()) {
             if (config.username().equals(username)) {
-                return config;
+                return CompletableFuture.completedFuture(config);
             }
         }
-        return null;
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public @Nullable UserConfig getUserConfigCaseInsensitive(String username) {
-        for (UserConfig config : getUserConfigs()) {
+    public CompletionStage<UserConfig> getUserConfigCaseInsensitive(String username) {
+        for (UserConfig config : getUserConfigs().toCompletableFuture().join()) {
             if (config.username().equalsIgnoreCase(username)) {
-                return config;
+                return CompletableFuture.completedFuture(config);
             }
         }
-        return null;
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public boolean namedUsersExist() {
-        for (UserConfig config : getUserConfigs()) {
+    public CompletionStage<Boolean> namedUsersExist() {
+        for (UserConfig config : getUserConfigs().toCompletableFuture().join()) {
             if (!config.username().equalsIgnoreCase("anonymous")) {
-                return true;
+                return CompletableFuture.completedFuture(true);
             }
         }
-        return false;
+        return CompletableFuture.completedFuture(false);
     }
 
     @Override
-    public List<RoleConfig> getRoleConfigs() {
-        return adminConfigService.getRoleConfigs();
+    public CompletionStage<List<RoleConfig>> getRoleConfigs() {
+        return CompletableFuture.completedFuture(adminConfigService.getRoleConfigs());
     }
 
     @Override
-    public @Nullable RoleConfig getRoleConfig(String name) {
-        for (RoleConfig config : getRoleConfigs()) {
+    public CompletionStage<RoleConfig> getRoleConfig(String name) {
+        for (RoleConfig config : getRoleConfigs().toCompletableFuture().join()) {
             if (config.name().equals(name)) {
-                return config;
+                return CompletableFuture.completedFuture(config);
             }
         }
-        return null;
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public WebConfig getWebConfig() {
-        return getEmbeddedWebConfig();
+    public CompletionStage<WebConfig> getWebConfig() {
+        return CompletableFuture.completedFuture(getEmbeddedWebConfig());
     }
 
     @Override
@@ -293,7 +301,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public CentralWebConfig getCentralWebConfig() {
+    public CompletionStage<CentralWebConfig> getCentralWebConfig() {
         throw new UnsupportedOperationException();
     }
 
@@ -308,33 +316,33 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public CentralStorageConfig getCentralStorageConfig() {
+    public CompletionStage<CentralStorageConfig> getCentralStorageConfig() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public SmtpConfig getSmtpConfig() {
-        return adminConfigService.getSmtpConfig();
+    public CompletionStage<SmtpConfig> getSmtpConfig() {
+        return CompletableFuture.completedFuture(adminConfigService.getSmtpConfig());
     }
 
     @Override
-    public HttpProxyConfig getHttpProxyConfig() {
-        return adminConfigService.getHttpProxyConfig();
+    public CompletionStage<HttpProxyConfig> getHttpProxyConfig() {
+        return CompletableFuture.completedFuture(adminConfigService.getHttpProxyConfig());
     }
 
     @Override
-    public LdapConfig getLdapConfig() {
-        return adminConfigService.getLdapConfig();
+    public CompletionStage<LdapConfig> getLdapConfig() {
+        return CompletableFuture.completedFuture(adminConfigService.getLdapConfig());
     }
 
     @Override
-    public PagerDutyConfig getPagerDutyConfig() {
-        return adminConfigService.getPagerDutyConfig();
+    public CompletionStage<PagerDutyConfig> getPagerDutyConfig() {
+        return CompletableFuture.completedFuture(adminConfigService.getPagerDutyConfig());
     }
 
     @Override
-    public SlackConfig getSlackConfig() {
-        return adminConfigService.getSlackConfig();
+    public CompletionStage<SlackConfig> getSlackConfig() {
+        return CompletableFuture.completedFuture(adminConfigService.getSlackConfig());
     }
 
     @Override
@@ -348,24 +356,24 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public AllCentralAdminConfig getAllCentralAdminConfig() {
+    public CompletionStage<AllCentralAdminConfig> getAllCentralAdminConfig() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean isConfigReadOnly(String agentId) {
-        return configReadOnly;
+    public CompletionStage<Boolean> isConfigReadOnly(String agentId) {
+        return CompletableFuture.completedFuture(configReadOnly);
     }
 
     @Override
-    public void updateGeneralConfig(String agentId, AgentConfig.GeneralConfig protoConfig,
-            String priorVersion) throws Exception {
+    public CompletionStage<?> updateGeneralConfig(String agentId, AgentConfig.GeneralConfig protoConfig,
+                                    String priorVersion, CassandraProfile profile) throws Exception {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void updateTransactionConfig(String agentId, AgentConfig.TransactionConfig protoConfig,
-            String priorVersion) throws Exception {
+    public CompletionStage<?> updateTransactionConfig(String agentId, AgentConfig.TransactionConfig protoConfig,
+            String priorVersion, CassandraProfile profile) throws Exception {
         TransactionConfig config = TransactionConfig.create(protoConfig);
         synchronized (writeLock) {
             String currVersion =
@@ -373,10 +381,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             checkVersionsEqual(currVersion, priorVersion);
             configService.updateTransactionConfig(config);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void insertGaugeConfig(String agentId, AgentConfig.GaugeConfig protoConfig)
+    public CompletionStage<?> insertGaugeConfig(String agentId, AgentConfig.GaugeConfig protoConfig, CassandraProfile profile)
             throws Exception {
         GaugeConfig config = GaugeConfig.create(protoConfig);
         synchronized (writeLock) {
@@ -391,11 +400,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             configs.add(config);
             configService.updateGaugeConfigs(configs);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void updateGaugeConfig(String agentId, AgentConfig.GaugeConfig protoConfig,
-            String priorVersion) throws Exception {
+    public CompletionStage<?> updateGaugeConfig(String agentId, AgentConfig.GaugeConfig protoConfig,
+            String priorVersion, CassandraProfile profile) throws Exception {
         GaugeConfig config = GaugeConfig.create(protoConfig);
         synchronized (writeLock) {
             List<GaugeConfig> configs = Lists.newArrayList(configService.getGaugeConfigs());
@@ -416,10 +426,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
             configService.updateGaugeConfigs(configs);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void deleteGaugeConfig(String agentId, String version) throws Exception {
+    public CompletionStage<?> deleteGaugeConfig(String agentId, String version, CassandraProfile profile) throws Exception {
         synchronized (writeLock) {
             List<GaugeConfig> configs = Lists.newArrayList(configService.getGaugeConfigs());
             boolean found = false;
@@ -437,11 +448,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
             configService.updateGaugeConfigs(configs);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void updateJvmConfig(String agentId, AgentConfig.JvmConfig protoConfig,
-            String priorVersion) throws Exception {
+    public CompletionStage<?> updateJvmConfig(String agentId, AgentConfig.JvmConfig protoConfig,
+            String priorVersion, CassandraProfile profile) throws Exception {
         JvmConfig config = JvmConfig.create(protoConfig);
         synchronized (writeLock) {
             String currVersion =
@@ -449,27 +461,28 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             checkVersionsEqual(currVersion, priorVersion);
             configService.updateJvmConfig(config);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void insertSyntheticMonitorConfig(String agentRollupId,
-            AgentConfig.SyntheticMonitorConfig config) {
+    public CompletionStage<?> insertSyntheticMonitorConfig(String agentRollupId,
+            AgentConfig.SyntheticMonitorConfig config, CassandraProfile profile) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void updateSyntheticMonitorConfig(String agentRollupId,
-            AgentConfig.SyntheticMonitorConfig config, String priorVersion) {
+    public CompletionStage<?> updateSyntheticMonitorConfig(String agentRollupId,
+            AgentConfig.SyntheticMonitorConfig config, String priorVersion, CassandraProfile profile) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void deleteSyntheticMonitorConfig(String agentRollupId, String syntheticMonitorId) {
+    public CompletionStage<?> deleteSyntheticMonitorConfig(String agentRollupId, String syntheticMonitorId, CassandraProfile profile) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void insertAlertConfig(String agentRollupId, AgentConfig.AlertConfig protoConfig)
+    public CompletionStage<?> insertAlertConfig(String agentRollupId, AgentConfig.AlertConfig protoConfig, CassandraProfile profile)
             throws Exception {
         String version = Versions.getVersion(protoConfig);
         ImmutableAlertConfig config = AlertConfig.create(protoConfig);
@@ -485,11 +498,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             configs.add(config);
             configService.updateAlertConfigs(configs);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void updateAlertConfig(String agentRollupId, AgentConfig.AlertConfig config,
-            String priorVersion) throws Exception {
+    public CompletionStage<?> updateAlertConfig(String agentRollupId, AgentConfig.AlertConfig config,
+            String priorVersion, CassandraProfile profile) {
         synchronized (writeLock) {
             List<AlertConfig> configs = Lists.newArrayList(configService.getAlertConfigs());
             boolean found = false;
@@ -505,12 +519,17 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (!found) {
                 throw new OptimisticLockException();
             }
-            configService.updateAlertConfigs(configs);
+            try {
+                configService.updateAlertConfigs(configs);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void deleteAlertConfig(String agentRollupId, String version) throws Exception {
+    public CompletionStage<?> deleteAlertConfig(String agentRollupId, String version, CassandraProfile profile) {
         synchronized (writeLock) {
             List<AlertConfig> configs = Lists.newArrayList(configService.getAlertConfigs());
             boolean found = false;
@@ -526,24 +545,30 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (!found) {
                 throw new OptimisticLockException();
             }
-            configService.updateAlertConfigs(configs);
+            try {
+                configService.updateAlertConfigs(configs);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void updateUiDefaultsConfig(String agentId, AgentConfig.UiDefaultsConfig protoConfig,
-            String priorVersion) throws Exception {
+    public CompletionStage<?> updateUiDefaultsConfig(String agentId, AgentConfig.UiDefaultsConfig protoConfig,
+            String priorVersion, CassandraProfile profile) throws Exception {
         UiDefaultsConfig config = UiDefaultsConfig.create(protoConfig);
         synchronized (writeLock) {
             String currVersion = Versions.getVersion(configService.getUiDefaultsConfig().toProto());
             checkVersionsEqual(currVersion, priorVersion);
             configService.updateUiDefaultsConfig(config);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void updatePluginConfig(String agentId, AgentConfig.PluginConfig protoConfig,
-            String priorVersion) throws Exception {
+    public CompletionStage<?> updatePluginConfig(String agentId, AgentConfig.PluginConfig protoConfig,
+            String priorVersion, CassandraProfile profile) throws Exception {
         PluginDescriptor pluginDescriptor = getPluginDescriptor(protoConfig.getId());
         PluginConfig config = PluginConfig.create(pluginDescriptor, protoConfig.getPropertyList());
         synchronized (writeLock) {
@@ -562,11 +587,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             checkState(found, "Plugin config not found: %s", protoConfig.getId());
             configService.updatePluginConfigs(configs);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void insertInstrumentationConfig(String agentId,
-            AgentConfig.InstrumentationConfig protoConfig) throws Exception {
+    public CompletionStage<?> insertInstrumentationConfig(String agentId,
+            AgentConfig.InstrumentationConfig protoConfig, CassandraProfile profile) throws Exception {
         InstrumentationConfig config = InstrumentationConfig.create(protoConfig);
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
@@ -577,11 +603,12 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             configs.add(config);
             configService.updateInstrumentationConfigs(configs);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void updateInstrumentationConfig(String agentId,
-            AgentConfig.InstrumentationConfig protoConfig, String priorVersion) throws Exception {
+    public CompletionStage<?> updateInstrumentationConfig(String agentId,
+            AgentConfig.InstrumentationConfig protoConfig, String priorVersion, CassandraProfile profile) throws Exception {
         InstrumentationConfig config = InstrumentationConfig.create(protoConfig);
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
@@ -602,10 +629,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
             configService.updateInstrumentationConfigs(configs);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void deleteInstrumentationConfigs(String agentId, List<String> versions)
+    public CompletionStage<?> deleteInstrumentationConfigs(String agentId, List<String> versions, CassandraProfile profile)
             throws Exception {
         synchronized (writeLock) {
             List<InstrumentationConfig> configs =
@@ -624,12 +652,13 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
             configService.updateInstrumentationConfigs(configs);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     // ignores any instrumentation configs that are duplicates of existing instrumentation configs
     @Override
-    public void insertInstrumentationConfigs(String agentId,
-            List<AgentConfig.InstrumentationConfig> protoConfigs) throws Exception {
+    public CompletionStage<?> insertInstrumentationConfigs(String agentId,
+            List<AgentConfig.InstrumentationConfig> protoConfigs, CassandraProfile profile) throws Exception {
         List<InstrumentationConfig> configs = Lists.newArrayList();
         for (AgentConfig.InstrumentationConfig instrumentationConfig : protoConfigs) {
             InstrumentationConfig config = InstrumentationConfig.create(instrumentationConfig);
@@ -645,21 +674,23 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
             configService.updateInstrumentationConfigs(existingConfigs);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void updateAdvancedConfig(String agentId, AgentConfig.AdvancedConfig protoConfig,
-            String priorVersion) throws Exception {
+    public CompletionStage<?> updateAdvancedConfig(String agentId, AgentConfig.AdvancedConfig protoConfig,
+            String priorVersion, CassandraProfile profile) throws Exception {
         AdvancedConfig config = AdvancedConfig.create(protoConfig);
         synchronized (writeLock) {
             String currVersion = Versions.getVersion(configService.getAdvancedConfig().toProto());
             checkVersionsEqual(currVersion, priorVersion);
             configService.updateAdvancedConfig(config);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void updateAllConfig(String agentId, AgentConfig config, @Nullable String priorVersion)
+    public CompletionStage<?> updateAllConfig(String agentId, AgentConfig config, @Nullable String priorVersion, CassandraProfile profile)
             throws Exception {
         ConfigValidation.validatePartOne(config);
         Set<String> validPluginIds = Sets.newHashSet();
@@ -676,26 +707,28 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             configService
                     .updateAllConfig(AllConfig.create(config, pluginCache.pluginDescriptors()));
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void updateEmbeddedAdminGeneralConfig(EmbeddedAdminGeneralConfig config,
-            String priorVersion) throws Exception {
+    public CompletionStage<?> updateEmbeddedAdminGeneralConfig(EmbeddedAdminGeneralConfig config,
+            String priorVersion, CassandraProfile profile) throws Exception {
         synchronized (writeLock) {
             String currVersion = adminConfigService.getEmbeddedAdminGeneralConfig().version();
             checkVersionsEqual(currVersion, priorVersion);
             adminConfigService.updateEmbeddedAdminGeneralConfig(config);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void updateCentralAdminGeneralConfig(CentralAdminGeneralConfig config,
-            String priorVersion) {
+    public CompletionStage<?> updateCentralAdminGeneralConfig(CentralAdminGeneralConfig config,
+            String priorVersion, CassandraProfile profile) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void insertUserConfig(UserConfig config) throws Exception {
+    public CompletionStage<?> insertUserConfig(UserConfig config, CassandraProfile profile) throws Exception {
         synchronized (writeLock) {
             List<UserConfig> configs = Lists.newArrayList(adminConfigService.getUserConfigs());
             // check for case-insensitive duplicate
@@ -708,10 +741,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             configs.add(ImmutableUserConfig.copyOf(config));
             adminConfigService.updateUserConfigs(configs);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void updateUserConfig(UserConfig config, String priorVersion) throws Exception {
+    public CompletionStage<?> updateUserConfig(UserConfig config, String priorVersion, CassandraProfile profile) throws Exception {
         synchronized (writeLock) {
             List<UserConfig> configs = Lists.newArrayList(adminConfigService.getUserConfigs());
             String username = config.username();
@@ -733,10 +767,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
             adminConfigService.updateUserConfigs(configs);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void deleteUserConfig(String username) throws Exception {
+    public CompletionStage<?> deleteUserConfig(String username, CassandraProfile profile) throws Exception {
         synchronized (writeLock) {
             List<UserConfig> configs = Lists.newArrayList(adminConfigService.getUserConfigs());
             boolean found = false;
@@ -751,15 +786,16 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             if (!found) {
                 throw new UserNotFoundException();
             }
-            if (getLdapConfig().host().isEmpty() && configs.isEmpty()) {
+            if (getLdapConfig().toCompletableFuture().join().host().isEmpty() && configs.isEmpty()) {
                 throw new CannotDeleteLastUserException();
             }
             adminConfigService.updateUserConfigs(configs);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void insertRoleConfig(RoleConfig config) throws Exception {
+    public CompletionStage<?> insertRoleConfig(RoleConfig config, CassandraProfile profile) throws Exception {
         synchronized (writeLock) {
             List<RoleConfig> configs = Lists.newArrayList(adminConfigService.getRoleConfigs());
             // check for case-insensitive duplicate
@@ -772,10 +808,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             configs.add(ImmutableRoleConfig.copyOf(config));
             adminConfigService.updateRoleConfigs(configs);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void updateRoleConfig(RoleConfig config, String priorVersion) throws Exception {
+    public CompletionStage<?> updateRoleConfig(RoleConfig config, String priorVersion, CassandraProfile profile) throws Exception {
         synchronized (writeLock) {
             List<RoleConfig> configs = Lists.newArrayList(adminConfigService.getRoleConfigs());
             String name = config.name();
@@ -797,10 +834,11 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
             adminConfigService.updateRoleConfigs(configs);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void deleteRoleConfig(String name) throws Exception {
+    public CompletionStage<?> deleteRoleConfig(String name, CassandraProfile profile) {
         synchronized (writeLock) {
             List<RoleConfig> configs = Lists.newArrayList(adminConfigService.getRoleConfigs());
             boolean found = false;
@@ -820,6 +858,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             }
             adminConfigService.updateRoleConfigs(configs);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -834,7 +873,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateCentralWebConfig(CentralWebConfig config, String priorVersion) {
+    public CompletionStage<?> updateCentralWebConfig(CentralWebConfig config, String priorVersion) {
         throw new UnsupportedOperationException();
     }
 
@@ -849,40 +888,43 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateCentralStorageConfig(CentralStorageConfig config, String priorVersion) {
+    public CompletionStage<?> updateCentralStorageConfig(CentralStorageConfig config, String priorVersion) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void updateSmtpConfig(SmtpConfig config, String priorVersion) throws Exception {
+    public CompletionStage<?> updateSmtpConfig(SmtpConfig config, String priorVersion) throws Exception {
         synchronized (writeLock) {
             String currVersion = adminConfigService.getSmtpConfig().version();
             checkVersionsEqual(currVersion, priorVersion);
             adminConfigService.updateSmtpConfig(config);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void updateHttpProxyConfig(HttpProxyConfig config, String priorVersion)
+    public CompletionStage<?> updateHttpProxyConfig(HttpProxyConfig config, String priorVersion)
             throws Exception {
         synchronized (writeLock) {
             String currVersion = adminConfigService.getHttpProxyConfig().version();
             checkVersionsEqual(currVersion, priorVersion);
             adminConfigService.updateHttpProxyConfig(config);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void updateLdapConfig(LdapConfig config, String priorVersion) throws Exception {
+    public CompletionStage<?> updateLdapConfig(LdapConfig config, String priorVersion) throws Exception {
         synchronized (writeLock) {
             String currVersion = adminConfigService.getLdapConfig().version();
             checkVersionsEqual(currVersion, priorVersion);
             adminConfigService.updateLdapConfig(config);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void updatePagerDutyConfig(PagerDutyConfig config, String priorVersion)
+    public CompletionStage<?> updatePagerDutyConfig(PagerDutyConfig config, String priorVersion)
             throws Exception {
         synchronized (writeLock) {
             String currVersion = adminConfigService.getPagerDutyConfig().version();
@@ -890,16 +932,18 @@ public class ConfigRepositoryImpl implements ConfigRepository {
             validatePagerDutyConfig(config);
             adminConfigService.updatePagerDutyConfig(config);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void updateSlackConfig(SlackConfig config, String priorVersion) throws Exception {
+    public CompletionStage<?> updateSlackConfig(SlackConfig config, String priorVersion) throws Exception {
         synchronized (writeLock) {
             String currVersion = adminConfigService.getSlackConfig().version();
             checkVersionsEqual(currVersion, priorVersion);
             validateSlackConfig(config);
             adminConfigService.updateSlackConfig(config);
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -987,7 +1031,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public LazySecretKey getLazySecretKey() throws Exception {
+    public LazySecretKey getLazySecretKey() {
         return lazySecretKey;
     }
 

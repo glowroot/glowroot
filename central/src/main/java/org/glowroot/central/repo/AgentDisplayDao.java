@@ -19,17 +19,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 
 import com.datastax.oss.driver.api.core.cql.*;
 import com.google.common.base.Joiner;
 
+import com.spotify.futures.CompletableFutures;
 import org.glowroot.central.util.AsyncCache;
 import org.glowroot.central.util.AsyncCache.AsyncCacheLoader;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.common2.config.MoreConfigDefaults;
 import org.glowroot.common2.repo.AgentDisplayRepository;
+import org.glowroot.common2.repo.CassandraProfile;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -64,39 +67,41 @@ public class AgentDisplayDao implements AgentDisplayRepository {
                 targetMaxActiveAgentsInPast7Days * 10, new AgentDisplayCacheLoader());
     }
 
-    void store(String agentRollupId, String display) throws Exception {
+    CompletionStage<?> store(String agentRollupId, String display) {
+        CompletionStage<AsyncResultSet> ret;
         if (display.isEmpty()) {
             BoundStatement boundStatement = deletePS.bind()
                 .setString(0, agentRollupId);
-            session.write(boundStatement);
+            ret = session.writeAsync(boundStatement, CassandraProfile.collector);
         } else {
             BoundStatement boundStatement = insertPS.bind()
                 .setString(0, agentRollupId)
                 .setString(1, display);
-            session.write(boundStatement);
+            ret = session.writeAsync(boundStatement, CassandraProfile.collector);
         }
-        agentDisplayCache.invalidate(agentRollupId);
+        return ret.thenRun(() -> agentDisplayCache.invalidate(agentRollupId));
     }
 
     @Override
-    public String readFullDisplay(String agentRollupId) throws Exception {
-        return Joiner.on(" :: ").join(readDisplayParts(agentRollupId));
+    public CompletionStage<String> readFullDisplay(String agentRollupId) {
+        return readDisplayParts(agentRollupId).thenApply(value -> {
+            return Joiner.on(" :: ").join(value);
+        });
     }
 
     @Override
-    public List<String> readDisplayParts(String agentRollupId) throws Exception {
+    public CompletableFuture<List<String>> readDisplayParts(String agentRollupId) {
         List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentRollupId);
-        List<String> displayParts = new ArrayList<>();
+        List<CompletionStage<String>> completionStages = new ArrayList<>();
         for (ListIterator<String> i = agentRollupIds.listIterator(agentRollupIds.size()); i
                 .hasPrevious();) {
-            displayParts.add(readLastDisplayPartAsync(i.previous()).get());
+            completionStages.add(readLastDisplayPartAsync(i.previous()));
         }
-        return displayParts;
+        return CompletableFutures.allAsList(completionStages);
     }
 
     @Override
-    public CompletableFuture<String> readLastDisplayPartAsync(String agentRollupId)
-            throws Exception {
+    public CompletableFuture<String> readLastDisplayPartAsync(String agentRollupId) {
         return agentDisplayCache.get(agentRollupId);
     }
 
@@ -105,7 +110,7 @@ public class AgentDisplayDao implements AgentDisplayRepository {
         public CompletableFuture<String> load(String agentRollupId) {
             BoundStatement boundStatement = readPS.bind()
                 .setString(0, agentRollupId);
-            return session.readAsync(boundStatement)
+            return session.readAsync(boundStatement, CassandraProfile.web)
                     .thenApplyAsync(results -> {
                         Row row = results.one();
                         if (row == null) {

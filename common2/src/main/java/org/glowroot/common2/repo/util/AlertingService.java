@@ -15,53 +15,21 @@
  */
 package org.glowroot.common2.repo.util;
 
-import java.io.ByteArrayOutputStream;
-import java.io.Serializable;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.TimeZone;
-import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-
-import javax.mail.Address;
-import javax.mail.Authenticator;
-import javax.mail.Message;
-import javax.mail.PasswordAuthentication;
-import javax.mail.Session;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.RateLimiter;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.immutables.serial.Serial;
-import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common.util.Versions;
 import org.glowroot.common2.config.SlackConfig.SlackWebhook;
 import org.glowroot.common2.config.SmtpConfig;
 import org.glowroot.common2.config.SmtpConfig.ConnectionSecurity;
-import org.glowroot.common2.repo.AggregateRepository;
-import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.*;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
-import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.GaugeValueRepository.Gauge;
-import org.glowroot.common2.repo.IncidentRepository;
 import org.glowroot.common2.repo.IncidentRepository.OpenIncident;
-import org.glowroot.common2.repo.TraceRepository;
-import org.glowroot.common2.repo.Utils;
 import org.glowroot.common2.repo.util.HttpClient.TooManyRequestsHttpResponseException;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
@@ -71,6 +39,25 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.PagerDutyNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification.SlackNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
+import org.immutables.serial.Serial;
+import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.mail.*;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
+import java.io.ByteArrayOutputStream;
+import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -99,11 +86,11 @@ public class AlertingService {
     private volatile boolean closed;
 
     public AlertingService(ConfigRepository configRepository, IncidentRepository incidentRepository,
-            AggregateRepository aggregateRepository, GaugeValueRepository gaugeValueRepository,
-            TraceRepository traceRepository, RollupLevelService rollupLevelService,
-            MailService mailService, HttpClient httpClient,
-            LockSet<IncidentKey> openingIncidentLockSet,
-            LockSet<IncidentKey> resolvingIncidentLockSet, Clock clock) {
+                           AggregateRepository aggregateRepository, GaugeValueRepository gaugeValueRepository,
+                           TraceRepository traceRepository, RollupLevelService rollupLevelService,
+                           MailService mailService, HttpClient httpClient,
+                           LockSet<IncidentKey> openingIncidentLockSet,
+                           LockSet<IncidentKey> resolvingIncidentLockSet, Clock clock) {
         this.configRepository = configRepository;
         this.incidentRepository = incidentRepository;
         this.mailService = mailService;
@@ -126,68 +113,92 @@ public class AlertingService {
         }
     }
 
-    public void checkForDeletedAlerts(String agentRollupId) throws Exception {
-        for (OpenIncident openIncident : incidentRepository.readOpenIncidents(agentRollupId)) {
-            if (isDeletedAlert(openIncident)) {
-                incidentRepository.resolveIncident(openIncident, clock.currentTimeMillis());
-            }
-        }
-    }
-
-    public void checkForAllDeletedAlerts() throws Exception {
-        for (OpenIncident openIncident : incidentRepository.readAllOpenIncidents()) {
-            if (isDeletedAlert(openIncident)) {
-                incidentRepository.resolveIncident(openIncident, clock.currentTimeMillis());
-            }
-        }
-    }
-
-    public void checkMetricAlert(String centralDisplay, String agentRollupId,
-            String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
-            long endTime) throws Exception {
-        long startTime = endTime - SECONDS.toMillis(metricCondition.getTimePeriodSeconds());
-        Number value =
-                metricService.getMetricValue(agentRollupId, metricCondition, startTime, endTime);
-        if (value == null) {
-            // cannot calculate due to no data, e.g. error rate (but not error count, which can be
-            // calculated - zero - when no data)
-            return;
-        }
-        boolean currentlyTriggered;
-        if (metricCondition.getLowerBoundThreshold()) {
-            currentlyTriggered = value.doubleValue() <= metricCondition.getThreshold();
-        } else {
-            currentlyTriggered = value.doubleValue() >= metricCondition.getThreshold();
-        }
-        AlertCondition alertCondition = alertConfig.getCondition();
-        OpenIncident openIncident = incidentRepository.readOpenIncident(agentRollupId,
-                alertCondition, alertConfig.getSeverity());
-        if (openIncident != null && !currentlyTriggered) {
-            // TODO don't close if no data and no heartbeat?
-            resolveIncident(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
-                    metricCondition, endTime, alertCondition, openIncident);
-        } else if (openIncident == null && currentlyTriggered) {
-            // don't open if min transaction count is not met
-            if (hasMinTransactionCount(metricCondition.getMetric())) {
-                long minTransactionCount = metricCondition.getMinTransactionCount();
-                if (minTransactionCount != 0) {
-                    long transactionCount = metricService.getTransactionCount(agentRollupId,
-                            metricCondition.getTransactionType(),
-                            Strings.emptyToNull(metricCondition.getTransactionName()), startTime,
-                            endTime);
-                    if (transactionCount < minTransactionCount) {
-                        return;
+    public CompletionStage<?> checkForDeletedAlerts(String agentRollupId, CassandraProfile profile) {
+        return incidentRepository.readOpenIncidents(agentRollupId, profile).thenCompose(openIncidents -> {
+            List<CompletionStage<?>> futures = new ArrayList<>();
+            for (OpenIncident openIncident : openIncidents) {
+                futures.add(isDeletedAlert(openIncident).thenCompose(isDeletedAlert -> {
+                    if (isDeletedAlert) {
+                        return incidentRepository.resolveIncident(openIncident, clock.currentTimeMillis(),
+                                profile);
+                    } else {
+                        return CompletableFuture.completedFuture(null);
                     }
-                }
+                }));
             }
-            openIncident(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
-                    metricCondition, endTime, alertCondition);
-        }
+            return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        });
     }
 
-    private void openIncident(String centralDisplay, String agentRollupId,
-            String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
-            long endTime, AlertCondition alertCondition) throws Exception {
+    public CompletionStage<?> checkForAllDeletedAlerts(CassandraProfile profile) {
+        return incidentRepository.readAllOpenIncidents(profile).thenCompose(openIncidents -> {
+            List<CompletionStage<?>> futures = new ArrayList<>(openIncidents.size());
+            for (OpenIncident openIncident : openIncidents) {
+                futures.add(isDeletedAlert(openIncident).thenCompose(isDeletedAlert -> {
+                    if (isDeletedAlert) {
+                        return incidentRepository.resolveIncident(openIncident, clock.currentTimeMillis(),
+                                profile);
+                    } else {
+                        return CompletableFuture.completedFuture(null);
+                    }
+                }));
+            }
+            return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        });
+    }
+
+    public CompletionStage<?> checkMetricAlert(String centralDisplay, String agentRollupId,
+                                               String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
+                                               long endTime, CassandraProfile profile) {
+        long startTime = endTime - SECONDS.toMillis(metricCondition.getTimePeriodSeconds());
+        return metricService.getMetricValue(agentRollupId, metricCondition, startTime, endTime, profile).thenCompose(value -> {
+
+            if (value == null) {
+                // cannot calculate due to no data, e.g. error rate (but not error count, which can be
+                // calculated - zero - when no data)
+                return CompletableFuture.completedFuture(null);
+            }
+            boolean currentlyTriggered;
+            if (metricCondition.getLowerBoundThreshold()) {
+                currentlyTriggered = value.doubleValue() <= metricCondition.getThreshold();
+            } else {
+                currentlyTriggered = value.doubleValue() >= metricCondition.getThreshold();
+            }
+            AlertCondition alertCondition = alertConfig.getCondition();
+            return incidentRepository.readOpenIncident(agentRollupId,
+                    alertCondition, alertConfig.getSeverity(), profile).thenCompose(openIncident -> {
+                if (openIncident != null && !currentlyTriggered) {
+                    // TODO don't close if no data and no heartbeat?
+                    return (CompletionStage<Object>) resolveIncident(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
+                            metricCondition, endTime, alertCondition, openIncident, profile);
+                } else if (openIncident == null && currentlyTriggered) {
+                    // don't open if min transaction count is not met
+                    if (hasMinTransactionCount(metricCondition.getMetric())) {
+                        long minTransactionCount = metricCondition.getMinTransactionCount();
+                        if (minTransactionCount != 0) {
+                            return (CompletionStage<Object>) metricService.getTransactionCount(agentRollupId,
+                                    metricCondition.getTransactionType(),
+                                    Strings.emptyToNull(metricCondition.getTransactionName()), startTime,
+                                    endTime, profile).thenCompose(transactionCount -> {
+                                if (transactionCount < minTransactionCount) {
+                                    return (CompletionStage<Object>) CompletableFuture.completedFuture(null);
+                                }
+                                return (CompletionStage<Object>) openIncident(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
+                                        metricCondition, endTime, alertCondition, profile);
+                            });
+                        }
+                    }
+                    return (CompletionStage<Object>) openIncident(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
+                            metricCondition, endTime, alertCondition, profile);
+                }
+                return (CompletionStage<Object>) CompletableFuture.completedFuture(null);
+            });
+        });
+    }
+
+    private CompletionStage<?> openIncident(String centralDisplay, String agentRollupId,
+                                            String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
+                                            long endTime, AlertCondition alertCondition, CassandraProfile profile) {
         IncidentKey incidentKey = ImmutableIncidentKey.builder()
                 .agentRollupId(agentRollupId)
                 .condition(alertCondition)
@@ -195,23 +206,21 @@ public class AlertingService {
                 .build();
         UUID lockToken = openingIncidentLockSet.lock(incidentKey);
         if (lockToken == null) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
-        try {
-            // the start time for the incident is the end time of the interval evaluated above
-            incidentRepository.insertOpenIncident(agentRollupId, alertCondition,
-                    alertConfig.getSeverity(), alertConfig.getNotification(), endTime);
+        // the start time for the incident is the end time of the interval evaluated above
+        return incidentRepository.insertOpenIncident(agentRollupId, alertCondition,
+                alertConfig.getSeverity(), alertConfig.getNotification(), endTime, profile).thenAccept(v -> {
             sendMetricAlert(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
                     metricCondition, endTime, false);
-        } finally {
+        }).whenComplete((v, t) -> {
             openingIncidentLockSet.unlock(incidentKey, lockToken);
-        }
+        });
     }
 
-    private void resolveIncident(String centralDisplay, String agentRollupId,
-            String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
-            long endTime, AlertCondition alertCondition, OpenIncident openIncident)
-            throws Exception {
+    private CompletionStage<?> resolveIncident(String centralDisplay, String agentRollupId,
+                                               String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
+                                               long endTime, AlertCondition alertCondition, OpenIncident openIncident, CassandraProfile profile) {
         IncidentKey incidentKey = ImmutableIncidentKey.builder()
                 .agentRollupId(agentRollupId)
                 .condition(alertCondition)
@@ -219,40 +228,45 @@ public class AlertingService {
                 .build();
         UUID lockToken = resolvingIncidentLockSet.lock(incidentKey);
         if (lockToken == null) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
-        try {
-            incidentRepository.resolveIncident(openIncident, endTime);
+        return incidentRepository.resolveIncident(openIncident, endTime, profile).thenAccept(v -> {
             sendMetricAlert(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig,
                     metricCondition, endTime, true);
-        } finally {
+        }).whenComplete((v, t) -> {
             resolvingIncidentLockSet.unlock(incidentKey, lockToken);
-        }
+        });
     }
 
-    private boolean isDeletedAlert(OpenIncident openIncident) throws Exception {
-        for (AlertConfig alertConfig : getAlertConfigsLeniently(openIncident.agentRollupId())) {
-            if (alertConfig.getCondition().equals(openIncident.condition())
-                    && alertConfig.getSeverity() == openIncident.severity()) {
-                return false;
+    private CompletionStage<Boolean> isDeletedAlert(OpenIncident openIncident) {
+        return getAlertConfigsLeniently(openIncident.agentRollupId()).thenApply(alertConfigs -> {
+            for (AlertConfig alertConfig : alertConfigs) {
+                if (alertConfig.getCondition().equals(openIncident.condition())
+                        && alertConfig.getSeverity() == openIncident.severity()) {
+                    return false;
+                }
             }
-        }
-        return true;
+            return true;
+        });
     }
 
-    private List<AlertConfig> getAlertConfigsLeniently(String agentRollupId) throws Exception {
-        try {
-            return configRepository.getAlertConfigs(agentRollupId);
-        } catch (AgentConfigNotFoundException e) {
-            // be lenient if agent_config table is messed up
-            logger.debug(e.getMessage(), e);
-            return ImmutableList.of();
-        }
+    private CompletionStage<List<AlertConfig>> getAlertConfigsLeniently(String agentRollupId) {
+        return configRepository.getAlertConfigs(agentRollupId).handle((configs, t) -> {
+            if (t != null) {
+                if (t instanceof AgentConfigNotFoundException) {
+                    // be lenient if agent_config table is messed up
+                    logger.debug(t.getMessage(), t);
+                    return ImmutableList.of();
+                }
+                throw new RuntimeException(t);
+            }
+            return configs;
+        });
     }
 
     private void sendMetricAlert(String centralDisplay, String agentRollupId,
-            String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
-            long endTime, boolean ok) throws Exception {
+                                 String agentRollupDisplay, AlertConfig alertConfig, MetricCondition metricCondition,
+                                 long endTime, boolean ok) {
         // subject is the same between initial and ok messages so they will be threaded by gmail
         StringBuilder subject = new StringBuilder();
         String metric = metricCondition.getMetric();
@@ -330,12 +344,12 @@ public class AlertingService {
     }
 
     public void sendNotification(String centralDisplay, String agentRollupId,
-            String agentRollupDisplay, AlertConfig alertConfig, long endTime, String subject,
-            String messageText, boolean ok) throws Exception {
+                                 String agentRollupDisplay, AlertConfig alertConfig, long endTime, String subject,
+                                 String messageText, boolean ok) {
         AlertNotification alertNotification = alertConfig.getNotification();
         EmailNotification emailNotification = alertNotification.getEmailNotification();
         if (emailNotification.getEmailAddressCount() > 0) {
-            SmtpConfig smtpConfig = configRepository.getSmtpConfig();
+            SmtpConfig smtpConfig = configRepository.getSmtpConfig().toCompletableFuture().join();
             if (smtpConfig.host().isEmpty()) {
                 if (smtpHostWarningRateLimiter.tryAcquire()) {
                     logger.warn("not sending alert due to missing SMTP host configuration"
@@ -345,7 +359,7 @@ public class AlertingService {
                 sendEmail(centralDisplay, agentRollupDisplay, subject,
                         emailNotification.getEmailAddressList(),
                         messageText, smtpConfig, null, configRepository.getLazySecretKey(),
-                        mailService);
+                        mailService, ok);
             }
         }
         PagerDutyNotification pagerDutyNotification = alertNotification.getPagerDutyNotification();
@@ -356,7 +370,7 @@ public class AlertingService {
         SlackNotification slackNotification = alertNotification.getSlackNotification();
         if (!slackNotification.getSlackWebhookId().isEmpty()) {
             String slackWebhookUrl = null;
-            for (SlackWebhook webhook : configRepository.getSlackConfig().webhooks()) {
+            for (SlackWebhook webhook : configRepository.getSlackConfig().toCompletableFuture().join().webhooks()) {
                 if (webhook.id().equals(slackNotification.getSlackWebhookId())) {
                     slackWebhookUrl = webhook.url();
                     break;
@@ -375,16 +389,16 @@ public class AlertingService {
     }
 
     private void sendPagerDutyWithRetry(String agentRollupId, String agentRollupDisplay,
-            AlertConfig alertConfig, PagerDutyNotification pagerDutyNotification,
-            long endTime, String subject, String messageText, boolean ok) {
+                                        AlertConfig alertConfig, PagerDutyNotification pagerDutyNotification,
+                                        long endTime, String subject, String messageText, boolean ok) {
         SendPagerDuty sendPagerDuty = new SendPagerDuty(agentRollupId, agentRollupDisplay,
                 alertConfig, pagerDutyNotification, endTime, subject, messageText, ok);
         sendPagerDuty.run();
     }
 
     private void sendSlackWithRetry(String centralDisplay, String agentRollupDisplay,
-            String slackWebhookUrl, String slackChannel, long endTime, String subject,
-            String messageText, boolean ok) {
+                                    String slackWebhookUrl, String slackChannel, long endTime, String subject,
+                                    String messageText, boolean ok) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             JsonGenerator jg = ObjectMappers.create().getFactory().createGenerator(baos);
@@ -420,39 +434,48 @@ public class AlertingService {
     // AdminJsonService.sentTestEmail() without possibility of throwing
     // org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException
     public static void sendEmail(String centralDisplay, String agentRollupDisplay, String subject,
-            List<String> emailAddresses, String messageText, SmtpConfig smtpConfig,
-            @Nullable String passwordOverride, LazySecretKey lazySecretKey, MailService mailService)
-            throws Exception {
-        Session session = createMailSession(smtpConfig, passwordOverride, lazySecretKey);
-        Message message = new MimeMessage(session);
-        String fromEmailAddress = smtpConfig.fromEmailAddress();
-        if (fromEmailAddress.isEmpty()) {
-            String localServerName = InetAddress.getLocalHost().getHostName();
-            fromEmailAddress = "glowroot@" + localServerName;
+                                 List<String> emailAddresses, String messageText, SmtpConfig smtpConfig,
+                                 @Nullable String passwordOverride, LazySecretKey lazySecretKey, MailService mailService,
+                                 boolean ok) {
+        try {
+            Session session = createMailSession(smtpConfig, passwordOverride, lazySecretKey);
+            Message message = new MimeMessage(session);
+            String fromEmailAddress = smtpConfig.fromEmailAddress();
+            if (fromEmailAddress.isEmpty()) {
+                String localServerName = InetAddress.getLocalHost().getHostName();
+                fromEmailAddress = "glowroot@" + localServerName;
+            }
+            String fromDisplayName = smtpConfig.fromDisplayName();
+            if (fromDisplayName.isEmpty()) {
+                fromDisplayName = "Glowroot";
+            }
+            message.setFrom(new InternetAddress(fromEmailAddress, fromDisplayName));
+            Address[] emailAddrs = new Address[emailAddresses.size()];
+            for (int i = 0; i < emailAddresses.size(); i++) {
+                emailAddrs[i] = new InternetAddress(emailAddresses.get(i));
+            }
+            message.setRecipients(Message.RecipientType.TO, emailAddrs);
+            String subj = subject;
+            if (!agentRollupDisplay.isEmpty()) {
+                subj = "[" + agentRollupDisplay + "] " + subj;
+            }
+            if (!centralDisplay.isEmpty()) {
+                subj = "[" + centralDisplay + "] " + subj;
+            }
+            if (agentRollupDisplay.isEmpty() && centralDisplay.isEmpty()) {
+                subj = "[Glowroot] " + subj;
+            }
+            if (ok) {
+                subj = subj + " - resolved";
+            } else {
+                subj = subj + " - triggered";
+            }
+            message.setSubject(subj);
+            message.setText(messageText);
+            mailService.send(message);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        String fromDisplayName = smtpConfig.fromDisplayName();
-        if (fromDisplayName.isEmpty()) {
-            fromDisplayName = "Glowroot";
-        }
-        message.setFrom(new InternetAddress(fromEmailAddress, fromDisplayName));
-        Address[] emailAddrs = new Address[emailAddresses.size()];
-        for (int i = 0; i < emailAddresses.size(); i++) {
-            emailAddrs[i] = new InternetAddress(emailAddresses.get(i));
-        }
-        message.setRecipients(Message.RecipientType.TO, emailAddrs);
-        String subj = subject;
-        if (!agentRollupDisplay.isEmpty()) {
-            subj = "[" + agentRollupDisplay + "] " + subj;
-        }
-        if (!centralDisplay.isEmpty()) {
-            subj = "[" + centralDisplay + "] " + subj;
-        }
-        if (agentRollupDisplay.isEmpty() && centralDisplay.isEmpty()) {
-            subj = "[Glowroot] " + subj;
-        }
-        message.setSubject(subj);
-        message.setText(messageText);
-        mailService.send(message);
     }
 
     public static String getPreUpperBoundText(boolean ok) {
@@ -510,7 +533,7 @@ public class AlertingService {
     // AdminJsonService.sentTestEmail() without possibility of throwing
     // org.glowroot.common.repo.util.LazySecretKey.SymmetricEncryptionKeyMissingException
     private static Session createMailSession(SmtpConfig smtpConfig,
-            @Nullable String passwordOverride, LazySecretKey lazySecretKey) throws Exception {
+                                             @Nullable String passwordOverride, LazySecretKey lazySecretKey) throws Exception {
         Properties props = new Properties();
         props.put("mail.smtp.host", smtpConfig.host());
         ConnectionSecurity connectionSecurity = smtpConfig.connectionSecurity();
@@ -544,7 +567,7 @@ public class AlertingService {
     }
 
     private static String getPassword(SmtpConfig smtpConfig, @Nullable String passwordOverride,
-            LazySecretKey lazySecretKey) throws Exception {
+                                      LazySecretKey lazySecretKey) throws Exception {
         if (passwordOverride != null) {
             return passwordOverride;
         }
@@ -559,7 +582,9 @@ public class AlertingService {
     @Serial.Structural
     public interface IncidentKey extends Serializable {
         String agentRollupId();
+
         AlertCondition condition();
+
         AlertSeverity severity();
     }
 
@@ -577,8 +602,8 @@ public class AlertingService {
         private volatile int currentTryCount = 1;
 
         private SendPagerDuty(String agentRollupId, String agentRollupDisplay,
-                AlertConfig alertConfig, PagerDutyNotification pagerDutyNotification,
-                long endTime, String subject, String messageText, boolean ok) {
+                              AlertConfig alertConfig, PagerDutyNotification pagerDutyNotification,
+                              long endTime, String subject, String messageText, boolean ok) {
             this.agentRollupId = agentRollupId;
             this.agentRollupDisplay = agentRollupDisplay;
             this.alertConfig = alertConfig;
@@ -629,8 +654,8 @@ public class AlertingService {
         }
 
         private void sendPagerDuty(String agentRollupId, String agentRollupDisplay,
-                AlertConfig alertConfig, PagerDutyNotification pagerDutyNotification, long endTime,
-                String subject, String messageText, boolean ok) throws Exception {
+                                   AlertConfig alertConfig, PagerDutyNotification pagerDutyNotification, long endTime,
+                                   String subject, String messageText, boolean ok) throws Exception {
             AlertCondition alertCondition = alertConfig.getCondition();
             String dedupKey = getPagerDutyDedupKey(agentRollupId, alertCondition);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();

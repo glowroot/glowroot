@@ -18,9 +18,11 @@ package org.glowroot.central.repo;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 
-import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,6 +40,7 @@ import org.glowroot.common.util.ObjectMappers;
 import org.glowroot.common2.config.AllCentralAdminConfig;
 import org.glowroot.common2.config.ImmutableAllCentralAdminConfig;
 import org.glowroot.common2.repo.AllAdminConfigUtil;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.util.RollupLevelService;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -76,7 +79,7 @@ public class CentralRepoModule {
         agentDisplayDao = new AgentDisplayDao(session, clusterManager, asyncExecutor,
                 targetMaxActiveAgentsInPast7Days);
         agentConfigDao = new AgentConfigDao(session, agentDisplayDao, clusterManager,
-                targetMaxActiveAgentsInPast7Days);
+                targetMaxActiveAgentsInPast7Days, asyncExecutor);
         userDao = new UserDao(session, clusterManager);
         roleDao = new RoleDao(session, clusterManager);
         configRepository = new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao,
@@ -119,14 +122,23 @@ public class CentralRepoModule {
             v09AggregateLastExpirationTime = 0;
         } else {
             agentRollupIdsWithV09Data = new HashSet<>();
-            ResultSet results = session.read("select agent_id from v09_agent_check where one = 1");
-            for (Row row : results) {
-                String agentId = checkNotNull(row.getString(0));
-                agentRollupIdsWithV09Data.addAll(AgentRollupIds.getAgentRollupIds(agentId));
-            }
-            results = session.read("select v09_last_capture_time, v09_fqt_last_expiration_time,"
+            Function<AsyncResultSet, CompletableFuture<Void>> compute = new Function<AsyncResultSet, CompletableFuture<Void>>() {
+                @Override
+                public CompletableFuture<Void> apply(AsyncResultSet results) {
+                    for (Row row : results.currentPage()) {
+                        String agentId = checkNotNull(row.getString(0));
+                        agentRollupIdsWithV09Data.addAll(AgentRollupIds.getAgentRollupIds(agentId));
+                    }
+                    if (results.hasMorePages()) {
+                        return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                    }
+                    return CompletableFuture.completedFuture(null);
+                }
+            };
+            session.readAsync("select agent_id from v09_agent_check where one = 1", CassandraProfile.slow).thenCompose(compute).toCompletableFuture().get();
+            AsyncResultSet results = session.readAsync("select v09_last_capture_time, v09_fqt_last_expiration_time,"
                     + " v09_trace_last_expiration_time, v09_aggregate_last_expiration_time from"
-                    + " v09_last_capture_time where one = 1");
+                    + " v09_last_capture_time where one = 1", CassandraProfile.slow).toCompletableFuture().get();
             Row row = checkNotNull(results.one());
             int i = 0;
             v09LastCaptureTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
@@ -134,7 +146,7 @@ public class CentralRepoModule {
             v09TraceLastExpirationTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
             v09AggregateLastExpirationTime = checkNotNull(row.getInstant(i++)).toEpochMilli();
         }
-        fullQueryTextDao = new FullQueryTextDao(session, configRepository, asyncExecutor);
+        fullQueryTextDao = new FullQueryTextDao(session, configRepository);
         AggregateDaoImpl aggregateDaoImpl = new AggregateDaoImpl(session, activeAgentDao,
                 transactionTypeDao, fullQueryTextDao, configRepository, asyncExecutor, cassandraGcGraceSeconds, clock);
         GaugeValueDaoImpl gaugeValueDaoImpl = new GaugeValueDaoImpl(session, configRepository,

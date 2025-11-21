@@ -17,6 +17,8 @@ package org.glowroot.agent.embedded.repo;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -52,14 +54,19 @@ class TransactionTypeDao implements TransactionTypeRepository {
     }
 
     @Override
-    public List<String> read(String agentRollupId) throws Exception {
-        List<String> transactionTypes = dataSource.queryForStringList(
-                "select transaction_type from transaction_types order by transaction_type");
-        if (transactionTypes == null) {
-            // data source is closing
-            return ImmutableList.of();
+    public CompletionStage<List<String>> read(String agentRollupId) {
+
+        try {
+            List<String> transactionTypes = dataSource.queryForStringList(
+                    "select transaction_type from transaction_types order by transaction_type");
+            if (transactionTypes == null) {
+                // data source is closing
+                return CompletableFuture.completedFuture(ImmutableList.of());
+            }
+            return CompletableFuture.completedFuture(transactionTypes);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
-        return transactionTypes;
     }
 
     void updateLastCaptureTime(String transactionType, long captureTime) throws Exception {

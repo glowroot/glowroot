@@ -44,20 +44,17 @@ fi
 if [ "$CASSANDRA_KEYSPACE" ]; then
   sed -i "s/^cassandra.keyspace=.*$/cassandra.keyspace=$CASSANDRA_KEYSPACE/" glowroot-central.properties
 fi
+if [ "$CASSANDRA_LOCALDATACENTER" ]; then
+  sed -i "s/^cassandra.localDatacenter=.*$/cassandra.localDatacenter=$CASSANDRA_LOCALDATACENTER/" glowroot-central.properties
+fi
 if [ "$CASSANDRA_CONSISTENCY_LEVEL" ]; then
   sed -i "s/^cassandra.consistencyLevel=.*$/cassandra.consistencyLevel=$CASSANDRA_CONSISTENCY_LEVEL/" glowroot-central.properties
 fi
 if [ "$CASSANDRA_SYMMETRIC_ENCRYPTION_KEY" ]; then
   sed -i "s/^cassandra.symmetricEncryptionKey=.*$/cassandra.symmetricEncryptionKey=$CASSANDRA_SYMMETRIC_ENCRYPTION_KEY/" glowroot-central.properties
 fi
-if [ "$CASSANDRA_CONNECTION_MAX_REQUESTS" ]; then
-  sed -i "s/^cassandra.connectionMaxRequests=.*$/cassandra.connectionMaxRequests=$CASSANDRA_CONNECTION_MAX_REQUESTS/" glowroot-central.properties
-fi
-if [ "$CASSANDRA_THROTTLER_MAX_CONCURRENT_REQUESTS" ]; then
-  sed -i "s/^cassandra.throttlerMaxConcurrentRequests=.*$/cassandra.throttlerMaxConcurrentRequests=$CASSANDRA_THROTTLER_MAX_CONCURRENT_REQUESTS/" glowroot-central.properties
-fi
-if [ "$CASSANDRA_THROTTLER_MAX_QUEUE_SIZE" ]; then
-  sed -i "s/^cassandra.throttlerMaxQueueSize=.*$/cassandra.throttlerMaxQueueSize=$CASSANDRA_THROTTLER_MAX_QUEUE_SIZE/" glowroot-central.properties
+if [ "$CASSANDRA_CONFIGURATION_FILE" ]; then
+  sed -i "s/^cassandra.configurationFile=.*$/cassandra.configurationFile=$CASSANDRA_CONFIGURATION_FILE/" glowroot-central.properties
 fi
 if [ "$UI_CONTEXT_PATH" ]; then
   # not using "/" as sed delimiter since it is a common character used in context path

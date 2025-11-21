@@ -15,24 +15,28 @@
  */
 package org.glowroot.central.repo;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-
-import com.datastax.oss.driver.api.core.cql.*;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.primitives.Ints;
-import org.immutables.value.Value;
-
-import org.glowroot.central.util.Cache;
-import org.glowroot.central.util.Cache.CacheLoader;
+import org.glowroot.central.util.AsyncCache;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Styles;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.TraceAttributeNameRepository;
+import org.immutables.value.Value;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -46,11 +50,10 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
     private final PreparedStatement readPS;
 
     private final RateLimiter<TraceAttributeNameKey> rateLimiter = new RateLimiter<>();
-
-    private final Cache<String, Map<String, List<String>>> traceAttributeNamesCache;
+    private final AsyncCache<String, Map<String, List<String>>> traceAttributeNamesCache;
 
     TraceAttributeNameDao(Session session, ConfigRepositoryImpl configRepository,
-            ClusterManager clusterManager, int targetMaxCentralUiUsers) throws Exception {
+                          ClusterManager clusterManager, int targetMaxCentralUiUsers) throws Exception {
         this.session = session;
         this.configRepository = configRepository;
 
@@ -65,68 +68,82 @@ class TraceAttributeNameDao implements TraceAttributeNameRepository {
 
         // this cache is primarily used for calculating Glowroot-Agent-Rollup-Layout-Version, which
         // is performed on the user's current agent-id/agent-rollup-id
-        traceAttributeNamesCache = clusterManager.createPerAgentCache("traceAttributeNamesCache",
+        traceAttributeNamesCache = clusterManager.createPerAgentAsyncCache("traceAttributeNamesCache",
                 targetMaxCentralUiUsers, new TraceAttributeNameCacheLoader());
     }
 
     @Override
     public Map<String, List<String>> read(String agentRollupId) throws Exception {
-        return traceAttributeNamesCache.get(agentRollupId);
+        return traceAttributeNamesCache.get(agentRollupId).get();
     }
 
-    CompletableFuture<?> store(String agentRollupId, String transactionType, String traceAttributeName) {
+    CompletionStage<?> store(String agentRollupId, String transactionType, String traceAttributeName) {
         TraceAttributeNameKey rateLimiterKey = ImmutableTraceAttributeNameKey.of(agentRollupId,
                 transactionType, traceAttributeName);
         if (!rateLimiter.tryAcquire(rateLimiterKey)) {
             return CompletableFuture.completedFuture(null);
         }
-        int i = 0;
-        BoundStatement boundStatement = insertPS.bind()
-            .setString(i++, agentRollupId)
-            .setString(i++, transactionType)
-            .setString(i++, traceAttributeName)
-            .setInt(i++, getTraceTTL());
-        return session.writeAsync(boundStatement).whenComplete(((asyncResultSet, throwable) -> {
-            if (throwable != null) {
-                rateLimiter.release(rateLimiterKey);
-            } else {
-                traceAttributeNamesCache.invalidate(agentRollupId);
-            }
-        })).toCompletableFuture();
+        return getTraceTTL().thenCompose(ttl -> {
+            int i = 0;
+            BoundStatement boundStatement = insertPS.bind()
+                    .setString(i++, agentRollupId)
+                    .setString(i++, transactionType)
+                    .setString(i++, traceAttributeName)
+                    .setInt(i++, ttl);
+            return session.writeAsync(boundStatement, CassandraProfile.collector).whenComplete(((asyncResultSet, throwable) -> {
+                if (throwable != null) {
+                    rateLimiter.release(rateLimiterKey);
+                } else {
+                    traceAttributeNamesCache.invalidate(agentRollupId);
+                }
+            }));
+        });
     }
 
-    private int getTraceTTL() {
-        int ttl = configRepository.getCentralStorageConfig().getTraceTTL();
-        if (ttl == 0) {
-            return 0;
-        }
-        // adding 1 day to account for rateLimiter
-        return Ints.saturatedCast(ttl + DAYS.toSeconds(1));
+    private CompletionStage<Integer> getTraceTTL() {
+        return configRepository.getCentralStorageConfig().thenApply(centralStorageConfig -> {
+            int ttl = centralStorageConfig.getTraceTTL();
+            if (ttl == 0) {
+                return 0;
+            }
+            // adding 1 day to account for rateLimiter
+            return Ints.saturatedCast(ttl + DAYS.toSeconds(1));
+        });
     }
 
     @Value.Immutable
     @Styles.AllParameters
     interface TraceAttributeNameKey {
         String agentRollupId();
+
         String transactionType();
+
         String traceAttributeName();
     }
 
     private class TraceAttributeNameCacheLoader
-            implements CacheLoader<String, Map<String, List<String>>> {
+            implements AsyncCache.AsyncCacheLoader<String, Map<String, List<String>>> {
         @Override
-        public Map<String, List<String>> load(String agentRollupId) {
+        public CompletableFuture<Map<String, List<String>>> load(String agentRollupId) {
             BoundStatement boundStatement = readPS.bind()
-                .setString(0, agentRollupId);
-            ResultSet results = session.read(boundStatement);
+                    .setString(0, agentRollupId);
             ListMultimap<String, String> traceAttributeNames = ArrayListMultimap.create();
-            for (Row row : results) {
-                int i = 0;
-                String transactionType = checkNotNull(row.getString(i++));
-                String traceAttributeName = checkNotNull(row.getString(i++));
-                traceAttributeNames.put(transactionType, traceAttributeName);
-            }
-            return Multimaps.asMap(traceAttributeNames);
+            Function<AsyncResultSet, CompletableFuture<Map<String, List<String>>>> compute = new Function<>() {
+                @Override
+                public CompletableFuture<Map<String, List<String>>> apply(AsyncResultSet results) {
+                    for (Row row : results.currentPage()) {
+                        int i = 0;
+                        String transactionType = checkNotNull(row.getString(i++));
+                        String traceAttributeName = checkNotNull(row.getString(i++));
+                        traceAttributeNames.put(transactionType, traceAttributeName);
+                    }
+                    if (results.hasMorePages()) {
+                        return results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
+                    }
+                    return CompletableFuture.completedFuture(Multimaps.asMap(traceAttributeNames));
+                }
+            };
+            return session.readAsync(boundStatement, CassandraProfile.collector).thenCompose(compute).toCompletableFuture();
         }
     }
 }

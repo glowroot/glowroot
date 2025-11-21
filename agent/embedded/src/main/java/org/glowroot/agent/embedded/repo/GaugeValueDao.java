@@ -21,6 +21,8 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicLongArray;
 
 import com.google.common.base.Joiner;
@@ -40,6 +42,7 @@ import org.glowroot.agent.embedded.util.Schemas.Column;
 import org.glowroot.agent.embedded.util.Schemas.ColumnType;
 import org.glowroot.agent.embedded.util.Schemas.Index;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common2.repo.GaugeValueRepository;
 import org.glowroot.common2.repo.util.Gauges;
@@ -106,20 +109,20 @@ public class GaugeValueDao implements GaugeValueRepository {
     }
 
     @Override
-    public List<Gauge> getRecentlyActiveGauges(String agentRollupId) throws Exception {
+    public CompletionStage<List<Gauge>> getRecentlyActiveGauges(String agentRollupId) {
         long now = clock.currentTimeMillis();
         long from = now - DAYS.toMillis(7);
-        return getGauges(agentRollupId, from, now + DAYS.toMillis(365));
+        return getGauges(agentRollupId, from, now + DAYS.toMillis(365), CassandraProfile.web);
     }
 
     @Override
-    public List<Gauge> getGauges(String agentRollupId, long from, long to) throws Exception {
+    public CompletionStage<List<Gauge>> getGauges(String agentRollupId, long from, long to, CassandraProfile profile) {
         Set<String> allGaugeNames = gaugeNameDao.readAllGaugeNames(from, to);
         List<Gauge> gauges = Lists.newArrayList();
         for (String gaugeName : allGaugeNames) {
             gauges.add(Gauges.getGauge(gaugeName));
         }
-        return gauges;
+        return CompletableFuture.completedFuture(gauges);
     }
 
     public void store(List<GaugeValue> gaugeValues) throws Exception {
@@ -165,28 +168,35 @@ public class GaugeValueDao implements GaugeValueRepository {
 
     // from is INCLUSIVE
     @Override
-    public List<GaugeValue> readGaugeValues(String agentRollupId, String gaugeName, long from,
-            long to, int rollupLevel) throws Exception {
-        Long gaugeId = gaugeIdDao.getGaugeId(gaugeName);
-        if (gaugeId == null) {
-            // not necessarily an error, gauge id not created until first store
-            return ImmutableList.of();
+    public CompletionStage<List<GaugeValue>> readGaugeValues(String agentRollupId, String gaugeName, long from,
+            long to, int rollupLevel, CassandraProfile profile) {
+        try {
+            Long gaugeId = gaugeIdDao.getGaugeId(gaugeName);
+            if (gaugeId == null) {
+                // not necessarily an error, gauge id not created until first store
+                return CompletableFuture.completedFuture(ImmutableList.of());
+            }
+            return CompletableFuture.completedFuture(dataSource.query(new GaugeValueQuery(gaugeId, from, to, rollupLevel)));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
-        return dataSource.query(new GaugeValueQuery(gaugeId, from, to, rollupLevel));
     }
 
     @Override
-    public long getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel)
-            throws Exception {
-        Long gaugeId = gaugeIdDao.getGaugeId(gaugeName);
-        if (gaugeId == null) {
-            // not necessarily an error, gauge id not created until first store
-            return Long.MAX_VALUE;
+    public CompletionStage<Long> getOldestCaptureTime(String agentRollupId, String gaugeName, int rollupLevel, CassandraProfile profile) {
+        try {
+            Long gaugeId = gaugeIdDao.getGaugeId(gaugeName);
+            if (gaugeId == null) {
+                // not necessarily an error, gauge id not created until first store
+                return CompletableFuture.completedFuture(Long.MAX_VALUE);
+            }
+            Long oldestCaptureTime = dataSource.queryForOptionalLong("select top 1 capture_time from"
+                    + " gauge_value_rollup_" + castUntainted(rollupLevel) + " where gauge_id = ? order"
+                    + " by capture_time", gaugeId);
+            return CompletableFuture.completedFuture(oldestCaptureTime == null ? Long.MAX_VALUE : oldestCaptureTime);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
-        Long oldestCaptureTime = dataSource.queryForOptionalLong("select top 1 capture_time from"
-                + " gauge_value_rollup_" + castUntainted(rollupLevel) + " where gauge_id = ? order"
-                + " by capture_time", gaugeId);
-        return oldestCaptureTime == null ? Long.MAX_VALUE : oldestCaptureTime;
     }
 
     void deleteBefore(long captureTime, int rollupLevel) throws SQLException {

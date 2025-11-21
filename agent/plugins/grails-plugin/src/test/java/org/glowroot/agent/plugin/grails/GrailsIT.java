@@ -53,7 +53,7 @@ public class GrailsIT {
     @BeforeAll
     public static void setUp() throws Exception {
         Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("17"));
-        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("20"));
+        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("21"));
         container = Containers.create();
     }
 

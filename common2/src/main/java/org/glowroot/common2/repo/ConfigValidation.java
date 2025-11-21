@@ -28,7 +28,7 @@ public class ConfigValidation {
 
     private ConfigValidation() {}
 
-    public static void validatePartOne(AgentConfig config) throws Exception {
+    public static void validatePartOne(AgentConfig config) {
         Set<String> gaugeMBeanObjectNames = Sets.newHashSet();
         for (AgentConfig.GaugeConfig gaugeConfig : config.getGaugeConfigList()) {
             if (!gaugeMBeanObjectNames.add(gaugeConfig.getMbeanObjectName())) {
@@ -63,8 +63,7 @@ public class ConfigValidation {
         }
     }
 
-    public static void validatePartTwo(AgentConfig config, Set<String> validPluginIds)
-            throws Exception {
+    public static void validatePartTwo(AgentConfig config, Set<String> validPluginIds) {
         for (AgentConfig.PluginConfig pluginConfig : config.getPluginConfigList()) {
             if (!validPluginIds.contains(pluginConfig.getId())) {
                 throw new IllegalStateException("Invalid plugin id: " + pluginConfig.getId());

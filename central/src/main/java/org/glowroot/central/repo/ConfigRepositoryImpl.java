@@ -15,77 +15,34 @@
  */
 package org.glowroot.central.repo;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.BaseEncoding;
+import com.spotify.futures.CompletableFutures;
 import org.checkerframework.checker.nullness.qual.Nullable;
-
 import org.glowroot.central.repo.AgentConfigDao.AgentConfigUpdater;
 import org.glowroot.common.util.Versions;
-import org.glowroot.common2.config.AllCentralAdminConfig;
-import org.glowroot.common2.config.AllEmbeddedAdminConfig;
-import org.glowroot.common2.config.CentralAdminGeneralConfig;
-import org.glowroot.common2.config.CentralStorageConfig;
-import org.glowroot.common2.config.CentralWebConfig;
-import org.glowroot.common2.config.EmbeddedAdminGeneralConfig;
-import org.glowroot.common2.config.EmbeddedStorageConfig;
-import org.glowroot.common2.config.EmbeddedWebConfig;
-import org.glowroot.common2.config.HealthchecksIoConfig;
-import org.glowroot.common2.config.HttpProxyConfig;
-import org.glowroot.common2.config.ImmutableAllCentralAdminConfig;
-import org.glowroot.common2.config.ImmutableCentralAdminGeneralConfig;
-import org.glowroot.common2.config.ImmutableCentralStorageConfig;
-import org.glowroot.common2.config.ImmutableCentralWebConfig;
-import org.glowroot.common2.config.ImmutableHttpProxyConfig;
-import org.glowroot.common2.config.ImmutableLdapConfig;
-import org.glowroot.common2.config.ImmutablePagerDutyConfig;
-import org.glowroot.common2.config.ImmutableRoleConfig;
-import org.glowroot.common2.config.ImmutableSlackConfig;
-import org.glowroot.common2.config.ImmutableSmtpConfig;
-import org.glowroot.common2.config.ImmutableUserConfig;
-import org.glowroot.common2.config.LdapConfig;
-import org.glowroot.common2.config.MoreConfigDefaults;
-import org.glowroot.common2.config.PagerDutyConfig;
+import org.glowroot.common2.config.*;
 import org.glowroot.common2.config.PagerDutyConfig.PagerDutyIntegrationKey;
-import org.glowroot.common2.config.RoleConfig;
-import org.glowroot.common2.config.SlackConfig;
 import org.glowroot.common2.config.SlackConfig.SlackWebhook;
-import org.glowroot.common2.config.SmtpConfig;
-import org.glowroot.common2.config.StorageConfig;
-import org.glowroot.common2.config.UserConfig;
-import org.glowroot.common2.config.WebConfig;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigValidation;
 import org.glowroot.common2.repo.util.LazySecretKey;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig;
+import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.*;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertCondition;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GaugeConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.GeneralConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.JvmConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.PluginProperty.Value.ValCase;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.SyntheticMonitorConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
-import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.UiDefaultsConfig;
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 
 public class ConfigRepositoryImpl implements ConfigRepository {
 
@@ -105,7 +62,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     private final Set<AgentConfigListener> agentConfigListeners = Sets.newCopyOnWriteArraySet();
 
     ConfigRepositoryImpl(CentralConfigDao centralConfigDao, AgentConfigDao agentConfigDao,
-            UserDao userDao, RoleDao roleDao, String symmetricEncryptionKey) {
+                         UserDao userDao, RoleDao roleDao, String symmetricEncryptionKey) {
         this.centralConfigDao = centralConfigDao;
         this.agentConfigDao = agentConfigDao;
         this.userDao = userDao;
@@ -125,7 +82,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public GeneralConfig getGeneralConfig(String agentRollupId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentRollupId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentRollupId);
         }
@@ -134,7 +91,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public TransactionConfig getTransactionConfig(String agentId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentId);
         }
@@ -143,7 +100,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public JvmConfig getJvmConfig(String agentId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentId);
         }
@@ -153,7 +110,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     // central supports ui config on rollups
     @Override
     public UiDefaultsConfig getUiDefaultsConfig(String agentRollupId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentRollupId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentRollupId);
         }
@@ -162,17 +119,18 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     // central supports advanced config on rollups (maxQueryAggregates and maxServiceCallAggregates)
     @Override
-    public AdvancedConfig getAdvancedConfig(String agentRollupId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
-        if (agentConfig == null) {
-            throw new AgentConfigNotFoundException(agentRollupId);
-        }
-        return agentConfig.getAdvancedConfig();
+    public CompletionStage<AdvancedConfig> getAdvancedConfig(String agentRollupId) {
+        return agentConfigDao.readAsync(agentRollupId).thenApply(agentConfig -> {
+            if (agentConfig == null) {
+                return null;
+            }
+            return agentConfig.getAdvancedConfig();
+        });
     }
 
     @Override
     public List<GaugeConfig> getGaugeConfigs(String agentId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentId);
         }
@@ -191,67 +149,83 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     // central supports synthetic monitor configs on rollups
     @Override
-    public List<SyntheticMonitorConfig> getSyntheticMonitorConfigs(String agentRollupId)
-            throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
-        if (agentConfig == null) {
-            throw new AgentConfigNotFoundException(agentRollupId);
-        }
-        return agentConfig.getSyntheticMonitorConfigList();
+    public CompletionStage<List<SyntheticMonitorConfig>> getSyntheticMonitorConfigs(String agentRollupId) {
+        return agentConfigDao.readAsync(agentRollupId).thenApply(agentConfig -> {
+            if (agentConfig == null) {
+                throw new AgentConfigNotFoundException(agentRollupId);
+            }
+            return agentConfig.getSyntheticMonitorConfigList();
+        });
     }
 
     // central supports synthetic monitor configs on rollups
     @Override
-    public @Nullable SyntheticMonitorConfig getSyntheticMonitorConfig(String agentRollupId,
-            String syntheticMonitorId) throws Exception {
-        for (SyntheticMonitorConfig config : getSyntheticMonitorConfigs(agentRollupId)) {
-            if (config.getId().equals(syntheticMonitorId)) {
-                return config;
+    public CompletionStage<SyntheticMonitorConfig> getSyntheticMonitorConfig(String agentRollupId,
+                                                                      String syntheticMonitorId) {
+        return getSyntheticMonitorConfigs(agentRollupId).thenApply(configs -> {
+            for (SyntheticMonitorConfig config : configs) {
+                if (config.getId().equals(syntheticMonitorId)) {
+                    return config;
+                }
             }
-        }
-        return null;
+            return null;
+        });
     }
 
     // central supports alert configs on rollups
     @Override
-    public List<AlertConfig> getAlertConfigs(String agentRollupId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentRollupId);
-        if (agentConfig == null) {
-            throw new AgentConfigNotFoundException(agentRollupId);
-        }
-        return agentConfig.getAlertConfigList();
+    public CompletionStage<List<AlertConfig>> getAlertConfigs(String agentRollupId) {
+        return agentConfigDao.readAsync(agentRollupId).thenApply(agentConfig -> {
+            if (agentConfig == null) {
+                throw new AgentConfigNotFoundException(agentRollupId);
+            }
+            return agentConfig.getAlertConfigList();
+        });
+    }
+
+    @Override
+    public CompletionStage<List<AlertConfig>> getAlertConfigsNonBlocking(String agentRollupId) {
+        return agentConfigDao.readAsync(agentRollupId).thenApply(agentConfig -> {
+            if (agentConfig == null) {
+                throw new AgentConfigNotFoundException(agentRollupId);
+            }
+            return agentConfig.getAlertConfigList();
+        });
     }
 
     // central supports alert configs on rollups
-    public List<AlertConfig> getAlertConfigsForSyntheticMonitorId(String agentRollupId,
-            String syntheticMonitorId) throws Exception {
-        List<AlertConfig> configs = new ArrayList<>();
-        for (AlertConfig config : getAlertConfigs(agentRollupId)) {
-            AlertCondition alertCondition = config.getCondition();
-            if (alertCondition.getValCase() == AlertCondition.ValCase.SYNTHETIC_MONITOR_CONDITION
-                    && alertCondition.getSyntheticMonitorCondition().getSyntheticMonitorId()
-                            .equals(syntheticMonitorId)) {
-                configs.add(config);
+    public CompletionStage<List<AlertConfig>> getAlertConfigsForSyntheticMonitorId(String agentRollupId,
+                                                                                   String syntheticMonitorId) {
+        return getAlertConfigs(agentRollupId).thenApply(alertConfigs -> {
+            List<AlertConfig> configs = new ArrayList<>();
+            for (AlertConfig config : alertConfigs) {
+                AlertCondition alertCondition = config.getCondition();
+                if (alertCondition.getValCase() == AlertCondition.ValCase.SYNTHETIC_MONITOR_CONDITION
+                        && alertCondition.getSyntheticMonitorCondition().getSyntheticMonitorId()
+                        .equals(syntheticMonitorId)) {
+                    configs.add(config);
+                }
             }
-        }
-        return configs;
+            return configs;
+        });
     }
 
     // central supports alert configs on rollups
     @Override
-    public @Nullable AlertConfig getAlertConfig(String agentRollupId, String configVersion)
-            throws Exception {
-        for (AlertConfig config : getAlertConfigs(agentRollupId)) {
-            if (Versions.getVersion(config).equals(configVersion)) {
-                return config;
+    public CompletionStage<AlertConfig> getAlertConfig(String agentRollupId, String configVersion) {
+        return getAlertConfigs(agentRollupId).thenApply(alertConfigs -> {
+            for (AlertConfig config : alertConfigs) {
+                if (Versions.getVersion(config).equals(configVersion)) {
+                    return config;
+                }
             }
-        }
-        throw new IllegalStateException("Alert config not found: " + configVersion);
+            throw new IllegalStateException("Alert config not found: " + configVersion);
+        });
     }
 
     @Override
     public List<PluginConfig> getPluginConfigs(String agentId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentId);
         }
@@ -270,7 +244,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public List<InstrumentationConfig> getInstrumentationConfigs(String agentId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentId);
         }
@@ -290,7 +264,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     @Override
     public AgentConfig getAllConfig(String agentId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentId);
+        AgentConfig agentConfig = agentConfigDao.readAsync(agentId).get();
         if (agentConfig == null) {
             throw new AgentConfigNotFoundException(agentId);
         } else {
@@ -304,51 +278,53 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public ImmutableCentralAdminGeneralConfig getCentralAdminGeneralConfig() throws Exception {
-        ImmutableCentralAdminGeneralConfig config =
-                (ImmutableCentralAdminGeneralConfig) centralConfigDao.read(GENERAL_KEY);
-        if (config == null) {
-            return ImmutableCentralAdminGeneralConfig.builder().build();
-        }
-        return config;
+    public CompletionStage<CentralAdminGeneralConfig> getCentralAdminGeneralConfig() {
+        return centralConfigDao.read(GENERAL_KEY).thenApply(conf -> {
+            ImmutableCentralAdminGeneralConfig config = (ImmutableCentralAdminGeneralConfig) conf;
+            if (config == null) {
+                return ImmutableCentralAdminGeneralConfig.builder().build();
+            }
+            return config;
+        });
     }
 
     @Override
-    public List<UserConfig> getUserConfigs() throws Exception {
+    public CompletionStage<List<UserConfig>> getUserConfigs() {
         return userDao.read();
     }
 
     @Override
-    public UserConfig getUserConfig(String username) throws Exception {
-        UserConfig config = userDao.read(username);
-        if (config == null) {
-            throw new UserNotFoundException();
-        }
-        return config;
+    public CompletionStage<UserConfig> getUserConfig(String username) {
+        return userDao.read(username).thenCompose(config -> {
+            if (config == null) {
+                return CompletableFuture.failedFuture(new UserNotFoundException());
+            }
+            return CompletableFuture.completedFuture(config);
+        });
     }
 
     @Override
-    public @Nullable UserConfig getUserConfigCaseInsensitive(String username) throws Exception {
+    public CompletionStage<UserConfig> getUserConfigCaseInsensitive(String username) {
         return userDao.readCaseInsensitive(username);
     }
 
     @Override
-    public boolean namedUsersExist() throws Exception {
+    public CompletionStage<Boolean> namedUsersExist() {
         return userDao.namedUsersExist();
     }
 
     @Override
-    public List<RoleConfig> getRoleConfigs() throws Exception {
+    public CompletionStage<List<RoleConfig>> getRoleConfigs() {
         return roleDao.read();
     }
 
     @Override
-    public @Nullable RoleConfig getRoleConfig(String name) throws Exception {
+    public CompletionStage<RoleConfig> getRoleConfig(String name) {
         return roleDao.read(name);
     }
 
     @Override
-    public WebConfig getWebConfig() throws Exception {
+    public CompletionStage<? extends WebConfig> getWebConfig() {
         return getCentralWebConfig();
     }
 
@@ -358,17 +334,19 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public CentralWebConfig getCentralWebConfig() throws Exception {
-        CentralWebConfig config = (CentralWebConfig) centralConfigDao.read(WEB_KEY);
-        if (config == null) {
-            return ImmutableCentralWebConfig.builder().build();
-        }
-        return config;
+    public CompletionStage<CentralWebConfig> getCentralWebConfig() {
+        return centralConfigDao.read(WEB_KEY).thenApply(conf -> {
+            CentralWebConfig config = (CentralWebConfig) conf;
+            if (config == null) {
+                return ImmutableCentralWebConfig.builder().build();
+            }
+            return config;
+        });
     }
 
     @Override
-    public StorageConfig getStorageConfig() throws Exception {
-        return getCentralStorageConfig();
+    public StorageConfig getStorageConfig() {
+        return getCentralStorageConfig().toCompletableFuture().join();
     }
 
     @Override
@@ -377,60 +355,72 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public CentralStorageConfig getCentralStorageConfig() {
-        CentralStorageConfig config = (CentralStorageConfig) centralConfigDao.read(STORAGE_KEY);
-        if (config == null) {
-            return ImmutableCentralStorageConfig.builder().build();
-        }
-        if (config.hasListIssues()) {
-            return withCorrectedLists(config);
-        }
-        return config;
+    public CompletionStage<CentralStorageConfig> getCentralStorageConfig() {
+        return centralConfigDao.read(STORAGE_KEY).thenApply(conf -> {
+            CentralStorageConfig config = (CentralStorageConfig) conf;
+            if (config == null) {
+                return ImmutableCentralStorageConfig.builder().build();
+            }
+            if (config.hasListIssues()) {
+                return withCorrectedLists(config);
+            }
+            return config;
+        });
     }
 
     @Override
-    public SmtpConfig getSmtpConfig() throws Exception {
-        SmtpConfig config = (SmtpConfig) centralConfigDao.read(SMTP_KEY);
-        if (config == null) {
-            return ImmutableSmtpConfig.builder().build();
-        }
-        return config;
+    public CompletionStage<SmtpConfig> getSmtpConfig() {
+        return centralConfigDao.read(SMTP_KEY).thenApply(conf -> {
+            SmtpConfig config = (SmtpConfig) conf;
+            if (config == null) {
+                return ImmutableSmtpConfig.builder().build();
+            }
+            return config;
+        });
     }
 
     @Override
-    public HttpProxyConfig getHttpProxyConfig() throws Exception {
-        HttpProxyConfig config = (HttpProxyConfig) centralConfigDao.read(HTTP_PROXY_KEY);
-        if (config == null) {
-            return ImmutableHttpProxyConfig.builder().build();
-        }
-        return config;
+    public CompletionStage<HttpProxyConfig> getHttpProxyConfig() {
+        return centralConfigDao.read(HTTP_PROXY_KEY).thenApply(conf -> {
+            HttpProxyConfig config = (HttpProxyConfig) conf;
+            if (config == null) {
+                return ImmutableHttpProxyConfig.builder().build();
+            }
+            return config;
+        });
     }
 
     @Override
-    public LdapConfig getLdapConfig() throws Exception {
-        LdapConfig config = (LdapConfig) centralConfigDao.read(LDAP_KEY);
-        if (config == null) {
-            return ImmutableLdapConfig.builder().build();
-        }
-        return config;
+    public CompletionStage<LdapConfig> getLdapConfig() {
+        return centralConfigDao.read(LDAP_KEY).thenApply(conf -> {
+            LdapConfig config = (LdapConfig) conf;
+            if (config == null) {
+                return ImmutableLdapConfig.builder().build();
+            }
+            return config;
+        });
     }
 
     @Override
-    public PagerDutyConfig getPagerDutyConfig() throws Exception {
-        PagerDutyConfig config = (PagerDutyConfig) centralConfigDao.read(PAGER_DUTY_KEY);
-        if (config == null) {
-            return ImmutablePagerDutyConfig.builder().build();
-        }
-        return config;
+    public CompletionStage<PagerDutyConfig> getPagerDutyConfig() {
+        return centralConfigDao.read(PAGER_DUTY_KEY).thenApply(conf -> {
+            PagerDutyConfig config = (PagerDutyConfig) conf;
+            if (config == null) {
+                return ImmutablePagerDutyConfig.builder().build();
+            }
+            return config;
+        });
     }
 
     @Override
-    public SlackConfig getSlackConfig() throws Exception {
-        SlackConfig config = (SlackConfig) centralConfigDao.read(SLACK_KEY);
-        if (config == null) {
-            return ImmutableSlackConfig.builder().build();
-        }
-        return config;
+    public CompletionStage<SlackConfig> getSlackConfig() {
+        return centralConfigDao.read(SLACK_KEY).thenApply(conf -> {
+            SlackConfig config = (SlackConfig) conf;
+            if (config == null) {
+                return ImmutableSlackConfig.builder().build();
+            }
+            return config;
+        });
     }
 
     @Override
@@ -444,641 +434,720 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public AllCentralAdminConfig getAllCentralAdminConfig() throws Exception {
-        ImmutableAllCentralAdminConfig.Builder builder = ImmutableAllCentralAdminConfig.builder()
-                .general(getCentralAdminGeneralConfig());
-        for (UserConfig userConfig : getUserConfigs()) {
-            builder.addUsers(ImmutableUserConfig.copyOf(userConfig));
-        }
-        for (RoleConfig roleConfig : getRoleConfigs()) {
-            builder.addRoles(ImmutableRoleConfig.copyOf(roleConfig));
-        }
-        return builder.web(ImmutableCentralWebConfig.copyOf(getCentralWebConfig()))
-                .storage(ImmutableCentralStorageConfig.copyOf(getCentralStorageConfig()))
-                .smtp(ImmutableSmtpConfig.copyOf(getSmtpConfig()))
-                .httpProxy(ImmutableHttpProxyConfig.copyOf(getHttpProxyConfig()))
-                .ldap(ImmutableLdapConfig.copyOf(getLdapConfig()))
-                .pagerDuty(ImmutablePagerDutyConfig.copyOf(getPagerDutyConfig()))
-                .slack(ImmutableSlackConfig.copyOf(getSlackConfig()))
-                .build();
-    }
+    public CompletionStage<AllCentralAdminConfig> getAllCentralAdminConfig() {
+        return getCentralAdminGeneralConfig().thenCompose(centralAdminGeneralConfig -> {
+            return getUserConfigs().thenCompose(userConfigs -> {
+                return getRoleConfigs().thenCompose(roleConfigs -> {
+                    return getCentralWebConfig().thenCompose(centralWebConfig -> {
+                        return getCentralStorageConfig().thenCompose(centralStorageConfig -> {
+                            return getSmtpConfig().thenCompose(smtpConfig -> {
+                                return getHttpProxyConfig().thenCompose(httpProxyConfig -> {
+                                    return getLdapConfig().thenCompose(ldapConfig -> {
+                                        return getPagerDutyConfig().thenCompose(pagerDutyConfig -> {
+                                            return getSlackConfig().thenApply(slackConfig -> {
 
-    @Override
-    public boolean isConfigReadOnly(String agentId) throws Exception {
-        AgentConfig agentConfig = agentConfigDao.read(agentId);
-        if (agentConfig == null) {
-            throw new AgentConfigNotFoundException(agentId);
-        }
-        return agentConfig.getConfigReadOnly();
-    }
-
-    @Override
-    public void updateGeneralConfig(String agentId, GeneralConfig config, String priorVersion)
-            throws Exception {
-        agentConfigDao.updateCentralOnly(agentId, new AgentConfigUpdater() {
-            @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                String existingVersion = Versions.getVersion(agentConfig.getGeneralConfig());
-                if (!priorVersion.equals(existingVersion)) {
-                    throw new OptimisticLockException();
-                }
-                return agentConfig.toBuilder()
-                        .setGeneralConfig(config)
-                        .build();
-            }
+                                                ImmutableAllCentralAdminConfig.Builder builder = ImmutableAllCentralAdminConfig.builder()
+                                                        .general((ImmutableCentralAdminGeneralConfig) centralAdminGeneralConfig);
+                                                for (UserConfig userConfig : userConfigs) {
+                                                    builder.addUsers(ImmutableUserConfig.copyOf(userConfig));
+                                                }
+                                                for (RoleConfig roleConfig : roleConfigs) {
+                                                    builder.addRoles(ImmutableRoleConfig.copyOf(roleConfig));
+                                                }
+                                                return builder.web(ImmutableCentralWebConfig.copyOf(centralWebConfig))
+                                                        .storage(ImmutableCentralStorageConfig.copyOf(centralStorageConfig))
+                                                        .smtp(ImmutableSmtpConfig.copyOf(smtpConfig))
+                                                        .httpProxy(ImmutableHttpProxyConfig.copyOf(httpProxyConfig))
+                                                        .ldap(ImmutableLdapConfig.copyOf(ldapConfig))
+                                                        .pagerDuty(ImmutablePagerDutyConfig.copyOf(pagerDutyConfig))
+                                                        .slack(ImmutableSlackConfig.copyOf(slackConfig))
+                                                        .build();
+                                            });
+                                        });
+                                    });
+                                });
+                            });
+                        });
+                    });
+                });
+            });
         });
+    }
+
+    @Override
+    public CompletionStage<Boolean> isConfigReadOnly(String agentId) {
+        return agentConfigDao.readAsync(agentId).thenApply(agentConfig -> {
+            if (agentConfig == null) {
+                throw new AgentConfigNotFoundException(agentId);
+            }
+            return agentConfig.getConfigReadOnly();
+        });
+    }
+
+    @Override
+    public CompletionStage<?> updateGeneralConfig(String agentId, GeneralConfig config, String priorVersion, CassandraProfile profile) {
+        return agentConfigDao.updateCentralOnly(agentId, new AgentConfigUpdater() {
+            @Override
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    String existingVersion = Versions.getVersion(agentConfig.getGeneralConfig());
+                    if (!priorVersion.equals(existingVersion)) {
+                        throw new OptimisticLockException();
+                    }
+                    return agentConfig.toBuilder()
+                            .setGeneralConfig(config)
+                            .build();
+                });
+            }
+        }, profile);
         // no need to call notifyAgentConfigListeners since updating "central only" data
     }
 
     @Override
-    public void updateTransactionConfig(String agentId, TransactionConfig config,
-            String priorVersion) throws Exception {
-        agentConfigDao.update(agentId, new AgentConfigUpdater() {
+    public CompletionStage<?> updateTransactionConfig(String agentId, TransactionConfig config,
+                                        String priorVersion, CassandraProfile profile) {
+        return agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                String existingVersion = Versions.getVersion(agentConfig.getTransactionConfig());
-                if (!priorVersion.equals(existingVersion)) {
-                    throw new OptimisticLockException();
-                }
-                return agentConfig.toBuilder()
-                        .setTransactionConfig(config)
-                        .build();
-            }
-        });
-        notifyAgentConfigListeners(agentId);
-    }
-
-    @Override
-    public void insertGaugeConfig(String agentId, GaugeConfig config) throws Exception {
-        agentConfigDao.update(agentId, new AgentConfigUpdater() {
-            @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                // check for duplicate mbeanObjectName
-                for (GaugeConfig loopConfig : agentConfig.getGaugeConfigList()) {
-                    if (loopConfig.getMbeanObjectName().equals(config.getMbeanObjectName())) {
-                        throw new DuplicateMBeanObjectNameException();
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    String existingVersion = Versions.getVersion(agentConfig.getTransactionConfig());
+                    if (!priorVersion.equals(existingVersion)) {
+                        throw new OptimisticLockException();
                     }
-                }
-                // no need to check for exact match since redundant with dup mbean object name check
-                return agentConfig.toBuilder()
-                        .addGaugeConfig(config)
-                        .build();
+                    return agentConfig.toBuilder()
+                            .setTransactionConfig(config)
+                            .build();
+                });
             }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentId);
         });
-        notifyAgentConfigListeners(agentId);
     }
 
     @Override
-    public void updateGaugeConfig(String agentId, GaugeConfig config, String priorVersion)
-            throws Exception {
-        agentConfigDao.update(agentId, new AgentConfigUpdater() {
+    public CompletionStage<?> insertGaugeConfig(String agentId, GaugeConfig config, CassandraProfile profile) {
+        return agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                List<GaugeConfig> existingConfigs =
-                        Lists.newArrayList(agentConfig.getGaugeConfigList());
-                ListIterator<GaugeConfig> i = existingConfigs.listIterator();
-                boolean found = false;
-                while (i.hasNext()) {
-                    GaugeConfig loopConfig = i.next();
-                    String loopVersion = Versions.getVersion(loopConfig);
-                    if (loopVersion.equals(priorVersion)) {
-                        i.set(config);
-                        found = true;
-                    } else if (loopConfig.getMbeanObjectName()
-                            .equals(config.getMbeanObjectName())) {
-                        throw new DuplicateMBeanObjectNameException();
-                    }
-                    // no need to check for exact match since redundant with dup mbean object name
-                    // check
-                }
-                if (!found) {
-                    throw new OptimisticLockException();
-                }
-                return agentConfig.toBuilder()
-                        .clearGaugeConfig()
-                        .addAllGaugeConfig(existingConfigs)
-                        .build();
-            }
-        });
-        notifyAgentConfigListeners(agentId);
-    }
-
-    @Override
-    public void deleteGaugeConfig(String agentId, String version) throws Exception {
-        agentConfigDao.update(agentId, new AgentConfigUpdater() {
-            @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                List<GaugeConfig> existingConfigs =
-                        Lists.newArrayList(agentConfig.getGaugeConfigList());
-                ListIterator<GaugeConfig> i = existingConfigs.listIterator();
-                boolean found = false;
-                while (i.hasNext()) {
-                    if (Versions.getVersion(i.next()).equals(version)) {
-                        i.remove();
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    throw new OptimisticLockException();
-                }
-                return agentConfig.toBuilder()
-                        .clearGaugeConfig()
-                        .addAllGaugeConfig(existingConfigs)
-                        .build();
-            }
-        });
-        notifyAgentConfigListeners(agentId);
-    }
-
-    @Override
-    public void updateJvmConfig(String agentId, JvmConfig config, String priorVersion)
-            throws Exception {
-        agentConfigDao.update(agentId, new AgentConfigUpdater() {
-            @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                String existingVersion = Versions.getVersion(agentConfig.getJvmConfig());
-                if (!priorVersion.equals(existingVersion)) {
-                    throw new OptimisticLockException();
-                }
-                return agentConfig.toBuilder()
-                        .setJvmConfig(config)
-                        .build();
-            }
-        });
-        notifyAgentConfigListeners(agentId);
-    }
-
-    // central supports synthetic monitor configs on rollups
-    @Override
-    public void insertSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config)
-            throws Exception {
-        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
-            @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                // check for duplicate display
-                String display = MoreConfigDefaults.getDisplayOrDefault(config);
-                for (SyntheticMonitorConfig loopConfig : agentConfig
-                        .getSyntheticMonitorConfigList()) {
-                    if (MoreConfigDefaults.getDisplayOrDefault(loopConfig).equals(display)) {
-                        throw new DuplicateSyntheticMonitorDisplayException();
-                    }
-                }
-                // no need to check for exact match since redundant with duplicate name check
-                return agentConfig.toBuilder()
-                        .addSyntheticMonitorConfig(config)
-                        .build();
-            }
-        });
-        notifyAgentConfigListeners(agentRollupId);
-    }
-
-    // central supports synthetic monitor configs on rollups
-    @Override
-    public void updateSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config,
-            String priorVersion) throws Exception {
-        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
-            @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                List<SyntheticMonitorConfig> existingConfigs =
-                        Lists.newArrayList(agentConfig.getSyntheticMonitorConfigList());
-                ListIterator<SyntheticMonitorConfig> i = existingConfigs.listIterator();
-                boolean found = false;
-                String display = config.getDisplay();
-                while (i.hasNext()) {
-                    SyntheticMonitorConfig loopConfig = i.next();
-                    if (loopConfig.getId().equals(config.getId())) {
-                        if (!Versions.getVersion(loopConfig).equals(priorVersion)) {
-                            throw new OptimisticLockException();
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    // check for duplicate mbeanObjectName
+                    for (GaugeConfig loopConfig : agentConfig.getGaugeConfigList()) {
+                        if (loopConfig.getMbeanObjectName().equals(config.getMbeanObjectName())) {
+                            throw new DuplicateMBeanObjectNameException();
                         }
-                        i.set(config);
-                        found = true;
-                    } else if (MoreConfigDefaults.getDisplayOrDefault(loopConfig).equals(display)) {
-                        throw new DuplicateSyntheticMonitorDisplayException();
                     }
-                }
-                if (!found) {
-                    throw new SyntheticNotFoundException();
-                }
-                return agentConfig.toBuilder()
-                        .clearSyntheticMonitorConfig()
-                        .addAllSyntheticMonitorConfig(existingConfigs)
-                        .build();
+                    // no need to check for exact match since redundant with dup mbean object name check
+                    return agentConfig.toBuilder()
+                            .addGaugeConfig(config)
+                            .build();
+                });
             }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentId);
         });
-        notifyAgentConfigListeners(agentRollupId);
+    }
+
+    @Override
+    public CompletionStage<?> updateGaugeConfig(String agentId, GaugeConfig config, String priorVersion, CassandraProfile profile) {
+        return agentConfigDao.update(agentId, new AgentConfigUpdater() {
+            @Override
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    List<GaugeConfig> existingConfigs =
+                            Lists.newArrayList(agentConfig.getGaugeConfigList());
+                    ListIterator<GaugeConfig> i = existingConfigs.listIterator();
+                    boolean found = false;
+                    while (i.hasNext()) {
+                        GaugeConfig loopConfig = i.next();
+                        String loopVersion = Versions.getVersion(loopConfig);
+                        if (loopVersion.equals(priorVersion)) {
+                            i.set(config);
+                            found = true;
+                        } else if (loopConfig.getMbeanObjectName()
+                                .equals(config.getMbeanObjectName())) {
+                            throw new DuplicateMBeanObjectNameException();
+                        }
+                        // no need to check for exact match since redundant with dup mbean object name
+                        // check
+                    }
+                    if (!found) {
+                        throw new OptimisticLockException();
+                    }
+                    return agentConfig.toBuilder()
+                            .clearGaugeConfig()
+                            .addAllGaugeConfig(existingConfigs)
+                            .build();
+                });
+            }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentId);
+        });
+    }
+
+    @Override
+    public CompletionStage<?> deleteGaugeConfig(String agentId, String version, CassandraProfile profile) {
+        return agentConfigDao.update(agentId, new AgentConfigUpdater() {
+            @Override
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    List<GaugeConfig> existingConfigs =
+                            Lists.newArrayList(agentConfig.getGaugeConfigList());
+                    ListIterator<GaugeConfig> i = existingConfigs.listIterator();
+                    boolean found = false;
+                    while (i.hasNext()) {
+                        if (Versions.getVersion(i.next()).equals(version)) {
+                            i.remove();
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        throw new OptimisticLockException();
+                    }
+                    return agentConfig.toBuilder()
+                            .clearGaugeConfig()
+                            .addAllGaugeConfig(existingConfigs)
+                            .build();
+                });
+            }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentId);
+        });
+    }
+
+    @Override
+    public CompletionStage<?> updateJvmConfig(String agentId, JvmConfig config, String priorVersion, CassandraProfile profile) {
+        return agentConfigDao.update(agentId, new AgentConfigUpdater() {
+            @Override
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    String existingVersion = Versions.getVersion(agentConfig.getJvmConfig());
+                    if (!priorVersion.equals(existingVersion)) {
+                        throw new OptimisticLockException();
+                    }
+                    return agentConfig.toBuilder()
+                            .setJvmConfig(config)
+                            .build();
+                });
+            }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentId);
+        });
     }
 
     // central supports synthetic monitor configs on rollups
     @Override
-    public void deleteSyntheticMonitorConfig(String agentRollupId, String syntheticMonitorId)
-            throws Exception {
-        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
+    public CompletionStage<?> insertSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config, CassandraProfile profile) {
+        return agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                if (!getAlertConfigsForSyntheticMonitorId(agentRollupId, syntheticMonitorId)
-                        .isEmpty()) {
-                    throw new IllegalStateException(
-                            "Cannot delete synthetic monitor is being used by active alert");
-                }
-                List<SyntheticMonitorConfig> existingConfigs =
-                        Lists.newArrayList(agentConfig.getSyntheticMonitorConfigList());
-                ListIterator<SyntheticMonitorConfig> i = existingConfigs.listIterator();
-                boolean found = false;
-                while (i.hasNext()) {
-                    if (i.next().getId().equals(syntheticMonitorId)) {
-                        i.remove();
-                        found = true;
-                        break;
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    // check for duplicate display
+                    String display = MoreConfigDefaults.getDisplayOrDefault(config);
+                    for (SyntheticMonitorConfig loopConfig : agentConfig
+                            .getSyntheticMonitorConfigList()) {
+                        if (MoreConfigDefaults.getDisplayOrDefault(loopConfig).equals(display)) {
+                            throw new DuplicateSyntheticMonitorDisplayException();
+                        }
                     }
-                }
-                if (!found) {
-                    throw new OptimisticLockException();
-                }
-                return agentConfig.toBuilder()
-                        .clearSyntheticMonitorConfig()
-                        .addAllSyntheticMonitorConfig(existingConfigs)
-                        .build();
+                    // no need to check for exact match since redundant with duplicate name check
+                    return agentConfig.toBuilder()
+                            .addSyntheticMonitorConfig(config)
+                            .build();
+                });
             }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentRollupId);
         });
-        notifyAgentConfigListeners(agentRollupId);
     }
 
-    // central supports alert configs on rollups
+    // central supports synthetic monitor configs on rollups
     @Override
-    public void insertAlertConfig(String agentRollupId, AlertConfig config) throws Exception {
-        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
+    public CompletionStage<?> updateSyntheticMonitorConfig(String agentRollupId, SyntheticMonitorConfig config,
+                                             String priorVersion, CassandraProfile profile) {
+        return agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                for (AlertConfig loopConfig : agentConfig.getAlertConfigList()) {
-                    if (loopConfig.getCondition().equals(config.getCondition())) {
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    List<SyntheticMonitorConfig> existingConfigs =
+                            Lists.newArrayList(agentConfig.getSyntheticMonitorConfigList());
+                    ListIterator<SyntheticMonitorConfig> i = existingConfigs.listIterator();
+                    boolean found = false;
+                    String display = config.getDisplay();
+                    while (i.hasNext()) {
+                        SyntheticMonitorConfig loopConfig = i.next();
+                        if (loopConfig.getId().equals(config.getId())) {
+                            if (!Versions.getVersion(loopConfig).equals(priorVersion)) {
+                                throw new OptimisticLockException();
+                            }
+                            i.set(config);
+                            found = true;
+                        } else if (MoreConfigDefaults.getDisplayOrDefault(loopConfig).equals(display)) {
+                            throw new DuplicateSyntheticMonitorDisplayException();
+                        }
+                    }
+                    if (!found) {
+                        throw new SyntheticNotFoundException();
+                    }
+                    return agentConfig.toBuilder()
+                            .clearSyntheticMonitorConfig()
+                            .addAllSyntheticMonitorConfig(existingConfigs)
+                            .build();
+                });
+            }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentRollupId);
+        });
+    }
+
+    // central supports synthetic monitor configs on rollups
+    @Override
+    public CompletionStage<?> deleteSyntheticMonitorConfig(String agentRollupId, String syntheticMonitorId, CassandraProfile profile) {
+        return agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
+            @Override
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+
+                return getAlertConfigsForSyntheticMonitorId(agentRollupId, syntheticMonitorId).thenApply(alertConfigs -> {
+                    if (!alertConfigs.isEmpty()) {
                         throw new IllegalStateException(
-                                "This exact alert condition already exists");
+                                "Cannot delete synthetic monitor is being used by active alert");
                     }
-                }
-                return agentConfig.toBuilder()
-                        .addAlertConfig(config)
-                        .build();
+                    List<SyntheticMonitorConfig> existingConfigs =
+                            Lists.newArrayList(agentConfig.getSyntheticMonitorConfigList());
+                    ListIterator<SyntheticMonitorConfig> i = existingConfigs.listIterator();
+                    boolean found = false;
+                    while (i.hasNext()) {
+                        if (i.next().getId().equals(syntheticMonitorId)) {
+                            i.remove();
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        throw new OptimisticLockException();
+                    }
+                    return agentConfig.toBuilder()
+                            .clearSyntheticMonitorConfig()
+                            .addAllSyntheticMonitorConfig(existingConfigs)
+                            .build();
+                });
             }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentRollupId);
         });
-        notifyAgentConfigListeners(agentRollupId);
     }
 
     // central supports alert configs on rollups
     @Override
-    public void updateAlertConfig(String agentRollupId, AlertConfig config, String priorVersion)
-            throws Exception {
-        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
+    public CompletionStage<?> insertAlertConfig(String agentRollupId, AlertConfig config, CassandraProfile profile) {
+        return agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                List<AlertConfig> existingConfigs =
-                        Lists.newArrayList(agentConfig.getAlertConfigList());
-                ListIterator<AlertConfig> i = existingConfigs.listIterator();
-                boolean found = false;
-                while (i.hasNext()) {
-                    AlertConfig loopConfig = i.next();
-                    if (Versions.getVersion(loopConfig).equals(priorVersion)) {
-                        i.set(config);
-                        found = true;
-                    } else if (loopConfig.getCondition().equals(config.getCondition())) {
-                        throw new IllegalStateException(
-                                "This exact alert condition already exists");
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    for (AlertConfig loopConfig : agentConfig.getAlertConfigList()) {
+                        if (loopConfig.getCondition().equals(config.getCondition())) {
+                            throw new IllegalStateException(
+                                    "This exact alert condition already exists");
+                        }
                     }
-                }
-                if (!found) {
-                    throw new AlertNotFoundException();
-                }
-                return agentConfig.toBuilder()
-                        .clearAlertConfig()
-                        .addAllAlertConfig(existingConfigs)
-                        .build();
+                    return agentConfig.toBuilder()
+                            .addAlertConfig(config)
+                            .build();
+                });
             }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentRollupId);
         });
-        notifyAgentConfigListeners(agentRollupId);
+
     }
 
     // central supports alert configs on rollups
     @Override
-    public void deleteAlertConfig(String agentRollupId, String version) throws Exception {
-        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
+    public CompletionStage<?> updateAlertConfig(String agentRollupId, AlertConfig config, String priorVersion, CassandraProfile profile) {
+        return agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                List<AlertConfig> existingConfigs =
-                        Lists.newArrayList(agentConfig.getAlertConfigList());
-                ListIterator<AlertConfig> i = existingConfigs.listIterator();
-                boolean found = false;
-                while (i.hasNext()) {
-                    if (Versions.getVersion(i.next()).equals(version)) {
-                        i.remove();
-                        found = true;
-                        break;
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    List<AlertConfig> existingConfigs =
+                            Lists.newArrayList(agentConfig.getAlertConfigList());
+                    ListIterator<AlertConfig> i = existingConfigs.listIterator();
+                    boolean found = false;
+                    while (i.hasNext()) {
+                        AlertConfig loopConfig = i.next();
+                        if (Versions.getVersion(loopConfig).equals(priorVersion)) {
+                            i.set(config);
+                            found = true;
+                        } else if (loopConfig.getCondition().equals(config.getCondition())) {
+                            throw new IllegalStateException(
+                                    "This exact alert condition already exists");
+                        }
                     }
-                }
-                if (!found) {
-                    throw new OptimisticLockException();
-                }
-                return agentConfig.toBuilder()
-                        .clearAlertConfig()
-                        .addAllAlertConfig(existingConfigs)
-                        .build();
+                    if (!found) {
+                        throw new AlertNotFoundException();
+                    }
+                    return agentConfig.toBuilder()
+                            .clearAlertConfig()
+                            .addAllAlertConfig(existingConfigs)
+                            .build();
+                });
             }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentRollupId);
         });
-        notifyAgentConfigListeners(agentRollupId);
+    }
+
+    // central supports alert configs on rollups
+    @Override
+    public CompletionStage<?> deleteAlertConfig(String agentRollupId, String version, CassandraProfile profile) {
+        return agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
+            @Override
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    List<AlertConfig> existingConfigs =
+                            Lists.newArrayList(agentConfig.getAlertConfigList());
+                    ListIterator<AlertConfig> i = existingConfigs.listIterator();
+                    boolean found = false;
+                    while (i.hasNext()) {
+                        if (Versions.getVersion(i.next()).equals(version)) {
+                            i.remove();
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        throw new OptimisticLockException();
+                    }
+                    return agentConfig.toBuilder()
+                            .clearAlertConfig()
+                            .addAllAlertConfig(existingConfigs)
+                            .build();
+                });
+            }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentRollupId);
+        });
     }
 
     // central supports ui config on rollups
     @Override
-    public void updateUiDefaultsConfig(String agentRollupId, UiDefaultsConfig config,
-            String priorVersion) throws Exception {
-        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
+    public CompletionStage<?> updateUiDefaultsConfig(String agentRollupId, UiDefaultsConfig config,
+                                       String priorVersion, CassandraProfile profile) {
+        return agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                String existingVersion = Versions.getVersion(agentConfig.getUiDefaultsConfig());
-                if (!priorVersion.equals(existingVersion)) {
-                    throw new OptimisticLockException();
-                }
-                return agentConfig.toBuilder()
-                        .setUiDefaultsConfig(config)
-                        .build();
-            }
-        });
-        notifyAgentConfigListeners(agentRollupId);
-    }
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
 
-    @Override
-    public void updatePluginConfig(String agentId, PluginConfig config, String priorVersion)
-            throws Exception {
-        agentConfigDao.update(agentId, new AgentConfigUpdater() {
-            @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                List<PluginConfig> pluginConfigs =
-                        buildPluginConfigs(config, priorVersion, agentConfig);
-                return agentConfig.toBuilder()
-                        .clearPluginConfig()
-                        .addAllPluginConfig(pluginConfigs)
-                        .build();
-            }
-        });
-        notifyAgentConfigListeners(agentId);
-    }
-
-    @Override
-    public void insertInstrumentationConfig(String agentId, InstrumentationConfig config)
-            throws Exception {
-        agentConfigDao.update(agentId, new AgentConfigUpdater() {
-            @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                if (agentConfig.getInstrumentationConfigList().contains(config)) {
-                    throw new IllegalStateException("This exact instrumentation already exists");
-                }
-                return agentConfig.toBuilder()
-                        .addInstrumentationConfig(config)
-                        .build();
-            }
-        });
-        notifyAgentConfigListeners(agentId);
-    }
-
-    @Override
-    public void updateInstrumentationConfig(String agentId, InstrumentationConfig config,
-            String priorVersion) throws Exception {
-        agentConfigDao.update(agentId, new AgentConfigUpdater() {
-            @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                String newVersion = Versions.getVersion(config);
-                List<InstrumentationConfig> existingConfigs =
-                        Lists.newArrayList(agentConfig.getInstrumentationConfigList());
-                ListIterator<InstrumentationConfig> i = existingConfigs.listIterator();
-                boolean found = false;
-                while (i.hasNext()) {
-                    String loopVersion = Versions.getVersion(i.next());
-                    if (loopVersion.equals(priorVersion)) {
-                        i.set(config);
-                        found = true;
-                    } else if (loopVersion.equals(newVersion)) {
-                        throw new IllegalStateException(
-                                "This exact instrumentation already exists");
+                    String existingVersion = Versions.getVersion(agentConfig.getUiDefaultsConfig());
+                    if (!priorVersion.equals(existingVersion)) {
+                        throw new OptimisticLockException();
                     }
-                }
-                if (!found) {
-                    throw new OptimisticLockException();
-                }
-                return agentConfig.toBuilder()
-                        .clearInstrumentationConfig()
-                        .addAllInstrumentationConfig(existingConfigs)
-                        .build();
+                    return agentConfig.toBuilder()
+                            .setUiDefaultsConfig(config)
+                            .build();
+                });
             }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentRollupId);
         });
-        notifyAgentConfigListeners(agentId);
     }
 
     @Override
-    public void deleteInstrumentationConfigs(String agentId, List<String> versions)
-            throws Exception {
-        agentConfigDao.update(agentId, new AgentConfigUpdater() {
+    public CompletionStage<?> updatePluginConfig(String agentId, PluginConfig config, String priorVersion, CassandraProfile profile) {
+        return agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                List<InstrumentationConfig> existingConfigs =
-                        Lists.newArrayList(agentConfig.getInstrumentationConfigList());
-                ListIterator<InstrumentationConfig> i = existingConfigs.listIterator();
-                List<String> remainingVersions = Lists.newArrayList(versions);
-                while (i.hasNext()) {
-                    String currVersion = Versions.getVersion(i.next());
-                    if (remainingVersions.contains(currVersion)) {
-                        i.remove();
-                        remainingVersions.remove(currVersion);
-                    }
-                }
-                if (!remainingVersions.isEmpty()) {
-                    throw new OptimisticLockException();
-                }
-                return agentConfig.toBuilder()
-                        .clearInstrumentationConfig()
-                        .addAllInstrumentationConfig(existingConfigs)
-                        .build();
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    List<PluginConfig> pluginConfigs =
+                            buildPluginConfigs(config, priorVersion, agentConfig);
+                    return agentConfig.toBuilder()
+                            .clearPluginConfig()
+                            .addAllPluginConfig(pluginConfigs)
+                            .build();
+                });
             }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentId);
         });
-        notifyAgentConfigListeners(agentId);
+    }
+
+    @Override
+    public CompletionStage<?> insertInstrumentationConfig(String agentId, InstrumentationConfig config, CassandraProfile profile) {
+        return agentConfigDao.update(agentId, new AgentConfigUpdater() {
+            @Override
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    if (agentConfig.getInstrumentationConfigList().contains(config)) {
+                        throw new IllegalStateException("This exact instrumentation already exists");
+                    }
+                    return agentConfig.toBuilder()
+                            .addInstrumentationConfig(config)
+                            .build();
+                });
+            }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentId);
+        });
+    }
+
+    @Override
+    public CompletionStage<?> updateInstrumentationConfig(String agentId, InstrumentationConfig config,
+                                            String priorVersion, CassandraProfile profile)  {
+        return agentConfigDao.update(agentId, new AgentConfigUpdater() {
+            @Override
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    String newVersion = Versions.getVersion(config);
+                    List<InstrumentationConfig> existingConfigs =
+                            Lists.newArrayList(agentConfig.getInstrumentationConfigList());
+                    ListIterator<InstrumentationConfig> i = existingConfigs.listIterator();
+                    boolean found = false;
+                    while (i.hasNext()) {
+                        String loopVersion = Versions.getVersion(i.next());
+                        if (loopVersion.equals(priorVersion)) {
+                            i.set(config);
+                            found = true;
+                        } else if (loopVersion.equals(newVersion)) {
+                            throw new IllegalStateException(
+                                    "This exact instrumentation already exists");
+                        }
+                    }
+                    if (!found) {
+                        throw new OptimisticLockException();
+                    }
+                    return agentConfig.toBuilder()
+                            .clearInstrumentationConfig()
+                            .addAllInstrumentationConfig(existingConfigs)
+                            .build();
+                });
+            }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentId);
+        });
+    }
+
+    @Override
+    public CompletionStage<?> deleteInstrumentationConfigs(String agentId, List<String> versions, CassandraProfile profile) {
+        return agentConfigDao.update(agentId, new AgentConfigUpdater() {
+            @Override
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    List<InstrumentationConfig> existingConfigs =
+                            Lists.newArrayList(agentConfig.getInstrumentationConfigList());
+                    ListIterator<InstrumentationConfig> i = existingConfigs.listIterator();
+                    List<String> remainingVersions = Lists.newArrayList(versions);
+                    while (i.hasNext()) {
+                        String currVersion = Versions.getVersion(i.next());
+                        if (remainingVersions.contains(currVersion)) {
+                            i.remove();
+                            remainingVersions.remove(currVersion);
+                        }
+                    }
+                    if (!remainingVersions.isEmpty()) {
+                        throw new OptimisticLockException();
+                    }
+                    return agentConfig.toBuilder()
+                            .clearInstrumentationConfig()
+                            .addAllInstrumentationConfig(existingConfigs)
+                            .build();
+                });
+            }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentId);
+        });
     }
 
     // ignores any instrumentation configs that are duplicates of existing instrumentation configs
     @Override
-    public void insertInstrumentationConfigs(String agentId, List<InstrumentationConfig> configs)
-            throws Exception {
-        agentConfigDao.update(agentId, new AgentConfigUpdater() {
+    public CompletionStage<?> insertInstrumentationConfigs(String agentId, List<InstrumentationConfig> configs, CassandraProfile profile) {
+        return agentConfigDao.update(agentId, new AgentConfigUpdater() {
             @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                AgentConfig.Builder builder = agentConfig.toBuilder();
-                List<InstrumentationConfig> existingConfigs =
-                        Lists.newArrayList(agentConfig.getInstrumentationConfigList());
-                for (InstrumentationConfig config : configs) {
-                    if (!existingConfigs.contains(config)) {
-                        existingConfigs.add(config);
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    AgentConfig.Builder builder = agentConfig.toBuilder();
+                    List<InstrumentationConfig> existingConfigs =
+                            Lists.newArrayList(agentConfig.getInstrumentationConfigList());
+                    for (InstrumentationConfig config : configs) {
+                        if (!existingConfigs.contains(config)) {
+                            existingConfigs.add(config);
+                        }
                     }
-                }
-                return builder.clearInstrumentationConfig()
-                        .addAllInstrumentationConfig(existingConfigs)
-                        .build();
+                    return builder.clearInstrumentationConfig()
+                            .addAllInstrumentationConfig(existingConfigs)
+                            .build();
+                });
             }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentId);
         });
-        notifyAgentConfigListeners(agentId);
     }
 
     @Override
-    public void updateAdvancedConfig(String agentRollupId, AdvancedConfig config,
-            String priorVersion) throws Exception {
-        agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
+    public CompletionStage<?> updateAdvancedConfig(String agentRollupId, AdvancedConfig config,
+                                     String priorVersion, CassandraProfile profile) {
+        return agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig)
-                    throws OptimisticLockException {
-                String existingVersion = Versions.getVersion(agentConfig.getAdvancedConfig());
-                if (!priorVersion.equals(existingVersion)) {
-                    throw new OptimisticLockException();
-                }
-                return agentConfig.toBuilder()
-                        .setAdvancedConfig(config)
-                        .build();
-            }
-        });
-        notifyAgentConfigListeners(agentRollupId);
-    }
-
-    @Override
-    public void updateAllConfig(String agentId, AgentConfig config, @Nullable String priorVersion)
-            throws Exception {
-        ConfigValidation.validatePartOne(config);
-        agentConfigDao.update(agentId, new AgentConfigUpdater() {
-            @Override
-            public AgentConfig updateAgentConfig(AgentConfig agentConfig) throws Exception {
-                if (priorVersion != null) {
-                    String existingVersion = Versions.getVersion(agentConfig);
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    String existingVersion = Versions.getVersion(agentConfig.getAdvancedConfig());
                     if (!priorVersion.equals(existingVersion)) {
                         throw new OptimisticLockException();
                     }
-                }
-                Set<String> validPluginIds = Sets.newHashSet();
-                for (PluginConfig pluginConfig : agentConfig.getPluginConfigList()) {
-                    validPluginIds.add(pluginConfig.getId());
-                }
-                ConfigValidation.validatePartTwo(config, validPluginIds);
-                return config.toBuilder()
-                        .clearPluginConfig()
-                        .addAllPluginConfig(
-                                buildPluginConfigs(config.getPluginConfigList(), agentConfig))
-                        .build();
+                    return agentConfig.toBuilder()
+                            .setAdvancedConfig(config)
+                            .build();
+                });
             }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentRollupId);
         });
-        notifyAgentConfigListeners(agentId);
     }
 
     @Override
-    public void updateEmbeddedAdminGeneralConfig(EmbeddedAdminGeneralConfig config,
-            String priorVersion) {
+    public CompletionStage<?> updateAllConfig(String agentId, AgentConfig config, @Nullable String priorVersion, CassandraProfile profile) {
+        ConfigValidation.validatePartOne(config);
+        return agentConfigDao.update(agentId, new AgentConfigUpdater() {
+            @Override
+            public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    if (priorVersion != null) {
+                        String existingVersion = Versions.getVersion(agentConfig);
+                        if (!priorVersion.equals(existingVersion)) {
+                            throw new OptimisticLockException();
+                        }
+                    }
+                    Set<String> validPluginIds = Sets.newHashSet();
+                    for (PluginConfig pluginConfig : agentConfig.getPluginConfigList()) {
+                        validPluginIds.add(pluginConfig.getId());
+                    }
+                    ConfigValidation.validatePartTwo(config, validPluginIds);
+                    return config.toBuilder()
+                            .clearPluginConfig()
+                            .addAllPluginConfig(
+                                    buildPluginConfigs(config.getPluginConfigList(), agentConfig))
+                            .build();
+                });
+            }
+        }, profile).thenRun(() -> {
+            notifyAgentConfigListeners(agentId);
+        });
+    }
+
+    @Override
+    public CompletionStage<?> updateEmbeddedAdminGeneralConfig(EmbeddedAdminGeneralConfig config,
+                                                 String priorVersion, CassandraProfile profile) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void updateCentralAdminGeneralConfig(CentralAdminGeneralConfig config,
-            String priorVersion) throws Exception {
-        centralConfigDao.write(GENERAL_KEY, config, priorVersion);
+    public CompletionStage<?> updateCentralAdminGeneralConfig(CentralAdminGeneralConfig config,
+                                                              String priorVersion, CassandraProfile profile) {
+        return centralConfigDao.write(GENERAL_KEY, config, priorVersion);
     }
 
     @Override
-    public void insertUserConfig(UserConfig config) throws Exception {
+    public CompletionStage<?> insertUserConfig(UserConfig config, CassandraProfile profile) {
         // check for case-insensitive duplicate
         String username = config.username();
-        for (UserConfig loopConfig : userDao.read()) {
-            if (loopConfig.username().equalsIgnoreCase(username)) {
-                throw new DuplicateUsernameException();
+        return userDao.read().thenCompose(configs -> {
+            for (UserConfig loopConfig : configs) {
+                if (loopConfig.username().equalsIgnoreCase(username)) {
+                    return CompletableFuture.failedFuture(new DuplicateUsernameException());
+                }
             }
-        }
-        userDao.insertIfNotExists(config);
+            return userDao.insertIfNotExists(config, profile);
+        });
     }
 
     @Override
-    public void updateUserConfig(UserConfig config, String priorVersion) throws Exception {
-        UserConfig existingConfig = userDao.read(config.username());
-        if (existingConfig == null) {
-            throw new UserNotFoundException();
-        }
-        if (!existingConfig.version().equals(priorVersion)) {
-            throw new OptimisticLockException();
-        }
-        userDao.insert(config);
-    }
-
-    @Override
-    public void deleteUserConfig(String username) throws Exception {
-        boolean found = false;
-        List<UserConfig> configs = userDao.read();
-        for (UserConfig config : configs) {
-            if (config.username().equalsIgnoreCase(username)) {
-                found = true;
-                break;
+    public CompletionStage<?> updateUserConfig(UserConfig config, String priorVersion, CassandraProfile profile) {
+        return userDao.read(config.username()).thenCompose(existingConfig -> {
+            if (existingConfig == null) {
+                return CompletableFuture.failedFuture(new UserNotFoundException());
             }
-        }
-        if (!found) {
-            throw new UserNotFoundException();
-        }
-        if (getSmtpConfig().host().isEmpty() && configs.size() == 1) {
-            throw new CannotDeleteLastUserException();
-        }
-        userDao.delete(username);
+            if (!existingConfig.version().equals(priorVersion)) {
+                return CompletableFuture.failedFuture(new OptimisticLockException());
+            }
+            return userDao.insert(config, profile);
+        });
     }
 
     @Override
-    public void insertRoleConfig(RoleConfig config) throws Exception {
+    public CompletionStage<?> deleteUserConfig(String username, CassandraProfile profile) {
+        return userDao.read().thenCompose(configs -> {
+            boolean found = false;
+            for (UserConfig config : configs) {
+                if (config.username().equalsIgnoreCase(username)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                return CompletableFuture.failedFuture(new UserNotFoundException());
+            }
+            return getSmtpConfig().thenCompose(smtpConfig -> {
+                if (smtpConfig.host().isEmpty() && configs.size() == 1) {
+                    return CompletableFuture.failedFuture(new CannotDeleteLastUserException());
+                }
+                return userDao.delete(username, profile);
+            });
+        });
+    }
+
+    @Override
+    public CompletionStage<?> insertRoleConfig(RoleConfig config, CassandraProfile profile) {
         // check for case-insensitive duplicate
         String name = config.name();
-        for (RoleConfig loopConfig : roleDao.read()) {
-            if (loopConfig.name().equalsIgnoreCase(name)) {
-                throw new DuplicateRoleNameException();
+        return roleDao.read().thenCompose(configs -> {
+            for (RoleConfig loopConfig : configs) {
+                if (loopConfig.name().equalsIgnoreCase(name)) {
+                    return CompletableFuture.failedFuture(new DuplicateRoleNameException());
+                }
             }
-        }
-        roleDao.insertIfNotExists(config);
+            return roleDao.insertIfNotExists(config, profile);
+        });
     }
 
     @Override
-    public void updateRoleConfig(RoleConfig config, String priorVersion) throws Exception {
-        RoleConfig existingConfig = roleDao.read(config.name());
-        if (existingConfig == null) {
-            throw new RoleNotFoundException();
-        }
-        if (!existingConfig.version().equals(priorVersion)) {
-            throw new OptimisticLockException();
-        }
-        roleDao.insert(config);
-    }
-
-    @Override
-    public void deleteRoleConfig(String name) throws Exception {
-        boolean found = false;
-        List<RoleConfig> configs = roleDao.read();
-        for (RoleConfig config : configs) {
-            if (config.name().equalsIgnoreCase(name)) {
-                found = true;
-                break;
+    public CompletionStage<?> updateRoleConfig(RoleConfig config, String priorVersion, CassandraProfile profile) {
+        return roleDao.read(config.name()).thenCompose(existingConfig -> {
+            if (existingConfig == null) {
+                return CompletableFuture.failedFuture(new RoleNotFoundException());
             }
-        }
-        if (!found) {
-            throw new RoleNotFoundException();
-        }
-        if (configs.size() == 1) {
-            throw new CannotDeleteLastRoleException();
-        }
-        roleDao.delete(name);
+            if (!existingConfig.version().equals(priorVersion)) {
+                return CompletableFuture.failedFuture(new OptimisticLockException());
+            }
+            return roleDao.insert(config, profile);
+        });
     }
 
     @Override
-    public void updateEmbeddedWebConfig(EmbeddedWebConfig config, String priorVersion)
-            throws Exception {
+    public CompletionStage<?> deleteRoleConfig(String name, CassandraProfile profile) {
+        return roleDao.read().thenCompose(configs -> {
+            boolean found = false;
+            for (RoleConfig config : configs) {
+                if (config.name().equalsIgnoreCase(name)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                return CompletableFuture.failedFuture(new RoleNotFoundException());
+            }
+            if (configs.size() == 1) {
+                return CompletableFuture.failedFuture(new CannotDeleteLastRoleException());
+            }
+            return roleDao.delete(name, profile);
+        });
+    }
+
+    @Override
+    public void updateEmbeddedWebConfig(EmbeddedWebConfig config, String priorVersion) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void updateCentralWebConfig(CentralWebConfig config, String priorVersion)
-            throws Exception {
-        centralConfigDao.write(WEB_KEY, config, priorVersion);
+    public CompletionStage<?> updateCentralWebConfig(CentralWebConfig config, String priorVersion) {
+        return centralConfigDao.write(WEB_KEY, config, priorVersion);
     }
 
     @Override
@@ -1087,86 +1156,92 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public void updateCentralStorageConfig(CentralStorageConfig config, String priorVersion)
-            throws Exception {
-        centralConfigDao.write(STORAGE_KEY, config, priorVersion);
+    public CompletionStage<?> updateCentralStorageConfig(CentralStorageConfig config, String priorVersion) {
+        return centralConfigDao.write(STORAGE_KEY, config, priorVersion);
     }
 
     @Override
-    public void updateSmtpConfig(SmtpConfig config, String priorVersion) throws Exception {
-        centralConfigDao.write(SMTP_KEY, config, priorVersion);
+    public CompletionStage<?> updateSmtpConfig(SmtpConfig config, String priorVersion) {
+        return centralConfigDao.write(SMTP_KEY, config, priorVersion);
     }
 
     @Override
-    public void updateHttpProxyConfig(HttpProxyConfig config, String priorVersion)
-            throws Exception {
-        centralConfigDao.write(HTTP_PROXY_KEY, config, priorVersion);
+    public CompletionStage<?> updateHttpProxyConfig(HttpProxyConfig config, String priorVersion) {
+        return centralConfigDao.write(HTTP_PROXY_KEY, config, priorVersion);
     }
 
     @Override
-    public void updateLdapConfig(LdapConfig config, String priorVersion) throws Exception {
-        centralConfigDao.write(LDAP_KEY, config, priorVersion);
+    public CompletionStage<?> updateLdapConfig(LdapConfig config, String priorVersion) {
+        return centralConfigDao.write(LDAP_KEY, config, priorVersion);
     }
 
     @Override
-    public void updatePagerDutyConfig(PagerDutyConfig config, String priorVersion)
+    public CompletionStage<?> updatePagerDutyConfig(PagerDutyConfig config, String priorVersion)
             throws Exception {
         validatePagerDutyConfig(config);
-        centralConfigDao.write(PAGER_DUTY_KEY, config, priorVersion);
+        return centralConfigDao.write(PAGER_DUTY_KEY, config, priorVersion);
     }
 
     @Override
-    public void updateSlackConfig(SlackConfig config, String priorVersion) throws Exception {
+    public CompletionStage<?> updateSlackConfig(SlackConfig config, String priorVersion) throws Exception {
         validateSlackConfig(config);
-        centralConfigDao.write(SLACK_KEY, config, priorVersion);
+        return centralConfigDao.write(SLACK_KEY, config, priorVersion);
     }
 
     @Override
     public void updateHealthchecksIoConfig(HealthchecksIoConfig healthchecksIoConfig,
-            String priorVersion) throws Exception {
+                                           String priorVersion) throws Exception {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateAllEmbeddedAdminConfig(AllEmbeddedAdminConfig config,
-            @Nullable String priorVersion) {
+                                             @Nullable String priorVersion) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void updateAllCentralAdminConfig(AllCentralAdminConfig config,
-            @Nullable String priorVersion) throws Exception {
+                                            @Nullable String priorVersion) throws Exception {
         validatePagerDutyConfig(config.pagerDuty());
         validateSlackConfig(config.slack());
         if (priorVersion == null) {
-            centralConfigDao.writeWithoutOptimisticLocking(GENERAL_KEY, config.general());
-            centralConfigDao.writeWithoutOptimisticLocking(WEB_KEY, config.web());
-            centralConfigDao.writeWithoutOptimisticLocking(STORAGE_KEY, config.storage());
-            centralConfigDao.writeWithoutOptimisticLocking(SMTP_KEY, config.smtp());
-            centralConfigDao.writeWithoutOptimisticLocking(HTTP_PROXY_KEY, config.httpProxy());
-            centralConfigDao.writeWithoutOptimisticLocking(LDAP_KEY, config.ldap());
-            centralConfigDao.writeWithoutOptimisticLocking(PAGER_DUTY_KEY, config.pagerDuty());
-            centralConfigDao.writeWithoutOptimisticLocking(SLACK_KEY, config.slack());
-            writeUsersWithoutOptimisticLocking(config.users());
-            writeRolesWithoutOptimisticLocking(config.roles());
+            centralConfigDao.writeWithoutOptimisticLocking(GENERAL_KEY, config.general()).thenCompose(ig ->
+                    centralConfigDao.writeWithoutOptimisticLocking(WEB_KEY, config.web())).thenCompose(iw ->
+                    centralConfigDao.writeWithoutOptimisticLocking(STORAGE_KEY, config.storage())).thenCompose(is ->
+                    centralConfigDao.writeWithoutOptimisticLocking(SMTP_KEY, config.smtp())).thenCompose(ism ->
+                    centralConfigDao.writeWithoutOptimisticLocking(HTTP_PROXY_KEY, config.httpProxy())).thenCompose(ihp ->
+                    centralConfigDao.writeWithoutOptimisticLocking(LDAP_KEY, config.ldap())).thenCompose(il ->
+                    centralConfigDao.writeWithoutOptimisticLocking(PAGER_DUTY_KEY, config.pagerDuty())).thenCompose(ipd ->
+                    centralConfigDao.writeWithoutOptimisticLocking(SLACK_KEY, config.slack())).thenCompose(isl ->
+                    writeUsersWithoutOptimisticLocking(config.users())).thenCompose(iu ->
+                    writeRolesWithoutOptimisticLocking(config.roles())).toCompletableFuture().join();
         } else {
-            AllCentralAdminConfig currConfig = getAllCentralAdminConfig();
-            if (!priorVersion.equals(currConfig.version())) {
-                throw new OptimisticLockException();
+            try {
+                getAllCentralAdminConfig().thenCompose(currConfig -> {
+                    if (!priorVersion.equals(currConfig.version())) {
+                        return CompletableFuture.failedFuture(new OptimisticLockException());
+                    }
+                    return centralConfigDao.write(GENERAL_KEY, config.general(), currConfig.general().version()).thenCompose(ig ->
+                            centralConfigDao.write(WEB_KEY, config.web(), currConfig.web().version()).thenCompose(iw ->
+                                    centralConfigDao.write(STORAGE_KEY, config.storage(), currConfig.storage().version()).thenCompose(is ->
+                                            centralConfigDao.write(SMTP_KEY, config.smtp(), currConfig.smtp().version()).thenCompose(ism ->
+                                                    centralConfigDao.write(HTTP_PROXY_KEY, config.httpProxy(),
+                                                            currConfig.httpProxy().version()).thenCompose(ihp ->
+                                                            centralConfigDao.write(LDAP_KEY, config.ldap(), currConfig.ldap().version()).thenCompose(il ->
+                                                                    centralConfigDao.write(PAGER_DUTY_KEY, config.pagerDuty(),
+                                                                            currConfig.pagerDuty().version()).thenCompose(ipd ->
+                                                                            centralConfigDao.write(SLACK_KEY, config.slack(), currConfig.slack().version()).thenCompose(isl ->
+                                                                                    // there is currently no optimistic locking when updating users
+                                                                                    writeUsersWithoutOptimisticLocking(config.users()).thenCompose(iu ->
+                                                                                            writeRolesWithoutOptimisticLocking(config.roles()))))))))));
+                }).toCompletableFuture().join();
+            } catch (CompletionException e) {
+                if (e.getCause() instanceof OptimisticLockException) {
+                    throw (OptimisticLockException) e.getCause();
+                }
+                throw new RuntimeException(e);
             }
-            centralConfigDao.write(GENERAL_KEY, config.general(), currConfig.general().version());
-            centralConfigDao.write(WEB_KEY, config.web(), currConfig.web().version());
-            centralConfigDao.write(STORAGE_KEY, config.storage(), currConfig.storage().version());
-            centralConfigDao.write(SMTP_KEY, config.smtp(), currConfig.smtp().version());
-            centralConfigDao.write(HTTP_PROXY_KEY, config.httpProxy(),
-                    currConfig.httpProxy().version());
-            centralConfigDao.write(LDAP_KEY, config.ldap(), currConfig.ldap().version());
-            centralConfigDao.write(PAGER_DUTY_KEY, config.pagerDuty(),
-                    currConfig.pagerDuty().version());
-            centralConfigDao.write(SLACK_KEY, config.slack(), currConfig.slack().version());
-            // there is currently no optimistic locking when updating users
-            writeUsersWithoutOptimisticLocking(config.users());
-            writeRolesWithoutOptimisticLocking(config.roles());
         }
     }
 
@@ -1181,7 +1256,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     @Override
-    public LazySecretKey getLazySecretKey() throws Exception {
+    public LazySecretKey getLazySecretKey() {
         return lazySecretKey;
     }
 
@@ -1189,57 +1264,63 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         agentConfigListeners.add(listener);
     }
 
-    private void writeUsersWithoutOptimisticLocking(List<ImmutableUserConfig> userConfigs)
-            throws Exception {
-        Map<String, UserConfig> remainingUserConfigs = new HashMap<>();
-        for (UserConfig userConfig : getUserConfigs()) {
-            remainingUserConfigs.put(userConfig.username(), userConfig);
-        }
-        for (UserConfig userConfig : userConfigs) {
-            UserConfig existingUserConfig =
-                    remainingUserConfigs.remove(userConfig.username());
-            if (userConfig.passwordHash().isEmpty() && !userConfig.ldap()) {
-                if (existingUserConfig == null) {
-                    throw new IllegalStateException(
-                            "New user " + userConfig.username() + " is missing password");
-                }
-                userConfig = ImmutableUserConfig.copyOf(userConfig)
-                        .withPasswordHash(existingUserConfig.passwordHash());
+    private CompletionStage<?> writeUsersWithoutOptimisticLocking(List<ImmutableUserConfig> userConfigs) {
+        return getUserConfigs().thenCompose(currentConfigs -> {
+            Map<String, UserConfig> remainingUserConfigs = new HashMap<>();
+            for (UserConfig userConfig : currentConfigs) {
+                remainingUserConfigs.put(userConfig.username(), userConfig);
             }
-            userDao.insert(userConfig);
-        }
-        for (String remainingUsername : remainingUserConfigs.keySet()) {
-            userDao.delete(remainingUsername);
-        }
+            List<CompletionStage<?>> futures = new ArrayList<>();
+            for (UserConfig userConfig : userConfigs) {
+                UserConfig existingUserConfig =
+                        remainingUserConfigs.remove(userConfig.username());
+                if (userConfig.passwordHash().isEmpty() && !userConfig.ldap()) {
+                    if (existingUserConfig == null) {
+                        throw new IllegalStateException(
+                                "New user " + userConfig.username() + " is missing password");
+                    }
+                    userConfig = ImmutableUserConfig.copyOf(userConfig)
+                            .withPasswordHash(existingUserConfig.passwordHash());
+                }
+                futures.add(userDao.insert(userConfig, CassandraProfile.web));
+            }
+            for (String remainingUsername : remainingUserConfigs.keySet()) {
+                futures.add(userDao.delete(remainingUsername, CassandraProfile.web));
+            }
+            return CompletableFutures.allAsList(futures);
+        });
     }
 
-    private void writeRolesWithoutOptimisticLocking(List<ImmutableRoleConfig> roleConfigs)
-            throws Exception {
-        Map<String, RoleConfig> remainingRoleConfigs = new HashMap<>();
-        for (RoleConfig roleConfig : getRoleConfigs()) {
-            remainingRoleConfigs.put(roleConfig.name(), roleConfig);
-        }
-        for (RoleConfig roleConfig : roleConfigs) {
-            remainingRoleConfigs.remove(roleConfig.name());
-            roleDao.insert(roleConfig);
-        }
-        for (String remainingRolename : remainingRoleConfigs.keySet()) {
-            roleDao.delete(remainingRolename);
-        }
+    private CompletionStage<?> writeRolesWithoutOptimisticLocking(List<ImmutableRoleConfig> roleConfigs) {
+        return getRoleConfigs().thenCompose(currrentRoleConfigs -> {
+            Map<String, RoleConfig> remainingRoleConfigs = new HashMap<>();
+            for (RoleConfig roleConfig : currrentRoleConfigs) {
+                remainingRoleConfigs.put(roleConfig.name(), roleConfig);
+            }
+            List<CompletionStage<?>> futures = new ArrayList<>();
+            for (RoleConfig roleConfig : roleConfigs) {
+                remainingRoleConfigs.remove(roleConfig.name());
+                futures.add(roleDao.insert(roleConfig, CassandraProfile.web));
+            }
+            for (String remainingRolename : remainingRoleConfigs.keySet()) {
+                futures.add(roleDao.delete(remainingRolename, CassandraProfile.web));
+            }
+            return CompletableFutures.allAsList(futures);
+        });
     }
 
     // the updated config is not passed to the listeners to avoid the race condition of multiple
     // config updates being sent out of order, instead listeners must call get*Config() which will
     // never return the updates out of order (at worst it may return the most recent update twice
     // which is ok)
-    private void notifyAgentConfigListeners(String agentRollupId) throws Exception {
+    private void notifyAgentConfigListeners(String agentRollupId) {
         for (AgentConfigListener agentConfigListener : agentConfigListeners) {
             agentConfigListener.onChange(agentRollupId);
         }
     }
 
     private static List<PluginConfig> buildPluginConfigs(PluginConfig updatedConfig,
-            String priorVersion, AgentConfig agentConfig) throws OptimisticLockException {
+                                                         String priorVersion, AgentConfig agentConfig) throws OptimisticLockException {
         List<PluginConfig> pluginConfigs =
                 Lists.newArrayList(agentConfig.getPluginConfigList());
         ListIterator<PluginConfig> i = pluginConfigs.listIterator();
@@ -1264,7 +1345,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     private static List<PluginConfig> buildPluginConfigs(List<PluginConfig> newConfigs,
-            AgentConfig agentConfig) {
+                                                         AgentConfig agentConfig) {
         List<PluginConfig> pluginConfigs = new ArrayList<>();
         Map<String, PluginConfig> remainingNewConfigs = new HashMap<>();
         for (PluginConfig newConfig : newConfigs) {
@@ -1289,7 +1370,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     private static PluginConfig buildPluginConfig(PluginConfig existingConfig,
-            List<PluginProperty> newProperties, boolean errorOnMissingProperty) {
+                                                  List<PluginProperty> newProperties, boolean errorOnMissingProperty) {
         Map<String, PluginProperty> newProps = buildMutablePropertiesMap(newProperties);
         PluginConfig.Builder builder = PluginConfig.newBuilder()
                 .setId(existingConfig.getId())
@@ -1350,7 +1431,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     }
 
     private static ImmutableList<Integer> fix(ImmutableList<Integer> thisList,
-            List<Integer> defaultList) {
+                                              List<Integer> defaultList) {
         if (thisList.size() >= defaultList.size()) {
             return thisList.subList(0, defaultList.size());
         }
@@ -1392,7 +1473,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         // the new config is not passed to onChange so that the receiver has to get the latest,
         // this avoids race condition worries that two updates may get sent to the receiver in the
         // wrong order
-        void onChange(String agentRollupId) throws Exception;
+        void onChange(String agentRollupId);
     }
 
     public static class LazySecretKeyImpl implements LazySecretKey {

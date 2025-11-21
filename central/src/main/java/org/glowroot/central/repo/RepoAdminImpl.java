@@ -22,6 +22,7 @@ import java.util.Map;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +58,7 @@ public class RepoAdminImpl implements RepoAdmin {
     @Override
     public void runHealthCheck() throws Exception {
         long now = clock.currentTimeMillis();
-        activeAgentDao.readActiveTopLevelAgentRollups(now - HOURS.toMillis(4), now);
+        activeAgentDao.readActiveTopLevelAgentRollups(now - HOURS.toMillis(4), now, CassandraProfile.web);
     }
 
     @Override
@@ -97,7 +98,7 @@ public class RepoAdminImpl implements RepoAdmin {
 
     @Override
     public int updateCassandraTwcsWindowSizes() throws Exception {
-        CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig();
+        CentralStorageConfig storageConfig = configRepository.getCentralStorageConfig().toCompletableFuture().join();
         List<String> tableNames = new ArrayList<>();
         for (TableMetadata table : session.getTables()) {
             Map<String, String> compaction = (Map<String, String>) table.getOptions()

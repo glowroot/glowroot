@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeoutException;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -29,6 +30,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.io.CharStreams;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
 import org.glowroot.common.live.LiveJvmService.AgentNotConnectedException;
@@ -89,7 +91,7 @@ class TraceCommonService {
     }
 
     @Nullable
-    String getEntriesJson(String agentId, String traceId, boolean checkLiveTraces)
+    String getEntriesJson(String agentId, String traceId, boolean checkLiveTraces, CassandraProfile profile)
             throws Exception {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
@@ -106,7 +108,7 @@ class TraceCommonService {
                 return toJson(entries);
             }
         }
-        return toJson(getStoredEntries(agentId, traceId, new RetryCountdown(checkLiveTraces)));
+        return toJson(getStoredEntries(agentId, traceId, new RetryCountdown(checkLiveTraces), profile));
     }
 
     @Nullable
@@ -127,7 +129,7 @@ class TraceCommonService {
                 return toJson(queries);
             }
         }
-        return toJson(getStoredQueries(agentId, traceId, new RetryCountdown(checkLiveTraces)));
+        return toJson(getStoredQueries(agentId, traceId, new RetryCountdown(checkLiveTraces), CassandraProfile.web));
     }
 
     @Nullable
@@ -185,7 +187,7 @@ class TraceCommonService {
     }
 
     @Nullable
-    TraceExport getExport(String agentId, String traceId, boolean checkLiveTraces)
+    TraceExport getExport(String agentId, String traceId, boolean checkLiveTraces, CassandraProfile profile)
             throws Exception {
         if (checkLiveTraces) {
             // check active/pending traces first, and lastly stored traces to make sure that the
@@ -223,7 +225,7 @@ class TraceCommonService {
                 .fileName(getFileName(header.header()))
                 .headerJson(toJsonRepoHeader(agentId, header));
         EntriesAndQueries queriesAndEntries =
-                getStoredEntriesAndQueriesForExport(agentId, traceId, retryCountdown);
+                getStoredEntriesAndQueriesForExport(agentId, traceId, retryCountdown, profile);
         if (queriesAndEntries != null) {
             builder.entriesJson(entriesToJson(queriesAndEntries.entries()));
             builder.queriesJson(queriesToJson(queriesAndEntries.queries()));
@@ -239,69 +241,69 @@ class TraceCommonService {
         return builder.build();
     }
 
-    private @Nullable HeaderPlus getStoredHeader(String agentId, String traceId,
-            RetryCountdown retryCountdown) throws Exception {
-        HeaderPlus headerPlus = traceRepository.readHeaderPlus(agentId, traceId);
+    private HeaderPlus getStoredHeader(String agentId, String traceId,
+                                                        RetryCountdown retryCountdown) throws Exception {
+        HeaderPlus headerPlus = traceRepository.readHeaderPlus(agentId, traceId).toCompletableFuture().get();
         while (headerPlus == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             MILLISECONDS.sleep(500);
-            headerPlus = traceRepository.readHeaderPlus(agentId, traceId);
+            headerPlus = traceRepository.readHeaderPlus(agentId, traceId).toCompletableFuture().get();
         }
         return headerPlus;
     }
 
     private @Nullable Entries getStoredEntries(String agentId, String traceId,
-            RetryCountdown retryCountdown) throws Exception {
-        Entries entries = traceRepository.readEntries(agentId, traceId);
+            RetryCountdown retryCountdown, CassandraProfile profile) throws Exception {
+        Entries entries = traceRepository.readEntries(agentId, traceId, profile).toCompletableFuture().get();
         while (entries == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             MILLISECONDS.sleep(500);
-            entries = traceRepository.readEntries(agentId, traceId);
+            entries = traceRepository.readEntries(agentId, traceId, profile).toCompletableFuture().get();
         }
         return entries;
     }
 
     private @Nullable Queries getStoredQueries(String agentId, String traceId,
-            RetryCountdown retryCountdown) throws Exception {
-        Queries queries = traceRepository.readQueries(agentId, traceId);
+            RetryCountdown retryCountdown, CassandraProfile profile) throws Exception {
+        Queries queries = traceRepository.readQueries(agentId, traceId, profile).toCompletableFuture().get();
         while (queries == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             MILLISECONDS.sleep(500);
-            queries = traceRepository.readQueries(agentId, traceId);
+            queries = traceRepository.readQueries(agentId, traceId, profile).toCompletableFuture().get();
         }
         return queries;
     }
 
     private @Nullable EntriesAndQueries getStoredEntriesAndQueriesForExport(String agentId,
-            String traceId, RetryCountdown retryCountdown) throws Exception {
+            String traceId, RetryCountdown retryCountdown, CassandraProfile profile) throws Exception {
         EntriesAndQueries entries =
-                traceRepository.readEntriesAndQueriesForExport(agentId, traceId);
+                traceRepository.readEntriesAndQueriesForExport(agentId, traceId, profile).toCompletableFuture().get();
         while (entries == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             MILLISECONDS.sleep(500);
-            entries = traceRepository.readEntriesAndQueriesForExport(agentId, traceId);
+            entries = traceRepository.readEntriesAndQueriesForExport(agentId, traceId, profile).toCompletableFuture().get();
         }
         return entries;
     }
 
     private @Nullable Profile getStoredMainThreadProfile(String agentId, String traceId,
             RetryCountdown retryCountdown) throws Exception {
-        Profile profile = traceRepository.readMainThreadProfile(agentId, traceId);
+        Profile profile = traceRepository.readMainThreadProfile(agentId, traceId).toCompletableFuture().get();
         while (profile == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             MILLISECONDS.sleep(500);
-            profile = traceRepository.readMainThreadProfile(agentId, traceId);
+            profile = traceRepository.readMainThreadProfile(agentId, traceId).toCompletableFuture().get();
         }
         return profile;
     }
 
     private @Nullable Profile getStoredAuxThreadProfile(String agentId, String traceId,
             RetryCountdown retryCountdown) throws Exception {
-        Profile profile = traceRepository.readAuxThreadProfile(agentId, traceId);
+        Profile profile = traceRepository.readAuxThreadProfile(agentId, traceId).toCompletableFuture().get();
         while (profile == null && retryCountdown.remaining-- > 0) {
             // trace may be completed, but still in transit from agent to the central collector
             MILLISECONDS.sleep(500);
-            profile = traceRepository.readAuxThreadProfile(agentId, traceId);
+            profile = traceRepository.readAuxThreadProfile(agentId, traceId).toCompletableFuture().get();
         }
         return profile;
     }
@@ -477,7 +479,7 @@ class TraceCommonService {
         try {
             jg.writeStartObject();
             if (!agentId.isEmpty()) {
-                jg.writeStringField("agent", agentDisplayRepository.readFullDisplay(agentId));
+                jg.writeStringField("agent", agentDisplayRepository.readFullDisplay(agentId).toCompletableFuture().get());
             }
             if (active) {
                 jg.writeBooleanField("active", active);

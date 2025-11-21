@@ -17,6 +17,7 @@ package org.glowroot.common2.repo;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
@@ -34,55 +35,48 @@ import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 public interface TraceRepository {
 
-    long readSlowCount(String agentRollupId, TraceQuery query) throws Exception;
+    CompletionStage<Long> readSlowCount(String agentRollupId, TraceQuery query) throws Exception;
 
-    CompletableFuture<Result<TracePoint>> readSlowPoints(String agentRollupId, TraceQuery query,
+    CompletionStage<Result<TracePoint>> readSlowPoints(String agentRollupId, TraceQuery query,
                                                         TracePointFilter filter, int limit) throws Exception;
 
-    long readErrorCount(String agentRollupId, TraceQuery query) throws Exception;
+    CompletionStage<Long> readErrorCount(String agentRollupId, TraceQuery query) throws Exception;
 
-    CompletableFuture<Result<TracePoint>> readErrorPoints(String agentRollupId, TraceQuery query,
+    CompletionStage<Result<TracePoint>> readErrorPoints(String agentRollupId, TraceQuery query,
             TracePointFilter filter, int limit) throws Exception;
 
-    ErrorMessageResult readErrorMessages(String agentRollupId, TraceQuery query,
-            ErrorMessageFilter filter, long resolutionMillis, int limit) throws Exception;
+    CompletionStage<ErrorMessageResult> readErrorMessages(String agentRollupId, TraceQuery query,
+            ErrorMessageFilter filter, long resolutionMillis, int limit);
 
-    long readErrorMessageCount(String agentRollupId, TraceQuery query, String errorMessageFilter)
-            throws Exception;
+    CompletionStage<Long> readErrorMessageCount(String agentRollupId, TraceQuery query, String errorMessageFilter, CassandraProfile profile);
 
     // null return value means trace not found
-    @Nullable
-    HeaderPlus readHeaderPlus(String agentId, String traceId) throws Exception;
+    CompletionStage<HeaderPlus> readHeaderPlus(String agentId, String traceId);
 
     // null return value means trace not found or was found but had no entries
     //
     // SharedQueryTexts are returned with either fullTrace or
     // truncatedText/truncatedEndText/fullTraceSha1
-    @Nullable
-    Entries readEntries(String agentId, String traceId) throws Exception;
+    CompletionStage<Entries> readEntries(String agentId, String traceId, CassandraProfile profile) throws Exception;
 
     // null return value means trace not found or was found but had no queries
     //
     // SharedQueryTexts are returned with either fullTrace or
     // truncatedText/truncatedEndText/fullTraceSha1
-    @Nullable
-    Queries readQueries(String agentId, String traceId) throws Exception;
+    CompletionStage<Queries> readQueries(String agentId, String traceId, CassandraProfile profile) throws Exception;
 
     // null return value means trace not found or was found but had no entries
     //
     // since this is only used by export, SharedQueryTexts are always returned with fullTrace
     // (never with truncatedText/truncatedEndText/fullTraceSha1)
-    @Nullable
-    EntriesAndQueries readEntriesAndQueriesForExport(String agentId, String traceId)
+    CompletionStage<EntriesAndQueries> readEntriesAndQueriesForExport(String agentId, String traceId, CassandraProfile profile)
             throws Exception;
 
     // null return value means trace not found or was found but had no main thread profile
-    @Nullable
-    Profile readMainThreadProfile(String agentId, String traceId) throws Exception;
+    CompletionStage<Profile> readMainThreadProfile(String agentId, String traceId) throws Exception;
 
     // null return value means trace not found or was found but had no aux thread profile
-    @Nullable
-    Profile readAuxThreadProfile(String agentId, String traceId) throws Exception;
+    CompletionStage<Profile> readAuxThreadProfile(String agentId, String traceId) throws Exception;
 
     @Value.Immutable
     interface TraceQuery {

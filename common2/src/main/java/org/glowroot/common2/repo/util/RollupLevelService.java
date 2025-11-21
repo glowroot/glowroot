@@ -34,7 +34,7 @@ public class RollupLevelService {
         this.clock = clock;
     }
 
-    public int getRollupLevelForView(long from, long to, DataKind dataKind) throws Exception {
+    public int getRollupLevelForView(long from, long to, DataKind dataKind) {
         long millis = to - from;
         long timeAgoMillis = clock.currentTimeMillis() - from;
         List<Integer> rollupExpirationHours = getRollupExpirationHours(dataKind);
@@ -63,8 +63,7 @@ public class RollupLevelService {
         return rollupConfigs.size() - 1;
     }
 
-    public int getGaugeRollupLevelForView(long from, long to, boolean agentRollup)
-            throws Exception {
+    public int getGaugeRollupLevelForView(long from, long to, boolean agentRollup) {
         long millis = to - from;
         long timeAgoMillis = clock.currentTimeMillis() - from;
         List<Integer> rollupExpirationHours =
@@ -108,7 +107,7 @@ public class RollupLevelService {
         return rollupConfigs.size();
     }
 
-    private List<Integer> getRollupExpirationHours(DataKind dataKind) throws Exception {
+    private List<Integer> getRollupExpirationHours(DataKind dataKind) {
         StorageConfig storageConfig = configRepository.getStorageConfig();
         switch (dataKind) {
             case GENERAL:
@@ -120,7 +119,7 @@ public class RollupLevelService {
             case PROFILE:
                 return storageConfig.profileRollupExpirationHours();
             default:
-                throw new Exception("Unexpected data kind: " + dataKind);
+                throw new RuntimeException("Unexpected data kind: " + dataKind);
         }
     }
 
