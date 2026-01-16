@@ -359,6 +359,8 @@
           </execution>
         </executions>
         <configuration>
+          <!-- Skip ProGuard - it causes VerifyError on Java 25 due to missing stack map frames -->
+          <skip>true</skip>
           <includeDependency>false</includeDependency>
           <obfuscate>false</obfuscate>
           <options>

@@ -48,6 +48,11 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <!-- javax.annotation.Generated and other annotations not in JDK 9+ -->
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
       <version>${asm.version}</version>
