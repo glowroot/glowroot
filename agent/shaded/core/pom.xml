@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+agent/shaded/core/pom.xml<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -359,12 +359,13 @@
           </execution>
         </executions>
         <configuration>
-          <!-- Skip ProGuard - it causes VerifyError on Java 25 due to missing stack map frames -->
+          <!-- Skip ProGuard - causes VerifyError on Java 25. Shading done by maven-shade-plugin. -->
           <skip>true</skip>
           <includeDependency>false</includeDependency>
           <obfuscate>false</obfuscate>
           <options>
             <option>-dontoptimize</option>
+            <option>-dontpreverify</option>
             <option>-dontnote **</option>
             <option>-dontwarn **</option>
             <option>

@@ -456,6 +456,14 @@
           <groupId>com.github.wvengen</groupId>
           <artifactId>proguard-maven-plugin</artifactId>
           <version>2.7.0</version>
+          <dependencies>
+            <!-- Use ProGuard 7.6.1 for Java 25 support -->
+            <dependency>
+              <groupId>com.guardsquare</groupId>
+              <artifactId>proguard-base</artifactId>
+              <version>7.6.1</version>
+            </dependency>
+          </dependencies>
         </plugin>
         <plugin>
           <groupId>com.github.os72</groupId>
