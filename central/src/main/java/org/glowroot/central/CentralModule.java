@@ -39,6 +39,7 @@ import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.fasterxml.jackson.core.StreamWriteConstraints;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
@@ -166,6 +167,9 @@ public class CentralModule {
             }
 
             CentralConfiguration centralConfig = getCentralConfiguration(directories.getConfDir());
+            StreamWriteConstraints.overrideDefaultStreamWriteConstraints(
+            StreamWriteConstraints.builder().maxNestingDepth(centralConfig.jacksonMaxNestingDepth()).build());
+
             clusterManager = ClusterManager.create(directories.getConfDir(),
                     centralConfig.jgroupsProperties());
             session = connect(centralConfig);
@@ -688,6 +692,10 @@ public class CentralModule {
         if (!Strings.isNullOrEmpty(threadPoolMaxSize)) {
             builder.threadPoolMaxSize(Integer.parseInt(threadPoolMaxSize));
         }
+        String jacksonMaxNestingDepth = properties.get("glowroot.jackson.max.nesting.depth");
+        if (!Strings.isNullOrEmpty(jacksonMaxNestingDepth)) {
+            builder.jacksonMaxNestingDepth(Integer.parseInt(jacksonMaxNestingDepth));
+        }
         for (Map.Entry<String, String> entry : properties.entrySet()) {
             String propertyName = entry.getKey();
             if (propertyName.startsWith("glowroot.jgroups.")) {
@@ -1111,6 +1119,11 @@ public class CentralModule {
         @Value.Default
         String uiContextPath() {
             return "/";
+        }
+
+        @Value.Default
+        int jacksonMaxNestingDepth() {
+            return 1000;
         }
 
         abstract Map<String, String> jgroupsProperties();
