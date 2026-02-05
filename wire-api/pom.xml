@@ -48,7 +48,7 @@
         <groupId>com.github.os72</groupId>
         <artifactId>protoc-jar-maven-plugin</artifactId>
         <configuration>
-          <protocVersion>${protoc.version}</protocVersion>
+          <protocArtifact>com.google.protobuf:protoc:${protoc.version}</protocArtifact>
           <outputTargets>
             <outputTarget>
               <type>java</type>
