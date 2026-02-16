@@ -34,7 +34,7 @@ import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.TransactionMarker;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 import org.junit.jupiter.api.*;
-import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.kafka.KafkaContainer;
 
 import java.util.Collections;
 import java.util.List;
@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class KafkaPluginIT {
 
     public static final KafkaContainer kafka
-            = (KafkaContainer) new KafkaContainer("5.2.5").withExposedPorts(9093);
+            = new KafkaContainer("5.2.5").withExposedPorts(9093);
 
     private static Container container;
 
