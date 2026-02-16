@@ -25,7 +25,7 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.common2.config.ImmutableCentralStorageConfig;
 import org.glowroot.common2.repo.SyntheticResult;
 import org.junit.jupiter.api.*;
-import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.cassandra.CassandraContainer;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class SyntheticResultDaoIT {
 
     public static final CassandraContainer cassandra
-            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
+            = new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     private ClusterManager clusterManager;
     private CqlSessionBuilder cqlSessionBuilder;

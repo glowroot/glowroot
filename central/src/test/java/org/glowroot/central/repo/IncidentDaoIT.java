@@ -29,7 +29,7 @@ import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertNotification;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AlertConfig.AlertSeverity;
 import org.junit.jupiter.api.*;
-import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.cassandra.CassandraContainer;
 
 import java.util.List;
 
@@ -40,7 +40,7 @@ import static org.mockito.Mockito.when;
 // NOTE this is mostly a copy of IncidentDaoTest in glowroot-agent-embedded
 public class IncidentDaoIT {
     public static final CassandraContainer cassandra
-            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
+            = new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     private static final String AGENT_ID = "xyz";
 

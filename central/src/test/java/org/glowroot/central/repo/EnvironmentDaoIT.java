@@ -23,13 +23,13 @@ import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment.HostInfo;
 import org.junit.jupiter.api.*;
-import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.cassandra.CassandraContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class EnvironmentDaoIT {
     public static final CassandraContainer cassandra
-            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
+            = new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     private static CqlSessionBuilder cqlSessionBuilder;
     private static Session session;

@@ -24,14 +24,14 @@ import org.glowroot.common2.config.ImmutableUserConfig;
 import org.glowroot.common2.config.UserConfig;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.junit.jupiter.api.*;
-import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.cassandra.CassandraContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class UserDaoIT {
 
     public static final CassandraContainer cassandra
-            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
+            = new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     private CqlSessionBuilder cqlSessionBuilder;
     private Session session;

@@ -45,7 +45,7 @@ import org.glowroot.wire.api.model.AggregateOuterClass.OldTransactionAggregate;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
 import org.glowroot.wire.api.model.Proto.OptionalInt64;
 import org.junit.jupiter.api.*;
-import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.cassandra.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -62,7 +62,7 @@ public class AggregateDaoIT {
 
     @Container
     public final CassandraContainer cassandra
-            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
+            = new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     private static final AdvancedConfig DEFAULT_ADVANCED_CONFIG = AdvancedConfig.newBuilder()
             .setMaxQueryAggregates(OptionalInt32.newBuilder()

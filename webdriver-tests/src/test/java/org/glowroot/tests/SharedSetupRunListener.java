@@ -18,7 +18,7 @@ package org.glowroot.tests;
 import org.junit.runner.Description;
 import org.junit.runner.Result;
 import org.junit.runner.notification.RunListener;
-import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.cassandra.CassandraContainer;
 
 public class SharedSetupRunListener extends RunListener {
 

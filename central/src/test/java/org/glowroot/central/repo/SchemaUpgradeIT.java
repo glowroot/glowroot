@@ -25,7 +25,7 @@ import com.google.common.io.Resources;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
 import org.junit.jupiter.api.*;
-import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.cassandra.CassandraContainer;
 import org.testcontainers.utility.MountableFile;
 
 import java.net.URL;
@@ -41,7 +41,7 @@ public class SchemaUpgradeIT {
     private static final String CASSANDRA_VERSION = "3.11.15";
 
     public static final CassandraContainer cassandra
-            = (CassandraContainer) new CassandraContainer("cassandra:" + CASSANDRA_VERSION)
+            =  new CassandraContainer("cassandra:" + CASSANDRA_VERSION)
             .withExposedPorts(9042)
             .withCopyToContainer(
                     MountableFile.forClasspathResource("/backup-0.9.1/"),

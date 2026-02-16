@@ -24,7 +24,7 @@ import org.glowroot.common2.config.ImmutableRoleConfig;
 import org.glowroot.common2.config.RoleConfig;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.junit.jupiter.api.*;
-import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.cassandra.CassandraContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RoleDaoIT {
 
     public static final CassandraContainer cassandra
-            = (CassandraContainer) new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
+            = new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
 
     private static CqlSessionBuilder cqlSessionBuilder;
     private static Session session;
