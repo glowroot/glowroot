@@ -673,7 +673,7 @@ public class ConfigRepositoryImpl implements ConfigRepository {
                             Lists.newArrayList(agentConfig.getSyntheticMonitorConfigList());
                     ListIterator<SyntheticMonitorConfig> i = existingConfigs.listIterator();
                     boolean found = false;
-                    String display = config.getDisplay();
+                    String display = MoreConfigDefaults.getDisplayOrDefault(config);
                     while (i.hasNext()) {
                         SyntheticMonitorConfig loopConfig = i.next();
                         if (loopConfig.getId().equals(config.getId())) {
@@ -706,11 +706,15 @@ public class ConfigRepositoryImpl implements ConfigRepository {
         return agentConfigDao.update(agentRollupId, new AgentConfigUpdater() {
             @Override
             public CompletionStage<AgentConfig> updateAgentConfig(AgentConfig agentConfig) {
-
-                return getAlertConfigsForSyntheticMonitorId(agentRollupId, syntheticMonitorId).thenApply(alertConfigs -> {
-                    if (!alertConfigs.isEmpty()) {
-                        throw new IllegalStateException(
-                                "Cannot delete synthetic monitor is being used by active alert");
+                return CompletableFuture.completedFuture(null).thenApply(ignore -> {
+                    for (AlertConfig alertConfig : agentConfig.getAlertConfigList()) {
+                        AlertCondition alertCondition = alertConfig.getCondition();
+                        if (alertCondition.getValCase() == AlertCondition.ValCase.SYNTHETIC_MONITOR_CONDITION
+                                && alertCondition.getSyntheticMonitorCondition().getSyntheticMonitorId()
+                                .equals(syntheticMonitorId)) {
+                            throw new IllegalStateException(
+                                    "Cannot delete synthetic monitor is being used by active alert");
+                        }
                     }
                     List<SyntheticMonitorConfig> existingConfigs =
                             Lists.newArrayList(agentConfig.getSyntheticMonitorConfigList());
