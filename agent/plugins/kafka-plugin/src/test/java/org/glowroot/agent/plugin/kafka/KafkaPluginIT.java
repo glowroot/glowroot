@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class KafkaPluginIT {
 
     public static final KafkaContainer kafka
-            = new KafkaContainer("5.2.5").withExposedPorts(9093);
+            = new KafkaContainer("apache/kafka:3.9.1").withExposedPorts(9093).withExposedPorts(9092);
 
     private static Container container;
 
