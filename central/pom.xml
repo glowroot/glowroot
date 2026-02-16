@@ -265,6 +265,11 @@
             <version>1.21.3</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>findbugs</artifactId>
+            <version>3.0.1</version>
+        </dependency>
     </dependencies>
 
     <build>
