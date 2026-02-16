@@ -1003,7 +1003,7 @@ public class AggregateDaoImpl implements AggregateDao {
                                 Set<String> transactionTypes = needsRollup.getKeys();
                                 List<CompletionStage<?>> futures = new ArrayList<>();
                                 for (String transactionType : transactionTypes) {
-                                    futures.addAll(rollupOne(rollupParams, transactionType, from, captureTime));
+                                    futures.add(rollupOne(rollupParams, transactionType, from, captureTime));
                                 }
                                 if (futures.isEmpty()) {
                                     // no rollups occurred, warning already logged inside rollupOne() above
@@ -1064,8 +1064,8 @@ public class AggregateDaoImpl implements AggregateDao {
         });
     }
 
-    private List<CompletionStage<?>> rollupOne(RollupParams rollup, String transactionType, long from,
-                                               long to) {
+    private CompletionStage<?> rollupOne(RollupParams rollup, String transactionType, long from,
+                                          long to) {
 
         ImmutableAggregateQuery query = ImmutableAggregateQuery.builder()
                 .transactionType(transactionType)
@@ -1073,23 +1073,25 @@ public class AggregateDaoImpl implements AggregateDao {
                 .to(to)
                 .rollupLevel(rollup.rollupLevel() - 1)
                 .build();
-        List<CompletionStage<?>> futures = new ArrayList<>();
-
-        futures.add(rollupOverallSummary(rollup, query));
-        futures.add(rollupErrorSummary(rollup, query));
 
         Set<String> transactionNames = new HashSet<>();
+        ScratchBuffer scratchBuffer = new ScratchBuffer();
+
+        List<CompletionStage<?>> futures = new ArrayList<>();
+        futures.add(rollupOverallSummary(rollup, query));
+        futures.add(rollupErrorSummary(rollup, query));
         futures.add(rollupTransactionSummary(rollup, query, transactionNames));
         futures.add(rollupTransactionErrorSummary(rollup, query));
-
-        ScratchBuffer scratchBuffer = new ScratchBuffer();
         futures.addAll(rollupOtherParts(rollup, query, scratchBuffer));
 
-        for (String transactionName : transactionNames) {
-            futures.addAll(rollupOtherParts(rollup, query.withTransactionName(transactionName),
-                    scratchBuffer));
-        }
-        return futures;
+        return CompletableFutures.allAsList(futures).thenCompose(ignored -> {
+            List<CompletionStage<?>> perTransactionFutures = new ArrayList<>();
+            for (String transactionName : transactionNames) {
+                perTransactionFutures.addAll(rollupOtherParts(rollup,
+                        query.withTransactionName(transactionName), scratchBuffer));
+            }
+            return CompletableFutures.allAsList(perTransactionFutures);
+        });
     }
 
     private List<CompletionStage<?>> rollupOtherParts(RollupParams rollup, AggregateQuery query,
@@ -1236,7 +1238,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 });
     }
 
-    // transactionNames is passed in empty, and populated synchronously by this method
+    // transactionNames is passed in empty, and populated asynchronously by this method
     private CompletableFuture<?> rollupTransactionSummary(RollupParams rollup,
                                                           AggregateQuery query, Set<String> transactionNames) {
         BoundStatement boundStatement = checkNotNull(readTransactionForRollupPS.get(summaryTable))
