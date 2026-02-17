@@ -77,7 +77,7 @@ public class WebDriverSetup {
     // travis build is currently failing with jbrowser driver
     private static final boolean USE_JBROWSER_DRIVER = false;
 
-    private static final String GECKO_DRIVER_VERSION = "0.33.0";
+    private static final String GECKO_DRIVER_VERSION = "0.36.0";
 
     private static final Logger logger = LoggerFactory.getLogger(WebDriverSetup.class);
 
@@ -239,6 +239,7 @@ public class WebDriverSetup {
                     geckoDriverExecutable.getAbsolutePath());
 
             FirefoxOptions options = new FirefoxOptions();
+            options.addArguments("--headless");
             FirefoxProfile profile = new FirefoxProfile();
             profile.setPreference("fission.bfcacheInParent.enabled", false);
             profile.setPreference("fission.bfcacheInParent", false);
