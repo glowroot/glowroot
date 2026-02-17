@@ -234,12 +234,25 @@ public class WebDriverSetup {
         if (USE_JBROWSER_DRIVER) {
             driver = new JBrowserDriver();
         } else {
-            File geckoDriverExecutable = downloadGeckoDriverIfNeeded();
-            System.setProperty("webdriver.gecko.driver",
-                    geckoDriverExecutable.getAbsolutePath());
+            // snap Firefox (common on Ubuntu) needs special handling: geckodriver
+            // cannot use the /usr/bin/firefox shell wrapper, it needs the real binary
+            File snapFirefox = new File("/snap/firefox/current/usr/lib/firefox/firefox");
+            File snapGeckodriver = new File("/snap/firefox/current/usr/lib/firefox/geckodriver");
+
+            if (snapGeckodriver.exists()) {
+                System.setProperty("webdriver.gecko.driver",
+                        snapGeckodriver.getAbsolutePath());
+            } else {
+                File geckoDriverExecutable = downloadGeckoDriverIfNeeded();
+                System.setProperty("webdriver.gecko.driver",
+                        geckoDriverExecutable.getAbsolutePath());
+            }
 
             FirefoxOptions options = new FirefoxOptions();
             options.addArguments("--headless");
+            if (snapFirefox.exists()) {
+                options.setBinary(snapFirefox.getAbsolutePath());
+            }
             FirefoxProfile profile = new FirefoxProfile();
             profile.setPreference("fission.bfcacheInParent.enabled", false);
             profile.setPreference("fission.bfcacheInParent", false);
