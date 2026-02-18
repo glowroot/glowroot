@@ -633,7 +633,7 @@ class WeavingClassVisitor extends ClassVisitor {
         }
         List<Advice> advisors = removeSuperseded(inheritedMethod.advisors());
         MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, inheritedMethod.name(),
-                inheritedMethod.getDesc(), inheritedMethod.signature(), exceptions);
+                inheritedMethod.getDesc(), null, exceptions);
         mv = visitMethodWithAdvice(mv, ACC_PUBLIC, inheritedMethod.name(),
                 inheritedMethod.getDesc(), advisors);
         checkNotNull(mv);
