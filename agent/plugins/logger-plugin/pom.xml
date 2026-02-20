@@ -187,6 +187,14 @@
       </build>
     </profile>
     <profile>
+      <!-- test against Logback 1.5.x + SLF4J 2.x to verify the ILoggingEventInvoker fix -->
+      <id>logback-1.5</id>
+      <properties>
+        <logback.version>1.5.18</logback.version>
+        <slf4j.version>2.0.17</slf4j.version>
+      </properties>
+    </profile>
+    <profile>
       <id>logback-old</id>
       <properties>
         <logback.version>0.9.15</logback.version>

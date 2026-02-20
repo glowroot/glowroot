@@ -29,7 +29,6 @@ import org.glowroot.agent.plugin.api.weaving.BindTraveler;
 import org.glowroot.agent.plugin.api.weaving.OnAfter;
 import org.glowroot.agent.plugin.api.weaving.OnBefore;
 import org.glowroot.agent.plugin.api.weaving.Pointcut;
-import org.glowroot.agent.plugin.api.weaving.Shim;
 
 public class LogbackAspect {
 
@@ -44,35 +43,10 @@ public class LogbackAspect {
     private static final int TRACE_INT = 5000;
     private static final int ALL_INT = Integer.MIN_VALUE;
 
-    @Shim("ch.qos.logback.classic.spi.ILoggingEvent")
-    public interface ILoggingEvent {
-
-        @Shim("ch.qos.logback.classic.Level getLevel()")
-        @Nullable
-        Level glowroot$getLevel();
-
-        @Nullable
-        String getFormattedMessage();
-
-        @Nullable
-        String getLoggerName();
-
-        @Shim("ch.qos.logback.classic.spi.IThrowableProxy getThrowableProxy()")
-        @Nullable
-        Object glowroot$getThrowableProxy();
-    }
-
-    @Shim("ch.qos.logback.classic.Level")
-    public interface Level {
-        int toInt();
-    }
-
-    @Shim("ch.qos.logback.classic.spi.ThrowableProxy")
-    public interface ThrowableProxy {
-        @Nullable
-        Throwable getThrowable();
-    }
-
+    // use reflection-based ILoggingEventInvoker instead of @Shim for ILoggingEvent because
+    // Logback 1.5.x changed ILoggingEvent's class hierarchy (it now extends
+    // DeferredProcessingAware), which causes an IncompatibleClassChangeError when the @Shim
+    // checkcast is applied at weave time
     @Pointcut(className = "ch.qos.logback.classic.Logger", methodName = "callAppenders",
             methodParameterTypes = {"ch.qos.logback.classic.spi.ILoggingEvent"},
             nestingGroup = "logging", timerName = TIMER_NAME)
@@ -82,26 +56,20 @@ public class LogbackAspect {
 
         @OnBefore
         public static @Nullable LogAdviceTraveler onBefore(ThreadContext context,
-                @BindParameter @Nullable ILoggingEvent loggingEvent) {
+                @BindParameter @Nullable Object loggingEvent,
+                @BindClassMeta ILoggingEventInvoker invoker) {
             if (loggingEvent == null) {
                 return null;
             }
-            String formattedMessage = nullToEmpty(loggingEvent.getFormattedMessage());
-            Level level = loggingEvent.glowroot$getLevel();
-            int lvl = level == null ? 0 : level.toInt();
-            Object throwableProxy = loggingEvent.glowroot$getThrowableProxy();
-            Throwable t = null;
-            if (throwableProxy instanceof ThrowableProxy) {
-                // there is only one other subclass of ch.qos.logback.classic.spi.IThrowableProxy
-                // and it is only used for logging exceptions over the wire
-                t = ((ThrowableProxy) throwableProxy).getThrowable();
-            }
+            String formattedMessage = invoker.getFormattedMessage(loggingEvent);
+            int lvl = invoker.getLevel(loggingEvent);
+            Throwable t = invoker.getThrowable(loggingEvent);
             if (LoggerPlugin.markTraceAsError(lvl >= ERROR_INT, lvl >= WARN_INT, t != null)) {
                 context.setTransactionError(formattedMessage, t);
             }
-            TraceEntry traceEntry;
-            traceEntry = context.startTraceEntry(
-                    new LogMessageSupplier(lvl, loggingEvent.getLoggerName(), formattedMessage),
+            TraceEntry traceEntry = context.startTraceEntry(
+                    new LogMessageSupplier(lvl, invoker.getLoggerName(loggingEvent),
+                            formattedMessage),
                     timerName);
             return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
@@ -124,10 +92,6 @@ public class LogbackAspect {
             } else {
                 traveler.traceEntry.end();
             }
-        }
-
-        private static String nullToEmpty(@Nullable String s) {
-            return s == null ? "" : s;
         }
     }
 
