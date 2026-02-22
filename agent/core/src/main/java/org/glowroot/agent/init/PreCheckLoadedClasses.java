@@ -71,7 +71,9 @@ public class PreCheckLoadedClasses {
                 // it seems that java 19+ loads very early the ForkJoinWorkerThread class
                 // maybe because of the virtual threads feature
                 // see https://levelup.gitconnected.com/java-virtual-threads-millions-of-threads-within-grasp-e0a4d26548ba
-                && !className.equals("java.util.concurrent.ForkJoinWorkerThread");
+                && !className.equals("java.util.concurrent.ForkJoinWorkerThread")
+                // java 25+ loads very early the DelayScheduler class
+                && !className.equals("java.util.concurrent.DelayScheduler");
     }
 
     private static boolean isShaded() {

@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import com.google.common.base.StandardSystemProperty;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.ning.http.client.AsyncHttpClient;
 import grails.artefact.Artefact;
@@ -41,7 +41,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
-import org.glowroot.agent.it.harness.Containers;
+import org.glowroot.agent.it.harness.impl.JavaagentContainer;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,9 +52,11 @@ public class GrailsIT {
 
     @BeforeAll
     public static void setUp() throws Exception {
-        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("17"));
-        Assumptions.assumeFalse(StandardSystemProperty.JAVA_VERSION.value().startsWith("21"));
-        container = Containers.create();
+        // Grails 3.3.10 / Spring 4.3.26 uses CGLIB which needs ClassLoader.defineClass() via
+        // reflection, requiring --add-opens java.base/java.lang=ALL-UNNAMED on Java 9+
+        container = JavaagentContainer
+                .createWithExtraJvmArgs(ImmutableList.of("--add-opens",
+                        "java.base/java.lang=ALL-UNNAMED"));
     }
 
     @AfterAll

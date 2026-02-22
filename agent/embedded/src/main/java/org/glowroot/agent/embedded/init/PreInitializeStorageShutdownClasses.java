@@ -145,6 +145,9 @@ class PreInitializeStorageShutdownClasses {
         types.add("java.sql.DriverManager$1");
         types.add("java.sql.DriverManager$2");
         types.add("java.sql.SQLException$1");
+        // used by H2 on older JVMs that have SecurityManager, but not on Java 25+ where
+        // SecurityManager was removed
+        types.add("java.sql.SQLPermission");
         return types;
     }
 
@@ -155,7 +158,6 @@ class PreInitializeStorageShutdownClasses {
         types.add("java.sql.Connection");
         types.add("java.sql.DriverManager");
         types.add("java.sql.SQLException");
-        types.add("java.sql.SQLPermission");
         types.add("java.sql.SQLWarning");
         types.add("java.sql.Statement");
         types.add("java.sql.Wrapper");
