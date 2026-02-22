@@ -318,6 +318,13 @@ case "$1" in
                                       $test_jvm_opt \
                                       -DargLine="$test_jvm_args \${jacocoArgLine}" \
                                       -B
+                 # LogbackIT with Logback 1.5.x + SLF4J 2.x
+                 mvn $common_mvn_args -pl agent/plugins/logger-plugin \
+                                      -P logback-1.5 \
+                                      -Dit.test=LogbackIT,LogbackMarkerIT \
+                                      $test_jvm_opt \
+                                      -DargLine="$test_jvm_args \${jacocoArgLine}" \
+                                      -B
                  # netty 3.x
                  mvn $common_mvn_args -pl agent/plugins/netty-plugin \
                                       -P netty-3.x \

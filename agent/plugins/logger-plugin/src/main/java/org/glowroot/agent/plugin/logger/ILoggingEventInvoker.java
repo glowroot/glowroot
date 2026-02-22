@@ -80,9 +80,8 @@ public class ILoggingEventInvoker {
         return Reflection.invokeWithDefault(toIntMethod, level, 0);
     }
 
-    @Nullable
     String getLoggerName(Object loggingEvent) {
-        return Reflection.</*@Nullable*/ String>invoke(getLoggerNameMethod, loggingEvent);
+        return Reflection.invokeWithDefault(getLoggerNameMethod, loggingEvent, "");
     }
 
     @Nullable
