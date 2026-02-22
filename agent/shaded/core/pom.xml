@@ -364,9 +364,11 @@
           <options>
             <option>-dontoptimize</option>
             <!-- skip preverification to avoid needing jmods (which may be absent in newer JDK
-              distributions); the javac-generated StackMapTable attributes remain valid since
-              ProGuard does not change bytecode when -dontoptimize is set -->
+              distributions); keepattributes StackMapTable preserves the javac-generated
+              StackMapTable attributes that ProGuard strips by default (they would normally be
+              re-added during the preverification step) -->
             <option>-dontpreverify</option>
+            <option>-keepattributes StackMapTable</option>
             <option>-dontnote **</option>
             <option>-dontwarn **</option>
             <option>
