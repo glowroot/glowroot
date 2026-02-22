@@ -310,12 +310,6 @@
           <obfuscate>false</obfuscate>
           <options>
             <option>-dontoptimize</option>
-            <!-- skip preverification to avoid needing jmods (which may be absent in newer JDK
-              distributions); keepattributes StackMapTable preserves the javac-generated
-              StackMapTable attributes that ProGuard strips by default (they would normally be
-              re-added during the preverification step) -->
-            <option>-dontpreverify</option>
-            <option>-keepattributes StackMapTable</option>
             <option>-dontnote **</option>
             <option>-dontwarn **</option>
             <option>-keep class !org.glowroot.agent.embedded.shaded.** { *; }</option>
@@ -337,4 +331,32 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <!-- add -dontpreverify only when jmods are absent (e.g. Temurin JDK 25+); when jmods are
+        present the auto-activated-jmods profile in root pom.xml provides library jars and
+        ProGuard runs preverification normally, which is required for correct StackMapTable -->
+      <id>proguard-dontpreverify</id>
+      <activation>
+        <file>
+          <missing>${java.home}/jmods/java.base.jmod</missing>
+        </file>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.github.wvengen</groupId>
+            <artifactId>proguard-maven-plugin</artifactId>
+            <configuration>
+              <options combine.children="append">
+                <option>-dontpreverify</option>
+                <option>-keepattributes StackMapTable</option>
+              </options>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
