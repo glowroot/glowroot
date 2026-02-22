@@ -552,9 +552,13 @@
       </modules>
     </profile>
     <profile>
-      <id>auto-activated-java-9</id>
+      <id>auto-activated-jmods</id>
       <activation>
-        <jdk>[9,)</jdk>
+        <file>
+          <!-- only add jmods when they exist; newer JDK distributions (e.g. Temurin 25+)
+            may not include the jmods directory -->
+          <exists>${java.home}/jmods/java.base.jmod</exists>
+        </file>
       </activation>
       <build>
         <pluginManagement>
@@ -568,6 +572,27 @@
                   <!-- java.sql.jmod is needed for glowroot-agent-embedded -->
                   <lib>${java.home}/jmods/java.sql.jmod</lib>
                 </libs>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+    <profile>
+      <!-- Java 21+ changed javac default behavior to not auto-discover annotation processors
+        from the classpath unless -proc:full is specified; this profile ensures that annotation
+        processors (e.g. Immutables, JMH) are discovered when building with Java 21+ -->
+      <id>auto-activated-java-21</id>
+      <activation>
+        <jdk>[21,)</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <artifactId>maven-compiler-plugin</artifactId>
+              <configuration>
+                <proc>full</proc>
               </configuration>
             </plugin>
           </plugins>

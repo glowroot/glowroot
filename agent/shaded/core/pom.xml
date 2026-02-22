@@ -363,6 +363,10 @@
           <obfuscate>false</obfuscate>
           <options>
             <option>-dontoptimize</option>
+            <!-- skip preverification to avoid needing jmods (which may be absent in newer JDK
+              distributions); the javac-generated StackMapTable attributes remain valid since
+              ProGuard does not change bytecode when -dontoptimize is set -->
+            <option>-dontpreverify</option>
             <option>-dontnote **</option>
             <option>-dontwarn **</option>
             <option>
