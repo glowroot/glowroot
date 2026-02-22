@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21.0.9_10-jdk-noble AS builder
+FROM eclipse-temurin:21.0.10_7-jdk-noble AS builder
 
 COPY target/glowroot-central-*.zip /tmp/glowroot-central.zip
 RUN useradd --no-log-init -r -g root glowroot
