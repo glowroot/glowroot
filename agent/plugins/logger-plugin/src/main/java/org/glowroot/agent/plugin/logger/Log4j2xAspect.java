@@ -60,6 +60,38 @@ public class Log4j2xAspect {
         String getFormattedMessage();
     }
 
+    // Used by both advice classes below
+    static String nullToEmpty(@Nullable String s) {
+        return s == null ? "" : s;
+    }
+
+    static String getLevelStr(int lvl) {
+        switch (lvl) {
+            case ALL:
+                return "all";
+            case TRACE:
+                return "trace";
+            case DEBUG:
+                return "debug";
+            case INFO:
+                return "info";
+            case WARN:
+                return "warn";
+            case ERROR:
+                return "error";
+            case FATAL:
+                return "fatal";
+            case OFF:
+                return "off";
+            default:
+                return "unknown (" + lvl + ")";
+        }
+    }
+
+    // Handles log4j 2.x < 2.12.1, and non-log4j-core backends in any version (e.g.
+    // log4j-to-slf4j) where AbstractLogger.log(Level, Marker, String, StackTraceElement, Message,
+    // Throwable) is not overridden and falls back to calling
+    // ExtendedLogger.logMessage(String, Level, Marker, Message, Throwable)
     @Pointcut(className = "org.apache.logging.log4j.spi.ExtendedLogger", methodName = "logMessage",
             methodParameterTypes = {"java.lang.String", "org.apache.logging.log4j.Level",
                     "org.apache.logging.log4j.Marker", "org.apache.logging.log4j.message.Message",
@@ -109,31 +141,56 @@ public class Log4j2xAspect {
                 traveler.traceEntry.end();
             }
         }
+    }
 
-        private static String nullToEmpty(@Nullable String s) {
-            return s == null ? "" : s;
+    // Handles log4j-core 2.12.1+. Starting in 2.12.1, AbstractLogger.tryLogMessage() calls
+    // AbstractLogger.log(Level, Marker, String, StackTraceElement, Message, Throwable) which
+    // org.apache.logging.log4j.core.Logger overrides to dispatch directly to
+    // ReliabilityStrategy.log(), bypassing ExtendedLogger.logMessage(String, Level, ...) entirely.
+    @Pointcut(className = "org.apache.logging.log4j.core.Logger", methodName = "log",
+            methodParameterTypes = {"org.apache.logging.log4j.Level",
+                    "org.apache.logging.log4j.Marker", "java.lang.String",
+                    "java.lang.StackTraceElement", "org.apache.logging.log4j.message.Message",
+                    "java.lang.Throwable"},
+            nestingGroup = "logging", timerName = TIMER_NAME)
+    public static class Log2xLocationAwareAdvice {
+
+        private static final TimerName timerName =
+                Agent.getTimerName(Log2xLocationAwareAdvice.class);
+
+        @OnBefore
+        public static LogAdviceTraveler onBefore(ThreadContext context, @BindReceiver Logger logger,
+                @BindParameter @Nullable Level level,
+                @SuppressWarnings("unused") @BindParameter @Nullable Object marker,
+                @SuppressWarnings("unused") @BindParameter @Nullable String fqcn,
+                @SuppressWarnings("unused") @BindParameter @Nullable Object location,
+                @BindParameter @Nullable Message message, @BindParameter @Nullable Throwable t) {
+            String formattedMessage =
+                    message == null ? "" : nullToEmpty(message.getFormattedMessage());
+            int lvl = level == null ? 0 : level.intLevel();
+            if (LoggerPlugin.markTraceAsError(lvl <= ERROR, lvl <= WARN, t != null)) {
+                context.setTransactionError(formattedMessage, t);
+            }
+            TraceEntry traceEntry =
+                    context.startTraceEntry(MessageSupplier.create("log {}: {} - {}",
+                            getLevelStr(lvl), logger.getName(), formattedMessage), timerName);
+            return new LogAdviceTraveler(traceEntry, lvl, formattedMessage, t);
         }
 
-        private static String getLevelStr(int lvl) {
-            switch (lvl) {
-                case ALL:
-                    return "all";
-                case TRACE:
-                    return "trace";
-                case DEBUG:
-                    return "debug";
-                case INFO:
-                    return "info";
-                case WARN:
-                    return "warn";
-                case ERROR:
-                    return "error";
-                case FATAL:
-                    return "fatal";
-                case OFF:
-                    return "off";
-                default:
-                    return "unknown (" + lvl + ")";
+        @OnAfter
+        public static void onAfter(@BindTraveler LogAdviceTraveler traveler) {
+            Throwable t = traveler.throwable;
+            if (t != null) {
+                // intentionally not passing message since it is already the trace entry message
+                if (traveler.level <= WARN) {
+                    traveler.traceEntry.endWithError(t);
+                } else {
+                    traveler.traceEntry.endWithInfo(t);
+                }
+            } else if (traveler.level <= WARN) {
+                traveler.traceEntry.endWithError(traveler.formattedMessage);
+            } else {
+                traveler.traceEntry.end();
             }
         }
     }

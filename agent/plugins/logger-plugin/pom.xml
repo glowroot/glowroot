@@ -21,8 +21,7 @@
     <logback.version>1.2.13</logback.version>
     <slf4j.version>1.7.36</slf4j.version>
     <log4j.version>1.2.17</log4j.version>
-    <!-- need to update instrumentation for 2.12.1+ !! -->
-    <log4j2x.version>2.12.0</log4j2x.version>
+    <log4j2x.version>2.24.3</log4j2x.version>
     <commons.logging.version>1.2</commons.logging.version>
     <!-- JBoss Logging 2.1+ requires Java 8+ -->
     <jboss.logging.version>2.0.11.Final</jboss.logging.version>
@@ -185,6 +184,13 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <!-- test against log4j 2.x < 2.12.1 to verify the ExtendedLogger.logMessage pointcut -->
+      <id>log4j2x-old</id>
+      <properties>
+        <log4j2x.version>2.12.0</log4j2x.version>
+      </properties>
     </profile>
     <profile>
       <!-- test against Logback 1.5.x + SLF4J 2.x to verify the ILoggingEventInvoker fix -->
