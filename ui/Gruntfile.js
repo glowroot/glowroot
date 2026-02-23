@@ -204,7 +204,11 @@ module.exports = function (grunt) {
     sass: {
       options: {
         implementation: require('sass'),
-        sourceMap: true
+        sourceMap: true,
+        // Bootstrap 4's SCSS uses APIs that are deprecated in Dart Sass (global built-in functions,
+        // @import rules, slash division, old if() syntax). Silence them since migrating Bootstrap 4
+        // to the modern Sass module system would require upgrading to Bootstrap 5.
+        silenceDeprecations: ['import', 'global-builtin', 'color-functions', 'slash-div', 'if-function']
       },
       dist: {
         files: {
