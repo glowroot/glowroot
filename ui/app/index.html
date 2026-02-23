@@ -29,11 +29,11 @@
 
   <!-- build:css({.tmp,.}) styles/main.css -->
   <link rel="stylesheet" href="styles/main.css">
-  <link rel="stylesheet" href="bower_components/angular-ui-bootstrap4/src/typeahead/typeahead.css">
-  <link rel="stylesheet" href="bower_components/angular-ui-bootstrap4/src/tooltip/tooltip.css">
-  <link rel="stylesheet" href="bower_components/bootstrap-multiselect/dist/css/bootstrap-multiselect.css">
-  <link rel="stylesheet" href="bower_components/d3-flame-graph/dist/d3-flamegraph.css">
-  <link rel="stylesheet" href="bower_components/codemirror/lib/codemirror.css">
+  <link rel="stylesheet" href="node_modules/ui-bootstrap4/src/typeahead/typeahead.css">
+  <link rel="stylesheet" href="node_modules/ui-bootstrap4/src/tooltip/tooltip.css">
+  <link rel="stylesheet" href="node_modules/bootstrap-multiselect/dist/css/bootstrap-multiselect.css">
+  <link rel="stylesheet" href="node_modules/d3-flame-graph/dist/d3-flamegraph.css">
+  <link rel="stylesheet" href="node_modules/codemirror/lib/codemirror.css">
   <!-- endbuild -->
 
   <script>
@@ -236,58 +236,58 @@
 <div class="gt-monospace gt-offscreen" id="offscreenText">x</div>
 
 <!-- build:js({.tmp,.}) scripts/vendor.js -->
-<script src="bower_components/jquery/dist/jquery.js"></script>
-<script src="bower_components/angular/angular.js"></script>
-<script src="bower_components/angular-ui-router/release/angular-ui-router.js"></script>
-<script src="bower_components/handlebars/handlebars.runtime.js"></script>
-<script src="bower_components/bootstrap/js/dist/util.js"></script>
+<script src="node_modules/jquery/dist/jquery.js"></script>
+<script src="node_modules/angular/angular.js"></script>
+<script src="node_modules/angular-ui-router/release/angular-ui-router.js"></script>
+<script src="node_modules/handlebars/dist/handlebars.runtime.js"></script>
+<script src="node_modules/bootstrap/js/dist/util.js"></script>
 <!-- bootstrap modal is much better than angular-ui-modal
      in particular around dealing with vertical scrollbar to prevent background jitter -->
-<script src="bower_components/bootstrap/js/dist/modal.js"></script>
+<script src="node_modules/bootstrap/js/dist/modal.js"></script>
 <!-- collapse is needed for the navbar on small screen (mobile) -->
-<script src="bower_components/bootstrap/js/dist/collapse.js"></script>
+<script src="node_modules/bootstrap/js/dist/collapse.js"></script>
 <!-- popper is needed by dropdown -->
-<script src="bower_components/popper.js/dist/umd/popper.js"></script>
+<script src="node_modules/popper.js/dist/umd/popper.js"></script>
 <!-- dropdown is needed for bootstrap-select (used by transaction sidebar) -->
-<script src="bower_components/bootstrap/js/dist/dropdown.js"></script>
+<script src="node_modules/bootstrap/js/dist/dropdown.js"></script>
 <!-- tooltip is used by copy to clipboard -->
-<script src="bower_components/bootstrap/js/dist/tooltip.js"></script>
+<script src="node_modules/bootstrap/js/dist/tooltip.js"></script>
 <!-- typeahead is used by instrumentation view -->
-<script src="bower_components/angular-ui-bootstrap4/src/typeahead/typeahead.js"></script>
+<script src="node_modules/ui-bootstrap4/src/typeahead/typeahead.js"></script>
 <!-- position is needed by typeahead -->
-<script src="bower_components/angular-ui-bootstrap4/src/position/position.js"></script>
+<script src="node_modules/ui-bootstrap4/src/position/position.js"></script>
 <!-- debounce is needed by typeahead -->
-<script src="bower_components/angular-ui-bootstrap4/src/debounce/debounce.js"></script>
+<script src="node_modules/ui-bootstrap4/src/debounce/debounce.js"></script>
 <!-- popover is used for chart help -->
-<script src="bower_components/angular-ui-bootstrap4/src/popover/popover.js"></script>
+<script src="node_modules/ui-bootstrap4/src/popover/popover.js"></script>
 <!-- tooltip is needed by popover -->
-<script src="bower_components/angular-ui-bootstrap4/src/tooltip/tooltip.js"></script>
+<script src="node_modules/ui-bootstrap4/src/tooltip/tooltip.js"></script>
 <!-- stackedMap is needed by tooltip -->
-<script src="bower_components/angular-ui-bootstrap4/src/stackedMap/stackedMap.js"></script>
-<script src="bower_components/moment/moment.js"></script>
-<script src="bower_components/moment-timezone/builds/moment-timezone-with-data.js"></script>
-<script src="bower_components/tempusdominus/build/js/tempusdominus-bootstrap-4.js"></script>
-<script src="bower_components/bootstrap-select/js/bootstrap-select.js"></script>
-<script src="bower_components/bootstrap-multiselect/dist/js/bootstrap-multiselect.js"></script>
-<script src="bower_components/flot/src/jquery.flot.js"></script>
-<script src="bower_components/flot/lib/jquery.colorhelpers.js"></script>
-<script src="bower_components/flot/lib/jquery.mousewheel.js"></script>
-<script src="bower_components/flot/src/plugins/jquery.flot.navigate.js"></script>
-<script src="bower_components/flot/src/plugins/jquery.flot.selection.js"></script>
-<script src="bower_components/flot/src/plugins/jquery.flot.time.js"></script>
-<script src="bower_components/flot/src/plugins/jquery.flot.stack.js"></script>
-<script src="bower_components/flot.tooltip/js/jquery.flot.tooltip.js"></script>
-<script src="bower_components/sequeljs/web/js/parser/SqlParser.js"></script>
-<script src="bower_components/sequeljs/web/js/parser/SqlPrettyPrinter.js"></script>
-<script src="bower_components/spinjs/spin.js"></script>
-<script src="bower_components/clipboard/dist/clipboard.js"></script>
-<script src="bower_components/codemirror/lib/codemirror.js"></script>
-<script src="bower_components/codemirror/mode/clike/clike.js"></script>
-<script src="bower_components/codemirror/addon/edit/matchbrackets.js"></script>
-<script src="bower_components/angular-ui-codemirror/ui-codemirror.js"></script>
+<script src="node_modules/ui-bootstrap4/src/stackedMap/stackedMap.js"></script>
+<script src="node_modules/moment/moment.js"></script>
+<script src="node_modules/moment-timezone/builds/moment-timezone-with-data.js"></script>
+<script src="node_modules/tempusdominus-bootstrap-4/build/js/tempusdominus-bootstrap-4.js"></script>
+<script src="node_modules/bootstrap-select/js/bootstrap-select.js"></script>
+<script src="node_modules/bootstrap-multiselect/dist/js/bootstrap-multiselect.js"></script>
+<script src="vendor/flot/src/jquery.flot.js"></script>
+<script src="vendor/flot/lib/jquery.colorhelpers.js"></script>
+<script src="vendor/flot/lib/jquery.mousewheel.js"></script>
+<script src="vendor/flot/src/plugins/jquery.flot.navigate.js"></script>
+<script src="vendor/flot/src/plugins/jquery.flot.selection.js"></script>
+<script src="vendor/flot/src/plugins/jquery.flot.time.js"></script>
+<script src="vendor/flot/src/plugins/jquery.flot.stack.js"></script>
+<script src="vendor/flot.tooltip/js/jquery.flot.tooltip.js"></script>
+<script src="vendor/sequeljs/web/js/parser/SqlParser.js"></script>
+<script src="vendor/sequeljs/web/js/parser/SqlPrettyPrinter.js"></script>
+<script src="node_modules/spin.js/spin.js"></script>
+<script src="node_modules/clipboard/dist/clipboard.js"></script>
+<script src="node_modules/codemirror/lib/codemirror.js"></script>
+<script src="node_modules/codemirror/mode/clike/clike.js"></script>
+<script src="node_modules/codemirror/addon/edit/matchbrackets.js"></script>
+<script src="node_modules/angular-ui-codemirror/ui-codemirror.js"></script>
 <!-- angular-ui-bootstrap4-templates.js is generated at build time by grunt-angular-templates -->
 <script src="scripts/generated/angular-ui-bootstrap4-templates.js"></script>
-<script src="bower_components/focus-visible/src/focus-visible.js"></script>
+<script src="node_modules/focus-visible/src/focus-visible.js"></script>
 <!-- endbuild -->
 
 <!-- build:js({.tmp,app}) scripts/scripts.js -->
@@ -386,9 +386,9 @@
      (but can't mark these all async which then causes failures under grunt serve since d3-flame-graph
      can be loaded before d3, see grunt-usemin issue #391, and workaround in Grunfile.js)
      also, the angular route for the flame graph page waits for window.d3 to be present (see routes.js) -->
-<script src="bower_components/d3/d3.js"></script>
+<script src="node_modules/d3/dist/d3.js"></script>
 <!-- the non-minified d3-flamegraph uses ES6 "const", which then causes problems for grunt uglify -->
-<script src="bower_components/d3-flame-graph/dist/d3-flamegraph.min.js"></script>
+<script src="node_modules/d3-flame-graph/dist/d3-flamegraph.min.js"></script>
 <!-- endbuild -->
 </body>
 </html>

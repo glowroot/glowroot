@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 /* styles shared between app.scss and export.scss */
-@import "../../bower_components/bootstrap/scss/variables";
-@import "../../bower_components/bootstrap/scss/mixins";
+@import "../../node_modules/bootstrap/scss/variables";
+@import "../../node_modules/bootstrap/scss/mixins";
 @import "variables";
 
 .gt-monospace {
