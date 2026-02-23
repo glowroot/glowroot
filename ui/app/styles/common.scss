@@ -244,16 +244,27 @@ table thead th {
   margin-right: .125rem;
 }
 
-.multiselect-native-select select:invalid + .dropdown button {
-  @extend .form-control:invalid;
+// Dart Sass no longer allows extending compound selectors (e.g. .form-control:invalid).
+// Use a mixin that inlines the same styles from Bootstrap's form-validation-state mixin instead.
+@mixin gt-form-control-invalid-state {
+  border-color: $form-feedback-invalid-color;
+  @if $enable-validation-icons {
+    padding-right: $input-height-inner;
+    background-repeat: no-repeat;
+    background-position: center right calc(#{$input-height-inner} / 4);
+    background-size: calc(#{$input-height-inner} / 2) calc(#{$input-height-inner} / 2);
+    background-image: $form-feedback-icon-invalid;
+  }
+  &:focus {
+    border-color: $form-feedback-invalid-color;
+    box-shadow: 0 0 0 $input-focus-width rgba($form-feedback-invalid-color, .25);
+  }
 }
 
-.multiselect-native-select select.is-invalid + .dropdown button {
-  @extend .form-control.is-invalid;
-}
-
+.multiselect-native-select select:invalid + .dropdown button,
+.multiselect-native-select select.is-invalid + .dropdown button,
 .multiselect-native-select select.ng-touched.ng-invalid + .dropdown button {
-  @extend .form-control:invalid;
+  @include gt-form-control-invalid-state;
 }
 
 .help-block code {

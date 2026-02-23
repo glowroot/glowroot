@@ -198,8 +198,8 @@
             </goals>
             <configuration>
               <skip>${glowroot.ui.skip}</skip>
-              <nodeVersion>v20.18.0</nodeVersion>
-              <npmVersion>10.9.4</npmVersion>
+              <nodeVersion>v24.13.1</nodeVersion>
+              <npmVersion>11.8.0</npmVersion>
             </configuration>
           </execution>
           <execution>

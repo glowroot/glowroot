@@ -57,7 +57,11 @@
 }
 
 .gt-full-width-modal-copy {
-  @extend button.close;
+  // inlined from Bootstrap's button.close (compound selector @extend not supported in Dart Sass)
+  padding: 0;
+  background-color: transparent;
+  border: 0;
+  appearance: none;
 }
 
 #queryModal .gt-clip {
