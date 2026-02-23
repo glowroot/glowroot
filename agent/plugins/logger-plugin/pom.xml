@@ -18,8 +18,8 @@
 
   <properties>
     <!-- instrumented libraries -->
-    <logback.version>1.2.13</logback.version>
-    <slf4j.version>1.7.36</slf4j.version>
+    <logback.version>1.5.19</logback.version>
+    <slf4j.version>2.0.17</slf4j.version>
     <log4j.version>1.2.17</log4j.version>
     <log4j2x.version>2.24.3</log4j2x.version>
     <commons.logging.version>1.2</commons.logging.version>
@@ -190,6 +190,14 @@
       <id>log4j2x-old</id>
       <properties>
         <log4j2x.version>2.12.0</log4j2x.version>
+      </properties>
+    </profile>
+    <profile>
+      <!-- test backward compatibility with Logback 1.2.x + SLF4J 1.7.x -->
+      <id>logback-1.2</id>
+      <properties>
+        <logback.version>1.2.13</logback.version>
+        <slf4j.version>1.7.36</slf4j.version>
       </properties>
     </profile>
     <profile>
