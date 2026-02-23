@@ -16,6 +16,7 @@
 package org.glowroot.agent.embedded.util;
 
 import java.io.File;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -40,10 +41,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Untainted;
-import org.h2.jdbc.JdbcConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.glowroot.agent.embedded.sql.DriverManager;
 import org.glowroot.agent.embedded.util.Schemas.Column;
 import org.glowroot.agent.embedded.util.Schemas.Index;
 import org.glowroot.common.util.OnlyUsedByTests;
@@ -69,7 +70,7 @@ public class DataSource {
     private final Thread shutdownHookThread;
     private final Object lock = new Object();
     @GuardedBy("lock")
-    private JdbcConnection connection;
+    private Connection connection;
     private volatile boolean closed;
 
     @SuppressWarnings("nullness:type.argument.type.incompatible")
@@ -119,7 +120,7 @@ public class DataSource {
                 return;
             }
             checkConnectionUnderLock();
-            execute("shutdown defrag");
+            execute("shutdown compact");
             connection = createConnection(dbFile);
             preparedStatementCache.invalidateAll();
         }
@@ -397,8 +398,8 @@ public class DataSource {
         // lock the single jdbc connection for one large chunk of time
         int deleted;
         do {
-            deleted = update("delete from " + tableName + " where " + columnName + " < ? limit 100",
-                    captureTime);
+            deleted = update("delete from " + tableName + " where " + columnName
+                    + " < ? fetch first 100 rows only", captureTime);
         } while (deleted > 0);
     }
 
@@ -410,7 +411,7 @@ public class DataSource {
         do {
             synchronized (externalLock) {
                 deleted = update(
-                        "delete from " + tableName + " where " + columnName + " < ? limit 100",
+                        "delete top 100 from " + tableName + " where " + columnName + " < ?",
                         captureTime);
             }
         } while (deleted > 0);
@@ -519,8 +520,8 @@ public class DataSource {
 
     @GuardedBy("lock")
     private void checkConnectionUnderLock() throws SQLException {
-        if (connection.getPowerOffCount() == -1) {
-            // connection was closed internally due to OutOfMemoryError
+        if (connection.isClosed()) {
+            // connection was closed internally (e.g. due to OutOfMemoryError)
             connection = createConnection(dbFile);
             preparedStatementCache.invalidateAll();
         }
@@ -607,21 +608,25 @@ public class DataSource {
         }
     }
 
-    private static JdbcConnection createConnection(@Nullable File dbFile) throws SQLException {
+    private static Connection createConnection(@Nullable File dbFile) throws SQLException {
+        // NON_KEYWORDS=USER,VALUE allows using "user" and "value" as column names which are
+        // reserved keywords in H2 2.x but were not reserved in H2 1.x
         if (dbFile == null) {
             // db_close_on_exit=false since jvm shutdown hook is handled by DataSource
-            return new JdbcConnection("jdbc:h2:mem:;compress=true;db_close_on_exit=false",
-                    new Properties());
+            return DriverManager.getConnection(
+                    "jdbc:h2:mem:;compress=true;db_close_on_exit=false;NON_KEYWORDS=USER,VALUE");
         } else {
             String dbPath = dbFile.getPath();
-            dbPath = dbPath.replaceFirst(".h2.db$", "");
+            // strip both H2 1.x (.h2.db) and H2 2.x (.mv.db) extensions
+            dbPath = dbPath.replaceFirst("\\.(h2|mv)\\.db$", "");
             Properties props = new Properties();
             props.setProperty("user", "sa");
             props.setProperty("password", "");
             // db_close_on_exit=false since jvm shutdown hook is handled by DataSource
-            String url = "jdbc:h2:" + dbPath + ";compress=true;db_close_on_exit=false;cache_size="
-                    + CACHE_SIZE;
-            return new JdbcConnection(url, props);
+            String url = "jdbc:h2:" + dbPath
+                    + ";compress=true;db_close_on_exit=false;cache_size=" + CACHE_SIZE
+                    + ";NON_KEYWORDS=USER,VALUE";
+            return DriverManager.getConnection(url, props);
         }
     }
 

@@ -216,9 +216,9 @@ public class GaugeValueDao implements GaugeValueRepository {
         String captureTimeSql = castUntainted(
                 "ceil(capture_time / " + fixedIntervalMillis + ".0) * " + fixedIntervalMillis);
         dataSource.update("merge into gauge_value_rollup_" + castUntainted(toRollupLevel)
-                + " (gauge_id, capture_time, value, weight) key (gauge_id, capture_time)"
+                + " (gauge_id, capture_time, \"VALUE\", weight) key (gauge_id, capture_time)"
                 + " select gauge_id, " + captureTimeSql + " ceil_capture_time,"
-                + " sum(value * weight) / sum(weight), sum(weight) from gauge_value_rollup_"
+                + " sum(\"VALUE\" * weight) / sum(weight), sum(weight) from gauge_value_rollup_"
                 + castUntainted(fromRollupLevel) + " gp where gp.capture_time > ?"
                 + " and gp.capture_time <= ? group by gp.gauge_id, ceil_capture_time",
                 lastRollupTime, safeRollupTime);
@@ -254,7 +254,7 @@ public class GaugeValueDao implements GaugeValueRepository {
 
         @Override
         public @Untainted String getSql() {
-            return "insert into gauge_value_rollup_0 (gauge_id, capture_time, value, weight)"
+            return "insert into gauge_value_rollup_0 (gauge_id, capture_time, \"VALUE\", weight)"
                     + " values (?, ?, ?, ?)";
         }
 
@@ -324,7 +324,7 @@ public class GaugeValueDao implements GaugeValueRepository {
 
         @Override
         public @Untainted String getSql() {
-            return "select capture_time, value, weight from gauge_value_rollup_"
+            return "select capture_time, \"VALUE\", weight from gauge_value_rollup_"
                     + castUntainted(rollupLevel) + " where gauge_id = ? and capture_time >= ?"
                     + " and capture_time <= ? order by capture_time";
         }

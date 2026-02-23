@@ -17,13 +17,12 @@ package org.glowroot.agent.embedded.util;
 
 import java.sql.Connection;
 import java.sql.Statement;
-import java.util.Properties;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
-import org.h2.jdbc.JdbcConnection;
 import org.junit.jupiter.api.Test;
 
+import org.glowroot.agent.embedded.sql.DriverManager;
 import org.glowroot.agent.embedded.util.Schemas.Index;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,7 +32,8 @@ public class SchemasTest {
     @Test
     public void shouldReadIndexes() throws Exception {
         // given
-        Connection connection = new JdbcConnection("jdbc:h2:mem:", new Properties());
+        Connection connection =
+                DriverManager.getConnection("jdbc:h2:mem:;NON_KEYWORDS=USER,VALUE");
         Statement statement = connection.createStatement();
         statement.execute("create table tab (a varchar, b bigint)");
         statement.execute("create index tab_idx on tab (a)");

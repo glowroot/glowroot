@@ -362,7 +362,7 @@ class EmbeddedAgentModule {
             // mem db is only used for testing (by glowroot-agent-it-harness)
             return new DataSource();
         } else {
-            return new DataSource(new File(dataDir, "data.h2.db"));
+            return new DataSource(new File(dataDir, "data.mv.db"));
         }
     }
 

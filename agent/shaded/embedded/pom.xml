@@ -73,6 +73,13 @@
           </artifactSet>
           <filters>
             <filter>
+              <artifact>*:*</artifact>
+              <excludes>
+                <exclude>META-INF/native-image/reflect-config.json</exclude>
+                <exclude>META-INF/native-image/resource-config.json</exclude>
+              </excludes>
+            </filter>
+            <filter>
               <artifact>com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer</artifact>
               <excludes>
                 <exclude>META-INF/MANIFEST.MF</exclude>

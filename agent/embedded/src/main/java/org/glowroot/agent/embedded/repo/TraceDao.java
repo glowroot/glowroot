@@ -523,7 +523,7 @@ public class TraceDao implements TraceRepository {
         @Override
         public @Untainted String getSql() {
             return "merge into trace (id, partial, slow, error, start_time, capture_time,"
-                    + " duration_nanos, transaction_type, transaction_name, headline, user,"
+                    + " duration_nanos, transaction_type, transaction_name, headline, \"USER\","
                     + " error_message, header, entries_capped_id, queries_capped_id,"
                     + " shared_query_texts_capped_id, main_thread_profile_capped_id,"
                     + " aux_thread_profile_capped_id) key (id) values (?, ?, ?, ?, ?, ?, ?, ?, ?,"
@@ -577,7 +577,7 @@ public class TraceDao implements TraceRepository {
 
         @Override
         public @Untainted String getSql() {
-            return "insert into trace_attribute (trace_id, name, value, capture_time)"
+            return "insert into trace_attribute (trace_id, name, \"VALUE\", capture_time)"
                     + " values (?, ?, ?, ?)";
         }
 
@@ -645,7 +645,7 @@ public class TraceDao implements TraceRepository {
 
         @Override
         public @Untainted String getSql() {
-            return "select headline, user, header, entries_capped_id, queries_capped_id,"
+            return "select headline, \"USER\", header, entries_capped_id, queries_capped_id,"
                     + " main_thread_profile_capped_id, aux_thread_profile_capped_id from trace"
                     + " where id = ?";
         }

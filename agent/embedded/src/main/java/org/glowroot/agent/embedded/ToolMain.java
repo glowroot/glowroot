@@ -140,8 +140,8 @@ public class ToolMain {
         }
         Script.main("-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data", "-user", "sa",
                 "-script", backupFile.getPath());
-        File dbFile = new File(dataDir, "data.h2.db");
-        File dbBakFile = new File(dataDir, "data.h2.db.bak");
+        File dbFile = new File(dataDir, "data.mv.db");
+        File dbBakFile = new File(dataDir, "data.mv.db.bak");
         if (dbBakFile.exists() && !dbBakFile.delete()) {
             startupLogger.warn("recreate failed, cannot delete existing file: {}",
                     dbBakFile.getPath());
@@ -166,13 +166,13 @@ public class ToolMain {
 
     @RequiresNonNull("startupLogger")
     private static void recover(File dataDir) throws Exception {
-        File recoverFile = new File(dataDir, "data.h2.sql");
+        File recoverFile = new File(dataDir, "data.mv.sql");
         if (recoverFile.exists() && !recoverFile.delete()) {
-            startupLogger.warn("recover failed: cannot delete existing data.h2.sql");
+            startupLogger.warn("recover failed: cannot delete existing data.mv.sql");
         }
         Recover.main("-dir", dataDir.getPath(), "-db", "data");
-        File dbFile = new File(dataDir, "data.h2.db");
-        File dbBakFile = new File(dataDir, "data.h2.db.bak");
+        File dbFile = new File(dataDir, "data.mv.db");
+        File dbBakFile = new File(dataDir, "data.mv.db.bak");
         if (dbBakFile.exists() && !dbBakFile.delete()) {
             startupLogger.warn("recover failed, cannot delete existing file: {}",
                     dbBakFile.getPath());
