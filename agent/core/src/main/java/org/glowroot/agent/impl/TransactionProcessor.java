@@ -135,17 +135,21 @@ public class TransactionProcessor {
         // flush, then no new traces will come in with prior captureTime)
         PendingTransaction newTail = new PendingTransaction(transaction);
         boolean exceededLimit = false;
+        boolean addedToQueue = false;
         synchronized (queueLock) {
             if (queueLength < TRANSACTION_PENDING_LIMIT) {
                 newTail.captureTime = clock.currentTimeMillis();
                 tail.next = newTail;
                 tail = newTail;
                 queueLength++;
-                synchronized (monitor) {
-                    monitor.notifyAll();
-                }
+                addedToQueue = true;
             } else {
                 exceededLimit = true;
+            }
+        }
+        if (addedToQueue) {
+            synchronized (monitor) {
+                monitor.notify();
             }
         }
         if (exceededLimit) {
@@ -278,15 +282,8 @@ public class TransactionProcessor {
         }
 
         private void flushActiveIntervalCollector() {
-            boolean accepted;
-            synchronized (pendingIntervalCollectors) {
-                accepted = pendingIntervalCollectors.offer(activeIntervalCollector);
-                if (accepted) {
-                    pendingIntervalCollectors.notifyAll();
-                }
-            }
+            boolean accepted = pendingIntervalCollectors.offer(activeIntervalCollector);
             if (!accepted) {
-                // don't log under synchronized lock
                 logger.warn("not storing an aggregate because of an excessive backlog of {}"
                         + " aggregates already waiting to be stored", AGGREGATE_PENDING_LIMIT);
             }
@@ -298,14 +295,8 @@ public class TransactionProcessor {
         public void run() {
             while (!closed) {
                 try {
-                    AggregateIntervalCollector intervalCollector;
-                    synchronized (pendingIntervalCollectors) {
-                        if (pendingIntervalCollectors.peek() == null) {
-                            pendingIntervalCollectors.wait();
-                            continue;
-                        }
-                        intervalCollector = pendingIntervalCollectors.remove();
-                    }
+                    AggregateIntervalCollector intervalCollector =
+                            pendingIntervalCollectors.take();
                     intervalCollector.flush(collector);
                 } catch (InterruptedException e) {
                     // probably shutdown requested (see close method above)
