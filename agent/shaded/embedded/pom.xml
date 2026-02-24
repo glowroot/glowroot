@@ -233,6 +233,49 @@
               <pattern>java.sql.SQLException</pattern>
               <shadedPattern>org.glowroot.agent.embedded.sql.SQLException</shadedPattern>
             </relocation>
+            <!-- H2 2.x exception classes extend these java.sql intermediate exception types;
+              without relocating them, after shading their superclass chain no longer connects
+              to org.glowroot.agent.embedded.sql.SQLException, causing VerifyError -->
+            <relocation>
+              <pattern>java.sql.SQLNonTransientException</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.sql.SQLNonTransientException</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>java.sql.SQLTransientException</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.sql.SQLTransientException</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>java.sql.SQLDataException</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.sql.SQLDataException</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>java.sql.SQLFeatureNotSupportedException</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.sql.SQLFeatureNotSupportedException</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>java.sql.SQLIntegrityConstraintViolationException</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.sql.SQLIntegrityConstraintViolationException</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>java.sql.SQLInvalidAuthorizationSpecException</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.sql.SQLInvalidAuthorizationSpecException</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>java.sql.SQLNonTransientConnectionException</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.sql.SQLNonTransientConnectionException</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>java.sql.SQLSyntaxErrorException</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.sql.SQLSyntaxErrorException</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>java.sql.SQLTimeoutException</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.sql.SQLTimeoutException</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>java.sql.SQLTransactionRollbackException</pattern>
+              <shadedPattern>org.glowroot.agent.embedded.sql.SQLTransactionRollbackException</shadedPattern>
+            </relocation>
             <relocation>
               <pattern>com.ning.compress</pattern>
               <shadedPattern>org.glowroot.agent.embedded.shaded.com.ning.compress</shadedPattern>
@@ -341,9 +384,12 @@
 
   <profiles>
     <profile>
-      <!-- add -dontpreverify only when jmods are absent (e.g. Temurin JDK 25+); when jmods are
+      <!-- add -dontpreverify when jmods are absent (e.g. Temurin JDK 25+); when jmods are
         present the auto-activated-jmods profile in root pom.xml provides library jars and
-        ProGuard runs preverification normally, which is required for correct StackMapTable -->
+        ProGuard runs preverification normally, which is required for correct StackMapTable.
+        -dontshrink is required here: without it, ProGuard's shrink pass invalidates StackMapTable
+        offsets causing VerifyError at runtime; with -dontshrink the original javac-generated
+        StackMapTable is preserved intact -->
       <id>proguard-dontpreverify</id>
       <activation>
         <file>
@@ -358,6 +404,7 @@
             <configuration>
               <options combine.children="append">
                 <option>-dontpreverify</option>
+                <option>-dontshrink</option>
                 <option>-keepattributes StackMapTable</option>
               </options>
             </configuration>

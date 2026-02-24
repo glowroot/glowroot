@@ -603,9 +603,12 @@
 
   <profiles>
     <profile>
-      <!-- add -dontpreverify only when jmods are absent (e.g. Temurin JDK 25+); when jmods are
+      <!-- add -dontpreverify when jmods are absent (e.g. Temurin JDK 25+); when jmods are
         present the auto-activated-jmods profile in root pom.xml provides library jars and
-        ProGuard runs preverification normally, which is required for correct StackMapTable -->
+        ProGuard runs preverification normally, which is required for correct StackMapTable.
+        -dontshrink is required here: without it, ProGuard's shrink pass invalidates StackMapTable
+        offsets causing VerifyError at runtime; with -dontshrink the original javac-generated
+        StackMapTable is preserved intact -->
       <id>proguard-dontpreverify</id>
       <activation>
         <file>
@@ -620,6 +623,7 @@
             <configuration>
               <options combine.children="append">
                 <option>-dontpreverify</option>
+                <option>-dontshrink</option>
                 <option>-keepattributes StackMapTable</option>
               </options>
             </configuration>
