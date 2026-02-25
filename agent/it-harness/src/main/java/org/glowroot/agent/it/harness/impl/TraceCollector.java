@@ -141,6 +141,13 @@ class TraceCollector {
                                 + " create a memory leak\\.")) {
             return;
         }
+        // this warning is a normal side effect of the agent reconnecting to the IT harness gRPC
+        // server (e.g. during startup), and does not indicate a real problem
+        if (logEvent.getLoggerName()
+                .equals("org.glowroot.agent.it.harness.shaded.io.grpc.netty.NettyServerStream")
+                && logEvent.getMessage().equals("Exception processing message")) {
+            return;
+        }
         if (logEvent.getLevel() == LogEvent.Level.WARN
                 || logEvent.getLevel() == LogEvent.Level.ERROR) {
             unexpectedMessages.add(logEvent);

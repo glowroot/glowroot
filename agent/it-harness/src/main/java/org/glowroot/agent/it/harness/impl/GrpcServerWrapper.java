@@ -32,6 +32,7 @@ import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Server;
+import io.grpc.Status;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.netty.channel.EventLoopGroup;
@@ -359,7 +360,10 @@ class GrpcServerWrapper {
                     }
                     @Override
                     public void onError(Throwable t) {
-                        logger.error(t.getMessage(), t);
+                        // CANCELLED is normal during agent reconnection
+                        if (Status.fromThrowable(t).getCode() != Status.Code.CANCELLED) {
+                            logger.error(t.getMessage(), t);
+                        }
                     }
                 };
 
