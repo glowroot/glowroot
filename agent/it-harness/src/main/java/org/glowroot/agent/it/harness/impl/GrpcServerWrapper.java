@@ -37,6 +37,7 @@ import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.netty.channel.EventLoopGroup;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -366,6 +367,8 @@ class GrpcServerWrapper {
                     }
                     @Override
                     public void onError(Throwable t) {
+                        // null out so sendRequest waits for the new connection on reconnect
+                        requestObserver = null;
                         // CANCELLED is normal during agent reconnection
                         if (Status.fromThrowable(t).getCode() != Status.Code.CANCELLED) {
                             logger.error(t.getMessage(), t);
@@ -373,7 +376,7 @@ class GrpcServerWrapper {
                     }
                 };
 
-        private volatile @MonotonicNonNull StreamObserver<CentralRequest> requestObserver;
+        private volatile @Nullable StreamObserver<CentralRequest> requestObserver;
 
         private volatile boolean closedByAgent;
 
@@ -401,23 +404,47 @@ class GrpcServerWrapper {
         }
 
         private AgentResponse sendRequest(CentralRequest request) throws Exception {
-            ResponseHolder responseHolder = new ResponseHolder();
-            responseHolders.put(request.getRequestId(), responseHolder);
-            while (requestObserver == null) {
-                MILLISECONDS.sleep(10);
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            while (true) {
+                ResponseHolder responseHolder = new ResponseHolder();
+                responseHolders.put(request.getRequestId(), responseHolder);
+                StreamObserver<CentralRequest> observer;
+                while ((observer = requestObserver) == null) {
+                    MILLISECONDS.sleep(10);
+                }
+                observer.onNext(request);
+                // poll for response, detecting connection changes so we can retry if needed
+                while (true) {
+                    try {
+                        // timeout is in case agent never responds
+                        // passing AgentResponse.getDefaultInstance() is just dummy (non-null) value
+                        AgentResponse response = responseHolder.response
+                                .exchange(AgentResponse.getDefaultInstance(), 1, SECONDS);
+                        if (response.getMessageCase() == MessageCase.UNKNOWN_REQUEST_RESPONSE) {
+                            throw new IllegalStateException();
+                        }
+                        if (response.getMessageCase() == MessageCase.EXCEPTION_RESPONSE) {
+                            throw new IllegalStateException();
+                        }
+                        return response;
+                    } catch (TimeoutException e) {
+                        if (requestObserver != observer) {
+                            // the connection was re-established during the wait (e.g. the agent
+                            // reconnected after a transient disconnect), so the request sent on
+                            // the previous connection may have been lost; retry on new connection
+                            responseHolders.invalidate(request.getRequestId());
+                            request = request.toBuilder()
+                                    .setRequestId(nextRequestId.getAndIncrement())
+                                    .build();
+                            break; // break inner loop to retry outer loop
+                        }
+                        if (stopwatch.elapsed(MINUTES) >= 1) {
+                            responseHolders.invalidate(request.getRequestId());
+                            throw e;
+                        }
+                    }
+                }
             }
-            requestObserver.onNext(request);
-            // timeout is in case agent never responds
-            // passing AgentResponse.getDefaultInstance() is just dummy (non-null) value
-            AgentResponse response = responseHolder.response
-                    .exchange(AgentResponse.getDefaultInstance(), 1, MINUTES);
-            if (response.getMessageCase() == MessageCase.UNKNOWN_REQUEST_RESPONSE) {
-                throw new IllegalStateException();
-            }
-            if (response.getMessageCase() == MessageCase.EXCEPTION_RESPONSE) {
-                throw new IllegalStateException();
-            }
-            return response;
         }
     }
 
