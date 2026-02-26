@@ -166,7 +166,10 @@ class GrpcServerWrapper {
                 public void onNext(AggregateStreamMessage value) {}
                 @Override
                 public void onError(Throwable t) {
-                    logger.error(t.getMessage(), t);
+                    // CANCELLED is normal during agent reconnection
+                    if (Status.fromThrowable(t).getCode() != Status.Code.CANCELLED) {
+                        logger.error(t.getMessage(), t);
+                    }
                 }
                 @Override
                 public void onCompleted() {
@@ -224,7 +227,10 @@ class GrpcServerWrapper {
 
                 @Override
                 public void onError(Throwable t) {
-                    logger.error(t.getMessage(), t);
+                    // CANCELLED is normal during agent reconnection
+                    if (Status.fromThrowable(t).getCode() != Status.Code.CANCELLED) {
+                        logger.error(t.getMessage(), t);
+                    }
                 }
 
                 private void onNextInternal(TraceStreamMessage value) {
