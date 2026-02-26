@@ -126,13 +126,22 @@ class ElasticsearchWrapper {
             String contents = Files.asCharSource(log4j2PropertiesFile, UTF_8).read();
             contents = contents.replace("rootLogger.level = info", "rootLogger.level = warn");
             Files.asCharSink(log4j2PropertiesFile, UTF_8).write(contents);
-        } else if (ELASTICSEARCH_VERSION.startsWith("2.")) {
+        }
+        if (ELASTICSEARCH_VERSION.startsWith("6.")) {
+            // disable X-Pack security to avoid SSL cipher errors on Java 17+
+            // (Java 17 disables TLS_RSA_WITH_* ciphers which X-Pack requests)
+            File elasticsearchYml = new File(configDir, "elasticsearch.yml");
+            String yamlContents = Files.asCharSource(elasticsearchYml, UTF_8).read();
+            yamlContents += "\nxpack.security.enabled: false\n";
+            Files.asCharSink(elasticsearchYml, UTF_8).write(yamlContents);
+        }
+        if (ELASTICSEARCH_VERSION.startsWith("2.")) {
             File loggingYamlFile = new File(configDir, "logging.yml");
             String contents = Files.asCharSource(loggingYamlFile, UTF_8).read();
             contents = contents.replace("es.logger.level: INFO", "es.logger.level: WARN");
             contents = contents.replace("action: DEBUG", "action: INFO");
             Files.asCharSink(loggingYamlFile, UTF_8).write(contents);
-        } else {
+        } else if (!ELASTICSEARCH_VERSION.startsWith("5.") && !ELASTICSEARCH_VERSION.startsWith("6.")) {
             throw new IllegalStateException(
                     "Unexpected Elasticsearch version: " + ELASTICSEARCH_VERSION);
         }
