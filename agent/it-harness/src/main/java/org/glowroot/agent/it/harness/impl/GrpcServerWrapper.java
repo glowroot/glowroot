@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.cache.Cache;
@@ -335,56 +336,60 @@ class GrpcServerWrapper {
                 .expireAfterWrite(1, HOURS)
                 .build();
 
-        private final StreamObserver<AgentResponse> responseObserver =
-                new StreamObserver<AgentResponse>() {
-                    @Override
-                    public void onNext(AgentResponse value) {
-                        if (value.getMessageCase() == MessageCase.HELLO) {
-                            return;
-                        }
-                        long requestId = value.getRequestId();
-                        ResponseHolder responseHolder = responseHolders.getIfPresent(requestId);
-                        responseHolders.invalidate(requestId);
-                        if (responseHolder == null) {
-                            logger.error("no response holder for request id: {}", requestId);
-                            return;
-                        }
-                        try {
-                            // this shouldn't timeout since it is the other side of the exchange
-                            // that is waiting
-                            responseHolder.response.exchange(value, 1, MINUTES);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            logger.error(e.getMessage(), e);
-                        } catch (TimeoutException e) {
-                            logger.error(e.getMessage(), e);
-                        }
-                    }
-                    @Override
-                    public void onCompleted() {
-                        checkNotNull(requestObserver).onCompleted();
-                        closedByAgent = true;
-                    }
-                    @Override
-                    public void onError(Throwable t) {
-                        // null out so sendRequest waits for the new connection on reconnect
-                        requestObserver = null;
-                        // CANCELLED is normal during agent reconnection
-                        if (Status.fromThrowable(t).getCode() != Status.Code.CANCELLED) {
-                            logger.error(t.getMessage(), t);
-                        }
-                    }
-                };
-
-        private volatile @Nullable StreamObserver<CentralRequest> requestObserver;
+        // use AtomicReference so that onError() for a stale connection cannot overwrite the
+        // requestObserver that was set by a newer connection's connect() call
+        private final AtomicReference<@Nullable StreamObserver<CentralRequest>> requestObserverRef =
+                new AtomicReference<>();
 
         private volatile boolean closedByAgent;
 
         @Override
         public StreamObserver<AgentResponse> connect(
-                StreamObserver<CentralRequest> requestObserver) {
-            this.requestObserver = requestObserver;
-            return responseObserver;
+                final StreamObserver<CentralRequest> requestObserver) {
+            requestObserverRef.set(requestObserver);
+            return new StreamObserver<AgentResponse>() {
+                @Override
+                public void onNext(AgentResponse value) {
+                    handleAgentResponse(value);
+                }
+                @Override
+                public void onCompleted() {
+                    requestObserver.onCompleted();
+                    closedByAgent = true;
+                }
+                @Override
+                public void onError(Throwable t) {
+                    // use compareAndSet so that a stale connection's onError does not null out
+                    // the requestObserver that was already replaced by a newer connection
+                    requestObserverRef.compareAndSet(requestObserver, null);
+                    // CANCELLED is normal during agent reconnection
+                    if (Status.fromThrowable(t).getCode() != Status.Code.CANCELLED) {
+                        logger.error(t.getMessage(), t);
+                    }
+                }
+            };
+        }
+
+        private void handleAgentResponse(AgentResponse value) {
+            if (value.getMessageCase() == MessageCase.HELLO) {
+                return;
+            }
+            long requestId = value.getRequestId();
+            ResponseHolder responseHolder = responseHolders.getIfPresent(requestId);
+            responseHolders.invalidate(requestId);
+            if (responseHolder == null) {
+                logger.error("no response holder for request id: {}", requestId);
+                return;
+            }
+            try {
+                // this shouldn't timeout since it is the other side of the exchange that is waiting
+                responseHolder.response.exchange(value, 1, MINUTES);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.error(e.getMessage(), e);
+            } catch (TimeoutException e) {
+                logger.error(e.getMessage(), e);
+            }
         }
 
         private void updateAgentConfig(AgentConfig agentConfig) throws Exception {
@@ -409,7 +414,11 @@ class GrpcServerWrapper {
                 ResponseHolder responseHolder = new ResponseHolder();
                 responseHolders.put(request.getRequestId(), responseHolder);
                 StreamObserver<CentralRequest> observer;
-                while ((observer = requestObserver) == null) {
+                while ((observer = requestObserverRef.get()) == null) {
+                    if (stopwatch.elapsed(MINUTES) >= 1) {
+                        responseHolders.invalidate(request.getRequestId());
+                        throw new TimeoutException();
+                    }
                     MILLISECONDS.sleep(10);
                 }
                 observer.onNext(request);
@@ -428,7 +437,7 @@ class GrpcServerWrapper {
                         }
                         return response;
                     } catch (TimeoutException e) {
-                        if (requestObserver != observer) {
+                        if (requestObserverRef.get() != observer) {
                             // the connection was re-established during the wait (e.g. the agent
                             // reconnected after a transient disconnect), so the request sent on
                             // the previous connection may have been lost; retry on new connection
