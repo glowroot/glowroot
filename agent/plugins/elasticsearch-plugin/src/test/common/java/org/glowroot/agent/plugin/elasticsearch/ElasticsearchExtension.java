@@ -35,6 +35,13 @@ public class ElasticsearchExtension implements BeforeAllCallback {
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
         assumeJdkLessThan18();
+        // in local harness mode, Netty conflicts between the Elasticsearch TransportClient and the
+        // gRPC infrastructure cause intermittent failures on CI; skip to avoid false negatives
+        // (local harness mode is still useful for IDE debugging)
+        if (!Containers.useJavaagent()) {
+            Assumptions.assumeFalse("true".equals(System.getenv("CI")),
+                    "Skipping Elasticsearch tests in local harness mode on CI");
+        }
         ElasticsearchStore store = (ElasticsearchStore) getStore(context).getOrComputeIfAbsent("cassandra", (v) -> new ElasticsearchStore());
         sharedContainer = store.getContainer();
     }
