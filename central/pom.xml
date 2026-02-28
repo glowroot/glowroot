@@ -56,9 +56,9 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-tcnative-boringssl-static</artifactId>
-            <!-- need to stick to version known to work with gRPC 1.60.0,
-              see table at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
-            <version>2.0.61.Final</version>
+            <!-- need to stick to version known to work with gRPC, see table at
+              https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
+            <version>2.0.72.Final</version>
         </dependency>
         <dependency>
             <groupId>org.apache.cassandra</groupId>
