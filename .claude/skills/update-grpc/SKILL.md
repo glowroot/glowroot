@@ -10,6 +10,8 @@ gRPC, Netty, and BoringSSL are tightly coupled together. Incompatible version co
 
 2. Update the version properties in **all** of the following POM files:
     - `pom.xml` (root)
+    - `central/pom.xml`
+    - `agent/shaded/core/pom.xml`
     - `agent/shaded/central-https-linux/pom.xml`
     - `agent/shaded/central-https-windows/pom.xml`
     - `agent/shaded/central-https-osx/pom.xml`
