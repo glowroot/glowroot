@@ -94,7 +94,7 @@ class GrpcServerWrapper {
                 .executor(executor)
                 .addService(new CollectorServiceImpl(collector).bindService())
                 .addService(downstreamService.bindService())
-                .maxInboundMessageSize(1024 * 1024 * 100)
+                .maxInboundMessageSize(Integer.MAX_VALUE)
                 // aggressive keep alive is used by agent to detect silently dropped connections
                 // (see org.glowroot.agent.central.CentralConnection)
                 .permitKeepAliveTime(20, SECONDS)
