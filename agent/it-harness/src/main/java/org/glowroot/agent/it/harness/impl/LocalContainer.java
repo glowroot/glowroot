@@ -181,15 +181,18 @@ public class LocalContainer implements Container {
     @Override
     public void close() throws Exception {
         glowrootAgentInit.close();
-        if (server != null) {
-            server.close();
+        try {
+            if (server != null) {
+                server.close();
+            }
+        } finally {
+            glowrootAgentInit.awaitClose();
+            if (deleteTestDirOnClose) {
+                TempDirs.deleteRecursively(testDir);
+            }
+            // release class loader to prevent PermGen OOM during maven test
+            isolatedWeavingClassLoader = null;
         }
-        glowrootAgentInit.awaitClose();
-        if (deleteTestDirOnClose) {
-            TempDirs.deleteRecursively(testDir);
-        }
-        // release class loader to prevent PermGen OOM during maven test
-        isolatedWeavingClassLoader = null;
     }
 
     public Trace executeInternal(Class<? extends AppUnderTest> appClass,
