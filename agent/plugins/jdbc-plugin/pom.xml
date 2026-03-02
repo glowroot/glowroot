@@ -20,7 +20,7 @@
     <!-- instrumented libraries -->
     <h2.version>1.4.200</h2.version>
     <!-- version 2.6+ require Java 11 -->
-    <hsqldb.version>2.5.2</hsqldb.version>
+    <hsqldb.version>2.7.1</hsqldb.version>
     <postgresql.version>42.2.24.jre7</postgresql.version>
     <mssql.version>9.4.0.jre8</mssql.version>
     <commons.dbcp.version>1.4</commons.dbcp.version>
