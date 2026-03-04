@@ -111,14 +111,23 @@ public class MergedThreadTimer implements TransactionTimer, AggregatedTimer {
     }
 
     public Trace.Timer toProto() {
+        return toProto(0);
+    }
+
+    private Trace.Timer toProto(int depth) {
         Trace.Timer.Builder builder = Trace.Timer.newBuilder()
                 .setName(name)
                 .setExtended(extended)
                 .setTotalNanos(totalNanos)
                 .setCount(count)
                 .setActive(active);
-        for (MergedThreadTimer childTimer : childTimers) {
-            builder.addChildTimer(childTimer.toProto());
+        // protobuf limits to 100 total levels of nesting by default, and there are ~2 levels of
+        // nesting above the root timer (TraceStreamMessage, Trace.Header), so truncate at depth 95
+        // to stay safely under the limit
+        if (depth < 95) {
+            for (MergedThreadTimer childTimer : childTimers) {
+                builder.addChildTimer(childTimer.toProto(depth + 1));
+            }
         }
         return builder.build();
     }

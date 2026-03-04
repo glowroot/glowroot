@@ -71,13 +71,22 @@ public class MutableAggregateTimer implements AggregatedTimer {
     }
 
     public Aggregate.Timer toProto() {
+        return toProto(0);
+    }
+
+    private Aggregate.Timer toProto(int depth) {
         Aggregate.Timer.Builder builder = Aggregate.Timer.newBuilder()
                 .setName(name)
                 .setExtended(extended)
                 .setTotalNanos(totalDurationNanos)
                 .setCount(count);
-        for (MutableAggregateTimer childTimer : childTimers) {
-            builder.addChildTimer(childTimer.toProto());
+        // protobuf limits to 100 total levels of nesting by default, and there are ~3 levels of
+        // nesting above the root timer (AggregateStreamMessage, OverallAggregate, Aggregate),
+        // so truncate at depth 95 to stay safely under the limit
+        if (depth < 95) {
+            for (MutableAggregateTimer childTimer : childTimers) {
+                builder.addChildTimer(childTimer.toProto(depth + 1));
+            }
         }
         return builder.build();
     }

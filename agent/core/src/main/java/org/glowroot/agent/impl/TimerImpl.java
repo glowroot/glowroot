@@ -96,6 +96,10 @@ public class TimerImpl implements Timer, TransactionTimer {
     // safe to be called from another thread when transaction is still active transaction
     @JsonIgnore
     Trace.Timer toProto() {
+        return toProto(0);
+    }
+
+    private Trace.Timer toProto(int depth) {
         Trace.Timer.Builder builder = Trace.Timer.newBuilder();
         builder.setName(timerName.name());
         builder.setExtended(timerName.extended());
@@ -105,11 +109,14 @@ public class TimerImpl implements Timer, TransactionTimer {
         builder.setCount(snapshot.count());
         builder.setActive(snapshot.active());
 
-        if (headChild != null) {
+        // protobuf limits to 100 total levels of nesting by default, and there are ~2 levels of
+        // nesting above the root timer (TraceStreamMessage, Trace.Header), so truncate at depth 95
+        // to stay safely under the limit
+        if (headChild != null && depth < 95) {
             List<Trace.Timer> nestedTimers = Lists.newArrayList();
             TimerImpl curr = headChild;
             while (curr != null) {
-                nestedTimers.add(curr.toProto());
+                nestedTimers.add(curr.toProto(depth + 1));
                 curr = curr.nextSibling;
             }
             builder.addAllChildTimer(nestedTimers);
