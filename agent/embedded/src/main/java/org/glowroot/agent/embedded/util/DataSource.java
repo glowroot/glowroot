@@ -410,9 +410,8 @@ public class DataSource {
         int deleted;
         do {
             synchronized (externalLock) {
-                deleted = update(
-                        "delete top 100 from " + tableName + " where " + columnName + " < ?",
-                        captureTime);
+                deleted = update("delete from " + tableName + " where " + columnName
+                        + " < ? fetch first 100 rows only", captureTime);
             }
         } while (deleted > 0);
     }
