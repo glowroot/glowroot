@@ -145,6 +145,10 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                 }
                 responseObserver.onNext(response.build());
                 responseObserver.onCompleted();
+            }).exceptionally(t -> {
+                logger.error("{} - {}", finalAgentId, t.getMessage(), t);
+                responseObserver.onError(t);
+                return null;
             });
 
         } catch (Throwable t) {

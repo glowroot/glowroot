@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 
@@ -103,9 +104,10 @@ class CentralAlertingService {
             }
             return CompletableFuture.completedFuture(null);
         }).exceptionally(throwable -> {
-            if (throwable instanceof AgentConfigNotFoundException) {
+            Throwable cause = throwable instanceof CompletionException ? throwable.getCause() : throwable;
+            if (cause instanceof AgentConfigNotFoundException) {
                 // be lenient if agent_config table is messed up
-                logger.debug(throwable.getMessage(), throwable);
+                logger.debug(cause.getMessage(), cause);
                 return null;
             }
             logger.error("{} - {}", agentId, throwable.getMessage(), throwable);
@@ -133,9 +135,10 @@ class CentralAlertingService {
             }
             return CompletableFuture.completedFuture(null);
         }).exceptionally(throwable -> {
-            if (throwable instanceof AgentConfigNotFoundException) {
+            Throwable cause = throwable instanceof CompletionException ? throwable.getCause() : throwable;
+            if (cause instanceof AgentConfigNotFoundException) {
                 // be lenient if agent_config table is messed up
-                logger.debug(throwable.getMessage(), throwable);
+                logger.debug(cause.getMessage(), cause);
                 return null;
             }
             logger.error("{} - {}", agentId, throwable.getMessage(), throwable);
@@ -169,9 +172,10 @@ class CentralAlertingService {
             }
             return CompletableFuture.completedFuture(null);
         }).exceptionally(throwable -> {
-            if (throwable instanceof AgentConfigNotFoundException) {
+            Throwable cause = throwable instanceof CompletionException ? throwable.getCause() : throwable;
+            if (cause instanceof AgentConfigNotFoundException) {
                 // be lenient if agent_config table is messed up
-                logger.debug(throwable.getMessage(), throwable);
+                logger.debug(cause.getMessage(), cause);
                 return null;
             }
             logger.error("{} - {}", agentRollupId, throwable.getMessage(), throwable);
