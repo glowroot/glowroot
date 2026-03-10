@@ -3,7 +3,7 @@
   "dependencies": {
     "angular": "1.7.9",
     "angular-sanitize": "1.7.9",
-    "angular-ui-bootstrap4": "Morgul/ui-bootstrap4#v3.0.5",
+    "ui-bootstrap4": "Morgul/ui-bootstrap4#v3.0.5",
     "angular-ui-codemirror": "0.3.0",
     "angular-ui-router": "1.0.20",
     "bootstrap": "4.2.1",
