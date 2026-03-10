@@ -44,9 +44,10 @@ jobs:
         with:
           path: |
             ~/.m2/repository
-            ~/.cache/bower
-          key: build-test${{ matrix.testGroup }}-${{ hashFiles('**/pom.xml') }}
+            ~/.npm
+          key: build-test${{ matrix.testGroup }}-${{ hashFiles('**/pom.xml', 'ui/package.json') }}
           restore-keys: |
+            build-test${{ matrix.testGroup }}-
             build-
 
       - name: Build
