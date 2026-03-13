@@ -186,8 +186,8 @@ public class CentralModule {
             }
             repoAsyncExecutor = MoreExecutors2.newFixedThreadPool(centralConfig.threadPoolMaxSize(), "Repo-Async-Worker-%d");
             repos = new CentralRepoModule(clusterManager, session, directories.getConfDir(),
-                    centralConfig.cassandraSymmetricEncryptionKey(), centralConfig.cassandraGcGraceSeconds(), repoAsyncExecutor,
-                    TARGET_MAX_ACTIVE_AGENTS_IN_PAST_7_DAYS, TARGET_MAX_CENTRAL_UI_USERS, clock);
+                    centralConfig.cassandraSymmetricEncryptionKey(), centralConfig.cassandraGcGraceSeconds(), centralConfig.helmMode(),
+                    repoAsyncExecutor, TARGET_MAX_ACTIVE_AGENTS_IN_PAST_7_DAYS, TARGET_MAX_CENTRAL_UI_USERS, clock);
 
             if (initialSchemaVersion == null) {
                 schemaUpgrade.updateSchemaVersionToCurent();
@@ -437,7 +437,7 @@ public class CentralModule {
             startupLogger.info("creating glowroot central schema...");
             repoAsyncExecutor = MoreExecutors2.newCachedThreadPool("Repo-Async-Worker-%d");
             repos = new CentralRepoModule(ClusterManager.create(), session, centralDir,
-                    centralConfig.cassandraSymmetricEncryptionKey(), centralConfig.cassandraGcGraceSeconds(), repoAsyncExecutor, 10, 10,
+                    centralConfig.cassandraSymmetricEncryptionKey(), centralConfig.cassandraGcGraceSeconds(), centralConfig.helmMode(), repoAsyncExecutor, 10, 10,
                     Clock.systemClock());
             schemaUpgrade.updateSchemaVersionToCurent();
         } finally {
@@ -558,7 +558,7 @@ public class CentralModule {
             }
             repoAsyncExecutor = MoreExecutors2.newCachedThreadPool("Repo-Async-Worker-%d");
             repos = new CentralRepoModule(ClusterManager.create(), session, centralDir,
-                    centralConfig.cassandraSymmetricEncryptionKey(), centralConfig.cassandraGcGraceSeconds(), repoAsyncExecutor, 10, 10,
+                    centralConfig.cassandraSymmetricEncryptionKey(), centralConfig.cassandraGcGraceSeconds(), centralConfig.helmMode(), repoAsyncExecutor, 10, 10,
                     Clock.systemClock());
             if (initialSchemaVersion == null) {
                 schemaUpgrade.updateSchemaVersionToCurent();
@@ -651,6 +651,10 @@ public class CentralModule {
         String cassandraPoolTimeoutMillis = properties.get("glowroot.cassandra.pool.timeoutMillis");
         if (!Strings.isNullOrEmpty(cassandraPoolTimeoutMillis)) {
             builder.cassandraPoolTimeoutMillis(Integer.parseInt(cassandraPoolTimeoutMillis));
+        }
+        String helmMode = properties.get("glowroot.helmMode");
+        if (!Strings.isNullOrEmpty(helmMode)) {
+            builder.helmMode(Boolean.parseBoolean(helmMode));
         }
         String grpcBindAddress = properties.get("glowroot.grpc.bindAddress");
         if (!Strings.isNullOrEmpty(grpcBindAddress)) {
@@ -1099,6 +1103,11 @@ public class CentralModule {
         @Nullable
         Integer grpcHttpsPort() {
             return null;
+        }
+
+        @Value.Default
+        boolean helmMode() {
+            return false;
         }
 
         @Value.Default
