@@ -273,7 +273,9 @@ public class TransactionProcessor {
         }
 
         private void flushAndResetActiveIntervalCollector(long currentTime) {
-            flushActiveIntervalCollector();
+            if (activeIntervalCollector.size() > 0) {
+                flushActiveIntervalCollector();
+            }
             activeIntervalCollector =
                     new AggregateIntervalCollector(currentTime, aggregateIntervalMillis,
                             configService.getAdvancedConfig().maxTransactionAggregates(),
