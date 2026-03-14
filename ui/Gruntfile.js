@@ -102,11 +102,10 @@ module.exports = function (grunt) {
             require('grunt-connect-rewrite/lib/utils').rewriteRequest,
             require('grunt-connect-proxy/lib/utils').proxyRequest,
             serveStatic('.tmp'),
-            connect().use('/node_modules', serveStatic('node_modules')),
-            connect().use('/vendor', serveStatic('vendor')),
+            connect().use('/bower_components', serveStatic('bower_components')),
             serveStatic(appConfig.app),
-            connect().use('/fonts', serveStatic('node_modules/@fortawesome/fontawesome-free/webfonts')),
-            connect().use('/uib/template', serveStatic('node_modules/ui-bootstrap4/template'))
+            connect().use('/fonts', serveStatic('bower_components/fontawesome/webfonts')),
+            connect().use('/uib/template', serveStatic('bower_components/angular-ui-bootstrap4/template'))
           ];
         }
       },
@@ -262,7 +261,7 @@ module.exports = function (grunt) {
           module: 'ui.bootstrap.typeahead',
           prefix: 'uib'
         },
-        cwd: 'node_modules/ui-bootstrap4',
+        cwd: 'bower_components/angular-ui-bootstrap4',
         src: [
           'template/typeahead/*.html',
           'template/modal/*.html',
@@ -320,7 +319,7 @@ module.exports = function (grunt) {
           },
           {
             expand: true,
-            cwd: 'node_modules/@fortawesome/fontawesome-free/webfonts',
+            cwd: 'bower_components/fontawesome/webfonts',
             dest: '<%= yeoman.dist %>/fonts',
             src: [
               'fa-regular-400.woff{,2}',
@@ -328,7 +327,7 @@ module.exports = function (grunt) {
             ]
           },
           {
-            src: 'vendor/sequeljs/web/flash/ZeroClipboard.swf',
+            src: 'bower_components/zeroclipboard/dist/ZeroClipboard.swf',
             dest: '<%= yeoman.dist %>/scripts/ZeroClipboard.swf'
           },
           {
