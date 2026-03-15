@@ -108,24 +108,46 @@ class RollupService implements Runnable {
         // randomize order so that multiple central collector nodes will be less likely to perform
         // duplicative work
         for (AgentRollup agentRollup : shuffle(agentRollups)) {
-            CompletableFuture<?> fut = rollupAggregates(agentRollup)
+            // run aggregate, gauge, and synthetic monitor rollups independently so that a
+            // failure in one type does not prevent the others from completing, and so that an
+            // async exception from one agent does not cause allAsList to fail-fast and abandon
+            // rollups for all other agents
+            CompletableFuture<?> aggregateFut = rollupAggregates(agentRollup)
+                    .exceptionally(t -> {
+                        logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                        return null;
+                    })
+                    .toCompletableFuture();
+            CompletableFuture<?> gaugeFut = rollupGauges(agentRollup)
+                    .exceptionally(t -> {
+                        logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                        return null;
+                    })
+                    .toCompletableFuture();
+            CompletableFuture<?> syntheticFut = rollupSyntheticMonitors(agentRollup)
+                    .exceptionally(t -> {
+                        logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                        return null;
+                    })
+                    .toCompletableFuture();
+            // checking aggregate and gauge alerts after rollup since their calculation can depend
+            // on rollups depending on time period length (and alerts on rollups are not checked
+            // anywhere else)
+            //
+            // agent (not rollup) alerts are also checked right after receiving the respective data
+            // (aggregate/gauge/heartbeat) from the agent, but need to also check these once a
+            // minute in case no data has been received from the agent recently
+            CompletableFuture<?> fut = CompletableFuture.allOf(
+                            aggregateFut, gaugeFut, syntheticFut)
                     .thenCompose(ignore -> {
-                        return rollupGauges(agentRollup);
-                    }).thenCompose(ignore -> {
-                        return rollupSyntheticMonitors(agentRollup);
-                    }).thenCompose(ignore -> {
-                        // checking aggregate and gauge alerts after rollup since their calculation can depend
-                        // on rollups depending on time period length (and alerts on rollups are not checked
-                        // anywhere else)
-                        //
-                        // agent (not rollup) alerts are also checked right after receiving the respective data
-                        // (aggregate/gauge/heartbeat) from the agent, but need to also check these once a
-                        // minute in case no data has been received from the agent recently
                         return checkAggregateAndGaugeAndHeartbeatAlertsAsync(agentRollup);
-                    }).toCompletableFuture();
+                    })
+                    .exceptionally(t -> {
+                        logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                        return null;
+                    });
             futures.add(fut);
         }
-        // none of the futures should fail since they all catch and log exception at the end
         CompletableFutures.allAsList(futures).thenCompose(ignore -> {
             return centralAlertingService.checkForAllDeletedAlerts(CassandraProfile.rollup);
         }).exceptionally(t -> {
@@ -161,6 +183,7 @@ class RollupService implements Runnable {
                 return gaugeValueDao.rollup(agentRollup.id());
             } catch (InterruptedException e) {
                 // probably shutdown requested (see close method above)
+                return CompletableFuture.completedFuture(null);
             } catch (Throwable t) {
                 logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
                 return CompletableFuture.completedFuture(null);
