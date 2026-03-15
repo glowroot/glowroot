@@ -113,7 +113,6 @@ public class CentralModule {
     private final RollupService rollupService;
     private final SyntheticMonitorService syntheticMonitorService;
     private final UiModule uiModule;
-    public CentralConfiguration centralConfig;
 
     public static CentralModule create() throws Exception {
         return create(getCentralDir());
@@ -369,13 +368,15 @@ public class CentralModule {
             }
 
             // forcefully close down background tasks
-            submit(executor, syntheticMonitorService::close);
-            submit(executor, rollupService::close);
-            submit(executor, centralAlertingService::close);
-            submit(executor, alertingService::close);
-            submit(executor, repos::close);
+            List<CompletableFuture<?>> backgroundFutures = new ArrayList<>();
+            backgroundFutures.add(submit(executor, syntheticMonitorService::close));
+            backgroundFutures.add(submit(executor, rollupService::close));
+            backgroundFutures.add(submit(executor, centralAlertingService::close));
+            backgroundFutures.add(submit(executor, alertingService::close));
+            backgroundFutures.add(submit(executor, repos::close));
 
             MoreFutures.waitForAll(futures);
+            MoreFutures.waitForAll(backgroundFutures);
 
             repoAsyncExecutor.shutdown();
             session.close();
