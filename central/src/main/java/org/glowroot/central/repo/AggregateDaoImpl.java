@@ -893,7 +893,9 @@ public class AggregateDaoImpl implements AggregateDao {
                     futures.add(rollup(agentRollupId, agentRollupIdForMeta, rollupLevel, ttl));
                     rollupLevel++;
                 }
-                return CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]));
+                return CompletableFuture.allOf(futures.stream()
+                        .map(CompletionStage::toCompletableFuture)
+                        .toArray(CompletableFuture<?>[]::new));
             });
         });
     }
@@ -1043,7 +1045,6 @@ public class AggregateDaoImpl implements AggregateDao {
 
         // key is transaction name, value child agent rollup id
         Multimap<String, String> transactionNames = ArrayListMultimap.create();
-        ScratchBuffer scratchBuffer = new ScratchBuffer();
 
         return rollupOverallSummaryFromChildren(rollup, query, childAgentRollupIds).thenCompose(ignored -> {
             return rollupErrorSummaryFromChildren(rollup, query, childAgentRollupIds);
@@ -1053,12 +1054,12 @@ public class AggregateDaoImpl implements AggregateDao {
         }).thenCompose(ignored -> {
             return rollupTransactionErrorSummaryFromChildren(rollup, query, childAgentRollupIds);
         }).thenCompose(ignored -> {
-            return CompletableFutures.allAsList(rollupOtherPartsFromChildren(rollup, query, childAgentRollupIds, scratchBuffer));
+            return CompletableFutures.allAsList(rollupOtherPartsFromChildren(rollup, query, childAgentRollupIds));
         }).thenCompose(ignored -> {
             List<CompletionStage<?>> futures = new ArrayList<>();
             for (Map.Entry<String, Collection<String>> entry : transactionNames.asMap().entrySet()) {
                 futures.addAll(rollupOtherPartsFromChildren(rollup,
-                        query.withTransactionName(entry.getKey()), entry.getValue(), scratchBuffer));
+                        query.withTransactionName(entry.getKey()), entry.getValue()));
             }
             return CompletableFutures.allAsList(futures);
         });
@@ -1075,30 +1076,28 @@ public class AggregateDaoImpl implements AggregateDao {
                 .build();
 
         Set<String> transactionNames = new HashSet<>();
-        ScratchBuffer scratchBuffer = new ScratchBuffer();
 
         List<CompletionStage<?>> futures = new ArrayList<>();
         futures.add(rollupOverallSummary(rollup, query));
         futures.add(rollupErrorSummary(rollup, query));
         futures.add(rollupTransactionSummary(rollup, query, transactionNames));
         futures.add(rollupTransactionErrorSummary(rollup, query));
-        futures.addAll(rollupOtherParts(rollup, query, scratchBuffer));
+        futures.addAll(rollupOtherParts(rollup, query));
 
         return CompletableFutures.allAsList(futures).thenCompose(ignored -> {
             List<CompletionStage<?>> perTransactionFutures = new ArrayList<>();
             for (String transactionName : transactionNames) {
                 perTransactionFutures.addAll(rollupOtherParts(rollup,
-                        query.withTransactionName(transactionName), scratchBuffer));
+                        query.withTransactionName(transactionName)));
             }
             return CompletableFutures.allAsList(perTransactionFutures);
         });
     }
 
-    private List<CompletionStage<?>> rollupOtherParts(RollupParams rollup, AggregateQuery query,
-                                                      ScratchBuffer scratchBuffer) {
+    private List<CompletionStage<?>> rollupOtherParts(RollupParams rollup, AggregateQuery query) {
         List<CompletionStage<?>> futures = new ArrayList<>();
         futures.add(rollupOverview(rollup, query));
-        futures.add(rollupHistogram(rollup, query, scratchBuffer));
+        futures.add(rollupHistogram(rollup, query, new ScratchBuffer()));
         futures.add(rollupThroughput(rollup, query));
         futures.add(rollupQueries(rollup, query));
         futures.add(rollupServiceCalls(rollup, query));
@@ -1108,11 +1107,10 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private List<CompletionStage<?>> rollupOtherPartsFromChildren(RollupParams rollup,
-                                                                  AggregateQuery query, Collection<String> childAgentRollupIds,
-                                                                  ScratchBuffer scratchBuffer) {
+                                                                  AggregateQuery query, Collection<String> childAgentRollupIds) {
         List<CompletionStage<?>> futures = new ArrayList<>();
         futures.add(rollupOverviewFromChildren(rollup, query, childAgentRollupIds));
-        futures.add(rollupHistogramFromChildren(rollup, query, childAgentRollupIds, scratchBuffer));
+        futures.add(rollupHistogramFromChildren(rollup, query, childAgentRollupIds, new ScratchBuffer()));
         futures.add(rollupThroughputFromChildren(rollup, query, childAgentRollupIds));
         futures.add(rollupQueriesFromChildren(rollup, query, childAgentRollupIds));
         futures.add(rollupServiceCallsFromChildren(rollup, query, childAgentRollupIds));
