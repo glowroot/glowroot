@@ -256,9 +256,14 @@ class SyntheticMonitorService implements Runnable {
                                 return CompletableFuture.completedFuture(null);
                             }
                             AgentRollup agentRollup = agentRollupIterator.next();
-                            return composeAgentRollups(agentRollup, SyntheticMonitorService.this::runSyntheticMonitors).thenCompose(ig -> {
-                                return apply(agentRollupIterator);
-                            });
+                            return composeAgentRollups(agentRollup, SyntheticMonitorService.this::runSyntheticMonitors)
+                                    .exceptionally(t -> {
+                                        logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                                        return null;
+                                    })
+                                    .thenCompose(ig -> {
+                                        return apply(agentRollupIterator);
+                                    });
                         }
                     };
                     return lambda.apply(list.iterator());
@@ -313,7 +318,9 @@ class SyntheticMonitorService implements Runnable {
                 });
                 stages.add(fut);
             }
-            return CompletableFuture.allOf(stages.toArray(new CompletableFuture<?>[0]));
+            return CompletableFuture.allOf(stages.stream()
+                    .map(CompletionStage::toCompletableFuture)
+                    .toArray(CompletableFuture<?>[]::new));
         });
     }
 
@@ -493,7 +500,11 @@ class SyntheticMonitorService implements Runnable {
         future.whenComplete((v, t) -> activeSyntheticMonitors.remove(uniqueKey));
         OnRunComplete onRunComplete = new OnRunComplete(agentRollup, syntheticMonitorConfig);
         if (alertConfigs.isEmpty()) {
-            future.thenCompose(onRunComplete);
+            future.thenCompose(onRunComplete)
+                    .exceptionally(t -> {
+                        logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                        return null;
+                    });
             return;
         }
         int maxAlertThresholdMillis = 0;
@@ -530,32 +541,36 @@ class SyntheticMonitorService implements Runnable {
         long finalDurationNanos = durationNanos;
         long finalCaptureTime = captureTime;
         String finalErrorMessage = errorMessage;
-        CompletableFuture.completedFuture(null).thenCompose(ignore -> {
-            return isCurrentlyDisabled(agentRollup.id()).thenCompose(disabled -> {
-                if (!disabled) {
-                    if (finalSuccess) {
-                        List<CompletionStage<?>> allFutures = new ArrayList<>(alertConfigs.size());
-                        for (AlertConfig alertConfig : alertConfigs) {
-                            AlertCondition alertCondition = alertConfig.getCondition();
-                            SyntheticMonitorCondition condition =
-                                    alertCondition.getSyntheticMonitorCondition();
-                            boolean currentlyTriggered =
-                                    finalDurationNanos >= MILLISECONDS.toNanos(condition.getThresholdMillis());
-                            allFutures.add(sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfig,
-                                    condition, finalCaptureTime, currentlyTriggered, null, profile));
-                        }
-                        return CompletableFuture.allOf(allFutures.toArray(new CompletableFuture<?>[0]));
-                    } else {
-                        return sendAlertOnErrorIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfigs,
-                                finalErrorMessage, finalCaptureTime, profile).thenAccept(ig -> {});
+        isCurrentlyDisabled(agentRollup.id()).thenCompose(disabled -> {
+            CompletionStage<?> alertStage;
+            if (!disabled) {
+                if (finalSuccess) {
+                    List<CompletionStage<?>> allFutures = new ArrayList<>(alertConfigs.size());
+                    for (AlertConfig alertConfig : alertConfigs) {
+                        AlertCondition alertCondition = alertConfig.getCondition();
+                        SyntheticMonitorCondition condition =
+                                alertCondition.getSyntheticMonitorCondition();
+                        boolean currentlyTriggered =
+                                finalDurationNanos >= MILLISECONDS.toNanos(condition.getThresholdMillis());
+                        allFutures.add(sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfig,
+                                condition, finalCaptureTime, currentlyTriggered, null, profile));
                     }
+                    alertStage = CompletableFuture.allOf(allFutures.stream()
+                            .map(CompletionStage::toCompletableFuture)
+                            .toArray(CompletableFuture<?>[]::new));
+                } else {
+                    alertStage = sendAlertOnErrorIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfigs,
+                            finalErrorMessage, finalCaptureTime, profile);
                 }
-                // need to run at end to ensure new synthetic response doesn't get stored before consecutive
-                // count is checked in sendAlertOnErrorIfStatusChanged()
-                future.thenCompose(onRunComplete);
-                return CompletableFuture.completedFuture(null);
-            });
-
+            } else {
+                alertStage = CompletableFuture.completedFuture(null);
+            }
+            // need to run at end to ensure new synthetic response doesn't get stored before
+            // consecutive count is checked in sendAlertOnErrorIfStatusChanged()
+            return alertStage.thenCompose(ig -> future.thenCompose(onRunComplete));
+        }).exceptionally(t -> {
+            logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+            return null;
         });
     }
 
@@ -620,7 +635,9 @@ class SyntheticMonitorService implements Runnable {
             futures.add(sendAlertIfStatusChanged(agentRollup, syntheticMonitorConfig, alertConfig, condition,
                     captureTime, true, errorMessage, profile));
         }
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]));
+        return CompletableFuture.allOf(futures.stream()
+                .map(CompletionStage::toCompletableFuture)
+                .toArray(CompletableFuture<?>[]::new));
     }
 
     private CompletionStage<?> sendAlertIfStatusChanged(AgentRollup agentRollup,
@@ -753,9 +770,14 @@ class SyntheticMonitorService implements Runnable {
                     return CompletableFuture.completedFuture(null);
                 }
                 AgentRollup agentRollup = agentRollupIterator.next();
-                return composeAgentRollups(agentRollup, agentRollupComposer).thenCompose(ig -> {
-                    return apply(agentRollupIterator);
-                });
+                return composeAgentRollups(agentRollup, agentRollupComposer)
+                        .exceptionally(t -> {
+                            logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                            return null;
+                        })
+                        .thenCompose(ig -> {
+                            return apply(agentRollupIterator);
+                        });
             }
         };
         return lambda.apply(agentRollup.children().iterator()).thenCompose(ig -> {
