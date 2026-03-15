@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -89,7 +90,7 @@ class CentralAlertingService {
 
         return isCurrentlyDisabled(agentId, profile).thenCompose(disabled -> {
             if (disabled) {
-                return CompletableFuture.completedFuture(null);
+                return CompletableFuture.completedFuture(Collections.<AlertConfig>emptyList());
             }
             return configRepository.getAlertConfigsNonBlocking(agentId);
         }).thenCompose((alertConfigs) -> {
@@ -118,7 +119,7 @@ class CentralAlertingService {
     CompletionStage<?> checkGaugeAndHeartbeatAlertsAsync(String agentId, String agentDisplay, long endTime, CassandraProfile profile) {
         return isCurrentlyDisabled(agentId, profile).thenCompose(disabled -> {
             if (disabled) {
-                return CompletableFuture.completedFuture(null);
+                return CompletableFuture.completedFuture(Collections.<AlertConfig>emptyList());
             }
             return configRepository.getAlertConfigsNonBlocking(agentId);
         }).thenCompose((alertConfigs) -> {
@@ -154,7 +155,7 @@ class CentralAlertingService {
 
         return isCurrentlyDisabled(agentRollupId, profile).thenCompose(disabled -> {
             if (disabled) {
-                return CompletableFuture.completedFuture(null);
+                return CompletableFuture.completedFuture(Collections.<AlertConfig>emptyList());
             }
             return configRepository.getAlertConfigsNonBlocking(agentRollupId);
         }).thenCompose((alertConfigs) -> {
@@ -202,7 +203,9 @@ class CentralAlertingService {
                 logger.error("{} - {}", agentRollupId, t.getMessage(), t);
             }
         }
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        return CompletableFuture.allOf(futures.stream()
+                .map(CompletionStage::toCompletableFuture)
+                .toArray(CompletableFuture<?>[]::new));
     }
 
     private CompletionStage<?> checkAlert(String agentRollupId, String agentDisplay, long endTime,
