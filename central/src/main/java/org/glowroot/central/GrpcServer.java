@@ -321,10 +321,11 @@ class GrpcServer {
 
         public void runInternal() throws Exception {
             WatchKey watchKey = watcher.take();
-            watchKey.reset();
             if (!certificateModified(watchKey)) {
+                watchKey.reset();
                 return;
             }
+            watchKey.reset();
             // wait for system to settle (in case copying over cert/key pair one by one)
             while (true) {
                 SECONDS.sleep(5);
@@ -332,10 +333,11 @@ class GrpcServer {
                 if (watchKey == null) {
                     break;
                 }
-                watchKey.reset();
                 if (!certificateModified(watchKey)) {
+                    watchKey.reset();
                     break;
                 }
+                watchKey.reset();
             }
             delegatingSslContext.reloadCertificate();
         }
