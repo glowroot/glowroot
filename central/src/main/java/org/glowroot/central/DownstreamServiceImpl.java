@@ -598,12 +598,13 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
                         .shuttingDown(true)
                         .build();
             }
+            long requestId = nextRequestId.getAndIncrement();
             try {
                 CentralRequest request = CentralRequest.newBuilder(requestWithoutRequestId)
-                        .setRequestId(nextRequestId.getAndIncrement())
+                        .setRequestId(requestId)
                         .build();
                 ResponseHolder responseHolder = new ResponseHolder();
-                responseHolders.put(request.getRequestId(), responseHolder);
+                responseHolders.put(requestId, responseHolder);
                 // synchronization required since individual StreamObservers are not thread-safe
                 synchronized (requestObserver) {
                     requestObserver.onNext(request);
@@ -617,10 +618,12 @@ class DownstreamServiceImpl extends DownstreamServiceImplBase {
                         .build();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                responseHolders.invalidate(requestId);
                 return ImmutableAgentResult.builder()
                         .interrupted(true)
                         .build();
             } catch (TimeoutException e) {
+                responseHolders.invalidate(requestId);
                 return ImmutableAgentResult.builder()
                         .timeout(true)
                         .build();
