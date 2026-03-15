@@ -106,7 +106,11 @@ class UpdateAgentConfigIfNeededService implements Runnable {
                 .readRecentlyActiveAgentRollups(DAYS.toMillis(7), CassandraProfile.rollup).thenCompose(list -> {
                     List<CompletionStage<?>> futures = new ArrayList<>();
                     for (AgentRollup agentRollup : list) {
-                        futures.add(updateAgentConfigIfNeededAndConnected(agentRollup));
+                        futures.add(updateAgentConfigIfNeededAndConnected(agentRollup)
+                                .exceptionally(t -> {
+                                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                                    return null;
+                                }));
                     }
                     return CompletableFutures.allAsList(futures);
                 }).toCompletableFuture().join();
@@ -118,7 +122,11 @@ class UpdateAgentConfigIfNeededService implements Runnable {
         } else {
             List<CompletionStage<?>> futures = new ArrayList<>();
             for (AgentRollup childAgentRollup : agentRollup.children()) {
-                futures.add(updateAgentConfigIfNeededAndConnected(childAgentRollup));
+                futures.add(updateAgentConfigIfNeededAndConnected(childAgentRollup)
+                        .exceptionally(t -> {
+                            logger.error("{} - {}", childAgentRollup.id(), t.getMessage(), t);
+                            return null;
+                        }));
             }
             return CompletableFutures.allAsList(futures);
         }
