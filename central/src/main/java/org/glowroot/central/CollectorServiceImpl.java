@@ -52,6 +52,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -184,7 +185,8 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         }
         throttleCollectAggregates(request.getAgentId(), false,
                 getFutureProofAggregateCaptureTime(request.getCaptureTime()),
-                sharedQueryTexts, request.getAggregatesByTypeList(), responseObserver);
+                sharedQueryTexts, request.getAggregatesByTypeList(), responseObserver)
+                .toCompletableFuture().join();
     }
 
     @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Gauges",
@@ -245,17 +247,13 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         responseObserver.onCompleted();
     }
 
-    private void throttleCollectAggregates(String agentId, boolean postV09, long captureTime,
+    private CompletionStage<?> throttleCollectAggregates(String agentId, boolean postV09, long captureTime,
                                            List<Aggregate.SharedQueryText> sharedQueryTexts,
                                            List<OldAggregatesByType> aggregatesByTypeList,
                                            StreamObserver<AggregateResponseMessage> responseObserver) {
-        throttle(agentId, postV09, "aggregate", responseObserver, new Runnable() {
-            @Override
-            public void run() {
-                collectAggregatesUnderThrottle(agentId, postV09, captureTime, sharedQueryTexts,
-                        aggregatesByTypeList, responseObserver);
-            }
-        });
+        return throttle(agentId, postV09, "aggregate", responseObserver,
+                () -> collectAggregatesUnderThrottle(agentId, postV09, captureTime, sharedQueryTexts,
+                        aggregatesByTypeList, responseObserver));
     }
 
     private CompletionStage<?> throttledCollectGaugeValues(GaugeValueMessage request,
@@ -269,8 +267,8 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         return collectTraceUnderThrottle(agentId, postV09, trace, responseObserver);
     }
 
-    private <T> void throttle(String agentId, boolean postV09, String collectionType,
-                              StreamObserver<T> responseObserver, Runnable runnable) {
+    private <T> CompletionStage<?> throttle(String agentId, boolean postV09, String collectionType,
+                              StreamObserver<T> responseObserver, Supplier<CompletionStage<?>> supplier) {
         Semaphore semaphore = throttlePerAgentId.getUnchecked(agentId);
         boolean acquired;
         try {
@@ -278,7 +276,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         } catch (InterruptedException e) {
             // probably shutdown requested
             responseObserver.onError(e);
-            return;
+            return CompletableFuture.completedFuture(null);
         }
         if (!acquired) {
             logger.warn("{} - {} collection rejected due to backlog",
@@ -286,16 +284,17 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             responseObserver.onError(Status.RESOURCE_EXHAUSTED
                     .withDescription("collection rejected due to backlog")
                     .asRuntimeException());
-            return;
+            return CompletableFuture.completedFuture(null);
         }
         try {
-            runnable.run();
-        } finally {
+            return supplier.get().whenComplete((v, t) -> semaphore.release());
+        } catch (Throwable t) {
             semaphore.release();
+            throw t;
         }
     }
 
-    private void collectAggregatesUnderThrottle(String agentId, boolean postV09, long captureTime,
+    private CompletionStage<?> collectAggregatesUnderThrottle(String agentId, boolean postV09, long captureTime,
                                                 List<Aggregate.SharedQueryText> sharedQueryTexts,
                                                 List<OldAggregatesByType> aggregatesByTypeList,
                                                 StreamObserver<AggregateResponseMessage> responseObserver) {
@@ -305,36 +304,36 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         } catch (Throwable t) {
             logger.error("{} - {}", getAgentIdForLogging(agentId, postV09), t.getMessage(), t);
             responseObserver.onError(t);
-            return;
+            return CompletableFuture.completedFuture(null);
         }
         try {
-            aggregateDao.store(postV09AgentId, captureTime, aggregatesByTypeList, sharedQueryTexts)
+            return aggregateDao.store(postV09AgentId, captureTime, aggregatesByTypeList, sharedQueryTexts)
                     .whenComplete((res, t) -> {
                         if (t != null) {
                             logger.error("{} - {}", postV09AgentId, t.getMessage(), t);
                             responseObserver.onError(t);
                             return;
                         }
+                        // send success response immediately, before alert checking
+                        responseObserver.onNext(AggregateResponseMessage.newBuilder()
+                                .setNextDelayMillis(getNextDelayMillis())
+                                .build());
+                        responseObserver.onCompleted();
+                        // check alerts separately, errors only logged
                         agentDisplayDao.readFullDisplay(postV09AgentId).thenCompose(agentDisplay -> {
                             return centralAlertingService.checkForDeletedAlerts(postV09AgentId, CassandraProfile.collector).thenApply(v -> agentDisplay);
                         }).thenCompose(agentDisplay -> {
                             return centralAlertingService.checkAggregateAlertsAsync(postV09AgentId, agentDisplay,
                                     captureTime, CassandraProfile.collector);
-                        }).thenApply(ignored -> {
-                            responseObserver.onNext(AggregateResponseMessage.newBuilder()
-                                    .setNextDelayMillis(getNextDelayMillis())
-                                    .build());
-                            responseObserver.onCompleted();
-                            return null;
                         }).exceptionally(t2 -> {
                             logger.error("{} - {}", postV09AgentId, t2.getMessage(), t2);
-                            responseObserver.onError(t2);
                             return null;
                         });
                     });
         } catch (Throwable t) {
             logger.error("{} - {}", postV09AgentId, t.getMessage(), t);
             responseObserver.onError(t);
+            return CompletableFuture.completedFuture(null);
         }
     }
 
@@ -358,21 +357,24 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             }
             final long finalMaxCaptureTime = maxCaptureTime;
             return heartbeatDao.store(postV09AgentId).thenCompose(ignored -> {
-                return agentDisplayDao.readFullDisplay(postV09AgentId).thenCompose(agentDisplay -> {
+                // check alerts separately, errors only logged
+                agentDisplayDao.readFullDisplay(postV09AgentId).thenCompose(agentDisplay -> {
                     return centralAlertingService.checkForDeletedAlerts(postV09AgentId, CassandraProfile.collector).thenCompose(v -> {
                         return centralAlertingService.checkGaugeAndHeartbeatAlertsAsync(postV09AgentId, agentDisplay,
                                 finalMaxCaptureTime, CassandraProfile.collector);
                     });
-                }).thenCompose(ignored2 -> {
-                    return agentConfigDao.readAsync(postV09AgentId).thenCompose(agentConfig -> {
-                        return environmentDao.read(postV09AgentId, CassandraProfile.collector).thenAccept(env -> {
-                            boolean resendInit = agentConfig == null || env == null;
-                            responseObserver.onNext(GaugeValueResponseMessage.newBuilder()
-                                    .setResendInit(resendInit)
-                                    .build());
-                            responseObserver.onCompleted();
-
-                        });
+                }).exceptionally(t -> {
+                    logger.error("{} - {}", postV09AgentId, t.getMessage(), t);
+                    return null;
+                });
+                // build and send response independently of alert checking
+                return agentConfigDao.readAsync(postV09AgentId).thenCompose(agentConfig -> {
+                    return environmentDao.read(postV09AgentId, CassandraProfile.collector).thenAccept(env -> {
+                        boolean resendInit = agentConfig == null || env == null;
+                        responseObserver.onNext(GaugeValueResponseMessage.newBuilder()
+                                .setResendInit(resendInit)
+                                .build());
+                        responseObserver.onCompleted();
                     });
                 });
             });
@@ -594,7 +596,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             throttleCollectAggregates(streamHeader.getAgentId(), streamHeader.getPostV09(),
                     getFutureProofAggregateCaptureTime(streamHeader.getCaptureTime()),
                     sharedQueryTexts,
-                    aggregatesByTypeList, responseObserver);
+                    aggregatesByTypeList, responseObserver).toCompletableFuture().join();
         }
 
         private void logError(Throwable t) {
