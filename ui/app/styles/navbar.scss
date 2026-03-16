@@ -46,6 +46,21 @@ $navbar-inverse-link-color: #fff;
   text-shadow: 0 0 10px #fff;
 }
 
+.gt-modern-ui-link {
+  display: flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  text-decoration: none !important;
+}
+
+.gt-modern-ui-link:hover {
+  color: #fff !important;
+  text-shadow: 0 0 4px #fff;
+}
+
 .gt-gears-btn, .gt-navbar-toggler {
   border: 0;
   background-color: transparent;
@@ -90,6 +105,9 @@ $navbar-inverse-link-color: #fff;
   }
   .gt-navbar .nav-link:focus, .gt-gears-btn:focus {
     box-shadow: 0 0 0 0.1rem $gt-blue;
+  }
+  .gt-modern-ui-link {
+    padding: 0.5rem 0;
   }
 }
 

@@ -78,9 +78,11 @@ public class CommonHandler {
     private static final long FIVE_MINUTES = MINUTES.toMillis(5);
 
     private static final String RESOURCE_BASE = "org/glowroot/ui/app-dist";
+    private static final String REACT_RESOURCE_BASE = "org/glowroot/ui/react-dist";
 
     // only null when running tests with glowroot.ui.skip=true (e.g. travis "deploy" build)
     private static final @Nullable String RESOURCE_BASE_URL_PREFIX;
+    private static final @Nullable String REACT_RESOURCE_BASE_URL_PREFIX;
 
     private static final ImmutableMap<String, MediaType> mediaTypes =
             ImmutableMap.<String, MediaType>builder()
@@ -92,6 +94,7 @@ public class CommonHandler {
                     .put("woff2", MediaType.create("application", "font-woff2"))
                     .put("swf", MediaType.create("application", "vnd.adobe.flash-movie"))
                     .put("map", MediaType.JSON_UTF_8)
+                    .put("svg", MediaType.SVG_UTF_8)
                     .build();
 
     // this constant is from org.h2.api.ErrorCode.STATEMENT_WAS_CANCELED
@@ -106,6 +109,14 @@ public class CommonHandler {
         } else {
             String externalForm = resourceBaseUrl.toExternalForm();
             RESOURCE_BASE_URL_PREFIX =
+                    externalForm.substring(0, externalForm.length() - "/index.html".length());
+        }
+        URL reactResourceBaseUrl = getUrlForPath(REACT_RESOURCE_BASE + "/index.html");
+        if (reactResourceBaseUrl == null) {
+            REACT_RESOURCE_BASE_URL_PREFIX = null;
+        } else {
+            String externalForm = reactResourceBaseUrl.toExternalForm();
+            REACT_RESOURCE_BASE_URL_PREFIX =
                     externalForm.substring(0, externalForm.length() - "/index.html".length());
         }
     }
@@ -373,7 +384,12 @@ public class CommonHandler {
 
     private CommonResponse handleStaticResource(String path, CommonRequest request)
             throws IOException {
-        URL url = getSecureUrlForPath(RESOURCE_BASE + path);
+        URL url;
+        if (path.startsWith("/modern/")) {
+            url = getSecureUrlForReactPath(path.substring("/modern".length()));
+        } else {
+            url = getSecureUrlForPath(RESOURCE_BASE + path);
+        }
         if (url == null) {
             // log at debug only since this is typically just exploit bot spam
             logger.debug("unexpected path: {}", path);
@@ -485,6 +501,15 @@ public class CommonHandler {
         URL url = getUrlForPath(path);
         if (url != null && RESOURCE_BASE_URL_PREFIX != null
                 && url.toExternalForm().startsWith(RESOURCE_BASE_URL_PREFIX)) {
+            return url;
+        }
+        return null;
+    }
+
+    private static @Nullable URL getSecureUrlForReactPath(String path) {
+        URL url = getUrlForPath(REACT_RESOURCE_BASE + path);
+        if (url != null && REACT_RESOURCE_BASE_URL_PREFIX != null
+                && url.toExternalForm().startsWith(REACT_RESOURCE_BASE_URL_PREFIX)) {
             return url;
         }
         return null;

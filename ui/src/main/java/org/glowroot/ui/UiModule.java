@@ -181,6 +181,8 @@ public class UiModule {
         HttpSessionManager httpSessionManager = new HttpSessionManager(central, offlineViewer,
                 configRepository, clock, layoutService, sessionMapFactory);
         IndexHtmlHttpService indexHtmlHttpService = new IndexHtmlHttpService(layoutService);
+        ReactIndexHtmlHttpService reactIndexHtmlHttpService =
+                new ReactIndexHtmlHttpService(layoutService);
         TraceDetailHttpService traceDetailHttpService =
                 new TraceDetailHttpService(traceCommonService);
         TraceExportHttpService traceExportHttpService =
@@ -202,6 +204,9 @@ public class UiModule {
         httpServices.put(Pattern.compile("^/admin/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/profile/.*$"), indexHtmlHttpService);
         httpServices.put(Pattern.compile("^/login$"), indexHtmlHttpService);
+        // react modern UI (catch-all excluding /modern/assets/ which are static resources)
+        httpServices.put(Pattern.compile("^/modern(?:/(?!assets/).*)?$"),
+                reactIndexHtmlHttpService);
         // export service is not bound under /backend since the export url is visible to users
         // as the download url for the export file
         httpServices.put(Pattern.compile("^/export/trace$"), traceExportHttpService);

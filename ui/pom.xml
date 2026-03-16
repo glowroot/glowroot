@@ -169,6 +169,9 @@
       <resource>
         <directory>${project.build.directory}/generated-resources/export-dist</directory>
       </resource>
+      <resource>
+        <directory>${project.build.directory}/generated-resources/react-dist</directory>
+      </resource>
     </resources>
     <plugins>
       <plugin>
@@ -263,6 +266,32 @@
             <configuration>
               <skip>${glowroot.ui.skip}</skip>
               <arguments>--no-color jshint build</arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>npm-install-react</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <configuration>
+              <skip>${glowroot.ui.skip}</skip>
+              <installDirectory>${basedir}</installDirectory>
+              <workingDirectory>${basedir}/react-app</workingDirectory>
+              <arguments>install</arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>npm-build-react</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <configuration>
+              <skip>${glowroot.ui.skip}</skip>
+              <installDirectory>${basedir}</installDirectory>
+              <workingDirectory>${basedir}/react-app</workingDirectory>
+              <arguments>run build</arguments>
             </configuration>
           </execution>
         </executions>

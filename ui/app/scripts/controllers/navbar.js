@@ -94,6 +94,10 @@ glowroot.controller('NavbarCtrl', [
       }
     };
 
+    $scope.modernUrl = function () {
+      return 'modern/' + $location.url().substring(1);
+    };
+
     $scope.collapseIfNeeded = function () {
       // need to collapse the navbar in mobile view
       var $navbarCollapse = $('.navbar-collapse');

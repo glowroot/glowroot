@@ -147,6 +147,14 @@
           </div>
         </ul>
         <ul class="nav navbar-nav navbar-right align-items-stretch">
+          <li class="d-flex align-items-center">
+            <a class="gt-modern-ui-link"
+               ng-href="{{modernUrl()}}"
+               ng-click="collapseIfNeeded()"
+               target="_self">
+              Try the new UI
+            </a>
+          </li>
           <li class="dropdown ng-cloak gt-gears-li"
               ng-class="{active: activeNavbarItem === 'gears'}"
               ng-if="layout.showNavbarConfig || layout.adminView || !layout.loggedIn && layout.loginEnabled || layout.loggedIn && !layout.ldap">
