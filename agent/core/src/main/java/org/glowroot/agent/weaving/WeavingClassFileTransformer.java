@@ -136,11 +136,10 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             // jdk/internal/reflect/GeneratedMethodAccessor..
             return true;
         }
-        // proxies under JDK 7+ start with com/sun/proxy/$Proxy
-        if (className.matches("^jdk/proxy\\d+/\\$Proxy.*") || className.startsWith("com/sun/proxy/$Proxy")) {
+        if (isJdkProxyClassName(className)) {
             // optimization, especially for jdbc plugin to avoid weaving proxy wrappers when dealing
             // with connection pools
-            // (but more importantly, weaving Java 17 proxies is failing due to stack map frames)
+            // (but more importantly, weaving proxies is failing due to stack map frames)
             return true;
         }
         if (className.equals("load/C4") && loader != null && loader.getClass().getName()
@@ -149,6 +148,29 @@ public class WeavingClassFileTransformer implements ClassFileTransformer {
             return true;
         }
         return false;
+    }
+
+    // JDK dynamic proxy classes have simple name $ProxyN, but can be in various packages
+    // depending on Java version and interface visibility:
+    // - com/sun/proxy/$Proxy0 (Java 7-15)
+    // - jdk/proxy1/$Proxy0 (Java 16+)
+    // - com/example/pkg/$Proxy0 (Java 16+, for package-private interfaces)
+    private static boolean isJdkProxyClassName(String className) {
+        int lastSlash = className.lastIndexOf('/');
+        int start = lastSlash + 1;
+        if (!className.startsWith("$Proxy", start)) {
+            return false;
+        }
+        int digitStart = start + 6; // length of "$Proxy"
+        if (digitStart >= className.length()) {
+            return false;
+        }
+        for (int i = digitStart; i < className.length(); i++) {
+            if (className.charAt(i) < '0' || className.charAt(i) > '9') {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean isGlowrootAgentClass(String className) {
