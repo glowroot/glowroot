@@ -4,6 +4,25 @@ import { LayoutProvider, useLayout } from '../contexts/LayoutContext'
 import { useAgent } from '../contexts/AgentContext'
 import { AppLayout } from '../components/layout/AppLayout'
 import { NotYetAvailable } from '../components/shared/NotYetAvailable'
+// Config pages
+import { ConfigLayout } from './config/ConfigLayout'
+import { ConfigGeneralPage } from './config/ConfigGeneralPage'
+import { ConfigTransactionPage } from './config/ConfigTransactionPage'
+import { ConfigGaugeListPage } from './config/ConfigGaugeListPage'
+import { ConfigGaugePage } from './config/ConfigGaugePage'
+import { ConfigJvmPage } from './config/ConfigJvmPage'
+import { ConfigSyntheticMonitorListPage } from './config/ConfigSyntheticMonitorListPage'
+import { ConfigSyntheticMonitorPage } from './config/ConfigSyntheticMonitorPage'
+import { ConfigAlertListPage } from './config/ConfigAlertListPage'
+import { ConfigAlertPage } from './config/ConfigAlertPage'
+import { ConfigUiDefaultsPage } from './config/ConfigUiDefaultsPage'
+import { ConfigPluginListPage } from './config/ConfigPluginListPage'
+import { ConfigPluginPage } from './config/ConfigPluginPage'
+import { ConfigInstrumentationListPage } from './config/ConfigInstrumentationListPage'
+import { ConfigInstrumentationPage } from './config/ConfigInstrumentationPage'
+import { ConfigAdvancedPage } from './config/ConfigAdvancedPage'
+import { ConfigJsonPage } from './config/ConfigJsonPage'
+// Admin pages
 import { AdminLayout } from './admin/AdminLayout'
 import { AdminGeneralPage } from './admin/AdminGeneralPage'
 import { AdminWebPage } from './admin/AdminWebPage'
@@ -19,6 +38,7 @@ import { AdminUserListPage } from './admin/AdminUserListPage'
 import { AdminUserPage } from './admin/AdminUserPage'
 import { AdminRoleListPage } from './admin/AdminRoleListPage'
 import { AdminRolePage } from './admin/AdminRolePage'
+import { AdminJsonPage } from './admin/AdminJsonPage'
 
 export function AppRouter() {
   const basename = getContextPath() || undefined
@@ -75,23 +95,23 @@ export function AppRouter() {
             </Route>
 
             {/* Config routes */}
-            <Route path="config">
-              <Route path="general" element={<NotYetAvailable />} />
-              <Route path="transaction" element={<NotYetAvailable />} />
-              <Route path="gauge-list" element={<NotYetAvailable />} />
-              <Route path="gauge" element={<NotYetAvailable />} />
-              <Route path="jvm" element={<NotYetAvailable />} />
-              <Route path="synthetic-monitor-list" element={<NotYetAvailable />} />
-              <Route path="synthetic-monitor" element={<NotYetAvailable />} />
-              <Route path="alert-list" element={<NotYetAvailable />} />
-              <Route path="alert" element={<NotYetAvailable />} />
-              <Route path="ui-defaults" element={<NotYetAvailable />} />
-              <Route path="plugin-list" element={<NotYetAvailable />} />
-              <Route path="plugin" element={<NotYetAvailable />} />
-              <Route path="instrumentation-list" element={<NotYetAvailable />} />
-              <Route path="instrumentation" element={<NotYetAvailable />} />
-              <Route path="advanced" element={<NotYetAvailable />} />
-              <Route path="json" element={<NotYetAvailable />} />
+            <Route path="config" element={<ConfigLayout />}>
+              <Route path="general" element={<ConfigGeneralPage />} />
+              <Route path="transaction" element={<ConfigTransactionPage />} />
+              <Route path="gauge-list" element={<ConfigGaugeListPage />} />
+              <Route path="gauge" element={<ConfigGaugePage />} />
+              <Route path="jvm" element={<ConfigJvmPage />} />
+              <Route path="synthetic-monitor-list" element={<ConfigSyntheticMonitorListPage />} />
+              <Route path="synthetic-monitor" element={<ConfigSyntheticMonitorPage />} />
+              <Route path="alert-list" element={<ConfigAlertListPage />} />
+              <Route path="alert" element={<ConfigAlertPage />} />
+              <Route path="ui-defaults" element={<ConfigUiDefaultsPage />} />
+              <Route path="plugin-list" element={<ConfigPluginListPage />} />
+              <Route path="plugin" element={<ConfigPluginPage />} />
+              <Route path="instrumentation-list" element={<ConfigInstrumentationListPage />} />
+              <Route path="instrumentation" element={<ConfigInstrumentationPage />} />
+              <Route path="advanced" element={<ConfigAdvancedPage />} />
+              <Route path="json" element={<ConfigJsonPage />} />
             </Route>
 
             {/* Admin routes */}
@@ -110,7 +130,7 @@ export function AppRouter() {
               <Route path="integration/pager-duty" element={<AdminPagerDutyPage />} />
               <Route path="integration/slack" element={<AdminSlackPage />} />
               <Route path="integration/healthchecks-io" element={<AdminHealthchecksIoPage />} />
-              <Route path="json" element={<NotYetAvailable />} />
+              <Route path="json" element={<AdminJsonPage />} />
             </Route>
 
             {/* Profile routes */}
