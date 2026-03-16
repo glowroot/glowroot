@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Open Sans';
+  font-weight: 400;
+  src: local('Open Sans'),
+    local('OpenSans'),
+    url('../../app/fonts/opensans-regular.woff2') format('woff2'),
+    url('../../app/fonts/opensans-regular.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-weight: 600;
+  src: local('Open Sans Semibold'),
+    local('OpenSans-Semibold'),
+    url('../../app/fonts/opensans-semibold.woff2') format('woff2'),
+    url('../../app/fonts/opensans-semibold.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-weight: 700;
+  src: local('Open Sans Bold'),
+    local('OpenSans-Bold'),
+    url('../../app/fonts/opensans-bold.woff2') format('woff2'),
+    url('../../app/fonts/opensans-bold.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Cousine';
+  font-weight: 400;
+  src: local('Cousine'),
+    url('../../app/fonts/cousine-regular.woff2') format('woff2'),
+    url('../../app/fonts/cousine-regular.woff') format('woff');
+}
+
+@theme {
+  --font-sans: 'Open Sans', sans-serif;
+  --font-mono: 'Cousine', monospace;
+
+  --color-blue-50: #f2f6f9;
+  --color-blue-100: #e0ebf1;
+  --color-blue-200: #c2d7e3;
+  --color-blue-300: #99bdd1;
+  --color-blue-400: #6d9fb9;
+  --color-blue-500: #417998;
+  --color-blue-600: #417998;
+  --color-blue-700: #36647d;
+  --color-blue-800: #2f586e;
+
+  --color-red-50: #fdf3f2;
+  --color-red-100: #f4e4e4;
+  --color-red-200: #e8c5c5;
+  --color-red-300: #dba09b;
+  --color-red-500: #bf380b;
+  --color-red-600: #bf380b;
+  --color-red-700: #9b2d09;
+  --color-red-800: #7f2507;
+}
+
+body {
+  overflow-y: scroll;
+  font-family: 'Open Sans', sans-serif;
+  color: #444;
+  background-color: #ffffff;
+}
+
+.gt-monospace {
+  font-family: 'Cousine', monospace;
+}
+
+.gt-opensans {
+  font-family: 'Open Sans', sans-serif;
+}
+
+.gt-header-text {
+  color: #8e6c15;
+  font-weight: 700;
+}
+
+main .rounded-lg.border.bg-white,
+main .rounded-md.border.bg-white {
+  border-color: #d2ba7f;
+}
+
+main .gt-incident-active {
+  border-color: #bf380b !important;
+}
+
+/* Declarative form validation feedback (hidden until form has .was-validated) */
+.gt-invalid-required-feedback,
+.gt-invalid-other-feedback {
+  display: none;
+}
+
+.was-validated [data-gt-invalid="required"] .gt-invalid-required-feedback,
+.was-validated[data-gt-invalid="required"] .gt-invalid-required-feedback {
+  display: block;
+}
+
+.was-validated [data-gt-invalid="other"] .gt-invalid-other-feedback,
+.was-validated[data-gt-invalid="other"] .gt-invalid-other-feedback {
+  display: block;
+}
+
+.was-validated [data-gt-invalid] input,
+.was-validated [data-gt-invalid] textarea,
+.was-validated [data-gt-invalid] select {
+  border-color: #bf380b;
+}
