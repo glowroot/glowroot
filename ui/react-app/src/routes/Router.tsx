@@ -4,6 +4,20 @@ import { LayoutProvider, useLayout } from '../contexts/LayoutContext'
 import { useAgent } from '../contexts/AgentContext'
 import { AppLayout } from '../components/layout/AppLayout'
 import { NotYetAvailable } from '../components/shared/NotYetAvailable'
+// JVM pages
+import { JvmLayout } from './jvm/JvmLayout'
+import { JvmEnvironmentPage } from './jvm/JvmEnvironmentPage'
+import { JvmSystemPropertiesPage } from './jvm/JvmSystemPropertiesPage'
+import { JvmCapabilitiesPage } from './jvm/JvmCapabilitiesPage'
+import { JvmForceGcPage } from './jvm/JvmForceGcPage'
+import { JvmThreadDumpPage } from './jvm/JvmThreadDumpPage'
+import { JvmJstackPage } from './jvm/JvmJstackPage'
+import { JvmHeapDumpPage } from './jvm/JvmHeapDumpPage'
+import { JvmHeapHistogramPage } from './jvm/JvmHeapHistogramPage'
+import { JvmMbeanTreePage } from './jvm/JvmMbeanTreePage'
+// Login & Profile
+import { LoginPage } from './LoginPage'
+import { ChangePasswordPage } from './profile/ChangePasswordPage'
 // Config pages
 import { ConfigLayout } from './config/ConfigLayout'
 import { ConfigGeneralPage } from './config/ConfigGeneralPage'
@@ -70,17 +84,17 @@ export function AppRouter() {
             </Route>
 
             {/* JVM routes */}
-            <Route path="jvm">
+            <Route path="jvm" element={<JvmLayout />}>
               <Route path="gauges" element={<NotYetAvailable />} />
-              <Route path="thread-dump" element={<NotYetAvailable />} />
-              <Route path="jstack" element={<NotYetAvailable />} />
-              <Route path="heap-dump" element={<NotYetAvailable />} />
-              <Route path="heap-histogram" element={<NotYetAvailable />} />
-              <Route path="force-gc" element={<NotYetAvailable />} />
-              <Route path="mbean-tree" element={<NotYetAvailable />} />
-              <Route path="system-properties" element={<NotYetAvailable />} />
-              <Route path="environment" element={<NotYetAvailable />} />
-              <Route path="capabilities" element={<NotYetAvailable />} />
+              <Route path="thread-dump" element={<JvmThreadDumpPage />} />
+              <Route path="jstack" element={<JvmJstackPage />} />
+              <Route path="heap-dump" element={<JvmHeapDumpPage />} />
+              <Route path="heap-histogram" element={<JvmHeapHistogramPage />} />
+              <Route path="force-gc" element={<JvmForceGcPage />} />
+              <Route path="mbean-tree" element={<JvmMbeanTreePage />} />
+              <Route path="system-properties" element={<JvmSystemPropertiesPage />} />
+              <Route path="environment" element={<JvmEnvironmentPage />} />
+              <Route path="capabilities" element={<JvmCapabilitiesPage />} />
             </Route>
 
             {/* Synthetic monitors (central only) */}
@@ -135,11 +149,11 @@ export function AppRouter() {
 
             {/* Profile routes */}
             <Route path="profile">
-              <Route path="change-password" element={<NotYetAvailable />} />
+              <Route path="change-password" element={<ChangePasswordPage />} />
             </Route>
 
             {/* Login */}
-            <Route path="login" element={<NotYetAvailable />} />
+            <Route path="login" element={<LoginPage />} />
 
             {/* Catch-all */}
             <Route path="*" element={<NotYetAvailable />} />
