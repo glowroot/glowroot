@@ -19,11 +19,17 @@ package org.glowroot.central.util;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
+import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
+import com.datastax.oss.driver.api.core.NodeUnavailableException;
 import com.datastax.oss.driver.api.core.cql.*;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.servererrors.InvalidConfigurationInQueryException;
@@ -42,6 +48,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class Session implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(Session.class);
+
+    private static final int MAX_RETRIES_ON_UNAVAILABLE = 3;
+    private static final long INITIAL_RETRY_DELAY_MILLIS = 1000;
 
     private final CqlSession wrappedSession;
     private final String keyspaceName;
@@ -135,8 +144,8 @@ public class Session implements AutoCloseable {
         }
         // do not use session.execute() because that calls getUninterruptibly() which can cause
         // central shutdown to timeout while waiting for executor service to shutdown
-        statement = statement.setExecutionProfileName(profile.name());
-        return wrappedSession.executeAsync(statement.setExecutionProfileName(profile.name()));
+        Statement<?> stmt = statement.setExecutionProfileName(profile.name());
+        return withRetryOnUnavailable(() -> wrappedSession.executeAsync(stmt));
     }
 
     public CompletionStage<AsyncResultSet> readAsyncWarnIfNoRows(Statement<?> statement, CassandraProfile profile,
@@ -150,20 +159,23 @@ public class Session implements AutoCloseable {
     }
 
     public CompletionStage<AsyncResultSet> readAsync(Statement<?> statement, CassandraProfile profile) {
-        return wrappedSession.executeAsync(statement.setExecutionProfileName(profile.name()));
+        Statement<?> stmt = statement.setExecutionProfileName(profile.name());
+        return withRetryOnUnavailable(() -> wrappedSession.executeAsync(stmt));
     }
 
     public CompletionStage<AsyncResultSet> readAsync(String statement, CassandraProfile profile) {
-        return wrappedSession.executeAsync(SimpleStatement.newInstance(statement).setExecutionProfileName(profile.name()));
+        SimpleStatement stmt = SimpleStatement.newInstance(statement)
+                .setExecutionProfileName(profile.name());
+        return withRetryOnUnavailable(() -> wrappedSession.executeAsync(stmt));
     }
 
     public CompletionStage<AsyncResultSet> writeAsync(Statement<?> statement, CassandraProfile profile) {
         if (statement.getConsistencyLevel() == null && writeConsistencyLevel != null) {
             statement = statement.setConsistencyLevel(writeConsistencyLevel);
         }
-        statement = statement.setExecutionProfileName(profile.name());
-        cassandraWriteMetrics.recordMetrics(statement);
-        return wrappedSession.executeAsync(statement);
+        Statement<?> stmt = statement.setExecutionProfileName(profile.name());
+        cassandraWriteMetrics.recordMetrics(stmt);
+        return withRetryOnUnavailable(() -> wrappedSession.executeAsync(stmt));
     }
 
     public String getKeyspaceName() {
@@ -354,6 +366,54 @@ public class Session implements AutoCloseable {
 
     private static String getTwcsCompactionClause(int expirationHours) {
         return getTwcsCompactionClause("HOURS", getCompactionWindowSizeHours(expirationHours));
+    }
+
+    private <T> CompletionStage<T> withRetryOnUnavailable(
+            Supplier<CompletionStage<T>> operation) {
+        return withRetryOnUnavailable(operation, 0);
+    }
+
+    private <T> CompletionStage<T> withRetryOnUnavailable(
+            Supplier<CompletionStage<T>> operation, int attemptNumber) {
+        return operation.get().exceptionallyCompose(throwable -> {
+            Throwable cause = unwrapCompletionException(throwable);
+            if (attemptNumber < MAX_RETRIES_ON_UNAVAILABLE
+                    && isRetryableUnavailable(cause)) {
+                long delayMillis = INITIAL_RETRY_DELAY_MILLIS * (1L << attemptNumber);
+                // add jitter to prevent thundering herd on retry
+                delayMillis += (long) (delayMillis * 0.25 * (2 * Math.random() - 1));
+                logger.debug("node unavailable, retrying in {} ms (attempt {} of {}): {}",
+                        delayMillis, attemptNumber + 1, MAX_RETRIES_ON_UNAVAILABLE,
+                        cause.toString());
+                CompletableFuture<T> retryFuture = new CompletableFuture<>();
+                CompletableFuture.delayedExecutor(delayMillis, TimeUnit.MILLISECONDS)
+                        .execute(() -> {
+                            withRetryOnUnavailable(operation, attemptNumber + 1)
+                                    .whenComplete((result, error) -> {
+                                        if (error != null) {
+                                            retryFuture.completeExceptionally(error);
+                                        } else {
+                                            retryFuture.complete(result);
+                                        }
+                                    });
+                        });
+                return retryFuture;
+            }
+            return CompletableFuture.failedFuture(throwable);
+        });
+    }
+
+    private static Throwable unwrapCompletionException(Throwable throwable) {
+        Throwable cause = throwable;
+        while (cause instanceof CompletionException && cause.getCause() != null) {
+            cause = cause.getCause();
+        }
+        return cause;
+    }
+
+    private static boolean isRetryableUnavailable(Throwable cause) {
+        return cause instanceof AllNodesFailedException
+                || cause instanceof NodeUnavailableException;
     }
 
 }
