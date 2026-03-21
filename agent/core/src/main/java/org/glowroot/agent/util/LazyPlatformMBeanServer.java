@@ -78,6 +78,8 @@ public class LazyPlatformMBeanServer {
     private final Object platformMBeanServerAvailability = new Object();
     @GuardedBy("platformMBeanServerAvailability")
     private boolean platformMBeanServerAvailable;
+    @GuardedBy("platformMBeanServerAvailability")
+    private boolean initialWaitComplete;
 
     private final LoadingCache<MBeanServer, MBeanServer> webSphereUnwrappedMBeanServers =
             CacheBuilder.newBuilder()
@@ -200,8 +202,14 @@ public class LazyPlatformMBeanServer {
         }
         // don't hold initListeners lock while waiting for platform mbean server to be created
         // as this blocks lazyRegisterMBean
-        if (waitForContainerToCreatePlatformMBeanServer) {
-            waitForContainerToCreatePlatformMBeanServer();
+        if (waitForContainerToCreatePlatformMBeanServer
+                && !waitForContainerToCreatePlatformMBeanServer()) {
+            // throw instead of proceeding, because calling
+            // ManagementFactory.getPlatformMBeanServer() from the wrong classloader (e.g. the
+            // agent thread instead of WebSphere's classloader) can permanently poison
+            // ManagementFactory$ServerHolder's static initializer, causing all subsequent calls
+            // to fail with NoClassDefFoundError
+            throw new Exception("platform mbean server is not yet available");
         }
         synchronized (initListeners) {
             if (platformMBeanServer != null) {
@@ -211,24 +219,30 @@ public class LazyPlatformMBeanServer {
         }
     }
 
-    private void waitForContainerToCreatePlatformMBeanServer() throws Exception {
+    // returns true if the platform mbean server has been signaled as available by the container
+    private boolean waitForContainerToCreatePlatformMBeanServer() throws Exception {
         synchronized (platformMBeanServerAvailability) {
             if (platformMBeanServerAvailable) {
-                return;
+                return true;
             }
-            Stopwatch stopwatch = Stopwatch.createStarted();
-            // looping to guard against "spurious wakeup" from Object.wait()
-            while (!platformMBeanServerAvailable) {
-                long remaining = SECONDS.toMillis(60) - stopwatch.elapsed(MILLISECONDS);
-                if (remaining < 1000) {
-                    // less that one second remaining
-                    break;
+            if (!initialWaitComplete) {
+                initialWaitComplete = true;
+                Stopwatch stopwatch = Stopwatch.createStarted();
+                // looping to guard against "spurious wakeup" from Object.wait()
+                while (!platformMBeanServerAvailable) {
+                    long remaining = SECONDS.toMillis(60) - stopwatch.elapsed(MILLISECONDS);
+                    if (remaining < 1000) {
+                        // less that one second remaining
+                        break;
+                    }
+                    platformMBeanServerAvailability.wait(remaining);
                 }
-                platformMBeanServerAvailability.wait(remaining);
+                if (!platformMBeanServerAvailable) {
+                    logger.info("platform mbean server was not yet created by container,"
+                            + " will retry after container initialization");
+                }
             }
-            if (!platformMBeanServerAvailable) {
-                logger.error("platform mbean server was never created by container");
-            }
+            return platformMBeanServerAvailable;
         }
     }
 
