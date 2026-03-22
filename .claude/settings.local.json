@@ -16,7 +16,8 @@
       "Bash(PATH=\"/home/richard/git/glowroot/ui/node:$PATH\" /home/richard/git/glowroot/ui/node/npm install tailwindcss@4 @tailwindcss/vite@4 2>&1)",
       "Bash(PATH=\"/home/richard/git/glowroot/ui/node:$PATH\" /home/richard/git/glowroot/ui/node/npm install class-variance-authority clsx tailwind-merge 2>&1)",
       "Bash(npx vite:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm install:*)"
     ]
   }
 }

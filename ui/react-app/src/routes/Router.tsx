@@ -15,6 +15,7 @@ import { JvmJstackPage } from './jvm/JvmJstackPage'
 import { JvmHeapDumpPage } from './jvm/JvmHeapDumpPage'
 import { JvmHeapHistogramPage } from './jvm/JvmHeapHistogramPage'
 import { JvmMbeanTreePage } from './jvm/JvmMbeanTreePage'
+import { JvmGaugesPage } from './jvm/JvmGaugesPage'
 // Login & Profile
 import { LoginPage } from './LoginPage'
 import { ChangePasswordPage } from './profile/ChangePasswordPage'
@@ -85,7 +86,7 @@ export function AppRouter() {
 
             {/* JVM routes */}
             <Route path="jvm" element={<JvmLayout />}>
-              <Route path="gauges" element={<NotYetAvailable />} />
+              <Route path="gauges" element={<JvmGaugesPage />} />
               <Route path="thread-dump" element={<JvmThreadDumpPage />} />
               <Route path="jstack" element={<JvmJstackPage />} />
               <Route path="heap-dump" element={<JvmHeapDumpPage />} />
