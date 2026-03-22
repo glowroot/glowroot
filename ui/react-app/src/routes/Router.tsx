@@ -1,9 +1,34 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useMemo } from 'react'
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  Navigate,
+  Outlet,
+  Route,
+  RouterProvider,
+} from 'react-router-dom'
 import { getContextPath } from '../lib/api'
 import { LayoutProvider, useLayout } from '../contexts/LayoutContext'
 import { useAgent } from '../contexts/AgentContext'
 import { AppLayout } from '../components/layout/AppLayout'
 import { NotYetAvailable } from '../components/shared/NotYetAvailable'
+// Transaction & Error pages
+import { TransactionProvider } from '../contexts/TransactionContext'
+import { TransactionLayout } from './transaction/TransactionLayout'
+import { TransactionAveragePage } from './transaction/TransactionAveragePage'
+import { TransactionPercentilesPage } from './transaction/TransactionPercentilesPage'
+import { TransactionThroughputPage } from './transaction/TransactionThroughputPage'
+import { TransactionTracesPage } from './transaction/TransactionTracesPage'
+import { TransactionQueriesPage } from './transaction/TransactionQueriesPage'
+import { TransactionServiceCallsPage } from './transaction/TransactionServiceCallsPage'
+import { TransactionThreadProfilePage } from './transaction/TransactionThreadProfilePage'
+import { TransactionFlameGraphPage } from './transaction/TransactionFlameGraphPage'
+import { TraceFlameGraphPage } from './transaction/TraceFlameGraphPage'
+import { ErrorMessagesPage } from './transaction/ErrorMessagesPage'
+import { SyntheticMonitorsPage } from './SyntheticMonitorsPage'
+import { IncidentsPage } from './IncidentsPage'
+import { ReportLayout } from './report/ReportLayout'
+import { ReportAdHocPage } from './report/ReportAdHocPage'
 // JVM pages
 import { JvmLayout } from './jvm/JvmLayout'
 import { JvmEnvironmentPage } from './jvm/JvmEnvironmentPage'
@@ -18,6 +43,7 @@ import { JvmMbeanTreePage } from './jvm/JvmMbeanTreePage'
 import { JvmGaugesPage } from './jvm/JvmGaugesPage'
 // Login & Profile
 import { LoginPage } from './LoginPage'
+import { ProfileLayout } from './profile/ProfileLayout'
 import { ChangePasswordPage } from './profile/ChangePasswordPage'
 // Config pages
 import { ConfigLayout } from './config/ConfigLayout'
@@ -55,33 +81,44 @@ import { AdminRoleListPage } from './admin/AdminRoleListPage'
 import { AdminRolePage } from './admin/AdminRolePage'
 import { AdminJsonPage } from './admin/AdminJsonPage'
 
+function RootLayout() {
+  return (
+    <LayoutProvider>
+      <Outlet />
+    </LayoutProvider>
+  )
+}
+
 export function AppRouter() {
   const basename = getContextPath() || undefined
-  return (
-    <BrowserRouter basename={basename}>
-      <LayoutProvider>
-        <Routes>
+  const router = useMemo(
+    () =>
+      createBrowserRouter(
+        createRoutesFromElements(
+          <Route element={<RootLayout />}>
           <Route path="/modern" element={<AppLayout />}>
             {/* Default redirect */}
             <Route index element={<DefaultRedirect />} />
 
             {/* Transaction routes */}
-            <Route path="transaction">
-              <Route path="average" element={<NotYetAvailable />} />
-              <Route path="percentiles" element={<NotYetAvailable />} />
-              <Route path="throughput" element={<NotYetAvailable />} />
-              <Route path="traces" element={<NotYetAvailable />} />
-              <Route path="queries" element={<NotYetAvailable />} />
-              <Route path="service-calls" element={<NotYetAvailable />} />
-              <Route path="thread-profile" element={<NotYetAvailable />} />
-              <Route path="thread-flame-graph" element={<NotYetAvailable />} />
-              <Route path="trace-thread-flame-graph" element={<NotYetAvailable />} />
+            <Route path="transaction" element={<TransactionProvider key="transaction" shortName="transaction"><TransactionLayout /></TransactionProvider>}>
+              <Route path="average" element={<TransactionAveragePage />} />
+              <Route path="percentiles" element={<TransactionPercentilesPage />} />
+              <Route path="throughput" element={<TransactionThroughputPage />} />
+              <Route path="traces" element={<TransactionTracesPage traceKind="transaction" />} />
+              <Route path="queries" element={<TransactionQueriesPage />} />
+              <Route path="service-calls" element={<TransactionServiceCallsPage />} />
+              <Route path="thread-profile" element={<TransactionThreadProfilePage />} />
             </Route>
 
+            {/* Standalone flame graph routes (outside TransactionLayout) */}
+            <Route path="transaction/thread-flame-graph" element={<TransactionFlameGraphPage />} />
+            <Route path="transaction/trace-thread-flame-graph" element={<TraceFlameGraphPage />} />
+
             {/* Error routes */}
-            <Route path="error">
-              <Route path="messages" element={<NotYetAvailable />} />
-              <Route path="traces" element={<NotYetAvailable />} />
+            <Route path="error" element={<TransactionProvider key="error" shortName="error"><TransactionLayout /></TransactionProvider>}>
+              <Route path="messages" element={<ErrorMessagesPage />} />
+              <Route path="traces" element={<TransactionTracesPage traceKind="error" />} />
             </Route>
 
             {/* JVM routes */}
@@ -98,15 +135,16 @@ export function AppRouter() {
               <Route path="capabilities" element={<JvmCapabilitiesPage />} />
             </Route>
 
-            {/* Synthetic monitors (central only) */}
-            <Route path="synthetic-monitors" element={<NotYetAvailable />} />
+            {/* Synthetic monitors */}
+            <Route path="synthetic-monitors" element={<SyntheticMonitorsPage />} />
 
             {/* Incidents */}
-            <Route path="incidents" element={<NotYetAvailable />} />
+            <Route path="incidents" element={<IncidentsPage />} />
 
             {/* Reports */}
-            <Route path="report">
-              <Route path="ad-hoc" element={<NotYetAvailable />} />
+            <Route path="report" element={<ReportLayout />}>
+              <Route index element={<Navigate to="ad-hoc" replace />} />
+              <Route path="ad-hoc" element={<ReportAdHocPage />} />
             </Route>
 
             {/* Config routes */}
@@ -149,7 +187,7 @@ export function AppRouter() {
             </Route>
 
             {/* Profile routes */}
-            <Route path="profile">
+            <Route path="profile" element={<ProfileLayout />}>
               <Route path="change-password" element={<ChangePasswordPage />} />
             </Route>
 
@@ -162,10 +200,13 @@ export function AppRouter() {
 
           {/* Redirect bare /modern to /modern/ */}
           <Route path="/" element={<Navigate to="/modern/" replace />} />
-        </Routes>
-      </LayoutProvider>
-    </BrowserRouter>
+        </Route>
+        ),
+        { basename },
+      ),
+    [basename],
   )
+  return <RouterProvider router={router} />
 }
 
 /**

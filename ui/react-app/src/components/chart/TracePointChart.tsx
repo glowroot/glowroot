@@ -7,7 +7,7 @@
  * Click on a point to open trace detail.
  */
 
-import { useEffect, useRef, useCallback, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useCallback, useState } from 'react'
 import * as d3 from 'd3'
 
 export interface TracePoint {
@@ -34,16 +34,18 @@ export interface TracePointChartProps {
   height?: number
   /** Called on zoom */
   onZoom?: (from: number, to: number, zoomingOut: boolean) => void
-  /** Called on selection (brush) */
-  onSelection?: (from: number, to: number) => void
+  /** Called on selection (2D xory brush) */
+  onSelection?: (from: number, to: number, durationLow?: number, durationHigh?: number) => void
   /** Called when a trace point is clicked */
-  onPointClick?: (point: TracePoint) => void
+  onPointClick?: (point: TracePoint, ctrlKey: boolean) => void
+  /** Trace ID of the currently highlighted point */
+  highlightedTraceId?: string | null
 }
 
 const MARGIN = { top: 10, right: 20, bottom: 30, left: 60 }
-const NORMAL_COLOR = '#5a8cc4'
-const ERROR_COLOR = '#c44e4e'
-const PARTIAL_COLOR = '#c4a84e'
+const NORMAL_COLOR = '#edc240'
+const ERROR_COLOR = '#bf380b'
+const PARTIAL_COLOR = '#417998'
 
 export function TracePointChart({
   normalPoints,
@@ -57,7 +59,9 @@ export function TracePointChart({
   onZoom,
   onSelection,
   onPointClick,
+  highlightedTraceId,
 }: TracePointChartProps) {
+  const clipId = `trace-clip-${useId().replace(/:/g, '')}`
   const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
@@ -77,7 +81,10 @@ export function TracePointChart({
     return () => obs.disconnect()
   }, [])
 
-  const allPoints = [...normalPoints, ...errorPoints, ...partialPoints]
+  const allPoints = useMemo(
+    () => [...normalPoints, ...errorPoints, ...partialPoints],
+    [normalPoints, errorPoints, partialPoints]
+  )
 
   const renderChart = useCallback(() => {
     const svg = svgRef.current
@@ -88,6 +95,9 @@ export function TracePointChart({
     if (width <= 0 || chartHeight <= 0) return
 
     d3.select(svg).selectAll('*').remove()
+    if (tooltipRef.current) {
+      tooltipRef.current.style.display = 'none'
+    }
 
     const g = d3
       .select(svg)
@@ -99,14 +109,19 @@ export function TracePointChart({
     // Scales
     const xScale = d3.scaleTime().domain([chartFrom, chartTo]).range([0, width])
 
-    let yMin = durationLow ?? 0
+    const yMin = durationLow ?? 0
     let yMax = durationHigh ?? 0
-    if (!durationHigh) {
+    if (durationHigh === undefined) {
       for (const p of allPoints) {
         if (p.durationMs > yMax) yMax = p.durationMs
       }
-      if (yMax === 0) yMax = 10
-      yMax *= 1.1
+      if (yMax <= yMin) {
+        yMax = yMin + 10
+      } else {
+        yMax = yMin + (yMax - yMin) * 1.1
+      }
+    } else if (yMax <= yMin) {
+      yMax = yMin + 10
     }
 
     const yScale = d3.scaleLinear().domain([yMin, yMax]).nice().range([chartHeight, 0])
@@ -157,15 +172,63 @@ export function TracePointChart({
       .attr('stroke', '#e8e8e8')
       .attr('stroke-dasharray', '2,2')
 
+    // Brush appended BEFORE chartArea so trace points receive click and hover events above overlay
+    const brush = d3
+      .brush()
+      .extent([
+        [0, 0],
+        [width, chartHeight],
+      ])
+      .on('end', (event: d3.D3BrushEvent<unknown>) => {
+        if (!event.selection) return
+        const [[x0, y0], [x1, y1]] = event.selection as [[number, number], [number, number]]
+        g.select<SVGGElement>('.brush').call(brush.move, null)
+        if (Math.abs(x1 - x0) < 3 && Math.abs(y1 - y0) < 3) return
+        const from = Math.max(chartFrom, Math.round(xScale.invert(x0).getTime()))
+        const to = Math.min(chartTo, Math.round(xScale.invert(x1).getTime()))
+        const rawLow = Math.max(0, Math.round(yScale.invert(y1)))
+        const rawHigh = y0 <= 1 ? undefined : Math.round(yScale.invert(y0))
+        if (from < to) {
+          onSelection?.(from, to, rawLow, rawHigh)
+        }
+      })
+
+    const brushGroup = g.append('g').attr('class', 'brush').call(brush)
+
+    // Ctrl+scroll zoom & double-click zoom — attach to brush overlay
+    brushGroup
+      .select<SVGRectElement>('.overlay')
+      .style('cursor', 'crosshair')
+      .on('wheel.zoom', function (event: WheelEvent) {
+        if (!event.ctrlKey) return
+        event.preventDefault()
+        const zoomingOut = event.deltaY > 0
+        const [mx] = d3.pointer(event, g.node())
+        const xTime = xScale.invert(mx).getTime()
+        const factor = zoomingOut ? 2 : 0.5
+        onZoom?.(
+          xTime - (xTime - chartFrom) * factor,
+          xTime + (chartTo - xTime) * factor,
+          zoomingOut
+        )
+      })
+      .on('dblclick.zoom', function (event: MouseEvent) {
+        event.preventDefault()
+        const [mx] = d3.pointer(event, g.node())
+        const xTime = xScale.invert(mx).getTime()
+        const range = chartTo - chartFrom
+        onZoom?.(xTime - range / 4, xTime + range / 4, false)
+      })
+
     // Clip
     g.append('defs')
       .append('clipPath')
-      .attr('id', 'trace-clip')
+      .attr('id', clipId)
       .append('rect')
       .attr('width', width)
       .attr('height', chartHeight)
 
-    const chartArea = g.append('g').attr('clip-path', 'url(#trace-clip)')
+    const chartArea = g.append('g').attr('clip-path', `url(#${clipId})`)
     const tooltip = tooltipRef.current
 
     function drawPoints(
@@ -177,118 +240,66 @@ export function TracePointChart({
         .data(points)
         .enter()
 
+      const isHighlighted = (d: TracePoint) =>
+        Boolean(highlightedTraceId && d.traceId === highlightedTraceId)
+
+      let elements: d3.Selection<SVGElement, TracePoint, SVGGElement, unknown>
       if (shape === 'circle') {
-        group
+        elements = group
           .append('circle')
           .attr('cx', (d) => xScale(d.captureTime))
           .attr('cy', (d) => yScale(d.durationMs))
-          .attr('r', 4)
-          .attr('fill', color)
-          .attr('fill-opacity', 0.7)
-          .attr('stroke', color)
-          .attr('stroke-width', 1)
-          .attr('cursor', 'pointer')
-          .on('click', (_event, d) => onPointClick?.(d))
-          .on('mouseenter', (event, d) => {
-            if (tooltip) {
-              tooltip.innerHTML = `<div><b>${d.durationMs.toLocaleString(undefined, { maximumFractionDigits: 1 })} ms</b></div><div class="text-gray-500">${new Date(d.captureTime).toLocaleTimeString()}</div>`
-              tooltip.style.display = 'block'
-              tooltip.style.left = `${event.clientX + 10}px`
-              tooltip.style.top = `${event.clientY - 10}px`
-            }
-          })
-          .on('mouseleave', () => {
-            if (tooltip) tooltip.style.display = 'none'
-          })
-      } else if (shape === 'triangle') {
-        const tri = d3.symbol().type(d3.symbolTriangle).size(50)
-        group
-          .append('path')
-          .attr('d', tri)
-          .attr('transform', (d) => `translate(${xScale(d.captureTime)},${yScale(d.durationMs)})`)
-          .attr('fill', color)
-          .attr('fill-opacity', 0.7)
-          .attr('stroke', color)
-          .attr('cursor', 'pointer')
-          .on('click', (_event, d) => onPointClick?.(d))
-          .on('mouseenter', (event, d) => {
-            if (tooltip) {
-              tooltip.innerHTML = `<div><b>${d.durationMs.toLocaleString(undefined, { maximumFractionDigits: 1 })} ms</b></div><div class="text-gray-500">${new Date(d.captureTime).toLocaleTimeString()}</div>`
-              tooltip.style.display = 'block'
-              tooltip.style.left = `${event.clientX + 10}px`
-              tooltip.style.top = `${event.clientY - 10}px`
-            }
-          })
-          .on('mouseleave', () => {
-            if (tooltip) tooltip.style.display = 'none'
-          })
+          .attr('r', (d) => (isHighlighted(d) ? 6 : 4)) as unknown as d3.Selection<
+            SVGElement,
+            TracePoint,
+            SVGGElement,
+            unknown
+          >
       } else {
-        const diamond = d3.symbol().type(d3.symbolDiamond).size(50)
-        group
+        const symbolType = shape === 'triangle' ? d3.symbolTriangle : d3.symbolDiamond
+        elements = group
           .append('path')
-          .attr('d', diamond)
-          .attr('transform', (d) => `translate(${xScale(d.captureTime)},${yScale(d.durationMs)})`)
-          .attr('fill', color)
-          .attr('fill-opacity', 0.7)
-          .attr('stroke', color)
-          .attr('cursor', 'pointer')
-          .on('click', (_event, d) => onPointClick?.(d))
-          .on('mouseenter', (event, d) => {
-            if (tooltip) {
-              tooltip.innerHTML = `<div><b>${d.durationMs.toLocaleString(undefined, { maximumFractionDigits: 1 })} ms</b></div><div class="text-gray-500">${new Date(d.captureTime).toLocaleTimeString()}</div>`
-              tooltip.style.display = 'block'
-              tooltip.style.left = `${event.clientX + 10}px`
-              tooltip.style.top = `${event.clientY - 10}px`
-            }
-          })
-          .on('mouseleave', () => {
-            if (tooltip) tooltip.style.display = 'none'
-          })
+          .attr('d', (d) =>
+            d3
+              .symbol()
+              .type(symbolType)
+              .size(isHighlighted(d) ? 90 : 50)() || ''
+          )
+          .attr(
+            'transform',
+            (d) => `translate(${xScale(d.captureTime)},${yScale(d.durationMs)})`
+          ) as unknown as d3.Selection<SVGElement, TracePoint, SVGGElement, unknown>
       }
+
+      elements
+        .attr('class', 'trace-point-' + shape)
+        .attr('fill', color)
+        .attr('fill-opacity', (d) => (isHighlighted(d) ? 1 : 0.7))
+        .attr('stroke', (d) => (isHighlighted(d) ? '#1f2937' : color))
+        .attr('stroke-width', (d) => (isHighlighted(d) ? 2.5 : 1))
+        .attr('cursor', 'pointer')
+        .on('click', (event: MouseEvent, d) =>
+          onPointClick?.(d, Boolean(event.ctrlKey || event.metaKey))
+        )
+        .on('mouseenter', (event: MouseEvent, d) => {
+          if (tooltip) {
+            tooltip.innerHTML = `<div><b>${d.durationMs.toLocaleString(undefined, { maximumFractionDigits: 1 })} ms</b></div><div class="text-gray-500">${new Date(d.captureTime).toLocaleTimeString()}</div>`
+            tooltip.style.display = 'block'
+            tooltip.style.left = `${event.clientX + 10}px`
+            tooltip.style.top = `${event.clientY - 10}px`
+          }
+        })
+        .on('mouseleave', () => {
+          if (tooltip) tooltip.style.display = 'none'
+        })
     }
 
     // Draw in order: normal (bottom), error, partial (top)
     drawPoints(normalPoints, NORMAL_COLOR, 'circle')
     drawPoints(errorPoints, ERROR_COLOR, 'triangle')
     drawPoints(partialPoints, PARTIAL_COLOR, 'diamond')
-
-    // Brush
-    const brush = d3
-      .brushX()
-      .extent([
-        [0, 0],
-        [width, chartHeight],
-      ])
-      .on('end', (event: d3.D3BrushEvent<unknown>) => {
-        if (!event.selection) return
-        const [x0, x1] = event.selection as [number, number]
-        g.select<SVGGElement>('.brush').call(brush.move, null)
-        onSelection?.(xScale.invert(x0).getTime(), xScale.invert(x1).getTime())
-      })
-
-    g.append('g').attr('class', 'brush').call(brush)
-
-    // Ctrl+scroll zoom
-    g.append('rect')
-      .attr('width', width)
-      .attr('height', chartHeight)
-      .attr('fill', 'none')
-      .attr('pointer-events', 'all')
-      .style('cursor', 'crosshair')
-      .on('wheel', function (event: WheelEvent) {
-        if (!event.ctrlKey) return
-        event.preventDefault()
-        const zoomingOut = event.deltaY > 0
-        const [mx] = d3.pointer(event)
-        const xTime = xScale.invert(mx).getTime()
-        const factor = zoomingOut ? 2 : 0.5
-        onZoom?.(
-          xTime - (xTime - chartFrom) * factor,
-          xTime + (chartTo - xTime) * factor,
-          zoomingOut
-        )
-      })
   }, [
+    clipId,
     containerWidth,
     height,
     normalPoints,
@@ -302,6 +313,7 @@ export function TracePointChart({
     onZoom,
     onSelection,
     onPointClick,
+    highlightedTraceId,
   ])
 
   useEffect(() => {
