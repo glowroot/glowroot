@@ -35,10 +35,10 @@ import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.MutableAggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -317,25 +317,31 @@ class TransactionCommonService {
                 getMaxQueryAggregatesPerTransactionAggregate(agentRollupId).toCompletableFuture().get();
         QueryCollector queryCollector =
                 new QueryCollector(maxQueryAggregatesPerTransactionAggregate);
-        long revisedFrom = query.from();
         long revisedTo =
                 liveAggregateRepository.mergeInQueries(agentRollupId, query, queryCollector);
-        List<CompletionStage<?>> futures = new ArrayList<>();
+        AtomicLong revisedFrom = new AtomicLong(query.from());
+        CompletionStage<Void> stage = CompletableFuture.completedFuture(null);
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
-            AggregateQuery revisedQuery = ImmutableAggregateQuery.builder()
-                    .copyFrom(query)
-                    .from(revisedFrom)
-                    .to(revisedTo)
-                    .rollupLevel(rollupLevel)
-                    .build();
-            futures.add(aggregateRepository.mergeQueriesInto(agentRollupId, revisedQuery, queryCollector, CassandraProfile.web));
-            long lastRolledUpTime = queryCollector.getLastCaptureTime();
-            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
-            if (revisedFrom > revisedTo) {
-                break;
-            }
+            final int currentRollupLevel = rollupLevel;
+            stage = stage.thenCompose(ignored -> {
+                long from = revisedFrom.get();
+                if (from > revisedTo) {
+                    return CompletableFuture.completedFuture(null);
+                }
+                AggregateQuery revisedQuery = ImmutableAggregateQuery.builder()
+                        .copyFrom(query)
+                        .from(from)
+                        .to(revisedTo)
+                        .rollupLevel(currentRollupLevel)
+                        .build();
+                return aggregateRepository.mergeQueriesInto(agentRollupId, revisedQuery, queryCollector, CassandraProfile.web)
+                        .thenAccept(v -> {
+                            long lastRolledUpTime = queryCollector.getLastCaptureTime();
+                            revisedFrom.set(Math.max(from, lastRolledUpTime + 1));
+                        });
+            });
         }
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).thenApply(ignore -> queryCollector);
+        return stage.thenApply(ignored -> queryCollector);
     }
 
     // query.from() is non-inclusive
@@ -345,26 +351,32 @@ class TransactionCommonService {
                 getMaxServiceCallAggregatesPerTransactionAggregate(agentRollupId).toCompletableFuture().get();
         ServiceCallCollector serviceCallCollector =
                 new ServiceCallCollector(maxServiceCallAggregatesPerTransactionAggregate);
-        long revisedFrom = query.from();
         long revisedTo = liveAggregateRepository.mergeInServiceCalls(agentRollupId, query,
                 serviceCallCollector);
-        List<CompletionStage<?>> futures = new ArrayList<>();
+        AtomicLong revisedFrom = new AtomicLong(query.from());
+        CompletionStage<Void> stage = CompletableFuture.completedFuture(null);
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
-            AggregateQuery revisedQuery = ImmutableAggregateQuery.builder()
-                    .copyFrom(query)
-                    .from(revisedFrom)
-                    .to(revisedTo)
-                    .rollupLevel(rollupLevel)
-                    .build();
-            futures.add(aggregateRepository.mergeServiceCallsInto(agentRollupId, revisedQuery,
-                    serviceCallCollector, CassandraProfile.web));
-            long lastRolledUpTime = serviceCallCollector.getLastCaptureTime();
-            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
-            if (revisedFrom > revisedTo) {
-                break;
-            }
+            final int currentRollupLevel = rollupLevel;
+            stage = stage.thenCompose(ignored -> {
+                long from = revisedFrom.get();
+                if (from > revisedTo) {
+                    return CompletableFuture.completedFuture(null);
+                }
+                AggregateQuery revisedQuery = ImmutableAggregateQuery.builder()
+                        .copyFrom(query)
+                        .from(from)
+                        .to(revisedTo)
+                        .rollupLevel(currentRollupLevel)
+                        .build();
+                return aggregateRepository.mergeServiceCallsInto(agentRollupId, revisedQuery,
+                        serviceCallCollector, CassandraProfile.web)
+                        .thenAccept(v -> {
+                            long lastRolledUpTime = serviceCallCollector.getLastCaptureTime();
+                            revisedFrom.set(Math.max(from, lastRolledUpTime + 1));
+                        });
+            });
         }
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).thenApply(ignore -> serviceCallCollector);
+        return stage.thenApply(ignored -> serviceCallCollector);
     }
 
     // query.from() is non-inclusive
