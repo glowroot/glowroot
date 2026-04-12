@@ -62,7 +62,6 @@ class TransactionCommonService {
     CompletionStage<OverallSummaryCollector> readOverallSummary(String agentRollupId, SummaryQuery query,
                                                                 boolean autoRefresh) throws Exception {
         OverallSummaryCollector collector = new OverallSummaryCollector();
-        long revisedFrom = query.from();
         long revisedTo;
         if (autoRefresh) {
             revisedTo = query.to();
@@ -70,22 +69,35 @@ class TransactionCommonService {
             revisedTo =
                     liveAggregateRepository.mergeInOverallSummary(agentRollupId, query, collector);
         }
-        List<CompletionStage<?>> futures = new ArrayList<>();
+        AtomicLong revisedFrom = new AtomicLong(query.from());
+        CompletionStage<Void> stage = CompletableFuture.completedFuture(null);
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
-            SummaryQuery revisedQuery = ImmutableSummaryQuery.builder()
-                    .copyFrom(query)
-                    .from(revisedFrom)
-                    .to(revisedTo)
-                    .rollupLevel(rollupLevel)
-                    .build();
-            futures.add(aggregateRepository.mergeOverallSummaryInto(agentRollupId, revisedQuery, collector, CassandraProfile.web));
-            long lastRolledUpTime = collector.getLastCaptureTime();
-            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
-            if (revisedFrom > revisedTo) {
-                break;
-            }
+            final int currentRollupLevel = rollupLevel;
+            stage = stage.thenCompose(ignored -> {
+                long from = revisedFrom.get();
+                if (from > revisedTo) {
+                    return CompletableFuture.completedFuture(null);
+                }
+                SummaryQuery revisedQuery = ImmutableSummaryQuery.builder()
+                        .copyFrom(query)
+                        .from(from)
+                        .to(revisedTo)
+                        .rollupLevel(currentRollupLevel)
+                        .build();
+                try {
+                    return aggregateRepository.mergeOverallSummaryInto(agentRollupId, revisedQuery, collector, CassandraProfile.web)
+                            .thenAccept(v -> {
+                                long lastRolledUpTime = collector.getLastCaptureTime();
+                                revisedFrom.set(Math.max(from, lastRolledUpTime + 1));
+                            });
+                } catch (Exception e) {
+                    CompletableFuture<Void> failedFuture = new CompletableFuture<>();
+                    failedFuture.completeExceptionally(e);
+                    return failedFuture;
+                }
+            });
         }
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).thenApply(ignore -> collector);
+        return stage.thenApply(ignored -> collector);
     }
 
     // query.from() is non-inclusive
@@ -93,7 +105,6 @@ class TransactionCommonService {
                                                                                  SummaryQuery query, SummarySortOrder sortOrder, int limit, boolean autoRefresh, CassandraProfile profile)
             throws Exception {
         TransactionNameSummaryCollector collector = new TransactionNameSummaryCollector();
-        long revisedFrom = query.from();
         long revisedTo;
         if (autoRefresh) {
             revisedTo = query.to();
@@ -102,23 +113,36 @@ class TransactionCommonService {
                     liveAggregateRepository.mergeInTransactionNameSummaries(agentRollupId, query,
                             collector);
         }
-        List<CompletionStage<?>> futures = new ArrayList<>();
+        AtomicLong revisedFrom = new AtomicLong(query.from());
+        CompletionStage<Void> stage = CompletableFuture.completedFuture(null);
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
-            SummaryQuery revisedQuery = ImmutableSummaryQuery.builder()
-                    .copyFrom(query)
-                    .from(revisedFrom)
-                    .to(revisedTo)
-                    .rollupLevel(rollupLevel)
-                    .build();
-            futures.add(aggregateRepository.mergeTransactionNameSummariesInto(agentRollupId, revisedQuery,
-                    sortOrder, limit, collector, profile));
-            long lastRolledUpTime = collector.getLastCaptureTime();
-            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
-            if (revisedFrom > revisedTo) {
-                break;
-            }
+            final int currentRollupLevel = rollupLevel;
+            stage = stage.thenCompose(ignored -> {
+                long from = revisedFrom.get();
+                if (from > revisedTo) {
+                    return CompletableFuture.completedFuture(null);
+                }
+                SummaryQuery revisedQuery = ImmutableSummaryQuery.builder()
+                        .copyFrom(query)
+                        .from(from)
+                        .to(revisedTo)
+                        .rollupLevel(currentRollupLevel)
+                        .build();
+                try {
+                    return aggregateRepository.mergeTransactionNameSummariesInto(agentRollupId, revisedQuery,
+                            sortOrder, limit, collector, profile)
+                            .thenAccept(v -> {
+                                long lastRolledUpTime = collector.getLastCaptureTime();
+                                revisedFrom.set(Math.max(from, lastRolledUpTime + 1));
+                            });
+                } catch (Exception e) {
+                    CompletableFuture<Void> failedFuture = new CompletableFuture<>();
+                    failedFuture.completeExceptionally(e);
+                    return failedFuture;
+                }
+            });
         }
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).thenApply(ignore -> collector.getResult(sortOrder, limit));
+        return stage.thenApply(ignored -> collector.getResult(sortOrder, limit));
     }
 
     // query.from() is INCLUSIVE
