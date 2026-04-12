@@ -15,10 +15,6 @@
  */
 package org.glowroot.central;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.RequiresNonNull;
@@ -50,14 +46,11 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.MINUTES;
 
 class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase {
 
@@ -79,15 +72,6 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
 
     private volatile long currentMinute;
     private final AtomicInteger nextDelay = new AtomicInteger();
-
-    private final LoadingCache<String, Semaphore> throttlePerAgentId = CacheBuilder.newBuilder()
-            .weakValues()
-            .build(new CacheLoader<String, Semaphore>() {
-                @Override
-                public Semaphore load(String key) throws Exception {
-                    return new Semaphore(1);
-                }
-            });
 
     CollectorServiceImpl(AgentDisplayDao agentDisplayDao, AgentConfigDao agentConfigDao,
                          ActiveAgentDao activeAgentDao, EnvironmentDao environmentDao, HeartbeatDao heartbeatDao,
@@ -183,10 +167,9 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                         .build());
             }
         }
-        throttleCollectAggregates(request.getAgentId(), false,
+        storeAggregates(request.getAgentId(), false,
                 getFutureProofAggregateCaptureTime(request.getCaptureTime()),
-                sharedQueryTexts, request.getAggregatesByTypeList(), responseObserver)
-                .toCompletableFuture().join();
+                sharedQueryTexts, request.getAggregatesByTypeList(), responseObserver);
     }
 
     @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Gauges",
@@ -194,7 +177,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     @Override
     public void collectGaugeValues(GaugeValueMessage request,
                                    StreamObserver<GaugeValueResponseMessage> responseObserver) {
-        throttledCollectGaugeValues(request, responseObserver).toCompletableFuture().join();
+        storeGaugeValues(request, responseObserver);
     }
 
     @Override
@@ -208,7 +191,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     @Override
     public void collectTrace(OldTraceMessage request,
                              StreamObserver<EmptyMessage> responseObserver) {
-        throttledCollectTrace(request.getAgentId(), false, request.getTrace(), responseObserver).toCompletableFuture().join();
+        storeTrace(request.getAgentId(), false, request.getTrace(), responseObserver);
     }
 
     @Instrumentation.Transaction(transactionType = "gRPC", transactionName = "Log",
@@ -247,54 +230,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         responseObserver.onCompleted();
     }
 
-    private CompletionStage<?> throttleCollectAggregates(String agentId, boolean postV09, long captureTime,
-                                           List<Aggregate.SharedQueryText> sharedQueryTexts,
-                                           List<OldAggregatesByType> aggregatesByTypeList,
-                                           StreamObserver<AggregateResponseMessage> responseObserver) {
-        return throttle(agentId, postV09, "aggregate", responseObserver,
-                () -> collectAggregatesUnderThrottle(agentId, postV09, captureTime, sharedQueryTexts,
-                        aggregatesByTypeList, responseObserver));
-    }
-
-    private CompletionStage<?> throttledCollectGaugeValues(GaugeValueMessage request,
-                                             StreamObserver<GaugeValueResponseMessage> responseObserver) {
-
-        return collectGaugeValuesUnderThrottle(request, responseObserver);
-    }
-
-    private CompletionStage<?> throttledCollectTrace(String agentId, boolean postV09, Trace trace,
-                                       StreamObserver<EmptyMessage> responseObserver) {
-        return collectTraceUnderThrottle(agentId, postV09, trace, responseObserver);
-    }
-
-    private <T> CompletionStage<?> throttle(String agentId, boolean postV09, String collectionType,
-                              StreamObserver<T> responseObserver, Supplier<CompletionStage<?>> supplier) {
-        Semaphore semaphore = throttlePerAgentId.getUnchecked(agentId);
-        boolean acquired;
-        try {
-            acquired = semaphore.tryAcquire(1, MINUTES);
-        } catch (InterruptedException e) {
-            // probably shutdown requested
-            responseObserver.onError(e);
-            return CompletableFuture.completedFuture(null);
-        }
-        if (!acquired) {
-            logger.warn("{} - {} collection rejected due to backlog",
-                    getAgentIdForLogging(agentId, postV09), collectionType);
-            responseObserver.onError(Status.RESOURCE_EXHAUSTED
-                    .withDescription("collection rejected due to backlog")
-                    .asRuntimeException());
-            return CompletableFuture.completedFuture(null);
-        }
-        try {
-            return supplier.get().whenComplete((v, t) -> semaphore.release());
-        } catch (Throwable t) {
-            semaphore.release();
-            throw t;
-        }
-    }
-
-    private CompletionStage<?> collectAggregatesUnderThrottle(String agentId, boolean postV09, long captureTime,
+    private CompletionStage<?> storeAggregates(String agentId, boolean postV09, long captureTime,
                                                 List<Aggregate.SharedQueryText> sharedQueryTexts,
                                                 List<OldAggregatesByType> aggregatesByTypeList,
                                                 StreamObserver<AggregateResponseMessage> responseObserver) {
@@ -337,7 +273,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         }
     }
 
-    private CompletionStage<?> collectGaugeValuesUnderThrottle(GaugeValueMessage request,
+    private CompletionStage<?> storeGaugeValues(GaugeValueMessage request,
                                                                StreamObserver<GaugeValueResponseMessage> responseObserver) {
         String postV09AgentId;
         try {
@@ -385,7 +321,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         });
     }
 
-    private CompletionStage<?> collectTraceUnderThrottle(String agentId, boolean postV09, Trace trace,
+    private CompletionStage<?> storeTrace(String agentId, boolean postV09, Trace trace,
                                            StreamObserver<EmptyMessage> responseObserver) {
         String postV09AgentId;
         try {
@@ -593,10 +529,10 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             for (OldAggregatesByType.Builder aggregatesByType : aggregatesByTypeMap.values()) {
                 aggregatesByTypeList.add(aggregatesByType.build());
             }
-            throttleCollectAggregates(streamHeader.getAgentId(), streamHeader.getPostV09(),
+            storeAggregates(streamHeader.getAgentId(), streamHeader.getPostV09(),
                     getFutureProofAggregateCaptureTime(streamHeader.getCaptureTime()),
                     sharedQueryTexts,
-                    aggregatesByTypeList, responseObserver).toCompletableFuture().join();
+                    aggregatesByTypeList, responseObserver);
         }
 
         private void logError(Throwable t) {
@@ -641,7 +577,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
         @Override
         public void onCompleted() {
             try {
-                onCompletedInternal().toCompletableFuture().join();
+                onCompletedInternal();
             } catch (Throwable t) {
                 logError(t);
                 throw t;
@@ -688,7 +624,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
             }
         }
 
-        private CompletionStage<?> onCompletedInternal() {
+        private void onCompletedInternal() {
             checkNotNull(streamHeader);
             if (trace == null) {
                 // this is for 0.9.13 and later agents
@@ -698,7 +634,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                     // will just be hit again
                     responseObserver.onNext(EmptyMessage.getDefaultInstance());
                     responseObserver.onCompleted();
-                    return CompletableFuture.completedFuture(null);
+                    return;
                 }
                 Trace.Builder builder = Trace.newBuilder()
                         .setId(streamHeader.getTraceId())
@@ -719,7 +655,7 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
                         .addAllSharedQueryText(sharedQueryTexts)
                         .build();
             }
-            return throttledCollectTrace(streamHeader.getAgentId(), streamHeader.getPostV09(), trace,
+            storeTrace(streamHeader.getAgentId(), streamHeader.getPostV09(), trace,
                     responseObserver);
         }
 
