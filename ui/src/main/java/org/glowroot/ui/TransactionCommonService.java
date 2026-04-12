@@ -404,16 +404,17 @@ class TransactionCommonService {
     }
 
     // query.from() is non-inclusive
-    ProfileCollector getMergedProfile(String agentRollupId, AggregateQuery query, boolean auxiliary,
-                                      List<String> includes, List<String> excludes, double truncateBranchPercentage)
-            throws Exception {
-        ProfileCollector profileCollector = getMergedProfile(agentRollupId, query, auxiliary, CassandraProfile.web);
-        MutableProfile profile = profileCollector.getProfile();
-        if (!includes.isEmpty() || !excludes.isEmpty()) {
-            profile.filter(includes, excludes);
-        }
-        profile.truncateBranches(truncateBranchPercentage);
-        return profileCollector;
+    CompletionStage<ProfileCollector> getMergedProfile(String agentRollupId, AggregateQuery query, boolean auxiliary,
+                                      List<String> includes, List<String> excludes, double truncateBranchPercentage) {
+        return getMergedProfile(agentRollupId, query, auxiliary, CassandraProfile.web)
+                .thenApply(profileCollector -> {
+                    MutableProfile profile = profileCollector.getProfile();
+                    if (!includes.isEmpty() || !excludes.isEmpty()) {
+                        profile.filter(includes, excludes);
+                    }
+                    profile.truncateBranches(truncateBranchPercentage);
+                    return profileCollector;
+                });
     }
 
     CompletionStage<String> readFullQueryText(String agentRollupId, String fullQueryTextSha1, CassandraProfile profile) {
@@ -569,10 +570,9 @@ class TransactionCommonService {
         return rolledUpThroughputAggregates;
     }
 
-    private ProfileCollector getMergedProfile(String agentRollupId, AggregateQuery query,
-                                              boolean auxiliary, CassandraProfile profile) throws Exception {
+    private CompletionStage<ProfileCollector> getMergedProfile(String agentRollupId, AggregateQuery query,
+                                              boolean auxiliary, CassandraProfile profile) {
         ProfileCollector profileCollector = new ProfileCollector();
-        long revisedFrom = query.from();
         long revisedTo;
         if (auxiliary) {
             revisedTo = liveAggregateRepository.mergeInAuxThreadProfiles(agentRollupId, query,
@@ -581,27 +581,36 @@ class TransactionCommonService {
             revisedTo = liveAggregateRepository.mergeInMainThreadProfiles(agentRollupId, query,
                     profileCollector);
         }
+        AtomicLong revisedFrom = new AtomicLong(query.from());
+        CompletionStage<Void> stage = CompletableFuture.completedFuture(null);
         for (int rollupLevel = query.rollupLevel(); rollupLevel >= 0; rollupLevel--) {
-            AggregateQuery revisedQuery = ImmutableAggregateQuery.builder()
-                    .copyFrom(query)
-                    .from(revisedFrom)
-                    .to(revisedTo)
-                    .rollupLevel(rollupLevel)
-                    .build();
-            if (auxiliary) {
-                aggregateRepository.mergeAuxThreadProfilesInto(agentRollupId, revisedQuery,
-                        profileCollector, profile).toCompletableFuture().join();
-            } else {
-                aggregateRepository.mergeMainThreadProfilesInto(agentRollupId, revisedQuery,
-                        profileCollector, profile).toCompletableFuture().join();
-            }
-            long lastRolledUpTime = profileCollector.getLastCaptureTime();
-            revisedFrom = Math.max(revisedFrom, lastRolledUpTime + 1);
-            if (revisedFrom > revisedTo) {
-                break;
-            }
+            final int currentRollupLevel = rollupLevel;
+            stage = stage.thenCompose(ignored -> {
+                long from = revisedFrom.get();
+                if (from > revisedTo) {
+                    return CompletableFuture.completedFuture(null);
+                }
+                AggregateQuery revisedQuery = ImmutableAggregateQuery.builder()
+                        .copyFrom(query)
+                        .from(from)
+                        .to(revisedTo)
+                        .rollupLevel(currentRollupLevel)
+                        .build();
+                CompletionStage<?> mergeStage;
+                if (auxiliary) {
+                    mergeStage = aggregateRepository.mergeAuxThreadProfilesInto(agentRollupId, revisedQuery,
+                            profileCollector, profile);
+                } else {
+                    mergeStage = aggregateRepository.mergeMainThreadProfilesInto(agentRollupId, revisedQuery,
+                            profileCollector, profile);
+                }
+                return mergeStage.thenAccept(v -> {
+                    long lastRolledUpTime = profileCollector.getLastCaptureTime();
+                    revisedFrom.set(Math.max(from, lastRolledUpTime + 1));
+                });
+            });
         }
-        return profileCollector;
+        return stage.thenApply(ignored -> profileCollector);
     }
 
     private CompletionStage<Integer> getMaxQueryAggregatesPerTransactionAggregate(String agentRollupId) {

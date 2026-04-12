@@ -352,14 +352,16 @@ class TransactionJsonService {
         AggregateQuery query = toQuery(request, DataKind.PROFILE);
         ProfileCollector profileCollector =
                 transactionCommonService.getMergedProfile(agentRollupId, query, request.auxiliary(),
-                        request.include(), request.exclude(), request.truncateBranchPercentage());
+                        request.include(), request.exclude(), request.truncateBranchPercentage())
+                        .toCompletableFuture().join();
         MutableProfile profile = profileCollector.getProfile();
         if (profile.isEmpty() && fallBackToLargestAggregates(query)) {
             // fall back to largest aggregates in case expiration settings have recently changed
             query = withLargestRollupLevel(query);
             profileCollector = transactionCommonService.getMergedProfile(agentRollupId, query,
                     request.auxiliary(), request.include(), request.exclude(),
-                    request.truncateBranchPercentage());
+                    request.truncateBranchPercentage())
+                    .toCompletableFuture().join();
             profile = profileCollector.getProfile();
             if (ignoreFallBackData(query, profileCollector.getLastCaptureTime())) {
                 // this is probably data from before the requested time period
@@ -378,7 +380,8 @@ class TransactionJsonService {
                 // return and display aux profile instead
                 profileCollector = transactionCommonService.getMergedProfile(agentRollupId, query,
                         true, request.include(), request.exclude(),
-                        request.truncateBranchPercentage());
+                        request.truncateBranchPercentage())
+                        .toCompletableFuture().join();
                 profile = profileCollector.getProfile();
                 if (profile.isEmpty() && fallBackToLargestAggregates(query)) {
                     // fall back to largest aggregates in case expiration settings have recently
@@ -386,7 +389,8 @@ class TransactionJsonService {
                     query = withLargestRollupLevel(query);
                     profileCollector = transactionCommonService.getMergedProfile(agentRollupId,
                             query, request.auxiliary(), request.include(), request.exclude(),
-                            request.truncateBranchPercentage());
+                            request.truncateBranchPercentage())
+                            .toCompletableFuture().join();
                     profile = profileCollector.getProfile();
                     if (ignoreFallBackData(query, profileCollector.getLastCaptureTime())) {
                         // this is probably data from before the requested time period
@@ -472,14 +476,16 @@ class TransactionJsonService {
         AggregateQuery query = toQuery(request, DataKind.PROFILE);
         ProfileCollector profileCollector =
                 transactionCommonService.getMergedProfile(agentRollupId, query, request.auxiliary(),
-                        request.include(), request.exclude(), request.truncateBranchPercentage());
+                        request.include(), request.exclude(), request.truncateBranchPercentage())
+                        .toCompletableFuture().join();
         MutableProfile profile = profileCollector.getProfile();
         if (profile.isEmpty() && fallBackToLargestAggregates(query)) {
             // fall back to largest aggregates in case expiration settings have recently changed
             query = withLargestRollupLevel(query);
             profileCollector = transactionCommonService.getMergedProfile(agentRollupId, query,
                     request.auxiliary(), request.include(), request.exclude(),
-                    request.truncateBranchPercentage());
+                    request.truncateBranchPercentage())
+                    .toCompletableFuture().join();
             profile = profileCollector.getProfile();
             if (ignoreFallBackData(query, profileCollector.getLastCaptureTime())) {
                 // this is probably data from before the requested time period
