@@ -96,6 +96,7 @@ class PreInitializeStorageShutdownClasses {
         types.add("org.h2.engine.CastDataProvider");
         types.add("org.h2.engine.Session");
         types.add("org.h2.jdbc.JdbcConnection");
+        types.add("org.h2.jdbc.JdbcConnectionBackwardsCompat");
         types.add("org.h2.jdbc.JdbcException");
         types.add("org.h2.jdbc.JdbcSQLDataException");
         types.add("org.h2.jdbc.JdbcSQLException");
