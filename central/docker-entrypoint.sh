@@ -54,7 +54,7 @@ if [ "$CASSANDRA_SYMMETRIC_ENCRYPTION_KEY" ]; then
   sed -i "s/^cassandra.symmetricEncryptionKey=.*$/cassandra.symmetricEncryptionKey=$CASSANDRA_SYMMETRIC_ENCRYPTION_KEY/" glowroot-central.properties
 fi
 if [ "$CASSANDRA_CONFIGURATION_FILE" ]; then
-  sed -i "s/^cassandra.configurationFile=.*$/cassandra.configurationFile=$CASSANDRA_CONFIGURATION_FILE/" glowroot-central.properties
+  sed -i "s|^cassandra.configurationFile=.*$|cassandra.configurationFile=$CASSANDRA_CONFIGURATION_FILE|" glowroot-central.properties
 fi
 if [ "$UI_CONTEXT_PATH" ]; then
   # not using "/" as sed delimiter since it is a common character used in context path
@@ -64,7 +64,7 @@ if [ "$CENTRAL_THREAD_POOL_MAX_SIZE" ]; then
   sed -i "s|^central.threadPoolMaxSize=.*$|central.threadPoolMaxSize=$CENTRAL_THREAD_POOL_MAX_SIZE|" glowroot-central.properties
 fi
 if [ "$JGROUPS_CONFIGURATION_FILE" ]; then
-  sed -i "s/^jgroups.configurationFile=.*$/jgroups.configurationFile=$JGROUPS_CONFIGURATION_FILE/" glowroot-central.properties
+  sed -i "s|^jgroups.configurationFile=.*$|jgroups.configurationFile=$JGROUPS_CONFIGURATION_FILE|" glowroot-central.properties
 fi
 if [ "$JGROUPS_LOCAL_ADDRESS" ]; then
   sed -i "s/^jgroups.localAddress=.*$/jgroups.localAddress=$JGROUPS_LOCAL_ADDRESS/" glowroot-central.properties
