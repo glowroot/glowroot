@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(find . -name \"*.java\" -path \"*/central/*\" -exec grep -l \"allOf\\\\|allAsList\" {} \\\\;)",
-      "Bash(mvn compile:*)"
+      "Bash(mvn compile:*)",
+      "Bash(mvn test *)"
     ]
   }
 }
