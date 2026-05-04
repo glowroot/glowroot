@@ -29,7 +29,7 @@
     <okhttpclient.version>4.9.2</okhttpclient.version>
     <okhttpclient2x.version>2.7.5</okhttpclient2x.version>
     <cxf.version>3.4.5</cxf.version>
-    <spring.version>5.3.23</spring.version>
+    <spring.version>6.0.0</spring.version>
     <axis.version>1.4</axis.version>
   </properties>
 
