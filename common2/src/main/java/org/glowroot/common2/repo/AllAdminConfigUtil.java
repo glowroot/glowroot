@@ -57,8 +57,8 @@ public class AllAdminConfigUtil {
         if (objectNode == null) {
             return;
         }
-        // FIXME remove()??
-        JsonNode passwordNode = objectNode.get("password");
+
+        JsonNode passwordNode = objectNode.remove("password");
         if (passwordNode == null) {
             JsonNode encryptedPasswordNode = objectNode.get("encryptedPassword");
             if (encryptedPasswordNode == null) {
