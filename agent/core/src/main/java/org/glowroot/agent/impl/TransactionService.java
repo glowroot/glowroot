@@ -103,7 +103,14 @@ public class TransactionService implements ConfigListener {
                 this, configService, threadContextHolder, rootNestingGroupId, rootSuppressionKeyId);
         SelfRemovableEntry transactionEntry = transactionRegistry.addTransaction(transaction);
         transaction.setTransactionEntry(transactionEntry);
-        threadContextHolder.set(transaction.getMainThreadContext());
+        // see counterpart to this synchronization (and explanation) in ThreadContextImpl.detach()
+        // this guards against a race condition where another thread is detaching a prior (e.g.
+        // auxiliary) thread context that shares this same holder (common on pooled threads), which
+        // could otherwise clobber the main thread context just set below and leave the holder null,
+        // leading to a NullPointerException in the callers' checkNotNull(threadContextHolder.get())
+        synchronized (threadContextHolder) {
+            threadContextHolder.set(transaction.getMainThreadContext());
+        }
         return transaction.getMainThreadContext().getRootEntry();
     }
 
