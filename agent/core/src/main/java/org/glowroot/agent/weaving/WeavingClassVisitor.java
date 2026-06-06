@@ -215,22 +215,30 @@ class WeavingClassVisitor extends ClassVisitor {
         }
         MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
         if (!noLongerNeedToWeaveMainMethods) {
-            if (Modifier.isPublic(access) && Modifier.isStatic(access)
-                    && descriptor.equals("([Ljava/lang/String;)V")) {
-                if (name.equals("main")) {
-                    mv.visitLdcInsn(type.getClassName());
-                    mv.visitVarInsn(ALOAD, 0);
-                    mv.visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(),
-                            "enteringMainMethod", "(Ljava/lang/String;[Ljava/lang/String;)V",
-                            false);
-                } else if (name.startsWith("start")) {
-                    mv.visitLdcInsn(type.getClassName());
-                    mv.visitLdcInsn(name);
-                    mv.visitVarInsn(ALOAD, 0);
-                    mv.visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(),
-                            "enteringPossibleProcrunStartMethod",
-                            "(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)V", false);
+            if (name.equals("main") && isMainMethod(access, descriptor)) {
+                // supports the classic "public static void main(String[])" as well as the Java 25
+                // (JEP 512) launch protocol variants: instance main methods, no-arg main methods,
+                // and non-public (but non-private) main methods
+                mv.visitLdcInsn(type.getClassName());
+                if (descriptor.equals("([Ljava/lang/String;)V")) {
+                    // the String[] arg is in local variable slot 0 for static methods, but slot 1
+                    // for instance methods (slot 0 holds "this")
+                    mv.visitVarInsn(ALOAD, Modifier.isStatic(access) ? 0 : 1);
+                } else {
+                    // no-arg main method
+                    mv.visitInsn(ACONST_NULL);
                 }
+                mv.visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(),
+                        "enteringMainMethod", "(Ljava/lang/String;[Ljava/lang/String;)V",
+                        false);
+            } else if (Modifier.isPublic(access) && Modifier.isStatic(access)
+                    && descriptor.equals("([Ljava/lang/String;)V") && name.startsWith("start")) {
+                mv.visitLdcInsn(type.getClassName());
+                mv.visitLdcInsn(name);
+                mv.visitVarInsn(ALOAD, 0);
+                mv.visitMethodInsn(INVOKESTATIC, bytecodeType.getInternalName(),
+                        "enteringPossibleProcrunStartMethod",
+                        "(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)V", false);
             } else if (type.getInternalName()
                     .equals("org/apache/commons/daemon/support/DaemonLoader")
                     && Modifier.isPublic(access) && Modifier.isStatic(access) && name.equals("load")
@@ -257,6 +265,14 @@ class WeavingClassVisitor extends ClassVisitor {
             return mv;
         }
         return visitMethodWithAdvice(mv, access, name, descriptor, matchingAdvisors);
+    }
+
+    // a main method per the JEP 512 launch protocol: named "main", not private (it may be static
+    // or an instance method, and may take a String[] argument or no arguments at all); abstract and
+    // native methods are already filtered out before reaching here (see visitMethod above)
+    private static boolean isMainMethod(int access, String descriptor) {
+        return !Modifier.isPrivate(access)
+                && (descriptor.equals("([Ljava/lang/String;)V") || descriptor.equals("()V"));
     }
 
     Set<Advice> getUsedAdvisors() {

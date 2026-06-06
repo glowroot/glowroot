@@ -18,6 +18,7 @@ package org.glowroot.agent.impl;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -258,14 +259,43 @@ public class BytecodeServiceImpl implements BytecodeService {
         }
     }
 
-    private static boolean ignoreMainClass(String expectedTopLevelClass,
+    @VisibleForTesting
+    static boolean ignoreMainClass(String expectedTopLevelClass,
             String expectedTopLevelMethodName, StackTraceElement[] stackTrace) {
         if (stackTrace.length == 0) {
             return true;
         }
-        StackTraceElement topStackTraceElement = stackTrace[stackTrace.length - 1];
-        return !topStackTraceElement.getClassName().equals(expectedTopLevelClass)
-                || !expectedTopLevelMethodName.equals(topStackTraceElement.getMethodName());
+        // find the bottom-most (closest to the entry point) frame for the expected main method
+        int mainIndex = -1;
+        for (int i = stackTrace.length - 1; i >= 0; i--) {
+            StackTraceElement element = stackTrace[i];
+            if (element.getClassName().equals(expectedTopLevelClass)
+                    && expectedTopLevelMethodName.equals(element.getMethodName())) {
+                mainIndex = i;
+                break;
+            }
+        }
+        if (mainIndex == -1) {
+            return true;
+        }
+        // the main method must be the application entry point, i.e. everything below it on the stack
+        // must be JVM/JDK launcher (or reflection) infrastructure
+        //
+        // for the classic "public static void main(String[])" the main method is the bottom-most
+        // frame, so there is nothing below it; for the Java 25 (JEP 512) launch protocol, instance
+        // and no-arg main methods are invoked through sun.launcher / java.lang.reflect frames, so
+        // those are allowed below the main method
+        for (int i = mainIndex + 1; i < stackTrace.length; i++) {
+            if (!isJdkInfrastructureFrame(stackTrace[i].getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isJdkInfrastructureFrame(String className) {
+        return className.startsWith("java.") || className.startsWith("jdk.")
+                || className.startsWith("sun.");
     }
 
     public interface OnEnteringMain {

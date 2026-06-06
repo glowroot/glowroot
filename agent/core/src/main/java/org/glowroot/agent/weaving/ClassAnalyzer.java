@@ -617,14 +617,25 @@ class ClassAnalyzer {
 
     private static boolean hasMainOrPossibleProcrunStartMethod(List<ThinMethod> methods) {
         for (ThinMethod method : methods) {
+            if (method.name().equals("main")
+                    && isMainMethod(method.access(), method.descriptor())) {
+                return true;
+            }
             // checking for start* methods since those seem to be common for procrun users
             if (Modifier.isPublic(method.access()) && Modifier.isStatic(method.access())
-                    && (method.name().equals("main") || method.name().startsWith("start"))
+                    && method.name().startsWith("start")
                     && method.descriptor().equals("([Ljava/lang/String;)V")) {
                 return true;
             }
         }
         return false;
+    }
+
+    // a main method per the JEP 512 launch protocol: named "main", not private and not abstract (it
+    // may be static or an instance method, and may take a String[] argument or no arguments at all)
+    private static boolean isMainMethod(int access, String descriptor) {
+        return !Modifier.isPrivate(access) && !Modifier.isAbstract(access)
+                && (descriptor.equals("([Ljava/lang/String;)V") || descriptor.equals("()V"));
     }
 
     private static Set<String> getEjbRemoteInterfaces(ThinClass thinClass,
