@@ -67,8 +67,20 @@ class PreparedStatementMirror extends StatementMirror {
 
     @Nullable
     BindParameterList getParameters() {
-        parametersShared = true;
-        return parameters;
+        // return an independent copy so that the captured query entry owns its bind parameters and
+        // is not affected by any subsequent reuse of this prepared statement
+        //
+        // the query entry's message is rendered lazily (at trace collection / download time), so
+        // holding a live reference to the mirror's parameters previously allowed a later execution
+        // (e.g. a cached or cross-thread shared PreparedStatement) to mutate the parameters out
+        // from under an already-captured entry, causing bind parameters from one query to show up
+        // on another query, see https://github.com/glowroot/glowroot/issues/1152
+        //
+        // for the common case of re-setting parameters between executions this is copy-neutral
+        // compared to the previous copy-on-write approach (which copied on the next setParameterValue
+        // anyway); only the uncommon case of re-executing without re-setting any parameters incurs
+        // an extra copy
+        return BindParameterList.copyOf(parameters);
     }
 
     String getSql() {
