@@ -3,7 +3,10 @@
     "allow": [
       "Bash(find . -name \"*.java\" -path \"*/central/*\" -exec grep -l \"allOf\\\\|allAsList\" {} \\\\;)",
       "Bash(mvn compile:*)",
-      "Bash(mvn test *)"
+      "Bash(mvn test *)",
+      "Bash(java -version)",
+      "Bash(timeout 580 mvn -q -o -pl :glowroot-agent-core compile -Dglowroot.ui.skip)",
+      "Bash(xargs sed -n '16,40p')"
     ]
   }
 }
