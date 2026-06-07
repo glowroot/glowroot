@@ -83,18 +83,21 @@
               <artifact>com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer</artifact>
               <excludes>
                 <exclude>META-INF/MANIFEST.MF</exclude>
+                <exclude>module-info.class</exclude>
               </excludes>
             </filter>
             <filter>
               <artifact>com.googlecode.owasp-java-html-sanitizer:java8-shim</artifact>
               <excludes>
                 <exclude>META-INF/MANIFEST.MF</exclude>
+                <exclude>module-info.class</exclude>
               </excludes>
             </filter>
             <filter>
               <artifact>com.googlecode.owasp-java-html-sanitizer:java10-shim</artifact>
               <excludes>
                 <exclude>META-INF/MANIFEST.MF</exclude>
+                <exclude>module-info.class</exclude>
               </excludes>
             </filter>
             <filter>
@@ -362,6 +365,7 @@
             <option>-dontoptimize</option>
             <option>-dontnote **</option>
             <option>-dontwarn **</option>
+            <option>-keep class org.glowroot.agent.embedded.shaded.org.owasp.shim.** { *; }</option>
             <option>-keep class !org.glowroot.agent.embedded.shaded.** { *; }</option>
             <option>-keep class org.glowroot.agent.embedded.shaded.org.glowroot.** { *; }</option>
             <option>
