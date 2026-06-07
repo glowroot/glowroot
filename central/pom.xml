@@ -331,15 +331,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <configuration>
-                    <properties>
-                        <property>
-                            <!-- this is just a test performance optimization -->
-                            <name>listener</name>
-                            <value>org.glowroot.central.repo.SharedSetupRunListener</value>
-                        </property>
-                    </properties>
-                </configuration>
+
                 <executions>
                     <execution>
                         <goals>
@@ -353,7 +345,7 @@
                 <!-- maven-war-plugin needs to execute before maven-jar-plugin, otherwise it messes up the
                   jar's manifest -->
                 <artifactId>maven-war-plugin</artifactId>
-                <version>3.4.0</version>
+                <version>3.5.1</version>
                 <executions>
                     <execution>
                         <goals>
@@ -427,7 +419,7 @@
             <plugin>
                 <groupId>de.dentrassi.maven</groupId>
                 <artifactId>rpm</artifactId>
-                <version>1.12.0</version>
+                <version>1.13.0</version>
                 <configuration>
                     <skipSigning>true</skipSigning>
                 </configuration>
@@ -617,7 +609,7 @@
                     <plugin>
                         <groupId>de.dentrassi.maven</groupId>
                         <artifactId>rpm</artifactId>
-                        <version>1.8.0</version>
+                        <version>1.13.0</version>
                         <configuration>
                             <signature>
                                 <keyringFile>${user.home}/.gnupg/secring.gpg</keyringFile>
@@ -651,7 +643,7 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
-                        <version>1.6.0</version>
+                        <version>3.6.3</version>
                         <executions>
                             <execution>
                                 <phase>package</phase>
