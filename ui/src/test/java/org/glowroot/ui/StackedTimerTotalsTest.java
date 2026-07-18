@@ -15,12 +15,11 @@
  */
 package org.glowroot.ui;
 
-import java.util.Map;
-
 import org.junit.jupiter.api.Test;
 
 import org.glowroot.common.live.ImmutableOverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
+import org.glowroot.ui.TransactionJsonService.MutableDoubleMap;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,12 +42,12 @@ public class StackedTimerTotalsTest {
 
         OverviewAggregate aggregate = overview(1000, 5_000_000, 1, root);
 
-        Map<String, Double> stacked = StackedTimerTotals.create(aggregate);
+        MutableDoubleMap<String> stacked = StackedTimerTotals.create(aggregate);
 
         // Chart skips the root timer; leaf self-time equals inclusive total when there are no
         // nested children under jdbc.
         assertThat(stacked).containsOnlyKeys("jdbc");
-        assertThat(stacked.get("jdbc")).isEqualTo(5_000_000);
+        assertThat(stacked.get("jdbc").doubleValue()).isEqualTo(5_000_000);
         assertThat(StackedTimerTotals.selfNanos(leaf)).isEqualTo(leaf.getTotalNanos());
     }
 
@@ -73,10 +72,10 @@ public class StackedTimerTotalsTest {
                 .build();
 
         OverviewAggregate aggregate = overview(1000, 10_000_000, 1, root);
-        Map<String, Double> stacked = StackedTimerTotals.create(aggregate);
+        MutableDoubleMap<String> stacked = StackedTimerTotals.create(aggregate);
 
-        double httpSelf = stacked.get("http");
-        double jdbcSelf = stacked.get("jdbc");
+        double httpSelf = stacked.get("http").doubleValue();
+        double jdbcSelf = stacked.get("jdbc").doubleValue();
 
         assertThat(httpSelf).isEqualTo(6_000_000); // exclusive / chart segment
         assertThat(jdbcSelf).isEqualTo(4_000_000);

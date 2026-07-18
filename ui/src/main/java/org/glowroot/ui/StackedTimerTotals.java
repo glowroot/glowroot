@@ -15,10 +15,8 @@
  */
 package org.glowroot.ui;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
+import org.glowroot.ui.TransactionJsonService.MutableDoubleMap;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 
 /**
@@ -33,8 +31,8 @@ class StackedTimerTotals {
 
     private StackedTimerTotals() {}
 
-    static Map<String, Double> create(OverviewAggregate overviewAggregate) {
-        Map<String, Double> stackedTimers = new HashMap<String, Double>();
+    static MutableDoubleMap<String> create(OverviewAggregate overviewAggregate) {
+        MutableDoubleMap<String> stackedTimers = new MutableDoubleMap<String>();
         for (Aggregate.Timer rootTimer : overviewAggregate.mainThreadRootTimers()) {
             // skip root timers — root self-time becomes the chart "other" bucket
             for (Aggregate.Timer topLevelTimer : rootTimer.getChildTimerList()) {
@@ -60,17 +58,12 @@ class StackedTimerTotals {
         return captureTime > from && captureTime <= to;
     }
 
-    private static void addToStackedTimer(Aggregate.Timer timer, Map<String, Double> stackedTimers) {
+    private static void addToStackedTimer(Aggregate.Timer timer, MutableDoubleMap<String> stackedTimers) {
         for (Aggregate.Timer childTimer : timer.getChildTimerList()) {
             addToStackedTimer(childTimer, stackedTimers);
         }
         String timerName = timer.getName();
-        Double existing = stackedTimers.get(timerName);
         double leafNanos = selfNanos(timer);
-        if (existing == null) {
-            stackedTimers.put(timerName, leafNanos);
-        } else {
-            stackedTimers.put(timerName, existing + leafNanos);
-        }
+        stackedTimers.add(timerName, leafNanos);
     }
 }

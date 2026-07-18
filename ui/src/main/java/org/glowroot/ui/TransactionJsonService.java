@@ -745,18 +745,18 @@ class TransactionJsonService {
                 dataSeriesHelper.addGapIfNeeded(priorOverviewAggregate.captureTime(),
                         overviewAggregate.captureTime(), dataSeriesList, otherDataSeries);
             }
-            Map<String, Double> stackedTimers = stackedPoint.getStackedTimers();
+            MutableDoubleMap<String> stackedTimers = stackedPoint.getStackedTimers();
             double totalOtherNanos = overviewAggregate.totalDurationNanos();
             for (DataSeries dataSeries : dataSeriesList) {
-                Double totalNanos = stackedTimers.get(dataSeries.getName());
+                MutableDouble totalNanos = stackedTimers.get(dataSeries.getName());
                 if (totalNanos == null) {
                     dataSeries.add(overviewAggregate.captureTime(), 0);
                 } else {
                     // convert to average milliseconds
-                    double value = (totalNanos / overviewAggregate.transactionCount())
+                    double value = (totalNanos.doubleValue() / overviewAggregate.transactionCount())
                             / NANOSECONDS_PER_MILLISECOND;
                     dataSeries.add(overviewAggregate.captureTime(), value);
-                    totalOtherNanos -= totalNanos;
+                    totalOtherNanos -= totalNanos.doubleValue();
                 }
             }
             if (overviewAggregate.transactionCount() == 0) {
@@ -800,35 +800,30 @@ class TransactionJsonService {
     // calculate top 5 timers
     private static List<String> getTopTimerNames(List<StackedPoint> stackedPoints, int topX,
             long from, long to) {
-        Map<String, Double> timerTotals = Maps.newHashMap();
+        MutableDoubleMap<String> timerTotals = new MutableDoubleMap<String>();
         for (StackedPoint stackedPoint : stackedPoints) {
             if (!StackedTimerTotals.captureTimeInMergedRange(
                     stackedPoint.getOverviewAggregate().captureTime(), from, to)) {
                 continue;
             }
-            for (Map.Entry<String, Double> entry : stackedPoint.getStackedTimers().entrySet()) {
-                Double existing = timerTotals.get(entry.getKey());
-                if (existing == null) {
-                    timerTotals.put(entry.getKey(), entry.getValue());
-                } else {
-                    timerTotals.put(entry.getKey(), existing + entry.getValue());
-                }
+            for (Map.Entry<String, MutableDouble> entry : stackedPoint.getStackedTimers().entrySet()) {
+                timerTotals.add(entry.getKey(), entry.getValue().doubleValue());
             }
         }
-        Ordering<Map.Entry<String, Double>> valueOrdering =
+        Ordering<Map.Entry<String, MutableDouble>> valueOrdering =
                 Ordering.natural()
-                        .onResultOf(new Function<Map.Entry<String, Double>, Double>() {
+                        .onResultOf(new Function<Map.Entry<String, MutableDouble>, Double>() {
                             @Override
-                            public Double apply(Map. /*@Nullable*/ Entry<String, Double> entry) {
+                            public Double apply(Map. /*@Nullable*/ Entry<String, MutableDouble> entry) {
                                 checkNotNull(entry);
-                                return entry.getValue();
+                                return entry.getValue().doubleValue();
                             }
                         });
         List<String> timerNames = Lists.newArrayList();
         @SuppressWarnings("assignment.type.incompatible")
-        List<Map.Entry<String, Double>> topTimerTotals =
+        List<Map.Entry<String, MutableDouble>> topTimerTotals =
                 valueOrdering.greatestOf(timerTotals.entrySet(), topX);
-        for (Map.Entry<String, Double> entry : topTimerTotals) {
+        for (Map.Entry<String, MutableDouble> entry : topTimerTotals) {
             timerNames.add(entry.getKey());
         }
         return timerNames;
@@ -838,14 +833,14 @@ class TransactionJsonService {
 
         private final OverviewAggregate overviewAggregate;
         // stacked timer values only include time spent as a leaf node in the timer tree
-        private final Map<String, Double> stackedTimers;
+        private final MutableDoubleMap<String> stackedTimers;
 
         private static StackedPoint create(OverviewAggregate overviewAggregate) {
             return new StackedPoint(overviewAggregate, StackedTimerTotals.create(overviewAggregate));
         }
 
         private StackedPoint(OverviewAggregate overviewAggregate,
-                Map<String, Double> stackedTimers) {
+                MutableDoubleMap<String> stackedTimers) {
             this.overviewAggregate = overviewAggregate;
             this.stackedTimers = stackedTimers;
         }
@@ -854,8 +849,32 @@ class TransactionJsonService {
             return overviewAggregate;
         }
 
-        private Map<String, Double> getStackedTimers() {
+        private MutableDoubleMap<String> getStackedTimers() {
             return stackedTimers;
+        }
+    }
+
+    // by using MutableDouble, two operations (get/put) are not required for each increment,
+    // instead just a single get is needed (except for first delta)
+    @SuppressWarnings("serial")
+    static class MutableDoubleMap<K> extends java.util.HashMap<K, MutableDouble> {
+        void add(K key, double delta) {
+            MutableDouble existing = get(key);
+            if (existing == null) {
+                put(key, new MutableDouble(delta));
+            } else {
+                existing.value += delta;
+            }
+        }
+    }
+
+    static class MutableDouble {
+        private double value;
+        private MutableDouble(double value) {
+            this.value = value;
+        }
+        double doubleValue() {
+            return value;
         }
     }
 
