@@ -23,7 +23,7 @@
 }
 
 .gt-opensans {
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'IBM Plex Sans', 'Open Sans', sans-serif;
 }
 
 @mixin gt-focus-ring($opacity: .25, $color: $primary) {
@@ -78,20 +78,22 @@
   background-color: transparent;
   // inherit vertical-align so it can be used inline with other text
   vertical-align: inherit;
-  border-radius: 4px;
+  border-radius: .375rem;
+  font-family: inherit;
+  font-weight: 600;
   @include gt-focus-ring;
 }
 
 .gt-flat-btn:hover {
-  background-color: #ddd;
+  background-color: rgba($gt-blue, .08);
 }
 
 .gt-flat-btn:active {
-  background-color: #ccc;
+  background-color: rgba($gt-blue, .14);
 }
 
 .gt-flat-btn-big {
-  padding: 6px 12px;
+  padding: .4rem .75rem;
 }
 
 .gt-link-with-focus-ring {
