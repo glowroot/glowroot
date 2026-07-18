@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-$navbar-inverse-bg: darken($gt-primary-color, 5%);
-$navbar-inverse-link-active-bg: darken($navbar-inverse-bg, 5%);
+$navbar-inverse-bg: darken($gt-blue, 10%);
+$navbar-inverse-link-active-bg: darken($navbar-inverse-bg, 6%);
 $navbar-inverse-link-color: #fff;
 
 .navbar-brand {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   color: #fff !important;
-  text-shadow: 0 0 4px white;
   font-weight: 700;
+  letter-spacing: .02em;
 }
 
 .gt-navbar .navbar-right {
@@ -31,7 +31,7 @@ $navbar-inverse-link-color: #fff;
 }
 
 .gt-navbar .nav-link:hover {
-  text-shadow: 0 0 4px #fff;
+  background-color: rgba(255, 255, 255, .08);
 }
 
 .gt-navbar .nav-link:focus, .gt-gears-btn:focus, .gt-navbar-toggler:focus {
@@ -39,11 +39,11 @@ $navbar-inverse-link-color: #fff;
 }
 
 .gt-navbar .nav-link.focus-visible, .gt-gears-btn.focus-visible, .gt-navbar-toggler.focus-visible {
-  box-shadow: inset 0 0 0 0.15rem #9fbbc6;
+  box-shadow: inset 0 0 0 0.15rem rgba(255, 255, 255, .45);
 }
 
 .gt-gears-btn:hover {
-  text-shadow: 0 0 10px #fff;
+  background-color: rgba(255, 255, 255, .08);
 }
 
 .gt-gears-btn, .gt-navbar-toggler {
@@ -60,6 +60,7 @@ $navbar-inverse-link-color: #fff;
 .gt-navbar {
   background-color: $navbar-inverse-bg;
   min-height: 3rem;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .08);
 }
 
 .gt-navbar .navbar-brand {
@@ -70,8 +71,9 @@ $navbar-inverse-link-color: #fff;
   display: flex;
   align-items: center;
   color: #fff !important;
-  font-size: 1rem;
+  font-size: .95rem;
   font-weight: 600;
+  border-radius: .25rem;
   @extend .px-md-3;
 }
 
@@ -89,7 +91,7 @@ $navbar-inverse-link-color: #fff;
     text-align: left;
   }
   .gt-navbar .nav-link:focus, .gt-gears-btn:focus {
-    box-shadow: 0 0 0 0.1rem $gt-blue;
+    box-shadow: 0 0 0 0.1rem rgba(255, 255, 255, .5);
   }
 }
 
