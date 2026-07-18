@@ -562,6 +562,7 @@ glowroot.directive('gtTimerDisplay', function () {
         return totalNanosList;
       }
 
+      // Share bar width = % of the largest inclusive total in this list (not % of response time).
       function applyBarPercents(timers, totalNanosList) {
         var maxNanos = totalNanosList.length ? totalNanosList[0] : 0;
         angular.forEach(timers, function (timer) {
@@ -635,6 +636,7 @@ glowroot.directive('gtTimerDisplay', function () {
 
 
 glowroot.directive('gtThreadStats', function () {
+  // Match chart.scss / thread-stats palette; pie is a CSS conic-gradient (no chart lib).
   var PIE_COLORS = {
     cpu: '#417998',
     blocked: '#bf380b',
@@ -648,6 +650,7 @@ glowroot.directive('gtThreadStats', function () {
     },
     templateUrl: 'template/gt-thread-stats.html',
     link: function (scope) {
+      // CPU / Blocked / Waited → pie. Allocated memory stays text-only (no JVM heap fetch).
       function refreshVisuals() {
         var stats = scope.threadStats;
         var txnCount = scope.transactionCount;

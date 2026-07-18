@@ -123,6 +123,7 @@ $trace-point-error: $gt-red;
 .gt-chart-legend {
   text-align: center;
   margin-top: .75rem;
+  // keep legend clear of the chart-vs-breakdown note / breakdown table below
   margin-bottom: 1.5rem;
   width: 100%;
 }
