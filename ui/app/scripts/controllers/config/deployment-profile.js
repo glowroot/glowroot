@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular */
+/* global glowroot, angular, console */
 
 glowroot.controller('ConfigDeploymentProfileCtrl', [
   '$scope',
@@ -34,14 +34,41 @@ glowroot.controller('ConfigDeploymentProfileCtrl', [
       return;
     }
 
+    var LOG_PREFIX = '[Glowroot deployment profile]';
+
+    function logInfo() {
+      // Help operators/reviewers see load → preview → sequential Save without guessing
+      var args = Array.prototype.slice.call(arguments);
+      args.unshift(LOG_PREFIX);
+      console.info.apply(console, args);
+    }
+
+    function logWarn() {
+      var args = Array.prototype.slice.call(arguments);
+      args.unshift(LOG_PREFIX);
+      console.warn.apply(console, args);
+    }
+
     $scope.page = {};
     $scope.profile = 'custom';
+    // Profile matching the last loaded/saved config (not the preview dropdown)
+    $scope.activeProfile = 'custom';
     $scope.loaded = false;
 
     var originalStorage;
     var originalTransaction;
     var originalAdvanced;
     var originalPage;
+
+    $scope.profileDisplayName = function (name) {
+      if (name === 'dev') {
+        return 'Dev';
+      }
+      if (name === 'prod') {
+        return 'Prod';
+      }
+      return 'Custom';
+    };
 
     $scope.canEdit = function () {
       return $scope.layout.adminEdit
@@ -105,24 +132,38 @@ glowroot.controller('ConfigDeploymentProfileCtrl', [
       };
     }
 
-    function matchedProfileName() {
-      if ($scope.page.rollupCappedSizesNonUniform) {
+    function matchedProfileName(page) {
+      if (!page) {
         return 'custom';
       }
-      return deploymentPresets.matchName($scope.page);
+      if (page.rollupCappedSizesNonUniform) {
+        return 'custom';
+      }
+      return deploymentPresets.matchName(page);
     }
 
     function syncProfileSelect() {
-      $scope.profile = matchedProfileName();
+      $scope.profile = matchedProfileName($scope.page);
+    }
+
+    function syncActiveProfile() {
+      $scope.activeProfile = matchedProfileName(originalPage);
     }
 
     $scope.onProfileChange = function () {
       if ($scope.profile === 'custom') {
+        // No draft restore — Custom keeps the current form values;
+        // activeProfile still shows what is currently saved.
+        logInfo('profile select → Custom (form unchanged; active saved profile still',
+            $scope.activeProfile + ')');
         return;
       }
       // Populate only — does not persist until Save
+      logInfo('profile select →', $scope.profile,
+          '(populate preview only; active saved profile still', $scope.activeProfile + ')');
       deploymentPresets.apply($scope.profile, $scope.page);
       $scope.page.rollupCappedSizesNonUniform = false;
+      logInfo('preview values applied', angular.copy($scope.page));
     };
 
     $scope.$watch('page', function () {
@@ -130,8 +171,9 @@ glowroot.controller('ConfigDeploymentProfileCtrl', [
         return;
       }
       // Keep dropdown in sync when user edits fields manually
-      var matched = matchedProfileName();
+      var matched = matchedProfileName($scope.page);
       if ($scope.profile !== matched) {
+        logInfo('form edit changed matched profile', $scope.profile, '→', matched);
         $scope.profile = matched;
       }
     }, true);
@@ -143,7 +185,10 @@ glowroot.controller('ConfigDeploymentProfileCtrl', [
       $scope.page = pageFromLoaded(storage, originalTransaction, advanced);
       originalPage = angular.copy($scope.page);
       syncProfileSelect();
+      syncActiveProfile();
       $scope.loaded = true;
+      logInfo('loaded; active=', $scope.activeProfile, 'select=', $scope.profile,
+          'values=', angular.copy($scope.page));
     }
 
     $scope.save = function (deferred) {
@@ -169,25 +214,35 @@ glowroot.controller('ConfigDeploymentProfileCtrl', [
       advancedPayload.maxTraceEntriesPerTransaction = $scope.page.maxTraceEntriesPerTransaction;
       advancedPayload.maxProfileSamplesPerTransaction = $scope.page.maxProfileSamplesPerTransaction;
 
+      logInfo('Save starting (sequential storage → transaction → advanced); preview profile=',
+          $scope.profile, 'active before save=', $scope.activeProfile);
+
       // Sequential: stop on first failure so we never claim full success after a partial apply
       $http.post('backend/admin/storage', storagePayload)
           .then(function (storageResponse) {
             originalStorage = storageResponse.data;
+            logInfo('POST admin/storage OK');
             return $http.post('backend/config/transaction?agent-id='
                 + encodeURIComponent($scope.agentId), transactionPayload);
           })
           .then(function (transactionResponse) {
             originalTransaction = transactionResponse.data.config;
+            logInfo('POST config/transaction OK');
             return $http.post('backend/config/advanced?agent-rollup-id='
                 + encodeURIComponent($scope.agentRollupId), advancedPayload);
           })
           .then(function (advancedResponse) {
             originalAdvanced = advancedResponse.data;
+            logInfo('POST config/advanced OK');
             $scope.page = pageFromLoaded(originalStorage, originalTransaction, originalAdvanced);
             originalPage = angular.copy($scope.page);
             syncProfileSelect();
+            syncActiveProfile();
+            logInfo('Save complete; active=', $scope.activeProfile);
             deferred.resolve('Saved');
           }, function (response) {
+            logWarn('Save failed (partial apply possible); reloading live config',
+                response && response.status, response && response.data);
             httpErrors.handle(response, deferred);
             // Reload versions / live values after a partial failure
             reloadAll();
@@ -195,6 +250,7 @@ glowroot.controller('ConfigDeploymentProfileCtrl', [
     };
 
     function reloadAll() {
+      logInfo('loading storage + transaction + advanced…');
       $q.all([
         $http.get('backend/admin/storage'),
         $http.get('backend/config/transaction?agent-id=' + encodeURIComponent($scope.agentId)),
@@ -203,6 +259,7 @@ glowroot.controller('ConfigDeploymentProfileCtrl', [
       ]).then(function (responses) {
         onLoaded(responses[0].data, responses[1].data, responses[2].data);
       }, function (response) {
+        logWarn('load failed', response && response.status, response && response.data);
         httpErrors.handle(response);
       });
     }
