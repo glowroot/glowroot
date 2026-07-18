@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular */
+/* global glowroot, angular, console */
 
 // Dev = Glowroot defaults. Prod = leaner retention/capped sizes and lighter profiling for
 // embedded-on-prod (same JVM as the app). Presets only populate the form; Save persists.
@@ -91,6 +91,7 @@ glowroot.factory('deploymentPresets', [
 
     function apply(name, page) {
       var preset = name === 'prod' ? PROD : DEV;
+      console.info('[Glowroot deployment profile] applying preset', name, angular.copy(preset));
       angular.extend(page, copyPreset(preset));
       return page;
     }
