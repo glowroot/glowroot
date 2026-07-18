@@ -24,25 +24,76 @@
 
 .gt-header-text {
   font-size: 1.75rem;
-  color: darken($gt-blue, 6%);
-  font-weight: 600;
+  // classic Glowroot title (goldenrod), not blue
+  color: $gt-page-title-color;
+  font-weight: 700;
+  letter-spacing: normal;
   line-height: inherit; // override h1
   margin: 0; // override h1
 }
 
-.gt-header .dropdown-toggle, .gt-not-header .dropdown-toggle {
-  font-size: 1.875rem !important;
+// Agent / rollup pickers: closed button and open list share one readable size
+$gt-header-select-font: 1rem;
+
+.gt-header .bootstrap-select > .dropdown-toggle,
+.gt-not-header .bootstrap-select > .dropdown-toggle,
+.gt-header .dropdown-toggle,
+.gt-not-header .dropdown-toggle {
+  font-size: $gt-header-select-font !important;
   font-weight: 600;
+  line-height: 1.35 !important;
   cursor: pointer;
   display: inline-block;
-  padding: .125rem 1rem .25rem 1rem;
+  padding: .35rem .65rem !important;
   border-radius: .5rem;
+  border: none;
+  background-color: transparent;
   color: #505050 !important;
+  height: auto !important;
+  box-shadow: none !important;
 }
 
-.gt-header .dropdown-menu, .gt-not-header .dropdown-menu {
+.gt-header .bootstrap-select > .dropdown-toggle:hover,
+.gt-not-header .bootstrap-select > .dropdown-toggle:hover,
+.gt-header .dropdown-toggle:hover,
+.gt-not-header .dropdown-toggle:hover,
+.gt-header .bootstrap-select > .dropdown-toggle:focus,
+.gt-not-header .bootstrap-select > .dropdown-toggle:focus,
+.gt-header .dropdown-toggle:focus,
+.gt-not-header .dropdown-toggle:focus {
+  background-color: transparent !important;
+  border: none;
+  color: #505050 !important;
+  box-shadow: none !important;
+}
+
+.gt-header .bootstrap-select .dropdown-menu,
+.gt-not-header .bootstrap-select .dropdown-menu,
+.gt-header .dropdown-menu,
+.gt-not-header .dropdown-menu {
   min-width: 100%;
   border-radius: .5rem;
+  font-size: $gt-header-select-font !important;
+  padding: .25rem 0;
+}
+
+// bootstrap-select renders options as <a> inside <li>, not always .dropdown-item
+.gt-header .bootstrap-select .dropdown-menu li a,
+.gt-not-header .bootstrap-select .dropdown-menu li a,
+.gt-header .bootstrap-select .dropdown-item,
+.gt-not-header .bootstrap-select .dropdown-item,
+.gt-header-lhs .dropdown-item,
+.gt-header-rhs .dropdown-item,
+.gt-not-header .dropdown-item {
+  font-size: $gt-header-select-font !important;
+  font-weight: 500;
+  line-height: 1.35;
+  padding: .5rem .85rem !important;
+}
+
+.gt-header .bootstrap-select .dropdown-menu li a.opt,
+.gt-not-header .bootstrap-select .dropdown-menu li a.opt {
+  font-size: $gt-header-select-font !important;
 }
 
 .gt-header-lhs, .gt-header-rhs {
@@ -52,14 +103,6 @@
 
 .gt-header-rhs {
   padding-top: .75rem;
-}
-
-.gt-header-lhs .dropdown-item {
-  font-size: 1.5rem;
-}
-
-.gt-header-rhs .dropdown-item, .gt-not-header .dropdown-item {
-  font-size: 1.25rem;
 }
 
 .dropdown-item {
@@ -83,3 +126,4 @@
   margin-left: .25rem;
   margin-right: calc(.25rem + 1px);
 }
+

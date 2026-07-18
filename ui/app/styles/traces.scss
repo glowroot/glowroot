@@ -29,17 +29,17 @@
 .gt-full-width-modal.modal .gt-close-sticky {
   position: sticky; // not supported by all browsers, but designed so fallback is acceptable
   height: 0;
-  top: 20px; // top is needed for browsers that support sticky
-  margin-top: 20px;
+  top: .75rem; // top is needed for browsers that support sticky
+  margin-top: .75rem;
   z-index: 100;
 }
 
 .gt-full-width-modal.modal .close {
-  margin-right: 25px;
+  margin-right: 1rem;
 }
 
 .gt-full-width-modal.modal .modal-body {
-  padding-top: 20px; // override .modal-body top padding due to margin-top of close button above
+  padding-top: 1rem; // override .modal-body top padding due to margin-top of close button above
 }
 
 .gt-full-height-modal .modal-dialog {
@@ -77,13 +77,18 @@
   // out of close button
   // this override is no longer applied and the button gets too light (default bootstrap opacity .2)
   // so bootstrap close.scss is duplicated/modified to handle this
-  opacity: .42 !important; // just enough opacity to meet accessibility contrast ratio
-  font-size: 24px !important;
+  opacity: .5 !important;
+  font-size: 1.25rem !important;
+  font-weight: 400;
+  padding: .15rem .35rem;
+  line-height: 1;
+  border-radius: .25rem;
 }
 
 // override bootstrap styling for modal close icon
 .modal .close:hover, .modal .close:focus {
-  opacity: .62 !important;
+  opacity: .85 !important;
+  background-color: #f0f0f0;
 }
 
 @include media-breakpoint-up(lg) {
