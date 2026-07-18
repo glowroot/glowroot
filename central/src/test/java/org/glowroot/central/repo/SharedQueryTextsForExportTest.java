@@ -45,17 +45,12 @@ public class SharedQueryTextsForExportTest {
 
         // Slow resolution for index 1 so it finishes after index 2 would have been reachable —
         // the old ArrayList.add()-on-complete path scrambled order here.
+        CompletableFuture<String> delayedFuture = new CompletableFuture<>();
         CompletionStage<List<Trace.SharedQueryText>> stage = SharedQueryTextsForExport.resolve(
                 ImmutableList.of(inline0, sha1, inline2),
-                fullTextSha1 -> CompletableFuture.supplyAsync(() -> {
-                    try {
-                        Thread.sleep(50);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                    return "select b full";
-                }));
+                fullTextSha1 -> delayedFuture);
 
+        delayedFuture.complete("select b full");
         List<Trace.SharedQueryText> resolved = stage.toCompletableFuture().get(2, TimeUnit.SECONDS);
 
         assertThat(resolved).hasSize(3);

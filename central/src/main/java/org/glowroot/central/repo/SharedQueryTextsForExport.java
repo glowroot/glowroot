@@ -16,7 +16,7 @@
 package org.glowroot.central.repo;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -38,32 +38,31 @@ final class SharedQueryTextsForExport {
     static CompletionStage<List<Trace.SharedQueryText>> resolve(
             List<Trace.SharedQueryText> sharedQueryTexts,
             Function<String, CompletionStage<String>> getFullText) {
-        List<Trace.SharedQueryText> resolved =
-                new ArrayList<>(Collections.nCopies(sharedQueryTexts.size(), null));
+        Trace.SharedQueryText[] resolved = new Trace.SharedQueryText[sharedQueryTexts.size()];
         List<CompletableFuture<?>> futures = new ArrayList<>();
         for (int i = 0; i < sharedQueryTexts.size(); i++) {
             Trace.SharedQueryText sharedQueryText = sharedQueryTexts.get(i);
             String fullTextSha1 = sharedQueryText.getFullTextSha1();
             if (fullTextSha1.isEmpty()) {
-                resolved.set(i, sharedQueryText);
+                resolved[i] = sharedQueryText;
             } else {
                 final int index = i;
                 futures.add(getFullText.apply(fullTextSha1).thenAccept(fullText -> {
                     if (fullText == null) {
-                        resolved.set(index, Trace.SharedQueryText.newBuilder()
+                        resolved[index] = Trace.SharedQueryText.newBuilder()
                                 .setFullText(sharedQueryText.getTruncatedText()
                                         + " ... [full query text has expired] ... "
                                         + sharedQueryText.getTruncatedEndText())
-                                .build());
+                                .build();
                     } else {
-                        resolved.set(index, Trace.SharedQueryText.newBuilder()
+                        resolved[index] = Trace.SharedQueryText.newBuilder()
                                 .setFullText(fullText)
-                                .build());
+                                .build();
                     }
                 }).toCompletableFuture());
             }
         }
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                .thenApply(ignored -> resolved);
+                .thenApply(ignored -> Arrays.asList(resolved));
     }
 }
