@@ -1245,8 +1245,8 @@ HandlebarsRendering = (function () {
             var afterPrefixStripped = text.substring('jdbc execution: '.length);
             var afterRowsStripped = afterPrefixStripped.replace(/ => [0-9]+ rows?$/, '');
             var queryText = afterRowsStripped.replace(/ \[.*?]$/, '');
-            var suffix = afterPrefixStripped.substring(queryText.length + 1);
-            formatSql(unexpanded, expanded, queryText, 'jdbc execution:', suffix);
+            var legacySuffix = afterPrefixStripped.substring(queryText.length + 1);
+            formatSql(unexpanded, expanded, queryText, 'jdbc execution:', legacySuffix);
           }
           doAfter();
         }
