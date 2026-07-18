@@ -6,6 +6,7 @@
     <tr>
       <td class="gt-breakdown-header gt-bold" style="text-align: left;">{{heading}}</td>
       <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+      <td class="gt-breakdown-header" style="font-weight: 600;">self&nbsp;(ms)</td>
       <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
     </tr>
     </thead>
@@ -18,10 +19,11 @@
         </div>
       </td>
       <td>{{flattenedTimer.totalNanos / (1000000 * transactionCount) | gtMillis}}</td>
+      <td>{{flattenedTimer.selfNanos / (1000000 * transactionCount) | gtMillis}}</td>
       <td>{{flattenedTimer.count / transactionCount | gtCount}}</td>
     </tr>
     <tr class="align-top">
-      <td colspan="3" style="text-align: left;">
+      <td colspan="4" style="text-align: left;">
         <div class="gt-indent2">
           <div style="margin-left: -6px;">
             <span tabindex="-1"></span>
@@ -63,6 +65,7 @@
     <tr>
       <td class="gt-breakdown-header gt-bold" style="text-align: left;">{{heading}}</td>
       <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
+      <td class="gt-breakdown-header" style="font-weight: 600;">self&nbsp;(ms)</td>
       <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
     </tr>
     </thead>
@@ -77,10 +80,11 @@
         </div>
       </td>
       <td>{{treeTimer.totalNanos / (1000000 * transactionCount) | gtMillis}}</td>
+      <td>{{treeTimer.selfNanos / (1000000 * transactionCount) | gtMillis}}</td>
       <td>{{treeTimer.count / transactionCount | gtCount}}</td>
     </tr>
     <tr class="align-top">
-      <td colspan="3" style="text-align: left;">
+      <td colspan="4" style="text-align: left;">
         <div class="gt-indent2">
           <div style="margin-left: -6px;">
             <span tabindex="-1"></span>

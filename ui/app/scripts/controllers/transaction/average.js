@@ -100,8 +100,19 @@ glowroot.controller('TransactionAverageCtrl', [
       // indent1 must be sync'd with $indent1 variable in common-trace.less
       var indent1 = 8.41; // px
 
+      function selfNanos(timer) {
+        var nested = 0;
+        if (timer.childTimers) {
+          angular.forEach(timer.childTimers, function (childTimer) {
+            nested += childTimer.totalNanos;
+          });
+        }
+        return timer.totalNanos - nested;
+      }
+
       function traverse(timer, nestingLevel) {
         timer.nestingIndent = nestingLevel * indent1 * 2;
+        timer.selfNanos = selfNanos(timer);
         treeTimers.push(timer);
         if (timer.childTimers) {
           timer.childTimers.sort(function (a, b) {
@@ -132,12 +143,24 @@ glowroot.controller('TransactionAverageCtrl', [
       var flattenedTimerMap = {};
       var flattenedTimers = [];
 
+      function selfNanos(timer) {
+        var nested = 0;
+        if (timer.childTimers) {
+          $.each(timer.childTimers, function (index, nestedTimer) {
+            nested += nestedTimer.totalNanos;
+          });
+        }
+        return timer.totalNanos - nested;
+      }
+
       function traverse(timer, parentTimerNames) {
+        var leafNanos = selfNanos(timer);
         var flattenedTimer = flattenedTimerMap[timer.name];
         if (!flattenedTimer) {
           flattenedTimer = {
             name: timer.name,
             totalNanos: timer.totalNanos,
+            selfNanos: leafNanos,
             count: timer.extended ? 0 : timer.count
           };
           flattenedTimerMap[timer.name] = flattenedTimer;
@@ -146,6 +169,7 @@ glowroot.controller('TransactionAverageCtrl', [
           // only add to existing flattened timer if the aggregate timer isn't appearing under itself
           // (this is possible when they are separated by another aggregate timer)
           flattenedTimer.totalNanos += timer.totalNanos;
+          flattenedTimer.selfNanos += leafNanos;
           if (!timer.extended) {
             flattenedTimer.count += timer.count;
           }
