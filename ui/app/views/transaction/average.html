@@ -70,7 +70,7 @@
     </span>
   </button>
   <button class="gt-chart-button"
-          uib-popover-template="'template/help/chart.html'"
+          uib-popover-template="'template/help/average-chart.html'"
           popover-placement="left"
           popover-trigger="'outsideClick'">
     <span title="Help"
@@ -119,6 +119,12 @@
   <div ng-if="mergedAggregate.transactionCount"
        class="gt-everything-below-average-chart"
        style="position: relative; padding-top: 30px;">
+    <div style="color: #555; font-size: 12px; margin-bottom: 12px; max-width: 640px;">
+      The chart shows stacked <em>self time</em> (exclusive). The breakdown table's
+      <em>total</em> column is inclusive (parents include nested timers); compare the
+      <em>self</em> column to the chart segments. Inclusive totals do not need to sum to
+      the chart total.
+    </div>
     <div ng-if="mainThreadFlattenedTimers.length">
       <div gt-timer-display
            heading="Breakdown{{auxThreadFlattenedTimers.length ? ' (Main Thread)' : ''}}:"
