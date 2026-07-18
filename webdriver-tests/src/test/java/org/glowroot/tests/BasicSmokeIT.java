@@ -41,7 +41,6 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.glowroot.tests.jvm.JvmSidebar;
@@ -52,7 +51,6 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
-import static org.openqa.selenium.By.id;
 import static org.openqa.selenium.By.xpath;
 
 public class BasicSmokeIT extends WebDriverIT {
@@ -443,12 +441,11 @@ public class BasicSmokeIT extends WebDriverIT {
 
     private void clickAcross() throws InterruptedException {
         waitFor(xpath("//td[normalize-space()='Breakdown:']"));
-        // average / percentiles / throughput is a View <select> (was overlapping radios/links)
-        new Select(Utils.getWithWait(driver, id("responseTimeViewSelect")))
-                .selectByValue("percentiles");
+        // View <select> replaced the old radio <a href>s; navigate by URL like those hrefs did
+        // (more reliable in headless Firefox than driving the select widget).
+        openResponseTimeView("percentiles");
         waitFor(xpath("//label[normalize-space()='95th percentile:']"));
-        new Select(Utils.getWithWait(driver, id("responseTimeViewSelect")))
-                .selectByValue("throughput");
+        openResponseTimeView("throughput");
         waitFor(xpath("//label[normalize-space()='Throughput:']"));
         clickPartialLink("Slow traces");
         waitFor(xpath("//label[normalize-space()='Response time']"));
@@ -464,6 +461,14 @@ public class BasicSmokeIT extends WebDriverIT {
         clickLink("View flame graph");
         // give flame graph a chance to render (only for visual when running locally)
         SECONDS.sleep(1);
+    }
+
+    /** Same navigation as the old average/percentiles/throughput radio links. */
+    private void openResponseTimeView(String view) {
+        String current = driver.getCurrentUrl();
+        String next = current.replaceAll("/transaction/(average|percentiles|throughput)",
+                "/transaction/" + view);
+        driver.navigate().to(next);
     }
 
     private void clickAroundInTraceModal(String traceId, boolean active) throws Exception {
