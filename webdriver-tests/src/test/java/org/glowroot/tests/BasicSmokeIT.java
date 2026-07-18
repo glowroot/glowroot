@@ -41,6 +41,7 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import org.glowroot.tests.jvm.JvmSidebar;
@@ -51,6 +52,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
+import static org.openqa.selenium.By.id;
 import static org.openqa.selenium.By.xpath;
 
 public class BasicSmokeIT extends WebDriverIT {
@@ -441,9 +443,12 @@ public class BasicSmokeIT extends WebDriverIT {
 
     private void clickAcross() throws InterruptedException {
         waitFor(xpath("//td[normalize-space()='Breakdown:']"));
-        clickLink("percentiles");
+        // average / percentiles / throughput is a View <select> (was overlapping radios/links)
+        new Select(Utils.getWithWait(driver, id("responseTimeViewSelect")))
+                .selectByValue("percentiles");
         waitFor(xpath("//label[normalize-space()='95th percentile:']"));
-        clickLink("throughput");
+        new Select(Utils.getWithWait(driver, id("responseTimeViewSelect")))
+                .selectByValue("throughput");
         waitFor(xpath("//label[normalize-space()='Throughput:']"));
         clickPartialLink("Slow traces");
         waitFor(xpath("//label[normalize-space()='Response time']"));
