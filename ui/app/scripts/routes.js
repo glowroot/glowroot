@@ -560,6 +560,11 @@ glowroot.config([
       templateUrl: 'views/config/advanced.html',
       controller: 'ConfigAdvancedCtrl'
     });
+    $stateProvider.state('config.deploymentProfile', {
+      url: '/deployment-profile',
+      templateUrl: 'views/config/deployment-profile.html',
+      controller: 'ConfigDeploymentProfileCtrl'
+    });
     $stateProvider.state('config.json', {
       url: '/json',
       templateUrl: 'views/config/json.html',
