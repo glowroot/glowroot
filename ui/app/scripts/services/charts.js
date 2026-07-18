@@ -17,6 +17,10 @@
 /* global glowroot, angular, moment, $ */
 
 // common code shared between transaction.js and errors.js
+//
+// Interactive legend (transaction average / percentiles):
+// click solos a series; Ctrl/Cmd+click toggles; Show all restores. While filtered, y-axis
+// stays at the full stacked max so a solo series shows relative impact, not a rescaled peak.
 glowroot.factory('charts', [
   '$http',
   '$rootScope',
@@ -27,6 +31,7 @@ glowroot.factory('charts', [
   function ($http, $rootScope, $timeout, keyedColorPools, queryStrings, httpErrors) {
 
     function createState() {
+      // fullPlotData / seriesVisible / stackedYMax are filled when legend filtering is used
       return {
         plot: undefined,
         keyedColorPool: keyedColorPools.create()
@@ -71,13 +76,14 @@ glowroot.factory('charts', [
       bindLegendControls(chartState, $scope);
     }
 
+    // Exposed so controllers can bind before charts.init / first refresh (legend is outside flot).
     function bindLegendControls(chartState, $scope) {
       // Idempotent: average/percentiles bind early; charts.init may call again.
       if ($scope.toggleChartSeries) {
         return;
       }
-      // Click legend: solo that series (others off). Click again on the only visible → show all.
-      // Ctrl/Cmd+click: toggle that series without resetting the others.
+      // Click: solo that series. Click again on the only visible series → show all.
+      // Ctrl/Cmd+click: toggle without resetting the others.
       $scope.toggleChartSeries = function (seriesLabel, $event) {
         if ($event) {
           $event.preventDefault();
@@ -119,6 +125,7 @@ glowroot.factory('charts', [
       };
     }
 
+    // Snapshot of unfiltered series so toggling can restore without another HTTP fetch.
     function ensureFullPlotData(chartState) {
       if (chartState.fullPlotData && chartState.fullPlotData.length) {
         return;
@@ -188,6 +195,7 @@ glowroot.factory('charts', [
       return count;
     }
 
+    // Max of per-bucket stacked sums (all series) — used as fixed y-axis when filtering.
     function computeStackedYMax(plotData) {
       var max = 0;
       var pointCount = 0;

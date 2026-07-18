@@ -33,6 +33,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
     }
 
     var chartState = charts.createState();
+    // Same early bind as average — legend is outside flot
     charts.bindLegendControls(chartState, $scope);
 
     var appliedPercentiles;
@@ -51,6 +52,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
               onRefreshData);
         });
 
+    // Shared View dropdown (gt-response-time-view) — replaces overlapping top radios
     $scope.responseTimeView = 'percentiles';
     $scope.changeResponseTimeView = function () {
       $scope.clickTopRadioButton($scope.responseTimeView);
