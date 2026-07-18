@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-// larger font size is for mobile, overridden to 14px on screen size 480px and larger
-$font-size-base: 16px;
+// larger font size is for mobile, overridden on wider screens via body rules
+$font-size-base: 15px;
 
-// lighten text to better fit with $gt-primary-color
-$text-color: #444;
+// body / UI text
+$text-color: #333;
 
 // used by copy to clipboard tooltip
 $tooltip-bg: #555;

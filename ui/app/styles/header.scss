@@ -15,7 +15,7 @@
  */
 
 .gt-header {
-  padding: 2.75rem 0 3.25rem;
+  padding: 1.75rem 0 2rem;
 }
 
 .gt-header-height {
@@ -23,9 +23,9 @@
 }
 
 .gt-header-text {
-  font-size: 2.25rem;
-  color: $gt-page-title-color;
-  font-weight: 700;
+  font-size: 1.75rem;
+  color: darken($gt-blue, 6%);
+  font-weight: 600;
   line-height: inherit; // override h1
   margin: 0; // override h1
 }
@@ -76,9 +76,10 @@
 }
 
 .gt-header .gt-separator {
-  margin-top: -.75rem;
-  font-size: 3.25rem;
+  margin-top: -.5rem;
+  font-size: 2.25rem;
   font-weight: 400;
+  color: #bbb;
   margin-left: .25rem;
   margin-right: calc(.25rem + 1px);
 }
