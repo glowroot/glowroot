@@ -54,7 +54,6 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -1097,32 +1096,14 @@ public class TraceDaoImpl implements TraceDao {
                         })
                 .thenCompose(entries -> {
                     return readSharedQueryTexts(agentId, traceId, profile).thenCompose(sht -> {
-                        List<Trace.SharedQueryText> sharedQueryTexts = new ArrayList<>();
-                        List<Future<?>> futures = new ArrayList<>();
-                        for (Trace.SharedQueryText sharedQueryText : sht) {
-                            String fullTextSha1 = sharedQueryText.getFullTextSha1();
-                            if (fullTextSha1.isEmpty()) {
-                                sharedQueryTexts.add(sharedQueryText);
-                            } else {
-                                futures.add(fullQueryTextDao.getFullText(agentId, fullTextSha1, profile).thenAccept(fullText -> {
-                                    if (fullText == null) {
-                                        sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
-                                                .setFullText(sharedQueryText.getTruncatedText()
-                                                        + " ... [full query text has expired] ... "
-                                                        + sharedQueryText.getTruncatedEndText())
-                                                .build());
-                                    } else {
-                                        sharedQueryTexts.add(Trace.SharedQueryText.newBuilder()
-                                                .setFullText(fullText)
-                                                .build());
-                                    }
-                                }).toCompletableFuture());
-                            }
-                        }
-                        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).thenApply(ignored -> {
-                            return entries.addAllSharedQueryTexts(sharedQueryTexts)
-                                    .build();
-                        });
+                        // Preserve original index order — see SharedQueryTextsForExport / issue #1181.
+                        return SharedQueryTextsForExport
+                                .resolve(sht,
+                                        fullTextSha1 -> fullQueryTextDao.getFullText(agentId,
+                                                fullTextSha1, profile))
+                                .thenApply(sharedQueryTexts -> entries
+                                        .addAllSharedQueryTexts(sharedQueryTexts)
+                                        .build());
                     });
                 });
 
