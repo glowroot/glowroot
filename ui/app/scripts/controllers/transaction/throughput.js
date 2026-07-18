@@ -40,6 +40,7 @@ glowroot.controller('TransactionThroughputCtrl', [
               onRefreshData);
         });
 
+    // Shared View dropdown (gt-response-time-view) — replaces overlapping top radios
     $scope.responseTimeView = 'throughput';
     $scope.changeResponseTimeView = function () {
       $scope.clickTopRadioButton($scope.responseTimeView);

@@ -23,8 +23,8 @@ $text-color: #333;
 // used by copy to clipboard tooltip
 $tooltip-bg: #555;
 
-$gt-primary-color: darken(goldenrod, 12%);
-$gt-page-title-color: darken($gt-primary-color, 5%);
+$gt-primary-color: darken(goldenrod, 12%); // classic Glowroot chrome (navbar / accents)
+$gt-page-title-color: darken($gt-primary-color, 5%); // page titles — keep goldenrod, not blue
 
 // TODO rename $gt-warning-color
 $gt-red: #bf380b;
