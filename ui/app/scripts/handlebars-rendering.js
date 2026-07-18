@@ -565,6 +565,9 @@ HandlebarsRendering = (function () {
   });
 
   Handlebars.registerHelper('firstLocationStackTraceElementHtml', function (stackTraceElements) {
+    if (!stackTraceElements || !stackTraceElements.length) {
+      return '';
+    }
     return escapeHtml(stackTraceElements[0]);
   });
 
@@ -1186,15 +1189,17 @@ HandlebarsRendering = (function () {
                 if (data.expired) {
                   expandedTraceEntryNode.text('[the full query text has expired]');
                 } else {
-                  expandedTraceEntryNode.text(queryMessage.prefix + data.fullText + queryMessage.suffix);
-                  if (queryMessage.prefix === 'jdbc query: ') {
-                    formatSql(unexpanded, expanded, data.fullText, 'jdbc query:', queryMessage.suffix.trim());
-                  } else if (queryMessage.prefix === 'jdbc execute: ') {
+                  var prefix = queryMessage.prefix || '';
+                  var suffix = queryMessage.suffix || '';
+                  expandedTraceEntryNode.text(prefix + data.fullText + suffix);
+                  if (prefix === 'jdbc query: ') {
+                    formatSql(unexpanded, expanded, data.fullText, 'jdbc query:', suffix.trim());
+                  } else if (prefix === 'jdbc execute: ') {
                     // this is for traces captured prior to 0.12.3
-                    formatSql(unexpanded, expanded, data.fullText, 'jdbc execute:', queryMessage.suffix.trim());
-                  } else if (queryMessage.prefix === 'jdbc execution: ') {
+                    formatSql(unexpanded, expanded, data.fullText, 'jdbc execute:', suffix.trim());
+                  } else if (prefix === 'jdbc execution: ') {
                     // this is for traces captured prior to 0.10.1
-                    formatSql(unexpanded, expanded, data.fullText, 'jdbc execution:', queryMessage.suffix.trim());
+                    formatSql(unexpanded, expanded, data.fullText, 'jdbc execution:', suffix.trim());
                   }
                   // so other trace entries with same shared query text don't need to go to server
                   queryMessage.sharedQueryText.fullText = data.fullText;
@@ -1216,19 +1221,21 @@ HandlebarsRendering = (function () {
               });
         } else if (queryMessage && queryMessage.sharedQueryText && queryMessage.sharedQueryText.fullText) {
           // full text is already available for short query texts, or was already fetched above
-          expandedTraceEntryNode.text(queryMessage.prefix + queryMessage.sharedQueryText.fullText
-              + queryMessage.suffix);
-          if (queryMessage.prefix === 'jdbc query: ') {
+          var prefix = queryMessage.prefix || '';
+          var suffix = queryMessage.suffix || '';
+          expandedTraceEntryNode.text(prefix + queryMessage.sharedQueryText.fullText
+              + suffix);
+          if (prefix === 'jdbc query: ') {
             formatSql(unexpanded, expanded, queryMessage.sharedQueryText.fullText, 'jdbc query:',
-                queryMessage.suffix.trim());
-          } else if (queryMessage.prefix === 'jdbc execute: ') {
+                suffix.trim());
+          } else if (prefix === 'jdbc execute: ') {
             // this is for traces captured prior to 0.12.3
             formatSql(unexpanded, expanded, queryMessage.sharedQueryText.fullText, 'jdbc execute:',
-                queryMessage.suffix.trim());
-          } else if (queryMessage.prefix === 'jdbc execution: ') {
+                suffix.trim());
+          } else if (prefix === 'jdbc execution: ') {
             // this is for traces captured prior to 0.10.1
             formatSql(unexpanded, expanded, queryMessage.sharedQueryText.fullText, 'jdbc execution:',
-                queryMessage.suffix.trim());
+                suffix.trim());
           }
           doAfter();
         } else {
