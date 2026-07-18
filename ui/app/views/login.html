@@ -37,29 +37,27 @@
   </div>
 </div>
 <div ng-form
+     class="gt-login-form"
      gt-form-with-primary-button
      gt-form-autofocus-on-first-input
      name="formCtrl">
   <div class="form-group">
-    <input class="form-control d-inline-block"
+    <input class="form-control gt-login-input"
            ng-model="page.username"
            id="username"
            placeholder="Enter username"
-           style="max-width: 20em;"
            aria-label="Username">
-    <span class="gt-red"
-          ng-if="message"
-          style="padding-left: 15px;">
+    <span class="gt-red gt-login-message"
+          ng-if="message">
       {{message}}
     </span>
   </div>
   <div class="form-group">
     <input type="password"
-           class="form-control d-inline-block"
+           class="form-control gt-login-input"
            ng-model="page.password"
            id="password"
            placeholder="Enter password"
-           style="max-width: 20em;"
            aria-label="Password">
   </div>
   <div gt-button

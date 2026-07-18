@@ -15,10 +15,15 @@
  */
 
 $primary: #417998;
-$secondary: #edeae4;
+$secondary: #f0f0f0;
 $danger: #bf380b;
 $success: darken(#28a745, 5%); // #28a745 is bootstrap $green
 $form-group-margin-bottom: 1.5rem; // a little more spacing between form elements
+$btn-font-weight: 600;
+$btn-border-radius: .375rem;
+$input-btn-padding-y: .4rem;
+$input-btn-padding-x: .9rem;
+$border-radius: .375rem;
 
 // fontawesome is used for gear and sign out icons in top right of navbar and also for help icon
 @import "../../bower_components/fontawesome/scss/variables";
@@ -87,30 +92,33 @@ $brand-primary: $gt-blue;
 $state-danger-text: $gt-red;
 
 @font-face {
-  font-family: 'Open Sans';
+  font-family: 'IBM Plex Sans';
   font-weight: 400;
-  src: local('Open Sans'),
-  local('OpenSans'),
-  url(../fonts/opensans-regular.woff2) format('woff2'),
-  url(../fonts/opensans-regular.woff) format('woff');
+  font-style: normal;
+  font-display: swap;
+  src: local('IBM Plex Sans'),
+  local('IBMPlexSans'),
+  url(../fonts/ibm-plex-sans-regular.woff2) format('woff2');
 }
 
 @font-face {
-  font-family: 'Open Sans';
+  font-family: 'IBM Plex Sans';
   font-weight: 600;
-  src: local('Open Sans Semibold'),
-  local('OpenSans-Semibold'),
-  url(../fonts/opensans-semibold.woff2) format('woff2'),
-  url(../fonts/opensans-semibold.woff) format('woff');
+  font-style: normal;
+  font-display: swap;
+  src: local('IBM Plex Sans SemiBold'),
+  local('IBMPlexSans-SemiBold'),
+  url(../fonts/ibm-plex-sans-semibold.woff2) format('woff2');
 }
 
 @font-face {
-  font-family: 'Open Sans';
+  font-family: 'IBM Plex Sans';
   font-weight: 700;
-  src: local('Open Sans Bold'),
-  local('OpenSans-Bold'),
-  url(../fonts/opensans-bold.woff2) format('woff2'),
-  url(../fonts/opensans-bold.woff) format('woff');
+  font-style: normal;
+  font-display: swap;
+  src: local('IBM Plex Sans Bold'),
+  local('IBMPlexSans-Bold'),
+  url(../fonts/ibm-plex-sans-bold.woff2) format('woff2');
 }
 
 @font-face {
@@ -152,7 +160,26 @@ body {
   // scrollbar shows up because the page dynamically expanded greater than a single screen, or
   // contracted down to a single screen, e.g. when showing or hiding content
   overflow-y: scroll;
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'IBM Plex Sans', 'Open Sans', sans-serif;
+  font-size: $font-size-base;
+  line-height: 1.5;
+  color: $text-color;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.gt-login-form {
+  max-width: 22rem;
+}
+
+.gt-login-input {
+  max-width: 20em;
+}
+
+.gt-login-message {
+  display: inline-block;
+  padding-left: .75rem;
+  vertical-align: middle;
 }
 
 .container {
@@ -322,14 +349,50 @@ select.form-control {
   @include gt-focus-ring;
 }
 
+.btn {
+  font-family: inherit;
+  letter-spacing: .01em;
+  transition: background-color .12s ease, border-color .12s ease, color .12s ease, box-shadow .12s ease;
+}
+
 .btn-secondary {
   // overriding border from button-variant to use .focus-visible (and to be blue instead of hard to see tan)
   @include gt-focus-ring;
+  color: #333 !important;
+  background-color: #fff !important;
+  border-color: #ccc !important;
+}
+
+.btn-secondary:hover:not(:disabled):not(.disabled) {
+  color: #111 !important;
+  background-color: #f5f5f5 !important;
+  border-color: #b0b0b0 !important;
+}
+
+.btn-secondary:active:not(:disabled):not(.disabled),
+.btn-secondary.active {
+  color: #111 !important;
+  background-color: #ebebeb !important;
+  border-color: #999 !important;
 }
 
 .btn-primary {
   // overriding border from button-variant to use .focus-visible
   @include gt-focus-ring(0.5);
+  background-color: $gt-blue !important;
+  border-color: $gt-blue !important;
+  color: #fff !important;
+}
+
+.btn-primary:hover:not(:disabled):not(.disabled) {
+  background-color: darken($gt-blue, 6%) !important;
+  border-color: darken($gt-blue, 6%) !important;
+}
+
+.btn-primary:active:not(:disabled):not(.disabled),
+.btn-primary.active {
+  background-color: darken($gt-blue, 10%) !important;
+  border-color: darken($gt-blue, 10%) !important;
 }
 
 .dropdown-menu {
