@@ -40,6 +40,11 @@ glowroot.controller('TransactionThroughputCtrl', [
               onRefreshData);
         });
 
+    $scope.responseTimeView = 'throughput';
+    $scope.changeResponseTimeView = function () {
+      $scope.clickTopRadioButton($scope.responseTimeView);
+    };
+
     $scope.clickTopRadioButton = function (item) {
       if (item === 'throughput') {
         $scope.range.chartRefresh++;

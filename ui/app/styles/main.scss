@@ -270,11 +270,6 @@ hr.soften {
   border: 0;
 }
 
-.modal-header {
-  // this is to match padding on modal-body
-  padding-left: 30px;
-}
-
 .gt-heap-histogram-table th, .gt-heap-histogram-table td {
   padding: .625rem;
 }
@@ -413,7 +408,7 @@ select.form-control {
 }
 
 .gt-everything-below-throughput-chart {
-  padding: 0 20px;
+  padding: 0;
 }
 
 @include media-breakpoint-up(md) {
@@ -424,12 +419,21 @@ select.form-control {
 
 @include media-breakpoint-up(lg) {
   .gt-everything-below-throughput-chart {
-    padding: 0 40px;
+    padding: 0 .5rem;
   }
 
   .gt-everything-below-average-chart {
-    padding: 0 20px;
+    padding: 0;
   }
+}
+
+.gt-chart-below {
+  position: relative;
+  padding-top: 1.25rem;
+}
+
+.gt-breakdown-stack {
+  margin-top: .75rem;
 }
 
 .gt-error-messages-chart-tools {
@@ -442,7 +446,7 @@ select.form-control {
   }
 
   .gt-everything-below-average-chart {
-    padding: 0 40px;
+    padding: 0;
   }
 
   .gt-flame-graph-link {
@@ -456,15 +460,33 @@ select.form-control {
   @extend .pt-1;
 }
 
-.gt-response-time-radios {
-  text-align: center;
+.gt-response-time-view {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
   position: relative;
   color: #555;
   padding-bottom: 1.25rem;
+  min-height: 2rem;
+}
+
+.gt-response-time-view-label {
+  margin: 0;
+  font-size: .9rem;
+  font-weight: 600;
+  color: #666;
+}
+
+.gt-response-time-view-select {
+  width: auto;
+  min-width: 9.5rem;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 @include media-breakpoint-up(lg) {
-  .gt-response-time-radios {
+  .gt-response-time-view {
     padding-bottom: .5rem;
   }
 }
