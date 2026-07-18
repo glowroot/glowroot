@@ -33,6 +33,7 @@ glowroot.controller('TransactionPercentilesCtrl', [
     }
 
     var chartState = charts.createState();
+    charts.bindLegendControls(chartState, $scope);
 
     var appliedPercentiles;
 
@@ -49,6 +50,11 @@ glowroot.controller('TransactionPercentilesCtrl', [
           charts.refreshData('backend/transaction/percentiles', chartState, $scope, autoRefresh, addToQuery,
               onRefreshData);
         });
+
+    $scope.responseTimeView = 'percentiles';
+    $scope.changeResponseTimeView = function () {
+      $scope.clickTopRadioButton($scope.responseTimeView);
+    };
 
     $scope.clickTopRadioButton = function (item) {
       if (item === 'percentiles') {

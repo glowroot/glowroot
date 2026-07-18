@@ -29,6 +29,9 @@ glowroot.controller('TransactionAverageCtrl', [
     }
 
     var chartState = charts.createState();
+    // Bind early so legend clicks work even before first plot refresh finishes
+    charts.bindLegendControls(chartState, $scope);
+    $scope.maxAsyncTimerNanos = 0;
 
     // using $watch instead of $watchGroup because $watchGroup has confusing behavior regarding oldValues
     // (see https://github.com/angular/angular.js/pull/12643)
@@ -37,6 +40,11 @@ glowroot.controller('TransactionAverageCtrl', [
           var autoRefresh = newValues[3] !== oldValues[3];
           charts.refreshData('backend/transaction/average', chartState, $scope, autoRefresh, undefined, onRefreshData);
         });
+
+    $scope.responseTimeView = 'average';
+    $scope.changeResponseTimeView = function () {
+      $scope.clickTopRadioButton($scope.responseTimeView);
+    };
 
     $scope.clickTopRadioButton = function (item) {
       if (item === 'average') {
@@ -62,6 +70,12 @@ glowroot.controller('TransactionAverageCtrl', [
               || threadStats.totalWaitedNanos !== -1 || threadStats.totalAllocatedBytes !== -1);
     };
 
+    $scope.asyncTimerBarPct = function (asyncTimer) {
+      return $scope.maxAsyncTimerNanos > 0
+          ? Math.round(100 * asyncTimer.totalNanos / $scope.maxAsyncTimerNanos)
+          : 0;
+    };
+
     function onRefreshData(data) {
       var mainThreadRootTimers = data.mergedAggregate.mainThreadRootTimers;
       if (mainThreadRootTimers.length === 1) {
@@ -82,6 +96,13 @@ glowroot.controller('TransactionAverageCtrl', [
       }
       $scope.transactionCounts = data.transactionCounts;
       $scope.mergedAggregate = data.mergedAggregate;
+      var maxAsyncNanos = 0;
+      angular.forEach(data.mergedAggregate.asyncTimers, function (timer) {
+        if (timer.totalNanos > maxAsyncNanos) {
+          maxAsyncNanos = timer.totalNanos;
+        }
+      });
+      $scope.maxAsyncTimerNanos = maxAsyncNanos;
       if ($scope.mergedAggregate.transactionCount) {
         $scope.mainThreadTreeTimers = createTreeTimers($scope.mergedAggregate.mainThreadRootTimer);
         $scope.auxThreadTreeTimers = createTreeTimers($scope.mergedAggregate.auxThreadRootTimer);

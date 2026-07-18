@@ -36,6 +36,7 @@ glowroot.factory('charts', [
     function init(chartState, $chart, $scope) {
 
       $scope.showChartSpinner = 0;
+      $scope.chartSeriesFiltered = false;
 
       $chart.bind('plotzoom', function (event, plot, args) {
         var zoomingOut = args.amount && args.amount < 1;
@@ -66,6 +67,203 @@ glowroot.factory('charts', [
         applyLast($scope);
         $scope.range.chartRefresh++;
       };
+
+      bindLegendControls(chartState, $scope);
+    }
+
+    function bindLegendControls(chartState, $scope) {
+      // Idempotent: average/percentiles bind early; charts.init may call again.
+      if ($scope.toggleChartSeries) {
+        return;
+      }
+      // Click legend: solo that series (others off). Click again on the only visible → show all.
+      // Ctrl/Cmd+click: toggle that series without resetting the others.
+      $scope.toggleChartSeries = function (seriesLabel, $event) {
+        if ($event) {
+          $event.preventDefault();
+        }
+        ensureFullPlotData(chartState);
+        if (!chartState.fullPlotData || !chartState.fullPlotData.length) {
+          return;
+        }
+        ensureSeriesVisibility(chartState);
+        var label = seriesLabel.text;
+        var multi = $event && ($event.ctrlKey || $event.metaKey);
+        if (multi) {
+          var currentlyVisible = chartState.seriesVisible[label] !== false;
+          chartState.seriesVisible[label] = !currentlyVisible;
+        } else {
+          var visibleCount = countVisibleSeries(chartState);
+          var onlyThisVisible = visibleCount === 1 && chartState.seriesVisible[label] !== false;
+          if (onlyThisVisible) {
+            setAllSeriesVisible(chartState, true);
+          } else {
+            setAllSeriesVisible(chartState, false);
+            chartState.seriesVisible[label] = true;
+          }
+        }
+        applySeriesVisibility(chartState, $scope);
+      };
+
+      $scope.showAllChartSeries = function ($event) {
+        if ($event) {
+          $event.preventDefault();
+        }
+        ensureFullPlotData(chartState);
+        if (!chartState.fullPlotData || !chartState.fullPlotData.length) {
+          return;
+        }
+        ensureSeriesVisibility(chartState);
+        setAllSeriesVisible(chartState, true);
+        applySeriesVisibility(chartState, $scope);
+      };
+    }
+
+    function ensureFullPlotData(chartState) {
+      if (chartState.fullPlotData && chartState.fullPlotData.length) {
+        return;
+      }
+      if (!chartState.plot) {
+        return;
+      }
+      var current = chartState.plot.getData();
+      if (!current || !current.length || current[0].label === undefined) {
+        return;
+      }
+      chartState.fullPlotData = clonePlotSeriesList(current);
+      chartState.stackedYMax = undefined;
+    }
+
+    function clonePlotSeriesList(plotData) {
+      var cloned = [];
+      angular.forEach(plotData, function (series) {
+        cloned.push({
+          data: series.data,
+          name: series.name,
+          label: series.label,
+          shortLabel: series.shortLabel,
+          color: series.color,
+          points: {
+            show: false,
+            fillColor: series.color
+          }
+        });
+      });
+      return cloned;
+    }
+
+    function ensureSeriesVisibility(chartState) {
+      if (!chartState.seriesVisible) {
+        chartState.seriesVisible = {};
+      }
+      if (!chartState.fullPlotData) {
+        return;
+      }
+      angular.forEach(chartState.fullPlotData, function (series) {
+        if (chartState.seriesVisible[series.label] === undefined) {
+          chartState.seriesVisible[series.label] = true;
+        }
+      });
+    }
+
+    function setAllSeriesVisible(chartState, visible) {
+      if (!chartState.fullPlotData) {
+        return;
+      }
+      angular.forEach(chartState.fullPlotData, function (series) {
+        chartState.seriesVisible[series.label] = visible;
+      });
+    }
+
+    function countVisibleSeries(chartState) {
+      var count = 0;
+      if (!chartState.fullPlotData) {
+        return 0;
+      }
+      angular.forEach(chartState.fullPlotData, function (series) {
+        if (chartState.seriesVisible[series.label] !== false) {
+          count++;
+        }
+      });
+      return count;
+    }
+
+    function computeStackedYMax(plotData) {
+      var max = 0;
+      var pointCount = 0;
+      var i;
+      for (i = 0; i < plotData.length; i++) {
+        if (plotData[i].data && plotData[i].data.length > pointCount) {
+          pointCount = plotData[i].data.length;
+        }
+      }
+      var j;
+      for (j = 0; j < pointCount; j++) {
+        var sum = 0;
+        for (i = 0; i < plotData.length; i++) {
+          var pt = plotData[i].data && plotData[i].data[j];
+          if (pt && pt[1] !== null && pt[1] !== undefined) {
+            sum += pt[1];
+          }
+        }
+        if (sum > max) {
+          max = sum;
+        }
+      }
+      return max > 0 ? max : undefined;
+    }
+
+    function ensureStackedYMax(chartState) {
+      if (chartState.stackedYMax !== undefined) {
+        return;
+      }
+      if (!chartState.fullPlotData || !chartState.fullPlotData.length) {
+        return;
+      }
+      chartState.stackedYMax = computeStackedYMax(chartState.fullPlotData);
+    }
+
+    function applySeriesVisibility(chartState, $scope) {
+      if (!chartState.fullPlotData || !chartState.fullPlotData.length || !chartState.plot) {
+        return;
+      }
+      ensureSeriesVisibility(chartState);
+      var visibleCount = countVisibleSeries(chartState);
+      if (visibleCount === 0) {
+        setAllSeriesVisible(chartState, true);
+        visibleCount = chartState.fullPlotData.length;
+      }
+      var allVisible = visibleCount === chartState.fullPlotData.length;
+      if (allVisible) {
+        // Fast path: no filter — same cost as pre-legend-filter refresh
+        chartState.plot.setData(chartState.fullPlotData);
+        chartState.plot.getAxes().yaxis.options.max = undefined;
+      } else {
+        ensureStackedYMax(chartState);
+        var filtered = [];
+        angular.forEach(chartState.fullPlotData, function (series) {
+          if (chartState.seriesVisible[series.label] !== false) {
+            filtered.push({
+              data: series.data,
+              name: series.name,
+              label: series.label,
+              shortLabel: series.shortLabel,
+              color: series.color,
+              points: {
+                show: false,
+                fillColor: series.color
+              }
+            });
+          }
+        });
+        chartState.plot.setData(filtered);
+        // Keep full stacked scale when filtered so a solo series shows impact vs total
+        chartState.plot.getAxes().yaxis.options.max = chartState.stackedYMax;
+      }
+      chartState.plot.setupGrid();
+      chartState.plot.draw();
+      $scope.chartSeriesFiltered = !allVisible;
+      updateLegend(chartState, $scope);
     }
 
     function initResize(plot, $scope) {
@@ -213,7 +411,9 @@ glowroot.factory('charts', [
           borderColor: '#7d7358',
           borderWidth: 1,
           // this is needed for tooltip plugin to work
-          hoverable: true
+          hoverable: true,
+          // avoid large gray hover markers (flot uses points.radius for highlight even when points are hidden)
+          autoHighlight: false
         },
         xaxis: {
           mode: 'time',
@@ -252,7 +452,8 @@ glowroot.factory('charts', [
             fill: true
           },
           points: {
-            radius: 8
+            show: false,
+            radius: 0
           }
         },
         legend: {
@@ -328,15 +529,34 @@ glowroot.factory('charts', [
                 shortLabel: dataSeries.shortLabel,
                 color: chartState.keyedColorPool.get(label),
                 points: {
+                  show: false,
                   fillColor: chartState.keyedColorPool.get(label)
                 }
               };
               plotData.push(plotDataItem);
             });
             if (plotData.length) {
-              chartState.plot.setData(plotData);
+              chartState.fullPlotData = clonePlotSeriesList(plotData);
+              // Invalidate cached scale — recompute only if user filters series
+              chartState.stackedYMax = undefined;
+              ensureSeriesVisibility(chartState);
+              // drop visibility for labels that no longer exist
+              angular.forEach(Object.keys(chartState.seriesVisible), function (label) {
+                var stillThere = false;
+                angular.forEach(chartState.fullPlotData, function (series) {
+                  if (series.label === label) {
+                    stillThere = true;
+                  }
+                });
+                if (!stillThere) {
+                  delete chartState.seriesVisible[label];
+                }
+              });
             } else {
+              chartState.fullPlotData = [];
               chartState.plot.setData([[]]);
+              chartState.plot.getAxes().yaxis.options.max = undefined;
+              $scope.chartSeriesFiltered = false;
             }
             if (data.markings) {
               var markings = [];
@@ -357,9 +577,13 @@ glowroot.factory('charts', [
               });
               chartState.plot.getOptions().grid.markings = markings;
             }
-            chartState.plot.setupGrid();
-            chartState.plot.draw();
-            updateLegend(chartState, $scope);
+            if (plotData.length) {
+              applySeriesVisibility(chartState, $scope);
+            } else {
+              chartState.plot.setupGrid();
+              chartState.plot.draw();
+              updateLegend(chartState, $scope);
+            }
           }, function (response) {
             if (showChartSpinner) {
               $scope.showChartSpinner--;
@@ -383,20 +607,24 @@ glowroot.factory('charts', [
     }
 
     function updateLegend(chartState, $scope) {
-      var plotData = chartState.plot.getData();
+      var plotData = chartState.fullPlotData || chartState.plot.getData();
       $scope.seriesLabels = [];
       if (plotData.length === 1 && plotData[0].label === undefined) {
         // special case for when user de-selects all gauges and chart displays 'Select one or more gauges below'
         return;
       }
+      ensureSeriesVisibility(chartState);
       var seriesIndex;
       for (seriesIndex = 0; seriesIndex < plotData.length; seriesIndex++) {
+        var label = plotData[seriesIndex].label;
         $scope.seriesLabels.push({
           color: plotData[seriesIndex].color,
-          text: plotData[seriesIndex].label,
-          name: plotData[seriesIndex].name
+          text: label,
+          name: plotData[seriesIndex].name,
+          visible: chartState.seriesVisible[label] !== false
         });
       }
+      $scope.chartSeriesFiltered = countVisibleSeries(chartState) !== plotData.length;
     }
 
     function renderTooltipHtml(from, to, transactionCount, dataIndex, highlightSeriesIndex, plot, display,
@@ -533,6 +761,7 @@ glowroot.factory('charts', [
     return {
       createState: createState,
       init: init,
+      bindLegendControls: bindLegendControls,
       initResize: initResize,
       plot: plot,
       refreshData: refreshData,
