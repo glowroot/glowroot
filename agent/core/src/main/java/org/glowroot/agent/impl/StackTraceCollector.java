@@ -96,6 +96,13 @@ public class StackTraceCollector {
             ThreadInfo threadInfo = threadInfos[i];
             if (threadInfo != null) {
                 threadContext.captureStackTrace(threadInfo);
+                continue;
+            }
+            // ThreadMXBean.getThreadInfo() returns null for virtual threads (JDK 21+). Fall back to
+            // the Thread reference captured when the context started (#1125).
+            Thread thread = threadContext.getThread();
+            if (thread != null && thread.isAlive()) {
+                threadContext.captureStackTrace(thread.getStackTrace(), thread.getState());
             }
         }
     }

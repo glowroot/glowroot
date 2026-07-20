@@ -16,6 +16,7 @@
 package org.glowroot.agent.impl;
 
 import java.lang.management.ThreadInfo;
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -117,6 +118,10 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     private final long threadId;
 
+    // retained so stack samples can still be taken when ThreadMXBean.getThreadInfo() returns null
+    // (virtual threads on JDK 21+); weak so completed/detached contexts do not pin the Thread
+    private final WeakReference<Thread> threadRef;
+
     private final boolean limitExceededAuxThreadContext;
 
     private final Ticker ticker;
@@ -153,7 +158,9 @@ public class ThreadContextImpl implements ThreadContextPlus {
         traceEntryComponent = new TraceEntryComponent(castInitialized(this), messageSupplier,
                 rootTimer, startTick);
         this.parentThreadContextPriorEntry = parentThreadContextPriorEntry;
-        threadId = Thread.currentThread().getId();
+        Thread currentThread = Thread.currentThread();
+        threadId = currentThread.getId();
+        threadRef = new WeakReference<Thread>(currentThread);
         threadStatsComponent =
                 captureThreadStats ? new ThreadStatsComponent(threadAllocatedBytes) : null;
         this.maxQueryAggregates = maxQueryAggregates;
@@ -204,6 +211,11 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     public long getThreadId() {
         return threadId;
+    }
+
+    @Nullable
+    Thread getThread() {
+        return threadRef.get();
     }
 
     boolean isCompleted() {
@@ -424,6 +436,12 @@ public class ThreadContextImpl implements ThreadContextPlus {
 
     void captureStackTrace(ThreadInfo threadInfo) {
         transaction.captureStackTrace(isAuxiliary(), threadInfo);
+        // memory barrier read ensures timely visibility of detach()
+        transaction.memoryBarrierRead();
+    }
+
+    void captureStackTrace(StackTraceElement[] stackTrace, Thread.State threadState) {
+        transaction.captureStackTrace(isAuxiliary(), stackTrace, threadState);
         // memory barrier read ensures timely visibility of detach()
         transaction.memoryBarrierRead();
     }

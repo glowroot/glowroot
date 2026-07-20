@@ -84,12 +84,16 @@ public class ThreadProfile {
     // limit is just to cap memory consumption for a single transaction profile in case it runs for
     // a very very very long time
     public void addStackTrace(ThreadInfo threadInfo) {
+        addStackTrace(threadInfo.getStackTrace(), threadInfo.getThreadState());
+    }
+
+    // used when ThreadMXBean.getThreadInfo() returns null (e.g. virtual threads on JDK 21+)
+    public void addStackTrace(StackTraceElement[] stackTraceElements, Thread.State threadState) {
         synchronized (lock) {
             if (++sampleCount > maxSamples) {
                 return;
             }
-            List<StackTraceElement> stackTrace = Arrays.asList(threadInfo.getStackTrace());
-            Thread.State threadState = threadInfo.getThreadState();
+            List<StackTraceElement> stackTrace = Arrays.asList(stackTraceElements);
             if (profile == null) {
                 unmergedStackTraces.add(stackTrace);
                 unmergedStackTraceThreadStates.add(threadState);
