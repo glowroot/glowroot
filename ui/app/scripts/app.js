@@ -26,6 +26,29 @@ var glowroot = angular.module('glowroot', [
 
 var Glowroot;
 
+// Moment ships with English only (no locale packs). LT/LTS would always be 12-hour AM/PM.
+// Honor the browser/OS hour cycle so header range + custom pickers use 24h where expected (#1108).
+var gtDateTimeWithMillisFormat;
+var gtTimeOfDayWithMillisFormat;
+(function () {
+  var hour12 = true;
+  try {
+    hour12 = new Intl.DateTimeFormat(undefined, {hour: 'numeric'}).resolvedOptions().hour12 !== false;
+  } catch (ignored) {
+    // keep English 12-hour default
+  }
+  if (!hour12) {
+    moment.updateLocale('en', {
+      longDateFormat: {
+        LT: 'HH:mm',
+        LTS: 'HH:mm:ss'
+      }
+    });
+  }
+  gtDateTimeWithMillisFormat = hour12 ? 'YYYY-MM-DD h:mm:ss.SSS a (Z)' : 'YYYY-MM-DD HH:mm:ss.SSS (Z)';
+  gtTimeOfDayWithMillisFormat = hour12 ? 'h:mm:ss.SSS a (Z)' : 'HH:mm:ss.SSS (Z)';
+})();
+
 glowroot.config([
   '$locationProvider',
   '$httpProvider',
