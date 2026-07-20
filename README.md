@@ -50,11 +50,12 @@ Please use the right channel so maintainers can help efficiently:
 
 | Need | Where |
 |------|--------|
-| Questions, how-to, configuration doubts, “is this expected?” | **[GitHub Discussions](https://github.com/glowroot/glowroot/discussions)** (prefer the **Q&A** category) |
-| Reproducible bugs or concrete feature requests | **[GitHub Issues](https://github.com/glowroot/glowroot/issues)** |
+| Questions, how-to, configuration doubts, “is this expected?” | **[GitHub Discussions → Q&A](https://github.com/glowroot/glowroot/discussions/categories/q-a)** |
+| Ideas, proposals, “would it make sense to…?” | **[GitHub Discussions → Ideas](https://github.com/glowroot/glowroot/discussions/categories/ideas)** |
+| Reproducible bugs (with steps, version, logs) | **[GitHub Issues](https://github.com/glowroot/glowroot/issues)** |
 | Release announcements / community | [Google Group](https://groups.google.com/forum/#!forum/glowroot) · [@glowroot](https://twitter.com/glowroot) |
 
-**Please do not open Issues for general questions** (for example empty “it doesn’t work” reports without steps, version, or logs). Start a Discussion instead — Issues stay focused on actionable defects and features.
+**Please do not open Issues for questions or raw ideas.** Use Discussions instead (Q&A or Ideas). Issues stay focused on actionable defects — for example empty “it doesn’t work” reports without steps/version/logs, or drive-by feature wishes without discussion, belong in Discussions first.
 
 ## Requirements
 
