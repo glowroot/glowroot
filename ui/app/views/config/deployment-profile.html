@@ -1,0 +1,244 @@
+<!--
+  Copyright 2026 the original author or authors.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<div class="card">
+  <div class="card-header">
+    <h2>Deployment profile</h2>
+  </div>
+  <div class="card-body">
+    <div ng-hide="hideMainContent()">
+      <div ng-include src="'template/gt-loading-overlay.html'"></div>
+      <div ng-include src="'template/gt-http-error-overlay.html'"></div>
+      <form name="formCtrl"
+            style="padding-top: 15px;"
+            novalidate>
+        <div class="help-block" style="margin-bottom: 1.25rem;">
+          Selecting a profile fills the values below. Click <strong>Save changes</strong> to apply.
+          Nothing is written until you save (safe if something goes wrong mid-edit).
+          <em>Dev</em> matches Glowroot defaults; <em>Prod</em> uses leaner storage and lighter
+          profiling for embedded agents that share the application JVM.
+        </div>
+
+        <div class="form-group row">
+          <label class="col-xl-3 gt-form-label-xl" for="deploymentProfileSelect">Profile</label>
+          <div class="col-xl-9">
+            <select id="deploymentProfileSelect"
+                    class="custom-select"
+                    style="max-width: 12rem;"
+                    ng-model="profile"
+                    ng-change="onProfileChange()"
+                    ng-disabled="!canEdit() || !loaded"
+                    aria-label="Deployment profile">
+              <option value="dev">Dev</option>
+              <option value="prod">Prod</option>
+              <option value="custom">Custom</option>
+            </select>
+            <span class="help-block d-inline-block ml-3 mb-0"
+                  ng-if="loaded">
+              Active: <strong>{{ profileDisplayName(activeProfile) }}</strong>
+              <span ng-if="hasChanges()"> — preview not saved</span>
+            </span>
+          </div>
+        </div>
+
+        <fieldset class="gt-fieldset">
+          <legend class="gt-legend">Storage</legend>
+          <div class="gt-fieldset-under-normal-form">
+            <div gt-form-group
+                 gt-label="1 minute aggregates retention"
+                 gt-model="page.rollupExpirationDays[0]"
+                 gt-number="true"
+                 gt-pattern="pattern.integer"
+                 gt-required="loaded"
+                 gt-disabled="!canEdit()"
+                 gt-width="7em"
+                 gt-addon="days">
+            </div>
+            <div gt-form-group
+                 gt-label="5 minute aggregates retention"
+                 gt-model="page.rollupExpirationDays[1]"
+                 gt-number="true"
+                 gt-pattern="pattern.integer"
+                 gt-required="loaded"
+                 gt-disabled="!canEdit()"
+                 gt-width="7em"
+                 gt-addon="days">
+            </div>
+            <div gt-form-group
+                 gt-label="30 minute aggregates retention"
+                 gt-model="page.rollupExpirationDays[2]"
+                 gt-number="true"
+                 gt-pattern="pattern.integer"
+                 gt-required="loaded"
+                 gt-disabled="!canEdit()"
+                 gt-width="7em"
+                 gt-addon="days">
+            </div>
+            <div gt-form-group
+                 gt-label="4 hour aggregates retention"
+                 gt-model="page.rollupExpirationDays[3]"
+                 gt-number="true"
+                 gt-pattern="pattern.integer"
+                 gt-required="loaded"
+                 gt-disabled="!canEdit()"
+                 gt-width="7em"
+                 gt-addon="days">
+            </div>
+            <div gt-form-group
+                 gt-label="Trace data retention"
+                 gt-model="page.traceExpirationDays"
+                 gt-number="true"
+                 gt-pattern="pattern.integer"
+                 gt-required="loaded"
+                 gt-disabled="!canEdit()"
+                 gt-width="7em"
+                 gt-addon="days">
+            </div>
+            <div gt-form-group
+                 gt-label="Full query text retention"
+                 gt-model="page.fullQueryTextExpirationDays"
+                 gt-number="true"
+                 gt-pattern="pattern.integer"
+                 gt-required="loaded"
+                 gt-disabled="!canEdit()"
+                 gt-width="7em"
+                 gt-addon="days">
+            </div>
+            <div gt-form-group
+                 gt-label="Rollup capped database size (all levels)"
+                 gt-model="page.rollupCappedDatabaseSizeMb"
+                 gt-number="true"
+                 gt-pattern="pattern.integer"
+                 gt-required="loaded"
+                 gt-disabled="!canEdit()"
+                 gt-width="7em"
+                 gt-addon="MB">
+              <div class="help-block">
+                Applied to all four rollup capped-database sizes on save.
+                For different per-level sizes use Administration → Storage.
+              </div>
+            </div>
+            <div gt-form-group
+                 gt-label="Trace capped database size"
+                 gt-model="page.traceCappedDatabaseSizeMb"
+                 gt-number="true"
+                 gt-pattern="pattern.integer"
+                 gt-required="loaded"
+                 gt-disabled="!canEdit()"
+                 gt-width="7em"
+                 gt-addon="MB">
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="gt-fieldset">
+          <legend class="gt-legend">Transactions / profiling</legend>
+          <div class="gt-fieldset-under-normal-form">
+            <div gt-form-group
+                 gt-label="Slow threshold"
+                 gt-model="page.slowThresholdMillis"
+                 gt-number="true"
+                 gt-pattern="pattern.integer"
+                 gt-required="loaded"
+                 gt-disabled="!canEdit()"
+                 gt-width="7em"
+                 gt-addon="milliseconds">
+            </div>
+            <div gt-form-group
+                 gt-label="Profiling interval"
+                 gt-model="page.profilingIntervalMillis"
+                 gt-number="true"
+                 gt-pattern="pattern.integer"
+                 gt-required="loaded"
+                 gt-disabled="!canEdit()"
+                 gt-width="7em"
+                 gt-addon="milliseconds">
+            </div>
+            <div gt-form-group
+                 gt-type="checkbox"
+                 gt-label="Thread stats"
+                 gt-checkbox-label="Capture JVM thread stats"
+                 gt-model="page.captureThreadStats"
+                 gt-disabled="!canEdit()">
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="gt-fieldset">
+          <legend class="gt-legend">Advanced limits</legend>
+          <div class="gt-fieldset-under-normal-form">
+            <div gt-form-group
+                 gt-label="Max transaction aggregates"
+                 gt-model="page.maxTransactionAggregates"
+                 gt-number="true"
+                 gt-pattern="pattern.integer"
+                 gt-required="loaded"
+                 gt-disabled="!canEdit()"
+                 gt-width="7em">
+            </div>
+            <div gt-form-group
+                 gt-label="Max query aggregates"
+                 gt-model="page.maxQueryAggregates"
+                 gt-number="true"
+                 gt-pattern="pattern.integer"
+                 gt-required="loaded"
+                 gt-disabled="!canEdit()"
+                 gt-width="7em">
+            </div>
+            <div gt-form-group
+                 gt-label="Max service call aggregates"
+                 gt-model="page.maxServiceCallAggregates"
+                 gt-number="true"
+                 gt-pattern="pattern.integer"
+                 gt-required="loaded"
+                 gt-disabled="!canEdit()"
+                 gt-width="7em">
+            </div>
+            <div gt-form-group
+                 gt-label="Max trace entries per transaction"
+                 gt-model="page.maxTraceEntriesPerTransaction"
+                 gt-number="true"
+                 gt-pattern="pattern.integer"
+                 gt-required="loaded"
+                 gt-disabled="!canEdit()"
+                 gt-width="7em">
+            </div>
+            <div gt-form-group
+                 gt-label="Max profile samples per transaction"
+                 gt-model="page.maxProfileSamplesPerTransaction"
+                 gt-number="true"
+                 gt-pattern="pattern.integer"
+                 gt-required="loaded"
+                 gt-disabled="!canEdit()"
+                 gt-width="7em">
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="form-group row"
+             ng-if="canEdit()">
+          <div class="offset-xl-3 col-xl-9">
+            <div gt-button
+                 gt-label="Save changes"
+                 gt-click="save(deferred)"
+                 gt-validate-form="formCtrl">
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<div ng-include="'template/gt-confirmation.html'"></div>
