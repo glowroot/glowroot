@@ -440,13 +440,17 @@ public class BasicSmokeIT extends WebDriverIT {
     }
 
     private void clickAcross() throws InterruptedException {
-        waitFor(xpath("//td[normalize-space()='Breakdown:']"));
+        // Breakdown heading moved from <td>Breakdown:</td> to .gt-breakdown-heading (no colon).
+        waitFor(xpath("//*[contains(@class,'gt-breakdown-heading')"
+                + " and starts-with(normalize-space(),'Breakdown')]"));
         // View <select> replaced the old radio <a href>s; navigate by URL like those hrefs did
         // (more reliable in headless Firefox than driving the select widget).
         openResponseTimeView("percentiles");
-        waitFor(xpath("//label[normalize-space()='95th percentile:']"));
+        // Percentile rows use <span>, not <label>.
+        waitFor(xpath("//*[normalize-space()='95th percentile:']"));
         openResponseTimeView("throughput");
-        waitFor(xpath("//label[normalize-space()='Throughput:']"));
+        waitFor(xpath("//*[contains(@class,'gt-breakdown-heading')"
+                + " and normalize-space()='Throughput']"));
         clickPartialLink("Slow traces");
         waitFor(xpath("//label[normalize-space()='Response time']"));
         clickLink("Queries");
