@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* global glowroot, angular, $, moment */
+/* global glowroot, angular, $, moment, gtTimeOfDayWithMillisFormat */
 
 glowroot.controller('JvmGaugeValuesCtrl', [
   '$scope',
@@ -507,7 +507,7 @@ glowroot.controller('JvmGaugeValuesCtrl', [
             var tooltip = '<table class="gt-chart-tooltip">';
             tooltip += '<tr><td colspan="2" style="font-weight: 600;">' + shortDisplayMap[label];
             tooltip += '</td></tr><tr><td style="padding-right: 10px;">Time:</td><td style="font-weight: 400;">';
-            tooltip += moment(xval).format('h:mm:ss.SSS a (Z)') + '</td></tr>';
+            tooltip += moment(xval).format(gtTimeOfDayWithMillisFormat) + '</td></tr>';
             tooltip += '<tr><td style="padding-right: 10px;">Value:</td><td style="font-weight: 600;">';
             tooltip += $filter('gtGaugeValue')(nonScaledValue) + gaugeUnits[label] + '</td></tr>';
             tooltip += '</table>';
