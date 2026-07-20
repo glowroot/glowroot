@@ -14,48 +14,7 @@
   limitations under the License.
 -->
 <div ng-include src="'template/gt-http-error-overlay.html'"></div>
-<div class="gt-response-time-radios"
-     role="group"
-     aria-label="View">
-  <div class="form-check-inline">
-    <input class="form-check-input"
-           type="radio"
-           name="view"
-           value="average"
-           ng-click="clickTopRadioButton('average')"
-           id="viewAverage"
-           checked>
-    <a class="gt-radio-link"
-       href="transaction/average{{tabQueryString()}}"
-       ng-click="clickActiveTopLink($event)">
-      <label class="form-check-label" for="viewAverage">average</label>
-    </a>
-  </div>
-  <div class="form-check-inline">
-    <input class="form-check-input"
-           type="radio"
-           name="view"
-           value="percentiles"
-           ng-click="clickTopRadioButton('percentiles')"
-           id="viewPercentiles">
-    <a class="gt-radio-link"
-       href="transaction/percentiles{{tabQueryString()}}">
-      <label class="form-check-label" for="viewPercentiles">percentiles</label>
-    </a>
-  </div>
-  <div class="form-check-inline">
-    <input class="form-check-input"
-           type="radio"
-           name="view"
-           value="throughput"
-           ng-click="clickTopRadioButton('throughput')"
-           id="viewThroughput">
-    <a class="gt-radio-link"
-       href="transaction/throughput{{tabQueryString()}}">
-      <label class="form-check-label" for="viewThroughput">throughput</label>
-    </a>
-  </div>
-</div>
+<div ng-include src="'template/gt-response-time-view.html'"></div>
 <div class="gt-chart-controls float-right">
   <button class="gt-chart-button"
           ng-click="zoomOut()">
@@ -100,26 +59,34 @@
       </div>
     </div>
   </div>
-  <div class="legend" id="chartLegend"
-       ng-hide="chartNoData"
-       style="text-align: center; margin-top: 10px; width: 100%;">
-    <div class="d-inline-block" style="max-width: 600px;">
-      <div class="d-inline-block" ng-repeat="seriesLabel in seriesLabels"
-           style="margin: 0 6px;">
-        <div class="legendColorBox d-inline-block"
-             style="border: 1px solid rgb(204, 204, 204); padding: 1px;">
-          <div style="width: 4px; height: 0px; border: 5px solid rgb(237, 194, 64); overflow: hidden;"
-               ng-style="{'border': '5px solid ' + seriesLabel.color}">
-          </div>
-        </div>
-        <div class="legendLabel d-inline-block">{{seriesLabel.text}}</div>
-      </div>
+  <div class="gt-chart-legend" id="chartLegend"
+       ng-hide="chartNoData">
+    <!-- Interactive legend: solo / Ctrl+toggle; y-scale stays full stacked max while filtered -->
+    <div class="gt-chart-legend-toolbar"
+         ng-if="chartSeriesFiltered">
+      <span class="gt-chart-legend-hint">Showing selected series vs full scale</span>
+      <button type="button"
+              class="gt-flat-btn gt-link-color"
+              ng-click="$parent.showAllChartSeries($event)">
+        Show all
+      </button>
+    </div>
+    <div class="gt-chart-legend-inner">
+      <button type="button"
+              class="gt-chart-legend-item"
+              ng-class="{'gt-chart-legend-item-off': !seriesLabel.visible}"
+              ng-repeat="seriesLabel in seriesLabels"
+              ng-click="$parent.toggleChartSeries(seriesLabel, $event)"
+              title="{{seriesLabel.text}} — click to show only this series (scale stays total). Ctrl+click to toggle.">
+        <span class="gt-chart-legend-swatch"
+              ng-style="seriesLabel.visible ? {'background': seriesLabel.color} : {}"></span>
+        <span class="legendLabel">{{seriesLabel.text}}</span>
+      </button>
     </div>
   </div>
   <div ng-if="mergedAggregate.transactionCount"
-       class="gt-everything-below-average-chart"
-       style="position: relative; padding-top: 30px;">
-    <div style="color: #555; font-size: 12px; margin-bottom: 12px; max-width: 640px;">
+       class="gt-everything-below-average-chart gt-chart-below">
+    <div class="gt-chart-breakdown-note">
       The chart shows stacked <em>self time</em> (exclusive). The breakdown table's
       <em>total</em> column is inclusive (parents include nested timers); compare the
       <em>self</em> column to the chart segments. Inclusive totals do not need to sum to
@@ -127,36 +94,41 @@
     </div>
     <div ng-if="mainThreadFlattenedTimers.length">
       <div gt-timer-display
-           heading="Breakdown{{auxThreadFlattenedTimers.length ? ' (Main Thread)' : ''}}:"
+           heading="Breakdown{{auxThreadFlattenedTimers.length ? ' (Main Thread)' : ''}}"
            flattened-timers="mainThreadFlattenedTimers"
            tree-timers="mainThreadTreeTimers"
            transaction-count="mergedAggregate.transactionCount">
       </div>
     </div>
-    <div ng-if="auxThreadFlattenedTimers.length" style="margin-top: 10px;">
+    <div ng-if="auxThreadFlattenedTimers.length" class="gt-breakdown-stack">
       <div gt-timer-display
-           heading="Breakdown{{mainThreadFlattenedTimers.length ? ' (Auxiliary Thread)' : ''}}:"
+           heading="Breakdown{{mainThreadFlattenedTimers.length ? ' (Auxiliary Thread)' : ''}}"
            flattened-timers="auxThreadFlattenedTimers"
            tree-timers="auxThreadTreeTimers"
            transaction-count="mergedAggregate.transactionCount">
       </div>
     </div>
-    <div ng-if="mergedAggregate.asyncTimers.length" style="margin-top: 10px;">
-      <table class="gt-timers-table d-inline-block"
-             style="border-spacing: 0;">
+    <div ng-if="mergedAggregate.asyncTimers.length" class="gt-breakdown">
+      <div class="gt-breakdown-heading">Breakdown (Async Timers)</div>
+      <table class="gt-timers-table gt-breakdown-table">
         <thead>
         <tr>
-          <td class="gt-breakdown-header gt-bold" style="text-align: left;">Breakdown (Async Timers):</td>
-          <td class="gt-breakdown-header" style="font-weight: 600;">total&nbsp;(ms)</td>
-          <td class="gt-breakdown-header" style="font-weight: 600;">count</td>
+          <th>Timer</th>
+          <th class="gt-breakdown-bar-cell">Share</th>
+          <th>total (ms)</th>
+          <th>count</th>
         </tr>
         </thead>
         <tbody>
-        <tr class="align-top"
-            ng-repeat="asyncTimer in mergedAggregate.asyncTimers">
-          <td style="text-align: left;">
-            <div class="gt-indent2">
-              <div class="gt-break-word gt-second-line-indent">{{asyncTimer.name}}</div>
+        <tr ng-repeat="asyncTimer in mergedAggregate.asyncTimers">
+          <td>
+            <div class="gt-breakdown-name gt-break-word">{{asyncTimer.name}}</div>
+          </td>
+          <td class="gt-breakdown-bar-cell">
+            <div class="gt-breakdown-bar-track"
+                 title="{{asyncTimerBarPct(asyncTimer)}}% of largest">
+              <div class="gt-breakdown-bar"
+                   ng-style="{'width': asyncTimerBarPct(asyncTimer) + '%'}"></div>
             </div>
           </td>
           <td>{{asyncTimer.totalNanos / (1000000 * mergedAggregate.transactionCount) | gtMillis}}</td>
@@ -165,18 +137,18 @@
         </tbody>
       </table>
     </div>
-    <div ng-if="displayThreadStats(mergedAggregate.mainThreadStats)" style="margin-top: 15px;">
-      <div class="gt-bold">
-        JVM Thread Stats<span ng-if="mergedAggregate.auxThreadStats"> (Main Thread)</span>:
+    <div ng-if="displayThreadStats(mergedAggregate.mainThreadStats)" class="gt-breakdown">
+      <div class="gt-breakdown-heading">
+        JVM Thread Stats<span ng-if="mergedAggregate.auxThreadStats"> (Main Thread)</span>
       </div>
       <div gt-thread-stats
            thread-stats="mergedAggregate.mainThreadStats"
            transaction-count="mergedAggregate.transactionCount">
       </div>
     </div>
-    <div ng-if="displayThreadStats(mergedAggregate.auxThreadStats)" style="margin-top: 15px;">
-      <div class="gt-bold">
-        JVM Thread Stats<span ng-if="mergedAggregate.mainThreadStats"> (Auxiliary Threads)</span>:
+    <div ng-if="displayThreadStats(mergedAggregate.auxThreadStats)" class="gt-breakdown">
+      <div class="gt-breakdown-heading">
+        JVM Thread Stats<span ng-if="mergedAggregate.mainThreadStats"> (Auxiliary Threads)</span>
       </div>
       <div gt-thread-stats
            thread-stats="mergedAggregate.auxThreadStats"

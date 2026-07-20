@@ -24,32 +24,44 @@ $trace-point-error: $gt-red;
   position: relative;
   // z-index 800 is needed to keep the buttons in front of the chart spinner overlay
   z-index: 800;
-  font-size: 20px;
+  font-size: 1.15rem;
   // so it doesn't affect layout, e.g. when there are other controls
   height: 0;
-  top: -21px;
+  top: -1.35rem;
 }
 
 .gt-chart-button {
-  color: #7d7358;
+  color: lighten($gt-blue, 8%);
   background: transparent;
-  padding: 0;
+  padding: .15rem .2rem;
   border: none;
-  border-radius: 3px; // for slightly rounded focus ring
-  line-height: 1; // needed for a snug focus ring
+  border-radius: .25rem;
+  line-height: 1;
   @include gt-focus-ring;
 }
 
 .gt-chart-button:hover {
-  color: darken(#7d7358, 8%);
+  color: darken($gt-blue, 6%);
 }
 
 .gt-chart-container {
   position: relative;
-  height: 300px;
+  height: 380px;
   // need min width, otherwise sometimes it gets flot error:
   // "Invalid dimensions for plot, width = 0, height = 0"
   min-width: 100px;
+}
+
+@include media-breakpoint-up(xl) {
+  .gt-chart-container {
+    height: 440px;
+  }
+}
+
+@media screen and (min-width: 1600px) {
+  .gt-chart-container {
+    height: 480px;
+  }
 }
 
 .gt-chart-dimensions {
@@ -82,12 +94,12 @@ $trace-point-error: $gt-red;
 .gt-chart-no-data {
   display: inline-block;
   color: #333;
-  background-color: #ddd;
+  background-color: #eee;
   font-size: 1rem;
-  font-weight: 700;
-  padding: 10px 35px;
+  font-weight: 600;
+  padding: .65rem 1.5rem;
   margin-bottom: 6px;
-  border-radius: 6px;
+  border-radius: .375rem;
 }
 
 .gt-chart-help {
@@ -108,13 +120,130 @@ $trace-point-error: $gt-red;
   border-color: $trace-point-active;
 }
 
+.gt-chart-legend {
+  text-align: center;
+  margin-top: .75rem;
+  // keep legend clear of the chart-vs-breakdown note / breakdown table below
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.gt-chart-legend-toolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: .5rem;
+  font-size: .85rem;
+}
+
+.gt-chart-legend-hint {
+  color: #777;
+}
+
+.gt-chart-legend-inner {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .4rem;
+  max-width: 100%;
+}
+
+.gt-chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .9rem;
+  font-family: inherit;
+  line-height: 1.2;
+  margin: 0;
+  padding: .35rem .65rem;
+  border: 1px solid #ddd;
+  border-radius: .375rem;
+  // kill UA/button gray hover fill
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: transparent;
+  background-image: none;
+  color: #333;
+  cursor: pointer;
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+  max-width: 16rem;
+  box-shadow: none;
+  transition: border-color .12s ease, color .12s ease;
+}
+
+.gt-chart-legend-item .legendLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.gt-chart-legend-item:hover,
+.gt-chart-legend-item:focus,
+.gt-chart-legend-item:active {
+  background-color: transparent !important;
+  background-image: none !important;
+  border-color: #999;
+  box-shadow: none !important;
+  outline: none;
+  color: #333;
+}
+
+.gt-chart-legend-item:focus {
+  border-color: $gt-blue;
+}
+
+.gt-chart-legend-item-off {
+  color: #999;
+  border-color: #e5e5e5;
+  background-color: transparent;
+}
+
+.gt-chart-legend-item-off .legendLabel {
+  text-decoration: line-through;
+  color: #999;
+}
+
+.gt-chart-legend-item-off .gt-chart-legend-swatch {
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 1px #ccc;
+}
+
+.gt-chart-legend-item-off:hover,
+.gt-chart-legend-item-off:focus,
+.gt-chart-legend-item-off:active {
+  background-color: transparent !important;
+  border-color: #bbb;
+  color: #666;
+}
+
+// Solid swatch — no nested gray frame
+.gt-chart-legend-swatch {
+  display: block;
+  width: .75rem;
+  height: .75rem;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+
+// Kept for gauges / reports / tooltip (not used by interactive chart legend pills)
 .legendColorBox {
-  padding-right: 2px;
+  padding: 0;
+  border: 1px solid #ddd;
+  border-radius: 2px;
+  line-height: 0;
 }
 
 .legendLabel {
   // this is to match color of flot axis ticks/labels (see jquery.flot.js)
-  color: #545454;
+  color: #555;
+  font-weight: 500;
 }
 
 .gt-chart-tooltip {
@@ -129,4 +258,195 @@ $trace-point-error: $gt-red;
 .gt-zoom-out:focus {
   text-decoration: none;
   color: $gt-blue;
+}
+
+// Breakdown under response-time charts
+.gt-breakdown {
+  margin-top: .5rem;
+  padding: 1rem 1.1rem 1.15rem;
+  border: 1px solid #e5e5e5;
+  border-radius: .5rem;
+  background: #fafafa;
+}
+
+.gt-breakdown + .gt-breakdown {
+  margin-top: .75rem;
+}
+
+.gt-breakdown-heading {
+  font-size: 1rem;
+  font-weight: 600;
+  color: darken($gt-blue, 4%);
+  margin-bottom: .65rem;
+}
+
+.gt-breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.gt-breakdown-table thead th {
+  font-size: .8rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  padding: .35rem .5rem .5rem 0;
+  border-bottom: 1px solid #e5e5e5;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.gt-breakdown-table thead th:first-child {
+  text-align: left;
+}
+
+.gt-breakdown-table tbody td {
+  padding: .45rem .5rem .45rem 0;
+  vertical-align: middle;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.gt-breakdown-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.gt-breakdown-table tbody td:first-child {
+  text-align: left;
+  width: 28%;
+  min-width: 8rem;
+}
+
+.gt-breakdown-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.gt-breakdown-bar-cell {
+  width: 42%;
+  min-width: 8rem;
+  text-align: left !important;
+}
+
+.gt-breakdown-bar-track {
+  position: relative;
+  height: .7rem;
+  background: #eaeaea;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.gt-breakdown-bar {
+  height: 100%;
+  background: linear-gradient(90deg, lighten($gt-blue, 18%), $gt-blue);
+  border-radius: 999px;
+  min-width: 0;
+}
+
+.gt-breakdown-actions {
+  margin-top: .35rem;
+}
+
+.gt-breakdown-toggle {
+  margin-top: .5rem;
+}
+
+.gt-thread-stats {
+  margin-top: .15rem;
+}
+
+.gt-thread-stats-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem 1.75rem;
+  align-items: center;
+}
+
+.gt-thread-pie-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+}
+
+.gt-thread-pie {
+  width: 7.5rem;
+  height: 7.5rem;
+  border-radius: 50%;
+  border: 1px solid #e0e0e0;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.gt-thread-pie::after {
+  content: '';
+  position: absolute;
+  inset: 22%;
+  background: #fafafa;
+  border-radius: 50%;
+  border: 1px solid #eee;
+}
+
+.gt-thread-pie-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-width: 12rem;
+}
+
+.gt-thread-pie-legend li {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: .4rem .55rem;
+  align-items: center;
+  padding: .3rem 0;
+  font-size: .9rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.gt-thread-pie-legend li:last-child {
+  border-bottom: 0;
+}
+
+.gt-thread-pie-swatch {
+  width: .7rem;
+  height: .7rem;
+  border-radius: 2px;
+}
+
+.gt-thread-pie-label {
+  font-weight: 500;
+  color: #333;
+}
+
+.gt-thread-pie-value,
+.gt-thread-pie-pct {
+  font-variant-numeric: tabular-nums;
+  color: #666;
+}
+
+.gt-thread-pie-pct {
+  min-width: 2.5rem;
+  text-align: right;
+  font-weight: 600;
+  color: #444;
+}
+
+.gt-thread-stats-list {
+  font-size: .95rem;
+  line-height: 1.6;
+}
+
+.gt-thread-allocated {
+  margin-top: .75rem;
+  font-size: .95rem;
+  color: #333;
+}
+
+.gt-thread-stats-grid + .gt-thread-allocated,
+.gt-thread-stats-list + .gt-thread-allocated {
+  padding-top: .65rem;
+  border-top: 1px solid #eee;
 }

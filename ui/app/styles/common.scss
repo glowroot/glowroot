@@ -23,7 +23,7 @@
 }
 
 .gt-opensans {
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'IBM Plex Sans', 'Open Sans', sans-serif;
 }
 
 @mixin gt-focus-ring($opacity: .25, $color: $primary) {
@@ -78,20 +78,22 @@
   background-color: transparent;
   // inherit vertical-align so it can be used inline with other text
   vertical-align: inherit;
-  border-radius: 4px;
+  border-radius: .375rem;
+  font-family: inherit;
+  font-weight: 600;
   @include gt-focus-ring;
 }
 
 .gt-flat-btn:hover {
-  background-color: #ddd;
+  background-color: rgba($gt-blue, .08);
 }
 
 .gt-flat-btn:active {
-  background-color: #ccc;
+  background-color: rgba($gt-blue, .14);
 }
 
 .gt-flat-btn-big {
-  padding: 6px 12px;
+  padding: .4rem .75rem;
 }
 
 .gt-link-with-focus-ring {
@@ -174,12 +176,58 @@ span.disabled {
 
 // global modal customization
 
+.modal-content {
+  border: 1px solid #e5e5e5;
+  border-radius: .5rem;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .12);
+}
+
+.modal-header {
+  padding: .75rem 1rem;
+  border-bottom: 1px solid #eee;
+  align-items: center;
+}
+
+.modal-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.3;
+  margin: 0;
+}
+
 .modal-body {
-  padding: 40px 30px;
+  padding: 1rem;
+  font-size: .95rem;
+  color: #444;
+}
+
+.modal-body > p:last-child {
+  margin-bottom: 0;
+}
+
+.modal-footer {
+  padding: .65rem 1rem;
+  border-top: 1px solid #eee;
+  background-color: #fafafa;
+  border-bottom-left-radius: .5rem;
+  border-bottom-right-radius: .5rem;
+}
+
+.modal-footer .btn {
+  min-width: 4.5rem;
 }
 
 .modal-backdrop {
-  background-color: #ddd;
+  background-color: #1a1a1a;
+}
+
+.modal-backdrop.show {
+  opacity: .35;
+}
+
+.gt-confirm-dialog {
+  max-width: 26rem;
 }
 
 // this is for typeahead dropdowns

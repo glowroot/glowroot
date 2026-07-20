@@ -14,23 +14,83 @@
  * limitations under the License.
  */
 @import "../../bower_components/bootstrap/scss/variables";
+@import "variables";
+
+.gt-fieldset-environment {
+  border-color: #e0e0e0 !important;
+  border-radius: .25rem;
+  background-color: #fafafa;
+}
+
+.gt-fieldset-environment .gt-legend {
+  color: darken($gt-blue, 4%);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0;
+}
 
 .gt-jvm-general-row {
-  padding-top: 5px;
-  padding-bottom: 5px;
+  padding-top: .5rem;
+  padding-bottom: .5rem;
+  border-bottom: 1px solid #eee;
+  align-items: baseline;
+}
+
+.gt-jvm-general-row:last-child {
+  border-bottom: 0;
+}
+
+.gt-jvm-general-row > [class*="col-"] {
+  color: #333;
+}
+
+.gt-jvm-general-row .font-weight-600 {
+  color: #666;
+  font-weight: 600;
 }
 
 .gt-jvm-argument {
-  padding-bottom: 10px;
+  padding-bottom: .35rem;
+  font-family: Cousine, monospace;
+  font-size: .9rem;
+  line-height: 1.45;
+  color: #333;
+}
+
+.gt-jvm-argument-key {
+  white-space: nowrap;
 }
 
 .gt-jvm-general-row .gt-jvm-argument:last-of-type {
   padding-bottom: 0;
 }
 
+.gt-jvm-action {
+  padding: 1.25rem 0 0 .15rem;
+}
+
+.gt-jvm-form {
+  margin-top: .75rem;
+}
+
+.gt-jvm-form .row.py-1 {
+  border-bottom: 1px solid #f0f0f0;
+  padding-top: .4rem !important;
+  padding-bottom: .4rem !important;
+}
+
+.gt-jvm-form .row.py-1:last-child {
+  border-bottom: 0;
+}
+
+.gt-main-column .alert {
+  border-radius: .375rem;
+  border-width: 1px;
+}
+
 .gt-capability {
-  padding-top: 5px;
-  padding-bottom: 5px;
+  padding-top: .4rem;
+  padding-bottom: .4rem;
 }
 
 .gt-capability label {
@@ -38,9 +98,18 @@
 }
 
 .gt-heap-dump-response td {
-  padding-left: 10px;
-  padding-right: 10px;
+  padding: .35rem .65rem;
   vertical-align: top;
+}
+
+.gt-heap-histogram-table {
+  font-size: .95rem;
+}
+
+.gt-heap-histogram-table thead th {
+  border-bottom-color: #ddd;
+  color: #555;
+  font-weight: 600;
 }
 
 .gt-mbean-unexpanded-content,
@@ -49,17 +118,17 @@
   // margin-right is used (instead of padding-right on the container) so that wide content which
   // requires horizontal scrolling will still have padding to its right
   margin-right: 20px;
-  border-radius: 4px;
-  padding: 2px 10px;
+  border-radius: .375rem;
+  padding: .25rem .65rem;
 }
 
 .gt-mbean-unexpanded-content:hover,
 .gt-mbean-expanded-content:hover {
-  background-color: #ddd;
+  background-color: #eee;
 }
 
 .gt-mbean-expanded-content {
-  background-color: #eee;
+  background-color: #f5f5f5;
   // margin for white space between successive expanded elements, at the bottom so that
   // expanding doesn't create jitter/shift down of expanding section
   margin-bottom: 4px;

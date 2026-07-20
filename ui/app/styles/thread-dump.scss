@@ -21,12 +21,13 @@
   display: inline-block;
   font-family: Cousine, monospace;
   color: #333;
-  padding: 0 20px 20px 20px;
-  font-size: 13px;
-  line-height: 20px;
+  padding: 1rem 1.25rem;
+  font-size: .8125rem;
+  line-height: 1.45;
   white-space: pre;
-  background-color: #eee;
-  border-radius: 8px;
+  background-color: #f7f7f7;
+  border: 1px solid #e5e5e5;
+  border-radius: .375rem;
   // min-width 100% so the section is at least flush-right with the container
   min-width: 100%;
   // this ensures there is still a bit of padding to the right since the log can be very wide

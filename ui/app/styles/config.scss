@@ -23,8 +23,10 @@
 }
 
 .card-header h2 {
-  margin: 10px 20px;
+  margin: .5rem 1rem;
+  font-size: 1.25rem;
   font-weight: 600;
+  color: #333;
 }
 
 // add more padding to the panels
@@ -151,8 +153,8 @@
 
 @include media-breakpoint-up(md) {
   .modal-dialog.gt-modal-dialog-md {
-    max-width: 700px;
-    margin: 1.75rem auto;
+    max-width: 36rem;
+    margin: 1.25rem auto;
   }
 }
 
