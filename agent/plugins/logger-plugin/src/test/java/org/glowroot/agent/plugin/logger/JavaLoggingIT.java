@@ -17,6 +17,7 @@ package org.glowroot.agent.plugin.logger;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
@@ -228,6 +229,19 @@ public class JavaLoggingIT {
         assertThat(entry.getDepth()).isEqualTo(0);
         assertThat(entry.getMessage()).isEqualTo("log severe: null - efg__");
 
+        assertThat(i.hasNext()).isFalse();
+    }
+
+    @Test
+    public void testLogWithNullMessageAndResourceBundle() throws Exception {
+        // Formatter.formatMessage NPEs when the message key is null and a ResourceBundle is set
+        // (PropertyResourceBundle.handleGetObject) — see #706
+        Trace trace = container.execute(ShouldLogWithNullMessageAndResourceBundle.class);
+
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).startsWith("log warning:");
         assertThat(i.hasNext()).isFalse();
     }
 
@@ -604,6 +618,26 @@ public class JavaLoggingIT {
             lr.setLoggerName(logger.getName()); // test logger name
             logger.log(lr);
             logger.log(new LogRecord(Level.SEVERE, "efg__"));
+        }
+    }
+
+    public static class ShouldLogWithNullMessageAndResourceBundle
+            implements AppUnderTest, TransactionMarker {
+        private static final Logger logger = Logger.getLogger(
+                ShouldLogWithNullMessageAndResourceBundle.class.getName(), "julmsgs");
+
+        @Override
+        public void executeApp() {
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() {
+            LogRecord lr = new LogRecord(Level.WARNING, null);
+            lr.setLoggerName(logger.getName());
+            lr.setResourceBundleName("julmsgs");
+            lr.setResourceBundle(ResourceBundle.getBundle("julmsgs"));
+            logger.log(lr);
         }
     }
 }

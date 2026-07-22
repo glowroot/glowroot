@@ -18,6 +18,7 @@
 
 glowroot.controller('TracesCtrl', [
   '$scope',
+  '$rootScope',
   '$location',
   '$http',
   '$q',
@@ -27,7 +28,7 @@ glowroot.controller('TracesCtrl', [
   'traceModal',
   'queryStrings',
   'traceKind',
-  function ($scope, $location, $http, $q, locationChanges, charts, httpErrors, traceModal, queryStrings, traceKind) {
+  function ($scope, $rootScope, $location, $http, $q, locationChanges, charts, httpErrors, traceModal, queryStrings, traceKind) {
 
     $scope.$parent.activeTabItem = 'traces';
 
@@ -154,6 +155,12 @@ glowroot.controller('TracesCtrl', [
             $scope.showExpiredMessage = data.expired;
             $scope.chartLimitExceeded = data.limitExceeded;
             $scope.chartLimit = limit;
+            // Keep Slow/Error traces tab count in sync with what the chart actually shows (#725).
+            // When the limit is exceeded the tab controller still fetches the filtered total.
+            if (!data.limitExceeded) {
+              // ui-router named views are siblings — $rootScope reaches the tab controller
+              $rootScope.$broadcast('gtDisplayedTraceCount', traceCount);
+            }
             // user clicked on Refresh button, need to reset axes
             plot.getAxes().xaxis.options.min = from;
             plot.getAxes().xaxis.options.max = to;
@@ -183,6 +190,8 @@ glowroot.controller('TracesCtrl', [
       }
       charts.applyLast($scope);
       angular.extend(appliedFilter, $scope.filter);
+      // Write filters to the URL before chartRefresh so the tab count request sees them (#725)
+      updateLocation();
       $scope.range.chartRefresh++;
     };
 

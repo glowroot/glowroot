@@ -57,8 +57,14 @@ public class RepoAdminImpl implements RepoAdmin {
 
     @Override
     public void runHealthCheck() throws Exception {
+        // Cheap Cassandra liveness probe (fails when ControlConnection / all nodes are down).
+        session.read("select release_version from system.local where key = 'local'",
+                CassandraProfile.web);
         long now = clock.currentTimeMillis();
-        activeAgentDao.readActiveTopLevelAgentRollups(now - HOURS.toMillis(4), now, CassandraProfile.web);
+        // Must wait: previously the CompletionStage was ignored, so /health always returned 200
+        // even when Cassandra was unreachable (see github.com/glowroot/glowroot/issues/766).
+        activeAgentDao.readActiveTopLevelAgentRollups(now - HOURS.toMillis(4), now, CassandraProfile.web)
+                .toCompletableFuture().get();
     }
 
     @Override
