@@ -107,6 +107,11 @@
   margin-bottom: .5rem;
 }
 
+// Bootstrap popovers default to max-width ~276px; filter help needs to match its content width
+.popover.gt-traces-filters-popover {
+  max-width: none;
+}
+
 .gt-button-message {
   display: inline-block;
   font-size: 1rem;
