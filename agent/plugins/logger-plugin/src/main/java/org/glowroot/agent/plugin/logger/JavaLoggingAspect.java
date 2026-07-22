@@ -89,7 +89,14 @@ public class JavaLoggingAspect {
             // cannot check Logger.getFilter().isLoggable(LogRecord) because the Filter object
             // could be stateful and might alter its state (e.g.
             // com.sun.mail.util.logging.DurationFilter)
-            String formattedMessage = nullToEmpty(formatter.formatMessage(record));
+            String formattedMessage;
+            try {
+                formattedMessage = nullToEmpty(formatter.formatMessage(record));
+            } catch (RuntimeException e) {
+                // PropertyResourceBundle / MessageFormat can NPE with null params or custom
+                // ResourceBundle loaders (e.g. WebSphere) — see #706
+                formattedMessage = nullToEmpty(record.getMessage());
+            }
             int lvl = level.intValue();
             Throwable t = record.getThrown();
             if (LoggerPlugin.markTraceAsError(lvl >= Level.SEVERE.intValue(),
