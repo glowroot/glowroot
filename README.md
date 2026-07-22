@@ -48,7 +48,7 @@ If you are modifying web assets, you either need to run grunt to re-build them a
 
 `./grunt serve` serves up the Glowroot web assets to the browser without the concat/minify/rev step, which makes testing/debugging much easier. It reverse proxies non- static resource requests to http://localhost:4000 to be handled by Glowroot. It also watches for changes to the files and performs live-reload of web assets inside the browser.
 
-`./grunt serve:demo` does the same as above, except that it reverse proxies non- static resource requests to [https://demo.glowroot.org](https://demo.glowroot.org) instead of http://localhost:4000.
+`./grunt serve:demo` does the same as above, except that it reverse proxies non- static resource requests to [http://web.archive.org/web/20230325052222/https://demo.glowroot.org/](https://demo.glowroot.org) instead of http://localhost:4000.
 
 ## Integration tests
 
