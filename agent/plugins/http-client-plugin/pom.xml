@@ -210,6 +210,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.springframework.ws</groupId>
+      <artifactId>spring-ws-core</artifactId>
+      <version>3.1.8</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <!-- axis dependency -->
       <groupId>javax.xml.rpc</groupId>
       <artifactId>javax.xml.rpc-api</artifactId>
@@ -479,6 +485,7 @@
             <configuration>
               <testExcludes>
                 <exclude>org/glowroot/agent/plugin/httpclient/RestTemplatePluginIT.java</exclude>
+                <exclude>org/glowroot/agent/plugin/httpclient/WebServiceTemplatePluginIT.java</exclude>
               </testExcludes>
             </configuration>
           </plugin>
