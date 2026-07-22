@@ -38,6 +38,8 @@ Building requires Java 11+ and Maven 3.8.0+.
 
 ## Contributing
 
+Issue triage FAQ / backlog patterns live under [docs/issue-map](docs/issue-map) (see also [discussion #1197](https://github.com/glowroot/glowroot/discussions/1197)).
+
 Glowroot uses [Immutables](https://immutables.github.io) annotation processing to eliminate maintenance on lots of boilerplate code. If you are using Eclipse, this requires installing the [m2e-apt](https://github.com/jbosstools/m2e-apt) plugin and changing Window > Preferences > Maven > Annotation Processing to "Automatically configure JDT APT".
 
 To work on the UI, run org.glowroot.ui.sandbox.UiSandboxMain under a debugger inside your favorite IDE. This starts Glowroot and generates a variety of sample traces to give the UI something to display. Connect your browser to http://localhost:4000.

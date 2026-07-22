@@ -1,0 +1,54 @@
+number,created,ageDays,user,labels,title,url,comments,bucket,difficulty
+1183,2026-06-29,23,ahp-gascoyne,"","Glowroot 0.14.6 not starting with Apache Procrun as Windows Service",https://github.com/glowroot/glowroot/issues/1183,1,fresh,easy
+1182,2026-06-23,30,ghedwards,"","Glowroot on Windows 2025 / JDK 21.0.11 failing",https://github.com/glowroot/glowroot/issues/1182,2,fresh,medium
+1180,2026-06-17,36,petterhanssen,"","Increased CPU load and GC pressure after upgrading from 0.14.4 to 0.14.7 / 0.14.8-beta.3",https://github.com/glowroot/glowroot/issues/1180,0,year,medium
+1165,2026-02-27,145,poirot-19,"","Glowroot flamegraph showing same function at two different line numbers and as sibling nodes.",https://github.com/glowroot/glowroot/issues/1165,1,year,medium
+1162,2026-02-20,153,QiuYucheng2003,"","[Bug] Severe ClassLoader Leak (Metaspace OOM) caused by unmanaged FastThreadLocal in Servlet Containers",https://github.com/glowroot/glowroot/issues/1162,1,year,hard
+1151,2025-09-18,307,lalmeras,"","Glowroot cannot reconnect to cassandra when DNS resolution changes",https://github.com/glowroot/glowroot/issues/1151,0,year,medium
+1144,2025-08-13,343,frenchcsurest,"","Transaction Rollup views taking over a day",https://github.com/glowroot/glowroot/issues/1144,2,year,medium
+1141,2025-08-07,349,lfen21,"","Error with somes traces when we want to go in ""profile"" section",https://github.com/glowroot/glowroot/issues/1141,2,year,medium
+1139,2025-08-07,350,tyd888666,"","The interface log contains outbound services, but the list of service calls is empty",https://github.com/glowroot/glowroot/issues/1139,1,year,medium
+1138,2025-07-09,378,anniezhang2288,"","Alerts and Settings Disappearing",https://github.com/glowroot/glowroot/issues/1138,1,mid,medium
+1137,2025-07-06,382,aloussase,"","glowroot logs rotation",https://github.com/glowroot/glowroot/issues/1137,1,mid,medium
+1136,2025-06-25,392,damienseuru,"","[JAXRS Plugin] Wrong transaction name",https://github.com/glowroot/glowroot/issues/1136,0,mid,medium
+1126,2025-05-13,435,victorrentea,"","The website shows older 0.14.0 version",https://github.com/glowroot/glowroot/issues/1126,0,mid,medium
+1125,2025-04-30,449,john9x,"","No thread profiling on Jetty with enabled virtual threads",https://github.com/glowroot/glowroot/issues/1125,1,mid,hard
+1124,2025-04-28,450,manmathank,"","one or more important classes were loaded before Glowroot instrumentation could be applied to them",https://github.com/glowroot/glowroot/issues/1124,1,mid,medium
+1122,2025-03-11,498,lfen21,"","When trace profile is too long we have an error (in the trace and at export)",https://github.com/glowroot/glowroot/issues/1122,3,mid,medium
+1118,2025-02-19,518,ArunVasanthmdu,"","Entries query stats and profile for this trace have expired",https://github.com/glowroot/glowroot/issues/1118,1,mid,medium
+1117,2025-01-30,539,adeokar13,"","Not able to see transactions for one of the microservice in glowroot",https://github.com/glowroot/glowroot/issues/1117,1,mid,medium
+1115,2025-01-15,553,mariorezdev,"","I cannot use Glowroot with the Helidon Micro-Profile Framework",https://github.com/glowroot/glowroot/issues/1115,0,mid,medium
+1114,2024-12-19,580,dseu89,"","Adding custom Metric/Gauge",https://github.com/glowroot/glowroot/issues/1114,1,mid,medium
+1112,2024-11-18,611,mauromol,"","java.lang.NoClassDefFoundError: org/glowroot/agent/weaving/GeneratedMethodMeta*",https://github.com/glowroot/glowroot/issues/1112,3,mid,hard
+1111,2024-11-16,614,ArturLinhart,"","Improvement of the display of the values in the graphs, where today's ""average only"" value display can now lead partially to very very misleading interpretation of the data in the case of aggregation on longer time intervals",https://github.com/glowroot/glowroot/issues/1111,1,mid,medium
+1110,2024-10-30,630,teid-bw,"","Memory leak in transactions queue",https://github.com/glowroot/glowroot/issues/1110,2,mid,hard
+1108,2024-10-16,644,farukomerballi,"","Glowroot central 24-hour screening",https://github.com/glowroot/glowroot/issues/1108,2,mid,medium
+1106,2024-10-01,659,Artyomcool,"","Glowroot breaks debugger",https://github.com/glowroot/glowroot/issues/1106,1,mid,medium
+1100,2024-07-30,722,FilipeCoelhoAlves,"","[0.14.3-beta4]Central colector warnings in querrys to cassandra",https://github.com/glowroot/glowroot/issues/1100,0,mid,medium
+1099,2024-07-26,726,arTG0D,"","Need to expose metrics to Prometheus",https://github.com/glowroot/glowroot/issues/1099,2,mid,medium
+1098,2024-07-25,727,mrireddy04,"","Glowroot  vs WildFly 26 ",https://github.com/glowroot/glowroot/issues/1098,1,mid,medium
+1097,2024-07-24,728,FilipeCoelhoAlves,"","[0.14.3-beta4] Error entenring in admin.json menu",https://github.com/glowroot/glowroot/issues/1097,2,mid,medium
+1095,2024-07-09,743,nagarjun1143,"","Custom plugin",https://github.com/glowroot/glowroot/issues/1095,2,mid,medium
+1090,2024-06-13,769,yasinsula061,"","Glowroot Transaction aggregation does not work in version 0.14.2",https://github.com/glowroot/glowroot/issues/1090,24,mid,medium
+1088,2024-06-13,770,NicholasAntinori,"","Glowroot Allert Mail subject ",https://github.com/glowroot/glowroot/issues/1088,0,mid,medium
+1087,2024-06-06,777,pshipton,"","Heap histogram not supported on OpenJ9",https://github.com/glowroot/glowroot/issues/1087,1,mid,medium
+1083,2024-05-29,784,gregsting,"","Cleanup traces in cassandra",https://github.com/glowroot/glowroot/issues/1083,0,mid,medium
+1082,2024-05-23,791,senhakan,"","No connection was available to Node",https://github.com/glowroot/glowroot/issues/1082,9,mid,medium
+1081,2024-05-23,791,parabinda,"","LIMIT EXCEEDED BUCKET in - Query Stats of a trace - please guide",https://github.com/glowroot/glowroot/issues/1081,2,mid,medium
+1078,2024-05-14,799,zshahan,"","glowroot agent for glowroot central docker image",https://github.com/glowroot/glowroot/issues/1078,0,mid,medium
+1077,2024-05-14,799,ingmars1709,"","Changing the log level of shaded gRPC classes in glowroot agent",https://github.com/glowroot/glowroot/issues/1077,0,mid,medium
+1074,2024-04-07,837,J-GainSec,"","Anonymous Access Concern",https://github.com/glowroot/glowroot/issues/1074,3,mid,medium
+1073,2024-03-28,847,gregsting,"","Cassandra heavy read every 4 hours",https://github.com/glowroot/glowroot/issues/1073,3,mid,medium
+1062,2024-01-31,903,bennekrouf,"","Update README to add a section describing what your lib is doing",https://github.com/glowroot/glowroot/issues/1062,1,mid,medium
+1059,2024-01-23,911,SoumyajitD,"","Heap info doesn't get refreshed without heap dump generation.",https://github.com/glowroot/glowroot/issues/1059,1,mid,medium
+1055,2023-12-14,951,zd-dalibor,"","spring boot 3 and logback 4 java.lang.IncompatibleClassChangeError ",https://github.com/glowroot/glowroot/issues/1055,10,mid,hard
+1050,2023-11-13,982,yalcindogan,"","Bytecode service retrieved too early",https://github.com/glowroot/glowroot/issues/1050,0,mid,hard
+1049,2023-11-13,982,dmorais895,"","Synthetic monitor not working.",https://github.com/glowroot/glowroot/issues/1049,0,mid,medium
+1044,2023-10-13,1013,soundarrajan-r-10017,"","Elastic search plugin stacktrace logging not wokring when we reconfigure",https://github.com/glowroot/glowroot/issues/1044,0,mid,medium
+1039,2023-09-05,1052,tellmewhattodo,"","About heap collection",https://github.com/glowroot/glowroot/issues/1039,1,mid,medium
+1036,2023-08-22,1065,chjourdain,"","Transaction aggregations and Error rate on rollup are not calculated since 0.14",https://github.com/glowroot/glowroot/issues/1036,12,mid,medium
+1035,2023-08-18,1069,farukomerballi,"","Not storing a gauge collection because of an excessive backlog of 60 gauge collections already waiting to be stored",https://github.com/glowroot/glowroot/issues/1035,2,mid,medium
+1032,2023-08-04,1083,rvjansen,"","glowroot changes serialVersionUID?",https://github.com/glowroot/glowroot/issues/1032,0,mid,hard
+1029,2023-08-01,1086,alessio-roselli-dedalus,"","Missing glowroot-agent-api 0.14.0 in maven central repository",https://github.com/glowroot/glowroot/issues/1029,1,mid,medium
+634,2019-09-16,2502,tbarnier,"","Issue with scala, jetty, and serialVersionUID",https://github.com/glowroot/glowroot/issues/634,1,stale,hard
+592,2019-05-23,2617,lfen21,"","Application outofmemory with endless threads",https://github.com/glowroot/glowroot/issues/592,3,stale,hard
