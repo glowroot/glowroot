@@ -69,7 +69,7 @@ public class CentralRepoModule {
     private final V09AgentRollupDao v09AgentRollupDao;
 
     public CentralRepoModule(ClusterManager clusterManager, Session session, File confDir,
-            String cassandraSymmetricEncryptionKey, int cassandraGcGraceSeconds, ExecutorService asyncExecutor,
+            String cassandraSymmetricEncryptionKey, int cassandraGcGraceSeconds, boolean helmMode, ExecutorService asyncExecutor,
             int targetMaxActiveAgentsInPast7Days, int targetMaxCentralUiUsers, Clock clock)
             throws Exception {
 
@@ -96,8 +96,9 @@ public class CentralRepoModule {
         traceAttributeNameDao = new TraceAttributeNameDao(session, configRepository, clusterManager,
                 targetMaxCentralUiUsers);
 
-        if (populateFromAdminDefault) {
+        if (helmMode || populateFromAdminDefault) {
             File adminDefaultFile = new File(confDir, "admin-default.json");
+
             if (adminDefaultFile.exists()) {
                 try {
                     populateFromAdminDefault(adminDefaultFile, configRepository);

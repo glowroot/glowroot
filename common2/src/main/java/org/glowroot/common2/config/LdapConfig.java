@@ -52,6 +52,12 @@ public abstract class LdapConfig {
 
     @Value.Default
     @JsonInclude(Include.NON_EMPTY)
+    public String password() {
+        return "";
+    }
+    
+    @Value.Default
+    @JsonInclude(Include.NON_EMPTY)
     public String encryptedPassword() {
         return "";
     }
