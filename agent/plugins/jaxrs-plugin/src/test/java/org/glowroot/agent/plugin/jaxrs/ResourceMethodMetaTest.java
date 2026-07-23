@@ -15,7 +15,18 @@
  */
 package org.glowroot.agent.plugin.jaxrs;
 
+import java.util.Collections;
+import java.util.List;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.core.Response;
+
 import org.junit.jupiter.api.Test;
+
+import org.glowroot.agent.plugin.api.MethodInfo;
+import org.glowroot.agent.plugin.api.checker.Nullable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,4 +49,50 @@ public class ResourceMethodMetaTest {
         assertThat(ResourceMethodMeta.combine("/abc", "")).isEqualTo("/abc");
         assertThat(ResourceMethodMeta.combine("", "/xyz")).isEqualTo("/xyz");
     }
+
+    @Test
+    public void shouldReadClassPathFromSuperclassLikeSpringCglibProxy() {
+        ResourceMethodMeta meta = new ResourceMethodMeta(methodInfo(OrdersProxy.class, "getOrder",
+                long.class));
+        assertThat(meta.getPath()).isEqualTo("/orders/*");
+        assertThat(meta.hasClassPathAnnotation()).isTrue();
+    }
+
+    private static MethodInfo methodInfo(final Class<?> declaringClass, final String name,
+            final Class<?>... parameterTypes) {
+        return new MethodInfo() {
+            @Override
+            public String getName() {
+                return name;
+            }
+            @Override
+            public Class<?> getReturnType() {
+                return Response.class;
+            }
+            @Override
+            public List<Class<?>> getParameterTypes() {
+                return Collections.<Class<?>>singletonList(parameterTypes[0]);
+            }
+            @Override
+            public String getDeclaringClassName() {
+                return declaringClass.getName();
+            }
+            @Override
+            public @Nullable ClassLoader getLoader() {
+                return declaringClass.getClassLoader();
+            }
+        };
+    }
+
+    @Path("/orders")
+    public static class OrdersResource {
+        @GET
+        @Path("/{id}")
+        public Response getOrder(@PathParam("id") long id) {
+            return Response.ok().build();
+        }
+    }
+
+    // mimics OrderController$$EnhancerBySpringCGLIB$$… (no annotations on the subclass)
+    public static class OrdersProxy extends OrdersResource {}
 }

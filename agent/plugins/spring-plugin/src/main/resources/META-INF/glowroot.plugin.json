@@ -37,15 +37,13 @@
       "timerName": "jms message"
     },
     {
-      "classAnnotation": "org.springframework.stereotype.Component|org.springframework.stereotype.Controller|org.springframework.stereotype.Repository|org.springframework.stereotype.Service|org.springframework.web.bind.annotation.RestController",
-      "methodAnnotation": "org.springframework.scheduling.annotation.Scheduled",
-      "methodParameterTypes": [
-        ".."
-      ],
+      "className": "org.springframework.scheduling.support.ScheduledMethodRunnable",
+      "methodName": "run",
+      "methodParameterTypes": [],
       "captureKind": "transaction",
       "transactionType": "Background",
-      "transactionNameTemplate": "Spring scheduled: {{this.class.simpleName}}#{{methodName}}",
-      "traceEntryMessageTemplate": "Spring scheduled: {{this.class.name}}.{{methodName}}()",
+      "transactionNameTemplate": "Spring scheduled: {{this.target.class.simpleName}}#{{this.method.name}}",
+      "traceEntryMessageTemplate": "Spring scheduled: {{this.method}}",
       "timerName": "spring scheduled"
     },
     {

@@ -97,6 +97,21 @@ public class ResourceMethodMeta {
         } catch (Throwable t) {
             logger.error(t.getMessage(), t);
         }
+        // Spring CGLIB/JDK proxies put @Path on the user superclass/interfaces, not the
+        // runtime enhancer class (see #1136).
+        Class<?> superclass = clazz.getSuperclass();
+        if (superclass != null && superclass != Object.class) {
+            String path = getPath(superclass);
+            if (path != null) {
+                return path;
+            }
+        }
+        for (Class<?> iface : clazz.getInterfaces()) {
+            String path = getPath(iface);
+            if (path != null) {
+                return path;
+            }
+        }
         return null;
     }
 
