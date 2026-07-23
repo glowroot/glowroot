@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,5 +38,22 @@ public class IterableWithSelfRemovableEntriesTest {
             entries.get(9 - i).remove();
         }
         assertThat(collection.iterator().hasNext()).isFalse();
+    }
+
+    // Cleared WeakReferences may not yet appear on ReferenceQueue (JVM pending window). Expunge
+    // must still unlink those tombstone Entry nodes or the active-transaction chain leaks (#1110).
+    @Test
+    public void testExpungeClearedReferencesWithoutQueueNotification() {
+        IterableWithSelfRemovableEntries<Object> collection =
+                new IterableWithSelfRemovableEntries<Object>();
+        for (int i = 0; i < 50; i++) {
+            collection.add(new Object());
+        }
+        // Simulate cleared refs that are not (yet) on ReferenceQueue.
+        collection.clearReferentsForTest();
+        Object live = new Object();
+        collection.add(live);
+        assertThat(collection.linkedEntryCountForTest()).isEqualTo(1);
+        assertThat(Lists.newArrayList(collection)).containsExactly(live);
     }
 }

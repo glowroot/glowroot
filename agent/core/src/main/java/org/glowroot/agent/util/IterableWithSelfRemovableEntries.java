@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.glowroot.agent.util;
 
-import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.Iterator;
@@ -57,21 +56,48 @@ public class IterableWithSelfRemovableEntries<E> implements Iterable<E> {
         return new ElementIterator();
     }
 
+    // package-private for tests (#1110)
+    int linkedEntryCountForTest() {
+        synchronized (lock) {
+            expungeStaleEntries();
+            int count = 0;
+            Entry currEntry = headEntry.nextEntry;
+            while (currEntry != null) {
+                count++;
+                currEntry = currEntry.nextEntry;
+            }
+            return count;
+        }
+    }
+
+    // Clears referents via WeakReference.clear() which does not enqueue on ReferenceQueue,
+    // reproducing the pending-window case where get() is null but poll() is empty (#1110).
+    void clearReferentsForTest() {
+        synchronized (lock) {
+            Entry currEntry = headEntry.nextEntry;
+            while (currEntry != null) {
+                if (currEntry.ref != null) {
+                    currEntry.ref.clear();
+                }
+                currEntry = currEntry.nextEntry;
+            }
+        }
+    }
+
     // requires lock
     private void expungeStaleEntries() {
-        Reference<? extends E> ref = queue.poll();
-        if (ref == null) {
-            return;
-        }
-        // drain the queue, since going to loop over and clean up everything anyways
+        // Drain ReferenceQueue if the JVM has enqueued cleared refs. Always walk the list as well:
+        // WeakReference.get() can already be null while the ref is still pending on the queue
+        // (or cleared without enqueue), which used to early-return and leave tombstones (#1110).
         while (queue.poll() != null) {
         }
         Entry currEntry = headEntry.nextEntry;
         while (currEntry != null) {
+            Entry next = currEntry.nextEntry;
             if (currEntry.getElement() == null) {
                 currEntry.remove();
             }
-            currEntry = currEntry.nextEntry;
+            currEntry = next;
         }
     }
 
