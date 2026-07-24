@@ -556,10 +556,19 @@ public class Log4jIT {
         }
         @Override
         public void transactionMarker() {
-            Logger.getRootLogger().setLevel(Level.DEBUG);
-            logger.setLevel(Level.ERROR);
-            logger.debug("should-not-appear");
-            logger.info("should-not-appear-either");
+            // Restore levels: Log4j hierarchy is JVM-global and shared across ITs in one container.
+            Logger root = Logger.getRootLogger();
+            Level previousRoot = root.getLevel();
+            Level previousLogger = logger.getLevel();
+            try {
+                root.setLevel(Level.DEBUG);
+                logger.setLevel(Level.ERROR);
+                logger.debug("should-not-appear");
+                logger.info("should-not-appear-either");
+            } finally {
+                root.setLevel(previousRoot);
+                logger.setLevel(previousLogger);
+            }
         }
     }
 
@@ -571,9 +580,17 @@ public class Log4jIT {
         }
         @Override
         public void transactionMarker() {
-            Logger.getRootLogger().setLevel(Level.DEBUG);
-            logger.setLevel(Level.ERROR);
-            logger.error("should-appear");
+            Logger root = Logger.getRootLogger();
+            Level previousRoot = root.getLevel();
+            Level previousLogger = logger.getLevel();
+            try {
+                root.setLevel(Level.DEBUG);
+                logger.setLevel(Level.ERROR);
+                logger.error("should-appear");
+            } finally {
+                root.setLevel(previousRoot);
+                logger.setLevel(previousLogger);
+            }
         }
     }
 
