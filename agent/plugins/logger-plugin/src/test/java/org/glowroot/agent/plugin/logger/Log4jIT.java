@@ -85,6 +85,30 @@ public class Log4jIT {
         assertThat(i.hasNext()).isFalse();
     }
 
+    // #1201: named logger ERROR + root DEBUG must not capture debug/info (log4j gates before
+    // forcedLog; Glowroot weaves forcedLog only).
+    @Test
+    public void testPerLoggerLevelSkipsDebug() throws Exception {
+        Trace trace = container.execute(ShouldLogDebugWithLoggerError.class);
+        assertThat(trace.getEntryList()).isEmpty();
+    }
+
+    @Test
+    public void testPerLoggerLevelStillCapturesError() throws Exception {
+        container.getConfigService().setPluginProperty(PLUGIN_ID,
+                "traceErrorOnErrorWithoutThrowable", true);
+
+        Trace trace = container.execute(ShouldLogErrorWithLoggerError.class);
+
+        assertThat(trace.getHeader().getError().getMessage()).isEqualTo("should-appear");
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        Trace.Entry entry = i.next();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEqualTo(
+                "log error: o.g.a.p.l.Log4jIT$ShouldLogErrorWithLoggerError - should-appear");
+        assertThat(i.hasNext()).isFalse();
+    }
+
     @Test
     public void testLogWithThrowable() throws Exception {
         // given
@@ -521,6 +545,52 @@ public class Log4jIT {
             logger.warn("def");
             logger.error("efg");
             logger.fatal("fgh");
+        }
+    }
+
+    public static class ShouldLogDebugWithLoggerError implements AppUnderTest, TransactionMarker {
+        private static final Logger logger = Logger.getLogger(ShouldLogDebugWithLoggerError.class);
+        @Override
+        public void executeApp() {
+            transactionMarker();
+        }
+        @Override
+        public void transactionMarker() {
+            // Restore levels: Log4j hierarchy is JVM-global and shared across ITs in one container.
+            Logger root = Logger.getRootLogger();
+            Level previousRoot = root.getLevel();
+            Level previousLogger = logger.getLevel();
+            try {
+                root.setLevel(Level.DEBUG);
+                logger.setLevel(Level.ERROR);
+                logger.debug("should-not-appear");
+                logger.info("should-not-appear-either");
+            } finally {
+                root.setLevel(previousRoot);
+                logger.setLevel(previousLogger);
+            }
+        }
+    }
+
+    public static class ShouldLogErrorWithLoggerError implements AppUnderTest, TransactionMarker {
+        private static final Logger logger = Logger.getLogger(ShouldLogErrorWithLoggerError.class);
+        @Override
+        public void executeApp() {
+            transactionMarker();
+        }
+        @Override
+        public void transactionMarker() {
+            Logger root = Logger.getRootLogger();
+            Level previousRoot = root.getLevel();
+            Level previousLogger = logger.getLevel();
+            try {
+                root.setLevel(Level.DEBUG);
+                logger.setLevel(Level.ERROR);
+                logger.error("should-appear");
+            } finally {
+                root.setLevel(previousRoot);
+                logger.setLevel(previousLogger);
+            }
         }
     }
 
