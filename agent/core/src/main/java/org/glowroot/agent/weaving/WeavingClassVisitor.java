@@ -648,12 +648,13 @@ class WeavingClassVisitor extends ClassVisitor {
             exceptions[i] = ClassNames.toInternalName(inheritedMethod.exceptions().get(i));
         }
         List<Advice> advisors = removeSuperseded(inheritedMethod.advisors());
-        MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, inheritedMethod.name(),
+        int access = ACC_PUBLIC | ACC_SYNTHETIC;
+        MethodVisitor mv = cw.visitMethod(access, inheritedMethod.name(),
                 inheritedMethod.getDesc(), null, exceptions);
-        mv = visitMethodWithAdvice(mv, ACC_PUBLIC, inheritedMethod.name(),
+        mv = visitMethodWithAdvice(mv, access, inheritedMethod.name(),
                 inheritedMethod.getDesc(), advisors);
         checkNotNull(mv);
-        GeneratorAdapter mg = new GeneratorAdapter(mv, ACC_PUBLIC, inheritedMethod.name(),
+        GeneratorAdapter mg = new GeneratorAdapter(mv, access, inheritedMethod.name(),
                 inheritedMethod.getDesc());
         mg.visitCode();
         mg.loadThis();

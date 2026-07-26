@@ -1665,6 +1665,37 @@ public class WeaverTest {
         test.execute1();
     }
 
+    public interface MyGenericMisc<T> {
+        void execute1(T t);
+    }
+    public interface MyMarkerInterface<T> {
+        void execute1(T t);
+    }
+    public static class MyBasicGenericMisc<T> implements MyGenericMisc<T> {
+        public void execute1(T t) {}
+    }
+    public static class MySubGenericMisc extends MyBasicGenericMisc<String> implements MyMarkerInterface<String> {}
+
+    @Pointcut(className = "org.glowroot.agent.weaving.WeaverTest$MyMarkerInterface", methodName = "execute1",
+            methodParameterTypes = {".."}, timerName = "xyz")
+    public static class GenericAdvice {
+        @org.glowroot.agent.plugin.api.weaving.OnBefore
+        public static void onBefore() {}
+    }
+
+    @Test
+    public void shouldWeaveInheritedGenericMethod() throws Exception {
+        // given
+        MyGenericMisc<String> test = newWovenObject(MySubGenericMisc.class,
+                MyGenericMisc.class, GenericAdvice.class);
+        // when
+        test.execute1("test");
+        // then
+        java.lang.reflect.Method method = test.getClass().getDeclaredMethod("execute1", Object.class);
+        assertThat(method.isSynthetic()).isTrue();
+        assertThat(method.getGenericParameterTypes()).hasSize(1);
+    }
+
     // ===================== test not perfect bytecode =====================
 
     @Test
