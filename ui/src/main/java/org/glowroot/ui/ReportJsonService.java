@@ -157,6 +157,56 @@ class ReportJsonService {
     }
 
     // permission is checked based on agentRollupIds in the request
+    @GET(path = "/backend/report/timer-names", permission = "")
+    String getTimerNames(@BindRequest TimerNamesRequest request,
+            @BindAuthentication Authentication authentication) throws Exception {
+        checkPermissions(request.agentRollupIds(), "agent:transaction:overview", authentication);
+        TimeZone timeZone = TimeZone.getTimeZone(request.timeZoneId());
+        FromToPair fromToPair = parseDates(request.fromDate(), request.toDate(), timeZone);
+        Date from = fromToPair.from();
+        Date to = fromToPair.to();
+        int rollupLevel =
+                Math.max(rollupLevelService.getRollupLevelForReport(from.getTime(), DataKind.GENERAL),
+                        2);
+        AggregateQuery query = ImmutableAggregateQuery.builder()
+                .transactionType(checkNotNull(request.transactionType()))
+                .transactionName(Strings.emptyToNull(Strings.nullToEmpty(request.transactionName())))
+                .from(from.getTime() + 1)
+                .to(to.getTime())
+                .rollupLevel(rollupLevel)
+                .build();
+        // Also query level 0 + live so the dropdown fills for recent data before coarser
+        // report rollups exist (same idea as Transactions → average).
+        AggregateQuery liveQuery = ImmutableAggregateQuery.builder()
+                .copyFrom(query)
+                .rollupLevel(0)
+                .build();
+        Set<String> timerNames = Sets.newTreeSet();
+        for (String agentRollupId : request.agentRollupIds()) {
+            List<OverviewAggregate> aggregates = aggregateRepository
+                    .readOverviewAggregates(agentRollupId, query, CassandraProfile.web)
+                    .toCompletableFuture().get();
+            for (OverviewAggregate aggregate : aggregates) {
+                timerNames.addAll(BreakdownTimerMetrics.timerNames(aggregate));
+            }
+            List<OverviewAggregate> level0 = aggregateRepository
+                    .readOverviewAggregates(agentRollupId, liveQuery, CassandraProfile.web)
+                    .toCompletableFuture().get();
+            for (OverviewAggregate aggregate : level0) {
+                timerNames.addAll(BreakdownTimerMetrics.timerNames(aggregate));
+            }
+            LiveAggregateRepository.LiveResult<OverviewAggregate> liveResult =
+                    liveAggregateRepository.getOverviewAggregates(agentRollupId, liveQuery);
+            if (liveResult != null) {
+                for (OverviewAggregate aggregate : liveResult.get()) {
+                    timerNames.addAll(BreakdownTimerMetrics.timerNames(aggregate));
+                }
+            }
+        }
+        return mapper.writeValueAsString(timerNames);
+    }
+
+    // permission is checked based on agentRollupIds in the request
     @GET(path = "/backend/report", permission = "")
     String getReport(final @BindRequest ReportRequest request,
             @BindAuthentication Authentication authentication) throws Exception {
@@ -164,6 +214,7 @@ class ReportJsonService {
         if (metric.startsWith("transaction:")) {
             checkPermissions(request.agentRollupIds(), "agent:transaction:overview",
                     authentication);
+            validateBreakdownTimerRequest(request);
         } else if (metric.startsWith("error:")) {
             checkPermissions(request.agentRollupIds(), "agent:error:overview", authentication);
         } else if (metric.startsWith("gauge:")) {
@@ -318,6 +369,18 @@ class ReportJsonService {
         } else if (metric.equals("error:count")) {
             return getDataSeriesForThroughput(agentRollupId, query, rollupCaptureTimeFn,
                     request.rollup(), timeZone, gapMillis, new ErrorCountCalculator());
+        } else if (metric.equals("transaction:timer-inclusive")) {
+            return getDataSeriesForBreakdownTimer(agentRollupId, query,
+                    checkNotNull(request.timerName()), BreakdownTimerMetrics.Kind.INCLUSIVE_NANOS,
+                    rollupCaptureTimeFn, request.rollup(), timeZone, gapMillis);
+        } else if (metric.equals("transaction:timer-exclusive")) {
+            return getDataSeriesForBreakdownTimer(agentRollupId, query,
+                    checkNotNull(request.timerName()), BreakdownTimerMetrics.Kind.EXCLUSIVE_NANOS,
+                    rollupCaptureTimeFn, request.rollup(), timeZone, gapMillis);
+        } else if (metric.equals("transaction:timer-count")) {
+            return getDataSeriesForBreakdownTimer(agentRollupId, query,
+                    checkNotNull(request.timerName()), BreakdownTimerMetrics.Kind.COUNT,
+                    rollupCaptureTimeFn, request.rollup(), timeZone, gapMillis);
         } else {
             throw new IllegalStateException("Unexpected metric: " + metric);
         }
@@ -368,6 +431,71 @@ class ReportJsonService {
         dataSeries
                 .setOverall(totalDurationNanos / (transactionCount * NANOSECONDS_PER_MILLISECOND));
         return dataSeries;
+    }
+
+    private DataSeries getDataSeriesForBreakdownTimer(String agentRollupId, AggregateQuery query,
+            String timerName, BreakdownTimerMetrics.Kind kind,
+            RollupCaptureTimeFn rollupCaptureTimeFn, ROLLUP rollup, TimeZone timeZone,
+            double gapMillis) throws Exception {
+        DataSeries dataSeries =
+                new DataSeries(agentDisplayRepository.readFullDisplay(agentRollupId).toCompletableFuture().get());
+        List<OverviewAggregate> aggregates =
+                aggregateRepository.readOverviewAggregates(agentRollupId, query, CassandraProfile.web).toCompletableFuture().get();
+        aggregates =
+                TransactionCommonService.rollUpOverviewAggregates(aggregates, rollupCaptureTimeFn);
+        if (aggregates.isEmpty()) {
+            return dataSeries;
+        }
+        OverviewAggregate lastAggregate = Iterables.getLast(aggregates);
+        long lastCaptureTime = lastAggregate.captureTime();
+        long lastRollupCaptureTime = rollupCaptureTimeFn.apply(lastCaptureTime);
+        if (lastCaptureTime != lastRollupCaptureTime) {
+            aggregates.set(aggregates.size() - 1, ImmutableOverviewAggregate.builder()
+                    .copyFrom(lastAggregate)
+                    .captureTime(lastRollupCaptureTime)
+                    .build());
+        }
+        OverviewAggregate priorAggregate = null;
+        for (OverviewAggregate aggregate : aggregates) {
+            if (priorAggregate != null
+                    && aggregate.captureTime() - priorAggregate.captureTime() > gapMillis) {
+                dataSeries.addNull();
+            }
+            double pointValue = breakdownTimerPointValue(aggregate, timerName, kind);
+            dataSeries.add(getIntervalAverage(rollup, timeZone, aggregate.captureTime()),
+                    pointValue);
+            priorAggregate = aggregate;
+        }
+        if (kind == BreakdownTimerMetrics.Kind.COUNT) {
+            double totalCount = 0;
+            for (OverviewAggregate aggregate : aggregates) {
+                totalCount += BreakdownTimerMetrics.value(aggregate, timerName, kind);
+            }
+            dataSeries.setOverall(totalCount);
+        } else {
+            double totalNanos = 0;
+            long transactionCount = 0;
+            for (OverviewAggregate aggregate : aggregates) {
+                totalNanos += BreakdownTimerMetrics.value(aggregate, timerName, kind);
+                transactionCount += aggregate.transactionCount();
+            }
+            checkState(transactionCount != 0);
+            dataSeries.setOverall(totalNanos / (transactionCount * NANOSECONDS_PER_MILLISECOND));
+        }
+        return dataSeries;
+    }
+
+    private static double breakdownTimerPointValue(OverviewAggregate aggregate, String timerName,
+            BreakdownTimerMetrics.Kind kind) {
+        double raw = BreakdownTimerMetrics.value(aggregate, timerName, kind);
+        if (kind == BreakdownTimerMetrics.Kind.COUNT) {
+            return raw;
+        }
+        long transactionCount = aggregate.transactionCount();
+        if (transactionCount == 0) {
+            return 0;
+        }
+        return raw / (transactionCount * NANOSECONDS_PER_MILLISECOND);
     }
 
     private DataSeries getDataSeriesForPercentile(String agentRollupId, AggregateQuery query,
@@ -546,6 +674,25 @@ class ReportJsonService {
         }
     }
 
+    private static void validateBreakdownTimerRequest(ReportRequest request) {
+        String metric = request.metric();
+        if (!metric.equals("transaction:timer-inclusive")
+                && !metric.equals("transaction:timer-exclusive")
+                && !metric.equals("transaction:timer-count")) {
+            return;
+        }
+        if (Strings.isNullOrEmpty(request.timerName())) {
+            throw new JsonServiceException(HttpResponseStatus.BAD_REQUEST,
+                    "missing timer-name query parameter");
+        }
+        if ((metric.equals("transaction:timer-inclusive")
+                || metric.equals("transaction:timer-exclusive"))
+                && Strings.isNullOrEmpty(request.transactionName())) {
+            throw new JsonServiceException(HttpResponseStatus.BAD_REQUEST,
+                    "transaction-name is required for breakdown timer time metrics");
+        }
+    }
+
     private static void verifyFourHourAggregateTimeZone(TimeZone timeZone) {
         boolean gmt = timeZone.getID().equals("GMT") || timeZone.getID().startsWith("GMT-")
                 || timeZone.getID().startsWith("GMT+");
@@ -610,6 +757,17 @@ class ReportJsonService {
     }
 
     @Value.Immutable
+    interface TimerNamesRequest {
+        List<String> agentRollupIds();
+        String transactionType();
+        @Nullable
+        String transactionName();
+        String fromDate();
+        String toDate();
+        String timeZoneId();
+    }
+
+    @Value.Immutable
     interface TransactionTypesAndGaugesReponse {
         List<String> transactionTypes();
         List<Gauge> gauges();
@@ -626,6 +784,8 @@ class ReportJsonService {
         String transactionName();
         @Nullable
         Double percentile();
+        @Nullable
+        String timerName();
 
         String fromDate();
         String toDate();

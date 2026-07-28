@@ -541,19 +541,18 @@ glowroot.run([
         id: 'transaction:x-percentile',
         display: 'Response time (X\u1d57\u02b0 percentile)'
       },
-      // TODO
-      // {
-      //   id: 'transaction:timer-inclusive',
-      //   display: 'Breakdown metric time (inclusive)'
-      // },
-      // {
-      //   id: 'transaction:timer-exclusive',
-      //   display: 'Breakdown metric time (exclusive)'
-      // },
-      // {
-      //   id: 'transaction:timer-count',
-      //   display: 'Breakdown metric count'
-      // },
+      {
+        id: 'transaction:timer-inclusive',
+        display: 'Breakdown metric time (inclusive)'
+      },
+      {
+        id: 'transaction:timer-exclusive',
+        display: 'Breakdown metric time (exclusive)'
+      },
+      {
+        id: 'transaction:timer-count',
+        display: 'Breakdown metric count'
+      },
       // {
       //   id: 'transaction:thread-profile-sample-count',
       //   display: 'Thread profile sample count'
