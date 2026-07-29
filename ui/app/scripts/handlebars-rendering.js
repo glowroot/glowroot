@@ -20,7 +20,7 @@
 
 // Glowroot dependency is used for spinner, but is not used in export file
 // angular dependency is used to call login.goToLogin() on 401 responses, but is not used in export file
-/* global $, Handlebars, JST, moment, Glowroot, angular, SqlPrettyPrinter, gtClipboard, gtParseIncludesExcludes, console, gtDateTimeWithMillisFormat */
+/* global $, Handlebars, JST, moment, Glowroot, angular, SqlPrettyPrinter, gtClipboard, gtParseIncludesExcludes, console, gtDateTimeFormat */
 
 // IMPORTANT: DO NOT USE ANGULAR IN THIS FILE
 // that would require adding angular to trace-export.js
@@ -270,8 +270,21 @@ HandlebarsRendering = (function () {
     return options.inverse(this);
   });
 
+  function getDateTimeWithMillisFormat() {
+    if (typeof gtDateTimeFormat !== 'undefined') {
+      return gtDateTimeFormat.dateTimeWithMillis;
+    }
+    var hour12 = true;
+    try {
+      hour12 = new Intl.DateTimeFormat(undefined, {hour: 'numeric'}).resolvedOptions().hour12 !== false;
+    } catch (ignored) {
+      // keep English 12-hour default
+    }
+    return hour12 ? 'YYYY-MM-DD h:mm:ss.SSS a (Z)' : 'YYYY-MM-DD HH:mm:ss.SSS (Z)';
+  }
+
   Handlebars.registerHelper('date', function (timestamp) {
-    return moment(timestamp).format(gtDateTimeWithMillisFormat);
+    return moment(timestamp).format(getDateTimeWithMillisFormat());
   });
 
   Handlebars.registerHelper('nanosToMillis', function (nanos) {

@@ -26,11 +26,11 @@ var glowroot = angular.module('glowroot', [
 
 var Glowroot;
 
+/* exported gtDateTimeFormat */
+
 // Moment ships with English only (no locale packs). LT/LTS would always be 12-hour AM/PM.
 // Honor the browser/OS hour cycle so header range + custom pickers use 24h where expected (#1108).
-var gtDateTimeWithMillisFormat;
-var gtTimeOfDayWithMillisFormat;
-(function () {
+var gtDateTimeFormat = (function () {
   var hour12 = true;
   try {
     hour12 = new Intl.DateTimeFormat(undefined, {hour: 'numeric'}).resolvedOptions().hour12 !== false;
@@ -45,8 +45,10 @@ var gtTimeOfDayWithMillisFormat;
       }
     });
   }
-  gtDateTimeWithMillisFormat = hour12 ? 'YYYY-MM-DD h:mm:ss.SSS a (Z)' : 'YYYY-MM-DD HH:mm:ss.SSS (Z)';
-  gtTimeOfDayWithMillisFormat = hour12 ? 'h:mm:ss.SSS a (Z)' : 'HH:mm:ss.SSS (Z)';
+  return {
+    dateTimeWithMillis: hour12 ? 'YYYY-MM-DD h:mm:ss.SSS a (Z)' : 'YYYY-MM-DD HH:mm:ss.SSS (Z)',
+    timeOfDayWithMillis: hour12 ? 'h:mm:ss.SSS a (Z)' : 'HH:mm:ss.SSS (Z)'
+  };
 })();
 
 glowroot.config([
