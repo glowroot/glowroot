@@ -69,9 +69,12 @@ class BreakdownTimerMetrics {
             Map<String, Double> counts) {
         String name = timer.getName();
         if (!parentTimerNames.contains(name)) {
+            // only add when this timer name isn't appearing under itself via another branch
+            // (same guard as average.js flatten)
             add(inclusive, name, timer.getTotalNanos());
             add(exclusive, name, StackedTimerTotals.selfNanos(timer));
             if (!timer.getExtended()) {
+                // extended nodes carry synthetic counts — skip for timer-count (average.js)
                 add(counts, name, timer.getCount());
             }
         }

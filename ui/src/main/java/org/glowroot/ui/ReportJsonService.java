@@ -433,6 +433,7 @@ class ReportJsonService {
         return dataSeries;
     }
 
+    // Same rollup/gap loop as getDataSeriesForAverage; per-point value from BreakdownTimerMetrics.
     private DataSeries getDataSeriesForBreakdownTimer(String agentRollupId, AggregateQuery query,
             String timerName, BreakdownTimerMetrics.Kind kind,
             RollupCaptureTimeFn rollupCaptureTimeFn, ROLLUP rollup, TimeZone timeZone,
@@ -466,6 +467,8 @@ class ReportJsonService {
                     pointValue);
             priorAggregate = aggregate;
         }
+        // COUNT overall is a raw sum across buckets; time metrics use weighted ms per transaction
+        // (same split as transaction:count vs transaction:average).
         if (kind == BreakdownTimerMetrics.Kind.COUNT) {
             double totalCount = 0;
             for (OverviewAggregate aggregate : aggregates) {
@@ -479,12 +482,15 @@ class ReportJsonService {
                 totalNanos += BreakdownTimerMetrics.value(aggregate, timerName, kind);
                 transactionCount += aggregate.transactionCount();
             }
+            // individual aggregate transaction counts cannot be zero, and aggregates is non-empty
+            // (see above conditional), so transactionCount is guaranteed non-zero
             checkState(transactionCount != 0);
             dataSeries.setOverall(totalNanos / (transactionCount * NANOSECONDS_PER_MILLISECOND));
         }
         return dataSeries;
     }
 
+    // Time metrics → ms average per transaction in the bucket; count is a raw total.
     private static double breakdownTimerPointValue(OverviewAggregate aggregate, String timerName,
             BreakdownTimerMetrics.Kind kind) {
         double raw = BreakdownTimerMetrics.value(aggregate, timerName, kind);
@@ -674,6 +680,8 @@ class ReportJsonService {
         }
     }
 
+    // timer-inclusive / timer-exclusive / timer-count need timer-name; time metrics also need
+    // transaction-name so the aggregate query matches Transactions → average breakdown.
     private static void validateBreakdownTimerRequest(ReportRequest request) {
         String metric = request.metric();
         if (!metric.equals("transaction:timer-inclusive")
