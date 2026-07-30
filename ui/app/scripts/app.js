@@ -541,6 +541,7 @@ glowroot.run([
         id: 'transaction:x-percentile',
         display: 'Response time (X\u1d57\u02b0 percentile)'
       },
+      // Breakdown timers from Transactions → average (inclusive / exclusive / count).
       {
         id: 'transaction:timer-inclusive',
         display: 'Breakdown metric time (inclusive)'

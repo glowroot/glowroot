@@ -341,6 +341,8 @@ glowroot.controller('ReportAdhocCtrl', [
       }
     });
 
+    // Best-effort timer list for the dropdown; mirrors GET /backend/report/timer-names
+    // (stored rollups plus level-0 and live aggregates for recent data).
     $scope.$watchGroup([
       'report.agentRollupIds',
       'report.transactionType',
