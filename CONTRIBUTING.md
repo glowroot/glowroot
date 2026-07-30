@@ -45,10 +45,15 @@ java -jar target/benchmarks.jar -jvmArgs -javaagent:path/to/glowroot.jar
 
 ## Code quality
 
-[SonarQube](http://www.sonarqube.org) analysis:
-[sonarcloud.io](https://sonarcloud.io/dashboard?id=org.glowroot%3Aglowroot-parent).
+Pull requests run the [GitHub Actions Build workflow](https://github.com/glowroot/glowroot/actions/workflows/build.yml) — unit and integration tests across Java versions, shaded/unshaded agents, and `javaagent` vs local harness modes.
 
-[Checker Framework](http://types.cs.washington.edu/checker-framework/) Nullness Checker is run in CI; violations fail the build.
+Optional local nullness check (Checker Framework), same as `.github/scripts/build.sh checker`:
+
+```bash
+.github/scripts/build.sh checker
+```
+
+(On Linux CI this is typically run under `xvfb-run`; see the script for details.)
 
 ## Dependency shading
 
