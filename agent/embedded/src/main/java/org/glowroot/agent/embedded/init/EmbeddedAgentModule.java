@@ -223,7 +223,9 @@ class EmbeddedAgentModule {
 
     void initEmbeddedServer() throws Exception {
         if (simpleRepoModule == null) {
-            // repo module failed to start
+            // repo module failed to start (error already logged from Init-Repo)
+            startupLogger.error("embedded UI will not start because storage failed to initialize"
+                    + " (see earlier \"Glowroot cannot start\" error)");
             return;
         }
         if (agentModule != null) {
