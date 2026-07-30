@@ -178,4 +178,4 @@ See [Third Party Software](https://github.com/glowroot/glowroot/wiki/Third-Party
 
 ---
 
-[![Star History Chart](https://api.star-history.com/svg?repos=glowroot/glowroot&type=Date)](https://www.star-history.com/#glowroot/glowroot&Date)
+**Project analytics:** [OSS Insight — glowroot/glowroot](https://ossinsight.io/analyze/glowroot/glowroot#overview) (stars, commits, issues, PRs, contributors — no API key required)
