@@ -30,11 +30,14 @@
 
 See the full list and instrumentation coverage on the [features](https://glowroot.org/features.html) and [instrumentation](https://glowroot.org/instrumentation.html) pages.
 
+## Requirements
+
+* Java 8+ for the agent
+* Java 17+ for glowroot-central
+
 ## Quick start (embedded)
 
-1. Download and unzip the latest **stable** agent distribution:
-   [glowroot-0.14.7-dist.zip](https://github.com/glowroot/glowroot/releases/download/v0.14.7/glowroot-0.14.7-dist.zip)
-   (or pick another build from [Releases](https://github.com/glowroot/glowroot/releases))
+1. Download and unzip the latest **stable** agent distribution from [GitHub Releases](https://github.com/glowroot/glowroot/releases/latest) (`glowroot-*-dist.zip`)
 2. Add `-javaagent:path/to/glowroot.jar` to your application's JVM args — **before** `-jar` if you use an executable JAR
    ([where are my application server's JVM args?](https://github.com/glowroot/glowroot/wiki/Where-are-my-application-server's-JVM-args%3F))
 3. Ensure the user that runs the JVM can write to the glowroot folder
@@ -43,6 +46,8 @@ See the full list and instrumentation coverage on the [features](https://glowroo
 
 Post-install details:
 [Agent Installation (Embedded Collector)](https://github.com/glowroot/glowroot/wiki/Agent-Installation-(with-Embedded-Collector)).
+
+**Central collector?** Start with [Agent Installation (for Central Collector)](https://github.com/glowroot/glowroot/wiki/Agent-Installation-(for-Central-Collector)) (agents on app JVMs, glowroot-central + Cassandra on a monitor host).
 
 ## Deployment
 
@@ -90,15 +95,9 @@ Only one embedded collector may use a given data directory. Stop the other JVM o
 **Can I run Glowroot together with another Java APM agent?**  
 Usually **no** — two bytecode-weaving agents on the same JVM is fragile. Pick one agent per process.
 
-**Building from source instead of Releases?**  
-`mvn clean install` (Java 11+, Maven 3.8+). The installable zip is produced under `agent/dist/target`. A full reactor build is required; individual modules are not published to Maven Central as a drop-in dist.
-
-**Is distributed tracing / a service topology map supported?**  
-Not today — service calls are captured per JVM. See [Discussions → Ideas](https://github.com/glowroot/glowroot/discussions/categories/ideas) for proposals.
-
 ## Support
 
-Please use the right channel so maintainers can help efficiently:
+Pick the channel that fits — it helps everyone respond faster:
 
 | Need | Where |
 |------|--------|
@@ -107,14 +106,7 @@ Please use the right channel so maintainers can help efficiently:
 | Reproducible bugs (with steps, version, logs) | **[GitHub Issues](https://github.com/glowroot/glowroot/issues)** |
 | Release announcements / community | [Google Group](https://groups.google.com/forum/#!forum/glowroot) · [@glowroot](https://twitter.com/glowroot) |
 
-**Please do not open Issues for questions or raw ideas.** Use Discussions instead (Q&A or Ideas). Issues stay focused on actionable defects — for example empty “it doesn’t work” reports without steps/version/logs, or drive-by feature wishes without discussion, belong in Discussions first.
-
-When asking for help, include **Glowroot version**, **deployment mode** (embedded or central), **JDK version**, and relevant log lines (especially agent startup and `collector.address` if using Central).
-
-## Requirements
-
-* Java 8+ for the agent
-* Java 17+ for glowroot-central
+**Discussions** (Q&A or Ideas) are usually the best fit for questions and feature ideas. **Issues** work best when you can share Glowroot version, deployment mode (embedded or central), JDK version, and steps to reproduce — that keeps the tracker useful for real defects.
 
 ## Contributing
 
