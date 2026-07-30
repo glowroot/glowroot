@@ -12,9 +12,10 @@
 - **Embedded or central** — local H2 collector out of the box, or scale out with a central collector
 
 **Website:** [glowroot.org](https://glowroot.org/) ·
-**Live demo:** [demo.glowroot.org](https://demo.glowroot.org/) ·
 **Features:** [glowroot.org/features](https://glowroot.org/features.html) ·
-**Releases:** [GitHub Releases](https://github.com/glowroot/glowroot/releases)
+**Releases:** [GitHub Releases](https://github.com/glowroot/glowroot/releases) ·
+**UI preview:** [archived demo snapshot](https://web.archive.org/web/20230325052222/https://demo.glowroot.org/)
+(the live `demo.glowroot.org` host is currently unreachable — see [#1102](https://github.com/glowroot/glowroot/issues/1102))
 
 ## Features
 
