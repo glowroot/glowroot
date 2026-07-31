@@ -1,0 +1,9 @@
+<div class="gt-storage-help">
+  <div><strong>*.capped.db</strong> — fixed-size detail files (<em>MB</em>), not day retention.</div>
+  <ul>
+    <li>When a file fills up, the oldest detail is overwritten (ring buffer).</li>
+    <li><strong>Query / service call / profile</strong> sizes — detail under those tabs at each aggregate interval.</li>
+    <li><strong>Trace detail</strong> — entries, query stats, and profiles inside individual traces.</li>
+  </ul>
+  <div>Larger MB ≈ longer detail history, more disk. Headers/points still follow <code>data.mv.db</code> Trace days.</div>
+</div>

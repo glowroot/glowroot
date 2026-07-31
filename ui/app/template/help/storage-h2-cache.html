@@ -1,0 +1,9 @@
+<div class="gt-storage-help">
+  <div><strong>H2 cache</strong> — in-memory page cache for H2 (same JVM heap as the app), not disk storage.</div>
+  <ul>
+    <li><strong>Auto</strong> — targets 128 MB.</li>
+    <li><strong>Fixed MB</strong> / <strong>% of -Xmx</strong> — your target before clamping.</li>
+    <li><strong>Clamp</strong> — effective size is always between 16 and 256 MB, and at most 5% of <code>-Xmx</code>.</li>
+  </ul>
+  <div>Optional override: <code>-Dglowroot.internal.h2.cacheSize</code> (KB) wins over the UI. Raise only if H2 is I/O-bound and heap allows; too large steals memory from the application.</div>
+</div>

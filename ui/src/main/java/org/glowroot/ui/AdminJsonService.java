@@ -632,6 +632,8 @@ class AdminJsonService {
         }
         long h2DataFileSize = repoAdmin.getH2DataFileSize();
         List<H2Table> tables = repoAdmin.analyzeH2DiskSpace();
+        // Approximate live footprint from H2 disk_space_used; file − sum ≈ Compact reclaimable.
+        // Can overstate reclaimable slightly (indexes / overhead outside per-table totals).
         long liveBytes = 0;
         for (H2Table table : tables) {
             liveBytes += table.bytes();

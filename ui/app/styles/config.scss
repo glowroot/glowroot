@@ -120,6 +120,111 @@
     margin-right: 0.35rem;
     font-size: 0.85em;
   }
+
+  .gt-storage-info-btn {
+    margin-left: 0.25rem;
+    vertical-align: middle;
+  }
+}
+
+.gt-storage-section-blurb {
+  margin: 0.15rem 0 0.85rem;
+}
+
+.gt-storage-h2-cache {
+  margin-bottom: 0.25rem;
+}
+
+.gt-storage-h2-cache-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.gt-storage-h2-cache-label {
+  margin: 0;
+  font-weight: 600;
+  margin-right: 0.25rem;
+}
+
+.gt-storage-h2-cache-unit {
+  color: #767676;
+}
+
+.gt-storage-h2-cache-meta {
+  margin-bottom: 0;
+}
+
+.gt-storage-h2-cache-more {
+  margin-top: 0.15rem;
+}
+
+.gt-storage-wiki-footer {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  color: #767676;
+  font-size: 0.875rem;
+}
+
+.gt-storage-maintenance-group {
+  margin-bottom: 1rem;
+
+  &:last-child {
+    margin-bottom: 0.25rem;
+  }
+
+  [gt-button-group] > .clearfix,
+  .gt-button-group > .clearfix {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.gt-storage-maintenance-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.gt-storage-info-btn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #6c757d;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover,
+  &:focus {
+    color: #495057;
+  }
+
+  .fas {
+    font-size: 0.95rem;
+  }
+}
+
+.gt-storage-help {
+  margin: 10px;
+  max-width: 22rem;
+  font-size: 0.875rem;
+
+  ul {
+    margin: 0.4rem 0 0;
+    padding-left: 1.1rem;
+  }
+
+  li + li {
+    margin-top: 0.35rem;
+  }
 }
 
 .gt-form-label-xl {

@@ -32,12 +32,24 @@
           <span class="fas gt-legend-chevron"
                 ng-class="sectionOpen.h2Data ? 'fa-chevron-down' : 'fa-chevron-right'"></span>
           data.mv.db
+          <button type="button"
+                  class="gt-storage-info-btn"
+                  ng-click="$event.stopPropagation()"
+                  uib-popover-template="'template/help/storage-h2-data.html'"
+                  popover-placement="bottom"
+                  popover-trigger="'outsideClick'">
+            <span title="Help" class="fas fa-question-circle"></span>
+          </button>
           <span class="text-muted font-weight-normal"
-                ng-if="!sectionOpen.h2Data"> — retention</span>
+                ng-if="!sectionOpen.h2Data"> — retention (days)</span>
         </legend>
         <div ng-show="sectionOpen.h2Data">
+        <div class="help-block gt-storage-section-blurb">
+          Time retention (<strong>days</strong>) for response-time / gauge charts, traces, and full query text in the main H2 file.
+          Click <span class="fas fa-question-circle"></span> above for details.
+        </div>
         <div gt-form-group
-             gt-label="Response time and JVM gauge data (1&nbsp;minute&nbsp;aggregates)"
+             gt-label="1&nbsp;minute&nbsp;aggregates"
              gt-model="page.rollupExpirationDays[0]"
              gt-number="true"
              gt-pattern="pattern.integer"
@@ -47,14 +59,9 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            The data that is displayed under the transaction response time tab and on the JVM gauge screen is collected
-            continuously and stored at 1 minute intervals. This setting defines how long to retain these 1 minute
-            aggregates. (this setting also applies to the 5 second gauge data)
-          </div>
         </div>
         <div gt-form-group
-             gt-label="Response time and JVM gauge data (5&nbsp;minute&nbsp;aggregates)"
+             gt-label="5&nbsp;minute&nbsp;aggregates"
              gt-model="page.rollupExpirationDays[1]"
              gt-number="true"
              gt-pattern="pattern.integer"
@@ -64,13 +71,9 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            Response time and JVM gauge data is rolled up at 5 minute intervals.
-            This setting defines how long to retain these 5 minute aggregates.
-          </div>
         </div>
         <div gt-form-group
-             gt-label="Response time and JVM gauge data (30&nbsp;minute&nbsp;aggregates)"
+             gt-label="30&nbsp;minute&nbsp;aggregates"
              gt-model="page.rollupExpirationDays[2]"
              gt-number="true"
              gt-pattern="pattern.integer"
@@ -80,13 +83,9 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            Response time and JVM gauge data is rolled up again at 30 minute intervals.
-            This setting defines how long to retain these 30 minute aggregates.
-          </div>
         </div>
         <div gt-form-group
-             gt-label="Response time and JVM gauge data (4&nbsp;hour&nbsp;aggregates)"
+             gt-label="4&nbsp;hour&nbsp;aggregates"
              gt-model="page.rollupExpirationDays[3]"
              gt-number="true"
              gt-pattern="pattern.integer"
@@ -96,10 +95,6 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            Response time and JVM gauge data is rolled up again at 4 hour intervals.
-            This setting defines how long to retain these 4 hour aggregates.
-          </div>
         </div>
         <div gt-form-group
              gt-label="Trace data"
@@ -112,10 +107,6 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            This setting defines how long to retain the trace points and trace header data that is displayed under the
-            transaction traces tab.
-          </div>
         </div>
         <div gt-form-group
              gt-label="Full query text"
@@ -128,10 +119,6 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            This setting defines how long to retain the full query text that is displayed under the transaction queries
-            tab. The truncated query text and query stats are retained according to *.capped.db settings below.
-          </div>
         </div>
         </div>
       </fieldset>
@@ -142,12 +129,24 @@
           <span class="fas gt-legend-chevron"
                 ng-class="sectionOpen.capped ? 'fa-chevron-down' : 'fa-chevron-right'"></span>
           *.capped.db
+          <button type="button"
+                  class="gt-storage-info-btn"
+                  ng-click="$event.stopPropagation()"
+                  uib-popover-template="'template/help/storage-capped.html'"
+                  popover-placement="bottom"
+                  popover-trigger="'outsideClick'">
+            <span title="Help" class="fas fa-question-circle"></span>
+          </button>
           <span class="text-muted font-weight-normal"
-                ng-if="!sectionOpen.capped"> — detail file sizes</span>
+                ng-if="!sectionOpen.capped"> — detail file sizes (MB)</span>
         </legend>
         <div ng-show="sectionOpen.capped">
+        <div class="help-block gt-storage-section-blurb">
+          Fixed-size detail files (<strong>MB</strong>): when full, oldest query / profile / trace detail is overwritten.
+          Click <span class="fas fa-question-circle"></span> above for details.
+        </div>
         <div gt-form-group
-             gt-label="Query, service call and profile data (1&nbsp;minute&nbsp;aggregates)"
+             gt-label="Queries / profiles (1&nbsp;min)"
              gt-model="config.rollupCappedDatabaseSizesMb[0]"
              gt-number="true"
              gt-pattern="pattern.integer"
@@ -158,14 +157,9 @@
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8"
              class="gt-rollup-capped-database-size">
-          <div class="help-block">
-            The data that is displayed under the transaction queries, service calls and continuous profiling tabs is
-            collected continuously and stored at 1 minute intervals. This setting defines how long to retain these 1
-            minute aggregates.
-          </div>
         </div>
         <div gt-form-group
-             gt-label="Query, service call and profile data (5&nbsp;minute&nbsp;aggregates)"
+             gt-label="Queries / profiles (5&nbsp;min)"
              gt-model="config.rollupCappedDatabaseSizesMb[1]"
              gt-number="true"
              gt-pattern="pattern.integer"
@@ -175,13 +169,9 @@
              gt-addon="MB"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            Query, service call and continuous profiling data is rolled up at 5 minute intervals.
-            This setting defines the size of the capped data file used to store these 5 minute aggregates.
-          </div>
         </div>
         <div gt-form-group
-             gt-label="Query, service call and profile data (30&nbsp;minute&nbsp;aggregates)"
+             gt-label="Queries / profiles (30&nbsp;min)"
              gt-model="config.rollupCappedDatabaseSizesMb[2]"
              gt-number="true"
              gt-pattern="pattern.integer"
@@ -191,13 +181,9 @@
              gt-addon="MB"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            Query, service call and continuous profiling data is rolled up again at 30 minute intervals.
-            This setting defines the size of the capped data file used to store these 30 minute aggregates.
-          </div>
         </div>
         <div gt-form-group
-             gt-label="Query, service call and profile data (4&nbsp;hour&nbsp;aggregates)"
+             gt-label="Queries / profiles (4&nbsp;hour)"
              gt-model="config.rollupCappedDatabaseSizesMb[3]"
              gt-number="true"
              gt-pattern="pattern.integer"
@@ -207,13 +193,9 @@
              gt-addon="MB"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            Query, service call and continuous profiling data is rolled up again at 4 hour intervals.
-            This setting defines the size of the capped data file used to store these 4 hour aggregates.
-          </div>
         </div>
         <div gt-form-group
-             gt-label="Trace detail data"
+             gt-label="Trace detail"
              gt-model="config.traceCappedDatabaseSizeMb"
              gt-number="true"
              gt-pattern="pattern.integer"
@@ -224,10 +206,6 @@
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8"
              class="gt-trace-capped-database-size">
-          <div class="help-block">
-            This setting defines the size of the capped data file used to store the trace detail data
-            (trace entries, trace query stats and trace profiles).
-          </div>
         </div>
         </div>
       </fieldset>
@@ -238,15 +216,24 @@
           <span class="fas gt-legend-chevron"
                 ng-class="sectionOpen.h2Cache ? 'fa-chevron-down' : 'fa-chevron-right'"></span>
           H2 cache
+          <button type="button"
+                  class="gt-storage-info-btn"
+                  ng-click="$event.stopPropagation()"
+                  uib-popover-template="'template/help/storage-h2-cache.html'"
+                  popover-placement="bottom"
+                  popover-trigger="'outsideClick'">
+            <span title="Help" class="fas fa-question-circle"></span>
+          </button>
           <span class="text-muted font-weight-normal"
                 ng-if="!sectionOpen.h2Cache"> — {{config.effectiveH2CacheMb || '…'}} MB effective</span>
         </legend>
         <div ng-show="sectionOpen.h2Cache">
-        <div class="form-group row">
-          <label class="col-xl-4 gt-form-label-xl" for="h2CacheMode">
-            Cache size
-          </label>
-          <div class="col-xl-8">
+        <div class="help-block gt-storage-section-blurb">
+          In-memory H2 page cache (same JVM heap as the app), not disk.
+        </div>
+        <div class="gt-storage-h2-cache">
+          <div class="gt-storage-h2-cache-controls">
+            <label class="gt-storage-h2-cache-label" for="h2CacheMode">Cache size</label>
             <select id="h2CacheMode"
                     class="form-control"
                     style="width: auto; max-width: 16em;"
@@ -255,32 +242,33 @@
                     ng-options="m.value as m.label for m in h2CacheModes">
             </select>
             <input type="number"
-                   class="form-control d-inline-block"
-                   style="width: 7em; margin-left: 0.5rem; vertical-align: top;"
+                   class="form-control"
+                   style="width: 7em;"
                    ng-model="config.h2CacheValue"
                    ng-disabled="!layout.adminEdit || config.h2CacheMode === 'auto' || config.h2CacheSystemPropertyOverride"
                    ng-required="config.h2CacheMode !== 'auto'"
                    min="1">
-            <span class="help-block d-inline-block"
-                  style="margin-left: 0.35rem;"
+            <span class="gt-storage-h2-cache-unit"
                   ng-if="config.h2CacheMode === 'fixed'">MB</span>
-            <span class="help-block d-inline-block"
-                  style="margin-left: 0.35rem;"
+            <span class="gt-storage-h2-cache-unit"
                   ng-if="config.h2CacheMode === 'percent'">% of -Xmx</span>
-            <div class="help-block">
-              Effective after save:
-              <strong>{{config.effectiveH2CacheMb}}</strong> MB
-              (max heap {{config.maxHeapMb}} MB; clamped to 16–256 MB and at most 5% of -Xmx).
-              Auto targets 128 MB. Cache uses the same JVM heap as the application.
+          </div>
+          <div class="help-block gt-storage-h2-cache-meta">
+            <div>
+              Effective after save: <strong>{{config.effectiveH2CacheMb}}</strong> MB
+              (heap {{config.maxHeapMb}} MB).
             </div>
-            <div class="help-block text-warning"
-                 ng-if="h2CacheWarning">
-              {{h2CacheWarning}}
+            <div class="gt-storage-h2-cache-more">
+              Click <span class="fas fa-question-circle"></span> above for modes and clamping.
             </div>
-            <div class="help-block text-warning"
-                 ng-if="config.h2CacheSystemPropertyOverride">
-              Overridden by JVM property <code>-Dglowroot.internal.h2.cacheSize</code> (KB). Clear the property to use UI settings.
-            </div>
+          </div>
+          <div class="help-block text-warning"
+               ng-if="h2CacheWarning">
+            {{h2CacheWarning}}
+          </div>
+          <div class="help-block text-warning"
+               ng-if="config.h2CacheSystemPropertyOverride">
+            Overridden by JVM property <code>-Dglowroot.internal.h2.cacheSize</code> (KB). Clear the property to use UI settings.
           </div>
         </div>
         </div>
@@ -292,8 +280,22 @@
           <span class="fas gt-legend-chevron"
                 ng-class="sectionOpen.centralRollup ? 'fa-chevron-down' : 'fa-chevron-right'"></span>
           Response time and JVM gauge data
+          <button type="button"
+                  class="gt-storage-info-btn"
+                  ng-click="$event.stopPropagation()"
+                  uib-popover-template="'template/help/storage-central-rollup.html'"
+                  popover-placement="bottom"
+                  popover-trigger="'outsideClick'">
+            <span title="Help" class="fas fa-question-circle"></span>
+          </button>
+          <span class="text-muted font-weight-normal"
+                ng-if="!sectionOpen.centralRollup"> — TTL (days)</span>
         </legend>
         <div ng-show="sectionOpen.centralRollup">
+        <div class="help-block gt-storage-section-blurb">
+          Cassandra TTL (<strong>days</strong>) for response-time and JVM gauge chart aggregates.
+          Click <span class="fas fa-question-circle"></span> above for details.
+        </div>
         <div gt-form-group
              gt-label="1&nbsp;minute&nbsp;aggregates"
              gt-model="page.rollupExpirationDays[0]"
@@ -305,12 +307,6 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            The data that is displayed under the transaction response time tab and on the JVM gauge screen is collected
-            continuously by the agents and sent to the central collector (and stored) at 1 minute intervals.
-            This setting defines how long to retain these 1 minute aggregates.
-            (this setting also applies to the 5 second gauge data)
-          </div>
         </div>
         <div gt-form-group
              gt-label="5&nbsp;minute&nbsp;aggregates"
@@ -323,10 +319,6 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            Response time and JVM gauge data is rolled up at 5 minute intervals.
-            This setting defines how long to retain these 5 minute aggregates.
-          </div>
         </div>
         <div gt-form-group
              gt-label="30&nbsp;minute&nbsp;aggregates"
@@ -339,10 +331,6 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            Response time and JVM gauge data is rolled up again at 30 minute intervals.
-            This setting defines how long to retain these 30 minute aggregates.
-          </div>
         </div>
         <div gt-form-group
              gt-label="4&nbsp;hour&nbsp;aggregates"
@@ -355,10 +343,6 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            Response time and JVM gauge data is rolled up again at 4 hour intervals.
-            This setting defines how long to retain these 4 hour aggregates.
-          </div>
         </div>
         </div>
       </fieldset>
@@ -369,8 +353,22 @@
           <span class="fas gt-legend-chevron"
                 ng-class="sectionOpen.centralQuery ? 'fa-chevron-down' : 'fa-chevron-right'"></span>
           Query and service call data
+          <button type="button"
+                  class="gt-storage-info-btn"
+                  ng-click="$event.stopPropagation()"
+                  uib-popover-template="'template/help/storage-central-query.html'"
+                  popover-placement="bottom"
+                  popover-trigger="'outsideClick'">
+            <span title="Help" class="fas fa-question-circle"></span>
+          </button>
+          <span class="text-muted font-weight-normal"
+                ng-if="!sectionOpen.centralQuery"> — TTL (days)</span>
         </legend>
         <div ng-show="sectionOpen.centralQuery">
+        <div class="help-block gt-storage-section-blurb">
+          Cassandra TTL (<strong>days</strong>) for Queries and service-call aggregates.
+          Click <span class="fas fa-question-circle"></span> above for details.
+        </div>
         <div gt-form-group
              gt-label="1&nbsp;minute&nbsp;aggregates"
              gt-model="page.queryAndServiceCallRollupExpirationDays[0]"
@@ -382,11 +380,6 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            The data that is displayed under the transaction queries and service calls tabs is collected continuously by
-            the agents and sent to the central collector (and stored) at 1 minute intervals.
-            This setting defines how long to retain these 1 minute aggregates.
-          </div>
         </div>
         <div gt-form-group
              gt-label="5&nbsp;minute&nbsp;aggregates"
@@ -399,10 +392,6 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            Query and service call data is rolled up at 5 minute intervals.
-            This setting defines how long to retain these 5 minute aggregates.
-          </div>
         </div>
         <div gt-form-group
              gt-label="30&nbsp;minute&nbsp;aggregates"
@@ -415,10 +404,6 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            Query and service call data is rolled up again at 30 minute intervals.
-            This setting defines how long to retain these 30 minute aggregates.
-          </div>
         </div>
         <div gt-form-group
              gt-label="4&nbsp;hour&nbsp;aggregates"
@@ -431,10 +416,6 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            Query and service call data is rolled up again at 4 hour intervals.
-            This setting defines how long to retain these 4 hour aggregates.
-          </div>
         </div>
         </div>
       </fieldset>
@@ -445,8 +426,22 @@
           <span class="fas gt-legend-chevron"
                 ng-class="sectionOpen.centralProfile ? 'fa-chevron-down' : 'fa-chevron-right'"></span>
           Profile data
+          <button type="button"
+                  class="gt-storage-info-btn"
+                  ng-click="$event.stopPropagation()"
+                  uib-popover-template="'template/help/storage-central-profile.html'"
+                  popover-placement="bottom"
+                  popover-trigger="'outsideClick'">
+            <span title="Help" class="fas fa-question-circle"></span>
+          </button>
+          <span class="text-muted font-weight-normal"
+                ng-if="!sectionOpen.centralProfile"> — TTL (days)</span>
         </legend>
         <div ng-show="sectionOpen.centralProfile">
+        <div class="help-block gt-storage-section-blurb">
+          Cassandra TTL (<strong>days</strong>) for continuous profiling aggregates.
+          Click <span class="fas fa-question-circle"></span> above for details.
+        </div>
         <div gt-form-group
              gt-label="1&nbsp;minute&nbsp;aggregates"
              gt-model="page.profileRollupExpirationDays[0]"
@@ -458,11 +453,6 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            The data that is displayed under the transaction continuous profiling tab is collected continuously by the
-            agents and sent to the central collector (and stored) at 1 minute intervals.
-            This setting defines how long to retain these 1 minute aggregates.
-          </div>
         </div>
         <div gt-form-group
              gt-label="5&nbsp;minute&nbsp;aggregates"
@@ -475,10 +465,6 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            Profile data is rolled up at 5 minute intervals.
-            This setting defines how long to retain these 5 minute aggregates.
-          </div>
         </div>
         <div gt-form-group
              gt-label="30&nbsp;minute&nbsp;aggregates"
@@ -491,10 +477,6 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            Profile data is rolled up again at 30 minute intervals.
-            This setting defines how long to retain these 30 minute aggregates.
-          </div>
         </div>
         <div gt-form-group
              gt-label="4&nbsp;hour&nbsp;aggregates"
@@ -507,10 +489,6 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            Profile data is rolled up again at 4 hour intervals.
-            This setting defines how long to retain these 4 hour aggregates.
-          </div>
         </div>
         </div>
       </fieldset>
@@ -521,8 +499,22 @@
           <span class="fas gt-legend-chevron"
                 ng-class="sectionOpen.centralTrace ? 'fa-chevron-down' : 'fa-chevron-right'"></span>
           Trace data
+          <button type="button"
+                  class="gt-storage-info-btn"
+                  ng-click="$event.stopPropagation()"
+                  uib-popover-template="'template/help/storage-central-trace.html'"
+                  popover-placement="bottom"
+                  popover-trigger="'outsideClick'">
+            <span title="Help" class="fas fa-question-circle"></span>
+          </button>
+          <span class="text-muted font-weight-normal"
+                ng-if="!sectionOpen.centralTrace"> — TTL (days)</span>
         </legend>
         <div ng-show="sectionOpen.centralTrace">
+        <div class="help-block gt-storage-section-blurb">
+          Cassandra TTL (<strong>days</strong>) for individual traces and error message data.
+          Click <span class="fas fa-question-circle"></span> above for details.
+        </div>
         <div gt-form-group
              gt-label="Trace data"
              gt-model="page.traceExpirationDays"
@@ -534,9 +526,6 @@
              gt-addon="days"
              gt-col-class1="col-xl-4"
              gt-col-class2="col-xl-8">
-          <div class="help-block">
-            This setting defines how long to retain trace data. This includes individual traces and error message data.
-          </div>
         </div>
         </div>
       </fieldset>
@@ -551,8 +540,22 @@
                 ng-if="!sectionOpen.maintenance"> — analyze / compact / delete</span>
         </legend>
         <div ng-show="sectionOpen.maintenance">
-          <div class="form-group row">
-            <div class="offset-xl-4 col-xl-8">
+          <div class="help-block gt-storage-section-blurb">
+            Disk analysis, reclaim free space in <code>data.mv.db</code>, or wipe captured data.
+            Use <span class="fas fa-question-circle"></span> next to each group for what each action does.
+          </div>
+          <div class="gt-storage-maintenance-actions">
+            <div class="gt-storage-maintenance-group">
+              <div class="gt-storage-maintenance-heading">
+                <span>Analyze</span>
+                <button type="button"
+                        class="gt-storage-info-btn"
+                        uib-popover-template="'template/help/storage-analyze.html'"
+                        popover-placement="bottom"
+                        popover-trigger="'outsideClick'">
+                  <span title="Help" class="fas fa-question-circle"></span>
+                </button>
+              </div>
               <div gt-button-group>
                 <div gt-button
                      gt-label="Analyze H2 disk space"
@@ -574,6 +577,20 @@
                      ng-if="layout.adminEdit || layout.offlineViewer"
                      class="d-inline-block">
                 </div>
+              </div>
+            </div>
+            <div class="gt-storage-maintenance-group">
+              <div class="gt-storage-maintenance-heading">
+                <span>Reclaim space</span>
+                <button type="button"
+                        class="gt-storage-info-btn"
+                        uib-popover-template="'template/help/storage-reclaim.html'"
+                        popover-placement="bottom"
+                        popover-trigger="'outsideClick'">
+                  <span title="Help" class="fas fa-question-circle"></span>
+                </button>
+              </div>
+              <div gt-button-group>
                 <div gt-button
                      gt-label="Compact H2 data"
                      gt-click="compactH2Data(deferred)"
@@ -594,6 +611,21 @@
                      ng-if="layout.adminEdit || layout.offlineViewer"
                      class="d-inline-block">
                 </div>
+              </div>
+            </div>
+            <div class="gt-storage-maintenance-group"
+                 ng-if="layout.adminEdit">
+              <div class="gt-storage-maintenance-heading">
+                <span class="text-danger">Danger</span>
+                <button type="button"
+                        class="gt-storage-info-btn"
+                        uib-popover-template="'template/help/storage-danger.html'"
+                        popover-placement="bottom"
+                        popover-trigger="'outsideClick'">
+                  <span title="Help" class="fas fa-question-circle"></span>
+                </button>
+              </div>
+              <div gt-button-group>
                 <div gt-button
                      gt-label="Delete all data"
                      gt-click="deleteAllStoredData(deferred)"
@@ -601,12 +633,8 @@
                      gt-dont-validate-form="true"
                      gt-confirm-header="Delete all data?"
                      gt-confirm-body="This will delete all captured data, including aggregated transaction data, traces and gauge data."
-                     ng-if="layout.adminEdit"
                      class="d-inline-block">
                 </div>
-              </div>
-              <div class="help-block">
-                Compact and Defrag both run H2 <code>shutdown compact</code> today (same effect). Analyze can pause capture while it runs.
               </div>
             </div>
           </div>
@@ -633,16 +661,22 @@
                  class="d-inline-block">
             </div>
           </div>
-          <div class="help-block" ng-if="layout.central">
-            Updated expiration settings only apply to data collected from this point forward. Existing data is still
-            tagged with the expiration settings in effect at the time the data was captured since using
-            <a href="https://docs.datastax.com/en/cql/3.1/cql/cql_using/use_expire_c.html">Cassandra TTL</a>
-            to implement expiration.
-          </div>
-          <div class="help-block" ng-if="layout.central">
-            <a href="http://cassandra.apache.org/doc/latest/operating/compaction.html#time-window-compactionstrategy">
-              Cassandra TWCS</a> window sizes are calculated using the TTL for the table divided by 24, so that the
-            table will have approximately 24 windows.
+          <div class="help-block gt-storage-h2-cache-meta"
+               ng-if="layout.central">
+            <div>
+              New TTLs apply to data collected from this point forward (existing cells keep their write-time TTL).
+            </div>
+            <div class="gt-storage-h2-cache-more">
+              Click
+              <button type="button"
+                      class="gt-storage-info-btn"
+                      uib-popover-template="'template/help/storage-central-save.html'"
+                      popover-placement="top"
+                      popover-trigger="'outsideClick'">
+                <span title="Help" class="fas fa-question-circle"></span>
+              </button>
+              for Save vs Update TWCS details.
+            </div>
           </div>
         </div>
       </div>
@@ -782,6 +816,12 @@
           </tbody>
         </table>
       </div>
+    </div>
+    <div class="gt-storage-wiki-footer">
+      For more information and configuration details, see the
+      <a href="https://github.com/glowroot/glowroot/wiki/Administration-Storage"
+         target="_blank"
+         rel="noopener noreferrer">Glowroot wiki</a>.
     </div>
   </div>
 </div>
