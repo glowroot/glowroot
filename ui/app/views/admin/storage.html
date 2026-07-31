@@ -27,9 +27,15 @@
          name="formCtrl">
       <fieldset class="gt-fieldset"
                 ng-if="!layout.central">
-        <legend class="gt-legend">
+        <legend class="gt-legend gt-legend-toggle"
+                ng-click="toggleSection('h2Data')">
+          <span class="fas gt-legend-chevron"
+                ng-class="sectionOpen.h2Data ? 'fa-chevron-down' : 'fa-chevron-right'"></span>
           data.mv.db
+          <span class="text-muted font-weight-normal"
+                ng-if="!sectionOpen.h2Data"> — retention</span>
         </legend>
+        <div ng-show="sectionOpen.h2Data">
         <div gt-form-group
              gt-label="Response time and JVM gauge data (1&nbsp;minute&nbsp;aggregates)"
              gt-model="page.rollupExpirationDays[0]"
@@ -127,12 +133,19 @@
             tab. The truncated query text and query stats are retained according to *.capped.db settings below.
           </div>
         </div>
+        </div>
       </fieldset>
       <fieldset class="gt-fieldset"
                 ng-if="!layout.central">
-        <legend class="gt-legend">
+        <legend class="gt-legend gt-legend-toggle"
+                ng-click="toggleSection('capped')">
+          <span class="fas gt-legend-chevron"
+                ng-class="sectionOpen.capped ? 'fa-chevron-down' : 'fa-chevron-right'"></span>
           *.capped.db
+          <span class="text-muted font-weight-normal"
+                ng-if="!sectionOpen.capped"> — detail file sizes</span>
         </legend>
+        <div ng-show="sectionOpen.capped">
         <div gt-form-group
              gt-label="Query, service call and profile data (1&nbsp;minute&nbsp;aggregates)"
              gt-model="config.rollupCappedDatabaseSizesMb[0]"
@@ -216,12 +229,19 @@
             (trace entries, trace query stats and trace profiles).
           </div>
         </div>
+        </div>
       </fieldset>
       <fieldset class="gt-fieldset"
                 ng-if="!layout.central">
-        <legend class="gt-legend">
+        <legend class="gt-legend gt-legend-toggle"
+                ng-click="toggleSection('h2Cache')">
+          <span class="fas gt-legend-chevron"
+                ng-class="sectionOpen.h2Cache ? 'fa-chevron-down' : 'fa-chevron-right'"></span>
           H2 cache
+          <span class="text-muted font-weight-normal"
+                ng-if="!sectionOpen.h2Cache"> — {{config.effectiveH2CacheMb || '…'}} MB effective</span>
         </legend>
+        <div ng-show="sectionOpen.h2Cache">
         <div class="form-group row">
           <label class="col-xl-4 gt-form-label-xl" for="h2CacheMode">
             Cache size
@@ -263,12 +283,17 @@
             </div>
           </div>
         </div>
+        </div>
       </fieldset>
       <fieldset class="gt-fieldset"
                 ng-if="layout.central">
-        <legend class="gt-legend">
+        <legend class="gt-legend gt-legend-toggle"
+                ng-click="toggleSection('centralRollup')">
+          <span class="fas gt-legend-chevron"
+                ng-class="sectionOpen.centralRollup ? 'fa-chevron-down' : 'fa-chevron-right'"></span>
           Response time and JVM gauge data
         </legend>
+        <div ng-show="sectionOpen.centralRollup">
         <div gt-form-group
              gt-label="1&nbsp;minute&nbsp;aggregates"
              gt-model="page.rollupExpirationDays[0]"
@@ -335,12 +360,17 @@
             This setting defines how long to retain these 4 hour aggregates.
           </div>
         </div>
+        </div>
       </fieldset>
       <fieldset class="gt-fieldset"
                 ng-if="layout.central">
-        <legend class="gt-legend">
+        <legend class="gt-legend gt-legend-toggle"
+                ng-click="toggleSection('centralQuery')">
+          <span class="fas gt-legend-chevron"
+                ng-class="sectionOpen.centralQuery ? 'fa-chevron-down' : 'fa-chevron-right'"></span>
           Query and service call data
         </legend>
+        <div ng-show="sectionOpen.centralQuery">
         <div gt-form-group
              gt-label="1&nbsp;minute&nbsp;aggregates"
              gt-model="page.queryAndServiceCallRollupExpirationDays[0]"
@@ -406,12 +436,17 @@
             This setting defines how long to retain these 4 hour aggregates.
           </div>
         </div>
+        </div>
       </fieldset>
       <fieldset class="gt-fieldset"
                 ng-if="layout.central">
-        <legend class="gt-legend">
+        <legend class="gt-legend gt-legend-toggle"
+                ng-click="toggleSection('centralProfile')">
+          <span class="fas gt-legend-chevron"
+                ng-class="sectionOpen.centralProfile ? 'fa-chevron-down' : 'fa-chevron-right'"></span>
           Profile data
         </legend>
+        <div ng-show="sectionOpen.centralProfile">
         <div gt-form-group
              gt-label="1&nbsp;minute&nbsp;aggregates"
              gt-model="page.profileRollupExpirationDays[0]"
@@ -477,12 +512,17 @@
             This setting defines how long to retain these 4 hour aggregates.
           </div>
         </div>
+        </div>
       </fieldset>
       <fieldset class="gt-fieldset"
                 ng-if="layout.central">
-        <legend class="gt-legend">
+        <legend class="gt-legend gt-legend-toggle"
+                ng-click="toggleSection('centralTrace')">
+          <span class="fas gt-legend-chevron"
+                ng-class="sectionOpen.centralTrace ? 'fa-chevron-down' : 'fa-chevron-right'"></span>
           Trace data
         </legend>
+        <div ng-show="sectionOpen.centralTrace">
         <div gt-form-group
              gt-label="Trace data"
              gt-model="page.traceExpirationDays"
@@ -497,6 +537,7 @@
           <div class="help-block">
             This setting defines how long to retain trace data. This includes individual traces and error message data.
           </div>
+        </div>
         </div>
       </fieldset>
       <div class="form-group row gt-form-buttons-below-fieldset"

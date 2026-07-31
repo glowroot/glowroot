@@ -27,6 +27,23 @@ glowroot.controller('AdminStorageCtrl', [
     // initialize page binding object
     $scope.page = {};
 
+    // Collapsible Storage sections — keep the page short; deep links open capped.db
+    var hash = $location.hash();
+    var openCapped = hash === 'rollup-capped-database-size'
+        || hash === 'trace-capped-database-size';
+    $scope.sectionOpen = {
+      h2Data: true,
+      capped: openCapped,
+      h2Cache: true,
+      centralRollup: true,
+      centralQuery: false,
+      centralProfile: false,
+      centralTrace: false
+    };
+    $scope.toggleSection = function (name) {
+      $scope.sectionOpen[name] = !$scope.sectionOpen[name];
+    };
+
     $scope.h2CacheModes = [
       { value: 'auto', label: 'Auto (128 MB target)' },
       { value: 'fixed', label: 'Fixed MB' },
