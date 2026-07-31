@@ -58,6 +58,7 @@ import org.glowroot.common2.config.CentralWebConfig;
 import org.glowroot.common2.config.EmbeddedAdminGeneralConfig;
 import org.glowroot.common2.config.EmbeddedStorageConfig;
 import org.glowroot.common2.config.EmbeddedWebConfig;
+import org.glowroot.common2.config.H2CacheSize;
 import org.glowroot.common2.config.HealthchecksIoConfig;
 import org.glowroot.common2.config.HttpProxyConfig;
 import org.glowroot.common2.config.ImmutableAllCentralAdminConfig;
@@ -631,10 +632,17 @@ class AdminJsonService {
         }
         long h2DataFileSize = repoAdmin.getH2DataFileSize();
         List<H2Table> tables = repoAdmin.analyzeH2DiskSpace();
+        long liveBytes = 0;
+        for (H2Table table : tables) {
+            liveBytes += table.bytes();
+        }
+        long reclaimableBytes = Math.max(0L, h2DataFileSize - liveBytes);
         StringBuilder sb = new StringBuilder();
         try (JsonGenerator jg = mapper.getFactory().createGenerator(CharStreams.asWriter(sb))) {
             jg.writeStartObject();
             jg.writeNumberField("h2DataFileSize", h2DataFileSize);
+            jg.writeNumberField("liveBytes", liveBytes);
+            jg.writeNumberField("reclaimableBytes", reclaimableBytes);
             jg.writeObjectField("tables", orderingByBytesDesc.sortedCopy(tables));
             jg.writeEndObject();
         }
@@ -939,6 +947,21 @@ class AdminJsonService {
         abstract int fullQueryTextExpirationHours();
         abstract ImmutableList<Integer> rollupCappedDatabaseSizesMb();
         abstract int traceCappedDatabaseSizeMb();
+        abstract String h2CacheMode();
+        abstract int h2CacheValue();
+        // response-only (ignored on convert): helps Admin UI show clamp without guessing -Xmx
+        @Value.Default
+        int effectiveH2CacheMb() {
+            return 0;
+        }
+        @Value.Default
+        long maxHeapMb() {
+            return 0;
+        }
+        @Value.Default
+        boolean h2CacheSystemPropertyOverride() {
+            return false;
+        }
         abstract String version();
 
         private EmbeddedStorageConfig convert() {
@@ -948,16 +971,27 @@ class AdminJsonService {
                     .fullQueryTextExpirationHours(fullQueryTextExpirationHours())
                     .rollupCappedDatabaseSizesMb(rollupCappedDatabaseSizesMb())
                     .traceCappedDatabaseSizeMb(traceCappedDatabaseSizeMb())
+                    .h2CacheMode(h2CacheMode())
+                    .h2CacheValue(h2CacheValue())
                     .build();
         }
 
         private static EmbeddedStorageConfigDto create(EmbeddedStorageConfig config) {
+            long maxMemory = Runtime.getRuntime().maxMemory();
+            String sysProp = System.getProperty(H2CacheSize.SYSTEM_PROPERTY);
+            int effectiveMb = H2CacheSize.effectiveMb(config.h2CacheMode(), config.h2CacheValue(),
+                    maxMemory, sysProp);
             return ImmutableEmbeddedStorageConfigDto.builder()
                     .addAllRollupExpirationHours(config.rollupExpirationHours())
                     .traceExpirationHours(config.traceExpirationHours())
                     .fullQueryTextExpirationHours(config.fullQueryTextExpirationHours())
                     .addAllRollupCappedDatabaseSizesMb(config.rollupCappedDatabaseSizesMb())
                     .traceCappedDatabaseSizeMb(config.traceCappedDatabaseSizeMb())
+                    .h2CacheMode(config.h2CacheMode())
+                    .h2CacheValue(config.h2CacheValue())
+                    .effectiveH2CacheMb(effectiveMb)
+                    .maxHeapMb(maxMemory / (1024L * 1024L))
+                    .h2CacheSystemPropertyOverride(sysProp != null && !sysProp.isEmpty())
                     .version(config.version())
                     .build();
         }
