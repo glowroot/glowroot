@@ -18,7 +18,6 @@ package org.glowroot.tests.admin;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
-import org.glowroot.tests.WebDriverSetup;
 import org.glowroot.tests.util.Page;
 
 import static org.openqa.selenium.By.xpath;
@@ -31,8 +30,9 @@ public class StorageConfigPage extends Page {
 
     public WebElement getRollupExpirationTextField(int i) {
         // Embedded: data.mv.db; Central: "Response time and JVM gauge data"
-        // (CI hardcodes useCentral=true in WebDriverSetup).
-        ensureSectionOpen(WebDriverSetup.useCentral
+        // (detect legend — WebDriverSetup.useCentral is package-protected).
+        waitForStorageLegends();
+        ensureSectionOpen(legendPresent("Response time and JVM gauge data")
                 ? "Response time and JVM gauge data"
                 : "data.mv.db");
         return getWithWait(xpath("//div[@gt-model='page.rollupExpirationDays[" + i + "]']//input"));
@@ -41,7 +41,10 @@ public class StorageConfigPage extends Page {
     public WebElement getTraceExpirationTextField() {
         // Embedded: same H2 retention section; Central: separate "Trace data" fieldset
         // (closed by default).
-        ensureSectionOpen(WebDriverSetup.useCentral ? "Trace data" : "data.mv.db");
+        waitForStorageLegends();
+        ensureSectionOpen(legendPresent("Response time and JVM gauge data")
+                ? "Trace data"
+                : "data.mv.db");
         return getWithWait(xpath("//div[@gt-model='page.traceExpirationDays']//input"));
     }
 
@@ -114,5 +117,14 @@ public class StorageConfigPage extends Page {
             getWithWait(xpath("//legend[contains(., '" + legendText
                     + "')]//span[contains(@class,'fa-chevron-down')]"));
         }
+    }
+
+    private void waitForStorageLegends() {
+        getWithWait(xpath("//legend[contains(@class,'gt-legend-toggle')]"));
+    }
+
+    private boolean legendPresent(String legendText) {
+        return !driver.findElements(xpath("//legend[contains(., '" + legendText + "')]"))
+                .isEmpty();
     }
 }
