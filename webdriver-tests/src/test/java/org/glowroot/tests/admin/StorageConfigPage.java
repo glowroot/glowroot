@@ -18,6 +18,7 @@ package org.glowroot.tests.admin;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
+import org.glowroot.tests.WebDriverSetup;
 import org.glowroot.tests.util.Page;
 
 import static org.openqa.selenium.By.xpath;
@@ -29,12 +30,18 @@ public class StorageConfigPage extends Page {
     }
 
     public WebElement getRollupExpirationTextField(int i) {
-        ensureSectionOpen("data.mv.db");
+        // Embedded: data.mv.db; Central: "Response time and JVM gauge data"
+        // (CI hardcodes useCentral=true in WebDriverSetup).
+        ensureSectionOpen(WebDriverSetup.useCentral
+                ? "Response time and JVM gauge data"
+                : "data.mv.db");
         return getWithWait(xpath("//div[@gt-model='page.rollupExpirationDays[" + i + "]']//input"));
     }
 
     public WebElement getTraceExpirationTextField() {
-        ensureSectionOpen("data.mv.db");
+        // Embedded: same H2 retention section; Central: separate "Trace data" fieldset
+        // (closed by default).
+        ensureSectionOpen(WebDriverSetup.useCentral ? "Trace data" : "data.mv.db");
         return getWithWait(xpath("//div[@gt-model='page.traceExpirationDays']//input"));
     }
 
@@ -103,6 +110,9 @@ public class StorageConfigPage extends Page {
                 legend.findElement(xpath(".//span[contains(@class,'gt-legend-chevron')]"));
         if (chevron.getAttribute("class").contains("fa-chevron-right")) {
             legend.click();
+            // wait until Angular ng-show reveals the body
+            getWithWait(xpath("//legend[contains(., '" + legendText
+                    + "')]//span[contains(@class,'fa-chevron-down')]"));
         }
     }
 }
