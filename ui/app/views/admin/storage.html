@@ -540,15 +540,86 @@
         </div>
         </div>
       </fieldset>
+      <fieldset class="gt-fieldset"
+                ng-if="(layout.adminEdit || layout.offlineViewer) && !layout.central">
+        <legend class="gt-legend gt-legend-toggle"
+                ng-click="toggleSection('maintenance')">
+          <span class="fas gt-legend-chevron"
+                ng-class="sectionOpen.maintenance ? 'fa-chevron-down' : 'fa-chevron-right'"></span>
+          Maintenance
+          <span class="text-muted font-weight-normal"
+                ng-if="!sectionOpen.maintenance"> — analyze / compact / delete</span>
+        </legend>
+        <div ng-show="sectionOpen.maintenance">
+          <div class="form-group row">
+            <div class="offset-xl-4 col-xl-8">
+              <div gt-button-group>
+                <div gt-button
+                     gt-label="Analyze H2 disk space"
+                     gt-click="analyzeH2DiskSpace(deferred)"
+                     gt-btn-class="btn-secondary"
+                     gt-dont-validate-form="true"
+                     gt-confirm-header="Analyze H2 disk space?"
+                     gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot data capture will be impacted."
+                     ng-if="layout.adminEdit || layout.offlineViewer"
+                     class="d-inline-block">
+                </div>
+                <div gt-button
+                     gt-label="Analyze trace counts"
+                     gt-click="analyzeTraceCounts(deferred)"
+                     gt-btn-class="btn-secondary"
+                     gt-dont-validate-form="true"
+                     gt-confirm-header="Analyze trace counts?"
+                     gt-confirm-body="This could take several minutes depending on the number of traces, during which time Glowroot data capture will be impacted."
+                     ng-if="layout.adminEdit || layout.offlineViewer"
+                     class="d-inline-block">
+                </div>
+                <div gt-button
+                     gt-label="Compact H2 data"
+                     gt-click="compactH2Data(deferred)"
+                     gt-btn-class="btn-secondary"
+                     gt-dont-validate-form="true"
+                     gt-confirm-header="Compact H2 data?"
+                     gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot will not capture any new data."
+                     ng-if="layout.adminEdit || layout.offlineViewer"
+                     class="d-inline-block">
+                </div>
+                <div gt-button
+                     gt-label="Defrag H2 data"
+                     gt-click="defragH2Data(deferred)"
+                     gt-btn-class="btn-secondary"
+                     gt-dont-validate-form="true"
+                     gt-confirm-header="Defrag H2 data?"
+                     gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot will not capture any new data."
+                     ng-if="layout.adminEdit || layout.offlineViewer"
+                     class="d-inline-block">
+                </div>
+                <div gt-button
+                     gt-label="Delete all data"
+                     gt-click="deleteAllStoredData(deferred)"
+                     gt-btn-class="btn-danger"
+                     gt-dont-validate-form="true"
+                     gt-confirm-header="Delete all data?"
+                     gt-confirm-body="This will delete all captured data, including aggregated transaction data, traces and gauge data."
+                     ng-if="layout.adminEdit"
+                     class="d-inline-block">
+                </div>
+              </div>
+              <div class="help-block">
+                Compact and Defrag both run H2 <code>shutdown compact</code> today (same effect). Analyze can pause capture while it runs.
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
       <div class="form-group row gt-form-buttons-below-fieldset"
-           ng-if="layout.adminEdit || layout.offlineViewer">
+           ng-if="layout.adminEdit">
         <div class="offset-xl-4 col-xl-8">
           <div gt-button-group>
             <div gt-button
                  gt-label="Save changes"
                  gt-click="save(deferred)"
                  gt-validate-form="formCtrl"
-                 ng-if="layout.adminEdit"
                  class="d-inline-block">
             </div>
             <div gt-button
@@ -558,85 +629,7 @@
                  gt-dont-validate-form="true"
                  gt-confirm-header="Update TWCS window sizes?"
                  gt-confirm-body="This could trigger a lot of window major compactions."
-                 ng-if="layout.adminEdit && layout.central"
-                 class="d-inline-block">
-            </div>
-            <div gt-button
-                 gt-label="Defrag H2 data"
-                 gt-click="defragH2Data(deferred)"
-                 gt-btn-class="btn-secondary"
-                 gt-dont-validate-form="true"
-                 gt-confirm-header="Defrag H2 data?"
-                 gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot will not capture any new data."
-                 ng-if="layout.adminEdit && !layout.central"
-                 class="d-inline-block">
-            </div>
-            <div gt-button
-                 gt-label="Compact H2 data"
-                 gt-click="compactH2Data(deferred)"
-                 gt-btn-class="btn-secondary"
-                 gt-dont-validate-form="true"
-                 gt-confirm-header="Compact H2 data?"
-                 gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot will not capture any new data."
-                 ng-if="layout.adminEdit && !layout.central"
-                 class="d-inline-block">
-            </div>
-            <div gt-button
-                 gt-label="Analyze H2 disk space"
-                 gt-click="analyzeH2DiskSpace(deferred)"
-                 gt-btn-class="btn-secondary"
-                 gt-dont-validate-form="true"
-                 gt-confirm-header="Analyze H2 disk space?"
-                 gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot data capture will be impacted."
-                 ng-if="layout.adminEdit && !layout.central"
-                 class="d-inline-block">
-            </div>
-            <div gt-button
-                 gt-label="Analyze trace counts"
-                 gt-click="analyzeTraceCounts(deferred)"
-                 gt-btn-class="btn-secondary"
-                 gt-dont-validate-form="true"
-                 gt-confirm-header="Analyze trace counts?"
-                 gt-confirm-body="This could take several minutes depending on the number of traces, during which time Glowroot data capture will be impacted."
-                 ng-if="layout.adminEdit && !layout.central"
-                 class="d-inline-block">
-            </div>
-            <div gt-button
-                 gt-label="Delete all data"
-                 gt-click="deleteAllStoredData(deferred)"
-                 gt-btn-class="btn-danger"
-                 gt-dont-validate-form="true"
-                 gt-confirm-header="Delete all data?"
-                 gt-confirm-body="This will delete all captured data, including aggregated transaction data, traces and gauge data."
-                 ng-if="layout.adminEdit && !layout.central"
-                 class="d-inline-block">
-            </div>
-            <div gt-button
-                 gt-label="Defrag H2 data"
-                 gt-click="defragH2Data(deferred)"
-                 gt-btn-class="btn-secondary"
-                 ng-if="layout.offlineViewer"
-                 class="d-inline-block">
-            </div>
-            <div gt-button
-                 gt-label="Compact H2 data"
-                 gt-click="compactH2Data(deferred)"
-                 gt-btn-class="btn-secondary"
-                 ng-if="layout.offlineViewer"
-                 class="d-inline-block">
-            </div>
-            <div gt-button
-                 gt-label="Analyze H2 disk space"
-                 gt-click="analyzeH2DiskSpace(deferred)"
-                 gt-btn-class="btn-secondary"
-                 ng-if="layout.offlineViewer"
-                 class="d-inline-block">
-            </div>
-            <div gt-button
-                 gt-label="Analyze trace counts"
-                 gt-click="analyzeTraceCounts(deferred)"
-                 gt-btn-class="btn-secondary"
-                 ng-if="layout.offlineViewer"
+                 ng-if="layout.central"
                  class="d-inline-block">
             </div>
           </div>
@@ -672,6 +665,18 @@
           <div class="help-block text-warning"
                ng-if="showCompactCta">
             Compact recommended (~{{h2ReclaimableBytes | gtBytes}}). Lowering retention does not shrink the file until Compact runs.
+            <div style="margin-top: 0.5rem;">
+              <div gt-button
+                   gt-label="Compact H2 data"
+                   gt-click="compactH2Data(deferred)"
+                   gt-btn-class="btn-secondary"
+                   gt-dont-validate-form="true"
+                   gt-confirm-header="Compact H2 data?"
+                   gt-confirm-body="This could take several minutes depending on the H2 data file size, during which time Glowroot will not capture any new data."
+                   ng-if="layout.adminEdit || layout.offlineViewer"
+                   class="d-inline-block">
+              </div>
+            </div>
           </div>
         </div>
         <table class="table"
