@@ -19,6 +19,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
 import org.glowroot.tests.util.Page;
+import org.glowroot.tests.util.Utils;
 
 import static org.openqa.selenium.By.xpath;
 
@@ -112,8 +113,9 @@ public class StorageConfigPage extends Page {
         WebElement chevron =
                 legend.findElement(xpath(".//span[contains(@class,'gt-legend-chevron')]"));
         if (chevron.getAttribute("class").contains("fa-chevron-right")) {
-            legend.click();
-            // wait until Angular ng-show reveals the body
+            // Click the chevron — legend.click() is flaky in headless Firefox when the
+            // legend also contains a help button (ng-click may not fire).
+            Utils.click(driver, chevron);
             getWithWait(xpath("//legend[contains(., '" + legendText
                     + "')]//span[contains(@class,'fa-chevron-down')]"));
         }
