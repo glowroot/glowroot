@@ -41,7 +41,8 @@ public class UiSandboxMain {
 
     public static void main(String[] args) throws Exception {
         Container container;
-        File testDir = new File("target");
+        boolean useCentral = useGlowrootCentral;
+        File testDir = new File(useCentral ? "target-central" : "target");
         if (!testDir.exists()) {
             testDir.mkdir();
         }
@@ -52,13 +53,13 @@ public class UiSandboxMain {
                             + "\"ui\":{\"defaultTransactionType\":\"Sandbox\"}}",
                     configFile, UTF_8);
         }
-        if (useJavaagent && useGlowrootCentral) {
+        if (useJavaagent && useCentral) {
             container = new JavaagentContainer(testDir, false,
                     ImmutableList.of("-Dglowroot.agent.id=UI Sandbox",
                             "-Dglowroot.collector.address=localhost:8181"));
         } else if (useJavaagent) {
             container = new JavaagentContainer(testDir, true, ImmutableList.<String>of());
-        } else if (useGlowrootCentral) {
+        } else if (useCentral) {
             container = new LocalContainer(testDir, false,
                     ImmutableMap.of("glowroot.agent.id", "UI Sandbox",
                             "glowroot.collector.address", "localhost:8181"));

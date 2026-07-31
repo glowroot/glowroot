@@ -62,15 +62,34 @@ Do **not** use `-Dglowroot.ui.skip` when changing UI (assets must rebuild).
 
 ### Local UI gates
 
-Two backends share the same AngularJS UI on http://localhost:4000 — pick the one that matches the change:
+Two backends share the same AngularJS UI — pick the one that matches the change. They can run **at the same time** if you put embedded on another port:
 
-**Embedded** (H2, no Cassandra): run `org.glowroot.agent.ui.sandbox.UiSandboxMain` (module `agent/ui-sandbox`), then open http://localhost:4000.
+| Mode | URL | How |
+|------|-----|-----|
+| **Central** | http://127.0.0.1:4000 (gRPC `:8181`) | Cassandra on `127.0.0.1:9042`, then `java -jar glowroot-central.jar` |
+| **Embedded** | http://127.0.0.1:4001 | `UiSandboxMain` with `-Dglowroot.agent.port=4001` (see below) |
 
-**Central** (Cassandra required):
+**Embedded sandbox** (H2 + in-process agent that generates sample traces):
 
-1. Cassandra reachable at `127.0.0.1:9042` (default datacenter `datacenter1`)
-2. From a Central dist directory: `java -jar glowroot-central.jar` (UI `:4000`, gRPC collector `:8181`)
-3. Optional agent: `-javaagent:…/glowroot.jar -Dglowroot.collector.address=localhost:8181`
+```bat
+cd agent\ui-sandbox
+mvn org.codehaus.mojo:exec-maven-plugin:3.6.3:exec ^
+  -Dexec.executable=java ^
+  -Dexec.classpathScope=test ^
+  "-Dexec.args=-Dglowroot.agent.port=4001 -cp %%classpath org.glowroot.agent.ui.sandbox.UiSandboxMain"
+```
+
+**Agent → Central** (second JVM; uses `agent/ui-sandbox/target-central` so it does not lock the embedded data dir):
+
+```bat
+cd agent\ui-sandbox
+mvn org.codehaus.mojo:exec-maven-plugin:3.6.3:exec ^
+  -Dexec.executable=java ^
+  -Dexec.classpathScope=test ^
+  "-Dexec.args=-Dglowroot.sandbox.central=true -Dglowroot.sandbox.javaagent=true -cp %%classpath org.glowroot.agent.ui.sandbox.UiSandboxMain"
+```
+
+Optional agent against an existing dist: `-javaagent:…/glowroot.jar -Dglowroot.collector.address=localhost:8181`.
 
 Use Central when verifying Central-only pages (Cassandra storage TTL, agent rollups, gRPC) or confirming embedded-only UI is hidden (`layout.central`).
 
