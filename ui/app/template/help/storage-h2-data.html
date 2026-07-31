@@ -1,0 +1,9 @@
+<div class="gt-storage-help">
+  <div><strong>data.mv.db</strong> — main H2 file; settings are <em>days</em> (time retention), not file size.</div>
+  <ul>
+    <li><strong>1 min → 4 hour aggregates</strong> — how long to keep response-time and JVM gauge charts at each resolution. Finer intervals use more disk for the same history.</li>
+    <li><strong>Trace data</strong> — days to keep trace points/headers (Traces tab).</li>
+    <li><strong>Full query text</strong> — days for full SQL text. Truncated text and query stats follow <code>*.capped.db</code> size limits.</li>
+  </ul>
+  <div>Large file? Use <strong>Maintenance</strong> → Analyze / Compact. Changing days only affects future expiry.</div>
+</div>

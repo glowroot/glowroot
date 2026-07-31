@@ -1,0 +1,11 @@
+<div class="gt-storage-help">
+  <div><strong>Reclaim space</strong></div>
+  <ul>
+    <li><strong>Compact H2 data</strong> — runs H2
+      <code>shutdown compact</code> to shrink <code>data.mv.db</code> after reclaimable
+      space is found. Glowroot does not capture new data while this runs.</li>
+    <li><strong>Defrag H2 data</strong> — today this runs the same H2
+      <code>shutdown compact</code> as Compact (same effect). Kept for operators who
+      look for a “defrag” action.</li>
+  </ul>
+</div>

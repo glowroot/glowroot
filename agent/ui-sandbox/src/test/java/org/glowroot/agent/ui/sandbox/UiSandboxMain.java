@@ -34,6 +34,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class UiSandboxMain {
 
     private static final boolean useJavaagent = Boolean.getBoolean("glowroot.sandbox.javaagent");
+    // When true, talk to Central (:8181) and use target-central/ so this JVM can run beside an
+    // embedded UiSandboxMain that holds a lock on target/ (and optionally -Dglowroot.agent.port=4001).
     private static final boolean useGlowrootCentral =
             Boolean.getBoolean("glowroot.sandbox.central");
 

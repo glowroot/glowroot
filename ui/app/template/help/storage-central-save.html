@@ -1,0 +1,11 @@
+<div class="gt-storage-help">
+  <div><strong>Save / TWCS</strong></div>
+  <ul>
+    <li><strong>Save changes</strong> — writes the new TTL (days) settings. They apply to data collected from this point forward.
+      Existing cells keep the TTL from when they were written
+      (<a href="https://docs.datastax.com/en/cql/3.1/cql/cql_using/use_expire_c.html" target="_blank" rel="noopener noreferrer">Cassandra TTL</a>).</li>
+    <li><strong>Update TWCS window sizes</strong> — recalculates
+      <a href="https://cassandra.apache.org/doc/latest/cassandra/operating/compaction/twcs.html" target="_blank" rel="noopener noreferrer">TWCS</a>
+      windows as roughly TTL/24. Can trigger heavy window major compaction; run when you intentionally change retention.</li>
+  </ul>
+</div>

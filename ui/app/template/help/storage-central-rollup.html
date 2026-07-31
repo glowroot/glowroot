@@ -1,0 +1,8 @@
+<div class="gt-storage-help">
+  <div><strong>Response time and JVM gauge data</strong> — Cassandra TTL in <em>days</em> for chart aggregates sent by agents.</div>
+  <ul>
+    <li><strong>1 min → 4 hour</strong> — how long to retain each rollup resolution. Finer intervals need more storage for the same history.</li>
+    <li>1-minute retention also covers the finer gauge samples agents collect.</li>
+  </ul>
+  <div>TTL applies to <strong>new</strong> writes. Existing cells keep the TTL they were written with. See the wiki for TWCS notes.</div>
+</div>

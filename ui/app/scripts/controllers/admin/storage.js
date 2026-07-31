@@ -27,7 +27,9 @@ glowroot.controller('AdminStorageCtrl', [
     // initialize page binding object
     $scope.page = {};
 
-    // Collapsible Storage sections — keep the page short; deep links open capped.db
+    // Collapsible Storage sections (embedded + Central). Defaults keep the page short;
+    // deep links #rollup-capped-database-size / #trace-capped-database-size open *.capped.db.
+    // Webdriver opens sections via StorageConfigPage.ensureSectionOpen before clicking.
     var hash = $location.hash();
     var openCapped = hash === 'rollup-capped-database-size'
         || hash === 'trace-capped-database-size';
@@ -45,6 +47,7 @@ glowroot.controller('AdminStorageCtrl', [
       $scope.sectionOpen[name] = !$scope.sectionOpen[name];
     };
 
+    // Embedded H2 page-cache modes; effective MB is clamped server-side (see H2CacheSize).
     $scope.h2CacheModes = [
       { value: 'auto', label: 'Auto (128 MB target)' },
       { value: 'fixed', label: 'Fixed MB' },
