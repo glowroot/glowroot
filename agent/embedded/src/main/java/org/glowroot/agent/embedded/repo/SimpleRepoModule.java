@@ -122,6 +122,8 @@ public class SimpleRepoModule {
         repoAdmin = new RepoAdminImpl(dataSource, rollupCappedDatabases, traceCappedDatabase,
                 configRepository, alertingDisabledDao, environmentDao, gaugeIdDao, gaugeNameDao,
                 gaugeValueDao, transactionTypeDao, fullQueryTextDao, traceAttributeNameDao, clock);
+        // Apply H2 cache from admin storage config (overrides JDBC-open Auto default when set)
+        repoAdmin.resizeIfNeeded();
 
         httpClient = new HttpClient(configRepository);
 

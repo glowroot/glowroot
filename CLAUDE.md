@@ -42,6 +42,13 @@ mvn clean install -Dglowroot.ui.skip
 # (see .github/scripts/build.sh "checker" target for full steps)
 ```
 
+## Session start
+
+```bash
+git fetch upstream main
+# fast-forward local main if behind, then push origin main on the fork if needed
+```
+
 ## UI Development
 
 ```bash
@@ -51,7 +58,21 @@ npm install
 ./grunt serve:demo     # Proxies API to demo.glowroot.org instead
 ```
 
-For UI sandbox (generates sample trace data): run `org.glowroot.ui.sandbox.UiSandboxMain` in your IDE, then browse to http://localhost:4000.
+Do **not** use `-Dglowroot.ui.skip` when changing UI (assets must rebuild).
+
+### Local UI gates
+
+Two backends share the same AngularJS UI on http://localhost:4000 — pick the one that matches the change:
+
+**Embedded** (H2, no Cassandra): run `org.glowroot.agent.ui.sandbox.UiSandboxMain` (module `agent/ui-sandbox`), then open http://localhost:4000.
+
+**Central** (Cassandra required):
+
+1. Cassandra reachable at `127.0.0.1:9042` (default datacenter `datacenter1`)
+2. From a Central dist directory: `java -jar glowroot-central.jar` (UI `:4000`, gRPC collector `:8181`)
+3. Optional agent: `-javaagent:…/glowroot.jar -Dglowroot.collector.address=localhost:8181`
+
+Use Central when verifying Central-only pages (Cassandra storage TTL, agent rollups, gRPC) or confirming embedded-only UI is hidden (`layout.central`).
 
 ## Architecture
 

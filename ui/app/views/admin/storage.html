@@ -218,6 +218,53 @@
         </div>
       </fieldset>
       <fieldset class="gt-fieldset"
+                ng-if="!layout.central">
+        <legend class="gt-legend">
+          H2 cache
+        </legend>
+        <div class="form-group row">
+          <label class="col-xl-4 gt-form-label-xl" for="h2CacheMode">
+            Cache size
+          </label>
+          <div class="col-xl-8">
+            <select id="h2CacheMode"
+                    class="form-control"
+                    style="width: auto; max-width: 16em;"
+                    ng-model="config.h2CacheMode"
+                    ng-disabled="!layout.adminEdit || config.h2CacheSystemPropertyOverride"
+                    ng-options="m.value as m.label for m in h2CacheModes">
+            </select>
+            <input type="number"
+                   class="form-control d-inline-block"
+                   style="width: 7em; margin-left: 0.5rem; vertical-align: top;"
+                   ng-model="config.h2CacheValue"
+                   ng-disabled="!layout.adminEdit || config.h2CacheMode === 'auto' || config.h2CacheSystemPropertyOverride"
+                   ng-required="config.h2CacheMode !== 'auto'"
+                   min="1">
+            <span class="help-block d-inline-block"
+                  style="margin-left: 0.35rem;"
+                  ng-if="config.h2CacheMode === 'fixed'">MB</span>
+            <span class="help-block d-inline-block"
+                  style="margin-left: 0.35rem;"
+                  ng-if="config.h2CacheMode === 'percent'">% of -Xmx</span>
+            <div class="help-block">
+              Effective after save:
+              <strong>{{config.effectiveH2CacheMb}}</strong> MB
+              (max heap {{config.maxHeapMb}} MB; clamped to 16–256 MB and at most 5% of -Xmx).
+              Auto targets 128 MB. Cache uses the same JVM heap as the application.
+            </div>
+            <div class="help-block text-warning"
+                 ng-if="h2CacheWarning">
+              {{h2CacheWarning}}
+            </div>
+            <div class="help-block text-warning"
+                 ng-if="config.h2CacheSystemPropertyOverride">
+              Overridden by JVM property <code>-Dglowroot.internal.h2.cacheSize</code> (KB). Clear the property to use UI settings.
+            </div>
+          </div>
+        </div>
+      </fieldset>
+      <fieldset class="gt-fieldset"
                 ng-if="layout.central">
         <legend class="gt-legend">
           Response time and JVM gauge data
@@ -568,6 +615,23 @@
       <div ng-if="showH2DiskSpaceAnalysis">
         <div style="margin-top: 40px;">
           <span style="font-weight: bold; margin-left: 8px;">H2 data file size:</span> {{h2DataFileSize | gtBytes}}
+        </div>
+        <div style="margin-top: 12px; margin-left: 8px;"
+             ng-if="h2DataFileSize > 0">
+          <div style="max-width: 36em; height: 1.25rem; display: flex; overflow: hidden; border: 1px solid #adb5bd;">
+            <div ng-style="{'width': h2LivePct + '%', 'background': '#6c757d'}"
+                 title="Live table data"></div>
+            <div ng-style="{'width': h2ReclaimablePct + '%', 'background': '#ffc107'}"
+                 title="Reclaimable with Compact"></div>
+          </div>
+          <div class="help-block" style="margin-top: 8px;">
+            Live (referenced): {{h2LiveBytes | gtBytes}} ·
+            Reclaimable with Compact: {{h2ReclaimableBytes | gtBytes}}
+          </div>
+          <div class="help-block text-warning"
+               ng-if="showCompactCta">
+            Compact recommended (~{{h2ReclaimableBytes | gtBytes}}). Lowering retention does not shrink the file until Compact runs.
+          </div>
         </div>
         <table class="table"
                style="table-layout: fixed; margin-top: 30px;">
