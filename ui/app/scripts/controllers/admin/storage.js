@@ -41,7 +41,8 @@ glowroot.controller('AdminStorageCtrl', [
       centralRollup: true,
       centralQuery: false,
       centralProfile: false,
-      centralTrace: false
+      // Trace TTL is a primary Central control (same weight as rollup); keep open.
+      centralTrace: true
     };
     $scope.toggleSection = function (name) {
       $scope.sectionOpen[name] = !$scope.sectionOpen[name];
