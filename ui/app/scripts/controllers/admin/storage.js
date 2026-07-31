@@ -35,6 +35,7 @@ glowroot.controller('AdminStorageCtrl', [
       h2Data: true,
       capped: openCapped,
       h2Cache: true,
+      maintenance: false,
       centralRollup: true,
       centralQuery: false,
       centralProfile: false,
