@@ -110,6 +110,18 @@
   @extend .w-auto;
 }
 
+.gt-legend-toggle {
+  cursor: pointer;
+  user-select: none;
+
+  .gt-legend-chevron {
+    display: inline-block;
+    width: 1em;
+    margin-right: 0.35rem;
+    font-size: 0.85em;
+  }
+}
+
 .gt-form-label-xl {
   @extend .col-form-label;
   @extend .text-xl-right;
