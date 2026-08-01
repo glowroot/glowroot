@@ -57,7 +57,12 @@ glowroot.controller('AdminWebCtrl', [
               httpErrors.handle(response, deferred);
             });
       } else {
-        var changingPort = $scope.config.port !== $scope.activePort;
+        // gt-number maps a cleared Port input to null; EmbeddedWebConfig defaults missing
+        // port to 4000, which would move the listener off the active port on save
+        if (postData.port === null || typeof postData.port !== 'number') {
+          postData.port = $scope.activePort;
+        }
+        var changingPort = postData.port !== $scope.activePort;
         var previousActivePort = $scope.activePort;
         var changingHttps = $scope.config.https !== $scope.activeHttps;
         $http.post('backend/admin/web', postData)
