@@ -110,29 +110,33 @@ glowroot.config([
       } else if ($rootScope.layout.showNavbarError) {
         return 'error/messages';
       } else if ($rootScope.layout.showNavbarJvm) {
-        if (!$rootScope.layout.central) {
-          var jvmPermissions = $rootScope.agentRollup.permissions.jvm;
+        var jvmPermissions = $rootScope.agentRollup
+            && $rootScope.agentRollup.permissions
+            && $rootScope.agentRollup.permissions.jvm;
+        if (jvmPermissions) {
+          var isLeafAgent = !($rootScope.isAgentRollup && $rootScope.isAgentRollup());
+          var isOnlineLeafAgent = isLeafAgent && !$rootScope.layout.offlineViewer;
           if (jvmPermissions.gauges) {
             return 'jvm/gauges';
-          } else if (jvmPermissions.threadDump) {
+          } else if (isOnlineLeafAgent && jvmPermissions.threadDump) {
             return 'jvm/thread-dump';
-          } else if (jvmPermissions.heapDump) {
+          } else if (isOnlineLeafAgent && jvmPermissions.heapDump) {
             return 'jvm/heap-dump';
-          } else if (jvmPermissions.heapHistogram) {
+          } else if (isOnlineLeafAgent && jvmPermissions.heapHistogram) {
             return 'jvm/heap-histogram';
-          } else if (jvmPermissions.mbeanTree) {
+          } else if (isOnlineLeafAgent && jvmPermissions.forceGC) {
+            return 'jvm/force-gc';
+          } else if (isOnlineLeafAgent && jvmPermissions.mbeanTree) {
             return 'jvm/mbean-tree';
-          } else if (jvmPermissions.systemProperties) {
+          } else if (isOnlineLeafAgent && jvmPermissions.systemProperties) {
             return 'jvm/system-properties';
-          } else {
-            // only remaining option when showNavbarJvm is true
+          } else if (isLeafAgent && jvmPermissions.environment) {
             return 'jvm/environment';
           }
-        } else {
-          // TODO this will not work if user has access to other JVM pages, but not gauges
-          // (deal with this when revisiting entire 'otherwise', see comment above)
-          return 'jvm/gauges';
         }
+        // Central (or agentRollup not loaded yet): gauges is the only JVM page that works
+        // without an agent-rollup-id (see jvm.html sidebar ng-if)
+        return 'jvm/gauges';
       } else if ($rootScope.layout.showNavbarConfig) {
         return $rootScope.layout.central ? 'config/general' : 'config/transaction';
       } else if ($rootScope.layout.adminView) {
