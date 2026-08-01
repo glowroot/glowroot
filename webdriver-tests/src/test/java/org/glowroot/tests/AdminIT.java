@@ -25,6 +25,7 @@ import org.glowroot.tests.admin.PagerDutyConfigPage;
 import org.glowroot.tests.admin.SlackConfigPage;
 import org.glowroot.tests.admin.SmtpConfigPage;
 import org.glowroot.tests.admin.StorageConfigPage;
+import org.glowroot.tests.admin.WebConfigPage;
 import org.glowroot.tests.config.ConfigSidebar;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -38,16 +39,32 @@ public class AdminIT extends WebDriverIT {
         App app = app();
         GlobalNavbar globalNavbar = globalNavbar();
         ConfigSidebar configSidebar = new ConfigSidebar(driver);
-        // WebConfigPage page = new WebConfigPage(driver);
+        WebConfigPage page = new WebConfigPage(driver);
 
         app.open();
         globalNavbar.clickAdminConfigLink();
         configSidebar.clickWebLink();
 
-        // FIXME currently save overrides active random port with the value 4000
-        // page.clickSaveButton();
+        // Embedded only: Port is not shown on Central. Historical FIXME was that Save could
+        // apply EmbeddedWebConfig's default port 4000 over the harness's random listen port.
+        if (!WebDriverSetup.useCentral) {
+            assertThat(page.getPortTextField().getAttribute("value"))
+                    .isEqualTo(Integer.toString(getUiPort()));
+        }
+
+        // when
+        page.clickSaveButton();
         // wait for save to finish
-        // SECONDS.sleep(1);
+        SECONDS.sleep(1);
+
+        // then
+        app.open();
+        globalNavbar.clickAdminConfigLink();
+        configSidebar.clickWebLink();
+        if (!WebDriverSetup.useCentral) {
+            assertThat(page.getPortTextField().getAttribute("value"))
+                    .isEqualTo(Integer.toString(getUiPort()));
+        }
     }
 
     @Test
