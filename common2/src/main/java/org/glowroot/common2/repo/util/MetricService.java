@@ -174,7 +174,7 @@ class MetricService {
                 for (ThroughputAggregate aggregate : aggregates) {
                     totalErrorCount += MoreObjects.firstNonNull(aggregate.errorCount(), 0L);
                 }
-                return (totalErrorCount); //FIXME
+                return totalErrorCount;
             });
         } else {
             ImmutableTraceQuery traceQuery = ImmutableTraceQuery.builder()
