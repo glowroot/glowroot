@@ -57,9 +57,9 @@ glowroot.controller('AdminWebCtrl', [
               httpErrors.handle(response, deferred);
             });
       } else {
-        // gt-number maps a cleared Port input to null; EmbeddedWebConfig defaults missing
-        // port to 4000, which would move the listener off the active port on save
-        if (postData.port === null || typeof postData.port !== 'number') {
+        // gt-number maps a cleared Port input to null; Jackson then binds null to int 0 and
+        // changePort(0) takes down the UI listener. Keep the active listen port instead.
+        if (postData.port === null || typeof postData.port !== 'number' || postData.port <= 0) {
           postData.port = $scope.activePort;
         }
         var changingPort = postData.port !== $scope.activePort;
