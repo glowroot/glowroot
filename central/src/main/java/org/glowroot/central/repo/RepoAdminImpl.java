@@ -106,9 +106,14 @@ public class RepoAdminImpl implements RepoAdmin {
 
     @Override
     public void deleteAgentMeta(String agentRollupId) throws Exception {
+        logger.info("deleting agent metadata for id={}", agentRollupId);
         agentConfigDao.delete(agentRollupId).toCompletableFuture().get();
+        logger.info("deleted agent_config for id={}", agentRollupId);
         agentDisplayDao.delete(agentRollupId).toCompletableFuture().get();
+        logger.info("deleted agent_display for id={}", agentRollupId);
         environmentDao.delete(agentRollupId).toCompletableFuture().get();
+        logger.info("deleted environment for id={} (live agents may resend collectInit and recreate metadata)",
+                agentRollupId);
     }
 
     @Override

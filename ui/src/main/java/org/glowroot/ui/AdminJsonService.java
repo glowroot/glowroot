@@ -111,7 +111,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.PRECONDITION_FAILED
 @JsonService
 class AdminJsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ConfigJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(AdminJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final Ordering<H2Table> orderingByBytesDesc = new Ordering<H2Table>() {
@@ -678,7 +678,10 @@ class AdminJsonService {
         if (agentRollupId == null || agentRollupId.trim().isEmpty()) {
             throw new JsonServiceException(BAD_REQUEST, "agentRollupId is required");
         }
-        repoAdmin.deleteAgentMeta(agentRollupId.trim());
+        String id = agentRollupId.trim();
+        logger.info("admin request: delete agent metadata for id={}", id);
+        repoAdmin.deleteAgentMeta(id);
+        logger.info("admin request completed: delete agent metadata for id={}", id);
     }
 
     @POST(path = "/backend/admin/update-cassandra-twcs-window-sizes",
