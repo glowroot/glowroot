@@ -530,6 +530,57 @@
         </div>
       </fieldset>
       <fieldset class="gt-fieldset"
+                ng-if="layout.central && layout.adminEdit">
+        <legend class="gt-legend gt-legend-toggle"
+                ng-click="toggleSection('centralDanger')">
+          <span class="fas gt-legend-chevron"
+                ng-class="sectionOpen.centralDanger ? 'fa-chevron-down' : 'fa-chevron-right'"></span>
+          <span class="text-danger">Danger</span>
+          <button type="button"
+                  class="gt-storage-info-btn"
+                  ng-click="$event.stopPropagation()"
+                  uib-popover-template="'template/help/storage-danger.html'"
+                  popover-placement="bottom"
+                  popover-trigger="'outsideClick'">
+            <span title="Help" class="fas fa-question-circle"></span>
+          </button>
+          <span class="text-muted font-weight-normal"
+                ng-if="!sectionOpen.centralDanger"> — delete agent metadata</span>
+        </legend>
+        <div ng-show="sectionOpen.centralDanger">
+          <div class="help-block gt-storage-section-blurb">
+            Remove config, display name, and environment for one abandoned agent or rollup id.
+            Does not purge charts or traces (those follow TTL).
+          </div>
+          <div class="form-group row">
+            <label class="col-form-label col-xl-4">Agent / rollup id</label>
+            <div class="col-xl-8">
+              <input type="text"
+                     class="form-control"
+                     style="max-width: 28em;"
+                     ng-model="page.deleteAgentMetaId"
+                     placeholder="MyApp::pod-xyz"
+                     autocomplete="off">
+            </div>
+          </div>
+          <div class="form-group row">
+            <div class="offset-xl-4 col-xl-8">
+              <div gt-button-group>
+                <div gt-button
+                     gt-label="Delete agent metadata"
+                     gt-click="deleteAgentMeta(deferred)"
+                     gt-btn-class="btn-secondary"
+                     gt-dont-validate-form="true"
+                     gt-confirm-header="Delete agent metadata?"
+                     gt-confirm-body="This removes config, display name, and environment for that id only. Charts and traces are not purged (they expire via TTL). This cannot be undone for metadata."
+                     class="d-inline-block">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+      <fieldset class="gt-fieldset"
                 ng-if="(layout.adminEdit || layout.offlineViewer) && !layout.central">
         <legend class="gt-legend gt-legend-toggle"
                 ng-click="toggleSection('maintenance')">

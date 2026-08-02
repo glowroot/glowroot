@@ -37,7 +37,8 @@ import org.glowroot.common2.repo.CassandraProfile;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 // this is just a read-optimization store of the same data in agent_config
-// TODO agent display records never expire for abandoned agent rollup ids
+// Agent display does not auto-expire. Operators can remove abandoned meta via Admin Storage
+// "Delete agent metadata" or CLI delete-agent-meta.
 public class AgentDisplayDao implements AgentDisplayRepository {
 
     private final Session session;
@@ -80,6 +81,13 @@ public class AgentDisplayDao implements AgentDisplayRepository {
             ret = session.writeAsync(boundStatement, CassandraProfile.collector);
         }
         return ret.thenRun(() -> agentDisplayCache.invalidate(agentRollupId));
+    }
+
+    public CompletionStage<?> delete(String agentRollupId) {
+        BoundStatement boundStatement = deletePS.bind()
+                .setString(0, agentRollupId);
+        return session.writeAsync(boundStatement, CassandraProfile.slow)
+                .thenRun(() -> agentDisplayCache.invalidate(agentRollupId));
     }
 
     @Override
