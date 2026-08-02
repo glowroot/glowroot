@@ -679,9 +679,7 @@ class AdminJsonService {
             throw new JsonServiceException(BAD_REQUEST, "agentRollupId is required");
         }
         String id = agentRollupId.trim();
-        logger.info("admin request: delete agent metadata for id={}", id);
         repoAdmin.deleteAgentMeta(id);
-        logger.info("admin request completed: delete agent metadata for id={}", id);
     }
 
     @POST(path = "/backend/admin/update-cassandra-twcs-window-sizes",
