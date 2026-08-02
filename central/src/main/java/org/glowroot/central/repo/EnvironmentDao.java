@@ -31,13 +31,15 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Enviro
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-// TODO environment records never expire for abandoned agent ids
+// Environment does not auto-expire. Operators can remove abandoned meta via Admin Storage
+// "Delete agent metadata" or CLI delete-agent-meta.
 public class EnvironmentDao implements EnvironmentRepository {
 
     private final Session session;
 
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
+    private final PreparedStatement deletePS;
 
     EnvironmentDao(Session session) throws Exception {
         this.session = session;
@@ -47,6 +49,13 @@ public class EnvironmentDao implements EnvironmentRepository {
 
         insertPS = session.prepare("insert into environment (agent_id, environment) values (?, ?)");
         readPS = session.prepare("select environment from environment where agent_id = ?");
+        deletePS = session.prepare("delete from environment where agent_id = ?");
+    }
+
+    public CompletionStage<?> delete(String agentId) {
+        BoundStatement boundStatement = deletePS.bind()
+                .setString(0, agentId);
+        return session.writeAsync(boundStatement, CassandraProfile.slow);
     }
 
     public CompletionStage<?> store(String agentId, Environment environment) {

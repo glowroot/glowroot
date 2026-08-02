@@ -42,7 +42,8 @@ glowroot.controller('AdminStorageCtrl', [
       centralQuery: false,
       centralProfile: false,
       // Trace TTL is a primary Central control (same weight as rollup); keep open.
-      centralTrace: true
+      centralTrace: true,
+      centralDanger: false
     };
     $scope.toggleSection = function (name) {
       $scope.sectionOpen[name] = !$scope.sectionOpen[name];
@@ -203,6 +204,22 @@ glowroot.controller('AdminStorageCtrl', [
           }, function (response) {
             httpErrors.handle(response, deferred);
           });
+    };
+
+    $scope.deleteAgentMeta = function (deferred) {
+      var id = ($scope.page.deleteAgentMetaId || '').trim();
+      if (!id) {
+        deferred.reject('Enter an agent or rollup id');
+        return;
+      }
+      $http.post('backend/admin/delete-agent-meta', {
+        agentRollupId: id
+      }).then(function () {
+        $scope.page.deleteAgentMetaId = '';
+        deferred.resolve('Deleted agent metadata for ' + id);
+      }, function (response) {
+        httpErrors.handle(response, deferred);
+      });
     };
 
     $scope.defragH2Data = function (deferred) {
