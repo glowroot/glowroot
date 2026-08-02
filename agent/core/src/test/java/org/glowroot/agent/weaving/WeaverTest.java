@@ -15,6 +15,8 @@
  */
 package org.glowroot.agent.weaving;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.List;
@@ -25,9 +27,15 @@ import com.google.common.base.Suppliers;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.io.ByteStreams;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 import org.glowroot.agent.bytecode.api.ThreadContextThreadLocal;
 import org.glowroot.agent.config.ConfigService;
@@ -1846,6 +1854,56 @@ public class WeaverTest {
         // do not crash with java.lang.VerifyError
     }
 
+    // ===================== #1106 LocalVariableTable / #721 stack-map =====================
+
+    @Test
+    public void shouldNotEmitGlowrootAdviceNamesInLocalVariableTable() throws Exception {
+        // given
+        byte[] original = readClassBytes(BasicMisc.class);
+        Weaver weaver = newWeaver(BindTravelerAdvice.class);
+        // when
+        byte[] woven = weaver.weave(original, BasicMisc.class.getName().replace('.', '/'), null,
+                null, WeaverTest.class.getClassLoader());
+        // then
+        assertThat(woven).isNotNull();
+        final List<String> lvtNames = Lists.newArrayList();
+        new ClassReader(woven).accept(new ClassVisitor(Opcodes.ASM9) {
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String descriptor,
+                    String signature, String[] exceptions) {
+                if (!"execute1".equals(name)) {
+                    return null;
+                }
+                return new MethodVisitor(Opcodes.ASM9) {
+                    @Override
+                    public void visitLocalVariable(String varName, String desc, String sig,
+                            Label start, Label end, int index) {
+                        lvtNames.add(varName);
+                    }
+                };
+            }
+        }, 0);
+        for (String name : lvtNames) {
+            assertThat(name).doesNotStartWith("glowroot$");
+        }
+    }
+
+    @Test
+    public void shouldWeaveMethodThatOverwritesParameterSlotWithDifferentType() throws Exception {
+        // given (#721): ServletContextListener-style overwrite of param local + exception handler
+        LazyDefinedClass implClass = GenerateParamSlotOverwriteBytecode.generate();
+        // when / then — must not throw VerifyError while defining the woven class
+        GenerateParamSlotOverwriteBytecode.Test test = newWovenObject(implClass,
+                GenerateParamSlotOverwriteBytecode.Test.class,
+                GenerateParamSlotOverwriteBytecode.ParamSlotOverwriteAdvice.class);
+        test.contextInitialized(new Runnable() {
+            @Override
+            public void run() {}
+        });
+        assertThat(SomeAspectThreadLocals.onBeforeCount.get()).isEqualTo(1);
+        assertThat(SomeAspectThreadLocals.onReturnCount.get()).isEqualTo(1);
+    }
+
     public static <S, T extends S> S newWovenObject(Class<T> implClass, Class<S> bridgeClass,
             Class<?> adviceOrShimOrMixinClass, Class<?>... extraBridgeClasses) throws Exception {
         // SomeAspectThreadLocals is passed as bridgeable so that the static thread locals will be
@@ -1936,6 +1994,32 @@ public class WeaverTest {
 
     private static MixinType newMixin(Class<?> clazz) throws Exception {
         return MixinType.create(PluginDetailBuilder.buildMixinClass(clazz));
+    }
+
+    private static Weaver newWeaver(Class<?> adviceClass) throws Exception {
+        List<Advice> advisors = Lists.newArrayList();
+        advisors.add(newAdvice(adviceClass));
+        Supplier<List<Advice>> advisorsSupplier =
+                Suppliers.<List<Advice>>ofInstance(ImmutableList.copyOf(advisors));
+        AnalyzedWorld analyzedWorld = new AnalyzedWorld(advisorsSupplier,
+                ImmutableList.<ShimType>of(), ImmutableList.<MixinType>of(), null);
+        TransactionRegistry transactionRegistry = mock(TransactionRegistry.class);
+        when(transactionRegistry.getCurrentThreadContextHolder())
+                .thenReturn(new ThreadContextThreadLocal().getHolder());
+        return new Weaver(advisorsSupplier, ImmutableList.<ShimType>of(),
+                ImmutableList.<MixinType>of(), analyzedWorld, transactionRegistry,
+                Ticker.systemTicker(), new TimerNameCache(), mock(ConfigService.class));
+    }
+
+    private static byte[] readClassBytes(Class<?> clazz) throws IOException {
+        String resource = clazz.getName().replace('.', '/') + ".class";
+        InputStream in = clazz.getClassLoader().getResourceAsStream(resource);
+        assertThat(in).isNotNull();
+        try {
+            return ByteStreams.toByteArray(in);
+        } finally {
+            in.close();
+        }
     }
 
     private static Class<?> enhanceConstructorAdviceClass(Class<?> adviceClass)

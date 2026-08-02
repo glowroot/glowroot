@@ -248,27 +248,10 @@ class WeavingMethodVisitor extends AdviceAdapter {
         visitLabel(outerEndLabel);
         super.visitLocalVariable(name, descriptor, signature, methodStartLabel, outerEndLabel,
                 index);
-        // at the same time, may as well define local vars for enabled and traveler as
-        // applicable
-        for (int i = 0; i < advisors.size(); i++) {
-            Advice advice = advisors.get(i);
-            Integer enabledLocalIndex = enabledLocals.get(advice);
-            if (enabledLocalIndex != null) {
-                super.visitLocalVariable("glowroot$enabled$" + i, Type.BOOLEAN_TYPE.getDescriptor(),
-                        null, methodStartLabel, outerEndLabel, enabledLocalIndex);
-            }
-            Integer travelerLocalIndex = travelerLocals.get(advice);
-            if (travelerLocalIndex != null) {
-                Type travelerType = advice.travelerType();
-                if (travelerType == null) {
-                    logger.error("visitLocalVariable(): traveler local index is not null,"
-                            + " but traveler type is null");
-                } else {
-                    super.visitLocalVariable("glowroot$traveler$" + i, travelerType.getDescriptor(),
-                            null, methodStartLabel, outerEndLabel, travelerLocalIndex);
-                }
-            }
-        }
+        // Do not emit LocalVariableTable entries for advice locals (enabled/traveler). Those
+        // indices come from newLocal() (already remapped); passing them to
+        // LocalVariablesSorter.visitLocalVariable remaps again and corrupts the LVT (wrong /
+        // overlapping slots), which breaks JDWP debuggers — see #1106.
     }
 
     @Override
@@ -1131,31 +1114,12 @@ class WeavingMethodVisitor extends AdviceAdapter {
     public void visitFrame(int type, int nLocal, Object /*@Nullable*/ [] local, int nStack,
             Object /*@Nullable*/ [] stack) {
         checkState(type == F_NEW, "Unexpected frame type: " + type);
-        int nExtraLocal = nLocal - implicitFrameLocals.length;
-        if (implicitFrameLocals.length >= nLocal) {
-            nExtraLocal = 0;
-        } else {
-            int i = 0;
-            int j = 0;
-            while (i < nLocal && j < implicitFrameLocals.length) {
-                Object currLocal = checkNotNull(local)[i++];
-                Object currImplicitFrameLocal = implicitFrameLocals[j++];
-                if (currLocal == TOP
-                        && (currImplicitFrameLocal == LONG || currImplicitFrameLocal == DOUBLE)) {
-                    i++;
-                }
-            }
-            nExtraLocal = nLocal - i;
-        }
-        if (nExtraLocal > 0) {
-            Object[] overlay = new Object[implicitFrameLocals.length + nExtraLocal];
-            System.arraycopy(implicitFrameLocals, 0, overlay, 0, implicitFrameLocals.length);
-            System.arraycopy(checkNotNull(local), nLocal - nExtraLocal, overlay,
-                    implicitFrameLocals.length, nExtraLocal);
-            super.visitFrame(type, overlay.length, overlay, nStack, stack);
-        } else {
-            super.visitFrame(type, implicitFrameLocals.length, implicitFrameLocals, nStack, stack);
-        }
+        // Pass through the original expanded frame locals. Replacing them with
+        // implicitFrameLocals (method-entry this/args types) dropped in-method updates such as
+        // overwriting a parameter slot with a different reference type, which produced
+        // VerifyError on exception handlers (#721). LocalVariablesSorter merges newLocal advice
+        // slots when remapping.
+        super.visitFrame(type, nLocal, local, nStack, stack);
     }
 
     private void pushDefault(Type type) {
