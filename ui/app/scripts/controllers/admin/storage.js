@@ -18,11 +18,13 @@
 
 glowroot.controller('AdminStorageCtrl', [
   '$scope',
+  '$rootScope',
   '$http',
   '$location',
+  '$timeout',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, $location, confirmIfHasChanges, httpErrors) {
+  function ($scope, $rootScope, $http, $location, $timeout, confirmIfHasChanges, httpErrors) {
 
     // initialize page binding object
     $scope.page = {};
@@ -219,11 +221,38 @@ glowroot.controller('AdminStorageCtrl', [
         $scope.deleteAgentMetaRollups = $scope.deleteAgentMetaRollups.filter(function (agentRollup) {
           return agentRollup.id !== id;
         });
+        removeDeletedAgentFromNavbar(id);
         deferred.resolve('Deleted agent metadata for ' + id);
       }, function (response) {
         httpErrors.handle(response, deferred);
       });
     };
+
+    function removeDeletedAgentFromNavbar(id) {
+      if ($rootScope.topLevelAgentRollups) {
+        $rootScope.setTopLevelAgentRollups($rootScope.topLevelAgentRollups.filter(function (agentRollup) {
+          return agentRollup.id !== id;
+        }));
+      }
+      if ($rootScope.childAgentRollups) {
+        $rootScope.setChildAgentRollups($rootScope.childAgentRollups.filter(function (agentRollup) {
+          return agentRollup.id !== id;
+        }));
+      }
+      $timeout(function () {
+        $('#topLevelAgentRollupDropdown').selectpicker('refresh');
+        $('#childAgentRollupDropdown').selectpicker('refresh');
+      });
+      if ($rootScope.agentRollupId === id || $rootScope.agentId === id) {
+        var search = $location.search();
+        delete search['agent-id'];
+        delete search['agent-rollup-id'];
+        $location.search(search);
+        delete $rootScope.agentRollupId;
+        delete $rootScope.agentId;
+        delete $rootScope.agentRollup;
+      }
+    }
 
     function loadDeleteAgentMetaRollups() {
       if (!$scope.layout.central || !$scope.layout.adminEdit) {

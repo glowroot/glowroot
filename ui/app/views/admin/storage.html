@@ -550,9 +550,10 @@
         <div ng-show="sectionOpen.centralDanger">
           <div class="help-block gt-storage-section-blurb">
             Remove config, display name, and environment for one agent or rollup
-            (same list as Roles: active in the last 7 days). Does not purge charts or traces
-            (those follow TTL). For ids not listed, use CLI
-            <code>delete-agent-meta</code>.
+            (same list as Roles: active in the last 7 days that still have metadata).
+            Does not purge charts or traces (those follow TTL). After delete the agent
+            disappears from the navbar until it reconnects (<code>collectInit</code>).
+            For ids not listed, use CLI <code>delete-agent-meta</code>.
           </div>
           <div class="form-group row">
             <label class="col-form-label col-xl-4">Agent / rollup</label>
