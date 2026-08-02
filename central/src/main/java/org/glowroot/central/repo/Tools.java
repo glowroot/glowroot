@@ -84,8 +84,8 @@ public class Tools {
         repos.getAgentConfigDao().delete(agentRollupId).toCompletableFuture().get();
         repos.getAgentDisplayDao().delete(agentRollupId).toCompletableFuture().get();
         repos.getEnvironmentDao().delete(agentRollupId).toCompletableFuture().get();
-        startupLogger.info("deleted agent metadata for {}"
-                + " (live agents may resend collectInit and recreate metadata)", agentRollupId);
+        startupLogger.info("deleted agent metadata for {} (agent_config, agent_display, environment);"
+                + " a still-connected agent may recreate it via collectInit", agentRollupId);
         return true;
     }
 
