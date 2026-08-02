@@ -1,8 +1,13 @@
 <div class="gt-storage-help">
   <div><strong>Danger</strong></div>
   <ul>
-    <li><strong>Delete all data</strong> — permanently removes all captured
+    <li ng-if="!layout.central"><strong>Delete all data</strong> — permanently removes all captured
       Glowroot data on this agent: aggregated transactions, traces, and gauge
       data. Configuration is kept. This cannot be undone.</li>
+    <li ng-if="layout.central"><strong>Delete agent metadata</strong> — removes config, display name,
+      and environment for one agent or rollup id. Does not purge charts or traces
+      (those expire via TTL). Same as CLI
+      <code>java -jar glowroot-central.jar delete-agent-meta &lt;id&gt;</code>.
+      Cannot be undone for metadata.</li>
   </ul>
 </div>
