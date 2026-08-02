@@ -135,12 +135,14 @@ public class ActiveAgentDao implements ActiveAgentRepository {
 
         Map<String, CompletableFuture<String>> topLevelDisplayFutureMap = new ConcurrentHashMap<>();
         return session.readAsync(boundStatement, profile).thenCompose(compute)
-                .thenCompose(ignored -> {
-                    for (String topLevelId : topLevelIds) {
+                .thenCompose(this::filterAgentIdsWithConfig)
+                .thenCompose(filteredTopLevelIds -> {
+                    for (String topLevelId : filteredTopLevelIds) {
                         topLevelDisplayFutureMap.put(topLevelId,
                                 agentDisplayDao.readLastDisplayPartAsync(topLevelId));
                     }
-                    return CompletableFuture.allOf(topLevelDisplayFutureMap.values().toArray(new CompletableFuture[0]));
+                    return CompletableFuture.allOf(topLevelDisplayFutureMap.values()
+                            .toArray(new CompletableFuture[0]));
                 }).thenApply(ignored -> {
                     List<TopLevelAgentRollup> agentRollups = new ArrayList<>();
                     for (Map.Entry<String, CompletableFuture<String>> entry : topLevelDisplayFutureMap.entrySet()) {
@@ -276,7 +278,11 @@ public class ActiveAgentDao implements ActiveAgentRepository {
         Set<String> directChildAgentRollupIds = new HashSet<>();
         Multimap<String, String> childMultimap = HashMultimap.create();
         Map<String, CompletableFuture<String>> agentDisplayFutureMap = new HashMap<>();
-        return session.readAsync(boundStatement, profile).thenCompose(compute).thenRun(() -> {
+        return session.readAsync(boundStatement, profile).thenCompose(compute)
+                .thenCompose(ids -> filterAgentIdsWithConfig(new HashSet<>(ids)))
+                .thenCompose(filteredAgentIds -> {
+            agentIds.clear();
+            agentIds.addAll(filteredAgentIds);
             for (String agentId : agentIds) {
                 List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);
                 allAgentRollupIds.addAll(agentRollupIds);
@@ -290,12 +296,12 @@ public class ActiveAgentDao implements ActiveAgentRepository {
                     }
                 }
             }
-        }).thenCompose(ignored -> {
             for (String agentRollupId : allAgentRollupIds) {
                 agentDisplayFutureMap.put(agentRollupId,
                         agentDisplayDao.readLastDisplayPartAsync(agentRollupId));
             }
-            return CompletableFuture.allOf(agentDisplayFutureMap.values().toArray(new CompletableFuture[0]));
+            return CompletableFuture.allOf(agentDisplayFutureMap.values()
+                    .toArray(new CompletableFuture[0]));
         }).thenApply(ignored -> {
             Map<String, String> agentDisplayMap = new HashMap<>();
             for (Map.Entry<String, CompletableFuture<String>> entry : agentDisplayFutureMap.entrySet()) {
@@ -314,6 +320,33 @@ public class ActiveAgentDao implements ActiveAgentRepository {
             }
             agentRollups.sort(Comparator.comparing(AgentRollup::display));
             return agentRollups;
+        });
+    }
+
+    // Hide agents whose metadata was deleted (active_* rows can linger until TWCS TTL).
+    // Keep rollup parents ("…::") so child filtering can still run underneath.
+    private CompletionStage<Set<String>> filterAgentIdsWithConfig(Set<String> agentIds) {
+        if (agentIds.isEmpty()) {
+            return CompletableFuture.completedFuture(agentIds);
+        }
+        List<CompletableFuture<String>> futures = new ArrayList<>();
+        for (String agentId : agentIds) {
+            if (agentId.endsWith("::")) {
+                futures.add(CompletableFuture.completedFuture(agentId));
+                continue;
+            }
+            futures.add(agentConfigDao.readAsync(agentId)
+                    .thenApply(config -> config == null ? null : agentId)
+                    .toCompletableFuture());
+        }
+        return CompletableFutures.allAsList(futures).thenApply(ids -> {
+            Set<String> filtered = new HashSet<>();
+            for (String id : ids) {
+                if (id != null) {
+                    filtered.add(id);
+                }
+            }
+            return filtered;
         });
     }
 
