@@ -207,20 +207,53 @@ glowroot.controller('AdminStorageCtrl', [
     };
 
     $scope.deleteAgentMeta = function (deferred) {
-      var id = ($scope.page.deleteAgentMetaId || '').trim();
+      var id = $scope.page.deleteAgentMetaId;
       if (!id) {
-        deferred.reject('Enter an agent or rollup id');
+        deferred.reject('Select an agent or rollup');
         return;
       }
       $http.post('backend/admin/delete-agent-meta', {
         agentRollupId: id
       }).then(function () {
         $scope.page.deleteAgentMetaId = '';
+        $scope.deleteAgentMetaRollups = $scope.deleteAgentMetaRollups.filter(function (agentRollup) {
+          return agentRollup.id !== id;
+        });
         deferred.resolve('Deleted agent metadata for ' + id);
       }, function (response) {
         httpErrors.handle(response, deferred);
       });
     };
+
+    function loadDeleteAgentMetaRollups() {
+      if (!$scope.layout.central || !$scope.layout.adminEdit) {
+        return;
+      }
+      $http.get('backend/admin/all-active-agent-rollups')
+          .then(function (response) {
+            var agentRollups = response.data || [];
+            angular.forEach(agentRollups, function (agentRollup) {
+              var indent = '';
+              for (var i = 0; i < agentRollup.depth; i++) {
+                indent += '\u00a0\u00a0\u00a0\u00a0';
+              }
+              agentRollup.indentedDisplay = indent + agentRollup.lastDisplayPart;
+            });
+            $scope.deleteAgentMetaRollups = agentRollups;
+            if ($scope.agentRollupId) {
+              var match = agentRollups.some(function (agentRollup) {
+                return agentRollup.id === $scope.agentRollupId;
+              });
+              if (match) {
+                $scope.page.deleteAgentMetaId = $scope.agentRollupId;
+              }
+            }
+          }, function (response) {
+            httpErrors.handle(response);
+          });
+    }
+
+    loadDeleteAgentMetaRollups();
 
     $scope.defragH2Data = function (deferred) {
       $scope.showH2DiskSpaceAnalysis = false;

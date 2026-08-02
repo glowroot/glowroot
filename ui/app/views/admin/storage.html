@@ -549,18 +549,20 @@
         </legend>
         <div ng-show="sectionOpen.centralDanger">
           <div class="help-block gt-storage-section-blurb">
-            Remove config, display name, and environment for one abandoned agent or rollup id.
-            Does not purge charts or traces (those follow TTL).
+            Remove config, display name, and environment for one agent or rollup
+            (same list as Roles: active in the last 7 days). Does not purge charts or traces
+            (those follow TTL). For ids not listed, use CLI
+            <code>delete-agent-meta</code>.
           </div>
           <div class="form-group row">
-            <label class="col-form-label col-xl-4">Agent / rollup id</label>
+            <label class="col-form-label col-xl-4">Agent / rollup</label>
             <div class="col-xl-8">
-              <input type="text"
-                     class="form-control"
-                     style="max-width: 28em;"
-                     ng-model="page.deleteAgentMetaId"
-                     placeholder="MyApp::pod-xyz"
-                     autocomplete="off">
+              <select class="form-control"
+                      style="max-width: 28em;"
+                      ng-model="page.deleteAgentMetaId"
+                      ng-options="agentRollup.id as agentRollup.indentedDisplay for agentRollup in deleteAgentMetaRollups track by agentRollup.id">
+                <option value="">Select agent…</option>
+              </select>
             </div>
           </div>
           <div class="form-group row">
@@ -571,6 +573,7 @@
                      gt-click="deleteAgentMeta(deferred)"
                      gt-btn-class="btn-secondary"
                      gt-dont-validate-form="true"
+                     gt-disabled="!page.deleteAgentMetaId"
                      gt-confirm-header="Delete agent metadata?"
                      gt-confirm-body="This removes config, display name, and environment for that id only. Charts and traces are not purged (they expire via TTL). This cannot be undone for metadata."
                      class="d-inline-block">
