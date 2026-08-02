@@ -666,7 +666,8 @@ class AdminJsonService {
     }
 
     @POST(path = "/backend/admin/delete-agent-meta", permission = "admin:edit:storage")
-    void deleteAgentMeta(@BindRequest DeleteAgentMetaRequest request) throws Exception {
+    void deleteAgentMeta(@BindRequest DeleteAgentMetaRequest request,
+            @BindAuthentication Authentication authentication) throws Exception {
         if (!central) {
             throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
         }
@@ -676,6 +677,11 @@ class AdminJsonService {
         }
         String id = agentRollupId.trim();
         repoAdmin.deleteAgentMeta(id);
+        // Username here (not in RepoAdmin): CLI has no user; Glowroot audit log also records
+        // POST body when -Dglowroot.log.auditOn=true.
+        logger.info("{} - deleted agent metadata for id={} (agent_config, agent_display, environment);"
+                + " a still-connected agent may recreate it via collectInit",
+                authentication.caseAmbiguousUsername(), id);
     }
 
     @POST(path = "/backend/admin/update-cassandra-twcs-window-sizes",

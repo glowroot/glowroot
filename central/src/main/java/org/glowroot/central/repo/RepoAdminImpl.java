@@ -103,10 +103,6 @@ public class RepoAdminImpl implements RepoAdmin {
         agentConfigDao.delete(agentRollupId).toCompletableFuture().get();
         agentDisplayDao.delete(agentRollupId).toCompletableFuture().get();
         environmentDao.delete(agentRollupId).toCompletableFuture().get();
-        // One line is enough for ops; per-table steps are not useful at INFO.
-        // Live agents can recreate rows on the next gauge collect (resendInit → collectInit).
-        logger.info("deleted agent metadata for id={} (agent_config, agent_display, environment);"
-                + " a still-connected agent may recreate it via collectInit", agentRollupId);
     }
 
     @Override
