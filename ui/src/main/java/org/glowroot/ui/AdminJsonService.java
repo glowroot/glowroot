@@ -669,6 +669,18 @@ class AdminJsonService {
         liveAggregateRepository.clearInMemoryData();
     }
 
+    @POST(path = "/backend/admin/delete-agent-meta", permission = "admin:edit:storage")
+    void deleteAgentMeta(@BindRequest DeleteAgentMetaRequest request) throws Exception {
+        if (!central) {
+            throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
+        }
+        String agentRollupId = request.agentRollupId();
+        if (agentRollupId == null || agentRollupId.trim().isEmpty()) {
+            throw new JsonServiceException(BAD_REQUEST, "agentRollupId is required");
+        }
+        repoAdmin.deleteAgentMeta(agentRollupId.trim());
+    }
+
     @POST(path = "/backend/admin/update-cassandra-twcs-window-sizes",
             permission = "admin:edit:storage")
     String updateCassandraTwcsWindowSizes() throws Exception {
@@ -845,6 +857,12 @@ class AdminJsonService {
         @Nullable
         String transactionType();
         int limit();
+    }
+
+    @Value.Immutable
+    interface DeleteAgentMetaRequest {
+        @Nullable
+        String agentRollupId();
     }
 
     @Value.Immutable
