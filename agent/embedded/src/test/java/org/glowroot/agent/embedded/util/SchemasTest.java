@@ -44,4 +44,25 @@ public class SchemasTest {
         assertThat(indexes.iterator().next())
                 .isEqualTo(ImmutableIndex.of("tab_idx", ImmutableList.of("a")));
     }
+
+    @Test
+    public void shouldSyncUniqueIndex() throws Exception {
+        Connection connection =
+                DriverManager.getConnection("jdbc:h2:mem:;NON_KEYWORDS=USER,VALUE");
+        Statement statement = connection.createStatement();
+        statement.execute("create table tab (a varchar, b bigint)");
+        Schemas.syncIndexes("tab",
+                ImmutableList.of(ImmutableIndex.builder()
+                        .name("tab_uidx")
+                        .addColumns("a")
+                        .unique(true)
+                        .build()),
+                connection);
+        Set<Index> indexes = Schemas.getIndexes("tab", connection);
+        assertThat(indexes).hasSize(1);
+        Index index = indexes.iterator().next();
+        assertThat(index.name()).isEqualTo("tab_uidx");
+        assertThat(index.columns()).containsExactly("a");
+        assertThat(index.unique()).isTrue();
+    }
 }

@@ -1,17 +1,18 @@
 {
   "name": "Microbenchmarks Plugin",
   "id": "glowroot-microbenchmarks",
-  "capturePoints": [
+  "instrumentation": [
     {
-      "className": "org.glowroot.microbenchmarks.core.support.TransactionWorthy",
+      "className": "org.glowroot.microbenchmarks.support.TransactionWorthy",
       "methodName": "doSomethingTransactionWorthy2",
       "methodParameterTypes": [ ],
       "captureKind": "transaction",
+      "transactionType": "Microbenchmark",
       "transactionNameTemplate": "transaction worthy",
       "timerName": "transaction worthy"
     },
     {
-      "className": "org.glowroot.microbenchmarks.core.support.TraceEntryWorthy",
+      "className": "org.glowroot.microbenchmarks.support.TraceEntryWorthy",
       "methodName": "doSomethingTraceEntryWorthy2",
       "methodParameterTypes": [ ],
       "captureKind": "trace-entry",
@@ -19,23 +20,53 @@
       "traceEntryMessageTemplate": "trace entry worthy: {{this.name}}"
     },
     {
-      "className": "org.glowroot.microbenchmarks.core.support.TimerWorthy",
+      "className": "org.glowroot.microbenchmarks.support.TimerWorthy",
       "methodName": "doSomethingTimerWorthy2",
       "methodParameterTypes": [ ],
       "captureKind": "timer",
       "timerName": "timer worthy"
     },
     {
-      "className": "org.glowroot.microbenchmarks.core.support.TimerWorthy",
+      "className": "org.glowroot.microbenchmarks.support.TimerWorthy",
       "methodName": "doSomethingTimerWorthy2B",
       "methodParameterTypes": [ ],
       "captureKind": "timer",
       "timerName": "timer worthy B"
+    },
+    {
+      "className": "org.glowroot.microbenchmarks.JdbcMemoryPressureBenchmark",
+      "methodName": "queryUnderTransaction",
+      "methodParameterTypes": [ ],
+      "captureKind": "transaction",
+      "transactionType": "Microbenchmark",
+      "transactionNameTemplate": "jdbc memory pressure",
+      "timerName": "jdbc memory pressure"
+    },
+    {
+      "className": "org.glowroot.microbenchmarks.AgentQueuePressureBenchmark",
+      "methodName": "churnTransaction",
+      "methodParameterTypes": [ ],
+      "captureKind": "transaction",
+      "transactionType": "Microbenchmark",
+      "transactionNameTemplate": "queue churn",
+      "timerName": "queue churn"
+    },
+    {
+      "className": "org.glowroot.microbenchmarks.AgentQueuePressureBenchmark",
+      "methodName": "retainTransaction",
+      "methodParameterTypes": [
+        "java.util.concurrent.CountDownLatch",
+        "java.util.concurrent.CountDownLatch"
+      ],
+      "captureKind": "transaction",
+      "transactionType": "Microbenchmark",
+      "transactionNameTemplate": "queue retain",
+      "timerName": "queue retain"
     }
   ],
   "aspects": [
-    "org.glowroot.microbenchmarks.core.support.TransactionWorthyAspect",
-    "org.glowroot.microbenchmarks.core.support.TraceEntryWorthyAspect",
-    "org.glowroot.microbenchmarks.core.support.TimerWorthyAspect"
+    "org.glowroot.microbenchmarks.support.TransactionWorthyAspect",
+    "org.glowroot.microbenchmarks.support.TraceEntryWorthyAspect",
+    "org.glowroot.microbenchmarks.support.TimerWorthyAspect"
   ]
 }

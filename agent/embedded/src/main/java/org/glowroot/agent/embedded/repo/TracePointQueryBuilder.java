@@ -166,10 +166,13 @@ class TracePointQueryBuilder {
     }
 
     private void appendOrderByAndLimit(ParameterizedSqlBuilder builder) {
-        builder.appendText(" order by trace.duration_nanos");
+        // Slow/error indexes are (... capture_time, duration_nanos, ...). A capture_time range
+        // is therefore not ordered by duration_nanos, so wide windows still need a top-N sort.
+        // Keep ORDER BY on columns present in those indexes; id breaks ties stably.
+        builder.appendText(" order by trace.duration_nanos desc, trace.capture_time desc, trace.id");
         if (limit != 0) {
             // +1 is to identify if limit was exceeded
-            builder.appendText(" desc limit ?");
+            builder.appendText(" limit ?");
             builder.addArg(limit + 1);
         }
     }
