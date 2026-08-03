@@ -46,7 +46,11 @@ class FullQueryTextDao {
             ImmutableColumn.of("last_capture_time", ColumnType.BIGINT));
 
     private static final ImmutableList<Index> indexes = ImmutableList.<Index>of(
-            ImmutableIndex.of("full_query_text_idx", ImmutableList.of("full_text_sha1")),
+            ImmutableIndex.builder()
+                    .name("full_query_text_idx")
+                    .addColumns("full_text_sha1")
+                    .unique(true)
+                    .build(),
             // full_query_text_last_capture_time_idx is for reaper, this is very important when
             // full query text table is large
             ImmutableIndex.of("full_query_text_last_capture_time_idx",
