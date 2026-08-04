@@ -7,8 +7,9 @@ For a short map of modules and how capture flows through the agent (embedded H2 
 - [For contributors](https://github.com/glowroot/glowroot/wiki/For-contributors)
 - [Agent data path](https://github.com/glowroot/glowroot/wiki/Agent-data-path)
 - [Embedded vs Central in code](https://github.com/glowroot/glowroot/wiki/Embedded-vs-Central-in-code)
+- [Plugin and Pointcut basics](https://github.com/glowroot/glowroot/wiki/Plugin-and-Pointcut-basics)
 
-Operator-facing UI docs (Plugins, Instrumentation, transaction tabs, alerts, …) live under the wiki [Home → UI / configuration](https://github.com/glowroot/glowroot/wiki#ui--configuration).
+Operator-facing UI docs (Plugins, Instrumentation, coverage gaps, transaction tabs, alerts, …) live under the wiki [Home](https://github.com/glowroot/glowroot/wiki) (UI / configuration + [Plugin coverage gaps](https://github.com/glowroot/glowroot/wiki/Plugin-coverage-gaps)).
 
 ## Building
 
@@ -71,7 +72,7 @@ All third party Java libraries used by the agent are shaded under the `org.glowr
 
 ## Getting help
 
-- **Code / module orientation:** [For contributors](https://github.com/glowroot/glowroot/wiki/For-contributors) wiki
+- **Code / module orientation:** [For contributors](https://github.com/glowroot/glowroot/wiki/For-contributors) · [Plugin and Pointcut basics](https://github.com/glowroot/glowroot/wiki/Plugin-and-Pointcut-basics)
 - **Questions about contributing or building:** [GitHub Discussions → Q&A](https://github.com/glowroot/glowroot/discussions/categories/q-a)
 - **Ideas for improvements:** [GitHub Discussions → Ideas](https://github.com/glowroot/glowroot/discussions/categories/ideas)
 - **Bugs with a reproducer:** [GitHub Issues](https://github.com/glowroot/glowroot/issues)
