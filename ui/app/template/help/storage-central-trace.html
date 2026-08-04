@@ -1,0 +1,8 @@
+<div class="gt-storage-help">
+  <div><strong>Trace data</strong> — Cassandra TTL in <em>days</em> for individual traces and error message data.</div>
+  <ul>
+    <li>Controls how long full traces remain available in the Traces UI.</li>
+    <li>Does not use the embedded <code>*.capped.db</code> model; Central stores trace detail in Cassandra.</li>
+  </ul>
+  <div>TTL applies to <strong>new</strong> writes only. After Save, use <strong>Update TWCS window sizes</strong> if you changed TTLs and want compaction windows recalculated.</div>
+</div>

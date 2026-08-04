@@ -26,6 +26,31 @@ var glowroot = angular.module('glowroot', [
 
 var Glowroot;
 
+/* exported gtDateTimeFormat */
+
+// Moment ships with English only (no locale packs). LT/LTS would always be 12-hour AM/PM.
+// Honor the browser/OS hour cycle so header range + custom pickers use 24h where expected (#1108).
+var gtDateTimeFormat = (function () {
+  var hour12 = true;
+  try {
+    hour12 = new Intl.DateTimeFormat(undefined, {hour: 'numeric'}).resolvedOptions().hour12 !== false;
+  } catch (ignored) {
+    // keep English 12-hour default
+  }
+  if (!hour12) {
+    moment.updateLocale('en', {
+      longDateFormat: {
+        LT: 'HH:mm',
+        LTS: 'HH:mm:ss'
+      }
+    });
+  }
+  return {
+    dateTimeWithMillis: hour12 ? 'YYYY-MM-DD h:mm:ss.SSS a (Z)' : 'YYYY-MM-DD HH:mm:ss.SSS (Z)',
+    timeOfDayWithMillis: hour12 ? 'h:mm:ss.SSS a (Z)' : 'HH:mm:ss.SSS (Z)'
+  };
+})();
+
 glowroot.config([
   '$locationProvider',
   '$httpProvider',
@@ -541,19 +566,19 @@ glowroot.run([
         id: 'transaction:x-percentile',
         display: 'Response time (X\u1d57\u02b0 percentile)'
       },
-      // TODO
-      // {
-      //   id: 'transaction:timer-inclusive',
-      //   display: 'Breakdown metric time (inclusive)'
-      // },
-      // {
-      //   id: 'transaction:timer-exclusive',
-      //   display: 'Breakdown metric time (exclusive)'
-      // },
-      // {
-      //   id: 'transaction:timer-count',
-      //   display: 'Breakdown metric count'
-      // },
+      // Breakdown timers from Transactions → average (inclusive / exclusive / count).
+      {
+        id: 'transaction:timer-inclusive',
+        display: 'Breakdown metric time (inclusive)'
+      },
+      {
+        id: 'transaction:timer-exclusive',
+        display: 'Breakdown metric time (exclusive)'
+      },
+      {
+        id: 'transaction:timer-count',
+        display: 'Breakdown metric count'
+      },
       // {
       //   id: 'transaction:thread-profile-sample-count',
       //   display: 'Thread profile sample count'

@@ -42,6 +42,13 @@ mvn clean install -Dglowroot.ui.skip
 # (see .github/scripts/build.sh "checker" target for full steps)
 ```
 
+## Session start
+
+```bash
+git fetch upstream main
+# fast-forward local main if behind, then push origin main on the fork if needed
+```
+
 ## UI Development
 
 ```bash
@@ -51,7 +58,40 @@ npm install
 ./grunt serve:demo     # Proxies API to demo.glowroot.org instead
 ```
 
-For UI sandbox (generates sample trace data): run `org.glowroot.ui.sandbox.UiSandboxMain` in your IDE, then browse to http://localhost:4000.
+Do **not** use `-Dglowroot.ui.skip` when changing UI (assets must rebuild).
+
+### Local UI gates
+
+Two backends share the same AngularJS UI — pick the one that matches the change. They can run **at the same time** if you put embedded on another port:
+
+| Mode | URL | How |
+|------|-----|-----|
+| **Central** | http://127.0.0.1:4000 (gRPC `:8181`) | Cassandra on `127.0.0.1:9042`, then `java -jar glowroot-central.jar` |
+| **Embedded** | http://127.0.0.1:4001 | `UiSandboxMain` with `-Dglowroot.agent.port=4001` (see below) |
+
+**Embedded sandbox** (H2 + in-process agent that generates sample traces):
+
+```bat
+cd agent\ui-sandbox
+mvn org.codehaus.mojo:exec-maven-plugin:3.6.3:exec ^
+  -Dexec.executable=java ^
+  -Dexec.classpathScope=test ^
+  "-Dexec.args=-Dglowroot.agent.port=4001 -cp %%classpath org.glowroot.agent.ui.sandbox.UiSandboxMain"
+```
+
+**Agent → Central** (second JVM; uses `agent/ui-sandbox/target-central` so it does not lock the embedded data dir):
+
+```bat
+cd agent\ui-sandbox
+mvn org.codehaus.mojo:exec-maven-plugin:3.6.3:exec ^
+  -Dexec.executable=java ^
+  -Dexec.classpathScope=test ^
+  "-Dexec.args=-Dglowroot.sandbox.central=true -Dglowroot.sandbox.javaagent=true -cp %%classpath org.glowroot.agent.ui.sandbox.UiSandboxMain"
+```
+
+Optional agent against an existing dist: `-javaagent:…/glowroot.jar -Dglowroot.collector.address=localhost:8181`.
+
+Use Central when verifying Central-only pages (Cassandra storage TTL, agent rollups, gRPC) or confirming embedded-only UI is hidden (`layout.central`).
 
 ## Architecture
 

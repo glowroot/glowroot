@@ -117,7 +117,46 @@
          gt-label="Transaction name"
          gt-model="report.transactionName"
          gt-width="20em"
+         gt-required="transactionNameRequired()"
          ng-if="showTransactionTypeAndName()">
+    </div>
+    <div class="form-group row"
+         ng-if="showTimerName()">
+      <label class="col-xl-3 gt-form-label-xl"
+             for="reportTimerName">
+        Timer name
+      </label>
+      <div class="col-xl-9">
+        <select ng-model="report.timerName"
+                class="custom-select"
+                name="reportTimerName"
+                id="reportTimerName"
+                style="width: 100%; max-width: 25em;"
+                required
+                ng-disabled="!timerNames.length">
+          <option value=""
+                  disabled
+                  ng-if="!timerNames.length">
+            (no timers for selected type / name / date range)
+          </option>
+          <option value=""
+                  disabled
+                  ng-if="timerNames.length && !report.timerName">
+          </option>
+          <option ng-repeat="timerName in timerNames track by timerName"
+                  ng-value="timerName">
+            {{timerName}}
+          </option>
+        </select>
+        <div class="help-block"
+             ng-if="report.metric === 'transaction:timer-inclusive'">
+          Inclusive time is total time in the timer including nested children (same as the breakdown table).
+        </div>
+        <div class="help-block"
+             ng-if="report.metric === 'transaction:timer-exclusive'">
+          Exclusive time is self time only (same as stacked response-time chart segments).
+        </div>
+      </div>
     </div>
     <div gt-form-group
          gt-label="Percentile"

@@ -34,6 +34,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class UiSandboxMain {
 
     private static final boolean useJavaagent = Boolean.getBoolean("glowroot.sandbox.javaagent");
+    // When true, talk to Central (:8181) and use target-central/ so this JVM can run beside an
+    // embedded UiSandboxMain that holds a lock on target/ (and optionally -Dglowroot.agent.port=4001).
     private static final boolean useGlowrootCentral =
             Boolean.getBoolean("glowroot.sandbox.central");
 
@@ -41,7 +43,8 @@ public class UiSandboxMain {
 
     public static void main(String[] args) throws Exception {
         Container container;
-        File testDir = new File("target");
+        boolean useCentral = useGlowrootCentral;
+        File testDir = new File(useCentral ? "target-central" : "target");
         if (!testDir.exists()) {
             testDir.mkdir();
         }
@@ -52,13 +55,13 @@ public class UiSandboxMain {
                             + "\"ui\":{\"defaultTransactionType\":\"Sandbox\"}}",
                     configFile, UTF_8);
         }
-        if (useJavaagent && useGlowrootCentral) {
+        if (useJavaagent && useCentral) {
             container = new JavaagentContainer(testDir, false,
                     ImmutableList.of("-Dglowroot.agent.id=UI Sandbox",
                             "-Dglowroot.collector.address=localhost:8181"));
         } else if (useJavaagent) {
             container = new JavaagentContainer(testDir, true, ImmutableList.<String>of());
-        } else if (useGlowrootCentral) {
+        } else if (useCentral) {
             container = new LocalContainer(testDir, false,
                     ImmutableMap.of("glowroot.agent.id", "UI Sandbox",
                             "glowroot.collector.address", "localhost:8181"));

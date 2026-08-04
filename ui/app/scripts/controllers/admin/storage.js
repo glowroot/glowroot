@@ -27,6 +27,34 @@ glowroot.controller('AdminStorageCtrl', [
     // initialize page binding object
     $scope.page = {};
 
+    // Collapsible Storage sections (embedded + Central). Defaults keep the page short;
+    // deep links #rollup-capped-database-size / #trace-capped-database-size open *.capped.db.
+    // Webdriver opens sections via StorageConfigPage.ensureSectionOpen before clicking.
+    var hash = $location.hash();
+    var openCapped = hash === 'rollup-capped-database-size'
+        || hash === 'trace-capped-database-size';
+    $scope.sectionOpen = {
+      h2Data: true,
+      capped: openCapped,
+      h2Cache: true,
+      maintenance: false,
+      centralRollup: true,
+      centralQuery: false,
+      centralProfile: false,
+      // Trace TTL is a primary Central control (same weight as rollup); keep open.
+      centralTrace: true
+    };
+    $scope.toggleSection = function (name) {
+      $scope.sectionOpen[name] = !$scope.sectionOpen[name];
+    };
+
+    // Embedded H2 page-cache modes; effective MB is clamped server-side (see H2CacheSize).
+    $scope.h2CacheModes = [
+      { value: 'auto', label: 'Auto (128 MB target)' },
+      { value: 'fixed', label: 'Fixed MB' },
+      { value: 'percent', label: '% of -Xmx' }
+    ];
+
     // close modal backdrop if open, this is needed if click on "see Configuration > Storage > Trace detail data" inside
     // of trace modal
     $('.modal-backdrop').remove();
@@ -35,6 +63,39 @@ glowroot.controller('AdminStorageCtrl', [
       return $scope.originalConfig && !angular.equals($scope.config, $scope.originalConfig);
     };
     $scope.$on('$locationChangeStart', confirmIfHasChanges($scope));
+
+    function refreshH2CacheWarning() {
+      if (!$scope.config || $scope.layout.central) {
+        $scope.h2CacheWarning = '';
+        return;
+      }
+      if ($scope.config.h2CacheSystemPropertyOverride) {
+        $scope.h2CacheWarning = '';
+        return;
+      }
+      var mode = $scope.config.h2CacheMode;
+      var value = $scope.config.h2CacheValue;
+      var maxHeapMb = $scope.config.maxHeapMb || 0;
+      var targetMb;
+      if (mode === 'percent') {
+        targetMb = Math.floor(maxHeapMb * value / 100);
+      } else if (mode === 'fixed') {
+        targetMb = value;
+      } else {
+        $scope.h2CacheWarning = '';
+        return;
+      }
+      if (targetMb >= 256 || targetMb > ($scope.config.effectiveH2CacheMb || 0)) {
+        $scope.h2CacheWarning = 'Requested size will be clamped for shared-JVM safety'
+            + ' (effective ' + $scope.config.effectiveH2CacheMb + ' MB).'
+            + ' On very large H2 files, prefer shorter retention and Compact over a huge cache.';
+      } else {
+        $scope.h2CacheWarning = '';
+      }
+    }
+
+    $scope.$watchGroup(['config.h2CacheMode', 'config.h2CacheValue', 'config.effectiveH2CacheMb'],
+        refreshH2CacheWarning);
 
     $scope.$watchCollection('page.rollupExpirationDays', function (newValue) {
       if ($scope.config) {
@@ -101,6 +162,13 @@ glowroot.controller('AdminStorageCtrl', [
       $scope.page.traceExpirationDays = data.traceExpirationHours / 24;
       if (!$scope.layout.central) {
         $scope.page.fullQueryTextExpirationDays = data.fullQueryTextExpirationHours / 24;
+        if (!data.h2CacheMode) {
+          data.h2CacheMode = 'auto';
+        }
+        if (data.h2CacheValue === undefined || data.h2CacheValue === null) {
+          data.h2CacheValue = 128;
+        }
+        refreshH2CacheWarning();
       }
     }
 
@@ -165,7 +233,20 @@ glowroot.controller('AdminStorageCtrl', [
       $http.post('backend/admin/analyze-h2-disk-space', {})
           .then(function (data) {
             $scope.h2DataFileSize = data.data.h2DataFileSize;
+            $scope.h2LiveBytes = data.data.liveBytes || 0;
+            $scope.h2ReclaimableBytes = data.data.reclaimableBytes || 0;
             $scope.analyzedH2Tables = data.data.tables;
+            var file = $scope.h2DataFileSize || 0;
+            if (file > 0) {
+              $scope.h2LivePct = Math.min(100, 100 * $scope.h2LiveBytes / file);
+              $scope.h2ReclaimablePct = Math.min(100 - $scope.h2LivePct,
+                  100 * $scope.h2ReclaimableBytes / file);
+            } else {
+              $scope.h2LivePct = 0;
+              $scope.h2ReclaimablePct = 0;
+            }
+            $scope.showCompactCta = $scope.h2ReclaimableBytes >= 64 * 1024 * 1024
+                || (file > 0 && $scope.h2ReclaimableBytes / file >= 0.1);
             $scope.showH2DiskSpaceAnalysis = true;
             deferred.resolve('Analyzed');
           }, function (response) {

@@ -73,9 +73,26 @@ glowroot.controller('ReportAdhocCtrl', [
       return metric && (metric.lastIndexOf('transaction:', 0) === 0 || metric.lastIndexOf('error:', 0) === 0);
     }
 
+    function showTimerName(metric) {
+      return metric === 'transaction:timer-inclusive'
+          || metric === 'transaction:timer-exclusive'
+          || metric === 'transaction:timer-count';
+    }
+
     $scope.showTransactionTypeAndName = function () {
       return showTransactionTypeAndName($scope.report.metric);
     };
+
+    $scope.showTimerName = function () {
+      return showTimerName($scope.report.metric);
+    };
+
+    $scope.transactionNameRequired = function () {
+      return $scope.report.metric === 'transaction:timer-inclusive'
+          || $scope.report.metric === 'transaction:timer-exclusive';
+    };
+
+    $scope.timerNames = [];
 
     if ($scope.layout.central) {
       $scope.$watchGroup(['report.fromDate', 'report.toDate'], function () {
@@ -273,6 +290,7 @@ glowroot.controller('ReportAdhocCtrl', [
       appliedReport.metric = $location.search().metric;
       appliedReport.transactionType = $location.search()['transaction-type'];
       appliedReport.transactionName = $location.search()['transaction-name'];
+      appliedReport.timerName = $location.search()['timer-name'];
       appliedReport.percentile = Number($location.search().percentile);
       if (isNaN(appliedReport.percentile)) {
         delete appliedReport.percentile;
@@ -313,6 +331,57 @@ glowroot.controller('ReportAdhocCtrl', [
       if (metric !== 'transaction:x-percentile') {
         delete $scope.report.percentile;
       }
+      if (showTimerName(metric)) {
+        if ($scope.report.timerName === undefined) {
+          $scope.report.timerName = '';
+        }
+      } else {
+        delete $scope.report.timerName;
+        $scope.timerNames = [];
+      }
+    });
+
+    // Best-effort timer list for the dropdown; mirrors GET /backend/report/timer-names
+    // (stored rollups plus level-0 and live aggregates for recent data).
+    $scope.$watchGroup([
+      'report.agentRollupIds',
+      'report.transactionType',
+      'report.transactionName',
+      'report.fromDate',
+      'report.toDate',
+      'report.metric',
+      'report.timeZoneId'
+    ], function () {
+      if (!showTimerName($scope.report.metric) || !$scope.report.transactionType) {
+        return;
+      }
+      var agentRollupIds = $scope.report.agentRollupIds;
+      if (!$scope.layout.central) {
+        agentRollupIds = [''];
+      } else if (!agentRollupIds || !agentRollupIds.length) {
+        $scope.timerNames = [];
+        return;
+      }
+      var query = {
+        agentRollupIds: agentRollupIds,
+        transactionType: $scope.report.transactionType,
+        transactionName: $scope.report.transactionName || '',
+        fromDate: moment($scope.report.fromDate).format('YYYYMMDD'),
+        toDate: moment($scope.report.toDate).format('YYYYMMDD'),
+        timeZoneId: $scope.report.timeZoneId
+      };
+      $http.get('backend/report/timer-names' + queryStrings.encodeObject(query))
+          .then(function (response) {
+            $scope.timerNames = response.data || [];
+            // Drop a stale selection that is no longer in the dropdown.
+            if ($scope.report.timerName
+                && $scope.timerNames.indexOf($scope.report.timerName) === -1) {
+              $scope.report.timerName = '';
+            }
+          }, function () {
+            $scope.timerNames = [];
+            $scope.report.timerName = '';
+          });
     });
 
     $scope.$watchGroup(['report.fromDate', 'report.toDate'], function (newValue) {
@@ -376,6 +445,14 @@ glowroot.controller('ReportAdhocCtrl', [
         deferred.reject('Select one or more agents');
         return;
       }
+      if (showTimerName($scope.report.metric) && !$scope.report.timerName) {
+        deferred.reject('Enter a timer name');
+        return;
+      }
+      if ($scope.transactionNameRequired() && !$scope.report.transactionName) {
+        deferred.reject('Enter a transaction name');
+        return;
+      }
       if ($scope.report.rollup === 'weekly'
           && moment($scope.report.toDate).diff(moment($scope.report.fromDate), 'days') < 6) {
         deferred.reject('Must select at least one full week when using weekly rollup');
@@ -397,6 +474,7 @@ glowroot.controller('ReportAdhocCtrl', [
       $location.search('metric', $scope.report.metric);
       $location.search('transaction-type', $scope.report.transactionType);
       $location.search('transaction-name', $scope.report.transactionName);
+      $location.search('timer-name', $scope.report.timerName);
       $location.search('percentile', $scope.report.percentile);
       var fromDate = moment($scope.report.fromDate).format('YYYYMMDD');
       var toDate = moment($scope.report.toDate).format('YYYYMMDD');
@@ -555,7 +633,9 @@ glowroot.controller('ReportAdhocCtrl', [
             });
 
             function doWithPlot() {
-              if (query.metric === 'transaction:x-percentile' || query.metric === 'transaction:average') {
+              if (query.metric === 'transaction:x-percentile' || query.metric === 'transaction:average'
+                  || query.metric === 'transaction:timer-inclusive'
+                  || query.metric === 'transaction:timer-exclusive') {
                 plot.getAxes().yaxis.options.label = 'milliseconds';
               } else if (query.metric === 'error:rate') {
                 plot.getAxes().yaxis.options.label = 'percent';
@@ -694,7 +774,10 @@ glowroot.controller('ReportAdhocCtrl', [
 
     function drillDownLink(agentRollupId, from, to) {
       var path;
-      if (appliedReport.metric === 'transaction:average') {
+      if (appliedReport.metric === 'transaction:average'
+          || appliedReport.metric === 'transaction:timer-inclusive'
+          || appliedReport.metric === 'transaction:timer-exclusive'
+          || appliedReport.metric === 'transaction:timer-count') {
         path = 'transaction/average';
       } else if (appliedReport.metric === 'transaction:x-percentile') {
         path = 'transaction/percentiles';

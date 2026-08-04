@@ -19,6 +19,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
 import org.glowroot.tests.util.Page;
+import org.glowroot.tests.util.Utils;
 
 import static org.openqa.selenium.By.xpath;
 
@@ -29,23 +30,38 @@ public class StorageConfigPage extends Page {
     }
 
     public WebElement getRollupExpirationTextField(int i) {
+        // Embedded: data.mv.db; Central: "Response time and JVM gauge data"
+        // (detect legend — WebDriverSetup.useCentral is package-protected).
+        waitForStorageLegends();
+        ensureSectionOpen(legendPresent("Response time and JVM gauge data")
+                ? "Response time and JVM gauge data"
+                : "data.mv.db");
         return getWithWait(xpath("//div[@gt-model='page.rollupExpirationDays[" + i + "]']//input"));
     }
 
     public WebElement getTraceExpirationTextField() {
+        // Embedded: same H2 retention section; Central: separate "Trace data" fieldset
+        // (closed by default).
+        waitForStorageLegends();
+        ensureSectionOpen(legendPresent("Response time and JVM gauge data")
+                ? "Trace data"
+                : "data.mv.db");
         return getWithWait(xpath("//div[@gt-model='page.traceExpirationDays']//input"));
     }
 
     public WebElement getFullQueryTextExpirationTextField() {
+        ensureSectionOpen("data.mv.db");
         return getWithWait(xpath("//div[@gt-model='page.fullQueryTextExpirationDays']//input"));
     }
 
     public WebElement getRollupCappedDatabaseSizeTextField(int i) {
+        ensureSectionOpen("*.capped.db");
         return getWithWait(
                 xpath("//div[@gt-model='config.rollupCappedDatabaseSizesMb[" + i + "]']//input"));
     }
 
     public WebElement getTraceCappedDatabaseSizeTextField() {
+        ensureSectionOpen("*.capped.db");
         return getWithWait(xpath("//div[@gt-model='config.traceCappedDatabaseSizeMb']//input"));
     }
 
@@ -54,26 +70,31 @@ public class StorageConfigPage extends Page {
     }
 
     public void clickDeleteAllButton() throws InterruptedException {
+        ensureSectionOpen("Maintenance");
         clickWithWait(xpath("//button[normalize-space()='Delete all data']"));
         clickWithWait(xpath("//button[normalize-space()='Yes']"));
     }
 
     public void clickDefragH2Data() {
+        ensureSectionOpen("Maintenance");
         clickWithWait(xpath("//button[normalize-space()='Defrag H2 data']"));
         clickWithWait(xpath("//button[normalize-space()='Yes']"));
     }
 
     public void clickCompactH2Data() {
+        ensureSectionOpen("Maintenance");
         clickWithWait(xpath("//button[normalize-space()='Compact H2 data']"));
         clickWithWait(xpath("//button[normalize-space()='Yes']"));
     }
 
     public void clickAnalyzeH2DiskSpace() {
+        ensureSectionOpen("Maintenance");
         clickWithWait(xpath("//button[normalize-space()='Analyze H2 disk space']"));
         clickWithWait(xpath("//button[normalize-space()='Yes']"));
     }
 
     public void clickAnalyzeTraceCounts() {
+        ensureSectionOpen("Maintenance");
         clickWithWait(xpath("//button[normalize-space()='Analyze trace counts']"));
         clickWithWait(xpath("//button[normalize-space()='Yes']"));
     }
@@ -81,5 +102,31 @@ public class StorageConfigPage extends Page {
     public void clickUpdateTwcsWindowSizesButton() {
         clickWithWait(xpath("//button[normalize-space()='Update TWCS window sizes']"));
         clickWithWait(xpath("//button[normalize-space()='Yes']"));
+    }
+
+    /**
+     * Storage fieldsets are collapsible; webdriver needs the section open before
+     * {@code getWithWait} (hidden inputs fail {@code isDisplayed}).
+     */
+    private void ensureSectionOpen(String legendText) {
+        WebElement legend = getWithWait(xpath("//legend[contains(., '" + legendText + "')]"));
+        WebElement chevron =
+                legend.findElement(xpath(".//span[contains(@class,'gt-legend-chevron')]"));
+        if (chevron.getAttribute("class").contains("fa-chevron-right")) {
+            // Click the chevron — legend.click() is flaky in headless Firefox when the
+            // legend also contains a help button (ng-click may not fire).
+            Utils.click(driver, chevron);
+            getWithWait(xpath("//legend[contains(., '" + legendText
+                    + "')]//span[contains(@class,'fa-chevron-down')]"));
+        }
+    }
+
+    private void waitForStorageLegends() {
+        getWithWait(xpath("//legend[contains(@class,'gt-legend-toggle')]"));
+    }
+
+    private boolean legendPresent(String legendText) {
+        return !driver.findElements(xpath("//legend[contains(., '" + legendText + "')]"))
+                .isEmpty();
     }
 }
