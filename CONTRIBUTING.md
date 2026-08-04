@@ -2,6 +2,14 @@
 
 Thank you for your interest in contributing. This file covers building from source, UI development, tests, and project conventions.
 
+For a short map of modules and how capture flows through the agent (embedded H2 vs Central/gRPC), start with the wiki:
+
+- [For contributors](https://github.com/glowroot/glowroot/wiki/For-contributors)
+- [Agent data path](https://github.com/glowroot/glowroot/wiki/Agent-data-path)
+- [Embedded vs Central in code](https://github.com/glowroot/glowroot/wiki/Embedded-vs-Central-in-code)
+
+Operator-facing UI docs (Plugins, Instrumentation, transaction tabs, alerts, …) live under the wiki [Home → UI / configuration](https://github.com/glowroot/glowroot/wiki#ui--configuration).
+
 ## Building
 
 ```bash
@@ -16,7 +24,7 @@ Building requires Java 11+ and Maven 3.8.0+.
 
 Glowroot uses [Immutables](https://immutables.github.io) annotation processing to eliminate maintenance on lots of boilerplate code. If you are using Eclipse, this requires installing the [m2e-apt](https://github.com/jbosstools/m2e-apt) plugin and changing Window > Preferences > Maven > Annotation Processing to "Automatically configure JDT APT".
 
-To work on the UI, run `org.glowroot.ui.sandbox.UiSandboxMain` under a debugger inside your favorite IDE. This starts Glowroot and generates a variety of sample traces to give the UI something to display. Connect your browser to http://localhost:4000.
+To work on the UI, run `org.glowroot.agent.ui.sandbox.UiSandboxMain` (module `agent/ui-sandbox`) under a debugger inside your favorite IDE. This starts Glowroot and generates a variety of sample traces to give the UI something to display. Connect your browser to http://localhost:4000.
 
 Glowroot uses [Bower](http://bower.io) and [Grunt](http://gruntjs.com) to build its web assets (dependency management, Javascript concat/minify, LESS compile/uncss/minify, AngularJS template concat/minify, asset revving and more). The first time you run `mvn clean install`, Node, Bower and Grunt are installed locally under the `ui` directory (thanks to the [frontend-maven-plugin](https://github.com/eirslett/frontend-maven-plugin)).
 
@@ -63,6 +71,7 @@ All third party Java libraries used by the agent are shaded under the `org.glowr
 
 ## Getting help
 
+- **Code / module orientation:** [For contributors](https://github.com/glowroot/glowroot/wiki/For-contributors) wiki
 - **Questions about contributing or building:** [GitHub Discussions → Q&A](https://github.com/glowroot/glowroot/discussions/categories/q-a)
 - **Ideas for improvements:** [GitHub Discussions → Ideas](https://github.com/glowroot/glowroot/discussions/categories/ideas)
 - **Bugs with a reproducer:** [GitHub Issues](https://github.com/glowroot/glowroot/issues)

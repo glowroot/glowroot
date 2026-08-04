@@ -64,10 +64,15 @@ Central needs its own install — see [Agent Installation (for Central Collector
 | Topic | Wiki |
 |-------|------|
 | Wiki home | [github.com/glowroot/glowroot/wiki](https://github.com/glowroot/glowroot/wiki) |
+| Embedded vs Central | [Choosing Embedded vs Central](https://github.com/glowroot/glowroot/wiki/Choosing-Embedded-vs-Central) |
 | Embedded install | [Agent Installation (with Embedded Collector)](https://github.com/glowroot/glowroot/wiki/Agent-Installation-(with-Embedded-Collector)) |
 | Central install | [Agent Installation (for Central Collector)](https://github.com/glowroot/glowroot/wiki/Agent-Installation-(for-Central-Collector)) |
 | Central on Docker | [Central Collector with Docker](https://github.com/glowroot/glowroot/wiki/Central-Collector-with-Docker) |
-| Data / config (`data.dir`, `multi.dir`) | [Agent Installation (with Embedded Collector)](https://github.com/glowroot/glowroot/wiki/Agent-Installation-(with-Embedded-Collector)) |
+| Troubleshooting | [Troubleshooting Tips](https://github.com/glowroot/glowroot/wiki/Troubleshooting-Tips) |
+| Storage (H2 / Cassandra TTL) | [Administration-Storage](https://github.com/glowroot/glowroot/wiki/Administration-Storage) |
+| Plugins / custom Instrumentation | [Plugins](https://github.com/glowroot/glowroot/wiki/Plugins) · [Instrumentation](https://github.com/glowroot/glowroot/wiki/Instrumentation) |
+| UI orientation (tabs, alerts, gauges, …) | [Transaction tabs](https://github.com/glowroot/glowroot/wiki/Transaction-tabs) · [wiki UI / configuration](https://github.com/glowroot/glowroot/wiki#ui--configuration) |
+| Contributing (modules / engine map) | [For contributors](https://github.com/glowroot/glowroot/wiki/For-contributors) |
 | Community Q&A | [GitHub Discussions](https://github.com/glowroot/glowroot/discussions) |
 
 ## FAQ
@@ -82,16 +87,19 @@ Java **8+** for the agent. Java **17+** for glowroot-central. There is no mainta
 Use a current **0.14.x** agent from Releases.
 
 **The UI does not open / I never see “UI listening”.**  
-Confirm `-javaagent` is on the JVM that runs your app, the glowroot directory is writable, and nothing else is bound to port 4000. With embedded mode the UI starts after application startup — if the JVM exits immediately, the UI never binds.
+Confirm `-javaagent` is on the JVM that runs your app, the glowroot directory is writable, and nothing else is bound to port 4000. With embedded mode the UI starts after application startup — if the JVM exits immediately, the UI never binds. Bind/port details: [Administration-Web](https://github.com/glowroot/glowroot/wiki/Administration-Web).
 
 **Several JVMs on one host.**  
-Embedded: give each JVM its own `data.dir` (or use Central). Central: use a **unique `agent.id` per JVM**; you can group agents in the UI with rollup IDs (for example `App::pod` in Kubernetes).
+Embedded: give each JVM its own `data.dir` (or use Central). Central: use a **unique `agent.id` per JVM**; you can group agents in the UI with rollup IDs (for example `App::pod` in Kubernetes). See [Multiple JVMs and agent.id](https://github.com/glowroot/glowroot/wiki/Multiple-JVMs-and-agent.id) and [Agents and rollups](https://github.com/glowroot/glowroot/wiki/Agents-and-rollups).
 
 **Agent cannot connect to Central.**  
-Set `collector.address` to the Central host and **gRPC port (8181 by default)** — not the UI port (4000). Use `host:port` only (no URL path). Check firewall/`nc` from the agent host. See the [Central install wiki](https://github.com/glowroot/glowroot/wiki/Agent-Installation-(for-Central-Collector)).
+Set `collector.address` to the Central host and **gRPC port (8181 by default)** — not the UI port (4000). Use `host:port` only (no URL path). Check firewall/`nc` from the agent host. See the [Central install wiki](https://github.com/glowroot/glowroot/wiki/Agent-Installation-(for-Central-Collector)) and [Troubleshooting Tips](https://github.com/glowroot/glowroot/wiki/Troubleshooting-Tips).
 
 **H2 “locked by another process”.**  
 Only one embedded collector may use a given data directory. Stop the other JVM or point `data.dir` / `multi.dir` at separate folders.
+
+**Few traces / empty Queries tab?**  
+Aggregates cover all traffic; **Traces** only store requests above the slow threshold ([Transaction configuration](https://github.com/glowroot/glowroot/wiki/Transaction-configuration)). **Queries** come from the JDBC plugin, not custom Instrumentation ([Plugins](https://github.com/glowroot/glowroot/wiki/Plugins) · [Transaction tabs](https://github.com/glowroot/glowroot/wiki/Transaction-tabs)).
 
 **Can I run Glowroot together with another Java APM agent?**  
 Usually **no** — two bytecode-weaving agents on the same JVM is fragile. Pick one agent per process.
@@ -112,6 +120,8 @@ Pick the channel that fits — it helps everyone respond faster:
 ## Contributing
 
 Build instructions, UI sandbox, integration tests, and code-quality checks: **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+
+Code orientation (modules, agent data path, embedded vs central in the tree): wiki **[For contributors](https://github.com/glowroot/glowroot/wiki/For-contributors)**.
 
 ## Project analytics
 
