@@ -41,15 +41,22 @@ public class RepoAdminImpl implements RepoAdmin {
 
     private final Session session;
     private final ActiveAgentDao activeAgentDao;
+    private final AgentConfigDao agentConfigDao;
+    private final AgentDisplayDao agentDisplayDao;
+    private final EnvironmentDao environmentDao;
     private final ConfigRepositoryImpl configRepository;
     private final CassandraWriteMetrics cassandraWriteMetrics;
     private final Clock clock;
 
     public RepoAdminImpl(Session session, ActiveAgentDao activeAgentDao,
-            ConfigRepositoryImpl configRepository, CassandraWriteMetrics cassandraWriteMetrics,
-            Clock clock) {
+            AgentConfigDao agentConfigDao, AgentDisplayDao agentDisplayDao,
+            EnvironmentDao environmentDao, ConfigRepositoryImpl configRepository,
+            CassandraWriteMetrics cassandraWriteMetrics, Clock clock) {
         this.session = session;
         this.activeAgentDao = activeAgentDao;
+        this.agentConfigDao = agentConfigDao;
+        this.agentDisplayDao = agentDisplayDao;
+        this.environmentDao = environmentDao;
         this.configRepository = configRepository;
         this.cassandraWriteMetrics = cassandraWriteMetrics;
         this.clock = clock;
@@ -89,6 +96,13 @@ public class RepoAdminImpl implements RepoAdmin {
     @Override
     public void deleteAllData() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void deleteAgentMeta(String agentRollupId) throws Exception {
+        agentConfigDao.delete(agentRollupId).toCompletableFuture().get();
+        agentDisplayDao.delete(agentRollupId).toCompletableFuture().get();
+        environmentDao.delete(agentRollupId).toCompletableFuture().get();
     }
 
     @Override
