@@ -82,16 +82,10 @@ class LayoutJsonService {
     @GET(path = "/backend/agent-rollup", permission = "")
     String getAgentRollup(@BindRequest AgentRollupRequest request,
             @BindAuthentication Authentication authentication) throws Exception {
+        // Always return the built layout (permissions may all be false). Empty "{}"
+        // broke the central UI which assigns response.data to $rootScope.agentRollup.
         AgentRollupLayout agentRollupLayout =
                 layoutService.buildAgentRollupLayout(authentication, request.id());
-        if (agentRollupLayout == null) {
-            // FIXME let user know that UI configuration not found
-            return "{}";
-        }
-        if (!agentRollupLayout.permissions().hasSomeAccess()) {
-            // FIXME return no-access AgentRollupLayout
-            return "{}";
-        }
         return mapper.writeValueAsString(agentRollupLayout);
     }
 
