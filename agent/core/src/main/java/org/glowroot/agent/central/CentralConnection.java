@@ -32,6 +32,7 @@ import com.google.common.collect.Lists;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.internal.DnsNameResolverProvider;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NegotiationType;
 import io.grpc.netty.NettyChannelBuilder;
@@ -89,7 +90,8 @@ class CentralConnection {
         NettyChannelBuilder builder;
         if (parsedCollectorAddress.targets().size() == 1) {
             CollectorTarget target = parsedCollectorAddress.targets().get(0);
-            builder = NettyChannelBuilder.forAddress(target.host(), target.port());
+            builder = NettyChannelBuilder.forAddress(target.host(), target.port())
+                    .nameResolverFactory(new DnsNameResolverProvider());
             if (collectorAuthority != null) {
                 builder.overrideAuthority(collectorAuthority);
             }
