@@ -187,6 +187,7 @@ public class UiModule {
                 new TraceExportHttpService(traceCommonService, version);
         GlowrootLogHttpService glowrootLogHttpService =
                 new GlowrootLogHttpService(logDir, logFileNamePattern);
+        LivenessHttpService livenessHttpService = new LivenessHttpService();
         HealthCheckHttpService healthCheckHttpService = new HealthCheckHttpService(repoAdmin);
 
         Map<Pattern, HttpService> httpServices = Maps.newHashMap();
@@ -211,7 +212,11 @@ public class UiModule {
         httpServices.put(Pattern.compile("^/backend/trace/aux-thread-profile$"),
                 traceDetailHttpService);
         httpServices.put(Pattern.compile("^/log$"), glowrootLogHttpService);
-        httpServices.put(Pattern.compile("^/health$"), healthCheckHttpService);
+        httpServices.put(Pattern.compile("^/health$"), livenessHttpService);
+        httpServices.put(Pattern.compile("^/liveness$"), livenessHttpService);
+        httpServices.put(Pattern.compile("^/healthz$"), livenessHttpService);
+        httpServices.put(Pattern.compile("^/readiness$"), healthCheckHttpService);
+        httpServices.put(Pattern.compile("^/ready$"), healthCheckHttpService);
 
         if (central) {
             httpServices.put(Pattern.compile("^/synthetic-monitors$"), indexHtmlHttpService);

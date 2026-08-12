@@ -52,9 +52,9 @@ class HealthCheckHttpService implements HttpService {
         } catch (Exception e) {
             // Avoid a blank browser page: return a clear text body and log for operators (#766)
             Throwable root = Throwables.getRootCause(e);
-            logger.error("Health check failed: {}", root.toString(), e);
+            logger.error("Readiness check failed: {}", root.toString(), e);
             return new CommonResponse(SERVICE_UNAVAILABLE, MediaType.PLAIN_TEXT_UTF_8,
-                    "Glowroot health check failed: " + root.toString() + "\n");
+                    "Glowroot readiness check failed: " + root.toString() + "\n");
         }
     }
 }
