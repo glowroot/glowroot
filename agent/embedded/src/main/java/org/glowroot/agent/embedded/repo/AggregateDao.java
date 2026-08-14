@@ -135,23 +135,27 @@ public class AggregateDao implements AggregateRepository {
                     ImmutableColumn.of("async_timers", ColumnType.VARBINARY), // protobuf
                     ImmutableColumn.of("duration_nanos_histogram", ColumnType.VARBINARY)); // protobuf
 
-    // this index includes all columns needed for the overall aggregate query so h2 can return
-    // the result set directly from the index without having to reference the table for each row
+    // Index columns for summary aggregates (OverallSummaryQuery / TransactionNameSummaryQuery)
+    // and CappedIdQuery (/queries, /service-calls, profiles). Not sufficient alone for overview /
+    // percentile SELECTs that also read timers, histograms, async_transactions, etc.
+    // (capped_id columns included so CappedIdQuery can be index-friendly)
     private static final ImmutableList<String> overallAggregateIndexColumns =
             ImmutableList.of("capture_time", "transaction_type", "total_duration_nanos",
                     "transaction_count", "error_count",
                     "main_thread_total_cpu_nanos", "aux_thread_total_cpu_nanos",
-                    "main_thread_total_allocated_bytes", "aux_thread_total_allocated_bytes");
+                    "main_thread_total_allocated_bytes", "aux_thread_total_allocated_bytes",
+                    "queries_capped_id", "service_calls_capped_id",
+                    "main_thread_profile_capped_id", "aux_thread_profile_capped_id");
 
-    // this index includes all columns needed for the transaction aggregate query so h2 can return
-    // the result set directly from the index without having to reference the table for each row
-    //
-    // capture_time is first so this can also be used for readTransactionErrorCounts()
+    // Same idea for per-transaction-name rollups. capture_time is first so time-range scans
+    // (including TransactionNameErrorSummaryQuery) can use the index prefix.
     private static final ImmutableList<String> transactionAggregateIndexColumns =
             ImmutableList.of("capture_time", "transaction_type", "transaction_name",
                     "total_duration_nanos", "transaction_count", "error_count",
                     "main_thread_total_cpu_nanos", "aux_thread_total_cpu_nanos",
-                    "main_thread_total_allocated_bytes", "aux_thread_total_allocated_bytes");
+                    "main_thread_total_allocated_bytes", "aux_thread_total_allocated_bytes",
+                    "queries_capped_id", "service_calls_capped_id",
+                    "main_thread_profile_capped_id", "aux_thread_profile_capped_id");
 
     private final DataSource dataSource;
     private final List<CappedDatabase> rollupCappedDatabases;
