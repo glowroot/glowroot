@@ -16,6 +16,7 @@
 package org.glowroot.tests.admin;
 
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 
 import org.glowroot.tests.util.Page;
 
@@ -25,6 +26,10 @@ public class WebConfigPage extends Page {
 
     public WebConfigPage(WebDriver driver) {
         super(driver);
+    }
+
+    public WebElement getPortTextField() {
+        return getWithWait(xpath("//div[@gt-label='Port']//input"));
     }
 
     public void clickSaveButton() {

@@ -57,7 +57,12 @@ glowroot.controller('AdminWebCtrl', [
               httpErrors.handle(response, deferred);
             });
       } else {
-        var changingPort = $scope.config.port !== $scope.activePort;
+        // gt-number maps a cleared Port input to null; Jackson then binds null to int 0 and
+        // changePort(0) takes down the UI listener. Keep the active listen port instead.
+        if (postData.port === null || typeof postData.port !== 'number' || postData.port <= 0) {
+          postData.port = $scope.activePort;
+        }
+        var changingPort = postData.port !== $scope.activePort;
         var previousActivePort = $scope.activePort;
         var changingHttps = $scope.config.https !== $scope.activeHttps;
         $http.post('backend/admin/web', postData)

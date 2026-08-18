@@ -21,6 +21,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.google.common.base.Strings;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -40,7 +41,6 @@ import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ImmutableTraceQuery;
 import org.glowroot.common2.repo.TraceRepository;
 import org.glowroot.common2.repo.TraceRepository.TraceQuery;
-import org.glowroot.ui.TransactionJsonService.TransactionDataRequest;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
@@ -69,26 +69,14 @@ class TracePointJsonService {
 
     @GET(path = "/backend/transaction/trace-count", permission = "agent:transaction:traces")
     String getTransactionTraceCount(@BindAgentRollupId String agentRollupId,
-            @BindRequest TransactionDataRequest request) throws Exception {
-        TraceQuery query = ImmutableTraceQuery.builder()
-                .transactionType(request.transactionType())
-                .transactionName(request.transactionName())
-                .from(request.from())
-                .to(request.to())
-                .build();
-        long traceCount = traceRepository.readSlowCount(agentRollupId, query).toCompletableFuture().get();
-        boolean includeActiveTraces = shouldIncludeActiveTraces(request);
-        if (includeActiveTraces) {
-            traceCount += liveTraceRepository.getMatchingTraceCount(request.transactionType(),
-                    request.transactionName());
-        }
-        return Long.toString(traceCount);
+            @BindRequest TracePointRequest request) throws Exception {
+        return Long.toString(getTraceCount(TraceKind.SLOW, agentRollupId, request));
     }
 
     @GET(path = "/backend/error/trace-count", permission = "agent:error:traces")
     String getErrorTraceCount(@BindAgentRollupId String agentRollupId,
-            @BindRequest TraceQuery query) throws Exception {
-        return Long.toString(traceRepository.readErrorCount(agentRollupId, query).toCompletableFuture().get());
+            @BindRequest TracePointRequest request) throws Exception {
+        return Long.toString(getTraceCount(TraceKind.ERROR, agentRollupId, request));
     }
 
     @GET(path = "/backend/transaction/points", permission = "agent:transaction:traces")
@@ -103,14 +91,52 @@ class TracePointJsonService {
         return getPoints(TraceKind.ERROR, agentRollupId, request);
     }
 
-    private boolean shouldIncludeActiveTraces(TransactionDataRequest request) {
+    private long getTraceCount(TraceKind traceKind, String agentRollupId, TracePointRequest request)
+            throws Exception {
+        TraceQuery query = toTraceQuery(request);
+        TracePointFilter filter = toTracePointFilter(request);
+        if (!hasTracePointFilters(filter)) {
+            long traceCount;
+            if (traceKind == TraceKind.SLOW) {
+                traceCount = traceRepository.readSlowCount(agentRollupId, query).toCompletableFuture()
+                        .get();
+                if (shouldIncludeActiveTraces(query)) {
+                    traceCount += liveTraceRepository.getMatchingTraceCount(request.transactionType(),
+                            request.transactionName());
+                }
+            } else {
+                traceCount = traceRepository.readErrorCount(agentRollupId, query).toCompletableFuture()
+                        .get();
+            }
+            return traceCount;
+        }
+        // Same collection + dedupe as /points so tab count matches the chart (#725)
+        return new Handler(traceKind, agentRollupId, query, filter, 0).count();
+    }
+
+    private boolean shouldIncludeActiveTraces(TraceQuery query) {
         long currentTimeMillis = clock.currentTimeMillis();
-        return (request.to() == 0 || request.to() > currentTimeMillis)
-                && request.from() < currentTimeMillis;
+        return (query.to() == 0 || query.to() > currentTimeMillis)
+                && query.from() < currentTimeMillis;
     }
 
     private String getPoints(TraceKind traceKind, String agentRollupId, TracePointRequest request)
             throws Exception {
+        TraceQuery query = toTraceQuery(request);
+        TracePointFilter filter = toTracePointFilter(request);
+        return new Handler(traceKind, agentRollupId, query, filter, request.limit()).handle();
+    }
+
+    private static TraceQuery toTraceQuery(TracePointRequest request) {
+        return ImmutableTraceQuery.builder()
+                .transactionType(request.transactionType())
+                .transactionName(request.transactionName())
+                .from(request.from())
+                .to(request.to())
+                .build();
+    }
+
+    private static TracePointFilter toTracePointFilter(TracePointRequest request) {
         double durationMillisLow = request.durationMillisLow();
         long durationNanosLow = Math.round(durationMillisLow * NANOSECONDS_PER_MILLISECOND);
         Long durationNanosHigh = null;
@@ -118,13 +144,7 @@ class TracePointJsonService {
         if (durationMillisHigh != null) {
             durationNanosHigh = Math.round(durationMillisHigh * NANOSECONDS_PER_MILLISECOND);
         }
-        TraceQuery query = ImmutableTraceQuery.builder()
-                .transactionType(request.transactionType())
-                .transactionName(request.transactionName())
-                .from(request.from())
-                .to(request.to())
-                .build();
-        TracePointFilter filter = ImmutableTracePointFilter.builder()
+        return ImmutableTracePointFilter.builder()
                 .durationNanosLow(durationNanosLow)
                 .durationNanosHigh(durationNanosHigh)
                 .headlineComparator(request.headlineComparator())
@@ -137,7 +157,16 @@ class TracePointJsonService {
                 .attributeValueComparator(request.attributeValueComparator())
                 .attributeValue(request.attributeValue())
                 .build();
-        return new Handler(traceKind, agentRollupId, query, filter, request.limit()).handle();
+    }
+
+    private static boolean hasTracePointFilters(TracePointFilter filter) {
+        return filter.durationNanosLow() > 0
+                || filter.durationNanosHigh() != null
+                || !Strings.isNullOrEmpty(filter.headline())
+                || !Strings.isNullOrEmpty(filter.errorMessage())
+                || !Strings.isNullOrEmpty(filter.user())
+                || !Strings.isNullOrEmpty(filter.attributeName())
+                || !Strings.isNullOrEmpty(filter.attributeValue());
     }
 
     private class Handler {
@@ -158,6 +187,21 @@ class TracePointJsonService {
         }
 
         private String handle() throws Exception {
+            CollectedPoints collected = collect();
+            int traceExpirationHours = configRepository.getStorageConfig().traceExpirationHours();
+            boolean expired = collected.points.isEmpty() && collected.activeTracePoints.isEmpty()
+                    && traceExpirationHours != 0 && query
+                    .to() < clock.currentTimeMillis() - HOURS.toMillis(traceExpirationHours);
+            return writeResponse(collected.points, collected.activeTracePoints,
+                    collected.limitExceeded, expired);
+        }
+
+        private long count() throws Exception {
+            CollectedPoints collected = collect();
+            return collected.points.size() + collected.activeTracePoints.size();
+        }
+
+        private CollectedPoints collect() throws Exception {
             boolean captureActiveTracePoints = shouldCaptureActiveTracePoints();
             List<TracePoint> activeTracePoints = Lists.newArrayList();
             long captureTime = 0;
@@ -175,10 +219,7 @@ class TracePointJsonService {
                     getStoredAndPendingPoints(captureTime, captureActiveTracePoints);
             List<TracePoint> points = Lists.newArrayList(queryResult.records());
             removeDuplicatesBetweenActiveAndNormalTracePoints(activeTracePoints, points);
-            int traceExpirationHours = configRepository.getStorageConfig().traceExpirationHours();
-            boolean expired = points.isEmpty() && traceExpirationHours != 0 && query
-                    .to() < clock.currentTimeMillis() - HOURS.toMillis(traceExpirationHours);
-            return writeResponse(points, activeTracePoints, queryResult.moreAvailable(), expired);
+            return new CollectedPoints(points, activeTracePoints, queryResult.moreAvailable());
         }
 
         private boolean shouldCaptureActiveTracePoints() {
@@ -327,6 +368,19 @@ class TracePointJsonService {
         }
     }
 
+    private static class CollectedPoints {
+        private final List<TracePoint> points;
+        private final List<TracePoint> activeTracePoints;
+        private final boolean limitExceeded;
+
+        private CollectedPoints(List<TracePoint> points, List<TracePoint> activeTracePoints,
+                boolean limitExceeded) {
+            this.points = points;
+            this.activeTracePoints = activeTracePoints;
+            this.limitExceeded = limitExceeded;
+        }
+    }
+
     // same as TracePointQuery but with milliseconds instead of nanoseconds
     @Value.Immutable
     public abstract static class TracePointRequest {
@@ -335,7 +389,10 @@ class TracePointJsonService {
         public abstract @Nullable String transactionName();
         public abstract long from();
         public abstract long to();
-        public abstract double durationMillisLow();
+        @Value.Default
+        public double durationMillisLow() {
+            return 0;
+        }
         public abstract @Nullable Double durationMillisHigh();
         public abstract @Nullable StringComparator headlineComparator();
         public abstract @Nullable String headline();
@@ -347,6 +404,10 @@ class TracePointJsonService {
         public abstract @Nullable StringComparator attributeValueComparator();
         public abstract @Nullable String attributeValue();
 
-        public abstract int limit();
+        // 0 means no limit (used by filtered trace-count)
+        @Value.Default
+        public int limit() {
+            return 0;
+        }
     }
 }

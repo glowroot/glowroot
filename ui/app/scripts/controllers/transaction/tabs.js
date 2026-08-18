@@ -28,6 +28,7 @@ glowroot.controller('TransactionTabCtrl', [
   function ($scope, $location, $http, $timeout, $filter, queryStrings, httpErrors, shortName) {
 
     var concurrentUpdateCount = 0;
+    var traceCountFromChart = false;
 
     // using $watch instead of $watchGroup because $watchGroup has confusing behavior regarding oldValues
     // (see https://github.com/angular/angular.js/pull/12643)
@@ -80,13 +81,20 @@ glowroot.controller('TransactionTabCtrl', [
 
     var initialStateChangeSuccess = true;
     $scope.$on('gtStateChangeSuccess', function () {
-      if ($scope.range.last && !initialStateChangeSuccess) {
+      if (!initialStateChangeSuccess) {
         $timeout(function () {
           // slight delay to de-prioritize summaries data request
+          // Always refresh: filter-only URL changes must update the tab count (#725)
           updateTabBarData();
         }, 100);
       }
       initialStateChangeSuccess = false;
+    });
+
+    // Chart points are the source of truth when under the result limit
+    $scope.$on('gtDisplayedTraceCount', function (event, count) {
+      traceCountFromChart = true;
+      $scope.traceCount = count;
     });
 
     function updateTabBarData(autoRefresh) {
@@ -97,6 +105,8 @@ glowroot.controller('TransactionTabCtrl', [
         $scope.traceCount = 0;
         return;
       }
+      traceCountFromChart = false;
+      var search = $location.search();
       var query = {
         agentRollupId: $scope.agentRollupId,
         transactionType: $scope.transactionType,
@@ -104,6 +114,31 @@ glowroot.controller('TransactionTabCtrl', [
         from: $scope.range.chartFrom,
         to: $scope.range.chartTo
       };
+      // Forward Slow/Error Traces filters so the tab count matches filtered points (#725).
+      // Location uses custom-attribute-* for bookmarks; the API expects attribute-* (see points query).
+      [
+        'duration-millis-low',
+        'duration-millis-high',
+        'headline-comparator',
+        'headline',
+        'error-message-comparator',
+        'error-message',
+        'user-comparator',
+        'user'
+      ].forEach(function (key) {
+        if (search[key]) {
+          query[key] = search[key];
+        }
+      });
+      if (search['custom-attribute-name']) {
+        query.attributeName = search['custom-attribute-name'];
+      }
+      if (search['custom-attribute-value-comparator']) {
+        query.attributeValueComparator = search['custom-attribute-value-comparator'];
+      }
+      if (search['custom-attribute-value']) {
+        query.attributeValue = search['custom-attribute-value'];
+      }
       if (autoRefresh) {
         query.autoRefresh = true;
       }
@@ -112,6 +147,10 @@ glowroot.controller('TransactionTabCtrl', [
           .then(function (response) {
             concurrentUpdateCount--;
             if (concurrentUpdateCount) {
+              return;
+            }
+            // Chart emit wins when under limit (avoids stale/unfiltered race with this request)
+            if (traceCountFromChart) {
               return;
             }
             $scope.traceCount = response.data;

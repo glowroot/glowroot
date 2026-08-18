@@ -315,6 +315,10 @@ class AdminJsonService {
             EmbeddedWebConfigDto configDto =
                     mapper.readValue(content, ImmutableEmbeddedWebConfigDto.class);
             EmbeddedWebConfig config = configDto.convert();
+            // null JSON "port" becomes 0 for primitive int; refuse before changePort(0)
+            if (config.port() <= 0) {
+                throw new JsonServiceException(BAD_REQUEST, "port must be a positive integer");
+            }
             if (config.https() && !httpServer.getHttps()) {
                 // validate certificate and private key exist and are valid
                 File certificateFile = getConfFile("ui-cert.pem");

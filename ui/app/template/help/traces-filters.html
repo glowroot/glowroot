@@ -1,0 +1,27 @@
+<div style="margin: 10px; width: 36em; max-width: 90vw; box-sizing: border-box; word-wrap: break-word; overflow-wrap: break-word; text-align: left;">
+  <div><strong>How Slow / Error trace filters work</strong></div>
+  <p style="margin: 6px 0 8px;">
+    Filters apply only after <em>Refresh</em>. They narrow traces on this chart and the tab count;
+    they do <em>not</em> change average / percentiles / throughput.
+  </p>
+  <div style="display: flex; flex-wrap: wrap; gap: 0 1.5em;">
+    <ul style="margin: 0; padding-left: 1.2em; flex: 1 1 15em; box-sizing: border-box;">
+      <li><strong>Response time</strong> — duration (ms): greater / less / between.</li>
+      <li><strong>Headline/URL</strong> — stored headline (often URL or txn text).
+        Comparators: begins, equals, ends, contains, does not contain.
+        Not full query-string search unless it is in the headline.</li>
+      <li ng-if="showErrorMessageFilter"><strong>Error message</strong> — error text
+        (same comparators as Headline/URL).</li>
+    </ul>
+    <ul style="margin: 0; padding-left: 1.2em; flex: 1 1 15em; box-sizing: border-box;">
+      <li><strong>User</strong> — user on the trace (servlet plugin user attribute).</li>
+      <li><strong>Attribute name / value</strong> — custom / session attributes.
+        Dropdown only if names exist for this transaction type.</li>
+      <li><strong>Result limit</strong> — max chart points (slowest matches).
+        Over limit → warning; tab count still shows matching total.</li>
+    </ul>
+  </div>
+  <p style="margin: 8px 0 0;">
+    <em>Clear criteria</em> resets all filters and refreshes.
+  </p>
+</div>
