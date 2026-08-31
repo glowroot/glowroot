@@ -38,6 +38,8 @@ public class UiSandboxMain {
     // embedded UiSandboxMain that holds a lock on target/ (and optionally -Dglowroot.agent.port=4001).
     private static final boolean useGlowrootCentral =
             Boolean.getBoolean("glowroot.sandbox.central");
+    // Docker / public-facing demo: facsimile Web traffic + UI banner (see NestableCallAspect).
+    private static final boolean demo = Boolean.getBoolean("glowroot.demo");
 
     private UiSandboxMain() {}
 
@@ -50,9 +52,10 @@ public class UiSandboxMain {
         }
         File configFile = new File(testDir, "config.json");
         if (!configFile.exists()) {
+            String defaultType = demo ? "Web" : "Sandbox";
             Files.write(
                     "{\"transactions\":{\"profilingIntervalMillis\":100},"
-                            + "\"ui\":{\"defaultTransactionType\":\"Sandbox\"}}",
+                            + "\"ui\":{\"defaultTransactionType\":\"" + defaultType + "\"}}",
                     configFile, UTF_8);
         }
         if (useJavaagent && useCentral) {
@@ -74,21 +77,33 @@ public class UiSandboxMain {
     public static class GenerateTraces implements AppUnderTest {
         @Override
         public void executeApp() throws Exception {
-            startDeadlockingThreads();
-            startDeadlockingThreads();
+            if (!demo) {
+                startDeadlockingThreads();
+                startDeadlockingThreads();
+            }
             while (true) {
                 Stopwatch stopwatch = Stopwatch.createStarted();
                 while (stopwatch.elapsed(SECONDS) < 300) {
-                    // a very short trace that will have an empty profile
-                    new NestableCall(1, 10, 100).execute();
-                    // a trace that will have profile tree with only a single leaf
-                    new NestableCall(1, 100, 100).execute();
-                    new NestableCall(new NestableCall(10, 50, 5000), 20, 50, 5000).execute();
-                    new NestableCall(new NestableCall(5, 50, 5000), 5, 50, 5000).execute();
-                    new NestableCall(new NestableCall(10, 50, 5000), 10, 50, 5000).execute();
-                    new NestableCall(new NestableCall(20, 50, 5000), 5, 50, 5000).execute();
+                    if (demo) {
+                        // Shallow facsimile requests (readable entries, not UI-stress depth).
+                        new NestableCall(2, 40, 0).execute();
+                        new NestableCall(new NestableCall(2, 30, 0), 3, 40, 0).execute();
+                        new NestableCall(4, 25, 0).execute();
+                        new NestableCall(1, 15, 0).execute();
+                    } else {
+                        // a very short trace that will have an empty profile
+                        new NestableCall(1, 10, 100).execute();
+                        // a trace that will have profile tree with only a single leaf
+                        new NestableCall(1, 100, 100).execute();
+                        new NestableCall(new NestableCall(10, 50, 5000), 20, 50, 5000).execute();
+                        new NestableCall(new NestableCall(5, 50, 5000), 5, 50, 5000).execute();
+                        new NestableCall(new NestableCall(10, 50, 5000), 10, 50, 5000).execute();
+                        new NestableCall(new NestableCall(20, 50, 5000), 5, 50, 5000).execute();
+                    }
                 }
-                new NestableCall(new NestableCall(5000, 50, 5000), 100, 50, 5000).execute();
+                if (!demo) {
+                    new NestableCall(new NestableCall(5000, 50, 5000), 100, 50, 5000).execute();
+                }
                 SECONDS.sleep(1);
             }
         }

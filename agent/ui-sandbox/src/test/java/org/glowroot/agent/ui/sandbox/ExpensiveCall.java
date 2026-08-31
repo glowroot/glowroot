@@ -134,7 +134,27 @@ public class ExpensiveCall {
     }
 
     public String getTraceEntryMessage() {
+        if (Boolean.getBoolean("glowroot.demo")) {
+            return demoTraceEntryMessage();
+        }
         return getTraceEntryMessage(random.nextInt(5) > 0);
+    }
+
+    private static final String[] DEMO_ENTRY_MESSAGES = {
+            "jdbc execute",
+            "http GET http://inventory-service/api/stock",
+            "http POST http://payments/v1/charge",
+            "redis GET session",
+            "validate OrderRequest",
+            "render template checkout",
+            "call PricingService.quote",
+            "call ShippingService.estimate",
+            "cache PUT product-catalog",
+            "send email order-confirmation"
+    };
+
+    private static String demoTraceEntryMessage() {
+        return DEMO_ENTRY_MESSAGES[random.nextInt(DEMO_ENTRY_MESSAGES.length)];
     }
 
     // this is just to prevent jvm from optimizing away for the loop below

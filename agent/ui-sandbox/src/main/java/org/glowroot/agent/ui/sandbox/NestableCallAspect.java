@@ -37,7 +37,25 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class NestableCallAspect {
 
+    // When true (Docker demo / -Dglowroot.demo=true), emit facsimile Web traffic instead of the
+    // intentional UI-stress Sandbox noise (random letter strings, wrapping stress tests, etc.).
+    private static final boolean DEMO = Boolean.getBoolean("glowroot.demo");
+
     private static final ImmutableList<String> USERS = ImmutableList.of("able", "baker", "charlie");
+    private static final ImmutableList<String> DEMO_USERS =
+            ImmutableList.of("alice", "bob", "carol", "dave", "erin");
+    private static final ImmutableList<String> DEMO_TRANSACTIONS = ImmutableList.of(
+            "GET /",
+            "GET /products",
+            "GET /products/*",
+            "GET /api/orders",
+            "GET /api/orders/*",
+            "POST /api/orders",
+            "GET /api/customers/*",
+            "POST /api/login",
+            "GET /checkout",
+            "POST /api/payments",
+            "GET /health");
 
     private static final AtomicInteger counter = new AtomicInteger();
 
@@ -48,6 +66,62 @@ public class NestableCallAspect {
         private static final Random random = new Random();
         @OnBefore
         public static TraceEntry onBefore(OptionalThreadContext context) {
+            if (DEMO) {
+                return onBeforeDemo(context);
+            }
+            return onBeforeSandbox(context);
+        }
+        @OnAfter
+        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
+            if (DEMO) {
+                double value = random.nextDouble();
+                if (value < 0.97) {
+                    traceEntry.end();
+                } else {
+                    traceEntry.endWithError("Payment gateway timeout",
+                            new IllegalStateException("Simulated downstream failure"));
+                }
+                return;
+            }
+            double value = random.nextDouble();
+            if (value < 0.8) {
+                traceEntry.end();
+            } else if (value < 0.9) {
+                traceEntry.endWithError("root entry randomized error", new IllegalStateException());
+            } else {
+                String reallyLongErrorMessage = Strings.repeat("abcdefghijklmnopqrstuvwxyz ", 100);
+                traceEntry.endWithError(reallyLongErrorMessage, new IllegalStateException());
+            }
+        }
+
+        private static TraceEntry onBeforeDemo(OptionalThreadContext context) {
+            int count = counter.getAndIncrement();
+            String transactionName =
+                    DEMO_TRANSACTIONS.get(random.nextInt(DEMO_TRANSACTIONS.size()));
+            if (transactionName.endsWith("/*")) {
+                transactionName = transactionName.substring(0, transactionName.length() - 1)
+                        + (1000 + random.nextInt(9000));
+            }
+            String transactionType = count % 12 == 0 ? "Background" : "Web";
+            if (transactionType.equals("Background")) {
+                transactionName = "Scheduled / inventory-sync";
+            }
+            TraceEntry traceEntry = context.startTransaction(transactionType, transactionName,
+                    MessageSupplier.create(transactionName), timerName);
+            context.setTransactionUser(DEMO_USERS.get(count % DEMO_USERS.size()),
+                    Priority.USER_PLUGIN);
+            if (random.nextBoolean()) {
+                context.addTransactionAttribute("http.method",
+                        transactionName.startsWith("POST") ? "POST" : "GET");
+            }
+            if (random.nextBoolean()) {
+                context.addTransactionAttribute("customer.tier",
+                        random.nextBoolean() ? "standard" : "premium");
+            }
+            return traceEntry;
+        }
+
+        private static TraceEntry onBeforeSandbox(OptionalThreadContext context) {
             int count = counter.getAndIncrement();
             String transactionName;
             String headline;
@@ -97,18 +171,6 @@ public class NestableCallAspect {
                                 + " a b c d e f g h i j k l m n o p q r s t u v w x y z");
             }
             return traceEntry;
-        }
-        @OnAfter
-        public static void onAfter(@BindTraveler TraceEntry traceEntry) {
-            double value = random.nextDouble();
-            if (value < 0.8) {
-                traceEntry.end();
-            } else if (value < 0.9) {
-                traceEntry.endWithError("root entry randomized error", new IllegalStateException());
-            } else {
-                String reallyLongErrorMessage = Strings.repeat("abcdefghijklmnopqrstuvwxyz ", 100);
-                traceEntry.endWithError(reallyLongErrorMessage, new IllegalStateException());
-            }
         }
     }
 

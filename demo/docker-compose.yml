@@ -1,0 +1,12 @@
+services:
+  demo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    volumes:
+      - demo-data:/opt/glowroot-demo/target
+
+volumes:
+  demo-data:

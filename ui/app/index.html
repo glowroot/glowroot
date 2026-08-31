@@ -80,6 +80,12 @@
 <![endif]-->
 <!-- the outer div is needed to fix IE11 flex bug, see https://github.com/philipwalton/flexbugs#flexbug-3 -->
 <div style="display: flex; flex-direction: column;">
+  <div class="gt-demo-banner ng-cloak"
+       ng-if="layout.demo"
+       role="status">
+    <strong>Demo</strong>
+    — synthetic sample traffic for trying Glowroot. Not a real application.
+  </div>
   <nav class="navbar navbar-expand-md navbar-dark gt-navbar py-0 align-items-stretch">
     <div class="container align-items-stretch">
       <div class="navbar-brand align-items-center"

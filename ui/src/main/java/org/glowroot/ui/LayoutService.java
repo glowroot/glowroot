@@ -52,6 +52,8 @@ class LayoutService {
 
     private static final Logger logger = LoggerFactory.getLogger(LayoutService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
+    // Docker / public demo (-Dglowroot.demo=true): show DEMO banner in the UI.
+    private static final boolean DEMO = Boolean.getBoolean("glowroot.demo");
 
     private final boolean central;
     private final boolean offlineViewer;
@@ -255,6 +257,7 @@ class LayoutService {
         return ImmutableLayout.builder()
                 .central(central)
                 .offlineViewer(offlineViewer)
+                .demo(DEMO)
                 .glowrootVersion(version)
                 .loginEnabled(true)
                 .gaugeCollectionIntervalMillis(0)
@@ -295,6 +298,7 @@ class LayoutService {
         return ImmutableLayout.builder()
                 .central(central)
                 .offlineViewer(offlineViewer)
+                .demo(DEMO)
                 .glowrootVersion(version)
                 .loginEnabled(!offlineViewer && (configRepository.namedUsersExist().toCompletableFuture().join()
                         || !configRepository.getLdapConfig().toCompletableFuture().join().host().isEmpty()))
@@ -451,6 +455,7 @@ class LayoutService {
 
         abstract boolean central();
         abstract boolean offlineViewer();
+        abstract boolean demo();
         abstract String glowrootVersion();
         abstract boolean loginEnabled();
         abstract ImmutableList<RollupConfig> rollupConfigs();

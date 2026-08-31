@@ -40,11 +40,19 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class ExpensiveCallAspect {
 
+    private static final boolean DEMO = Boolean.getBoolean("glowroot.demo");
+
     private static final Random random = new Random();
     private static final Exception nestedCause =
             new IllegalArgumentException("A cause with a different stack trace");
     private static final Exception cause =
             new IllegalStateException("A cause with a different stack trace", nestedCause);
+    private static final ImmutableList<String> DEMO_SQL = ImmutableList.of(
+            "SELECT id, status, total FROM orders WHERE customer_id = ?",
+            "SELECT id, name, price FROM products WHERE category = ?",
+            "INSERT INTO order_items (order_id, sku, qty) VALUES (?, ?, ?)",
+            "UPDATE customers SET last_login = ? WHERE id = ?",
+            "SELECT COUNT(*) FROM inventory WHERE warehouse_id = ?");
 
     @Pointcut(className = "org.glowroot.agent.ui.sandbox.ExpensiveCall", methodName = "execute0",
             methodParameterTypes = {}, timerName = "expensive 0")
@@ -57,19 +65,26 @@ public class ExpensiveCallAspect {
             // detail
             QueryMessageSupplier messageSupplier =
                     getQueryMessageSupplierWithDetail(expensiveCall, expensiveCallInvoker);
-            char randomChar = (char) ('a' + random.nextInt(26));
             String queryText;
-            if (random.nextBoolean()) {
-                queryText = "this is a short query " + randomChar;
+            String queryType;
+            if (DEMO) {
+                queryType = "SQL";
+                queryText = DEMO_SQL.get(random.nextInt(DEMO_SQL.size()));
             } else {
-                queryText = "this is a long query " + randomChar
-                        + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz"
-                        + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz"
-                        + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz"
-                        + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz"
-                        + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz";
+                queryType = "EQL";
+                char randomChar = (char) ('a' + random.nextInt(26));
+                if (random.nextBoolean()) {
+                    queryText = "this is a short query " + randomChar;
+                } else {
+                    queryText = "this is a long query " + randomChar
+                            + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz"
+                            + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz"
+                            + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz"
+                            + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz"
+                            + " abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz";
+                }
             }
-            return context.startQueryEntry("EQL", queryText, messageSupplier, timerName);
+            return context.startQueryEntry(queryType, queryText, messageSupplier, timerName);
         }
         @OnAfter
         public static void onAfter(ThreadContext context, @BindTraveler QueryEntry query) {
@@ -277,7 +292,7 @@ public class ExpensiveCallAspect {
 
     private static TraceEntry onBeforeInternal(ThreadContext context, Object expensiveCall,
             ExpensiveCallInvoker expensiveCallInvoker, TimerName timerName) {
-        if (random.nextDouble() < 0.05) {
+        if (!DEMO && random.nextDouble() < 0.05) {
             return null;
         }
         MessageSupplier messageSupplier =
@@ -287,6 +302,18 @@ public class ExpensiveCallAspect {
 
     private static void onAfterInternal(ThreadContext context, TraceEntry traceEntry, int num) {
         double value = random.nextDouble();
+        if (DEMO) {
+            if (traceEntry == null) {
+                return;
+            }
+            if (value < 0.98) {
+                traceEntry.end();
+            } else {
+                traceEntry.endWithError("Downstream service unavailable",
+                        new IllegalStateException("inventory-service timed out"));
+            }
+            return;
+        }
         if (traceEntry == null) {
             if (value < 0.5) {
                 context.addErrorEntry(new IllegalStateException(
@@ -318,6 +345,9 @@ public class ExpensiveCallAspect {
         return new QueryMessageSupplier() {
             @Override
             public QueryMessage get() {
+                if (DEMO) {
+                    return QueryMessage.create("jdbc query: ", "");
+                }
                 Map<String, ?> detail =
                         ImmutableMap.of("attr1", "value1\nwith newline", "attr2", "value2", "attr3",
                                 ImmutableMap.of("attr31",
