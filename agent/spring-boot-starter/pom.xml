@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.glowroot</groupId>
+    <artifactId>glowroot-parent</artifactId>
+    <version>0.14.8-beta.5-SNAPSHOT</version>
+    <relativePath>../..</relativePath>
+  </parent>
+
+  <artifactId>glowroot-spring-boot-starter</artifactId>
+
+  <name>Glowroot Spring Boot Starter</name>
+  <description>
+    Marker artifact for Spring Boot apps. Glowroot still requires -javaagent on
+    org.glowroot:glowroot-agent — see README.md in this module.
+  </description>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>${project.basedir}</directory>
+        <includes>
+          <include>README.md</include>
+        </includes>
+        <targetPath>META-INF</targetPath>
+      </resource>
+    </resources>
+  </build>
+</project>
