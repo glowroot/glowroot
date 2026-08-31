@@ -82,6 +82,7 @@
     <module>agent/ui-sandbox</module>
     <module>agent/dist-maven-plugin</module>
     <module>agent/dist</module>
+    <module>agent/spring-boot-starter</module>
   </modules>
 
   <scm>
