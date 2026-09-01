@@ -1,0 +1,56 @@
+# Organization context (copy and customize)
+
+1. Copy this file to `ORG-CONTEXT.md` in the same folder.
+2. Replace every `{{PLACEHOLDER}}` with your environment.
+3. The skill reads `ORG-CONTEXT.md` when giving install or deployment advice.
+
+Do not commit `ORG-CONTEXT.md` if it contains internal paths or hostnames.
+
+---
+
+## Organization
+
+| Field | Your value |
+|-------|------------|
+| `{{ORG_NAME}}` | Example Corp |
+| `{{TEAM_NAME}}` | Platform / Java team |
+
+## Applications
+
+| Field | Your value |
+|-------|------------|
+| `{{PRIMARY_APP_NAME}}` | main-web-app |
+| `{{PRIMARY_STACK}}` | Java 17, Tomcat 9 |
+| `{{SECONDARY_APP_NAME}}` | api-service (optional) |
+| `{{SECONDARY_STACK}}` | Java 17, Spring Boot 3 (optional) |
+
+## Install paths
+
+| Field | Your value |
+|-------|------------|
+| `{{INSTALL_PATH_PROD}}` | /opt/glowroot or C:\tools\glowroot |
+| `{{INSTALL_PATH_DEV}}` | same as prod or per-developer path |
+| `{{JVM_ARG_EXAMPLE}}` | -javaagent:{{INSTALL_PATH_PROD}}/glowroot.jar |
+
+## Runtime defaults
+
+| Field | Your value |
+|-------|------------|
+| `{{DEFAULT_MODE}}` | embedded |
+| `{{CENTRAL_GRPC_ADDRESS}}` | central.example.com:8181 (if using Central) |
+| `{{OS_PRIMARY}}` | Windows / Linux / mixed |
+| `{{RECOMMENDED_VERSION}}` | v0.14.7 or latest stable from Releases |
+
+## Local dev workflow
+
+| Field | Your value |
+|-------|------------|
+| `{{HOW_DEVS_START_APP}}` | IntelliJ Run Config / mvn spring-boot:run / Tomcat setenv.bat |
+| `{{MULTI_JVM_LOCALLY}}` | yes / no |
+| `{{AGENT_ID_PREFIX}}` | myorg- |
+
+## Notes (free text)
+
+{{ORG_NOTES}}
+
+Example: "Monolith on Tomcat in prod; microservices only in dev. Devs use logs only today."
