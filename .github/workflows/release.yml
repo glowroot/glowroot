@@ -59,8 +59,7 @@ jobs:
           VERSION: ${{ steps.set-version.outputs.release-version }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          sed -ri "s/glowroot-[0-9]+.[0-9]+.[0-9]+(-beta(\.[0-9]+)?)?-dist.zip/glowroot-$VERSION-dist.zip/g" README.md
-          sed -ri "s#https://github.com/glowroot/glowroot/releases/download/v[0-9]+.[0-9]+.[0-9]+(-beta(\.[0-9]+)?)?/#https://github.com/glowroot/glowroot/releases/download/v$VERSION/#" README.md
+          # README quick start uses releases/latest (no pinned zip URL) — wiki sed below still runs on stable releases.
 
           mvn versions:set -DgenerateBackupPoms=false -DnewVersion=$VERSION
 
