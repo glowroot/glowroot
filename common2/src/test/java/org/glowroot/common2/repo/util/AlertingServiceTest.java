@@ -166,6 +166,8 @@ public class AlertingServiceTest {
                 TRANSACTION_X_PERCENTILE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000, CassandraProfile.collector).toCompletableFuture().join();
         // then
         assertThat(mailService.getMessage()).isNotNull();
+        assertThat(mailService.getMessage().getSubject())
+                .isEqualTo("[Glowroot] tt - 1 millisecond - triggered");
         assertThat(((String) mailService.getMessage().getContent()).trim())
                 .isEqualTo("95th percentile over the last 1 minute is greater than or equal to the"
                         + " alert threshold of 1 millisecond.");
@@ -201,6 +203,9 @@ public class AlertingServiceTest {
                 UPPER_BOUND_GAUGE_ALERT_CONFIG.getCondition().getMetricCondition(), 120000, CassandraProfile.collector).toCompletableFuture().join();
         // then
         assertThat(mailService.getMessage()).isNotNull();
+        assertThat(mailService.getMessage().getSubject())
+                .isEqualTo("[Glowroot] java.lang / GarbageCollector / ConcurrentMarkSweep"
+                        + " / CollectionTime - 500 milliseconds per second - triggered");
         assertThat(((String) mailService.getMessage().getContent()).trim())
                 .isEqualTo("Average over the last 1 minute is greater than or equal to the alert"
                         + " threshold of 500 milliseconds per second.");
