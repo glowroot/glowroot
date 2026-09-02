@@ -285,17 +285,22 @@ public class AlertingService {
         }
         Gauge gauge = null;
         StringBuilder message = new StringBuilder();
+        String thresholdText;
         if (metric.equals("transaction:x-percentile")) {
             checkState(metricCondition.hasPercentile());
             message.append(
                     Utils.getPercentileWithSuffix(metricCondition.getPercentile().getValue()));
             message.append(" percentile");
+            thresholdText = AlertingService.getWithUnit(metricCondition.getThreshold(), "millisecond");
         } else if (metric.equals("transaction:average")) {
             message.append("Average");
+            thresholdText = AlertingService.getWithUnit(metricCondition.getThreshold(), "millisecond");
         } else if (metric.equals("transaction:count")) {
             message.append("Transaction count");
+            thresholdText = Double.toString(metricCondition.getThreshold());
         } else if (metric.equals("error:rate")) {
             message.append("Error rate");
+            thresholdText = metricCondition.getThreshold() + "percent";
         } else if (metric.equals("error:count")) {
             String errorMessageFilter = metricCondition.getErrorMessageFilter();
             if (errorMessageFilter.isEmpty()) {
@@ -308,11 +313,14 @@ public class AlertingService {
                 message.append(errorMessageFilter);
                 message.append("\"");
             }
+            thresholdText = Double.toString(metricCondition.getThreshold());
         } else if (metric.startsWith("gauge:")) {
             String gaugeName = metric.substring("gauge:".length());
             gauge = Gauges.getGauge(gaugeName);
             subject.append(gauge.display());
             message.append("Average");
+            thresholdText = getGaugeThresholdText(metricCondition.getThreshold(),
+                    checkNotNull(gauge).unit());
         } else {
             throw new IllegalStateException("Unexpected metric: " + metric);
         }
@@ -322,23 +330,13 @@ public class AlertingService {
         } else {
             message.append(getPreUpperBoundText(ok));
         }
-        if (metric.equals("transaction:x-percentile") || metric.equals("transaction:average")) {
-            message.append(
-                    AlertingService.getWithUnit(metricCondition.getThreshold(), "millisecond"));
-        } else if (metric.equals("transaction:count")) {
-            message.append(metricCondition.getThreshold());
-        } else if (metric.equals("error:rate")) {
-            message.append(metricCondition.getThreshold());
-            message.append("percent");
-        } else if (metric.equals("error:count")) {
-            message.append(metricCondition.getThreshold());
-        } else if (metric.startsWith("gauge:")) {
-            message.append(getGaugeThresholdText(metricCondition.getThreshold(),
-                    checkNotNull(gauge).unit()));
-        } else {
-            throw new IllegalStateException("Unexpected metric: " + metric);
-        }
+        message.append(thresholdText);
         message.append(".\n\n");
+        // threshold in subject (same for triggered/resolved — keeps Gmail threading above)
+        if (subject.length() > 0) {
+            subject.append(" - ");
+        }
+        subject.append(thresholdText);
         sendNotification(centralDisplay, agentRollupId, agentRollupDisplay, alertConfig, endTime,
                 subject.toString(), message.toString(), ok);
     }
