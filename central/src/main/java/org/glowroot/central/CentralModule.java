@@ -890,11 +890,8 @@ public class CentralModule {
             configFileName = "datastax-driver.conf";
         }
         CqlSessionBuilder builder = CqlSession.builder()
-                .addContactPoints(
-                        centralConfig.cassandraContactPoint()
-                                .stream()
-                                .map(addr -> new InetSocketAddress(addr, centralConfig.cassandraPort()))
-                                .collect(Collectors.toList()))
+                .addContactPoints(cassandraContactPoints(centralConfig.cassandraContactPoint(),
+                        centralConfig.cassandraPort()))
                 // cassandra driver v4.x requires localdatacenter name to be defined
                 // see https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/load_balancing/
                 .withLocalDatacenter(centralConfig.cassandraLocalDatacenter())
@@ -914,6 +911,13 @@ public class CentralModule {
             }
         }
         return builder;
+    }
+
+    // unresolved: DataStax re-resolves DNS on reconnect
+    static List<InetSocketAddress> cassandraContactPoints(List<String> hosts, int port) {
+        return hosts.stream()
+                .map(addr -> InetSocketAddress.createUnresolved(addr, port))
+                .collect(Collectors.toList());
     }
 
     private static String verifyCassandraVersion(Session session) throws Exception {
