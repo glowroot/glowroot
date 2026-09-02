@@ -50,10 +50,14 @@ class HeapHistogramTool {
         return HeapHistogramProcessor.process(new BufferedReader(new StringReader(result)));
     }
 
-    static HeapHistogram runPriorToJava8(long pid, boolean allowAttachSelf,
+    static HeapHistogram runViaAttach(long pid, boolean allowAttachSelf,
             @Nullable File glowrootJarFile) throws Exception {
         return JvmTool.run(pid, "heapHisto", new HeapHistogramProcessor(), allowAttachSelf,
                 glowrootJarFile);
+    }
+
+    static HeapHistogram parseHistogramText(String text) throws IOException {
+        return HeapHistogramProcessor.process(new BufferedReader(new StringReader(text)));
     }
 
     private static class HeapHistogramProcessor implements InputStreamProcessor<HeapHistogram> {
@@ -63,7 +67,7 @@ class HeapHistogramTool {
             return process(new BufferedReader(new InputStreamReader(in)));
         }
 
-        private static HeapHistogram process(BufferedReader in) throws IOException {
+        static HeapHistogram process(BufferedReader in) throws IOException {
             boolean jrockit = JavaVersion.isJRockitJvm();
             // skip over header lines
             String line = in.readLine();
