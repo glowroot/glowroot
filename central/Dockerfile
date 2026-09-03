@@ -1,4 +1,4 @@
-ARG JAVA_VERSION=25.0.3_9-jdk-noble
+ARG JAVA_VERSION=25.0.4_7-jdk-noble
 FROM eclipse-temurin:$JAVA_VERSION AS builder
 
 COPY target/glowroot-central-*.zip /tmp/glowroot-central.zip
