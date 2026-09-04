@@ -56,10 +56,10 @@ Post-install details:
 
 ### Local demo (one-shot)
 
-The public site `demo.glowroot.org` is down. To try the UI with sample traces locally:
+The public site `demo.glowroot.org` is down. To try Central UI with live sample traffic locally
+(Cassandra + Central + RabbitMQ + Spring app with agent):
 
-```powershell
-.\demo\prepare.ps1
+```bash
 docker compose -f demo/docker-compose.yml up --build
 ```
 

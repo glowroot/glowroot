@@ -1,6 +1,0 @@
-*
-!docker-entrypoint.sh
-!Dockerfile
-!docker-compose.yml
-!runtime
-!runtime/**

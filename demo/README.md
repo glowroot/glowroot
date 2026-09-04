@@ -1,35 +1,30 @@
-# Glowroot demo (one-shot)
+# Glowroot local demo
 
-Local replacement for the defunct public demo (`demo.glowroot.org`). Starts
-embedded Glowroot with the existing `UiSandboxMain` load generator.
+One-shot replacement for the defunct public demo (`demo.glowroot.org`).
 
-Docker only packages jars — Maven builds on the host so the image context stays small.
+Stack matches the pattern @nowheresly uses for local data generation
+([spring-rabbitmq-glowroot](https://github.com/nowheresly/spring-rabbitmq-glowroot)):
+
+- Cassandra + glowroot-central (published image)
+- RabbitMQ
+- Small Spring Boot app with `-javaagent` → Central, generating HTTP / JDBC / AMQP traffic
 
 ## Run
 
-From the repo root (JDK 11+, Maven 3.8+, Docker Desktop running):
-
-```powershell
-.\demo\prepare.ps1
-docker compose -f demo/docker-compose.yml up --build
-```
-
-Linux/macOS:
+Docker Desktop (or equivalent) required. From this directory:
 
 ```bash
-./demo/prepare.sh
-docker compose -f demo/docker-compose.yml up --build
+docker compose up --build
 ```
 
-Then open http://localhost:4000
+Then open http://localhost:4000 — pick agent `demo-sample`.
 
-Stop with Ctrl+C. Data persists in the Compose volume `demo-data`.
+First Central start waits on Cassandra (often 1–2 minutes). Traffic begins once the sample app is up.
 
-Re-run only `docker compose ...` after code changes if you already ran `prepare` for that tree.
+Stop with Ctrl+C.
 
 ## Notes
 
-- Embedded only (no Cassandra / Central).
-- Runs with `-Dglowroot.demo=true`: DEMO banner in the UI, facsimile Web/SQL traffic (not Sandbox UI-stress noise).
-- UI listens on `0.0.0.0:4000` inside the container so port publish works.
-- `demo/runtime/` is local build output (gitignored); same layout is what CI can publish to GHCR later.
+- Central UI on `:4000`, gRPC on `:8181`. Sample app is not published (it calls itself + Rabbit).
+- Agent jar is downloaded in the sample-app image build (same version as the Central image tag).
+- For a fuller multi-module playground (Kafka, WebFlux, cluster compose), use the upstream sample linked above.

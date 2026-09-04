@@ -1,12 +1,32 @@
+# Local Glowroot demo: Central + Cassandra + RabbitMQ + sample Spring app with agent.
+# Pattern from https://github.com/nowheresly/spring-rabbitmq-glowroot
 services:
-  demo:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  rabbitmq:
+    image: rabbitmq:management
     ports:
-      - "4000:4000"
-    volumes:
-      - demo-data:/opt/glowroot-demo/target
+      - "5672:5672"
+      - "15672:15672"
 
-volumes:
-  demo-data:
+  cassandra:
+    image: cassandra:4.1.12
+    ports:
+      - "9042:9042"
+
+  glowroot:
+    image: glowroot/glowroot-central:0.14.8-beta.4
+    ports:
+      - "8181:8181"
+      - "4000:4000"
+    environment:
+      CASSANDRA_CONTACT_POINTS: cassandra
+    depends_on:
+      - cassandra
+
+  sample-app:
+    build: ./sample-app
+    depends_on:
+      - glowroot
+      - rabbitmq
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      GLOWROOT_COLLECTOR_ADDRESS: glowroot:8181
