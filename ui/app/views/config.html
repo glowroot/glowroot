@@ -176,6 +176,12 @@
            gt-url="config/advanced{{agentQueryString()}}"
            gt-active="currentUrl() === 'config/advanced'">
       </div>
+      <div gt-sidebar-item
+           gt-display="Deployment profile"
+           gt-url="config/deployment-profile{{agentQueryString()}}"
+           gt-active="currentUrl() === 'config/deployment-profile'"
+           ng-if="!layout.central">
+      </div>
     </div>
   </div>
   <div class="card mt-4"
