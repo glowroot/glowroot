@@ -46,7 +46,8 @@ import java.util.function.Function;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-// TODO agent config records never expire for abandoned agent rollup ids
+// Agent config does not auto-expire. Operators can remove abandoned meta via Admin Storage
+// "Delete agent metadata" or CLI delete-agent-meta.
 public class AgentConfigDao {
 
     private final Session session;
@@ -57,6 +58,7 @@ public class AgentConfigDao {
     private final PreparedStatement updatePS;
     private final PreparedStatement updateCentralOnlyPS;
     private final PreparedStatement markUpdatedPS;
+    private final PreparedStatement deletePS;
 
     private final AsyncCache<String, Optional<AgentConfigAndUpdateToken>> agentConfigCache;
 
@@ -87,9 +89,17 @@ public class AgentConfigDao {
         markUpdatedPS = session.prepare("update agent_config set config_update = false,"
                 + " config_update_token = null where agent_rollup_id = ? if config_update_token"
                 + " = ?");
+        deletePS = session.prepare("delete from agent_config where agent_rollup_id = ?");
 
         agentConfigCache = clusterManager.createPerAgentAsyncCache("agentConfigCache",
                 targetMaxActiveAgentsInPast7Days, new AgentConfigCacheLoader());
+    }
+
+    public CompletionStage<?> delete(String agentRollupId) {
+        BoundStatement boundStatement = deletePS.bind()
+                .setString(0, agentRollupId);
+        return session.writeAsync(boundStatement, CassandraProfile.slow)
+                .thenRun(() -> agentConfigCache.invalidate(agentRollupId));
     }
 
     public CompletionStage<AgentConfig> store(String agentId, AgentConfig agentConfig, boolean overwriteExisting) {

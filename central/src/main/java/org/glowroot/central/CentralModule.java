@@ -268,7 +268,9 @@ public class CentralModule {
                     .syntheticResultRepository(repos.getSyntheticResultDao())
                     .incidentRepository(repos.getIncidentDao())
                     .repoAdmin(new RepoAdminImpl(session, repos.getActiveAgentDao(),
-                            repos.getConfigRepository(), session.getCassandraWriteMetrics(), clock))
+                            repos.getAgentConfigDao(), repos.getAgentDisplayDao(),
+                            repos.getEnvironmentDao(), repos.getConfigRepository(),
+                            session.getCassandraWriteMetrics(), clock))
                     .rollupLevelService(repos.getRollupLevelService())
                     .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService))
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
@@ -491,6 +493,12 @@ public class CentralModule {
             LazySecretKey lazySecretKey = new LazySecretKeyImpl(symmetricEncryptionKey);
             System.out.println(Encryption.encrypt(plainPassword, lazySecretKey));
             return;
+        } else if (commandName.equals("delete-agent-meta")) {
+            if (args.size() != 1) {
+                System.err.println("delete-agent-meta requires one arg (agent/rollup id), exiting");
+                return;
+            }
+            command = Tools::deleteAgentMeta;
         } else if (commandName.equals("truncate-all-data")) {
             if (!args.isEmpty()) {
                 System.err.println("truncate-all-data does not accept any args, exiting");
