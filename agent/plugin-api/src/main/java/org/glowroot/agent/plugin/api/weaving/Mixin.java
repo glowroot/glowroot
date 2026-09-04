@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2015 the original author or authors.
+ * Copyright 2012-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,11 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * will be added to the target types. The target types can include interfaces, in which case the
  * annotated class will be mixed in to all classes which implement any of those interfaces.
  * <p>
- * If the mixin class implements any interfaces, those interfaces will be added to the target types.
- * This is the recommended way to access methods that are mixed in to the target types.
+ * If the mixin class implements any interfaces, those interfaces will be added to the target types
+ * when {@link #addInterfaces()} is {@code true} (the default). This is the recommended way to
+ * access methods that are mixed in to the target types. Set {@link #addInterfaces()} to
+ * {@code false} when mixed-in interfaces must not appear in {@link Class#getInterfaces()} (for
+ * example, to avoid breaking CDI decorators) while still mixing in fields and methods.
  * <p>
  * Constructors are not mixed in to the target types, but a single method in the mixin class can be
  * annotated with {@literal @}{@code MixinInit} and this will be called exactly once at some point
@@ -42,4 +45,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 public @interface Mixin {
     String[] value();
+    /**
+     * Whether interfaces implemented by the mixin class are added to woven target types. Defaults
+     * to {@code true}. When {@code false}, fields and methods are still mixed in.
+     */
+    boolean addInterfaces() default true;
 }
