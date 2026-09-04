@@ -54,6 +54,17 @@ Post-install details:
 
 **Central collector?** Start with [Agent Installation (for Central Collector)](https://github.com/glowroot/glowroot/wiki/Agent-Installation-(for-Central-Collector)) (agents on app JVMs, glowroot-central + Cassandra on a monitor host).
 
+### Local demo (one-shot)
+
+The public site `demo.glowroot.org` is down. To try Central UI with live sample traffic locally
+(Cassandra + Central + RabbitMQ + Spring app with agent):
+
+```bash
+docker compose -f demo/docker-compose.yml up --build
+```
+
+Then open http://localhost:4000 — see [demo/README.md](demo/README.md).
+
 ## Deployment
 
 | Mode | What you run | Typical use |

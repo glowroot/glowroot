@@ -1,2 +1,4 @@
 target/
 .idea/
+demo/runtime/
+demo/sample-app/target/
