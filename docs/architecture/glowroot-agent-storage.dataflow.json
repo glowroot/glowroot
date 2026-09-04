@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Glowroot agent → storage data flow",
+    "locale": "en",
+    "output": "glowroot-agent-storage.dataflow.html",
+    "quality_profile": "showcase",
+    "viewBox": [1068, 620],
+    "views": [
+      {
+        "id": "embedded-hot-path",
+        "label": "Embedded hot path",
+        "focus": ["app", "weave", "agent", "emb", "h2", "ui"],
+        "note": "Capture stays in-process: weave → agent → embedded collector → H2 → UI."
+      },
+      {
+        "id": "central-path",
+        "label": "Central path",
+        "focus": ["agent", "central", "cass", "ui"],
+        "note": "Same agent payload over gRPC into Central, then Cassandra."
+      }
+    ]
+  },
+  "stages": [
+    { "label": "Capture" },
+    { "label": "Agent" },
+    { "label": "Collector" },
+    { "label": "Store" },
+    { "label": "UI" }
+  ],
+  "nodes": [
+    {
+      "id": "app",
+      "type": "frontend",
+      "label": "Monitored app",
+      "sublabel": "Java JVM",
+      "stage": 0,
+      "row": 1,
+      "tag": "-javaagent"
+    },
+    {
+      "id": "weave",
+      "type": "backend",
+      "label": "Weaving",
+      "sublabel": "ASM plugins",
+      "stage": 1,
+      "row": 0,
+      "tag": "@Pointcut"
+    },
+    {
+      "id": "agent",
+      "type": "backend",
+      "label": "Agent core",
+      "sublabel": "traces",
+      "stage": 1,
+      "row": 2,
+      "tag": "agg"
+    },
+    {
+      "id": "emb",
+      "type": "backend",
+      "label": "Embedded",
+      "sublabel": "in-process",
+      "stage": 2,
+      "row": 0,
+      "tag": "local"
+    },
+    {
+      "id": "central",
+      "type": "backend",
+      "label": "Central",
+      "sublabel": "gRPC",
+      "stage": 2,
+      "row": 2,
+      "tag": "remote"
+    },
+    {
+      "id": "h2",
+      "type": "database",
+      "label": "H2",
+      "sublabel": "local DB",
+      "stage": 3,
+      "row": 0,
+      "tag": "SQL"
+    },
+    {
+      "id": "cass",
+      "type": "database",
+      "label": "Cassandra",
+      "sublabel": "rollups",
+      "stage": 3,
+      "row": 2,
+      "tag": "CQL"
+    },
+    {
+      "id": "ui",
+      "type": "frontend",
+      "label": "Glowroot UI",
+      "sublabel": "AngularJS",
+      "stage": 4,
+      "row": 1,
+      "tag": "REST"
+    }
+  ],
+  "flows": [
+    {
+      "id": "app-to-weave",
+      "from": "app",
+      "to": "weave",
+      "label": "method enter/exit",
+      "classification": "instrumentation",
+      "variant": "emphasis"
+    },
+    {
+      "id": "weave-to-agent",
+      "from": "weave",
+      "to": "agent",
+      "label": "trace entries",
+      "classification": "in-JVM",
+      "variant": "emphasis",
+      "labelDy": 28
+    },
+    {
+      "id": "agent-to-emb",
+      "from": "agent",
+      "to": "emb",
+      "label": "aggregates + traces",
+      "classification": "embedded",
+      "variant": "emphasis",
+      "labelDy": -36
+    },
+    {
+      "id": "agent-to-central",
+      "from": "agent",
+      "to": "central",
+      "label": "gRPC Protobuf",
+      "classification": "central",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "via": [[315, 460], [530, 460]],
+      "labelAt": [422, 478]
+    },
+    {
+      "id": "emb-to-h2",
+      "from": "emb",
+      "to": "h2",
+      "label": "persist",
+      "classification": "SQL",
+      "variant": "emphasis"
+    },
+    {
+      "id": "central-to-cass",
+      "from": "central",
+      "to": "cass",
+      "label": "persist",
+      "classification": "CQL",
+      "variant": "dashed"
+    },
+    {
+      "id": "h2-to-ui",
+      "from": "h2",
+      "to": "ui",
+      "label": "query charts",
+      "classification": "read",
+      "variant": "default"
+    },
+    {
+      "id": "cass-to-ui",
+      "from": "cass",
+      "to": "ui",
+      "label": "query charts",
+      "classification": "read",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Primary path",
+      "items": [
+        "Embedded hot path: weave → agent → H2 → UI"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Central fork",
+      "items": [
+        "Same agent payload over gRPC → Cassandra"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Payload",
+      "items": [
+        "Traces, timers, query text, aggregates"
+      ]
+    }
+  ]
+}

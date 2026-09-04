@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Instrumented HTTP request (embedded)",
+    "locale": "en",
+    "output": "glowroot-instrumented-request.sequence.html",
+    "quality_profile": "showcase",
+    "column_fit": "spread",
+    "viewBox": [900, 560],
+    "legend": { "mode": "hidden" },
+    "views": [
+      {
+        "id": "request",
+        "label": "Request + weave",
+        "focus": ["client", "app", "agent"],
+        "note": "Pointcut starts the Glowroot transaction."
+      },
+      {
+        "id": "jdbc",
+        "label": "JDBC capture",
+        "focus": ["app", "jdbc", "appdb", "agent"],
+        "note": "JDBC plugin records SQL on the active trace."
+      },
+      {
+        "id": "store",
+        "label": "Store + response",
+        "focus": ["agent", "h2", "client"],
+        "note": "Agent persists the trace to H2; client gets 200."
+      }
+    ]
+  },
+  "participants": [
+    { "id": "client", "type": "external", "label": "Client", "sublabel": "HTTP" },
+    { "id": "app", "type": "backend", "label": "App", "sublabel": "Servlet" },
+    { "id": "agent", "type": "backend", "label": "Agent", "sublabel": "weave" },
+    { "id": "jdbc", "type": "backend", "label": "JDBC", "sublabel": "plugin" },
+    { "id": "appdb", "type": "database", "label": "App DB", "sublabel": "SQL" },
+    { "id": "h2", "type": "database", "label": "H2", "sublabel": "Glowroot" }
+  ],
+  "messages": [
+    { "id": "http-in", "from": "client", "to": "app", "y": 165, "label": "GET /orders", "variant": "emphasis" },
+    { "id": "start-trace", "from": "app", "to": "agent", "y": 198, "label": "start txn", "variant": "emphasis" },
+    { "id": "jdbc-call", "from": "app", "to": "jdbc", "y": 235, "label": "PreparedStatement", "variant": "default" },
+    { "id": "sql-exec", "from": "jdbc", "to": "appdb", "y": 268, "label": "SELECT …", "variant": "emphasis" },
+    { "id": "sql-rows", "from": "appdb", "to": "jdbc", "y": 301, "label": "rows", "variant": "return" },
+    { "id": "query-entry", "from": "jdbc", "to": "agent", "y": 334, "label": "query entry", "variant": "dashed" },
+    { "id": "jdbc-return", "from": "jdbc", "to": "app", "y": 367, "label": "ResultSet", "variant": "return" },
+    { "id": "end-trace", "from": "app", "to": "agent", "y": 405, "label": "end txn", "variant": "emphasis" },
+    { "id": "persist", "from": "agent", "to": "h2", "y": 438, "label": "store trace", "variant": "dashed" },
+    { "id": "http-out", "from": "app", "to": "client", "y": 470, "label": "200 OK", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "app", "from": 165, "to": 475, "type": "backend" },
+    { "participant": "agent", "from": 193, "to": 448, "type": "backend" },
+    { "participant": "jdbc", "from": 230, "to": 377, "type": "backend" },
+    { "participant": "appdb", "from": 263, "to": 311, "type": "database" },
+    { "participant": "h2", "from": 433, "to": 453, "type": "database" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "User path",
+      "items": ["Client latency is App → response"]
+    },
+    {
+      "dot": "cyan",
+      "title": "Capture",
+      "items": ["Pointcuts + JDBC plugin"]
+    },
+    {
+      "dot": "amber",
+      "title": "Store",
+      "items": ["Agent → H2 (≠ App DB)"]
+    }
+  ]
+}
