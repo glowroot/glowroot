@@ -13,7 +13,6 @@ RUN apt-get update \
   && curl -fsSL -o /tmp/glowroot.zip \
        "https://github.com/glowroot/glowroot/releases/download/v${GLOWROOT_VERSION}/glowroot-${GLOWROOT_VERSION}-dist.zip" \
   && unzip -q /tmp/glowroot.zip -d /opt \
-  && mv /opt/glowroot-${GLOWROOT_VERSION} /opt/glowroot \
   && mkdir -p /opt/glowroot/conf /opt/glowroot/logs /opt/glowroot/tmp \
   && rm -rf /tmp/glowroot.zip /var/lib/apt/lists/*
 COPY --from=build /src/target/sample-app-0.1.0.jar /app/app.jar
