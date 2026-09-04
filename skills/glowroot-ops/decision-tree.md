@@ -49,7 +49,7 @@ Read this first. Then wiki. Then `issue-gate.md` for verdict.
 |---------|----------------|
 | How does heap work? | JMX heap used/max via Gauges; no built-in % of -Xmx (`#946`) |
 | p99 vs p95? | Check wiki Transaction tabs for aggregate type |
-| CPU spike after upgrade | Version path, embedded vs central, H2 upgrade `#1180` |
+| CPU spike after upgrade | Version path, embedded vs central, H2 upgrade `#1180` → [docs/embedded-h2-upgrade.md](../../docs/embedded-h2-upgrade.md) |
 | JVM RAM vs OS | JMX heap ≠ process RSS |
 
 **Verdict:** `wiki-only` or `discussion`
