@@ -24,6 +24,7 @@ Read this first. Then wiki. Then `issue-gate.md` for verdict.
 | UI won't open | App running? `UI listening on` in log? Port/bind? → `dev-setup.md` + `ORG-CONTEXT.md` |
 | Find slow traces | Transactions → sort by time → open trace → Queries / Profile |
 | Filter errors | Errors tab = errors in **traced** transactions only; not container stdout |
+| JBoss/WildFly `GeneratedMethodMeta` CNFE | `-Djboss.modules.system.pkgs=org.glowroot` (append if set); `-javaagent` only — README FAQ / `#1112` |
 
 **Verdict:** `wiki-only` or `no-issue`
 
