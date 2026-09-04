@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -33,8 +34,15 @@ import org.glowroot.wire.api.model.Proto.Throwable;
 @Value.Immutable
 public abstract class ErrorMessage {
 
+    private static final int DEFAULT_TRANSACTION_THROWABLE_FRAME_LIMIT = 10000;
+
     private static final int TRANSACTION_THROWABLE_FRAME_LIMIT =
-            Integer.getInteger("glowroot.transaction.throwable.frame.limit", 100000);
+            resolveFrameLimit(Integer.getInteger("glowroot.transaction.throwable.frame.limit"));
+
+    @VisibleForTesting
+    static int resolveFrameLimit(@Nullable Integer override) {
+        return override != null ? override : DEFAULT_TRANSACTION_THROWABLE_FRAME_LIMIT;
+    }
 
     @Value.Parameter
     public abstract String message();
