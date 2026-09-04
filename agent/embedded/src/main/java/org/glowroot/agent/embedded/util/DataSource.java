@@ -16,6 +16,8 @@
 package org.glowroot.agent.embedded.util;
 
 import java.io.File;
+import java.io.Flushable;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -59,6 +61,8 @@ import static org.glowroot.agent.util.Checkers.castUntainted;
 public class DataSource {
 
     private static final Logger logger = LoggerFactory.getLogger(DataSource.class);
+
+    private static final @Nullable Appendable H2_TIMING_LOG = openH2TimingLog();
 
     private static final int QUERY_TIMEOUT_SECONDS =
             Integer.getInteger("glowroot.internal.h2.queryTimeout", 60);
@@ -224,7 +228,18 @@ public class DataSource {
             try {
                 // setQueryTimeout() affects all statements of this connection (at least with h2)
                 statement.setQueryTimeout(0);
-                statement.execute(sql);
+                long startNanos = 0;
+                boolean timing = H2_TIMING_LOG != null;
+                if (timing) {
+                    startNanos = System.nanoTime();
+                }
+                try {
+                    statement.execute(sql);
+                } finally {
+                    if (timing) {
+                        recordH2Timing(sql, startNanos);
+                    }
+                }
             } catch (Throwable t) {
                 throw closer.rethrow(t);
             } finally {
@@ -309,7 +324,19 @@ public class DataSource {
             PreparedStatement preparedStatement =
                     prepareStatementUnderLock(jdbcQuery.getSql(), QUERY_TIMEOUT_SECONDS);
             jdbcQuery.bind(preparedStatement);
-            ResultSet resultSet = preparedStatement.executeQuery();
+            long startNanos = 0;
+            boolean timing = H2_TIMING_LOG != null;
+            if (timing) {
+                startNanos = System.nanoTime();
+            }
+            ResultSet resultSet;
+            try {
+                resultSet = preparedStatement.executeQuery();
+            } finally {
+                if (timing) {
+                    recordH2Timing(jdbcQuery.getSql(), startNanos);
+                }
+            }
             ResultSetCloser closer = new ResultSetCloser(resultSet);
             try {
                 return jdbcQuery.processResultSet(resultSet);
@@ -344,7 +371,19 @@ public class DataSource {
             PreparedStatement preparedStatement =
                     prepareStatementUnderLock(jdbcQuery.getSql(), QUERY_TIMEOUT_SECONDS);
             jdbcQuery.bind(preparedStatement);
-            ResultSet resultSet = preparedStatement.executeQuery();
+            long startNanos = 0;
+            boolean timing = H2_TIMING_LOG != null;
+            if (timing) {
+                startNanos = System.nanoTime();
+            }
+            ResultSet resultSet;
+            try {
+                resultSet = preparedStatement.executeQuery();
+            } finally {
+                if (timing) {
+                    recordH2Timing(jdbcQuery.getSql(), startNanos);
+                }
+            }
             ResultSetCloser closer = new ResultSetCloser(resultSet);
             try {
                 List<T> mappedRows = Lists.newArrayList();
@@ -391,7 +430,18 @@ public class DataSource {
             checkConnectionUnderLock();
             PreparedStatement preparedStatement = prepareStatementUnderLock(jdbcUpdate.getSql(), 0);
             jdbcUpdate.bind(preparedStatement);
-            return preparedStatement.executeUpdate();
+            long startNanos = 0;
+            boolean timing = H2_TIMING_LOG != null;
+            if (timing) {
+                startNanos = System.nanoTime();
+            }
+            try {
+                return preparedStatement.executeUpdate();
+            } finally {
+                if (timing) {
+                    recordH2Timing(jdbcUpdate.getSql(), startNanos);
+                }
+            }
             // don't need to close statement since they are all cached and used under lock
         }
     }
@@ -410,7 +460,18 @@ public class DataSource {
             checkConnectionUnderLock();
             PreparedStatement preparedStatement = prepareStatementUnderLock(jdbcUpdate.getSql(), 0);
             jdbcUpdate.bind(preparedStatement);
-            return preparedStatement.executeBatch();
+            long startNanos = 0;
+            boolean timing = H2_TIMING_LOG != null;
+            if (timing) {
+                startNanos = System.nanoTime();
+            }
+            try {
+                return preparedStatement.executeBatch();
+            } finally {
+                if (timing) {
+                    recordH2Timing(jdbcUpdate.getSql(), startNanos);
+                }
+            }
             // don't need to close statement since they are all cached and used under lock
         }
     }
@@ -582,7 +643,19 @@ public class DataSource {
         for (int i = 0; i < args.length; i++) {
             preparedStatement.setObject(i + 1, args[i]);
         }
-        ResultSet resultSet = preparedStatement.executeQuery();
+        long startNanos = 0;
+        boolean timing = H2_TIMING_LOG != null;
+        if (timing) {
+            startNanos = System.nanoTime();
+        }
+        ResultSet resultSet;
+        try {
+            resultSet = preparedStatement.executeQuery();
+        } finally {
+            if (timing) {
+                recordH2Timing(sql, startNanos);
+            }
+        }
         return extractAndClose(resultSet, rse);
         // don't need to close statement since they are all cached and used under lock
     }
@@ -637,6 +710,49 @@ public class DataSource {
     private static int resolveInitialCacheSizeKb() {
         return H2CacheSize.resolveKb(H2CacheSize.MODE_AUTO, H2CacheSize.AUTO_MB,
                 Runtime.getRuntime().maxMemory(), System.getProperty(H2CacheSize.SYSTEM_PROPERTY));
+    }
+
+    private static @Nullable Appendable openH2TimingLog() {
+        String path = System.getProperty("glowroot.internal.h2.timingLog");
+        if (path == null || path.isEmpty()) {
+            return null;
+        }
+        try {
+            File file = new File(path);
+            File parent = file.getParentFile();
+            if (parent != null) {
+                parent.mkdirs();
+            }
+            return new java.io.FileWriter(file, true);
+        } catch (IOException e) {
+            logger.warn("could not open glowroot.internal.h2.timingLog: {}", path, e);
+            return null;
+        }
+    }
+
+    private static void recordH2Timing(@Nullable String sql, long startNanos) {
+        Appendable log = H2_TIMING_LOG;
+        if (log == null) {
+            return;
+        }
+        long milliseconds = (System.nanoTime() - startNanos) / 1000000L;
+        String truncatedSql = sql == null ? ""
+                : sql.replace('\r', ' ').replace('\n', ' ').replace(',', ';');
+        if (truncatedSql.length() > 200) {
+            truncatedSql = truncatedSql.substring(0, 200);
+        }
+        try {
+            synchronized (DataSource.class) {
+                log.append(Long.toString(System.currentTimeMillis())).append(',')
+                        .append(Long.toString(milliseconds)).append(',')
+                        .append(truncatedSql).append('\n');
+                if (log instanceof Flushable) {
+                    ((Flushable) log).flush();
+                }
+            }
+        } catch (IOException e) {
+            logger.debug(e.getMessage(), e);
+        }
     }
 
     private static Connection createConnection(@Nullable File dbFile, int cacheSizeKb)
