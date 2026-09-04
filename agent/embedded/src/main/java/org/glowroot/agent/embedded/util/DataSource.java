@@ -63,6 +63,14 @@ public class DataSource {
     private static final int QUERY_TIMEOUT_SECONDS =
             Integer.getInteger("glowroot.internal.h2.queryTimeout", 60);
 
+    // H2 2.x MVStore only. Glowroot default 30 (H2 stock default is 90) to cut background
+    // rewriteChunks CPU/IO on shared-JVM embeds (#1180). Override with
+    // -Dglowroot.internal.h2.autoCompactFillRate=N (90 = stock H2; 0 = disable auto-compact).
+    // WRITE_DELAY is PageStore-era; Hikari/multi-connection pool still deferred.
+    private static final int DEFAULT_AUTO_COMPACT_FILL_RATE = 30;
+    private static final int AUTO_COMPACT_FILL_RATE =
+            resolveAutoCompactFillRate(Integer.getInteger("glowroot.internal.h2.autoCompactFillRate"));
+
     // null means use memDb
     private final @Nullable File dbFile;
     private final Thread shutdownHookThread;
@@ -655,11 +663,25 @@ public class DataSource {
             props.setProperty("user", "sa");
             props.setProperty("password", "");
             // db_close_on_exit=false since jvm shutdown hook is handled by DataSource
-            String url = "jdbc:h2:" + dbPath
-                    + ";compress=true;db_close_on_exit=false;cache_size=" + cacheSizeKb
-                    + ";NON_KEYWORDS=USER,VALUE";
-            return DriverManager.getConnection(url, props);
+            return DriverManager.getConnection(
+                    buildFileUrl(dbPath, cacheSizeKb, AUTO_COMPACT_FILL_RATE), props);
         }
+    }
+
+    /**
+     * File-backed H2 JDBC URL. Always sets {@code AUTO_COMPACT_FILL_RATE} (Glowroot default 30).
+     */
+    @VisibleForTesting
+    static String buildFileUrl(String dbPath, int cacheSizeKb, int autoCompactFillRate) {
+        return "jdbc:h2:" + dbPath
+                + ";compress=true;db_close_on_exit=false;cache_size=" + cacheSizeKb
+                + ";NON_KEYWORDS=USER,VALUE"
+                + ";AUTO_COMPACT_FILL_RATE=" + autoCompactFillRate;
+    }
+
+    @VisibleForTesting
+    static int resolveAutoCompactFillRate(@Nullable Integer override) {
+        return override != null ? override : DEFAULT_AUTO_COMPACT_FILL_RATE;
     }
 
     private static <T> T extractAndClose(ResultSet resultSet, ResultSetExtractor<T> rse)

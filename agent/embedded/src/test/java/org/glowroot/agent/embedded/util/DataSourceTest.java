@@ -20,6 +20,7 @@ import java.sql.SQLException;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -27,6 +28,24 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class DataSourceTest {
+
+    @Test
+    public void resolveAutoCompactFillRateDefaultsTo30() {
+        assertThat(DataSource.resolveAutoCompactFillRate(null)).isEqualTo(30);
+    }
+
+    @Test
+    public void resolveAutoCompactFillRateHonorsOverride() {
+        assertThat(DataSource.resolveAutoCompactFillRate(90)).isEqualTo(90);
+        assertThat(DataSource.resolveAutoCompactFillRate(0)).isEqualTo(0);
+    }
+
+    @Test
+    public void buildFileUrlAlwaysSetsAutoCompactFillRate() {
+        assertThat(DataSource.buildFileUrl("/tmp/data", 131072, 30))
+                .contains("cache_size=131072")
+                .endsWith(";AUTO_COMPACT_FILL_RATE=30");
+    }
 
     @Test
     public void testDebugNoArgs() throws SQLException {
