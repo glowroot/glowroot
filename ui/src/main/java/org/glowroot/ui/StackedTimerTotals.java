@@ -43,6 +43,7 @@ class StackedTimerTotals {
     }
 
     static double selfNanos(Aggregate.Timer timer) {
+        // exclusive time: totalNanos minus nested child totals (chart stack segments)
         double totalNestedNanos = 0;
         for (Aggregate.Timer childTimer : timer.getChildTimerList()) {
             totalNestedNanos += childTimer.getTotalNanos();
@@ -52,7 +53,8 @@ class StackedTimerTotals {
 
     /**
      * Whether an aggregate capture time belongs in the merged breakdown for the selected chart
-     * range (same filter as {@link TransactionJsonService#getOverview}).
+     * range (same filter as {@link TransactionJsonService#getOverview}). Extra slope points
+     * outside {@code (from, to]} are for chart edge sloping only and must not affect ranking.
      */
     static boolean captureTimeInMergedRange(long captureTime, long from, long to) {
         return captureTime > from && captureTime <= to;

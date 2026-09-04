@@ -183,7 +183,8 @@ glowroot.config([
             'total-cpu-time': 'By total CPU time (%)',
             'average-cpu-time': 'By average CPU time',
             'total-allocated-memory': 'By total allocated memory (%)',
-            'average-allocated-memory': 'By average allocated memory'
+            'average-allocated-memory': 'By average allocated memory',
+            'total-transaction-count': 'By total transaction count'
           };
         },
         summaryValueFn: [
@@ -206,6 +207,8 @@ glowroot.config([
                 return (100 * summary.totalAllocatedBytes / overallSummary.totalAllocatedBytes).toFixed(1) + ' %';
               } else if (sortOrder === 'average-allocated-memory') {
                 return $filter('gtBytes')(summary.totalAllocatedBytes / summary.transactionCount);
+              } else if (sortOrder === 'total-transaction-count') {
+                  return summary.transactionCount;
               } else {
                 // unexpected sort order
                 return '';

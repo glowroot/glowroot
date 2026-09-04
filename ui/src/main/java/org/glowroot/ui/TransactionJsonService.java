@@ -797,7 +797,8 @@ class TransactionJsonService {
         return transactionCounts;
     }
 
-    // calculate top 5 timers
+    // Top timers for the chart legend/series — only aggregates inside the selected range
+    // (see StackedTimerTotals.captureTimeInMergedRange / issue #1158).
     private static List<String> getTopTimerNames(List<StackedPoint> stackedPoints, int topX,
             long from, long to) {
         MutableDoubleMap<String> timerTotals = new MutableDoubleMap<String>();

@@ -136,6 +136,7 @@ public class TransactionNameSummaryCollector {
                 return orderingByTotalTimeDesc.immutableSortedCopy(transactionNameSummaries);
             case AVERAGE_TIME:
                 return orderingByAverageTimeDesc.immutableSortedCopy(transactionNameSummaries);
+            case TOTAL_TRANSACTION_COUNT:
             case THROUGHPUT:
                 return orderingByTransactionCountDesc.immutableSortedCopy(transactionNameSummaries);
             case TOTAL_CPU_TIME:
@@ -152,7 +153,7 @@ public class TransactionNameSummaryCollector {
     }
 
     public enum SummarySortOrder {
-        TOTAL_TIME, AVERAGE_TIME, THROUGHPUT, TOTAL_CPU_TIME, AVERAGE_CPU_TIME, TOTAL_ALLOCATED_MEMORY, AVERAGE_ALLOCATED_MEMORY
+        TOTAL_TIME, AVERAGE_TIME, THROUGHPUT, TOTAL_CPU_TIME, AVERAGE_CPU_TIME, TOTAL_ALLOCATED_MEMORY, AVERAGE_ALLOCATED_MEMORY, TOTAL_TRANSACTION_COUNT
     }
 
     @Value.Immutable
