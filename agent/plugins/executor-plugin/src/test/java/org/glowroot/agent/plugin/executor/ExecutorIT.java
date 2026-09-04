@@ -232,6 +232,15 @@ public class ExecutorIT {
         checkTrace(trace, false, false);
     }
 
+    // #1115: Weld SE RunnableDecorator fails if RunnableEtcMixin appears in getInterfaces()
+    @Test
+    public void shouldNotExposeRunnableEtcMixinOnInterfaces() throws Exception {
+        // when
+        Trace trace = container.execute(DoCheckRunnableEtcMixinNotOnInterfaces.class);
+        // then
+        checkTrace(trace, false, false);
+    }
+
     private static void checkTrace(Trace trace, boolean isAny, boolean withFuture) {
         Trace.Header header = trace.getHeader();
         if (withFuture) {
@@ -299,6 +308,73 @@ public class ExecutorIT {
 
         @Override
         public void transactionMarker() throws Exception {
+            ExecutorService executor = createExecutorService();
+            final CountDownLatch latch = new CountDownLatch(3);
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    latch.countDown();
+                }
+            });
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    latch.countDown();
+                }
+            });
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    new CreateTraceEntry().traceEntryMarker();
+                    latch.countDown();
+                }
+            });
+            latch.await();
+            executor.shutdown();
+            executor.awaitTermination(10, SECONDS);
+        }
+    }
+
+    // proves #1115 fix: mixin fields/methods present, RunnableEtcMixin not in getInterfaces()
+    public static class DoCheckRunnableEtcMixinNotOnInterfaces
+            implements AppUnderTest, TransactionMarker {
+
+        @Override
+        public void executeApp() throws Exception {
+            transactionMarker();
+        }
+
+        @Override
+        public void transactionMarker() throws Exception {
+            Runnable probe = new Runnable() {
+                @Override
+                public void run() {}
+            };
+            for (Class<?> iface : probe.getClass().getInterfaces()) {
+                if (iface.getName().endsWith("RunnableEtcMixin")) {
+                    throw new AssertionError(
+                            "woven Runnable must not declare RunnableEtcMixin: " + iface.getName());
+                }
+            }
+            boolean foundGet = false;
+            boolean foundSet = false;
+            for (java.lang.reflect.Method method : probe.getClass().getMethods()) {
+                if (method.getName().equals("glowroot$getAuxContext")
+                        && method.getParameterCount() == 0) {
+                    foundGet = true;
+                }
+                if (method.getName().equals("glowroot$setAuxContext")
+                        && method.getParameterCount() == 1) {
+                    foundSet = true;
+                }
+            }
+            if (!foundGet || !foundSet) {
+                throw new AssertionError(
+                        "mixed-in glowroot$getAuxContext / glowroot$setAuxContext missing");
+            }
+
             ExecutorService executor = createExecutorService();
             final CountDownLatch latch = new CountDownLatch(3);
             executor.execute(new Runnable() {

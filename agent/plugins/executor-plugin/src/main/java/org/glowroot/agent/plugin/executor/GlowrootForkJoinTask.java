@@ -25,9 +25,9 @@ import org.glowroot.agent.plugin.api.TraceEntry;
 // instrumented; by wrapping in this class, exec() can be instrumented instead
 //
 // NOTE: does NOT implement RunnableEtcMixin directly because the class file transformer will
-// inject the mixin into this class (since it extends ForkJoinTask which is a @Mixin target),
-// and implementing the interface directly would cause a ClassFormatError due to duplicate
-// field "glowroot$auxContext"; tracing is managed directly in exec() instead
+// inject RunnableEtcImpl into this class (since it extends ForkJoinTask which is a @Mixin
+// target), and implementing the interface directly would cause a ClassFormatError due to
+// duplicate field "glowroot$auxContext"; tracing is managed directly in exec() instead
 @SuppressWarnings("serial")
 class GlowrootForkJoinTask<V> extends ForkJoinTask<V> {
 

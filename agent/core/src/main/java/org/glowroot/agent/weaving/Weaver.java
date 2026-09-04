@@ -246,6 +246,9 @@ public class Weaver {
                 }
             }
             for (MixinType matchedMixinType : reweavableMatchedMixinTypes) {
+                if (!matchedMixinType.addInterfaces()) {
+                    continue;
+                }
                 for (Type mixinInterface : matchedMixinType.interfaces()) {
                     if (!interfaceNames.contains(mixinInterface.getClassName())) {
                         // re-weaving would fail with "attempted to change superclass or interfaces"
