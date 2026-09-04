@@ -73,6 +73,7 @@ Central needs its own install — see [Agent Installation (for Central Collector
 | Central install | [Agent Installation (for Central Collector)](https://github.com/glowroot/glowroot/wiki/Agent-Installation-(for-Central-Collector)) |
 | Central on Docker | [Central Collector with Docker](https://github.com/glowroot/glowroot/wiki/Central-Collector-with-Docker) |
 | Troubleshooting | [Troubleshooting Tips](https://github.com/glowroot/glowroot/wiki/Troubleshooting-Tips) |
+| JBoss / WildFly `GeneratedMethodMeta` CNFE | See FAQ below (`jboss.modules.system.pkgs`) · [#1112](https://github.com/glowroot/glowroot/issues/1112) |
 | Storage (H2 / Cassandra TTL) | [Administration-Storage](https://github.com/glowroot/glowroot/wiki/Administration-Storage) |
 | Plugins / custom Instrumentation | [Plugins](https://github.com/glowroot/glowroot/wiki/Plugins) · [Instrumentation](https://github.com/glowroot/glowroot/wiki/Instrumentation) |
 | Empty Queries / Service Calls / Web? | [Plugin coverage gaps](https://github.com/glowroot/glowroot/wiki/Plugin-coverage-gaps) · [What Glowroot does not do](https://github.com/glowroot/glowroot/wiki/What-Glowroot-does-not-do) |
@@ -109,6 +110,15 @@ Aggregates cover all traffic; **Traces** only store requests above the slow thre
 
 **Can I run Glowroot together with another Java APM agent?**  
 Usually **no** — two bytecode-weaving agents on the same JVM is fragile. Pick one agent per process.
+
+**JBoss / WildFly: `ClassNotFoundException: GeneratedMethodMeta*` (or `NoClassDefFoundError`)?**  
+JBoss Modules isolation: woven app classes get a `MetaHolder` in the deployment `ModuleClassLoader`, but `GeneratedMethodMeta*` / related weaving classes live in the agent/bootstrap loader. Mark Glowroot as a system package so deployments can see those classes:
+
+```bash
+-Djboss.modules.system.pkgs=org.glowroot
+```
+
+If the property is already set (e.g. for Byteman), **append** `org.glowroot` to the comma-separated list. Keep using only `-javaagent:/path/to/glowroot.jar`. Do **not** ship `glowroot.jar` inside the EAR once `system.pkgs` is set. See [#1112](https://github.com/glowroot/glowroot/issues/1112).
 
 ## Support
 
