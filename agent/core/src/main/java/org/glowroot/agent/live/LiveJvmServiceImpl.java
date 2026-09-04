@@ -158,13 +158,15 @@ public class LiveJvmServiceImpl implements LiveJvmService {
     @Override
     public HeapHistogram heapHistogram(String agentId) throws Exception {
         if (JavaVersion.isJ9Jvm()) {
-            throw new UnavailableDueToRunningInJ9JvmException();
+            // OpenJ9: no DiagnosticCommand.gcClassHistogram — attach heapHisto instead
+            long pid = checkNotNull(LiveJvmServiceImpl.getProcessId());
+            return HeapHistogramTool.runViaAttach(pid, allowAttachSelf(), glowrootJarFile);
         }
         if (JavaVersion.isGreaterThanOrEqualToJava8()) {
             return HeapHistogramTool.run(lazyPlatformMBeanServer);
         } else {
             long pid = checkNotNull(LiveJvmServiceImpl.getProcessId());
-            return HeapHistogramTool.runPriorToJava8(pid, allowAttachSelf(), glowrootJarFile);
+            return HeapHistogramTool.runViaAttach(pid, allowAttachSelf(), glowrootJarFile);
         }
     }
 

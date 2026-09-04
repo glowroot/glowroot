@@ -90,9 +90,8 @@ class JvmTool {
         }
         Method attachMethod = vmClass.getMethod("attach", String.class);
         Method detachMethod = vmClass.getMethod("detach");
-        Class<?> hotSpotVmClass = Class.forName("sun.tools.attach.HotSpotVirtualMachine", true,
-                systemToolClassLoader);
-        Method method = hotSpotVmClass.getMethod(methodName, Object[].class);
+        Class<?> attachVmClass = findAttachVirtualMachineClass(systemToolClassLoader);
+        Method method = attachVmClass.getMethod(methodName, Object[].class);
 
         Object vm;
         try {
@@ -115,6 +114,18 @@ class JvmTool {
             return processAndClose(in, processor);
         } finally {
             detachMethod.invoke(vm);
+        }
+    }
+
+    // HotSpot, else OpenJ9 (heapHisto lives on the concrete attach VM class)
+    static Class<?> findAttachVirtualMachineClass(ClassLoader systemToolClassLoader)
+            throws ClassNotFoundException {
+        try {
+            return Class.forName("sun.tools.attach.HotSpotVirtualMachine", true,
+                    systemToolClassLoader);
+        } catch (ClassNotFoundException e) {
+            return Class.forName("com.ibm.tools.attach.attacher.OpenJ9VirtualMachine", true,
+                    systemToolClassLoader);
         }
     }
 
