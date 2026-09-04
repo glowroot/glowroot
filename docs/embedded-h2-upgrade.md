@@ -2,7 +2,7 @@
 
 **Supported path:** historical H2 SQL data is **not** migrated across the engine file-format change. Back up, archive H2 1.x files, start with a fresh H2 2.x store.
 
-Tracks [#1243](https://github.com/glowroot/glowroot/issues/1243) · regression [#1180](https://github.com/glowroot/glowroot/issues/1180) · design [superpowers/specs/2026-09-04-h2-upgrade-migration-policy-design.md](superpowers/specs/2026-09-04-h2-upgrade-migration-policy-design.md)
+Tracks [#1243](https://github.com/glowroot/glowroot/issues/1243) · regression [#1180](https://github.com/glowroot/glowroot/issues/1180).
 
 ## Two layers (do not mix them)
 
@@ -43,9 +43,16 @@ Prefer lean retention/capped sizes in production (Deployment profile **Prod** wh
 
 CPU/GC rising with `data.mv.db` size after H2 2.x, resetting when data is cleared, points at **storage pressure** (MVStore write/compact), not a single UI bug. Clearing data is a temporary relief, not a fix.
 
-## Offline data port (planned, not default)
+## Offline data port (best-effort, not default)
 
-A CLI best-effort SCRIPT/RUNSCRIPT helper may appear later. It will **not** run at agent boot and is **not** the supported path. Until it exists, use Layer 1 recreate (or external H2 tooling at your own risk).
+Supported path remains Layer 1 recreate. Optional CLI (does **not** run at agent boot):
+
+```text
+java -jar glowroot.jar h2 upgrade-check
+java -jar glowroot.jar h2 import-script <export.sql>
+```
+
+`upgrade-check` reports whether `data.h2.db` / `data.mv.db` are present. `import-script` loads an **external** H2 1.x `SCRIPT` dump into a new `data.mv.db` via the bundled H2 2.x driver (export the dump yourself with H2 1.3.x first). Verify the UI before deleting backups. Large scripts (≥ 1 GiB) may OOM or run for hours.
 
 ## Central
 
