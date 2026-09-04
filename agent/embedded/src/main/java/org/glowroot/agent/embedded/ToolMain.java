@@ -91,6 +91,12 @@ public class ToolMain {
             } else if (subcommand.equals("recover") && args.length == 2) {
                 recover(directories.getDataDir());
                 return;
+            } else if (subcommand.equals("upgrade-check") && args.length == 2) {
+                startupLogger.info(describeUpgradeState(directories.getDataDir()));
+                return;
+            } else if (subcommand.equals("import-script") && args.length == 3) {
+                importScript(directories.getDataDir(), new File(args[2]));
+                return;
             }
         } else if (command.equals("mask-central-data") && args.length == 1) {
             // this is for monitoring glowroot central with glowroot agent, and then masking the
@@ -130,6 +136,70 @@ public class ToolMain {
     private static void run(File dataDir, String sql) throws Exception {
         Shell.main("-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data", "-user",
                 "sa", "-sql", sql);
+    }
+
+    /**
+     * Best-effort status for embedded H2 1.x → 2.x upgrades. See docs/embedded-h2-upgrade.md.
+     */
+    @VisibleForTesting
+    static String describeUpgradeState(File dataDir) {
+        boolean legacy = new File(dataDir, "data.h2.db").exists();
+        boolean mv = new File(dataDir, "data.mv.db").exists();
+        if (legacy) {
+            return "Found data.h2.db (H2 1.x PageStore). Layer 1: Glowroot does not auto-migrate."
+                    + " Supported path: backup data/, archive data.h2.db, start fresh data.mv.db."
+                    + " Best-effort: export with H2 1.3.x Script, then"
+                    + " \"java -jar glowroot.jar h2 import-script <export.sql>\"."
+                    + (mv ? " Note: data.mv.db also present." : "");
+        }
+        if (mv) {
+            return "Found data.mv.db (H2 2.x). No Layer 1 migration needed;"
+                    + " schema sync may still run on upgrade (can be slow on large stores).";
+        }
+        return "No data.h2.db or data.mv.db in " + dataDir.getPath();
+    }
+
+    @VisibleForTesting
+    static boolean isLargeImportScript(long sizeBytes) {
+        return sizeBytes >= 1024L * 1024 * 1024;
+    }
+
+    /**
+     * Loads an SQL dump into a new data.mv.db using the bundled H2 2.x driver.
+     * Does not read data.h2.db — export that with H2 1.3.x first.
+     */
+    @RequiresNonNull("startupLogger")
+    private static void importScript(File dataDir, File scriptFile) throws Exception {
+        if (!scriptFile.isFile()) {
+            startupLogger.error("import-script failed: not a file: {}", scriptFile.getPath());
+            return;
+        }
+        if (isLargeImportScript(scriptFile.length())) {
+            startupLogger.warn("import-script: script is >= 1 GiB ({} bytes); best-effort only,"
+                    + " may OOM or run for hours", scriptFile.length());
+        }
+        File legacy = new File(dataDir, "data.h2.db");
+        if (legacy.exists()) {
+            startupLogger.warn("import-script: data.h2.db still present; this command does not"
+                    + " read it. Archive it after a successful import.");
+        }
+        File dbFile = new File(dataDir, "data.mv.db");
+        File dbBakFile = new File(dataDir, "data.mv.db.bak");
+        if (dbFile.exists()) {
+            if (dbBakFile.exists() && !dbBakFile.delete()) {
+                startupLogger.warn("import-script failed, cannot delete existing file: {}",
+                        dbBakFile.getPath());
+                return;
+            }
+            if (!dbFile.renameTo(dbBakFile)) {
+                startupLogger.warn("import-script failed, cannot rename {} to {}", dbFile.getPath(),
+                        dbBakFile.getPath());
+                return;
+            }
+        }
+        RunScript.main("-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data", "-user",
+                "sa", "-script", scriptFile.getPath());
+        startupLogger.info("import-script succeeded (best-effort; verify UI before deleting backups)");
     }
 
     @RequiresNonNull("startupLogger")
