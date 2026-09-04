@@ -10,5 +10,9 @@
   </div>
   <div ng-if="threadStats.totalAllocatedBytes != -1">
     Allocated memory: {{threadStats.totalAllocatedBytes / transactionCount | gtBytes}}
+    <a href="https://github.com/glowroot/glowroot/blob/main/docs/jvm-thread-stats-allocated-memory.md"
+       target="_blank"
+       rel="noopener noreferrer"
+       title="What allocated memory means (cumulative)">what is this?</a>
   </div>
 </div>

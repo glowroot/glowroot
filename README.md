@@ -77,6 +77,7 @@ Central needs its own install — see [Agent Installation (for Central Collector
 | Plugins / custom Instrumentation | [Plugins](https://github.com/glowroot/glowroot/wiki/Plugins) · [Instrumentation](https://github.com/glowroot/glowroot/wiki/Instrumentation) |
 | Empty Queries / Service Calls / Web? | [Plugin coverage gaps](https://github.com/glowroot/glowroot/wiki/Plugin-coverage-gaps) · [What Glowroot does not do](https://github.com/glowroot/glowroot/wiki/What-Glowroot-does-not-do) |
 | UI orientation (tabs, alerts, gauges, …) | [Transaction tabs](https://github.com/glowroot/glowroot/wiki/Transaction-tabs) · [wiki UI / configuration](https://github.com/glowroot/glowroot/wiki#ui--configuration) |
+| JVM thread “Allocated memory” meaning | [docs/jvm-thread-stats-allocated-memory.md](docs/jvm-thread-stats-allocated-memory.md) (wiki paste: [JVM-thread-stats-allocated-memory](https://github.com/glowroot/glowroot/wiki/JVM-thread-stats-allocated-memory)) · [#630](https://github.com/glowroot/glowroot/issues/630) |
 | Contributing (modules / engine map) | [For contributors](https://github.com/glowroot/glowroot/wiki/For-contributors) · [Plugin and Pointcut basics](https://github.com/glowroot/glowroot/wiki/Plugin-and-Pointcut-basics) |
 | Community Q&A | [GitHub Discussions](https://github.com/glowroot/glowroot/discussions) |
 | AI assistant (`glowroot-ops`) | [skills/glowroot-ops/](skills/glowroot-ops/) |
