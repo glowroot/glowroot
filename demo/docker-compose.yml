@@ -6,11 +6,25 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: demo
+      RABBITMQ_DEFAULT_PASS: demo
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   cassandra:
     image: cassandra:4.1.12
     ports:
       - "9042:9042"
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'select now() from system.local' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 40s
 
   glowroot:
     image: glowroot/glowroot-central:0.14.8-beta.4
@@ -20,13 +34,26 @@ services:
     environment:
       CASSANDRA_CONTACT_POINTS: cassandra
     depends_on:
-      - cassandra
+      cassandra:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo >/dev/tcp/127.0.0.1/4000"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 60s
 
   sample-app:
     build: ./sample-app
+    restart: unless-stopped
     depends_on:
-      - glowroot
-      - rabbitmq
+      glowroot:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: demo
+      SPRING_RABBITMQ_PASSWORD: demo
       GLOWROOT_COLLECTOR_ADDRESS: glowroot:8181
+      SPRING_RABBITMQ_LISTENER_SIMPLE_MISSING_QUEUES_FATAL: "false"
