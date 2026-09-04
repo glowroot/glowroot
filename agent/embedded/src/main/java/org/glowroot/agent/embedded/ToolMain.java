@@ -46,6 +46,9 @@ public class ToolMain {
     // need to wait to init logger until
     private static volatile @MonotonicNonNull Logger startupLogger;
 
+    private static final String H2_USAGE = "usage: h2 console|shell|run <sql>|recreate|recover"
+            + "|upgrade-check|import-script <file.sql>";
+
     private ToolMain() {}
 
     public static void main(String[] args, Directories directories) throws Exception {
@@ -75,6 +78,10 @@ public class ToolMain {
         }
         String command = args[0];
         if (command.equals("h2")) {
+            if (args.length < 2) {
+                startupLogger.error(H2_USAGE);
+                return;
+            }
             String subcommand = args[1];
             if (subcommand.equals("console") && args.length == 2) {
                 console(directories.getDataDir());
@@ -98,6 +105,8 @@ public class ToolMain {
                 importScript(directories.getDataDir(), new File(args[2]));
                 return;
             }
+            startupLogger.error(H2_USAGE);
+            return;
         } else if (command.equals("mask-central-data") && args.length == 1) {
             // this is for monitoring glowroot central with glowroot agent, and then masking the
             // data captured from glowroot central so that it can be shared for debugging issues
@@ -185,6 +194,7 @@ public class ToolMain {
         }
         File dbFile = new File(dataDir, "data.mv.db");
         File dbBakFile = new File(dataDir, "data.mv.db.bak");
+        boolean movedAside = false;
         if (dbFile.exists()) {
             if (dbBakFile.exists() && !dbBakFile.delete()) {
                 startupLogger.warn("import-script failed, cannot delete existing file: {}",
@@ -196,10 +206,36 @@ public class ToolMain {
                         dbBakFile.getPath());
                 return;
             }
+            movedAside = true;
         }
-        RunScript.main("-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data", "-user",
-                "sa", "-script", scriptFile.getPath());
+        try {
+            RunScript.main("-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data", "-user",
+                    "sa", "-script", scriptFile.getPath());
+        } catch (Exception e) {
+            if (movedAside) {
+                if (!restoreMvDbFromBak(dbFile, dbBakFile)) {
+                    startupLogger.warn("import-script failed and could not restore {} from {}",
+                            dbFile.getPath(), dbBakFile.getPath());
+                } else {
+                    startupLogger.warn("import-script failed; restored previous {}",
+                            dbFile.getPath());
+                }
+            }
+            throw e;
+        }
         startupLogger.info("import-script succeeded (best-effort; verify UI before deleting backups)");
+    }
+
+    /**
+     * After a failed import that renamed {@code data.mv.db} aside, drop any partial new file and
+     * rename {@code data.mv.db.bak} back.
+     */
+    @VisibleForTesting
+    static boolean restoreMvDbFromBak(File dbFile, File dbBakFile) {
+        if (dbFile.exists() && !dbFile.delete()) {
+            return false;
+        }
+        return dbBakFile.renameTo(dbFile);
     }
 
     @RequiresNonNull("startupLogger")
