@@ -596,6 +596,18 @@ class ClassAnalyzer {
             }
             for (Iterator<MixinType> i = matchedMixinTypes.iterator(); i.hasNext();) {
                 MixinType matchedMixinType = i.next();
+                if (!matchedMixinType.addInterfaces()) {
+                    // Interfaces are not declared on the woven class; detect a prior mixin apply
+                    // via mixed-in methods so retransform keeps the same fields (JVMS).
+                    if (!classHasMixinInterfaceMethods(classBeingRedefined, matchedMixinType)) {
+                        logger.debug("not reweaving {} because cannot add mixin fields late: {}",
+                                ClassNames.fromInternalName(className),
+                                matchedMixinType.targets());
+                        nonReweavableMatchedMixinTypes.add(matchedMixinType);
+                        i.remove();
+                    }
+                    continue;
+                }
                 for (Type mixinInterface : matchedMixinType.interfaces()) {
                     if (!interfaceNames.contains(mixinInterface.getClassName())) {
                         // re-weaving would fail with "attempted to change superclass or interfaces"
@@ -613,6 +625,42 @@ class ClassAnalyzer {
                 .addAllReweavable(matchedMixinTypes)
                 .addAllNonReweavable(nonReweavableMatchedMixinTypes)
                 .build();
+    }
+
+    // True when clazz already has the public methods from the mixin interfaces (name + arity),
+    // which indicates the mixin fields/methods were applied at initial load.
+    private static boolean classHasMixinInterfaceMethods(Class<?> clazz, MixinType mixinType) {
+        for (Type mixinInterface : mixinType.interfaces()) {
+            Class<?> iface;
+            try {
+                iface = Class.forName(mixinInterface.getClassName(), false, clazz.getClassLoader());
+            } catch (ClassNotFoundException e) {
+                try {
+                    iface = Class.forName(mixinInterface.getClassName(), false, null);
+                } catch (ClassNotFoundException e2) {
+                    return false;
+                }
+            }
+            Method[] ifaceMethods = iface.getMethods();
+            if (ifaceMethods.length == 0) {
+                return false;
+            }
+            for (Method ifaceMethod : ifaceMethods) {
+                boolean found = false;
+                for (Method method : clazz.getMethods()) {
+                    if (method.getName().equals(ifaceMethod.getName())
+                            && method.getParameterCount() == ifaceMethod.getParameterCount()) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
     private static boolean hasMainOrPossibleProcrunStartMethod(List<ThinMethod> methods) {
