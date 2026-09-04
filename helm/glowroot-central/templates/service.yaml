@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "glowroot-central.fullname" . }}
+  labels:
+    {{- include "glowroot-central.labels" . | nindent 4 }}
+  {{- with .Values.service.ui.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.ui.type }}
+  ports:
+    - name: ui
+      port: {{ .Values.service.ui.port }}
+      targetPort: ui
+      protocol: TCP
+  selector:
+    {{- include "glowroot-central.selectorLabels" . | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "glowroot-central.fullname" . }}-collector
+  labels:
+    {{- include "glowroot-central.labels" . | nindent 4 }}
+  {{- with .Values.service.collector.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.collector.type }}
+  ports:
+    - name: collector
+      port: {{ .Values.service.collector.port }}
+      targetPort: collector
+      protocol: TCP
+  selector:
+    {{- include "glowroot-central.selectorLabels" . | nindent 4 }}

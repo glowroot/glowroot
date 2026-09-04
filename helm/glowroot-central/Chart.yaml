@@ -1,0 +1,17 @@
+apiVersion: v2
+name: glowroot-central
+description: Official Helm chart for Glowroot Central Collector
+type: application
+version: 0.1.0
+appVersion: "0.14.7"
+home: https://glowroot.org
+sources:
+  - https://github.com/glowroot/glowroot
+keywords:
+  - glowroot
+  - apm
+  - java
+  - cassandra
+maintainers:
+  - name: Glowroot
+    url: https://github.com/glowroot/glowroot
