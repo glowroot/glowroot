@@ -19,6 +19,7 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -259,24 +260,15 @@ public class ActiveAgentDao implements ActiveAgentRepository {
                 .setInstant(2, Instant.ofEpochMilli(revisedTo));
 
         List<String> agentIds = new ArrayList<>();
-        Function<AsyncResultSet, CompletableFuture<List<String>>> compute = new Function<AsyncResultSet, CompletableFuture<List<String>>>() {
-            @Override
-            public CompletableFuture<List<String>> apply(AsyncResultSet results) {
-                for (Row row : results.currentPage()) {
-                    String agentId = topLevelId + checkNotNull(row.getString(0));
-                    agentIds.add(agentId);
-                }
-                if (results.hasMorePages()) {
-                    results.fetchNextPage().thenCompose(this::apply).toCompletableFuture();
-                }
-                return CompletableFuture.completedFuture(agentIds);
-            }
-        };
         Set<String> allAgentRollupIds = new HashSet<>();
         Set<String> directChildAgentRollupIds = new HashSet<>();
         Multimap<String, String> childMultimap = HashMultimap.create();
         Map<String, CompletableFuture<String>> agentDisplayFutureMap = new HashMap<>();
-        return session.readAsync(boundStatement, profile).thenCompose(compute).thenRun(() -> {
+        // must return the next-page future (same as readActiveTopLevelAgentRollups above);
+        // otherwise RollupService walks an incomplete agent tree and parent aggregate rollups stall
+        return session.readAsync(boundStatement, profile)
+                .thenCompose(results -> accumulateChildAgentIds(results, topLevelId, agentIds))
+                .thenRun(() -> {
             for (String agentId : agentIds) {
                 List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);
                 allAgentRollupIds.addAll(agentRollupIds);
@@ -315,6 +307,20 @@ public class ActiveAgentDao implements ActiveAgentRepository {
             agentRollups.sort(Comparator.comparing(AgentRollup::display));
             return agentRollups;
         });
+    }
+
+    @VisibleForTesting
+    static CompletableFuture<List<String>> accumulateChildAgentIds(AsyncResultSet results,
+            String topLevelId, List<String> agentIds) {
+        for (Row row : results.currentPage()) {
+            agentIds.add(topLevelId + checkNotNull(row.getString(0)));
+        }
+        if (results.hasMorePages()) {
+            return results.fetchNextPage()
+                    .thenCompose(next -> accumulateChildAgentIds(next, topLevelId, agentIds))
+                    .toCompletableFuture();
+        }
+        return CompletableFuture.completedFuture(agentIds);
     }
 
     private static AgentRollup createAgentRollup(String agentRollupId,
