@@ -212,6 +212,8 @@ public class UiModule {
         httpServices.put(Pattern.compile("^/backend/trace/aux-thread-profile$"),
                 traceDetailHttpService);
         httpServices.put(Pattern.compile("^/log$"), glowrootLogHttpService);
+        // Liveness: process up. Readiness (Cassandra/H2): /readiness and /ready.
+        // Breaking vs 0.14.7: /health used to be readiness — see docs/health-endpoints.md
         httpServices.put(Pattern.compile("^/health$"), livenessHttpService);
         httpServices.put(Pattern.compile("^/liveness$"), livenessHttpService);
         httpServices.put(Pattern.compile("^/healthz$"), livenessHttpService);

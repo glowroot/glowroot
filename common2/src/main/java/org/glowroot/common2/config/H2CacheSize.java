@@ -18,8 +18,9 @@ package org.glowroot.common2.config;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- * Resolves H2 {@code cache_size} (KB) for embedded installs. Auto targets 128 MB; values are
- * clamped to {@code [16 MB, min(5% of max heap, 256 MB)]} so shared-JVM deploys stay safe.
+ * Resolves H2 {@code cache_size} (KB) for embedded installs. Default UI mode is fixed
+ * {@link #DEFAULT_MB} MB; auto targets {@link #AUTO_MB} MB. Values are clamped to
+ * {@code [16 MB, min(5% of max heap, 256 MB)]} so shared-JVM deploys stay safe.
  */
 public final class H2CacheSize {
 
@@ -29,6 +30,8 @@ public final class H2CacheSize {
 
     public static final String SYSTEM_PROPERTY = "glowroot.internal.h2.cacheSize";
 
+    /** Default for new installs ({@link #MODE_FIXED}). Between the historical ~8 MB and auto 128 MB. */
+    public static final int DEFAULT_MB = 32;
     public static final int AUTO_MB = 128;
     public static final int FLOOR_MB = 16;
     public static final int CEILING_MB = 256;

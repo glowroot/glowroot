@@ -163,10 +163,10 @@ glowroot.controller('AdminStorageCtrl', [
       if (!$scope.layout.central) {
         $scope.page.fullQueryTextExpirationDays = data.fullQueryTextExpirationHours / 24;
         if (!data.h2CacheMode) {
-          data.h2CacheMode = 'auto';
+          data.h2CacheMode = 'fixed';
         }
         if (data.h2CacheValue === undefined || data.h2CacheValue === null) {
-          data.h2CacheValue = 128;
+          data.h2CacheValue = 32;
         }
         refreshH2CacheWarning();
       }

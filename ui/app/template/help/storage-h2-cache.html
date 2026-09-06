@@ -1,6 +1,7 @@
 <div class="gt-storage-help">
   <div><strong>H2 cache</strong> — in-memory page cache for H2 (same JVM heap as the app), not disk storage.</div>
   <ul>
+    <li><strong>Default</strong> — Fixed <strong>32 MB</strong> on new installs (was Auto 128 MB target in early 0.14.8 betas).</li>
     <li><strong>Auto</strong> — targets 128 MB.</li>
     <li><strong>Fixed MB</strong> / <strong>% of -Xmx</strong> — your target before clamping.</li>
     <li><strong>Clamp</strong> — effective size is always between 16 and 256 MB, and at most 5% of <code>-Xmx</code>.</li>

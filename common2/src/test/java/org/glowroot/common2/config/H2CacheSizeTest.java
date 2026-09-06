@@ -32,6 +32,14 @@ public class H2CacheSizeTest {
     }
 
     @Test
+    public void defaultFixedIs32Mb() {
+        int kb = H2CacheSize.resolveKb(H2CacheSize.MODE_FIXED, H2CacheSize.DEFAULT_MB, XMX_10G,
+                null);
+        assertThat(kb).isEqualTo(32 * 1024);
+        assertThat(H2CacheSize.DEFAULT_MB).isEqualTo(32);
+    }
+
+    @Test
     public void fixedClampedToFivePercentAndCeiling() {
         // request 1024 MB on 10g: 5%=512, ceiling=256 → 256
         int kb = H2CacheSize.resolveKb(H2CacheSize.MODE_FIXED, 1024, XMX_10G, null);

@@ -74,6 +74,7 @@ Central needs its own install — see [Agent Installation (for Central Collector
 | Central on Docker | [Central Collector with Docker](https://github.com/glowroot/glowroot/wiki/Central-Collector-with-Docker) |
 | Troubleshooting | [Troubleshooting Tips](https://github.com/glowroot/glowroot/wiki/Troubleshooting-Tips) |
 | Storage (H2 / Cassandra TTL) | [Administration-Storage](https://github.com/glowroot/glowroot/wiki/Administration-Storage) |
+| HTTP `/health` vs `/readiness` (0.14.8+) | [docs/health-endpoints.md](docs/health-endpoints.md) · [0.14.8 upgrade notes](docs/0.14.8-upgrade-notes.md) |
 | Plugins / custom Instrumentation | [Plugins](https://github.com/glowroot/glowroot/wiki/Plugins) · [Instrumentation](https://github.com/glowroot/glowroot/wiki/Instrumentation) |
 | Empty Queries / Service Calls / Web? | [Plugin coverage gaps](https://github.com/glowroot/glowroot/wiki/Plugin-coverage-gaps) · [What Glowroot does not do](https://github.com/glowroot/glowroot/wiki/What-Glowroot-does-not-do) |
 | UI orientation (tabs, alerts, gauges, …) | [Transaction tabs](https://github.com/glowroot/glowroot/wiki/Transaction-tabs) · [wiki UI / configuration](https://github.com/glowroot/glowroot/wiki#ui--configuration) |

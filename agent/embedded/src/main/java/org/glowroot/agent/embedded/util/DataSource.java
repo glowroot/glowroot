@@ -643,7 +643,7 @@ public class DataSource {
     }
 
     private static int resolveInitialCacheSizeKb() {
-        return H2CacheSize.resolveKb(H2CacheSize.MODE_AUTO, H2CacheSize.AUTO_MB,
+        return H2CacheSize.resolveKb(H2CacheSize.MODE_FIXED, H2CacheSize.DEFAULT_MB,
                 Runtime.getRuntime().maxMemory(), System.getProperty(H2CacheSize.SYSTEM_PROPERTY));
     }
 
