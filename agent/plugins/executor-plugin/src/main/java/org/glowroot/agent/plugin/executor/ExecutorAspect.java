@@ -127,20 +127,32 @@ public class ExecutorAspect {
                     getter.setAccessible(true);
                     setter.setAccessible(true);
                 } catch (RuntimeException e) {
-                    // JDK 16+: setAccessible on java.base members throws. Public methods on
-                    // public exported types (e.g. mixin methods declared on ForkJoinTask) remain
-                    // invocable without setAccessible. Package-private nestmates
-                    // (ThreadPoolExecutor$Worker) stay inaccessible — treat as no mixin.
-                    if (!Modifier.isPublic(getter.getModifiers())
-                            || !Modifier.isPublic(setter.getModifiers())
-                            || !Modifier.isPublic(getter.getDeclaringClass().getModifiers())
-                            || !Modifier.isPublic(setter.getDeclaringClass().getModifiers())) {
+                    // JDK 16+: setAccessible on strongly encapsulated members throws.
+                    // Public methods on public exported types (e.g. ForkJoinTask) remain
+                    // invocable without setAccessible. Non-exported JDK types
+                    // (e.g. sun.net.www.http.KeepAliveCache) and package-private nestmates
+                    // are not — treat as no mixin (else Method.invoke blows up CXF IT).
+                    // No Module API: agent is Animal-Sniffer Java 8.
+                    if (!isInvocableWithoutSetAccessible(getter, setter)) {
                         return NONE;
                     }
                 }
                 return new Handles(getter, setter);
             }
         };
+
+        private static boolean isInvocableWithoutSetAccessible(Method getter, Method setter) {
+            Class<?> declaringClass = getter.getDeclaringClass();
+            if (!Modifier.isPublic(getter.getModifiers())
+                    || !Modifier.isPublic(setter.getModifiers())
+                    || !Modifier.isPublic(declaringClass.getModifiers())
+                    || !Modifier.isPublic(setter.getDeclaringClass().getModifiers())) {
+                return false;
+            }
+            String name = declaringClass.getName();
+            return !name.startsWith("sun.") && !name.startsWith("jdk.")
+                    && !name.startsWith("com.sun.");
+        }
 
         private final Object target;
         private final Handles handles;
