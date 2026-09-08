@@ -128,7 +128,7 @@ class ClassAnalyzer {
         if (intf) {
             matchedShimTypes = getMatchedShimTypes(shimTypes, className,
                     ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
-            matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className, classBeingRedefined,
+            matchedMixinTypes = getMatchedMixinTypes(mixinTypes, thinClass, classBeingRedefined,
                     ImmutableList.<AnalyzedClass>of(), ImmutableList.<AnalyzedClass>of());
             hasMainMethod = false;
             isClassLoader = false;
@@ -138,7 +138,7 @@ class ClassAnalyzer {
             superAnalyzedClasses.addAll(superAnalyzedHierarchy);
             matchedShimTypes = getMatchedShimTypes(shimTypes, className, superAnalyzedHierarchy,
                     interfaceAnalyzedHierarchy);
-            matchedMixinTypes = getMatchedMixinTypes(mixinTypes, className, classBeingRedefined,
+            matchedMixinTypes = getMatchedMixinTypes(mixinTypes, thinClass, classBeingRedefined,
                     superAnalyzedHierarchy, interfaceAnalyzedHierarchy);
             if (noLongerNeedToWeaveMainMethods) {
                 hasMainMethod = false;
@@ -566,9 +566,10 @@ class ClassAnalyzer {
     }
 
     private static MatchedMixinTypes getMatchedMixinTypes(List<MixinType> mixinTypes,
-            String className, @Nullable Class<?> classBeingRedefined,
+            ThinClass thinClass, @Nullable Class<?> classBeingRedefined,
             List<AnalyzedClass> superAnalyzedHierarchy,
             List<AnalyzedClass> interfaceAnalyzedHierarchy) {
+        String className = ClassNames.fromInternalName(thinClass.name());
         Set<MixinType> matchedMixinTypes = Sets.newHashSet();
         for (MixinType mixinType : mixinTypes) {
             // currently only exact matching is supported
@@ -599,10 +600,11 @@ class ClassAnalyzer {
                 if (!matchedMixinType.addInterfaces()) {
                     // Interfaces are not declared on the woven class; detect a prior mixin apply
                     // via mixed-in methods so retransform keeps the same fields (JVMS).
-                    if (!classHasMixinInterfaceMethods(classBeingRedefined, matchedMixinType)) {
+                    // Inspect thinClass bytecode only — Class.getMethods() during retransform can
+                    // initialize bootstrap types (e.g. ForkJoinPool) while CFT is non-reentrant.
+                    if (!classHasMixinInterfaceMethods(thinClass, matchedMixinType)) {
                         logger.debug("not reweaving {} because cannot add mixin fields late: {}",
-                                ClassNames.fromInternalName(className),
-                                matchedMixinType.targets());
+                                className, matchedMixinType.targets());
                         nonReweavableMatchedMixinTypes.add(matchedMixinType);
                         i.remove();
                     }
@@ -612,8 +614,7 @@ class ClassAnalyzer {
                     if (!interfaceNames.contains(mixinInterface.getClassName())) {
                         // re-weaving would fail with "attempted to change superclass or interfaces"
                         logger.debug("not reweaving {} because cannot add mixin type: {}",
-                                ClassNames.fromInternalName(className),
-                                mixinInterface.getClassName());
+                                className, mixinInterface.getClassName());
                         nonReweavableMatchedMixinTypes.add(matchedMixinType);
                         i.remove();
                         break;
@@ -627,40 +628,38 @@ class ClassAnalyzer {
                 .build();
     }
 
-    // True when clazz already has the public methods from the mixin interfaces (name + arity),
-    // which indicates the mixin fields/methods were applied at initial load.
-    private static boolean classHasMixinInterfaceMethods(Class<?> clazz, MixinType mixinType) {
-        for (Type mixinInterface : mixinType.interfaces()) {
-            Class<?> iface;
-            try {
-                iface = Class.forName(mixinInterface.getClassName(), false, clazz.getClassLoader());
-            } catch (ClassNotFoundException e) {
-                try {
-                    iface = Class.forName(mixinInterface.getClassName(), false, null);
-                } catch (ClassNotFoundException e2) {
-                    return false;
-                }
-            }
-            Method[] ifaceMethods = iface.getMethods();
-            if (ifaceMethods.length == 0) {
-                return false;
-            }
-            for (Method ifaceMethod : ifaceMethods) {
-                boolean found = false;
-                for (Method method : clazz.getMethods()) {
-                    if (method.getName().equals(ifaceMethod.getName())
-                            && method.getParameterCount() == ifaceMethod.getParameterCount()) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    return false;
-                }
-            }
-            return true;
+    // True when the class bytes already contain the public instance methods from the mixin
+    // implementation (name + arity), which indicates mixin fields/methods were applied at
+    // initial load.
+    private static boolean classHasMixinInterfaceMethods(ThinClass thinClass, MixinType mixinType) {
+        Set<String> required = mixinImplementationMethodKeys(mixinType);
+        if (required.isEmpty()) {
+            return false;
         }
-        return false;
+        Set<String> present = Sets.newHashSet();
+        for (ThinMethod method : thinClass.nonBridgeMethods()) {
+            present.add(method.name() + '#' + Type.getArgumentTypes(method.descriptor()).length);
+        }
+        return present.containsAll(required);
+    }
+
+    private static Set<String> mixinImplementationMethodKeys(MixinType mixinType) {
+        final Set<String> keys = Sets.newHashSet();
+        new ClassReader(mixinType.implementationBytes()).accept(new ClassVisitor(ASM9) {
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String descriptor,
+                    @Nullable String signature, String /*@Nullable*/ [] exceptions) {
+                if (name.equals("<init>") || name.equals("<clinit>")) {
+                    return null;
+                }
+                if ((access & org.objectweb.asm.Opcodes.ACC_PUBLIC) != 0
+                        && (access & org.objectweb.asm.Opcodes.ACC_STATIC) == 0) {
+                    keys.add(name + '#' + Type.getArgumentTypes(descriptor).length);
+                }
+                return null;
+            }
+        }, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+        return keys;
     }
 
     private static boolean hasMainOrPossibleProcrunStartMethod(List<ThinMethod> methods) {
