@@ -16,6 +16,7 @@
 package org.glowroot.agent.plugin.executor;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.TimerTask;
 import java.util.concurrent.Callable;
@@ -126,8 +127,16 @@ public class ExecutorAspect {
                     getter.setAccessible(true);
                     setter.setAccessible(true);
                 } catch (RuntimeException e) {
-                    // e.g. InaccessibleObjectException for some java.base implementors
-                    return NONE;
+                    // JDK 16+: setAccessible on java.base members throws. Public methods on
+                    // public exported types (e.g. mixin methods declared on ForkJoinTask) remain
+                    // invocable without setAccessible. Package-private nestmates
+                    // (ThreadPoolExecutor$Worker) stay inaccessible — treat as no mixin.
+                    if (!Modifier.isPublic(getter.getModifiers())
+                            || !Modifier.isPublic(setter.getModifiers())
+                            || !Modifier.isPublic(getter.getDeclaringClass().getModifiers())
+                            || !Modifier.isPublic(setter.getDeclaringClass().getModifiers())) {
+                        return NONE;
+                    }
                 }
                 return new Handles(getter, setter);
             }
