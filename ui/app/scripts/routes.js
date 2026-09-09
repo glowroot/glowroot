@@ -110,8 +110,10 @@ glowroot.config([
       } else if ($rootScope.layout.showNavbarError) {
         return 'error/messages';
       } else if ($rootScope.layout.showNavbarJvm) {
-        if (!$rootScope.layout.central) {
-          var jvmPermissions = $rootScope.agentRollup.permissions.jvm;
+        var jvmPermissions = $rootScope.agentRollup
+            && $rootScope.agentRollup.permissions
+            && $rootScope.agentRollup.permissions.jvm;
+        if (jvmPermissions) {
           if (jvmPermissions.gauges) {
             return 'jvm/gauges';
           } else if (jvmPermissions.threadDump) {
@@ -128,11 +130,10 @@ glowroot.config([
             // only remaining option when showNavbarJvm is true
             return 'jvm/environment';
           }
-        } else {
-          // TODO this will not work if user has access to other JVM pages, but not gauges
-          // (deal with this when revisiting entire 'otherwise', see comment above)
-          return 'jvm/gauges';
         }
+        // Central (or agentRollup not loaded yet): gauges is the only JVM page that works
+        // without an agent-rollup-id (see jvm.html sidebar ng-if)
+        return 'jvm/gauges';
       } else if ($rootScope.layout.showNavbarConfig) {
         return $rootScope.layout.central ? 'config/general' : 'config/transaction';
       } else if ($rootScope.layout.adminView) {
