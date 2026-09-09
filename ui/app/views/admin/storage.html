@@ -616,6 +616,28 @@
             <div class="gt-storage-maintenance-group"
                  ng-if="layout.adminEdit">
               <div class="gt-storage-maintenance-heading">
+                <span>Lean defaults</span>
+                <button type="button"
+                        class="gt-storage-info-btn"
+                        uib-popover-template="'template/help/storage-lean-prod.html'"
+                        popover-placement="bottom"
+                        popover-trigger="'outsideClick'">
+                  <span title="Help" class="fas fa-question-circle"></span>
+                </button>
+              </div>
+              <div gt-button-group>
+                <div gt-button
+                     gt-label="Apply lean defaults"
+                     gt-click="applyLeanProdDefaults(deferred)"
+                     gt-btn-class="btn-secondary"
+                     gt-dont-validate-form="true"
+                     class="d-inline-block">
+                </div>
+              </div>
+            </div>
+            <div class="gt-storage-maintenance-group"
+                 ng-if="layout.adminEdit">
+              <div class="gt-storage-maintenance-heading">
                 <span class="text-danger">Danger</span>
                 <button type="button"
                         class="gt-storage-info-btn"
@@ -636,6 +658,33 @@
                      class="d-inline-block">
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+      <!-- Central has no H2 Maintenance box; same lean-defaults control + ? help -->
+      <fieldset class="gt-fieldset"
+                ng-if="layout.adminEdit && layout.central">
+        <legend class="gt-legend">Lean defaults</legend>
+        <div class="gt-fieldset-under-normal-form">
+          <div class="gt-storage-maintenance-heading"
+               style="margin-bottom: 0.5rem;">
+            <span>Storage TTLs</span>
+            <button type="button"
+                    class="gt-storage-info-btn"
+                    uib-popover-template="'template/help/storage-lean-prod.html'"
+                    popover-placement="bottom"
+                    popover-trigger="'outsideClick'">
+              <span title="Help" class="fas fa-question-circle"></span>
+            </button>
+          </div>
+          <div gt-button-group>
+            <div gt-button
+                 gt-label="Apply lean defaults"
+                 gt-click="applyLeanProdDefaults(deferred)"
+                 gt-btn-class="btn-secondary"
+                 gt-dont-validate-form="true"
+                 class="d-inline-block">
             </div>
           </div>
         </div>

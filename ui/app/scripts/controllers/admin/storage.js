@@ -22,7 +22,8 @@ glowroot.controller('AdminStorageCtrl', [
   '$location',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, $location, confirmIfHasChanges, httpErrors) {
+  'leanProdPresets',
+  function ($scope, $http, $location, confirmIfHasChanges, httpErrors, leanProdPresets) {
 
     // initialize page binding object
     $scope.page = {};
@@ -171,6 +172,20 @@ glowroot.controller('AdminStorageCtrl', [
         refreshH2CacheWarning();
       }
     }
+
+    // Populate lean Prod retention/capped (or Central TTLs); does not persist until Save.
+    $scope.applyLeanProdDefaults = function (deferred) {
+      if (!$scope.loaded || !$scope.layout.adminEdit) {
+        deferred.reject('Storage config is not ready');
+        return;
+      }
+      if ($scope.layout.central) {
+        leanProdPresets.applyCentralStorage($scope.page);
+      } else {
+        leanProdPresets.applyEmbeddedStorage($scope.page, $scope.config);
+      }
+      deferred.resolve('Filled lean defaults — click Save changes to persist');
+    };
 
     $scope.save = function (deferred) {
       $scope.showH2DiskSpaceAnalysis = false;
