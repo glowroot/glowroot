@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Glowroot runtime architecture",
+    "locale": "en",
+    "output": "glowroot-runtime.architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "embedded-path",
+        "label": "Embedded path",
+        "focus": ["app", "agent", "plugins", "emb", "h2", "ui", "ops"],
+        "note": "Single JVM: weaving → in-process collector → H2 → UI over HTTP."
+      },
+      {
+        "id": "central-path",
+        "label": "Central path",
+        "focus": ["app", "agent", "central", "cass", "ui", "ops"],
+        "note": "Remote agent over gRPC; Cassandra persistence; UI served by Central."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "ops",
+      "type": "external",
+      "label": "Operator",
+      "sublabel": "Browser",
+      "pos": [40, 40],
+      "size": [110, 48]
+    },
+    {
+      "id": "ui",
+      "type": "frontend",
+      "label": "Glowroot UI",
+      "sublabel": "AngularJS 1.x",
+      "pos": [210, 40],
+      "size": [130, 48]
+    },
+    {
+      "id": "central",
+      "type": "backend",
+      "label": "Central collector",
+      "sublabel": "gRPC + HTTP",
+      "pos": [440, 30],
+      "size": [140, 48]
+    },
+    {
+      "id": "cass",
+      "type": "database",
+      "label": "Cassandra",
+      "sublabel": "rollups + traces",
+      "pos": [650, 30],
+      "size": [120, 48]
+    },
+    {
+      "id": "app",
+      "type": "external",
+      "label": "Monitored app",
+      "sublabel": "JVM Java 8+",
+      "pos": [40, 220],
+      "size": [120, 48],
+      "tag": "-javaagent"
+    },
+    {
+      "id": "agent",
+      "type": "backend",
+      "label": "Agent core",
+      "sublabel": "ASM weaving",
+      "pos": [210, 220],
+      "size": [130, 52]
+    },
+    {
+      "id": "emb",
+      "type": "backend",
+      "label": "Embedded collector",
+      "sublabel": "in-process",
+      "pos": [440, 220],
+      "size": [140, 48]
+    },
+    {
+      "id": "h2",
+      "type": "database",
+      "label": "H2",
+      "sublabel": "local storage",
+      "pos": [650, 220],
+      "size": [110, 48]
+    },
+    {
+      "id": "plugins",
+      "type": "backend",
+      "label": "Plugin pack",
+      "sublabel": "27 pointcuts",
+      "pos": [210, 340],
+      "size": [130, 48]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Embedded (same JVM)",
+      "wraps": ["app", "agent", "plugins", "emb", "h2"]
+    },
+    {
+      "kind": "security-group",
+      "label": "Central deploy",
+      "wraps": ["central", "cass"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "ops-to-ui",
+      "from": "ops",
+      "to": "ui",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ui-to-central",
+      "from": "ui",
+      "to": "central",
+      "label": "REST",
+      "labelDy": -24
+    },
+    {
+      "id": "app-to-agent",
+      "from": "app",
+      "to": "agent",
+      "label": "same JVM",
+      "variant": "emphasis"
+    },
+    {
+      "id": "agent-to-plugins",
+      "from": "agent",
+      "to": "plugins",
+      "label": "@Pointcut",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 22
+    },
+    {
+      "id": "agent-to-emb",
+      "from": "agent",
+      "to": "emb",
+      "label": "trace / metrics",
+      "variant": "emphasis"
+    },
+    {
+      "id": "emb-to-h2",
+      "from": "emb",
+      "to": "h2",
+      "label": "SQL",
+      "variant": "emphasis"
+    },
+    {
+      "id": "agent-to-central",
+      "from": "agent",
+      "to": "central",
+      "label": "gRPC :8181",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [[275, 140], [510, 140]],
+      "labelAt": [390, 128]
+    },
+    {
+      "id": "central-to-cass",
+      "from": "central",
+      "to": "cass",
+      "label": "CQL"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Differentiator",
+      "items": [
+        "Embedded: zip + -javaagent, no extra infra",
+        "27 weave plugins + agent shading"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Two deploys",
+      "items": [
+        "Embedded: UI REST + H2 in the same process",
+        "Central: gRPC, Cassandra, UI over HTTP"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Trust boundary",
+      "items": [
+        "Agent runs inside the app JVM",
+        "Central is a separate ops service"
+      ]
+    }
+  ]
+}
