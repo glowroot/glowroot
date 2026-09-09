@@ -137,7 +137,7 @@
       <!-- track by $index is needed since duplicates are possible in this list -->
       <div class="gt-jvm-argument gt-break-word"
            ng-repeat="arg in data.java.args track by $index">
-        <span style="white-space: nowrap;">{{argFirstPart(arg)}}</span>{{argSecondPart(arg)}}
+        <span class="gt-jvm-argument-key">{{argFirstPart(arg)}}</span>{{argSecondPart(arg)}}
       </div>
     </div>
   </div>

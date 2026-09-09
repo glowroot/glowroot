@@ -562,6 +562,14 @@ glowroot.directive('gtTimerDisplay', function () {
         return totalNanosList;
       }
 
+      // Share bar width = % of the largest inclusive total in this list (not % of response time).
+      function applyBarPercents(timers, totalNanosList) {
+        var maxNanos = totalNanosList.length ? totalNanosList[0] : 0;
+        angular.forEach(timers, function (timer) {
+          timer.barPct = maxNanos > 0 ? Math.round(100 * timer.totalNanos / maxNanos) : 0;
+        });
+      }
+
       var flattenedTotalNanosList = [];
       var treeTotalNanosList = [];
 
@@ -571,6 +579,8 @@ glowroot.directive('gtTimerDisplay', function () {
         scope.ftShowMore = scope.limit < scope.flattenedTimers.length;
         scope.ttShowMore = scope.limit < scope.treeTimers.length;
         scope.showLess = scope.limit !== 10;
+        scope.ftShowMoreAndLess = scope.ftShowMore && scope.showLess;
+        scope.ttShowMoreAndLess = scope.ttShowMore && scope.showLess;
 
         function updateLimitOne(timers, totalNanosList) {
           var limit = Math.min(scope.limit, totalNanosList.length);
@@ -590,6 +600,8 @@ glowroot.directive('gtTimerDisplay', function () {
         // the timer list changes each time the chart is refreshed
         flattenedTotalNanosList = buildTotalNanosList(scope.flattenedTimers);
         treeTotalNanosList = buildTotalNanosList(scope.treeTimers);
+        applyBarPercents(scope.flattenedTimers, flattenedTotalNanosList);
+        applyBarPercents(scope.treeTimers, treeTotalNanosList);
         updateLimit();
       });
 
@@ -624,11 +636,72 @@ glowroot.directive('gtTimerDisplay', function () {
 
 
 glowroot.directive('gtThreadStats', function () {
+  // Match chart.scss / thread-stats palette; pie is a CSS conic-gradient (no chart lib).
+  var PIE_COLORS = {
+    cpu: '#417998',
+    blocked: '#bf380b',
+    waited: '#8a7a4a'
+  };
+
   return {
     scope: {
       threadStats: '=',
       transactionCount: '='
     },
-    templateUrl: 'template/gt-thread-stats.html'
+    templateUrl: 'template/gt-thread-stats.html',
+    link: function (scope) {
+      // CPU / Blocked / Waited → pie. Allocated memory stays text-only (no JVM heap fetch).
+      function refreshVisuals() {
+        var stats = scope.threadStats;
+        var txnCount = scope.transactionCount;
+        scope.hasTimeSlices = false;
+        scope.timeSlices = [];
+        scope.pieBackground = '#eee';
+
+        if (!stats || !txnCount) {
+          return;
+        }
+
+        var slices = [];
+        function addSlice(name, nanos, color) {
+          if (nanos === undefined || nanos === -1) {
+            return;
+          }
+          slices.push({
+            name: name,
+            nanos: nanos,
+            ms: nanos / (1000000 * txnCount),
+            color: color
+          });
+        }
+        addSlice('CPU', stats.totalCpuNanos, PIE_COLORS.cpu);
+        addSlice('Blocked', stats.totalBlockedNanos, PIE_COLORS.blocked);
+        addSlice('Waited', stats.totalWaitedNanos, PIE_COLORS.waited);
+
+        if (!slices.length) {
+          return;
+        }
+        var total = 0;
+        angular.forEach(slices, function (slice) {
+          total += slice.nanos;
+        });
+        if (total <= 0) {
+          return;
+        }
+        var cursor = 0;
+        var stops = [];
+        angular.forEach(slices, function (slice) {
+          slice.pct = Math.round(100 * slice.nanos / total);
+          var start = cursor;
+          cursor += 100 * slice.nanos / total;
+          stops.push(slice.color + ' ' + start.toFixed(2) + '% ' + cursor.toFixed(2) + '%');
+        });
+        scope.pieBackground = 'conic-gradient(' + stops.join(', ') + ')';
+        scope.timeSlices = slices;
+        scope.hasTimeSlices = true;
+      }
+
+      scope.$watchGroup(['threadStats', 'transactionCount'], refreshVisuals);
+    }
   };
 });

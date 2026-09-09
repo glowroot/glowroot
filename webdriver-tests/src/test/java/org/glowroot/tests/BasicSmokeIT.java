@@ -440,11 +440,17 @@ public class BasicSmokeIT extends WebDriverIT {
     }
 
     private void clickAcross() throws InterruptedException {
-        waitFor(xpath("//td[normalize-space()='Breakdown:']"));
-        clickLink("percentiles");
-        waitFor(xpath("//label[normalize-space()='95th percentile:']"));
-        clickLink("throughput");
-        waitFor(xpath("//label[normalize-space()='Throughput:']"));
+        // Breakdown heading moved from <td>Breakdown:</td> to .gt-breakdown-heading (no colon).
+        waitFor(xpath("//*[contains(@class,'gt-breakdown-heading')"
+                + " and starts-with(normalize-space(),'Breakdown')]"));
+        // View <select> replaced the old radio <a href>s; navigate by URL like those hrefs did
+        // (more reliable in headless Firefox than driving the select widget).
+        openResponseTimeView("percentiles");
+        // Percentile rows use <span>, not <label>.
+        waitFor(xpath("//*[normalize-space()='95th percentile:']"));
+        openResponseTimeView("throughput");
+        waitFor(xpath("//*[contains(@class,'gt-breakdown-heading')"
+                + " and normalize-space()='Throughput']"));
         clickPartialLink("Slow traces");
         waitFor(xpath("//label[normalize-space()='Response time']"));
         clickLink("Queries");
@@ -459,6 +465,14 @@ public class BasicSmokeIT extends WebDriverIT {
         clickLink("View flame graph");
         // give flame graph a chance to render (only for visual when running locally)
         SECONDS.sleep(1);
+    }
+
+    /** Same navigation as the old average/percentiles/throughput radio links. */
+    private void openResponseTimeView(String view) {
+        String current = driver.getCurrentUrl();
+        String next = current.replaceAll("/transaction/(average|percentiles|throughput)",
+                "/transaction/" + view);
+        driver.navigate().to(next);
     }
 
     private void clickAroundInTraceModal(String traceId, boolean active) throws Exception {
