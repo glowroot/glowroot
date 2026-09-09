@@ -1,0 +1,19 @@
+1. UI Service: {{ include "glowroot-central.fullname" . }}:{{ .Values.service.ui.port }}
+2. Agent collector Service: {{ include "glowroot-central.fullname" . }}-collector:{{ .Values.service.collector.port }}
+
+Point each agent at the collector Service DNS (gRPC), not the UI port:
+
+  collector.address=http://{{ include "glowroot-central.fullname" . }}-collector.{{ .Release.Namespace }}.svc:{{ .Values.service.collector.port }}
+
+Ops guide: https://github.com/glowroot/glowroot/wiki/Kubernetes
+
+{{- if .Values.ingress.enabled }}
+Ingress hosts:
+{{- range .Values.ingress.hosts }}
+  - http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- else if eq .Values.service.ui.type "ClusterIP" }}
+Port-forward UI:
+
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "glowroot-central.fullname" . }} {{ .Values.service.ui.port }}:{{ .Values.service.ui.port }}
+{{- end }}
