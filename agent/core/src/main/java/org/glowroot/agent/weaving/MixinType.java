@@ -29,7 +29,6 @@ abstract class MixinType {
         return ImmutableMixinType.builder()
                 .addTargets(mixinClass.mixin().value())
                 .addAllInterfaces(mixinClass.interfaces())
-                .addInterfaces(mixinClass.mixin().addInterfaces())
                 .initMethodName(mixinClass.initMethodName())
                 .implementationBytes(mixinClass.bytes())
                 .build();
@@ -37,7 +36,6 @@ abstract class MixinType {
 
     abstract ImmutableList<String> targets();
     abstract ImmutableList<Type> interfaces();
-    abstract boolean addInterfaces();
     abstract @Nullable String initMethodName();
     abstract byte[] implementationBytes();
 }

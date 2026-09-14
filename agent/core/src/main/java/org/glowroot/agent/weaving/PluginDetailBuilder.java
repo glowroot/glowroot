@@ -437,15 +437,10 @@ class PluginDetailBuilder {
         }
 
         private List<String> values = Lists.newArrayList();
-        private boolean addInterfaces = true;
 
         @Override
         public void visit(@Nullable String name, Object value) {
-            if ("addInterfaces".equals(name)) {
-                addInterfaces = (Boolean) value;
-            } else {
-                throw new IllegalStateException("Unexpected @Mixin attribute name: " + name);
-            }
+            throw new IllegalStateException("Unexpected @Mixin attribute name: " + name);
         }
 
         @Override
@@ -466,10 +461,6 @@ class PluginDetailBuilder {
                 @Override
                 public String[] value() {
                     return Iterables.toArray(values, String.class);
-                }
-                @Override
-                public boolean addInterfaces() {
-                    return addInterfaces;
                 }
             };
         }

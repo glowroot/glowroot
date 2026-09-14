@@ -516,9 +516,6 @@ class WeavingClassVisitor extends ClassVisitor {
             interfacesIncludingShimsAndMixins.add(matchedShimType.iface().getInternalName());
         }
         for (MixinType matchedMixinType : mixinTypes) {
-            if (!matchedMixinType.addInterfaces()) {
-                continue;
-            }
             for (Type mixinInterface : matchedMixinType.interfaces()) {
                 interfacesIncludingShimsAndMixins.add(mixinInterface.getInternalName());
             }

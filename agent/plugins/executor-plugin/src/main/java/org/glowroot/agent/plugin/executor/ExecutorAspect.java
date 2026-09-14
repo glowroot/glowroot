@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2026 the original author or authors.
+ * Copyright 2016-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package org.glowroot.agent.plugin.executor;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.TimerTask;
 import java.util.concurrent.Callable;
@@ -57,16 +55,10 @@ public class ExecutorAspect {
 
     private static final AtomicBoolean isDoneExceptionLogged = new AtomicBoolean();
 
-    // Do NOT add RunnableEtcMixin to woven Class.getInterfaces() (addInterfaces=false): Weld SE
-    // RunnableDecorator validation fails with WELD-000061 / Helidon MP when that interface
-    // appears in the decorated type set (#1115). Fields/methods are still mixed in; callers use
-    // RunnableEtcAux (ClassValue + reflective Method) instead of instanceof / casts.
-    // Mixin still implements RunnableEtcMixin so MixinType.interfaces() stays non-empty and the
-    // reweave guard can refuse late field injection on retransform.
     // the field and method names are verbose since they will be mixed in to existing classes
-    @Mixin(value = {"java.lang.Runnable", "java.util.concurrent.Callable",
+    @Mixin({"java.lang.Runnable", "java.util.concurrent.Callable",
             "java.util.concurrent.ForkJoinTask", "akka.jsr166y.ForkJoinTask",
-            "scala.concurrent.forkjoin.ForkJoinTask"}, addInterfaces = false)
+            "scala.concurrent.forkjoin.ForkJoinTask"})
     public abstract static class RunnableEtcImpl implements RunnableEtcMixin {
 
         private transient volatile @Nullable AuxThreadContext glowroot$auxContext;
@@ -99,112 +91,6 @@ public class ExecutorAspect {
 
     public interface SuppressedRunnableMixin {}
 
-    // Invokes mixed-in glowroot$getAuxContext / glowroot$setAuxContext without requiring
-    // RunnableEtcMixin to appear in Class.getInterfaces() (see RunnableEtcImpl).
-    private static final class RunnableEtcAux {
-
-        private static final Handles NONE = new Handles(null, null);
-
-        private static final ClassValue<Handles> HANDLES = new ClassValue<Handles>() {
-            @Override
-            protected Handles computeValue(Class<?> type) {
-                Method getter = null;
-                Method setter = null;
-                for (Method method : type.getMethods()) {
-                    if (method.getName().equals("glowroot$getAuxContext")
-                            && method.getParameterCount() == 0) {
-                        getter = method;
-                    } else if (method.getName().equals("glowroot$setAuxContext")
-                            && method.getParameterCount() == 1) {
-                        setter = method;
-                    }
-                }
-                if (getter == null || setter == null) {
-                    return NONE;
-                }
-                try {
-                    // public methods on package-private woven classes still need setAccessible
-                    getter.setAccessible(true);
-                    setter.setAccessible(true);
-                } catch (RuntimeException e) {
-                    // JDK 16+: setAccessible on strongly encapsulated members throws.
-                    // Public methods on public exported types (e.g. ForkJoinTask) remain
-                    // invocable without setAccessible. Non-exported JDK types
-                    // (e.g. sun.net.www.http.KeepAliveCache) and package-private nestmates
-                    // are not — treat as no mixin (else Method.invoke blows up CXF IT).
-                    // No Module API: agent is Animal-Sniffer Java 8.
-                    if (!isInvocableWithoutSetAccessible(getter, setter)) {
-                        return NONE;
-                    }
-                }
-                return new Handles(getter, setter);
-            }
-        };
-
-        private static boolean isInvocableWithoutSetAccessible(Method getter, Method setter) {
-            Class<?> declaringClass = getter.getDeclaringClass();
-            if (!Modifier.isPublic(getter.getModifiers())
-                    || !Modifier.isPublic(setter.getModifiers())
-                    || !Modifier.isPublic(declaringClass.getModifiers())
-                    || !Modifier.isPublic(setter.getDeclaringClass().getModifiers())) {
-                return false;
-            }
-            String name = declaringClass.getName();
-            return !name.startsWith("sun.") && !name.startsWith("jdk.")
-                    && !name.startsWith("com.sun.");
-        }
-
-        private final Object target;
-        private final Handles handles;
-
-        private RunnableEtcAux(Object target, Handles handles) {
-            this.target = target;
-            this.handles = handles;
-        }
-
-        static boolean isMixin(Object obj) {
-            return obj != null && HANDLES.get(obj.getClass()) != NONE;
-        }
-
-        static @Nullable RunnableEtcAux asMixin(Object obj) {
-            if (obj == null) {
-                return null;
-            }
-            Handles handles = HANDLES.get(obj.getClass());
-            if (handles == NONE) {
-                return null;
-            }
-            return new RunnableEtcAux(obj, handles);
-        }
-
-        @Nullable
-        AuxThreadContext glowroot$getAuxContext() {
-            try {
-                return (AuxThreadContext) handles.getter.invoke(target);
-            } catch (Throwable t) {
-                throw new IllegalStateException(t);
-            }
-        }
-
-        void glowroot$setAuxContext(@Nullable AuxThreadContext auxContext) {
-            try {
-                handles.setter.invoke(target, auxContext);
-            } catch (Throwable t) {
-                throw new IllegalStateException(t);
-            }
-        }
-
-        private static final class Handles {
-            private final @Nullable Method getter;
-            private final @Nullable Method setter;
-
-            private Handles(@Nullable Method getter, @Nullable Method setter) {
-                this.getter = getter;
-                this.setter = setter;
-            }
-        }
-    }
-
     @Pointcut(className = EXECUTOR_CLASSES, methodName = "execute|submit|submitListenable",
             methodParameterTypes = {"java.lang.Runnable", ".."}, nestingGroup = "executor-execute")
     public static class ExecuteRunnableAdvice {
@@ -232,7 +118,7 @@ public class ExecutorAspect {
     public static class ForkJoinPoolAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object forkJoinTask) {
-            return RunnableEtcAux.isMixin(forkJoinTask)
+            return forkJoinTask instanceof RunnableEtcMixin
                     // for ForkJoinTask subclasses loaded before the transformer (e.g. Java 25+),
                     // wrap if it's a Runnable so exec() can be instrumented via GlowrootForkJoinTask
                     || forkJoinTask instanceof Runnable;
@@ -242,9 +128,8 @@ public class ExecutorAspect {
         public static void onBefore(ThreadContext context,
                 @BindParameter ParameterHolder<ForkJoinTask<?>> forkJoinTaskHolder) {
             ForkJoinTask<?> forkJoinTask = forkJoinTaskHolder.get();
-            RunnableEtcAux mixin = RunnableEtcAux.asMixin(forkJoinTask);
-            if (mixin != null) {
-                onBeforeCommon(context, mixin);
+            if (forkJoinTask instanceof RunnableEtcMixin) {
+                onBeforeCommon(context, (RunnableEtcMixin) forkJoinTask);
             } else if (forkJoinTask instanceof Runnable) {
                 // wrap non-mixin Runnable ForkJoinTask (e.g. AdaptedCallable, AdaptedRunnable
                 // in Java 25+ that are loaded before the class file transformer)
@@ -261,12 +146,12 @@ public class ExecutorAspect {
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object forkJoinTask) {
             // this class may have been loaded before class file transformer was added to jvm
-            return RunnableEtcAux.isMixin(forkJoinTask);
+            return forkJoinTask instanceof RunnableEtcMixin;
         }
         @OnBefore
         public static void onBefore(ThreadContext context, @BindParameter Object forkJoinTask) {
-            // asMixin is non-null because of isEnabled() check above
-            onBeforeCommon(context, RunnableEtcAux.asMixin(forkJoinTask));
+            // cast is safe because of isEnabled() check above
+            onBeforeCommon(context, (RunnableEtcMixin) forkJoinTask);
         }
     }
 
@@ -278,12 +163,12 @@ public class ExecutorAspect {
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object forkJoinTask) {
             // this class may have been loaded before class file transformer was added to jvm
-            return RunnableEtcAux.isMixin(forkJoinTask);
+            return forkJoinTask instanceof RunnableEtcMixin;
         }
         @OnBefore
         public static void onBefore(ThreadContext context, @BindParameter Object forkJoinTask) {
-            // asMixin is non-null because of isEnabled() check above
-            onBeforeCommon(context, RunnableEtcAux.asMixin(forkJoinTask));
+            // cast is safe because of isEnabled() check above
+            onBeforeCommon(context, (RunnableEtcMixin) forkJoinTask);
         }
     }
 
@@ -328,11 +213,8 @@ public class ExecutorAspect {
         @OnReturn
         public static void onReturn(ThreadContext context, @BindTraveler boolean alreadyHandled,
                 @BindReceiver Thread thread) {
-            if (!alreadyHandled) {
-                RunnableEtcAux mixin = RunnableEtcAux.asMixin(thread);
-                if (mixin != null) {
-                    onBeforeCommon(context, mixin);
-                }
+            if (!alreadyHandled && thread instanceof RunnableEtcMixin) {
+                onBeforeCommon(context, (RunnableEtcMixin) thread);
             }
         }
     }
@@ -352,11 +234,8 @@ public class ExecutorAspect {
         @OnReturn
         public static void onReturn(ThreadContext context, @BindTraveler boolean alreadyHandled,
                 @BindReceiver Thread thread) {
-            if (!alreadyHandled) {
-                RunnableEtcAux mixin = RunnableEtcAux.asMixin(thread);
-                if (mixin != null) {
-                    onBeforeCommon(context, mixin);
-                }
+            if (!alreadyHandled && thread instanceof RunnableEtcMixin) {
+                onBeforeCommon(context, (RunnableEtcMixin) thread);
             }
         }
     }
@@ -387,10 +266,10 @@ public class ExecutorAspect {
             }
             for (Object callable : callables) {
                 // this class may have been loaded before class file transformer was added to jvm
-                RunnableEtcAux mixin = RunnableEtcAux.asMixin(callable);
-                if (mixin != null) {
+                if (callable instanceof RunnableEtcMixin) {
+                    RunnableEtcMixin callableMixin = (RunnableEtcMixin) callable;
                     AuxThreadContext auxContext = context.createAuxThreadContext();
-                    mixin.glowroot$setAuxContext(auxContext);
+                    callableMixin.glowroot$setAuxContext(auxContext);
                 }
             }
         }
@@ -436,12 +315,12 @@ public class ExecutorAspect {
         @IsEnabled
         public static boolean isEnabled(@BindParameter Object runnableEtc) {
             // this class may have been loaded before class file transformer was added to jvm
-            return RunnableEtcAux.isMixin(runnableEtc);
+            return runnableEtc instanceof RunnableEtcMixin;
         }
         @OnBefore
         public static void onBefore(ThreadContext context, @BindParameter TimerTask timerTask) {
-            // asMixin is non-null because of isEnabled() check above
-            onBeforeCommon(context, RunnableEtcAux.asMixin(timerTask));
+            // cast is safe because of isEnabled() check above
+            onBeforeCommon(context, (RunnableEtcMixin) timerTask);
         }
     }
 
@@ -513,25 +392,22 @@ public class ExecutorAspect {
     public static class RunnableAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver Runnable runnable) {
-            RunnableEtcAux mixin = RunnableEtcAux.asMixin(runnable);
-            if (mixin == null) {
+            if (!(runnable instanceof RunnableEtcMixin)) {
                 // this class was loaded before class file transformer was added to jvm
                 return false;
             }
-            return mixin.glowroot$getAuxContext() != null;
+            RunnableEtcMixin runnableMixin = (RunnableEtcMixin) runnable;
+            return runnableMixin.glowroot$getAuxContext() != null;
         }
         @OnBefore
         public static @Nullable TraceEntry onBefore(@BindReceiver Runnable runnable) {
-            RunnableEtcAux mixin = RunnableEtcAux.asMixin(runnable);
-            if (mixin == null) {
-                return null;
-            }
-            AuxThreadContext auxContext = mixin.glowroot$getAuxContext();
+            RunnableEtcMixin runnableMixin = (RunnableEtcMixin) runnable;
+            AuxThreadContext auxContext = runnableMixin.glowroot$getAuxContext();
             if (auxContext == null) {
                 // this is unlikely (since checked in @IsEnabled) but possible under concurrency
                 return null;
             }
-            mixin.glowroot$setAuxContext(null);
+            runnableMixin.glowroot$setAuxContext(null);
             return auxContext.start();
         }
         @OnReturn
@@ -556,25 +432,22 @@ public class ExecutorAspect {
     public static class CallableAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver Callable<?> callable) {
-            RunnableEtcAux mixin = RunnableEtcAux.asMixin(callable);
-            if (mixin == null) {
+            if (!(callable instanceof RunnableEtcMixin)) {
                 // this class was loaded before class file transformer was added to jvm
                 return false;
             }
-            return mixin.glowroot$getAuxContext() != null;
+            RunnableEtcMixin callableMixin = (RunnableEtcMixin) callable;
+            return callableMixin.glowroot$getAuxContext() != null;
         }
         @OnBefore
         public static @Nullable TraceEntry onBefore(@BindReceiver Callable<?> callable) {
-            RunnableEtcAux mixin = RunnableEtcAux.asMixin(callable);
-            if (mixin == null) {
-                return null;
-            }
-            AuxThreadContext auxContext = mixin.glowroot$getAuxContext();
+            RunnableEtcMixin callableMixin = (RunnableEtcMixin) callable;
+            AuxThreadContext auxContext = callableMixin.glowroot$getAuxContext();
             if (auxContext == null) {
                 // this is unlikely (since checked in @IsEnabled) but possible under concurrency
                 return null;
             }
-            mixin.glowroot$setAuxContext(null);
+            callableMixin.glowroot$setAuxContext(null);
             return auxContext.start();
         }
         @OnReturn
@@ -617,25 +490,22 @@ public class ExecutorAspect {
     public static class ExecAdvice {
         @IsEnabled
         public static boolean isEnabled(@BindReceiver Object task) {
-            RunnableEtcAux mixin = RunnableEtcAux.asMixin(task);
-            if (mixin == null) {
+            if (!(task instanceof RunnableEtcMixin)) {
                 // this class was loaded before class file transformer was added to jvm
                 return false;
             }
-            return mixin.glowroot$getAuxContext() != null;
+            RunnableEtcMixin taskMixin = (RunnableEtcMixin) task;
+            return taskMixin.glowroot$getAuxContext() != null;
         }
         @OnBefore
         public static @Nullable TraceEntry onBefore(@BindReceiver Object task) {
-            RunnableEtcAux mixin = RunnableEtcAux.asMixin(task);
-            if (mixin == null) {
-                return null;
-            }
-            AuxThreadContext auxContext = mixin.glowroot$getAuxContext();
+            RunnableEtcMixin taskMixin = (RunnableEtcMixin) task;
+            AuxThreadContext auxContext = taskMixin.glowroot$getAuxContext();
             if (auxContext == null) {
                 // this is unlikely (since checked in @IsEnabled) but possible under concurrency
                 return null;
             }
-            mixin.glowroot$setAuxContext(null);
+            taskMixin.glowroot$setAuxContext(null);
             return auxContext.start();
         }
         @OnReturn
@@ -657,10 +527,8 @@ public class ExecutorAspect {
         Runnable runnable = runnableHolder.get();
         if (runnable instanceof SuppressedRunnableMixin) {
             return;
-        }
-        RunnableEtcAux mixin = RunnableEtcAux.asMixin(runnable);
-        if (mixin != null) {
-            onBeforeCommon(context, mixin);
+        } else if (runnable instanceof RunnableEtcMixin) {
+            onBeforeCommon(context, (RunnableEtcMixin) runnable);
         } else if (isLambda(runnable)) {
             wrapRunnable(runnableHolder, context);
         }
@@ -669,21 +537,16 @@ public class ExecutorAspect {
     private static <T> void onBeforeWithCallableHolder(ThreadContext context,
             ParameterHolder<Callable<T>> callableHolder) {
         Callable<T> callable = callableHolder.get();
-        RunnableEtcAux mixin = RunnableEtcAux.asMixin(callable);
-        if (mixin != null) {
-            onBeforeCommon(context, mixin);
+        if (callable instanceof RunnableEtcMixin) {
+            onBeforeCommon(context, (RunnableEtcMixin) callable);
         } else if (isLambda(callable)) {
             wrapCallable(callableHolder, context);
         }
     }
 
     private static void onThreadInitCommon(ThreadContext context, Thread thread) {
-        if (thread instanceof SuppressedRunnableMixin) {
-            return;
-        }
-        RunnableEtcAux mixin = RunnableEtcAux.asMixin(thread);
-        if (mixin != null) {
-            onBeforeCommon(context, mixin);
+        if (thread instanceof RunnableEtcMixin && !(thread instanceof SuppressedRunnableMixin)) {
+            onBeforeCommon(context, (RunnableEtcMixin) thread);
         }
     }
 
@@ -691,9 +554,8 @@ public class ExecutorAspect {
             ParameterHolder<Runnable> runnableHolder) {
         Runnable runnable = runnableHolder.get();
         if (!(runnable instanceof SuppressedRunnableMixin)) {
-            RunnableEtcAux mixin = RunnableEtcAux.asMixin(runnable);
-            if (mixin != null) {
-                onBeforeCommon(context, mixin);
+            if (runnable instanceof RunnableEtcMixin) {
+                onBeforeCommon(context, (RunnableEtcMixin) runnable);
                 return true;
             } else if (isLambda(runnable)) {
                 wrapRunnable(runnableHolder, context);
@@ -711,12 +573,10 @@ public class ExecutorAspect {
         return name.contains("$$Lambda/") /* jdk21+ */ || name.contains("$$Lambda$"); /* jdk8-20 */
     }
 
-    private static void onBeforeCommon(ThreadContext context, @Nullable RunnableEtcAux runnableEtc) {
-        if (runnableEtc == null) {
-            return;
-        }
+    private static void onBeforeCommon(ThreadContext context, RunnableEtcMixin runnableEtc) {
+        RunnableEtcMixin runnableMixin = runnableEtc;
         AuxThreadContext auxContext = context.createAuxThreadContext();
-        runnableEtc.glowroot$setAuxContext(auxContext);
+        runnableMixin.glowroot$setAuxContext(auxContext);
     }
 
     private static void wrapRunnable(ParameterHolder<Runnable> runnableHolder,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -246,9 +246,6 @@ public class Weaver {
                 }
             }
             for (MixinType matchedMixinType : reweavableMatchedMixinTypes) {
-                if (!matchedMixinType.addInterfaces()) {
-                    continue;
-                }
                 for (Type mixinInterface : matchedMixinType.interfaces()) {
                     if (!interfaceNames.contains(mixinInterface.getClassName())) {
                         // re-weaving would fail with "attempted to change superclass or interfaces"
@@ -425,8 +422,14 @@ public class Weaver {
         public @Nullable MethodVisitor visitMethod(int access, String name, String descriptor,
                 @Nullable String signature, String /*@Nullable*/ [] exceptions) {
             MethodVisitor mv = cw.visitMethod(access, name, descriptor, signature, exceptions);
+            // Helidon MP / Weld 5+ use jakarta.*; older Weld uses javax.* (#1115).
+            // stripGlowrootTypes drops mixin interfaces (e.g. RunnableEtcMixin) so CDI
+            // decorator validation does not fail with WELD-000061 — keeps executor mixin
+            // on Class.getInterfaces() for zero-overhead instanceof access.
             if (name.equals("checkDelegateType")
-                    && descriptor.equals("(Ljavax/enterprise/inject/spi/Decorator;)V")) {
+                    && (descriptor.equals("(Ljavax/enterprise/inject/spi/Decorator;)V")
+                            || descriptor.equals(
+                                    "(Ljakarta/enterprise/inject/spi/Decorator;)V"))) {
                 return new JBossWeldHackMethodVisitor(mv);
             } else {
                 return mv;
