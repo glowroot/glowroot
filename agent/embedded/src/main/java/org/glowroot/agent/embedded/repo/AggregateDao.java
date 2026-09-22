@@ -818,6 +818,7 @@ public class AggregateDao implements AggregateRepository {
                     return "sum(total_duration_nanos) desc";
                 case AVERAGE_TIME:
                     return "sum(total_duration_nanos) / sum(transaction_count) desc";
+                case TOTAL_TRANSACTION_COUNT:
                 case THROUGHPUT:
                     return "sum(transaction_count) desc";
                 case TOTAL_CPU_TIME:

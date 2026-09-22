@@ -17,11 +17,13 @@
 table.gt-gauge-table thead th {
   border-bottom: 1px solid #ddd;
   vertical-align: bottom;
-  padding: 5px 20px;
+  padding: .5rem 1rem;
+  color: #555;
+  font-weight: 600;
 }
 
 table.gt-gauge-table td {
   // vertical align is for the color bars when the gauge name wraps on two lines
   vertical-align: top;
-  padding: 2px 20px;
+  padding: .35rem 1rem;
 }
