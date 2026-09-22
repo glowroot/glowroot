@@ -17,10 +17,12 @@ package org.glowroot.agent.embedded;
 
 import java.io.File;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.security.CodeSource;
 import java.security.cert.Certificate;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,5 +45,49 @@ public class ToolMainTest {
         File glowrootJar = new File("x/classes");
         CodeSource codeSource = new CodeSource(glowrootJar.toURI().toURL(), new Certificate[0]);
         assertThat(ToolMain.getGlowrootJarFile(codeSource)).isNull();
+    }
+
+    @Test
+    public void describeUpgradeStateDetectsLegacyH2(@TempDir File dataDir) throws Exception {
+        Files.write(new File(dataDir, "data.h2.db").toPath(), new byte[] {1});
+        assertThat(ToolMain.describeUpgradeState(dataDir))
+                .contains("data.h2.db")
+                .contains("Layer 1")
+                .contains("import-script");
+    }
+
+    @Test
+    public void describeUpgradeStateDetectsMvStoreOnly(@TempDir File dataDir) throws Exception {
+        Files.write(new File(dataDir, "data.mv.db").toPath(), new byte[] {1});
+        assertThat(ToolMain.describeUpgradeState(dataDir))
+                .contains("data.mv.db")
+                .contains("No Layer 1");
+    }
+
+    @Test
+    public void describeUpgradeStateNotesBothFiles(@TempDir File dataDir) throws Exception {
+        Files.write(new File(dataDir, "data.h2.db").toPath(), new byte[] {1});
+        Files.write(new File(dataDir, "data.mv.db").toPath(), new byte[] {2});
+        assertThat(ToolMain.describeUpgradeState(dataDir))
+                .contains("data.h2.db")
+                .contains("data.mv.db also present");
+    }
+
+    @Test
+    public void largeScriptWarnsAtOneGib() {
+        assertThat(ToolMain.isLargeImportScript(1024L * 1024 * 1024)).isTrue();
+        assertThat(ToolMain.isLargeImportScript(1024L * 1024 * 1024 - 1)).isFalse();
+    }
+
+    @Test
+    public void restoreMvDbFromBakReplacesPartialFile(@TempDir File dataDir) throws Exception {
+        File dbFile = new File(dataDir, "data.mv.db");
+        File dbBakFile = new File(dataDir, "data.mv.db.bak");
+        Files.write(dbBakFile.toPath(), new byte[] {9, 9});
+        Files.write(dbFile.toPath(), new byte[] {1});
+        assertThat(ToolMain.restoreMvDbFromBak(dbFile, dbBakFile)).isTrue();
+        assertThat(dbFile).exists();
+        assertThat(dbBakFile).doesNotExist();
+        assertThat(Files.readAllBytes(dbFile.toPath())).containsExactly(9, 9);
     }
 }
