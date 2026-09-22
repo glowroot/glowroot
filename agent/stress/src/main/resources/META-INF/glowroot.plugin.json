@@ -1,0 +1,72 @@
+{
+  "name": "Agent Stress Plugin",
+  "id": "glowroot-agent-stress",
+  "instrumentation": [
+    {
+      "className": "org.glowroot.agent.stress.Workloads",
+      "methodName": "jdbcOnce",
+      "methodParameterTypes": [ "int" ],
+      "captureKind": "transaction",
+      "transactionType": "Stress",
+      "transactionNameTemplate": "jdbc-stress",
+      "timerName": "jdbc stress"
+    },
+    {
+      "className": "org.glowroot.agent.stress.Workloads",
+      "methodName": "jdbcOnceUnique",
+      "methodParameterTypes": [ "int", "long" ],
+      "captureKind": "transaction",
+      "transactionType": "Stress",
+      "transactionNameTemplate": "jdbc-stress-unique",
+      "timerName": "jdbc stress unique"
+    },
+    {
+      "className": "org.glowroot.agent.stress.Workloads",
+      "methodName": "jdbcOnceA",
+      "methodParameterTypes": [ "int", "long" ],
+      "captureKind": "transaction",
+      "transactionType": "Stress",
+      "transactionNameTemplate": "fill-a",
+      "timerName": "jdbc stress"
+    },
+    {
+      "className": "org.glowroot.agent.stress.Workloads",
+      "methodName": "jdbcOnceB",
+      "methodParameterTypes": [ "int", "long" ],
+      "captureKind": "transaction",
+      "transactionType": "Stress",
+      "transactionNameTemplate": "fill-b",
+      "timerName": "jdbc stress"
+    },
+    {
+      "className": "org.glowroot.agent.stress.Workloads",
+      "methodName": "jdbcOnceC",
+      "methodParameterTypes": [ "int", "long" ],
+      "captureKind": "transaction",
+      "transactionType": "Stress",
+      "transactionNameTemplate": "fill-c",
+      "timerName": "jdbc stress"
+    },
+    {
+      "className": "org.glowroot.agent.stress.Workloads",
+      "methodName": "churnOnce",
+      "methodParameterTypes": [ "int" ],
+      "captureKind": "transaction",
+      "transactionType": "Stress",
+      "transactionNameTemplate": "agent-churn",
+      "timerName": "agent churn"
+    },
+    {
+      "className": "org.glowroot.agent.stress.Workloads",
+      "methodName": "retainOnce",
+      "methodParameterTypes": [
+        "java.util.concurrent.CountDownLatch",
+        "java.util.concurrent.CountDownLatch"
+      ],
+      "captureKind": "transaction",
+      "transactionType": "Stress",
+      "transactionNameTemplate": "agent-retain",
+      "timerName": "agent retain"
+    }
+  ]
+}
