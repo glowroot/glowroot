@@ -100,6 +100,11 @@ class RepoAdminImpl implements RepoAdmin {
     }
 
     @Override
+    public void deleteAgentMeta(String agentRollupId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void defragH2Data() throws Exception {
         dataSource.defrag();
     }
