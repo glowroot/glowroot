@@ -177,8 +177,11 @@ public class ToolMain {
      * Loads an SQL dump into a new data.mv.db using the bundled H2 2.x driver.
      * Does not read data.h2.db — export that with H2 1.3.x first.
      */
-    @RequiresNonNull("startupLogger")
-    private static void importScript(File dataDir, File scriptFile) throws Exception {
+    @VisibleForTesting
+    static void importScript(File dataDir, File scriptFile) throws Exception {
+        if (startupLogger == null) {
+            startupLogger = LoggerFactory.getLogger("org.glowroot");
+        }
         if (!scriptFile.isFile()) {
             startupLogger.error("import-script failed: not a file: {}", scriptFile.getPath());
             return;
@@ -209,8 +212,10 @@ public class ToolMain {
             movedAside = true;
         }
         try {
-            RunScript.main("-url", "jdbc:h2:" + dataDir.getPath() + File.separator + "data", "-user",
-                    "sa", "-script", scriptFile.getPath());
+            RunScript.main("-url",
+                    "jdbc:h2:" + dataDir.getPath() + File.separator + "data"
+                            + ";NON_KEYWORDS=USER,VALUE;compress=true",
+                    "-user", "sa", "-script", scriptFile.getPath());
         } catch (Exception e) {
             if (movedAside) {
                 if (!restoreMvDbFromBak(dbFile, dbBakFile)) {
@@ -220,6 +225,9 @@ public class ToolMain {
                     startupLogger.warn("import-script failed; restored previous {}",
                             dbFile.getPath());
                 }
+            } else if (dbFile.exists() && !dbFile.delete()) {
+                startupLogger.warn("import-script failed and could not clean up partial {}",
+                        dbFile.getPath());
             }
             throw e;
         }

@@ -21,10 +21,16 @@ import java.nio.file.Files;
 import java.security.CodeSource;
 import java.security.cert.Certificate;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ToolMainTest {
 
@@ -89,5 +95,73 @@ public class ToolMainTest {
         assertThat(dbFile).exists();
         assertThat(dbBakFile).doesNotExist();
         assertThat(Files.readAllBytes(dbFile.toPath())).containsExactly(9, 9);
+    }
+
+    @Test
+    public void importScriptSupportsLegacyReservedKeywords(@TempDir File dataDir) throws Exception {
+        File scriptFile = new File(dataDir, "export.sql");
+        String sql = "CREATE MEMORY TABLE PUBLIC.TRACE(\n"
+                + "    ID BIGINT,\n"
+                + "    USER VARCHAR(255),\n"
+                + "    VALUE VARCHAR(255)\n"
+                + ");\n"
+                + "INSERT INTO PUBLIC.TRACE (ID, USER, VALUE) VALUES (1, 'operator', 'custom');\n"
+                + "CREATE CACHED TABLE PUBLIC.GAUGE_VALUE(\n"
+                + "    GAUGE_ID BIGINT,\n"
+                + "    CAPTURE_TIME BIGINT,\n"
+                + "    VALUE DOUBLE\n"
+                + ");\n"
+                + "INSERT INTO PUBLIC.GAUGE_VALUE (GAUGE_ID, CAPTURE_TIME, VALUE) VALUES (42, 1000, 99.5);\n";
+        Files.write(scriptFile.toPath(), sql.getBytes());
+
+        ToolMain.importScript(dataDir, scriptFile);
+
+        File dbFile = new File(dataDir, "data.mv.db");
+        assertThat(dbFile).exists();
+
+        String url = "jdbc:h2:" + dataDir.getPath() + File.separator + "data;NON_KEYWORDS=USER,VALUE;compress=true";
+        try (Connection conn = DriverManager.getConnection(url, "sa", "");
+                Statement stmt = conn.createStatement()) {
+            try (ResultSet rs = stmt.executeQuery("SELECT trace.user, trace.value FROM trace WHERE id = 1")) {
+                assertThat(rs.next()).isTrue();
+                assertThat(rs.getString("user")).isEqualTo("operator");
+                assertThat(rs.getString("value")).isEqualTo("custom");
+            }
+            try (ResultSet rs = stmt.executeQuery("SELECT gauge_id, value FROM gauge_value WHERE gauge_id = 42")) {
+                assertThat(rs.next()).isTrue();
+                assertThat(rs.getDouble("value")).isEqualTo(99.5);
+            }
+        }
+    }
+
+    @Test
+    public void importScriptCleansUpPartialFileOnFailureWhenNoPriorDb(@TempDir File dataDir) throws Exception {
+        File scriptFile = new File(dataDir, "invalid.sql");
+        Files.write(scriptFile.toPath(), "INVALID SQL STATEMENT;".getBytes());
+
+        File dbFile = new File(dataDir, "data.mv.db");
+        assertThat(dbFile).doesNotExist();
+
+        assertThatThrownBy(() -> ToolMain.importScript(dataDir, scriptFile))
+                .isInstanceOf(Exception.class);
+
+        assertThat(dbFile).doesNotExist();
+    }
+
+    @Test
+    public void importScriptRestoresBakOnFailureWhenPriorDbExisted(@TempDir File dataDir) throws Exception {
+        File dbFile = new File(dataDir, "data.mv.db");
+        byte[] originalContent = new byte[] {42, 43, 44};
+        Files.write(dbFile.toPath(), originalContent);
+
+        File scriptFile = new File(dataDir, "invalid.sql");
+        Files.write(scriptFile.toPath(), "INVALID SQL STATEMENT;".getBytes());
+
+        assertThatThrownBy(() -> ToolMain.importScript(dataDir, scriptFile))
+                .isInstanceOf(Exception.class);
+
+        assertThat(dbFile).exists();
+        assertThat(Files.readAllBytes(dbFile.toPath())).containsExactly(originalContent);
+        assertThat(new File(dataDir, "data.mv.db.bak")).doesNotExist();
     }
 }
