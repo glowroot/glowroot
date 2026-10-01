@@ -220,7 +220,12 @@ public class UiModule {
         httpServices.put(Pattern.compile("^/readiness$"), healthCheckHttpService);
         httpServices.put(Pattern.compile("^/ready$"), healthCheckHttpService);
 
-        if (central) {
+        if (!central) {
+            // Opt-in Prometheus scrape — see docs/prometheus-metrics.md (#1249)
+            PrometheusMetricsHttpService prometheusMetricsHttpService =
+                    new PrometheusMetricsHttpService(repoAdmin, version);
+            httpServices.put(Pattern.compile("^/metrics$"), prometheusMetricsHttpService);
+        } else {
             httpServices.put(Pattern.compile("^/synthetic-monitors$"), indexHtmlHttpService);
         }
 
