@@ -29,7 +29,7 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class TransactionWorthyAspect {
 
-    @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TransactionWorthy",
+    @Pointcut(className = "org.glowroot.microbenchmarks.support.TransactionWorthy",
             methodName = "doSomethingTransactionWorthy", methodParameterTypes = {},
             timerName = "transaction worthy")
     public static class TransactionWorthyAdvice {
