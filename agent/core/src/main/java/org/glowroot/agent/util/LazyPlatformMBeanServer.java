@@ -121,6 +121,28 @@ public class LazyPlatformMBeanServer {
         waitForContainerToCreatePlatformMBeanServer =
                 jbossModules || wildflyBootable || wildflySwarm || oldJBoss || glassfish || weblogic || websphere;
         needsManualPatternMatching = oldJBoss;
+        if (jbossModules && !systemPkgsIncludesGlowroot()) {
+            // MetaHolder in deployment ModuleClassLoader cannot see GeneratedMethodMeta* in
+            // agent/bootstrap loader unless org.glowroot is on jboss.modules.system.pkgs (#1112)
+            logger.warn("jboss.modules.system.pkgs does not include org.glowroot;"
+                    + " deployment modules may fail with ClassNotFoundException on"
+                    + " GeneratedMethodMeta*. Add -Djboss.modules.system.pkgs=org.glowroot"
+                    + " (append org.glowroot if the property is already set)");
+        }
+    }
+
+    private static boolean systemPkgsIncludesGlowroot() {
+        String systemPkgs = System.getProperty("jboss.modules.system.pkgs");
+        if (systemPkgs == null || systemPkgs.isEmpty()) {
+            return false;
+        }
+        for (String pkg : systemPkgs.split(",")) {
+            String trimmed = pkg.trim();
+            if (trimmed.equals("org.glowroot") || trimmed.startsWith("org.glowroot.")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void lazyRegisterMBean(Object object, String name) {
