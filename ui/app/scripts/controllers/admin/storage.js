@@ -18,11 +18,13 @@
 
 glowroot.controller('AdminStorageCtrl', [
   '$scope',
+  '$rootScope',
   '$http',
   '$location',
+  '$timeout',
   'confirmIfHasChanges',
   'httpErrors',
-  function ($scope, $http, $location, confirmIfHasChanges, httpErrors) {
+  function ($scope, $rootScope, $http, $location, $timeout, confirmIfHasChanges, httpErrors) {
 
     // initialize page binding object
     $scope.page = {};
@@ -42,7 +44,8 @@ glowroot.controller('AdminStorageCtrl', [
       centralQuery: false,
       centralProfile: false,
       // Trace TTL is a primary Central control (same weight as rollup); keep open.
-      centralTrace: true
+      centralTrace: true,
+      centralDanger: false
     };
     $scope.toggleSection = function (name) {
       $scope.sectionOpen[name] = !$scope.sectionOpen[name];
@@ -204,6 +207,82 @@ glowroot.controller('AdminStorageCtrl', [
             httpErrors.handle(response, deferred);
           });
     };
+
+    $scope.deleteAgentMeta = function (deferred) {
+      var id = $scope.page.deleteAgentMetaId;
+      if (!id) {
+        deferred.reject('Select an agent or rollup');
+        return;
+      }
+      $http.post('backend/admin/delete-agent-meta', {
+        agentRollupId: id
+      }).then(function () {
+        $scope.page.deleteAgentMetaId = '';
+        $scope.deleteAgentMetaRollups = $scope.deleteAgentMetaRollups.filter(function (agentRollup) {
+          return agentRollup.id !== id;
+        });
+        removeDeletedAgentFromNavbar(id);
+        deferred.resolve('Deleted agent metadata for ' + id);
+      }, function (response) {
+        httpErrors.handle(response, deferred);
+      });
+    };
+
+    function removeDeletedAgentFromNavbar(id) {
+      if ($rootScope.topLevelAgentRollups) {
+        $rootScope.setTopLevelAgentRollups($rootScope.topLevelAgentRollups.filter(function (agentRollup) {
+          return agentRollup.id !== id;
+        }));
+      }
+      if ($rootScope.childAgentRollups) {
+        $rootScope.setChildAgentRollups($rootScope.childAgentRollups.filter(function (agentRollup) {
+          return agentRollup.id !== id;
+        }));
+      }
+      $timeout(function () {
+        $('#topLevelAgentRollupDropdown').selectpicker('refresh');
+        $('#childAgentRollupDropdown').selectpicker('refresh');
+      });
+      if ($rootScope.agentRollupId === id || $rootScope.agentId === id) {
+        var search = $location.search();
+        delete search['agent-id'];
+        delete search['agent-rollup-id'];
+        $location.search(search);
+        delete $rootScope.agentRollupId;
+        delete $rootScope.agentId;
+        delete $rootScope.agentRollup;
+      }
+    }
+
+    function loadDeleteAgentMetaRollups() {
+      if (!$scope.layout.central || !$scope.layout.adminEdit) {
+        return;
+      }
+      $http.get('backend/admin/all-active-agent-rollups')
+          .then(function (response) {
+            var agentRollups = response.data || [];
+            angular.forEach(agentRollups, function (agentRollup) {
+              var indent = '';
+              for (var i = 0; i < agentRollup.depth; i++) {
+                indent += '\u00a0\u00a0\u00a0\u00a0';
+              }
+              agentRollup.indentedDisplay = indent + agentRollup.lastDisplayPart;
+            });
+            $scope.deleteAgentMetaRollups = agentRollups;
+            if ($scope.agentRollupId) {
+              var match = agentRollups.some(function (agentRollup) {
+                return agentRollup.id === $scope.agentRollupId;
+              });
+              if (match) {
+                $scope.page.deleteAgentMetaId = $scope.agentRollupId;
+              }
+            }
+          }, function (response) {
+            httpErrors.handle(response);
+          });
+    }
+
+    loadDeleteAgentMetaRollups();
 
     $scope.defragH2Data = function (deferred) {
       $scope.showH2DiskSpaceAnalysis = false;
