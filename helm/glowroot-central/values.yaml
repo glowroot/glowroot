@@ -1,0 +1,91 @@
+# Default values for glowroot-central.
+# Central requires Cassandra. Point contactPoints at an existing cluster
+# (in-cluster or external). This chart does not deploy Cassandra.
+
+replicaCount: 1
+
+image:
+  repository: glowroot/glowroot-central
+  tag: "0.14.7"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: false
+  name: ""
+
+podAnnotations: {}
+podSecurityContext:
+  fsGroup: 0
+securityContext:
+  runAsUser: 999
+  runAsGroup: 0
+
+service:
+  ui:
+    type: ClusterIP
+    port: 4000
+    annotations: {}
+  collector:
+    type: ClusterIP
+    port: 8181
+    annotations: {}
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: glowroot.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Cassandra connection (env vars consumed by docker-entrypoint.sh)
+cassandra:
+  contactPoints: ""
+  username: ""
+  password: ""
+  keyspace: ""
+  localDatacenter: ""
+  # 32-char hex; REQUIRED for encrypting LDAP/SMTP passwords in admin config
+  symmetricEncryptionKey: ""
+  # Optional: existing Secret with keys contactPoints, username, password,
+  # keyspace, localDatacenter, symmetricEncryptionKey (overrides plain values when set)
+  existingSecret: ""
+
+ui:
+  contextPath: ""
+
+# Optional admin-default.json (applied only on first Central bootstrap when
+# central_config is empty). Plain "password" fields are accepted for ldap/smtp
+# and converted to encryptedPassword (#729).
+adminDefault:
+  enabled: false
+  # Raw JSON string, or leave empty and set inline below via values file.
+  json: ""
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: ui
+  initialDelaySeconds: 120
+  periodSeconds: 20
+  failureThreshold: 10
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: ui
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 6
