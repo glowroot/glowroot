@@ -223,7 +223,8 @@ public class UiModule {
         if (!central) {
             // Opt-in Prometheus scrape — see docs/prometheus-metrics.md (#1249)
             PrometheusMetricsHttpService prometheusMetricsHttpService =
-                    new PrometheusMetricsHttpService(repoAdmin, version);
+                    new PrometheusMetricsHttpService(repoAdmin, version, liveAggregateRepository,
+                            clock);
             httpServices.put(Pattern.compile("^/metrics$"), prometheusMetricsHttpService);
         } else {
             httpServices.put(Pattern.compile("^/synthetic-monitors$"), indexHtmlHttpService);
