@@ -36,6 +36,8 @@ public interface RepoAdmin {
 
     void deleteAllData() throws Exception;
 
+    void deleteAgentMeta(String agentRollupId) throws Exception;
+
     void resizeIfNeeded() throws Exception;
 
     int updateCassandraTwcsWindowSizes() throws Exception;
