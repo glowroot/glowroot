@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.jar.JarFile;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
@@ -247,6 +248,16 @@ public class AgentModule {
 
         weaver.setNoLongerNeedToWeaveMainMethods();
 
+        if ("org.jboss.modules.Main".equals(mainClass)
+                && !systemPkgsIncludesGlowroot(System.getProperty("jboss.modules.system.pkgs"))) {
+            // MetaHolder in deployment ModuleClassLoader cannot see GeneratedMethodMeta* in
+            // agent/bootstrap loader unless org.glowroot is on jboss.modules.system.pkgs (#1112)
+            startupLogger.warn("jboss.modules.system.pkgs does not include org.glowroot;"
+                    + " deployment modules may fail with ClassNotFoundException on"
+                    + " GeneratedMethodMeta*. Add -Djboss.modules.system.pkgs=org.glowroot"
+                    + " (append org.glowroot if the property is already set)");
+        }
+
         deadlockedActiveWeavingRunnable = new DeadlockedActiveWeavingRunnable(weaver);
         deadlockedActiveWeavingRunnable.scheduleWithFixedDelay(backgroundExecutor, 5, 5, SECONDS);
 
@@ -437,6 +448,20 @@ public class AgentModule {
                 }
             }
         }
+    }
+
+    @VisibleForTesting
+    static boolean systemPkgsIncludesGlowroot(@Nullable String systemPkgs) {
+        if (systemPkgs == null || systemPkgs.isEmpty()) {
+            return false;
+        }
+        for (String pkg : systemPkgs.split(",")) {
+            String trimmed = pkg.trim();
+            if (trimmed.equals("org.glowroot") || trimmed.startsWith("org.glowroot.")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @OnlyUsedByTests
