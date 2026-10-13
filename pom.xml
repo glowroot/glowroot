@@ -493,6 +493,22 @@
           <version>0.8.15</version>
         </plugin>
         <plugin>
+          <!-- shaded modules relocate their dependencies and drop their maven metadata, so SBOM
+            scanners cannot see them in the shipped jars, see
+            https://github.com/glowroot/glowroot/issues/1268 -->
+          <groupId>org.cyclonedx</groupId>
+          <artifactId>cyclonedx-maven-plugin</artifactId>
+          <version>2.9.3</version>
+          <configuration>
+            <projectType>library</projectType>
+            <outputFormat>json</outputFormat>
+            <outputName>${project.artifactId}-${project.version}-cyclonedx</outputName>
+            <includeProvidedScope>false</includeProvidedScope>
+            <includeSystemScope>false</includeSystemScope>
+            <includeTestScope>false</includeTestScope>
+          </configuration>
+        </plugin>
+        <plugin>
           <groupId>org.eclipse.m2e</groupId>
           <artifactId>lifecycle-mapping</artifactId>
           <version>1.0.0</version>
