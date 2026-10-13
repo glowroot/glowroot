@@ -59,4 +59,18 @@ public class SchemaUpgradeTest {
                 "agent:abc,mno,xyz:error", "agent:abc,mno,xyz:jvm:environment",
                 "agent:abc,mno,xyz:jvm:gauges", "agent:abc,mno,xyz:transaction");
     }
+
+    @Test
+    public void shouldAddSyntheticAndAlertFromTransactionPermission() {
+        Set<String> added = SchemaUpgrade.upgradePermissions2(
+                ImmutableSet.of("agent:abc:transaction", "admin:view"));
+        assertThat(Ordering.natural().sortedCopy(added)).containsExactly(
+                "agent:abc:alert", "agent:abc:syntheticMonitor");
+    }
+
+    @Test
+    public void shouldNotUpgradePermissionsWhenNoViewPermission() {
+        assertThat(SchemaUpgrade.upgradePermissions(ImmutableSet.of("agent:abc:transaction")))
+                .isNull();
+    }
 }
