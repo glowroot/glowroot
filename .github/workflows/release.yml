@@ -118,8 +118,20 @@ jobs:
                   --augmentMerge \
                   --outputSpecVersion 1.6 \
                   --primary glowroot-agent-core-$VERSION-cyclonedx.json \
-                  --output glowroot-$VERSION-sbom.cdx.json \
+                  --output glowroot-agent-$VERSION-merged-cyclonedx.json \
                   "${boms[@]#sbom/}"
+
+          # the augment merge keeps the root component of the primary BOM (glowroot-agent-core),
+          # so make it describe the agent dist instead
+          sbomasm edit \
+                  --subject primary-component \
+                  --type application \
+                  --name glowroot-agent \
+                  --version $VERSION \
+                  --description "Glowroot Agent" \
+                  --purl "pkg:maven/org.glowroot/glowroot-agent@$VERSION?type=jar" \
+                  --output glowroot-$VERSION-sbom.cdx.json \
+                  glowroot-agent-$VERSION-merged-cyclonedx.json
 
           cp central/target/glowroot-central-$VERSION-cyclonedx.json sbom/glowroot-central-$VERSION-sbom.cdx.json
 
