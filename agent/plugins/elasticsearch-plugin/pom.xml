@@ -39,9 +39,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.rauschig</groupId>
-      <artifactId>jarchivelib</artifactId>
-      <version>1.2.0</version>
+      <groupId>com.hominux</groupId>
+      <artifactId>compress4j</artifactId>
+      <version>5.1.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
