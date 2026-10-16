@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 
 import javax.sql.DataSource;
 
@@ -47,10 +48,12 @@ public class PostgresCentralConfigDao {
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private final DataSource dataSource;
+    private final Executor asyncExecutor;
     private final Map<String, Class<?>> keyTypes = new ConcurrentHashMap<>();
 
-    public PostgresCentralConfigDao(DataSource dataSource) {
+    public PostgresCentralConfigDao(DataSource dataSource, Executor asyncExecutor) {
         this.dataSource = dataSource;
+        this.asyncExecutor = asyncExecutor;
     }
 
     public void addKeyType(String key, Class<?> clazz) {
@@ -68,7 +71,7 @@ public class PostgresCentralConfigDao {
             } catch (SQLException | IOException e) {
                 future.completeExceptionally(e);
             }
-        });
+        }, asyncExecutor);
         return future;
     }
 
@@ -81,7 +84,7 @@ public class PostgresCentralConfigDao {
             } catch (SQLException | JsonProcessingException e) {
                 future.completeExceptionally(e);
             }
-        });
+        }, asyncExecutor);
         return future;
     }
 
@@ -92,7 +95,7 @@ public class PostgresCentralConfigDao {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
-        });
+        }, asyncExecutor);
     }
 
     /** @deprecated use {@link #writeWithoutOptimisticLocking(String, Object)} */
@@ -136,10 +139,14 @@ public class PostgresCentralConfigDao {
                 if (currValue == null) {
                     String initialValue = mapper.writeValueAsString(config);
                     try (PreparedStatement insert = connection.prepareStatement(
-                            "insert into central_config (key, value) values (?, ?)")) {
+                            "insert into central_config (key, value) values (?, ?) "
+                                    + "on conflict (key) do nothing")) {
                         insert.setString(1, key);
                         insert.setString(2, initialValue);
-                        insert.executeUpdate();
+                        if (insert.executeUpdate() == 0) {
+                            connection.rollback();
+                            throw new OptimisticLockException();
+                        }
                     }
                     connection.commit();
                     return;

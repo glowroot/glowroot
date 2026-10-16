@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 
 import javax.sql.DataSource;
 
@@ -43,9 +44,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class PostgresUserDao {
 
     private final DataSource dataSource;
+    private final Executor asyncExecutor;
 
-    public PostgresUserDao(DataSource dataSource) {
+    public PostgresUserDao(DataSource dataSource, Executor asyncExecutor) {
         this.dataSource = dataSource;
+        this.asyncExecutor = asyncExecutor;
     }
 
     public CompletionStage<List<UserConfig>> read() {
@@ -55,7 +58,7 @@ public class PostgresUserDao {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
-        });
+        }, asyncExecutor);
     }
 
     public CompletionStage<@Nullable UserConfig> read(String username) {
@@ -100,7 +103,7 @@ public class PostgresUserDao {
             } catch (SQLException e) {
                 future.completeExceptionally(e);
             }
-        });
+        }, asyncExecutor);
         return future;
     }
 
@@ -115,7 +118,7 @@ public class PostgresUserDao {
             } catch (SQLException e) {
                 future.completeExceptionally(e);
             }
-        });
+        }, asyncExecutor);
         return future;
     }
 
@@ -131,7 +134,7 @@ public class PostgresUserDao {
             } catch (SQLException e) {
                 future.completeExceptionally(e);
             }
-        });
+        }, asyncExecutor);
         return future;
     }
 

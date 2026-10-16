@@ -20,6 +20,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 
 import javax.sql.DataSource;
 
@@ -29,9 +30,11 @@ import javax.sql.DataSource;
 public class PostgresAgentDisplayDao {
 
     private final DataSource dataSource;
+    private final Executor asyncExecutor;
 
-    public PostgresAgentDisplayDao(DataSource dataSource) {
+    public PostgresAgentDisplayDao(DataSource dataSource, Executor asyncExecutor) {
         this.dataSource = dataSource;
+        this.asyncExecutor = asyncExecutor;
     }
 
     public CompletionStage<?> store(String agentRollupId, String display) {
@@ -60,7 +63,7 @@ public class PostgresAgentDisplayDao {
             } catch (SQLException e) {
                 future.completeExceptionally(e);
             }
-        });
+        }, asyncExecutor);
         return future;
     }
 }

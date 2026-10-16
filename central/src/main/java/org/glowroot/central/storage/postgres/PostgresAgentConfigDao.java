@@ -19,7 +19,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +27,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 import javax.sql.DataSource;
@@ -53,10 +53,13 @@ public class PostgresAgentConfigDao {
 
     private final DataSource dataSource;
     private final PostgresAgentDisplayDao agentDisplayDao;
+    private final Executor asyncExecutor;
 
-    public PostgresAgentConfigDao(DataSource dataSource, PostgresAgentDisplayDao agentDisplayDao) {
+    public PostgresAgentConfigDao(DataSource dataSource, PostgresAgentDisplayDao agentDisplayDao,
+            Executor asyncExecutor) {
         this.dataSource = dataSource;
         this.agentDisplayDao = agentDisplayDao;
+        this.asyncExecutor = asyncExecutor;
     }
 
     public CompletionStage<AgentConfig> store(String agentId, AgentConfig agentConfig,
@@ -177,7 +180,7 @@ public class PostgresAgentConfigDao {
                 ps.setBytes(2, config.toByteArray());
                 ps.setBoolean(3, configUpdate);
                 if (updateToken == null) {
-                    ps.setNull(4, Types.OTHER);
+                    ps.setObject(4, null);
                 } else {
                     ps.setObject(4, updateToken);
                 }
@@ -186,7 +189,7 @@ public class PostgresAgentConfigDao {
             } catch (SQLException e) {
                 future.completeExceptionally(e);
             }
-        });
+        }, asyncExecutor);
         return future;
     }
 
@@ -217,7 +220,7 @@ public class PostgresAgentConfigDao {
             } catch (SQLException e) {
                 future.completeExceptionally(e);
             }
-        });
+        }, asyncExecutor);
         return future;
     }
 
@@ -244,7 +247,7 @@ public class PostgresAgentConfigDao {
             } catch (SQLException | InvalidProtocolBufferException e) {
                 throw new RuntimeException(e);
             }
-        });
+        }, asyncExecutor);
     }
 
     private static AgentConfig buildUpdatedAgentConfig(AgentConfig agentConfig,

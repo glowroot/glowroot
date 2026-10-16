@@ -15,9 +15,12 @@
  */
 package org.glowroot.central.repo;
 
+import java.util.concurrent.ExecutorService;
+
 import com.zaxxer.hikari.HikariDataSource;
 import org.glowroot.central.storage.postgres.PostgresAgentConfigDao;
 import org.glowroot.central.storage.postgres.PostgresAgentDisplayDao;
+import org.glowroot.central.storage.postgres.PostgresAsync;
 import org.glowroot.central.storage.postgres.PostgresCentralConfigDao;
 import org.glowroot.central.storage.postgres.PostgresDataSourceFactory;
 import org.glowroot.central.storage.postgres.PostgresRoleDao;
@@ -32,11 +35,13 @@ import org.glowroot.common2.repo.ConfigRepository;
 public final class PostgresCentralAdminModule implements AutoCloseable {
 
     private final HikariDataSource dataSource;
+    private final ExecutorService asyncExecutor;
     private final ConfigRepositoryImpl configRepository;
 
-    private PostgresCentralAdminModule(HikariDataSource dataSource,
+    private PostgresCentralAdminModule(HikariDataSource dataSource, ExecutorService asyncExecutor,
             ConfigRepositoryImpl configRepository) {
         this.dataSource = dataSource;
+        this.asyncExecutor = asyncExecutor;
         this.configRepository = configRepository;
     }
 
@@ -44,22 +49,26 @@ public final class PostgresCentralAdminModule implements AutoCloseable {
             String password, int maximumPoolSize, String symmetricEncryptionKey) throws Exception {
         HikariDataSource dataSource = PostgresDataSourceFactory.create(jdbcUrl, username, password,
                 maximumPoolSize);
+        ExecutorService asyncExecutor = PostgresAsync.newExecutor(maximumPoolSize);
         try {
             PostgresSchemaUpgrade.upgrade(dataSource);
-            PostgresCentralConfigDao centralConfigDao = new PostgresCentralConfigDao(dataSource);
-            PostgresUserDao userDao = new PostgresUserDao(dataSource);
-            PostgresRoleDao roleDao = new PostgresRoleDao(dataSource);
-            PostgresAgentDisplayDao agentDisplayDao = new PostgresAgentDisplayDao(dataSource);
+            PostgresCentralConfigDao centralConfigDao =
+                    new PostgresCentralConfigDao(dataSource, asyncExecutor);
+            PostgresUserDao userDao = new PostgresUserDao(dataSource, asyncExecutor);
+            PostgresRoleDao roleDao = new PostgresRoleDao(dataSource, asyncExecutor);
+            PostgresAgentDisplayDao agentDisplayDao =
+                    new PostgresAgentDisplayDao(dataSource, asyncExecutor);
             PostgresAgentConfigDao agentConfigDao =
-                    new PostgresAgentConfigDao(dataSource, agentDisplayDao);
+                    new PostgresAgentConfigDao(dataSource, agentDisplayDao, asyncExecutor);
             ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(
                     new PostgresCentralConfigStore(centralConfigDao),
                     new PostgresAgentConfigStore(agentConfigDao),
                     new PostgresUserStore(userDao),
                     new PostgresRoleStore(roleDao),
                     symmetricEncryptionKey);
-            return new PostgresCentralAdminModule(dataSource, configRepository);
+            return new PostgresCentralAdminModule(dataSource, asyncExecutor, configRepository);
         } catch (Exception e) {
+            PostgresAsync.shutdownQuietly(asyncExecutor);
             PostgresDataSourceFactory.closeQuietly(dataSource);
             throw e;
         }
@@ -71,6 +80,7 @@ public final class PostgresCentralAdminModule implements AutoCloseable {
 
     @Override
     public void close() {
+        PostgresAsync.shutdownQuietly(asyncExecutor);
         PostgresDataSourceFactory.closeQuietly(dataSource);
     }
 }

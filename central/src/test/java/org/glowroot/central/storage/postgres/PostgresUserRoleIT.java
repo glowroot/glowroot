@@ -15,6 +15,8 @@
  */
 package org.glowroot.central.storage.postgres;
 
+import java.util.concurrent.ExecutorService;
+
 import com.zaxxer.hikari.HikariDataSource;
 import org.glowroot.common2.config.ImmutableRoleConfig;
 import org.glowroot.common2.config.ImmutableUserConfig;
@@ -43,6 +45,7 @@ public class PostgresUserRoleIT {
             new PostgreSQLContainer<>("postgres:16-alpine");
 
     private HikariDataSource dataSource;
+    private ExecutorService asyncExecutor;
     private PostgresUserDao userDao;
     private PostgresRoleDao roleDao;
 
@@ -50,13 +53,15 @@ public class PostgresUserRoleIT {
     public void before() throws Exception {
         dataSource = PostgresDataSourceFactory.create(postgres.getJdbcUrl(), postgres.getUsername(),
                 postgres.getPassword(), 5);
+        asyncExecutor = PostgresAsync.newExecutor(5);
         PostgresSchemaUpgrade.upgrade(dataSource);
-        userDao = new PostgresUserDao(dataSource);
-        roleDao = new PostgresRoleDao(dataSource);
+        userDao = new PostgresUserDao(dataSource, asyncExecutor);
+        roleDao = new PostgresRoleDao(dataSource, asyncExecutor);
     }
 
     @AfterEach
     public void after() {
+        PostgresAsync.shutdownQuietly(asyncExecutor);
         PostgresDataSourceFactory.closeQuietly(dataSource);
     }
 

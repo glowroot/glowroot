@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 
 import javax.sql.DataSource;
 
@@ -40,9 +41,11 @@ import static org.glowroot.central.storage.postgres.PostgresUserDao.toStringSet;
 public class PostgresRoleDao {
 
     private final DataSource dataSource;
+    private final Executor asyncExecutor;
 
-    public PostgresRoleDao(DataSource dataSource) {
+    public PostgresRoleDao(DataSource dataSource, Executor asyncExecutor) {
         this.dataSource = dataSource;
+        this.asyncExecutor = asyncExecutor;
     }
 
     public CompletionStage<List<RoleConfig>> read() {
@@ -52,7 +55,7 @@ public class PostgresRoleDao {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
-        });
+        }, asyncExecutor);
     }
 
     public CompletionStage<@Nullable RoleConfig> read(String name) {
@@ -74,7 +77,7 @@ public class PostgresRoleDao {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
-        });
+        }, asyncExecutor);
     }
 
     public CompletionStage<?> insert(RoleConfig roleConfig) {
@@ -86,7 +89,7 @@ public class PostgresRoleDao {
             } catch (SQLException e) {
                 future.completeExceptionally(e);
             }
-        });
+        }, asyncExecutor);
         return future;
     }
 
@@ -101,7 +104,7 @@ public class PostgresRoleDao {
             } catch (SQLException e) {
                 future.completeExceptionally(e);
             }
-        });
+        }, asyncExecutor);
         return future;
     }
 
@@ -117,7 +120,7 @@ public class PostgresRoleDao {
             } catch (SQLException e) {
                 future.completeExceptionally(e);
             }
-        });
+        }, asyncExecutor);
         return future;
     }
 

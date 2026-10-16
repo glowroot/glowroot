@@ -15,6 +15,8 @@
  */
 package org.glowroot.central.storage.postgres;
 
+import java.util.concurrent.ExecutorService;
+
 import com.zaxxer.hikari.HikariDataSource;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.TransactionConfig;
@@ -39,19 +41,22 @@ public class PostgresAgentConfigIT {
             new PostgreSQLContainer<>("postgres:16-alpine");
 
     private HikariDataSource dataSource;
+    private ExecutorService asyncExecutor;
     private PostgresAgentConfigDao agentConfigDao;
 
     @BeforeEach
     public void before() throws Exception {
         dataSource = PostgresDataSourceFactory.create(postgres.getJdbcUrl(), postgres.getUsername(),
                 postgres.getPassword(), 5);
+        asyncExecutor = PostgresAsync.newExecutor(5);
         PostgresSchemaUpgrade.upgrade(dataSource);
         agentConfigDao = new PostgresAgentConfigDao(dataSource,
-                new PostgresAgentDisplayDao(dataSource));
+                new PostgresAgentDisplayDao(dataSource, asyncExecutor), asyncExecutor);
     }
 
     @AfterEach
     public void after() {
+        PostgresAsync.shutdownQuietly(asyncExecutor);
         PostgresDataSourceFactory.closeQuietly(dataSource);
     }
 
