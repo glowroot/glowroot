@@ -150,6 +150,9 @@ public class PostgresIncidentDao implements IncidentRepository {
     @Override
     public CompletionStage<?> resolveIncident(OpenIncident openIncident, long resolveTime,
             CassandraProfile profile) {
+        if (openIncident == null) {
+            return CompletableFuture.failedFuture(new NullPointerException("openIncident"));
+        }
         CompletableFuture<Void> future = new CompletableFuture<>();
         CompletableFuture.runAsync(() -> {
             int ttlSeconds = Ints.saturatedCast(

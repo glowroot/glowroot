@@ -138,17 +138,18 @@ public class PostgresAggregateDao implements AggregateDao {
                     write.completeExceptionally(e);
                 }
             }, asyncExecutor);
-            return write.thenCompose(v -> transactionTypeDao.store(agentRollupIds,
-                    aggregatesByTypeList.get(0).getTransactionType()))
-                    .thenCompose(v -> {
-                        CompletionStage<?> chain = CompletableFuture.completedFuture(null);
-                        for (OldAggregatesByType byType : aggregatesByTypeList) {
-                            chain = chain.thenCompose(
-                                    x -> transactionTypeDao.store(agentRollupIds,
-                                            byType.getTransactionType()));
-                        }
-                        return chain;
-                    }).thenCompose(v -> activeAgentDao.insert(agentId, captureTime));
+            List<String> transactionTypeNames = new ArrayList<>();
+            for (OldAggregatesByType byType : aggregatesByTypeList) {
+                transactionTypeNames.add(byType.getTransactionType());
+            }
+            return write.thenCompose(v -> {
+                List<CompletableFuture<?>> typeFutures = new ArrayList<>();
+                for (String transactionType : transactionTypeNames) {
+                    typeFutures.add(transactionTypeDao.store(agentRollupIds, transactionType)
+                            .toCompletableFuture());
+                }
+                return CompletableFuture.allOf(typeFutures.toArray(new CompletableFuture[0]));
+            }).thenCompose(v -> activeAgentDao.insert(agentId, captureTime));
         });
     }
 
@@ -160,11 +161,20 @@ public class PostgresAggregateDao implements AggregateDao {
             CompletableFuture<Void> future = new CompletableFuture<>();
             CompletableFuture.runAsync(() -> {
                 try (Connection connection = dataSource.getConnection()) {
-                    for (int level = 1; level < rollupConfigs.size(); level++) {
-                        rollupLevel(connection, agentRollupId, level, rollupConfigs,
-                                rollupExpirationHours);
+                    connection.setAutoCommit(false);
+                    try {
+                        for (int level = 1; level < rollupConfigs.size(); level++) {
+                            rollupLevel(connection, agentRollupId, level, rollupConfigs,
+                                    rollupExpirationHours);
+                        }
+                        connection.commit();
+                        future.complete(null);
+                    } catch (Exception e) {
+                        connection.rollback();
+                        throw e;
+                    } finally {
+                        connection.setAutoCommit(true);
                     }
-                    future.complete(null);
                 } catch (Exception e) {
                     future.completeExceptionally(e);
                 }
@@ -320,7 +330,11 @@ public class PostgresAggregateDao implements AggregateDao {
             for (RowAgg row : rows) {
                 List<Aggregate.SharedQueryText> shared = deserializeSharedQueryTexts(row.sharedBytes);
                 for (Aggregate.Query q : row.aggregate.getQueryList()) {
-                    Aggregate.SharedQueryText sqt = shared.get(q.getSharedQueryTextIndex());
+                    int idx = q.getSharedQueryTextIndex();
+                    if (idx < 0 || idx >= shared.size()) {
+                        continue;
+                    }
+                    Aggregate.SharedQueryText sqt = shared.get(idx);
                     String truncated = sqt.getFullText().isEmpty()
                             ? sqt.getTruncatedText()
                             : sqt.getFullText();
@@ -419,6 +433,8 @@ public class PostgresAggregateDao implements AggregateDao {
                         mergeAndWriteTransactions(connection, agentRollupId, fromLevel, level,
                                 transactionType, from, rollupCaptureTime, ttlSeconds);
                     }
+                    queueNextNeedsRollup(connection, agentRollupId, level, rollupCaptureTime,
+                            transactionTypes, ttlSeconds);
                     deleteNeeds.setString(1, agentRollupId);
                     deleteNeeds.setInt(2, level);
                     deleteNeeds.setTimestamp(3, new Timestamp(rollupCaptureTime));
@@ -528,6 +544,8 @@ public class PostgresAggregateDao implements AggregateDao {
         if (rollupConfigs.size() < 2) {
             return;
         }
+        // Only queue level 1 here (same as Cassandra). Higher levels are queued after lower
+        // rollup succeeds — see queueNextNeedsRollup.
         long intervalMillis = rollupConfigs.get(1).intervalMillis();
         long rollupCaptureTime = CaptureTimes.getRollup(captureTime, intervalMillis);
         try (PreparedStatement ps = connection.prepareStatement(
@@ -540,22 +558,29 @@ public class PostgresAggregateDao implements AggregateDao {
             ps.setTimestamp(5, expiresAt);
             ps.executeUpdate();
         }
-        // higher levels: when level N-1 is written by rollup, Cassandra queues next; for lab slice
-        // also queue level 2+ based on same capture for first store path simplification
-        for (int level = 2; level < rollupConfigs.size(); level++) {
-            long higherInterval = rollupConfigs.get(level).intervalMillis();
-            long higherCapture = CaptureTimes.getRollup(captureTime, higherInterval);
-            try (PreparedStatement ps = connection.prepareStatement(
-                    "insert into aggregate_needs_rollup (agent_rollup, rollup_level, capture_time, "
-                            + "uniqueness, transaction_types, expires_at) values (?, ?, ?, ?, ?, ?)")) {
-                ps.setString(1, agentId);
-                ps.setInt(2, level);
-                ps.setTimestamp(3, new Timestamp(higherCapture));
-                ps.setObject(4, UUID.randomUUID());
-                ps.setArray(5, connection.createArrayOf("text", transactionTypes.toArray()));
-                ps.setTimestamp(6, expiresAt);
-                ps.executeUpdate();
-            }
+    }
+
+    private void queueNextNeedsRollup(Connection connection, String agentRollupId, int fromLevel,
+            long captureTime, String[] transactionTypes, int ttlSeconds) throws SQLException {
+        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+        int nextLevel = fromLevel + 1;
+        if (nextLevel >= rollupConfigs.size()) {
+            return;
+        }
+        long intervalMillis = rollupConfigs.get(nextLevel).intervalMillis();
+        long rollupCaptureTime = CaptureTimes.getRollup(captureTime, intervalMillis);
+        Timestamp expiresAt =
+                PostgresExpires.fromTtlSeconds(ttlSeconds, rollupCaptureTime, clock);
+        try (PreparedStatement ps = connection.prepareStatement(
+                "insert into aggregate_needs_rollup (agent_rollup, rollup_level, capture_time, "
+                        + "uniqueness, transaction_types, expires_at) values (?, ?, ?, ?, ?, ?)")) {
+            ps.setString(1, agentRollupId);
+            ps.setInt(2, nextLevel);
+            ps.setTimestamp(3, new Timestamp(rollupCaptureTime));
+            ps.setObject(4, UUID.randomUUID());
+            ps.setArray(5, connection.createArrayOf("text", transactionTypes));
+            ps.setTimestamp(6, expiresAt);
+            ps.executeUpdate();
         }
     }
 

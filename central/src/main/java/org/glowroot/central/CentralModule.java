@@ -855,7 +855,8 @@ public class CentralModule {
                     .join();
             admin.getTransactionTypeDao().read("postgres-boot-check").toCompletableFuture().join();
             admin.getV09AgentRollupDao().getV09AgentRollupId("postgres-boot-check");
-            admin.getAggregateDao().truncateAll();
+            // smoke-construct only — do not truncate (would wipe lab data on every rejected boot)
+            admin.getAggregateDao();
             if (startupLogger != null) {
                 startupLogger.info(
                         "PostgreSQL admin+metadata+aggregates-slice OK; boot still blocked "
