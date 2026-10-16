@@ -70,9 +70,8 @@ import org.glowroot.central.repo.ConfigRepositoryImpl.LazySecretKeyImpl;
 import org.glowroot.central.repo.RepoAdminImpl;
 import org.glowroot.central.repo.SchemaUpgrade;
 import org.glowroot.central.repo.Tools;
+import org.glowroot.central.repo.PostgresCentralAdminModule;
 import org.glowroot.central.storage.StorageType;
-import org.glowroot.central.storage.postgres.PostgresDataSourceFactory;
-import org.glowroot.central.storage.postgres.PostgresSchemaUpgrade;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.PropertiesFiles;
@@ -836,29 +835,29 @@ public class CentralModule {
     }
 
     /**
-     * Spike gate: if {@code storage.type=postgres}, validate JDBC + minimal schema then refuse
-     * full Central boot / Cassandra connect until more Postgres DAOs land.
+     * If {@code storage.type=postgres}, wire admin {@code ConfigRepository} against Postgres then
+     * refuse full Central boot until remaining DAOs (aggregates/traces/…) exist.
      */
     private static void rejectIncompletePostgresStorage(CentralConfiguration centralConfig)
             throws Exception {
         if (centralConfig.storageType() != StorageType.POSTGRES) {
             return;
         }
-        com.zaxxer.hikari.HikariDataSource dataSource = PostgresDataSourceFactory.create(
+        try (PostgresCentralAdminModule admin = PostgresCentralAdminModule.create(
                 centralConfig.postgresJdbcUrl(), centralConfig.postgresUsername(),
-                centralConfig.postgresPassword(), centralConfig.postgresMaximumPoolSize());
-        try {
-            PostgresSchemaUpgrade.upgrade(dataSource);
+                centralConfig.postgresPassword(), centralConfig.postgresMaximumPoolSize(),
+                centralConfig.cassandraSymmetricEncryptionKey())) {
+            admin.getConfigRepository().getCentralWebConfig().toCompletableFuture().join();
+            admin.getConfigRepository().getUserConfigs().toCompletableFuture().join();
+            admin.getConfigRepository().getRoleConfigs().toCompletableFuture().join();
             if (startupLogger != null) {
                 startupLogger.info(
-                        "PostgreSQL storage spike: connected and schema_version/central_config OK");
+                        "PostgreSQL admin ConfigRepository OK (central_config/user/role/agent_config)");
             }
-        } finally {
-            PostgresDataSourceFactory.closeQuietly(dataSource);
         }
         throw new UnsupportedOperationException(
                 "storage.type=postgres is experimental and incomplete"
-                        + " (schema through agent_config; Central boot still Cassandra-only)."
+                        + " (admin ConfigRepository wired; full Central boot still Cassandra-only)."
                         + " Cassandra remains the supported Central backend.");
     }
 

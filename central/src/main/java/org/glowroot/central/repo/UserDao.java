@@ -38,7 +38,7 @@ import org.glowroot.common2.repo.ConfigRepository.DuplicateUsernameException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-class UserDao {
+class UserDao implements UserStore {
 
     private static final String ALL_USERS_SINGLE_CACHE_KEY = "x";
 
@@ -83,11 +83,13 @@ class UserDao {
                 new AllUsersCacheLoader());
     }
 
-    CompletionStage<List<UserConfig>> read() {
+    @Override
+    public CompletionStage<List<UserConfig>> read() {
         return allUserConfigsCache.get(ALL_USERS_SINGLE_CACHE_KEY);
     }
 
-    CompletionStage<UserConfig> read(String username) {
+    @Override
+    public CompletionStage<UserConfig> read(String username) {
         return read().thenApply(users -> {
             for (UserConfig userConfig : users) {
                 if (userConfig.username().equals(username)) {
@@ -98,7 +100,8 @@ class UserDao {
         });
     }
 
-    CompletionStage<UserConfig> readCaseInsensitive(String username) {
+    @Override
+    public CompletionStage<UserConfig> readCaseInsensitive(String username) {
         return read().thenApply(users -> {
             for (UserConfig userConfig : users) {
                 if (userConfig.username().equalsIgnoreCase(username)) {
@@ -109,7 +112,8 @@ class UserDao {
         });
     }
 
-    CompletionStage<Boolean> namedUsersExist() {
+    @Override
+    public CompletionStage<Boolean> namedUsersExist() {
         return read().thenApply(users -> {
             for (UserConfig userConfig : users) {
                 if (!userConfig.username().equalsIgnoreCase("anonymous")) {
@@ -120,7 +124,8 @@ class UserDao {
         });
     }
 
-    CompletionStage<Void> insert(UserConfig userConfig, CassandraProfile profile) {
+    @Override
+    public CompletionStage<Void> insert(UserConfig userConfig, CassandraProfile profile) {
         BoundStatement boundStatement = insertPS.bind();
         boundStatement = bindInsert(boundStatement, userConfig);
         return session.writeAsync(boundStatement, profile).thenRun(() -> {
@@ -128,7 +133,8 @@ class UserDao {
         });
     }
 
-    CompletionStage<?> insertIfNotExists(UserConfig userConfig, CassandraProfile profile) {
+    @Override
+    public CompletionStage<?> insertIfNotExists(UserConfig userConfig, CassandraProfile profile) {
         BoundStatement boundStatement = insertIfNotExistsPS.bind();
         boundStatement = bindInsert(boundStatement, userConfig);
         // consistency level must be at least LOCAL_SERIAL
@@ -147,7 +153,8 @@ class UserDao {
         });
     }
 
-    CompletionStage<Void> delete(String username, CassandraProfile profile) {
+    @Override
+    public CompletionStage<Void> delete(String username, CassandraProfile profile) {
         BoundStatement boundStatement = deletePS.bind()
             .setString(0, username);
         return session.writeAsync(boundStatement, profile).thenRun(() -> {

@@ -69,6 +69,28 @@ public class PostgresUserDao {
         });
     }
 
+    public CompletionStage<@Nullable UserConfig> readCaseInsensitive(String username) {
+        return read().thenApply(users -> {
+            for (UserConfig userConfig : users) {
+                if (userConfig.username().equalsIgnoreCase(username)) {
+                    return userConfig;
+                }
+            }
+            return null;
+        });
+    }
+
+    public CompletionStage<Boolean> namedUsersExist() {
+        return read().thenApply(users -> {
+            for (UserConfig userConfig : users) {
+                if (!userConfig.username().equalsIgnoreCase("anonymous")) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    }
+
     public CompletionStage<Void> insert(UserConfig userConfig) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         CompletableFuture.runAsync(() -> {

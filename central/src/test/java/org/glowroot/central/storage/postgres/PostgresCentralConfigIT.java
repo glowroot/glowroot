@@ -61,9 +61,9 @@ public class PostgresCentralConfigIT {
                 .sessionTimeoutMinutes(31)
                 .sessionCookieName("GLOWROOT_SESSION_ID2")
                 .build();
-        dao.writeWithoutOptimisticLocking("web", written);
+        dao.writeWithoutOptimisticLocking("web", written).toCompletableFuture().join();
 
-        Object read = dao.read("web");
+        Object read = dao.read("web").join();
         assertThat(read).isInstanceOf(ImmutableCentralWebConfig.class);
         ImmutableCentralWebConfig web = (ImmutableCentralWebConfig) read;
         assertThat(web.sessionTimeoutMinutes()).isEqualTo(31);

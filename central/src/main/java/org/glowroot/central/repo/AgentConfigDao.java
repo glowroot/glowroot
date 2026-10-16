@@ -47,7 +47,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 // TODO agent config records never expire for abandoned agent rollup ids
-public class AgentConfigDao {
+public class AgentConfigDao implements AgentConfigStore {
 
     private final Session session;
     private final AgentDisplayDao agentDisplayDao;
@@ -92,6 +92,7 @@ public class AgentConfigDao {
                 targetMaxActiveAgentsInPast7Days, new AgentConfigCacheLoader());
     }
 
+    @Override
     public CompletionStage<AgentConfig> store(String agentId, AgentConfig agentConfig, boolean overwriteExisting) {
         return readAsync(agentId).thenCompose(existingAgentConfig -> {
 
@@ -152,12 +153,14 @@ public class AgentConfigDao {
         });
     }
 
-    CompletionStage<?> update(String agentRollupId, AgentConfigUpdater agentConfigUpdater, CassandraProfile profile) {
+    @Override
+    public CompletionStage<?> update(String agentRollupId, AgentConfigUpdater agentConfigUpdater, CassandraProfile profile) {
         return update(agentRollupId, agentConfigUpdater, false, profile);
     }
 
     // only call this method when updating AgentConfig data that resides only on central
-    CompletionStage<?> updateCentralOnly(String agentRollupId, AgentConfigUpdater agentConfigUpdater, CassandraProfile profile) {
+    @Override
+    public CompletionStage<?> updateCentralOnly(String agentRollupId, AgentConfigUpdater agentConfigUpdater, CassandraProfile profile) {
         return update(agentRollupId, agentConfigUpdater, true, profile);
     }
 
@@ -220,16 +223,19 @@ public class AgentConfigDao {
         });
     }
 
+    @Override
     public CompletableFuture<AgentConfig> readAsync(String agentRollupId) {
         return agentConfigCache.get(agentRollupId).thenApply(agent -> agent.map(AgentConfigAndUpdateToken::config).orElse(null));
     }
 
     // does not apply to agent rollups
+    @Override
     public CompletableFuture<Optional<AgentConfigAndUpdateToken>> readForUpdate(String agentId) {
         return agentConfigCache.get(agentId);
     }
 
     // does not apply to agent rollups
+    @Override
     public void markUpdated(String agentId, UUID configUpdateToken) throws Exception {
         int i = 0;
         BoundStatement boundStatement = markUpdatedPS.bind()
