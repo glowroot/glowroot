@@ -24,11 +24,11 @@ import java.sql.Statement;
 import javax.sql.DataSource;
 
 /**
- * Minimal Postgres schema migrator for the storage spike (central_config only).
+ * Postgres schema migrator. Version 1: central_config. Version 2: user + role (+ seeds).
  */
 public final class PostgresSchemaUpgrade {
 
-    static final int CURRENT_VERSION = 1;
+    static final int CURRENT_VERSION = 2;
 
     private PostgresSchemaUpgrade() {}
 
@@ -45,6 +45,11 @@ public final class PostgresSchemaUpgrade {
                                 + "value text not null)");
                     }
                     writeVersion(connection, 1);
+                    version = 1;
+                }
+                if (version < 2) {
+                    migrateToV2(connection);
+                    writeVersion(connection, 2);
                 }
                 connection.commit();
             } catch (SQLException e) {
@@ -53,6 +58,38 @@ public final class PostgresSchemaUpgrade {
             } finally {
                 connection.setAutoCommit(true);
             }
+        }
+    }
+
+    private static void migrateToV2(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            // "user" is a reserved word in PostgreSQL
+            statement.execute("create table if not exists \"user\" ("
+                    + "username varchar(255) primary key, "
+                    + "ldap boolean not null, "
+                    + "password_hash varchar(512) not null, "
+                    + "roles text[] not null)");
+            statement.execute("create table if not exists role ("
+                    + "name varchar(255) primary key, "
+                    + "permissions text[] not null)");
+        }
+        try (PreparedStatement insertUser = connection.prepareStatement(
+                "insert into \"user\" (username, ldap, password_hash, roles) values (?, ?, ?, ?) "
+                        + "on conflict (username) do nothing");
+                PreparedStatement insertRole = connection.prepareStatement(
+                        "insert into role (name, permissions) values (?, ?) "
+                                + "on conflict (name) do nothing")) {
+            insertUser.setString(1, "anonymous");
+            insertUser.setBoolean(2, false);
+            insertUser.setString(3, "");
+            insertUser.setArray(4, connection.createArrayOf("text", new String[] {"Administrator"}));
+            insertUser.executeUpdate();
+
+            insertRole.setString(1, "Administrator");
+            insertRole.setArray(2, connection.createArrayOf("text", new String[] {
+                    "agent:*:transaction", "agent:*:error", "agent:*:jvm",
+                    "agent:*:syntheticMonitor", "agent:*:incident", "agent:*:config", "admin"}));
+            insertRole.executeUpdate();
         }
     }
 
