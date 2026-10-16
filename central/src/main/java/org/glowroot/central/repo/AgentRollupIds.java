@@ -51,7 +51,7 @@ public class AgentRollupIds {
         return agentRollupIds;
     }
 
-    static @Nullable String getParent(String agentRollupId) {
+    public static @Nullable String getParent(String agentRollupId) {
         int index;
         if (agentRollupId.endsWith("::")) {
             index = agentRollupId.lastIndexOf("::", agentRollupId.length() - 5);

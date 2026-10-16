@@ -24,11 +24,16 @@ import java.sql.Statement;
 import javax.sql.DataSource;
 
 /**
- * Postgres schema migrator. Version 1: central_config. Version 2: user + role (+ seeds).
+ * Postgres schema migrator.
+ * <ul>
+ * <li>v1: central_config</li>
+ * <li>v2: user + role (+ seeds)</li>
+ * <li>v3: agent_config + agent_display</li>
+ * </ul>
  */
 public final class PostgresSchemaUpgrade {
 
-    static final int CURRENT_VERSION = 2;
+    static final int CURRENT_VERSION = 3;
 
     private PostgresSchemaUpgrade() {}
 
@@ -50,6 +55,11 @@ public final class PostgresSchemaUpgrade {
                 if (version < 2) {
                     migrateToV2(connection);
                     writeVersion(connection, 2);
+                    version = 2;
+                }
+                if (version < 3) {
+                    migrateToV3(connection);
+                    writeVersion(connection, 3);
                 }
                 connection.commit();
             } catch (SQLException e) {
@@ -90,6 +100,19 @@ public final class PostgresSchemaUpgrade {
                     "agent:*:transaction", "agent:*:error", "agent:*:jvm",
                     "agent:*:syntheticMonitor", "agent:*:incident", "agent:*:config", "admin"}));
             insertRole.executeUpdate();
+        }
+    }
+
+    private static void migrateToV3(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("create table if not exists agent_config ("
+                    + "agent_rollup_id varchar(512) primary key, "
+                    + "config bytea not null, "
+                    + "config_update boolean not null default false, "
+                    + "config_update_token uuid)");
+            statement.execute("create table if not exists agent_display ("
+                    + "agent_rollup_id varchar(512) primary key, "
+                    + "display varchar(1024) not null)");
         }
     }
 

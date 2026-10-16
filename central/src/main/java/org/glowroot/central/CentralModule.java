@@ -858,7 +858,7 @@ public class CentralModule {
         }
         throw new UnsupportedOperationException(
                 "storage.type=postgres is experimental and incomplete"
-                        + " (schema through user/role; Central boot still Cassandra-only)."
+                        + " (schema through agent_config; Central boot still Cassandra-only)."
                         + " Cassandra remains the supported Central backend.");
     }
 
