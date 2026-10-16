@@ -61,6 +61,16 @@
             <version>2.0.74.Final</version>
         </dependency>
         <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>5.1.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>java-driver-core</artifactId>
             <version>4.19.2</version>
@@ -256,6 +266,12 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>cassandra</artifactId>
+            <version>1.21.3</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
             <version>1.21.3</version>
             <scope>test</scope>
         </dependency>
@@ -602,6 +618,13 @@
     </build>
 
     <profiles>
+        <!-- Optional: mvn test -Ppostgres-store -Dtest=PostgresCentralConfigIT,StorageTypeTest -pl :glowroot-central -->
+        <profile>
+            <id>postgres-store</id>
+            <properties>
+                <glowroot.postgres.store.tests>true</glowroot.postgres.store.tests>
+            </properties>
+        </profile>
         <profile>
             <id>release</id>
             <build>

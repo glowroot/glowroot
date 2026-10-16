@@ -70,6 +70,9 @@ import org.glowroot.central.repo.ConfigRepositoryImpl.LazySecretKeyImpl;
 import org.glowroot.central.repo.RepoAdminImpl;
 import org.glowroot.central.repo.SchemaUpgrade;
 import org.glowroot.central.repo.Tools;
+import org.glowroot.central.storage.StorageType;
+import org.glowroot.central.storage.postgres.PostgresDataSourceFactory;
+import org.glowroot.central.storage.postgres.PostgresSchemaUpgrade;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.PropertiesFiles;
@@ -168,6 +171,8 @@ public class CentralModule {
             CentralConfiguration centralConfig = getCentralConfiguration(directories.getConfDir());
             StreamWriteConstraints.overrideDefaultStreamWriteConstraints(
             StreamWriteConstraints.builder().maxNestingDepth(centralConfig.jacksonMaxNestingDepth()).build());
+
+            rejectIncompletePostgresStorage(centralConfig);
 
             clusterManager = ClusterManager.create(directories.getConfDir(),
                     centralConfig.jgroupsProperties());
@@ -425,6 +430,7 @@ public class CentralModule {
         startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
 
         CentralConfiguration centralConfig = getCentralConfiguration(directories.getConfDir());
+        rejectIncompletePostgresStorage(centralConfig);
         Session session = null;
         ExecutorService repoAsyncExecutor = null;
         CentralRepoModule repos = null;
@@ -540,6 +546,7 @@ public class CentralModule {
         startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
 
         CentralConfiguration centralConfig = getCentralConfiguration(directories.getConfDir());
+        rejectIncompletePostgresStorage(centralConfig);
         Session session = null;
         ExecutorService repoAsyncExecutor = null;
         CentralRepoModule repos = null;
@@ -587,6 +594,26 @@ public class CentralModule {
         Map<String, String> properties = getPropertiesFromConfigFile(confDir);
         properties = overlayAnySystemProperties(properties);
         ImmutableCentralConfiguration.Builder builder = ImmutableCentralConfiguration.builder();
+        String storageTypeText = properties.get("glowroot.storage.type");
+        if (!Strings.isNullOrEmpty(storageTypeText)) {
+            builder.storageType(StorageType.parse(storageTypeText));
+        }
+        String postgresJdbcUrl = properties.get("glowroot.postgres.jdbcUrl");
+        if (!Strings.isNullOrEmpty(postgresJdbcUrl)) {
+            builder.postgresJdbcUrl(postgresJdbcUrl);
+        }
+        String postgresUsername = properties.get("glowroot.postgres.username");
+        if (!Strings.isNullOrEmpty(postgresUsername)) {
+            builder.postgresUsername(postgresUsername);
+        }
+        String postgresPassword = properties.get("glowroot.postgres.password");
+        if (!Strings.isNullOrEmpty(postgresPassword)) {
+            builder.postgresPassword(postgresPassword);
+        }
+        String postgresMaximumPoolSize = properties.get("glowroot.postgres.maximumPoolSize");
+        if (!Strings.isNullOrEmpty(postgresMaximumPoolSize)) {
+            builder.postgresMaximumPoolSize(Integer.parseInt(postgresMaximumPoolSize));
+        }
         String cassandraContactPoints = properties.get("glowroot.cassandra.contactPoints");
         if (!Strings.isNullOrEmpty(cassandraContactPoints)) {
             builder.cassandraContactPoint(Splitter.on(',').trimResults().omitEmptyStrings()
@@ -808,6 +835,33 @@ public class CentralModule {
         return properties;
     }
 
+    /**
+     * Spike gate: if {@code storage.type=postgres}, validate JDBC + minimal schema then refuse
+     * full Central boot / Cassandra connect until more Postgres DAOs land.
+     */
+    private static void rejectIncompletePostgresStorage(CentralConfiguration centralConfig)
+            throws Exception {
+        if (centralConfig.storageType() != StorageType.POSTGRES) {
+            return;
+        }
+        com.zaxxer.hikari.HikariDataSource dataSource = PostgresDataSourceFactory.create(
+                centralConfig.postgresJdbcUrl(), centralConfig.postgresUsername(),
+                centralConfig.postgresPassword(), centralConfig.postgresMaximumPoolSize());
+        try {
+            PostgresSchemaUpgrade.upgrade(dataSource);
+            if (startupLogger != null) {
+                startupLogger.info(
+                        "PostgreSQL storage spike: connected and schema_version/central_config OK");
+            }
+        } finally {
+            PostgresDataSourceFactory.closeQuietly(dataSource);
+        }
+        throw new UnsupportedOperationException(
+                "storage.type=postgres is experimental and incomplete"
+                        + " (central_config schema spike only)."
+                        + " Cassandra remains the supported Central backend.");
+    }
+
     @RequiresNonNull("startupLogger")
     private static Session connect(CentralConfiguration centralConfig) throws Exception {
         Session session = null;
@@ -994,6 +1048,31 @@ public class CentralModule {
 
     @Value.Immutable
     abstract static class CentralConfiguration {
+
+        @Value.Default
+        StorageType storageType() {
+            return StorageType.CASSANDRA;
+        }
+
+        @Value.Default
+        String postgresJdbcUrl() {
+            return "";
+        }
+
+        @Value.Default
+        String postgresUsername() {
+            return "";
+        }
+
+        @Value.Default
+        String postgresPassword() {
+            return "";
+        }
+
+        @Value.Default
+        int postgresMaximumPoolSize() {
+            return 20;
+        }
 
         @Value.Default
         List<String> cassandraContactPoint() {
