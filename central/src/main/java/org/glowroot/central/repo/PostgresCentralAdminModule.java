@@ -18,6 +18,8 @@ package org.glowroot.central.repo;
 import java.util.concurrent.ExecutorService;
 
 import com.zaxxer.hikari.HikariDataSource;
+import org.glowroot.central.storage.postgres.PostgresActiveAgentDao;
+import org.glowroot.central.storage.postgres.PostgresAggregateDao;
 import org.glowroot.central.storage.postgres.PostgresAgentConfigDao;
 import org.glowroot.central.storage.postgres.PostgresAgentDisplayDao;
 import org.glowroot.central.storage.postgres.PostgresAlertingDisabledDao;
@@ -26,35 +28,57 @@ import org.glowroot.central.storage.postgres.PostgresCentralConfigDao;
 import org.glowroot.central.storage.postgres.PostgresDataSourceFactory;
 import org.glowroot.central.storage.postgres.PostgresEnvironmentDao;
 import org.glowroot.central.storage.postgres.PostgresHeartbeatDao;
+import org.glowroot.central.storage.postgres.PostgresIncidentDao;
 import org.glowroot.central.storage.postgres.PostgresRoleDao;
 import org.glowroot.central.storage.postgres.PostgresSchemaUpgrade;
+import org.glowroot.central.storage.postgres.PostgresTraceAttributeNameDao;
+import org.glowroot.central.storage.postgres.PostgresTransactionTypeDao;
 import org.glowroot.central.storage.postgres.PostgresUserDao;
+import org.glowroot.central.storage.postgres.PostgresV09AgentRollupDao;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ConfigRepository;
+import org.glowroot.common2.repo.util.RollupLevelService;
 
 /**
- * Wires admin-facing {@link ConfigRepository} against PostgreSQL. Does not start full Central
- * (aggregates/traces/etc. still Cassandra-only).
+ * Wires admin + metadata + experimental aggregate DAOs against PostgreSQL. Full Central boot still
+ * blocked until traces/gauges/synthetics land (see docs/central-postgresql-storage.md).
  */
 public final class PostgresCentralAdminModule implements AutoCloseable {
 
     private final HikariDataSource dataSource;
     private final ExecutorService asyncExecutor;
     private final ConfigRepositoryImpl configRepository;
+    private final PostgresAgentConfigDao agentConfigDao;
     private final PostgresHeartbeatDao heartbeatDao;
     private final PostgresEnvironmentDao environmentDao;
     private final PostgresAlertingDisabledDao alertingDisabledDao;
+    private final PostgresIncidentDao incidentDao;
+    private final PostgresActiveAgentDao activeAgentDao;
+    private final PostgresTransactionTypeDao transactionTypeDao;
+    private final PostgresTraceAttributeNameDao traceAttributeNameDao;
+    private final PostgresV09AgentRollupDao v09AgentRollupDao;
+    private final PostgresAggregateDao aggregateDao;
 
     private PostgresCentralAdminModule(HikariDataSource dataSource, ExecutorService asyncExecutor,
-            ConfigRepositoryImpl configRepository, PostgresHeartbeatDao heartbeatDao,
-            PostgresEnvironmentDao environmentDao,
-            PostgresAlertingDisabledDao alertingDisabledDao) {
+            ConfigRepositoryImpl configRepository, PostgresAgentConfigDao agentConfigDao,
+            PostgresHeartbeatDao heartbeatDao, PostgresEnvironmentDao environmentDao,
+            PostgresAlertingDisabledDao alertingDisabledDao, PostgresIncidentDao incidentDao,
+            PostgresActiveAgentDao activeAgentDao, PostgresTransactionTypeDao transactionTypeDao,
+            PostgresTraceAttributeNameDao traceAttributeNameDao,
+            PostgresV09AgentRollupDao v09AgentRollupDao, PostgresAggregateDao aggregateDao) {
         this.dataSource = dataSource;
         this.asyncExecutor = asyncExecutor;
         this.configRepository = configRepository;
+        this.agentConfigDao = agentConfigDao;
         this.heartbeatDao = heartbeatDao;
         this.environmentDao = environmentDao;
         this.alertingDisabledDao = alertingDisabledDao;
+        this.incidentDao = incidentDao;
+        this.activeAgentDao = activeAgentDao;
+        this.transactionTypeDao = transactionTypeDao;
+        this.traceAttributeNameDao = traceAttributeNameDao;
+        this.v09AgentRollupDao = v09AgentRollupDao;
+        this.aggregateDao = aggregateDao;
     }
 
     public static PostgresCentralAdminModule create(String jdbcUrl, String username,
@@ -91,8 +115,26 @@ public final class PostgresCentralAdminModule implements AutoCloseable {
                     new PostgresUserStore(userDao),
                     new PostgresRoleStore(roleDao),
                     symmetricEncryptionKey);
+            RollupLevelService rollupLevelService =
+                    new RollupLevelService(configRepository, clock);
+            PostgresIncidentDao incidentDao =
+                    new PostgresIncidentDao(dataSource, clock, asyncExecutor);
+            PostgresActiveAgentDao activeAgentDao = new PostgresActiveAgentDao(dataSource,
+                    agentDisplayDao, agentConfigDao, configRepository, rollupLevelService, clock,
+                    asyncExecutor);
+            PostgresTransactionTypeDao transactionTypeDao = new PostgresTransactionTypeDao(
+                    dataSource, configRepository, clock, asyncExecutor);
+            PostgresTraceAttributeNameDao traceAttributeNameDao =
+                    new PostgresTraceAttributeNameDao(dataSource, configRepository, clock,
+                            asyncExecutor);
+            PostgresV09AgentRollupDao v09AgentRollupDao =
+                    new PostgresV09AgentRollupDao(dataSource, asyncExecutor);
+            PostgresAggregateDao aggregateDao = new PostgresAggregateDao(dataSource, activeAgentDao,
+                    transactionTypeDao, configRepository, clock, asyncExecutor);
             return new PostgresCentralAdminModule(dataSource, asyncExecutor, configRepository,
-                    heartbeatDao, environmentDao, alertingDisabledDao);
+                    agentConfigDao, heartbeatDao, environmentDao, alertingDisabledDao, incidentDao,
+                    activeAgentDao, transactionTypeDao, traceAttributeNameDao, v09AgentRollupDao,
+                    aggregateDao);
         } catch (Exception e) {
             PostgresAsync.shutdownQuietly(asyncExecutor);
             PostgresDataSourceFactory.closeQuietly(dataSource);
@@ -102,6 +144,10 @@ public final class PostgresCentralAdminModule implements AutoCloseable {
 
     public ConfigRepository getConfigRepository() {
         return configRepository;
+    }
+
+    public PostgresAgentConfigDao getAgentConfigDao() {
+        return agentConfigDao;
     }
 
     public PostgresHeartbeatDao getHeartbeatDao() {
@@ -114,6 +160,30 @@ public final class PostgresCentralAdminModule implements AutoCloseable {
 
     public PostgresAlertingDisabledDao getAlertingDisabledDao() {
         return alertingDisabledDao;
+    }
+
+    public PostgresIncidentDao getIncidentDao() {
+        return incidentDao;
+    }
+
+    public PostgresActiveAgentDao getActiveAgentDao() {
+        return activeAgentDao;
+    }
+
+    public PostgresTransactionTypeDao getTransactionTypeDao() {
+        return transactionTypeDao;
+    }
+
+    public PostgresTraceAttributeNameDao getTraceAttributeNameDao() {
+        return traceAttributeNameDao;
+    }
+
+    public PostgresV09AgentRollupDao getV09AgentRollupDao() {
+        return v09AgentRollupDao;
+    }
+
+    public PostgresAggregateDao getAggregateDao() {
+        return aggregateDao;
     }
 
     @Override

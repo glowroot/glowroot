@@ -30,11 +30,14 @@ import javax.sql.DataSource;
  * <li>v2: user + role (+ seeds)</li>
  * <li>v3: agent_config + agent_display</li>
  * <li>v4: heartbeat, environment, alerting_disabled</li>
+ * <li>v5: open/resolved_incident, active_*_rollup, transaction_type, trace_attribute_name</li>
+ * <li>v6: v09_agent_rollup</li>
+ * <li>v7: aggregate_overall / aggregate_transaction / aggregate_query / aggregate_needs_rollup</li>
  * </ul>
  */
 public final class PostgresSchemaUpgrade {
 
-    static final int CURRENT_VERSION = 4;
+    static final int CURRENT_VERSION = 7;
 
     private PostgresSchemaUpgrade() {}
 
@@ -66,6 +69,21 @@ public final class PostgresSchemaUpgrade {
                 if (version < 4) {
                     migrateToV4(connection);
                     writeVersion(connection, 4);
+                    version = 4;
+                }
+                if (version < 5) {
+                    migrateToV5(connection);
+                    writeVersion(connection, 5);
+                    version = 5;
+                }
+                if (version < 6) {
+                    migrateToV6(connection);
+                    writeVersion(connection, 6);
+                    version = 6;
+                }
+                if (version < 7) {
+                    migrateToV7(connection);
+                    writeVersion(connection, 7);
                 }
                 connection.commit();
             } catch (SQLException e) {
@@ -137,6 +155,114 @@ public final class PostgresSchemaUpgrade {
             statement.execute("create table if not exists alerting_disabled ("
                     + "agent_rollup_id varchar(512) primary key, "
                     + "disabled_until_time timestamptz not null)");
+        }
+    }
+
+    private static void migrateToV5(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("create table if not exists open_incident ("
+                    + "agent_rollup_id varchar(512) not null, "
+                    + "condition bytea not null, "
+                    + "severity varchar(32) not null, "
+                    + "notification bytea not null, "
+                    + "open_time timestamptz not null, "
+                    + "primary key (agent_rollup_id, condition, severity))");
+            statement.execute("create table if not exists resolved_incident ("
+                    + "resolve_time timestamptz not null, "
+                    + "agent_rollup_id varchar(512) not null, "
+                    + "condition bytea not null, "
+                    + "severity varchar(32) not null, "
+                    + "notification bytea not null, "
+                    + "open_time timestamptz not null, "
+                    + "expires_at timestamptz not null, "
+                    + "primary key (resolve_time, agent_rollup_id, condition))");
+            statement.execute("create index if not exists resolved_incident_from_idx "
+                    + "on resolved_incident (resolve_time)");
+            statement.execute("create table if not exists active_top_level_rollup ("
+                    + "rollup_level int not null, "
+                    + "capture_time timestamptz not null, "
+                    + "top_level_id varchar(512) not null, "
+                    + "expires_at timestamptz not null, "
+                    + "primary key (rollup_level, capture_time, top_level_id))");
+            statement.execute("create index if not exists active_top_level_range_idx "
+                    + "on active_top_level_rollup (rollup_level, capture_time)");
+            statement.execute("create table if not exists active_child_rollup ("
+                    + "rollup_level int not null, "
+                    + "top_level_id varchar(512) not null, "
+                    + "capture_time timestamptz not null, "
+                    + "child_agent_id varchar(512) not null, "
+                    + "expires_at timestamptz not null, "
+                    + "primary key (rollup_level, top_level_id, capture_time, child_agent_id))");
+            statement.execute("create index if not exists active_child_range_idx "
+                    + "on active_child_rollup (rollup_level, top_level_id, capture_time)");
+            statement.execute("create table if not exists transaction_type ("
+                    + "agent_rollup varchar(512) not null, "
+                    + "transaction_type varchar(512) not null, "
+                    + "expires_at timestamptz not null, "
+                    + "primary key (agent_rollup, transaction_type))");
+            statement.execute("create table if not exists trace_attribute_name ("
+                    + "agent_rollup varchar(512) not null, "
+                    + "transaction_type varchar(512) not null, "
+                    + "trace_attribute_name varchar(512) not null, "
+                    + "expires_at timestamptz not null, "
+                    + "primary key (agent_rollup, transaction_type, trace_attribute_name))");
+        }
+    }
+
+    private static void migrateToV6(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("create table if not exists v09_agent_rollup ("
+                    + "v09_agent_id varchar(512) primary key, "
+                    + "v09_agent_rollup_id varchar(512) not null)");
+        }
+    }
+
+    private static void migrateToV7(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("create table if not exists aggregate_overall ("
+                    + "agent_rollup_id varchar(512) not null, "
+                    + "rollup_level int not null, "
+                    + "transaction_type varchar(512) not null, "
+                    + "capture_time timestamptz not null, "
+                    + "total_duration_nanos double precision not null, "
+                    + "total_cpu_nanos double precision not null, "
+                    + "total_allocated_bytes double precision not null, "
+                    + "transaction_count bigint not null, "
+                    + "error_count bigint not null, "
+                    + "aggregate_bytes bytea not null, "
+                    + "shared_query_texts_bytes bytea, "
+                    + "expires_at timestamptz not null, "
+                    + "primary key (agent_rollup_id, rollup_level, transaction_type, capture_time))");
+            statement.execute("create index if not exists aggregate_overall_range_idx "
+                    + "on aggregate_overall (agent_rollup_id, rollup_level, transaction_type, "
+                    + "capture_time)");
+            statement.execute("create table if not exists aggregate_transaction ("
+                    + "agent_rollup_id varchar(512) not null, "
+                    + "rollup_level int not null, "
+                    + "transaction_type varchar(512) not null, "
+                    + "transaction_name varchar(1024) not null, "
+                    + "capture_time timestamptz not null, "
+                    + "total_duration_nanos double precision not null, "
+                    + "total_cpu_nanos double precision not null, "
+                    + "total_allocated_bytes double precision not null, "
+                    + "transaction_count bigint not null, "
+                    + "error_count bigint not null, "
+                    + "aggregate_bytes bytea not null, "
+                    + "shared_query_texts_bytes bytea, "
+                    + "expires_at timestamptz not null, "
+                    + "primary key (agent_rollup_id, rollup_level, transaction_type, "
+                    + "transaction_name, capture_time))");
+            statement.execute("create index if not exists aggregate_transaction_range_idx "
+                    + "on aggregate_transaction (agent_rollup_id, rollup_level, transaction_type, "
+                    + "capture_time)");
+            statement.execute("create table if not exists aggregate_needs_rollup ("
+                    + "agent_rollup varchar(512) not null, "
+                    + "rollup_level int not null, "
+                    + "capture_time timestamptz not null, "
+                    + "uniqueness uuid not null, "
+                    + "transaction_types text[] not null, "
+                    + "expires_at timestamptz not null, "
+                    + "primary key (agent_rollup, rollup_level, capture_time, uniqueness))");
         }
     }
 

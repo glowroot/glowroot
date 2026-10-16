@@ -17,6 +17,7 @@ package org.glowroot.central.storage.postgres;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -24,8 +25,10 @@ import java.util.concurrent.Executor;
 
 import javax.sql.DataSource;
 
+import org.glowroot.common2.config.MoreConfigDefaults;
+
 /**
- * Minimal Postgres port of Cassandra {@code AgentDisplayDao#store}.
+ * Minimal Postgres port of Cassandra {@code AgentDisplayDao}.
  */
 public class PostgresAgentDisplayDao {
 
@@ -35,6 +38,32 @@ public class PostgresAgentDisplayDao {
     public PostgresAgentDisplayDao(DataSource dataSource, Executor asyncExecutor) {
         this.dataSource = dataSource;
         this.asyncExecutor = asyncExecutor;
+    }
+
+    public CompletableFuture<String> readLastDisplayPartAsync(String agentRollupId) {
+        return CompletableFuture.supplyAsync(() -> readLastDisplayPart(agentRollupId),
+                asyncExecutor);
+    }
+
+    /** Sync read for callers already on the JDBC async executor (avoids pool deadlock). */
+    public String readLastDisplayPart(String agentRollupId) {
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement ps = connection.prepareStatement(
+                        "select display from agent_display where agent_rollup_id = ?")) {
+            ps.setString(1, agentRollupId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
+                }
+                String display = rs.getString(1);
+                if (display == null || display.isEmpty()) {
+                    return MoreConfigDefaults.getDefaultAgentRollupDisplayPart(agentRollupId);
+                }
+                return display;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public CompletionStage<?> store(String agentRollupId, String display) {

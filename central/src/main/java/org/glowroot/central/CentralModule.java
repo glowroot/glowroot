@@ -851,14 +851,23 @@ public class CentralModule {
             admin.getConfigRepository().getUserConfigs().toCompletableFuture().join();
             admin.getConfigRepository().getRoleConfigs().toCompletableFuture().join();
             admin.getHeartbeatDao().store("postgres-boot-check").toCompletableFuture().join();
+            admin.getIncidentDao().readAllOpenIncidents(CassandraProfile.web).toCompletableFuture()
+                    .join();
+            admin.getTransactionTypeDao().read("postgres-boot-check").toCompletableFuture().join();
+            admin.getV09AgentRollupDao().getV09AgentRollupId("postgres-boot-check");
+            admin.getAggregateDao().truncateAll();
             if (startupLogger != null) {
                 startupLogger.info(
-                        "PostgreSQL admin+metadata OK (config/user/role/agent_config/heartbeat/…)");
+                        "PostgreSQL admin+metadata+aggregates-slice OK; boot still blocked "
+                                + "(traces/gauges/synthetics missing). See "
+                                + "docs/central-postgresql-storage.md");
             }
         }
         throw new UnsupportedOperationException(
                 "storage.type=postgres is experimental and incomplete"
-                        + " (admin+metadata DAOs wired; full Central boot still Cassandra-only)."
+                        + " (admin/metadata/v09/aggregates-slice wired;"
+                        + " traces/gauges/synthetics and full boot still Cassandra-only)."
+                        + " See docs/central-postgresql-storage.md."
                         + " Cassandra remains the supported Central backend.");
     }
 
