@@ -850,14 +850,15 @@ public class CentralModule {
             admin.getConfigRepository().getCentralWebConfig().toCompletableFuture().join();
             admin.getConfigRepository().getUserConfigs().toCompletableFuture().join();
             admin.getConfigRepository().getRoleConfigs().toCompletableFuture().join();
+            admin.getHeartbeatDao().store("postgres-boot-check").toCompletableFuture().join();
             if (startupLogger != null) {
                 startupLogger.info(
-                        "PostgreSQL admin ConfigRepository OK (central_config/user/role/agent_config)");
+                        "PostgreSQL admin+metadata OK (config/user/role/agent_config/heartbeat/…)");
             }
         }
         throw new UnsupportedOperationException(
                 "storage.type=postgres is experimental and incomplete"
-                        + " (admin ConfigRepository wired; full Central boot still Cassandra-only)."
+                        + " (admin+metadata DAOs wired; full Central boot still Cassandra-only)."
                         + " Cassandra remains the supported Central backend.");
     }
 

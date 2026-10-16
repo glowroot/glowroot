@@ -29,11 +29,12 @@ import javax.sql.DataSource;
  * <li>v1: central_config</li>
  * <li>v2: user + role (+ seeds)</li>
  * <li>v3: agent_config + agent_display</li>
+ * <li>v4: heartbeat, environment, alerting_disabled</li>
  * </ul>
  */
 public final class PostgresSchemaUpgrade {
 
-    static final int CURRENT_VERSION = 3;
+    static final int CURRENT_VERSION = 4;
 
     private PostgresSchemaUpgrade() {}
 
@@ -60,6 +61,11 @@ public final class PostgresSchemaUpgrade {
                 if (version < 3) {
                     migrateToV3(connection);
                     writeVersion(connection, 3);
+                    version = 3;
+                }
+                if (version < 4) {
+                    migrateToV4(connection);
+                    writeVersion(connection, 4);
                 }
                 connection.commit();
             } catch (SQLException e) {
@@ -113,6 +119,24 @@ public final class PostgresSchemaUpgrade {
             statement.execute("create table if not exists agent_display ("
                     + "agent_rollup_id varchar(512) primary key, "
                     + "display varchar(1024) not null)");
+        }
+    }
+
+    private static void migrateToV4(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("create table if not exists heartbeat ("
+                    + "agent_id varchar(512) not null, "
+                    + "central_capture_time timestamptz not null, "
+                    + "expires_at timestamptz not null, "
+                    + "primary key (agent_id, central_capture_time))");
+            statement.execute("create index if not exists heartbeat_range_idx "
+                    + "on heartbeat (agent_id, central_capture_time)");
+            statement.execute("create table if not exists environment ("
+                    + "agent_id varchar(512) primary key, "
+                    + "environment bytea not null)");
+            statement.execute("create table if not exists alerting_disabled ("
+                    + "agent_rollup_id varchar(512) primary key, "
+                    + "disabled_until_time timestamptz not null)");
         }
     }
 

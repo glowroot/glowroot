@@ -20,12 +20,16 @@ import java.util.concurrent.ExecutorService;
 import com.zaxxer.hikari.HikariDataSource;
 import org.glowroot.central.storage.postgres.PostgresAgentConfigDao;
 import org.glowroot.central.storage.postgres.PostgresAgentDisplayDao;
+import org.glowroot.central.storage.postgres.PostgresAlertingDisabledDao;
 import org.glowroot.central.storage.postgres.PostgresAsync;
 import org.glowroot.central.storage.postgres.PostgresCentralConfigDao;
 import org.glowroot.central.storage.postgres.PostgresDataSourceFactory;
+import org.glowroot.central.storage.postgres.PostgresEnvironmentDao;
+import org.glowroot.central.storage.postgres.PostgresHeartbeatDao;
 import org.glowroot.central.storage.postgres.PostgresRoleDao;
 import org.glowroot.central.storage.postgres.PostgresSchemaUpgrade;
 import org.glowroot.central.storage.postgres.PostgresUserDao;
+import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ConfigRepository;
 
 /**
@@ -37,16 +41,31 @@ public final class PostgresCentralAdminModule implements AutoCloseable {
     private final HikariDataSource dataSource;
     private final ExecutorService asyncExecutor;
     private final ConfigRepositoryImpl configRepository;
+    private final PostgresHeartbeatDao heartbeatDao;
+    private final PostgresEnvironmentDao environmentDao;
+    private final PostgresAlertingDisabledDao alertingDisabledDao;
 
     private PostgresCentralAdminModule(HikariDataSource dataSource, ExecutorService asyncExecutor,
-            ConfigRepositoryImpl configRepository) {
+            ConfigRepositoryImpl configRepository, PostgresHeartbeatDao heartbeatDao,
+            PostgresEnvironmentDao environmentDao,
+            PostgresAlertingDisabledDao alertingDisabledDao) {
         this.dataSource = dataSource;
         this.asyncExecutor = asyncExecutor;
         this.configRepository = configRepository;
+        this.heartbeatDao = heartbeatDao;
+        this.environmentDao = environmentDao;
+        this.alertingDisabledDao = alertingDisabledDao;
     }
 
     public static PostgresCentralAdminModule create(String jdbcUrl, String username,
             String password, int maximumPoolSize, String symmetricEncryptionKey) throws Exception {
+        return create(jdbcUrl, username, password, maximumPoolSize, symmetricEncryptionKey,
+                Clock.systemClock());
+    }
+
+    public static PostgresCentralAdminModule create(String jdbcUrl, String username,
+            String password, int maximumPoolSize, String symmetricEncryptionKey, Clock clock)
+            throws Exception {
         HikariDataSource dataSource = PostgresDataSourceFactory.create(jdbcUrl, username, password,
                 maximumPoolSize);
         ExecutorService asyncExecutor = PostgresAsync.newExecutor(maximumPoolSize);
@@ -60,13 +79,20 @@ public final class PostgresCentralAdminModule implements AutoCloseable {
                     new PostgresAgentDisplayDao(dataSource, asyncExecutor);
             PostgresAgentConfigDao agentConfigDao =
                     new PostgresAgentConfigDao(dataSource, agentDisplayDao, asyncExecutor);
+            PostgresHeartbeatDao heartbeatDao =
+                    new PostgresHeartbeatDao(dataSource, clock, asyncExecutor);
+            PostgresEnvironmentDao environmentDao =
+                    new PostgresEnvironmentDao(dataSource, asyncExecutor);
+            PostgresAlertingDisabledDao alertingDisabledDao =
+                    new PostgresAlertingDisabledDao(dataSource, clock, asyncExecutor);
             ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(
                     new PostgresCentralConfigStore(centralConfigDao),
                     new PostgresAgentConfigStore(agentConfigDao),
                     new PostgresUserStore(userDao),
                     new PostgresRoleStore(roleDao),
                     symmetricEncryptionKey);
-            return new PostgresCentralAdminModule(dataSource, asyncExecutor, configRepository);
+            return new PostgresCentralAdminModule(dataSource, asyncExecutor, configRepository,
+                    heartbeatDao, environmentDao, alertingDisabledDao);
         } catch (Exception e) {
             PostgresAsync.shutdownQuietly(asyncExecutor);
             PostgresDataSourceFactory.closeQuietly(dataSource);
@@ -76,6 +102,18 @@ public final class PostgresCentralAdminModule implements AutoCloseable {
 
     public ConfigRepository getConfigRepository() {
         return configRepository;
+    }
+
+    public PostgresHeartbeatDao getHeartbeatDao() {
+        return heartbeatDao;
+    }
+
+    public PostgresEnvironmentDao getEnvironmentDao() {
+        return environmentDao;
+    }
+
+    public PostgresAlertingDisabledDao getAlertingDisabledDao() {
+        return alertingDisabledDao;
     }
 
     @Override
