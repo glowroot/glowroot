@@ -61,7 +61,15 @@ public class PostgresTransactionTypeDao implements TransactionTypeRepository {
 
     @Override
     public CompletionStage<List<String>> read(String agentRollupId) {
-        return cache.computeIfAbsent(agentRollupId, this::load);
+        return cache.computeIfAbsent(agentRollupId, id -> {
+            CompletableFuture<List<String>> future = load(id);
+            future.whenComplete((result, error) -> {
+                if (error != null) {
+                    cache.remove(id, future);
+                }
+            });
+            return future;
+        });
     }
 
     @CheckReturnValue

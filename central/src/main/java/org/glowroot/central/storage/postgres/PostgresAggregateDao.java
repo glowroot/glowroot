@@ -25,7 +25,9 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -413,31 +415,55 @@ public class PostgresAggregateDao implements AggregateDao {
         long intervalMillis = rollupConfigs.get(level).intervalMillis();
         int fromLevel = level - 1;
         int ttlSeconds = Ints.saturatedCast(HOURS.toSeconds(rollupExpirationHours.get(level)));
+        // Capture now before read — same race guard as Common.getNeedsRollupList.
+        long currentTimeMillis = clock.currentTimeMillis();
+        Map<Long, NeedsRollupBatch> batches = new LinkedHashMap<>();
         try (PreparedStatement readNeeds = connection.prepareStatement(
                 "select capture_time, uniqueness, transaction_types from aggregate_needs_rollup "
-                        + "where agent_rollup = ? and rollup_level = ?");
-                PreparedStatement deleteNeeds = connection.prepareStatement(
-                        "delete from aggregate_needs_rollup where agent_rollup = ? "
-                                + "and rollup_level = ? and capture_time = ? and uniqueness = ?")) {
+                        + "where agent_rollup = ? and rollup_level = ? and expires_at > ? "
+                        + "order by capture_time")) {
             readNeeds.setString(1, agentRollupId);
             readNeeds.setInt(2, level);
+            readNeeds.setTimestamp(3, new Timestamp(currentTimeMillis));
             try (ResultSet needs = readNeeds.executeQuery()) {
                 while (needs.next()) {
                     long rollupCaptureTime = needs.getTimestamp(1).getTime();
+                    // Same rule as Common.isOldEnoughToRollup: skip open interval (break —
+                    // rows ordered by capture_time).
+                    if (rollupCaptureTime >= currentTimeMillis - intervalMillis) {
+                        break;
+                    }
                     UUID uniqueness = (UUID) needs.getObject(2);
                     String[] transactionTypes = (String[]) needs.getArray(3).getArray();
-                    long from = rollupCaptureTime - intervalMillis;
-                    for (String transactionType : transactionTypes) {
-                        mergeAndWriteOverall(connection, agentRollupId, fromLevel, level,
-                                transactionType, from, rollupCaptureTime, ttlSeconds);
-                        mergeAndWriteTransactions(connection, agentRollupId, fromLevel, level,
-                                transactionType, from, rollupCaptureTime, ttlSeconds);
+                    NeedsRollupBatch batch = batches.get(rollupCaptureTime);
+                    if (batch == null) {
+                        batch = new NeedsRollupBatch(rollupCaptureTime);
+                        batches.put(rollupCaptureTime, batch);
                     }
-                    queueNextNeedsRollup(connection, agentRollupId, level, rollupCaptureTime,
-                            transactionTypes, ttlSeconds);
+                    batch.uniquenessKeys.add(uniqueness);
+                    for (String transactionType : transactionTypes) {
+                        batch.transactionTypes.add(transactionType);
+                    }
+                }
+            }
+        }
+        try (PreparedStatement deleteNeeds = connection.prepareStatement(
+                "delete from aggregate_needs_rollup where agent_rollup = ? "
+                        + "and rollup_level = ? and capture_time = ? and uniqueness = ?")) {
+            for (NeedsRollupBatch batch : batches.values()) {
+                long from = batch.captureTime - intervalMillis;
+                for (String transactionType : batch.transactionTypes) {
+                    mergeAndWriteOverall(connection, agentRollupId, fromLevel, level,
+                            transactionType, from, batch.captureTime, ttlSeconds);
+                    mergeAndWriteTransactions(connection, agentRollupId, fromLevel, level,
+                            transactionType, from, batch.captureTime, ttlSeconds);
+                }
+                queueNextNeedsRollup(connection, agentRollupId, level, batch.captureTime,
+                        batch.transactionTypes.toArray(new String[0]), ttlSeconds);
+                for (UUID uniqueness : batch.uniquenessKeys) {
                     deleteNeeds.setString(1, agentRollupId);
                     deleteNeeds.setInt(2, level);
-                    deleteNeeds.setTimestamp(3, new Timestamp(rollupCaptureTime));
+                    deleteNeeds.setTimestamp(3, new Timestamp(batch.captureTime));
                     deleteNeeds.setObject(4, uniqueness);
                     deleteNeeds.executeUpdate();
                 }
@@ -848,6 +874,17 @@ public class PostgresAggregateDao implements AggregateDao {
             this.totalAllocatedBytes = totalAllocatedBytes;
             this.transactionCount = transactionCount;
             this.errorCount = errorCount;
+        }
+    }
+
+    /** Coalesced needs_rollup rows for one capture_time (Cassandra Common.NeedsRollup parity). */
+    private static final class NeedsRollupBatch {
+        final long captureTime;
+        final Set<String> transactionTypes = new HashSet<>();
+        final Set<UUID> uniquenessKeys = new HashSet<>();
+
+        NeedsRollupBatch(long captureTime) {
+            this.captureTime = captureTime;
         }
     }
 }

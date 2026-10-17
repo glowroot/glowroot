@@ -65,17 +65,25 @@ public class PostgresTraceAttributeNameDao implements TraceAttributeNameReposito
 
     @Override
     public Map<String, List<String>> read(String agentRollupId) throws Exception {
-        return cache.computeIfAbsent(agentRollupId, this::load).get();
+        return cache.computeIfAbsent(agentRollupId, id -> {
+            CompletableFuture<Map<String, List<String>>> future = load(id);
+            future.whenComplete((result, error) -> {
+                if (error != null) {
+                    cache.remove(id, future);
+                }
+            });
+            return future;
+        }).get();
     }
 
     public CompletionStage<?> store(String agentRollupId, String transactionType,
             String traceAttributeName) {
         TraceAttributeNameKey rateLimiterKey =
                 new TraceAttributeNameKey(agentRollupId, transactionType, traceAttributeName);
-        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
-            return CompletableFuture.completedFuture(null);
-        }
         return getTraceTTL().thenCompose(ttl -> {
+            if (!rateLimiter.tryAcquire(rateLimiterKey)) {
+                return CompletableFuture.completedFuture(null);
+            }
             Timestamp expiresAt =
                     PostgresExpires.fromTtlSeconds(ttl, clock.currentTimeMillis(), clock);
             CompletableFuture<Void> future = new CompletableFuture<>();
