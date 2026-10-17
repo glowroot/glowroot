@@ -16,9 +16,12 @@
 package org.glowroot.central.storage.postgres;
 
 import java.sql.Timestamp;
+import java.util.List;
 
+import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -40,5 +43,19 @@ final class PostgresExpires {
         int adjustedTTL = Ints.saturatedCast(ttlSeconds - captureTimeAgoSeconds);
         adjustedTTL = Math.max(adjustedTTL, 60);
         return new Timestamp(clock.currentTimeMillis() + SECONDS.toMillis(adjustedTTL));
+    }
+
+    /**
+     * Same formula as package-private {@code Common.getNeedsRollupAdjustedTTL}: shorten needs-queue
+     * TTL so L0 data still exists when rollup runs (max rollup interval + 1h headroom).
+     */
+    static int needsRollupAdjustedTtlSeconds(int dataTtlSeconds, List<RollupConfig> rollupConfigs) {
+        if (dataTtlSeconds == 0) {
+            return 0;
+        }
+        long maxRollupInterval = Iterables.getLast(rollupConfigs).intervalMillis();
+        int needsTtl = dataTtlSeconds - Ints.saturatedCast(MILLISECONDS.toSeconds(maxRollupInterval))
+                - 3600;
+        return Math.max(needsTtl, 60);
     }
 }

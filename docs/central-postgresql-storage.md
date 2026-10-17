@@ -26,7 +26,7 @@ Embedded collector is unchanged (local H2). This option applies only to Central.
 
 ## Boot gate
 
-`CentralModule` still refuses full Postgres boot after validating JDBC + schema + admin/metadata + aggregate truncate smoke.
+`CentralModule` still refuses full Postgres boot after validating JDBC + schema + admin/metadata DAOs and constructing the aggregate DAO (read-only smoke; no truncate).
 
 **Intentional:** do not lift the gate until traces (and remaining hot-path DAOs) exist. Shipping a UI/gRPC process that cannot store traces would mislead operators.
 

@@ -127,7 +127,7 @@ public class PostgresAggregateDao implements AggregateDao {
                             }
                         }
                         insertNeedsRollup(connection, agentId, captureTime, transactionTypes,
-                                expiresAt);
+                                ttlSeconds);
                         connection.commit();
                         write.complete(null);
                     } catch (SQLException e) {
@@ -565,7 +565,7 @@ public class PostgresAggregateDao implements AggregateDao {
     }
 
     private void insertNeedsRollup(Connection connection, String agentId, long captureTime,
-            Set<String> transactionTypes, Timestamp expiresAt) throws SQLException {
+            Set<String> transactionTypes, int dataTtlSeconds) throws SQLException {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         if (rollupConfigs.size() < 2) {
             return;
@@ -574,6 +574,10 @@ public class PostgresAggregateDao implements AggregateDao {
         // rollup succeeds — see queueNextNeedsRollup.
         long intervalMillis = rollupConfigs.get(1).intervalMillis();
         long rollupCaptureTime = CaptureTimes.getRollup(captureTime, intervalMillis);
+        int needsTtlSeconds =
+                PostgresExpires.needsRollupAdjustedTtlSeconds(dataTtlSeconds, rollupConfigs);
+        Timestamp needsExpiresAt =
+                PostgresExpires.fromTtlSeconds(needsTtlSeconds, rollupCaptureTime, clock);
         try (PreparedStatement ps = connection.prepareStatement(
                 "insert into aggregate_needs_rollup (agent_rollup, rollup_level, capture_time, "
                         + "uniqueness, transaction_types, expires_at) values (?, 1, ?, ?, ?, ?)")) {
@@ -581,13 +585,13 @@ public class PostgresAggregateDao implements AggregateDao {
             ps.setTimestamp(2, new Timestamp(rollupCaptureTime));
             ps.setObject(3, UUID.randomUUID());
             ps.setArray(4, connection.createArrayOf("text", transactionTypes.toArray()));
-            ps.setTimestamp(5, expiresAt);
+            ps.setTimestamp(5, needsExpiresAt);
             ps.executeUpdate();
         }
     }
 
     private void queueNextNeedsRollup(Connection connection, String agentRollupId, int fromLevel,
-            long captureTime, String[] transactionTypes, int ttlSeconds) throws SQLException {
+            long captureTime, String[] transactionTypes, int dataTtlSeconds) throws SQLException {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         int nextLevel = fromLevel + 1;
         if (nextLevel >= rollupConfigs.size()) {
@@ -595,8 +599,10 @@ public class PostgresAggregateDao implements AggregateDao {
         }
         long intervalMillis = rollupConfigs.get(nextLevel).intervalMillis();
         long rollupCaptureTime = CaptureTimes.getRollup(captureTime, intervalMillis);
+        int needsTtlSeconds =
+                PostgresExpires.needsRollupAdjustedTtlSeconds(dataTtlSeconds, rollupConfigs);
         Timestamp expiresAt =
-                PostgresExpires.fromTtlSeconds(ttlSeconds, rollupCaptureTime, clock);
+                PostgresExpires.fromTtlSeconds(needsTtlSeconds, rollupCaptureTime, clock);
         try (PreparedStatement ps = connection.prepareStatement(
                 "insert into aggregate_needs_rollup (agent_rollup, rollup_level, capture_time, "
                         + "uniqueness, transaction_types, expires_at) values (?, ?, ?, ?, ?, ?)")) {
@@ -752,8 +758,12 @@ public class PostgresAggregateDao implements AggregateDao {
         }
         if (a.hasAuxThreadRootTimer()) {
             m.mergeAuxThreadRootTimer(a.getAuxThreadRootTimer());
+            // MutableAggregate.toOverviewAggregate requires auxThreadStats whenever the aux
+            // root timer is present (Cassandra overview rows always materialize both).
             if (a.hasAuxThreadStats()) {
                 m.mergeAuxThreadStats(a.getAuxThreadStats());
+            } else {
+                m.mergeAuxThreadStats(Aggregate.ThreadStats.getDefaultInstance());
             }
         }
         m.mergeAsyncTimers(a.getAsyncTimerList());

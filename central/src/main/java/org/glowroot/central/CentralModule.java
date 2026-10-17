@@ -850,7 +850,10 @@ public class CentralModule {
             admin.getConfigRepository().getCentralWebConfig().toCompletableFuture().join();
             admin.getConfigRepository().getUserConfigs().toCompletableFuture().join();
             admin.getConfigRepository().getRoleConfigs().toCompletableFuture().join();
-            admin.getHeartbeatDao().store("postgres-boot-check").toCompletableFuture().join();
+            // read-only smoke — do not store (would leave postgres-boot-check heartbeat rows)
+            admin.getHeartbeatDao()
+                    .exists("postgres-boot-check", 0, System.currentTimeMillis())
+                    .toCompletableFuture().join();
             admin.getIncidentDao().readAllOpenIncidents(CassandraProfile.web).toCompletableFuture()
                     .join();
             admin.getTransactionTypeDao().read("postgres-boot-check").toCompletableFuture().join();
