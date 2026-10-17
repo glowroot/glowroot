@@ -19,18 +19,25 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 
 import javax.sql.DataSource;
 
+import com.google.common.base.Joiner;
+import com.spotify.futures.CompletableFutures;
+import org.glowroot.central.repo.AgentRollupIds;
 import org.glowroot.common2.config.MoreConfigDefaults;
+import org.glowroot.common2.repo.AgentDisplayRepository;
 
 /**
  * Minimal Postgres port of Cassandra {@code AgentDisplayDao}.
  */
-public class PostgresAgentDisplayDao {
+public class PostgresAgentDisplayDao implements AgentDisplayRepository {
 
     private final DataSource dataSource;
     private final Executor asyncExecutor;
@@ -40,6 +47,23 @@ public class PostgresAgentDisplayDao {
         this.asyncExecutor = asyncExecutor;
     }
 
+    @Override
+    public CompletionStage<String> readFullDisplay(String agentRollupId) {
+        return readDisplayParts(agentRollupId).thenApply(parts -> Joiner.on(" :: ").join(parts));
+    }
+
+    @Override
+    public CompletableFuture<List<String>> readDisplayParts(String agentRollupId) {
+        List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentRollupId);
+        List<CompletionStage<String>> futures = new ArrayList<>();
+        for (ListIterator<String> i = agentRollupIds.listIterator(agentRollupIds.size()); i
+                .hasPrevious();) {
+            futures.add(readLastDisplayPartAsync(i.previous()));
+        }
+        return CompletableFutures.allAsList(futures);
+    }
+
+    @Override
     public CompletableFuture<String> readLastDisplayPartAsync(String agentRollupId) {
         return CompletableFuture.supplyAsync(() -> readLastDisplayPart(agentRollupId),
                 asyncExecutor);

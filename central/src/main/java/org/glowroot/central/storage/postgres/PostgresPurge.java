@@ -38,6 +38,11 @@ public final class PostgresPurge {
             "aggregate_needs_rollup_from_child",
             "active_top_level_rollup",
             "active_child_rollup",
+            "trace",
+            "gauge_value",
+            "synthetic_result",
+            "full_query_text",
+            "full_query_text_check",
     };
 
     private PostgresPurge() {}

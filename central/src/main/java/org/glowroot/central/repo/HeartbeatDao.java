@@ -29,7 +29,7 @@ import org.glowroot.common2.repo.CassandraProfile;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
-public class HeartbeatDao {
+public class HeartbeatDao implements HeartbeatStore {
 
     static final int EXPIRATION_HOURS = 24;
 

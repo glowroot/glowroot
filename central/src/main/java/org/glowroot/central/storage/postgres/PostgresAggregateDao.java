@@ -38,17 +38,23 @@ import java.util.concurrent.Executor;
 import javax.annotation.Nullable;
 import javax.sql.DataSource;
 
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.InvalidProtocolBufferException;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.glowroot.central.repo.AgentRollupIds;
 import org.glowroot.central.repo.AggregateDao;
+import org.glowroot.common.Constants;
 import org.glowroot.common.live.ImmutableThroughputAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.AggregateQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.PercentileAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.SummaryQuery;
 import org.glowroot.common.live.LiveAggregateRepository.ThroughputAggregate;
+import org.glowroot.common.model.MutableProfile;
+import org.glowroot.common.model.MutableQuery;
+import org.glowroot.common.model.MutableServiceCall;
 import org.glowroot.common.model.OverallErrorSummaryCollector;
 import org.glowroot.common.model.OverallSummaryCollector;
 import org.glowroot.common.model.ProfileCollector;
@@ -67,29 +73,37 @@ import org.glowroot.common2.repo.MutableAggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldTransactionAggregate;
+import org.glowroot.wire.api.model.Proto;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 /**
  * Postgres port of Cassandra {@code AggregateDaoImpl} — experimental slice: store/read/rollup for
- * overall + per-transaction aggregates (Aggregate protobuf + summary columns). Query/profile merge
- * from stored Aggregate bytes; full query-text DAO / child rollups still incomplete vs Cassandra.
+ * overall + per-transaction aggregates (Aggregate protobuf + summary columns). Queries / service
+ * calls / profiles merge from Aggregate bytes on store, L0 read, and rollup/from-child.
+ * FQT via {@link PostgresFullQueryTextDao}.
  */
 public class PostgresAggregateDao implements AggregateDao {
+
+    private static final HashFunction SHA_1 = Hashing.sha1();
 
     private final DataSource dataSource;
     private final PostgresActiveAgentDao activeAgentDao;
     private final PostgresTransactionTypeDao transactionTypeDao;
+    private final PostgresFullQueryTextDao fullQueryTextDao;
     private final ConfigRepository configRepository;
     private final Clock clock;
     private final Executor asyncExecutor;
 
     public PostgresAggregateDao(DataSource dataSource, PostgresActiveAgentDao activeAgentDao,
-            PostgresTransactionTypeDao transactionTypeDao, ConfigRepository configRepository,
+            PostgresTransactionTypeDao transactionTypeDao,
+            PostgresFullQueryTextDao fullQueryTextDao, ConfigRepository configRepository,
             Clock clock, Executor asyncExecutor) {
         this.dataSource = dataSource;
         this.activeAgentDao = activeAgentDao;
         this.transactionTypeDao = transactionTypeDao;
+        this.fullQueryTextDao = fullQueryTextDao;
         this.configRepository = configRepository;
         this.clock = clock;
         this.asyncExecutor = asyncExecutor;
@@ -104,12 +118,36 @@ public class PostgresAggregateDao implements AggregateDao {
             return activeAgentDao.insert(agentId, captureTime);
         }
         List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);
-        return configRepository.getCentralStorageConfig().thenCompose(storage -> {
+        List<CompletionStage<?>> fqtFutures = new ArrayList<>();
+        List<Aggregate.SharedQueryText> sharedQueryTexts = new ArrayList<>();
+        for (Aggregate.SharedQueryText sharedQueryText : initialSharedQueryTexts) {
+            String fullTextSha1 = sharedQueryText.getFullTextSha1();
+            if (fullTextSha1.isEmpty()) {
+                String fullText = sharedQueryText.getFullText();
+                if (fullText.length() > Constants.AGGREGATE_QUERY_TEXT_TRUNCATE) {
+                    fullTextSha1 = SHA_1.hashString(fullText, UTF_8).toString();
+                    fqtFutures.add(fullQueryTextDao.store(agentRollupIds, fullTextSha1, fullText));
+                    sharedQueryText = Aggregate.SharedQueryText.newBuilder()
+                            .setTruncatedText(fullText.substring(0,
+                                    Constants.AGGREGATE_QUERY_TEXT_TRUNCATE))
+                            .setFullTextSha1(fullTextSha1)
+                            .build();
+                }
+            }
+            sharedQueryTexts.add(sharedQueryText);
+        }
+        CompletableFuture<?>[] fqtArray = new CompletableFuture<?>[fqtFutures.size()];
+        for (int i = 0; i < fqtFutures.size(); i++) {
+            fqtArray[i] = fqtFutures.get(i).toCompletableFuture();
+        }
+        return CompletableFuture.allOf(fqtArray)
+                .thenCompose(ignored -> configRepository.getCentralStorageConfig())
+                .thenCompose(storage -> {
             List<Integer> rollupExpirationHours = storage.rollupExpirationHours();
             int ttlSeconds = Ints.saturatedCast(HOURS.toSeconds(rollupExpirationHours.get(0)));
             Timestamp expiresAt =
                     PostgresExpires.fromTtlSeconds(ttlSeconds, captureTime, clock);
-            byte[] sharedBytes = serializeSharedQueryTexts(initialSharedQueryTexts);
+            byte[] sharedBytes = serializeSharedQueryTexts(sharedQueryTexts);
             CompletableFuture<Void> write = new CompletableFuture<>();
             CompletableFuture.runAsync(() -> {
                 try (Connection connection = dataSource.getConnection()) {
@@ -365,60 +403,121 @@ public class PostgresAggregateDao implements AggregateDao {
     @Override
     public CompletionStage<?> mergeServiceCallsInto(String agentRollupId, AggregateQuery query,
             ServiceCallCollector collector, CassandraProfile profile) {
-        return CompletableFuture.completedFuture(null);
+        return CompletableFuture.runAsync(() -> {
+            List<RowAgg> rows = loadAggregateRows(agentRollupId, query);
+            for (RowAgg row : rows) {
+                for (Aggregate.ServiceCall sc : row.aggregate.getServiceCallList()) {
+                    collector.mergeServiceCall(sc.getType(), sc.getText(),
+                            sc.getTotalDurationNanos(), sc.getExecutionCount());
+                }
+                for (Aggregate.OldServiceCallsByType byType : row.aggregate
+                        .getOldServiceCallsByTypeList()) {
+                    for (Aggregate.OldServiceCall sc : byType.getServiceCallList()) {
+                        collector.mergeServiceCall(byType.getType(), sc.getText(),
+                                sc.getTotalDurationNanos(), sc.getExecutionCount());
+                    }
+                }
+            }
+        }, asyncExecutor);
     }
 
     @Override
     public CompletionStage<?> mergeMainThreadProfilesInto(String agentRollupId, AggregateQuery query,
             ProfileCollector collector, CassandraProfile profile) {
-        return CompletableFuture.completedFuture(null);
+        return CompletableFuture.runAsync(() -> {
+            List<RowAgg> rows = loadAggregateRows(agentRollupId, query);
+            for (RowAgg row : rows) {
+                if (row.aggregate.hasMainThreadProfile()) {
+                    collector.mergeProfile(row.aggregate.getMainThreadProfile());
+                    collector.updateLastCaptureTime(row.captureTime);
+                }
+            }
+        }, asyncExecutor);
     }
 
     @Override
     public CompletionStage<?> mergeAuxThreadProfilesInto(String agentRollupId, AggregateQuery query,
             ProfileCollector collector, CassandraProfile profile) {
-        return CompletableFuture.completedFuture(null);
+        return CompletableFuture.runAsync(() -> {
+            List<RowAgg> rows = loadAggregateRows(agentRollupId, query);
+            for (RowAgg row : rows) {
+                if (row.aggregate.hasAuxThreadProfile()) {
+                    collector.mergeProfile(row.aggregate.getAuxThreadProfile());
+                    collector.updateLastCaptureTime(row.captureTime);
+                }
+            }
+        }, asyncExecutor);
     }
 
     @Override
     public CompletionStage<String> readFullQueryText(String agentRollupId, String fullQueryTextSha1,
             CassandraProfile profile) {
-        return CompletableFuture.completedFuture(null);
+        return fullQueryTextDao.getFullText(agentRollupId, fullQueryTextSha1, profile);
     }
 
     @Override
     public CompletionStage<Boolean> hasMainThreadProfile(String agentRollupId, AggregateQuery query,
             CassandraProfile profile) {
-        return CompletableFuture.completedFuture(false);
+        return CompletableFuture.supplyAsync(() -> {
+            for (RowAgg row : loadAggregateRows(agentRollupId, query)) {
+                if (row.aggregate.hasMainThreadProfile()) {
+                    return true;
+                }
+            }
+            return false;
+        }, asyncExecutor);
     }
 
     @Override
     public CompletionStage<Boolean> hasAuxThreadProfile(String agentRollupId, AggregateQuery query,
             CassandraProfile profile) {
-        return CompletableFuture.completedFuture(false);
+        return CompletableFuture.supplyAsync(() -> {
+            for (RowAgg row : loadAggregateRows(agentRollupId, query)) {
+                if (row.aggregate.hasAuxThreadProfile()) {
+                    return true;
+                }
+            }
+            return false;
+        }, asyncExecutor);
     }
 
     @Override
     public CompletionStage<Boolean> shouldHaveQueries(String agentRollupId, AggregateQuery query) {
-        return CompletableFuture.completedFuture(true);
+        return CompletableFuture.supplyAsync(() -> {
+            for (RowAgg row : loadAggregateRows(agentRollupId, query)) {
+                if (!row.aggregate.getQueryList().isEmpty()
+                        || !row.aggregate.getOldQueriesByTypeList().isEmpty()) {
+                    return true;
+                }
+            }
+            return false;
+        }, asyncExecutor);
     }
 
     @Override
     public CompletionStage<Boolean> shouldHaveServiceCalls(String agentRollupId,
             AggregateQuery query) {
-        return CompletableFuture.completedFuture(false);
+        return CompletableFuture.supplyAsync(() -> {
+            for (RowAgg row : loadAggregateRows(agentRollupId, query)) {
+                if (!row.aggregate.getServiceCallList().isEmpty()
+                        || !row.aggregate.getOldServiceCallsByTypeList().isEmpty()) {
+                    return true;
+                }
+            }
+            return false;
+        }, asyncExecutor);
     }
 
     @Override
     public CompletionStage<Boolean> shouldHaveMainThreadProfile(String agentRollupId,
             AggregateQuery query) {
-        return CompletableFuture.completedFuture(false);
+        return hasMainThreadProfile(agentRollupId, query, CassandraProfile.web);
     }
 
     @Override
     public CompletionStage<Boolean> shouldHaveAuxThreadProfile(String agentRollupId,
             AggregateQuery query) {
-        return CompletableFuture.completedFuture(false);
+        return hasAuxThreadProfile(agentRollupId, query, CassandraProfile.web);
     }
 
     private void rollupFromChildren(Connection connection, String agentRollupId,
@@ -485,7 +584,6 @@ public class PostgresAggregateDao implements AggregateDao {
             String transactionType, Set<String> childAgentRollupIds, long captureTime,
             int ttlSeconds) throws Exception {
         MutableAggregate merged = new MutableAggregate(1000, 1000);
-        List<Aggregate.SharedQueryText> shared = null;
         for (String childId : childAgentRollupIds) {
             try (PreparedStatement ps = connection.prepareStatement(
                     "select aggregate_bytes, shared_query_texts_bytes from aggregate_overall "
@@ -498,11 +596,8 @@ public class PostgresAggregateDao implements AggregateDao {
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         Aggregate aggregate = Aggregate.parseFrom(rs.getBytes(1));
-                        byte[] sharedBytes = rs.getBytes(2);
-                        if (shared == null && sharedBytes != null) {
-                            shared = deserializeSharedQueryTexts(sharedBytes);
-                        }
-                        mergeAggregate(merged, aggregate);
+                        mergeAggregate(merged, aggregate,
+                                deserializeSharedQueryTexts(rs.getBytes(2)));
                     }
                 }
             }
@@ -510,11 +605,10 @@ public class PostgresAggregateDao implements AggregateDao {
         if (merged.isEmpty()) {
             return;
         }
-        Aggregate aggregate = toAggregate(merged, shared);
-        byte[] sharedBytes = shared == null ? null : serializeSharedQueryTexts(shared);
+        RolledAggregate rolled = toAggregate(merged);
         Timestamp expiresAt = PostgresExpires.fromTtlSeconds(ttlSeconds, captureTime, clock);
-        upsertOverall(connection, parentAgentRollupId, 0, transactionType, captureTime, aggregate,
-                sharedBytes, expiresAt);
+        upsertOverall(connection, parentAgentRollupId, 0, transactionType, captureTime,
+                rolled.aggregate, rolled.sharedBytes, expiresAt);
     }
 
     private void mergeTransactionsFromChildren(Connection connection, String parentAgentRollupId,
@@ -539,7 +633,6 @@ public class PostgresAggregateDao implements AggregateDao {
         }
         for (String transactionName : names) {
             MutableAggregate merged = new MutableAggregate(1000, 1000);
-            List<Aggregate.SharedQueryText> shared = null;
             for (String childId : childAgentRollupIds) {
                 try (PreparedStatement ps = connection.prepareStatement(
                         "select aggregate_bytes, shared_query_texts_bytes from "
@@ -555,11 +648,8 @@ public class PostgresAggregateDao implements AggregateDao {
                     try (ResultSet rs = ps.executeQuery()) {
                         if (rs.next()) {
                             Aggregate aggregate = Aggregate.parseFrom(rs.getBytes(1));
-                            byte[] sharedBytes = rs.getBytes(2);
-                            if (shared == null && sharedBytes != null) {
-                                shared = deserializeSharedQueryTexts(sharedBytes);
-                            }
-                            mergeAggregate(merged, aggregate);
+                            mergeAggregate(merged, aggregate,
+                                    deserializeSharedQueryTexts(rs.getBytes(2)));
                         }
                     }
                 }
@@ -567,11 +657,10 @@ public class PostgresAggregateDao implements AggregateDao {
             if (merged.isEmpty()) {
                 continue;
             }
-            Aggregate aggregate = toAggregate(merged, shared);
-            byte[] sharedBytes = shared == null ? null : serializeSharedQueryTexts(shared);
+            RolledAggregate rolled = toAggregate(merged);
             Timestamp expiresAt = PostgresExpires.fromTtlSeconds(ttlSeconds, captureTime, clock);
             upsertTransaction(connection, parentAgentRollupId, 0, transactionType, transactionName,
-                    captureTime, aggregate, sharedBytes, expiresAt);
+                    captureTime, rolled.aggregate, rolled.sharedBytes, expiresAt);
         }
     }
 
@@ -663,7 +752,6 @@ public class PostgresAggregateDao implements AggregateDao {
             int toLevel, String transactionType, long from, long to, int ttlSeconds)
             throws Exception {
         MutableAggregate merged = new MutableAggregate(1000, 1000);
-        List<Aggregate.SharedQueryText> shared = null;
         String sql = "select aggregate_bytes, shared_query_texts_bytes from aggregate_overall "
                 + "where agent_rollup_id = ? and rollup_level = ? and transaction_type = ? "
                 + "and capture_time > ? and capture_time <= ? and expires_at > ?";
@@ -677,22 +765,18 @@ public class PostgresAggregateDao implements AggregateDao {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Aggregate aggregate = Aggregate.parseFrom(rs.getBytes(1));
-                    byte[] sharedBytes = rs.getBytes(2);
-                    if (shared == null && sharedBytes != null) {
-                        shared = deserializeSharedQueryTexts(sharedBytes);
-                    }
-                    mergeAggregate(merged, aggregate);
+                    mergeAggregate(merged, aggregate,
+                            deserializeSharedQueryTexts(rs.getBytes(2)));
                 }
             }
         }
         if (merged.isEmpty()) {
             return;
         }
-        Aggregate aggregate = toAggregate(merged, shared);
-        byte[] sharedBytes = shared == null ? null : serializeSharedQueryTexts(shared);
+        RolledAggregate rolled = toAggregate(merged);
         Timestamp expiresAt = PostgresExpires.fromTtlSeconds(ttlSeconds, to, clock);
-        upsertOverall(connection, agentRollupId, toLevel, transactionType, to, aggregate,
-                sharedBytes, expiresAt);
+        upsertOverall(connection, agentRollupId, toLevel, transactionType, to, rolled.aggregate,
+                rolled.sharedBytes, expiresAt);
     }
 
     private void mergeAndWriteTransactions(Connection connection, String agentRollupId,
@@ -717,7 +801,6 @@ public class PostgresAggregateDao implements AggregateDao {
         }
         for (String transactionName : names) {
             MutableAggregate merged = new MutableAggregate(1000, 1000);
-            List<Aggregate.SharedQueryText> shared = null;
             try (PreparedStatement ps = connection.prepareStatement(
                     "select aggregate_bytes, shared_query_texts_bytes from aggregate_transaction "
                             + "where agent_rollup_id = ? and rollup_level = ? "
@@ -733,22 +816,18 @@ public class PostgresAggregateDao implements AggregateDao {
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         Aggregate aggregate = Aggregate.parseFrom(rs.getBytes(1));
-                        byte[] sharedBytes = rs.getBytes(2);
-                        if (shared == null && sharedBytes != null) {
-                            shared = deserializeSharedQueryTexts(sharedBytes);
-                        }
-                        mergeAggregate(merged, aggregate);
+                        mergeAggregate(merged, aggregate,
+                                deserializeSharedQueryTexts(rs.getBytes(2)));
                     }
                 }
             }
             if (merged.isEmpty()) {
                 continue;
             }
-            Aggregate aggregate = toAggregate(merged, shared);
-            byte[] sharedBytes = shared == null ? null : serializeSharedQueryTexts(shared);
+            RolledAggregate rolled = toAggregate(merged);
             Timestamp expiresAt = PostgresExpires.fromTtlSeconds(ttlSeconds, to, clock);
             upsertTransaction(connection, agentRollupId, toLevel, transactionType, transactionName,
-                    to, aggregate, sharedBytes, expiresAt);
+                    to, rolled.aggregate, rolled.sharedBytes, expiresAt);
         }
     }
 
@@ -932,6 +1011,11 @@ public class PostgresAggregateDao implements AggregateDao {
     }
 
     private static void mergeAggregate(MutableAggregate m, Aggregate a) {
+        mergeAggregate(m, a, null);
+    }
+
+    private static void mergeAggregate(MutableAggregate m, Aggregate a,
+            @Nullable List<Aggregate.SharedQueryText> shared) {
         m.addTotalDurationNanos(a.getTotalDurationNanos());
         m.addTransactionCount(a.getTransactionCount());
         m.addErrorCount(a.getErrorCount());
@@ -964,10 +1048,57 @@ public class PostgresAggregateDao implements AggregateDao {
         if (a.hasAuxThreadProfile()) {
             m.mergeAuxThreadProfile(a.getAuxThreadProfile());
         }
+        if (shared != null) {
+            for (Aggregate.Query q : a.getQueryList()) {
+                int idx = q.getSharedQueryTextIndex();
+                if (idx < 0 || idx >= shared.size()) {
+                    continue;
+                }
+                mergeSharedQuery(m, q.getType(), shared.get(idx), q.getTotalDurationNanos(),
+                        q.getExecutionCount(), q.hasTotalRows(),
+                        q.hasTotalRows() ? q.getTotalRows().getValue() : 0);
+            }
+            for (Aggregate.OldQueriesByType byType : a.getOldQueriesByTypeList()) {
+                for (Aggregate.OldQuery q : byType.getQueryList()) {
+                    int idx = q.getSharedQueryTextIndex();
+                    if (idx < 0 || idx >= shared.size()) {
+                        continue;
+                    }
+                    mergeSharedQuery(m, byType.getType(), shared.get(idx),
+                            q.getTotalDurationNanos(), q.getExecutionCount(), q.hasTotalRows(),
+                            q.hasTotalRows() ? q.getTotalRows().getValue() : 0);
+                }
+            }
+        }
+        for (Aggregate.ServiceCall sc : a.getServiceCallList()) {
+            m.mergeServiceCall(sc.getType(), sc.getText(), sc.getTotalDurationNanos(),
+                    sc.getExecutionCount());
+        }
+        for (Aggregate.OldServiceCallsByType byType : a.getOldServiceCallsByTypeList()) {
+            for (Aggregate.OldServiceCall sc : byType.getServiceCallList()) {
+                m.mergeServiceCall(byType.getType(), sc.getText(), sc.getTotalDurationNanos(),
+                        sc.getExecutionCount());
+            }
+        }
     }
 
-    private static Aggregate toAggregate(MutableAggregate m,
-            @Nullable List<Aggregate.SharedQueryText> shared) {
+    private static void mergeSharedQuery(MutableAggregate m, String type,
+            Aggregate.SharedQueryText sqt, double totalDurationNanos, long executionCount,
+            boolean hasTotalRows, long totalRows) {
+        String truncated;
+        String sha1;
+        if (sqt.getFullTextSha1().isEmpty()) {
+            truncated = sqt.getFullText();
+            sha1 = null;
+        } else {
+            truncated = sqt.getTruncatedText();
+            sha1 = sqt.getFullTextSha1();
+        }
+        m.mergeQuery(type, truncated, sha1, totalDurationNanos, executionCount, hasTotalRows,
+                totalRows);
+    }
+
+    private static RolledAggregate toAggregate(MutableAggregate m) {
         OverviewAggregate overview = m.toOverviewAggregate(0);
         PercentileAggregate percentile = m.toPercentileAggregate(0);
         Aggregate.Builder b = Aggregate.newBuilder()
@@ -985,7 +1116,58 @@ public class PostgresAggregateDao implements AggregateDao {
         if (overview.auxThreadStats() != null) {
             b.setAuxThreadStats(overview.auxThreadStats());
         }
-        return b.build();
+        List<Aggregate.SharedQueryText> sharedOut = new ArrayList<>();
+        QueryCollector queries = m.getQueries();
+        if (queries != null) {
+            Map<String, Integer> sharedIndex = new HashMap<>();
+            for (MutableQuery mq : queries.getSortedAndTruncatedQueries()) {
+                String key = mq.getFullTextSha1() != null
+                        ? "sha1:" + mq.getFullTextSha1()
+                        : "full:" + mq.getTruncatedText();
+                Integer idx = sharedIndex.get(key);
+                if (idx == null) {
+                    idx = sharedOut.size();
+                    sharedIndex.put(key, idx);
+                    Aggregate.SharedQueryText.Builder sqt = Aggregate.SharedQueryText.newBuilder();
+                    if (mq.getFullTextSha1() == null) {
+                        sqt.setFullText(mq.getTruncatedText());
+                    } else {
+                        sqt.setTruncatedText(mq.getTruncatedText())
+                                .setFullTextSha1(mq.getFullTextSha1());
+                    }
+                    sharedOut.add(sqt.build());
+                }
+                Aggregate.Query.Builder qb = Aggregate.Query.newBuilder()
+                        .setType(mq.getType())
+                        .setSharedQueryTextIndex(idx)
+                        .setTotalDurationNanos(mq.getTotalDurationNanos())
+                        .setExecutionCount(mq.getExecutionCount());
+                if (mq.hasTotalRows()) {
+                    qb.setTotalRows(Proto.OptionalInt64.newBuilder().setValue(mq.getTotalRows()));
+                }
+                b.addQuery(qb);
+            }
+        }
+        ServiceCallCollector serviceCalls = m.getServiceCalls();
+        if (serviceCalls != null) {
+            for (MutableServiceCall sc : serviceCalls.getSortedAndTruncatedServiceCalls()) {
+                b.addServiceCall(Aggregate.ServiceCall.newBuilder()
+                        .setType(sc.getType())
+                        .setText(sc.getText())
+                        .setTotalDurationNanos(sc.getTotalDurationNanos())
+                        .setExecutionCount(sc.getExecutionCount()));
+            }
+        }
+        MutableProfile mainProfile = m.getMainThreadProfile();
+        if (mainProfile != null) {
+            b.setMainThreadProfile(mainProfile.toProto());
+        }
+        MutableProfile auxProfile = m.getAuxThreadProfile();
+        if (auxProfile != null) {
+            b.setAuxThreadProfile(auxProfile.toProto());
+        }
+        byte[] sharedBytes = sharedOut.isEmpty() ? null : serializeSharedQueryTexts(sharedOut);
+        return new RolledAggregate(b.build(), sharedBytes);
     }
 
     private static SummaryNums summaryNums(Aggregate aggregate) {
@@ -1044,6 +1226,16 @@ public class PostgresAggregateDao implements AggregateDao {
 
     private interface AggMapper<T> {
         T map(long captureTime, Aggregate aggregate);
+    }
+
+    private static final class RolledAggregate {
+        final Aggregate aggregate;
+        final @Nullable byte[] sharedBytes;
+
+        RolledAggregate(Aggregate aggregate, @Nullable byte[] sharedBytes) {
+            this.aggregate = aggregate;
+            this.sharedBytes = sharedBytes;
+        }
     }
 
     private static final class RowAgg {

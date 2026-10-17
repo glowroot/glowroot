@@ -11,24 +11,25 @@ Related: [Choosing Embedded vs Central](https://github.com/glowroot/glowroot/wik
 | Area | Postgres path |
 |------|----------------|
 | Config flag + JDBC pool (HikariCP) | Yes |
-| Schema migrator (`schema_version`) | Yes (v1–v7) |
+| Schema migrator (`schema_version`) | Yes (v1–v10) |
 | Central / user / role / agent config | Yes |
 | Heartbeat, environment, alerting disabled | Yes |
 | Incidents, active-agent rollups, transaction types, trace attribute names | Yes |
 | Legacy v0.9 agent rollup id map (`v09_agent_rollup`) | Yes |
-| Aggregates store + summary/overview/percentile/throughput reads + level rollup | **Partial** (Aggregate protobuf rows; not full Cassandra parity for profiles/service-calls/FQT) |
-| Traces, gauges, synthetics, full query text DAO | **No** |
-| Full Central boot (`glowroot-central.jar` serving UI + gRPC) | **No** — see [Boot gate](#boot-gate) |
+| Aggregates store + summary/overview/percentile/throughput reads + level rollup | **Partial** (queries/service-calls/profiles carried through rollup + from-child; not full Cassandra table-split parity) |
+| Traces, gauges, synthetics (minimal store/read) | **Partial** (schema v9; not full Cassandra parity) |
+| Full query text DAO | **Yes** (schema v10; truncate + sha1 body + per-agent check) |
+| Full Central boot (`glowroot-central.jar` serving UI + gRPC) | **Yes (experimental)** — UI default http://127.0.0.1:4000 |
 | Online migration Cassandra ↔ Postgres | **No** (not planned for v1) |
 | Dual-write Cassandra + Postgres | **No** |
 
 Embedded collector is unchanged (local H2). This option applies only to Central.
 
-## Boot gate
+## Boot (experimental)
 
-`CentralModule` still refuses full Postgres boot after validating JDBC + schema + admin/metadata DAOs and constructing the aggregate DAO (read-only smoke; no truncate).
+With `storage.type=postgres`, Central skips Cassandra connect and boots via `PostgresCentralRepoModule` (UI + gRPC). Default UI port is **4000**.
 
-**Intentional:** do not lift the gate until traces (and remaining hot-path DAOs) exist. Shipping a UI/gRPC process that cannot store traces would mislead operators.
+Cassandra remains the supported production backend. Postgres path is incomplete vs Cassandra (rollups, FQT, multi-node cache, CLI tools).
 
 ## v0.9 agent rollups
 
@@ -69,10 +70,14 @@ Migrations live in `org.glowroot.central.storage.postgres.PostgresSchemaUpgrade`
 | 6 | `v09_agent_rollup` |
 | 7 | `aggregate_overall`, `aggregate_transaction`, `aggregate_needs_rollup` |
 | 8 | `aggregate_needs_rollup_from_child` |
+| 9 | `trace`, `gauge_value`, `synthetic_result` |
+| 10 | `full_query_text`, `full_query_text_check` |
 
 Cassandra TTLs are emulated with `expires_at` columns and filtered on read. Boot-time `PostgresPurge` deletes expired rows on admin-module create; a scheduled sweeper is not shipped yet. Schema upgrades lock `schema_version` with `SELECT … FOR UPDATE`.
 
-Aggregates store the `Aggregate` protobuf (`aggregate_bytes`) plus denormalized summary columns and delimited `SharedQueryText` bytes for query merge.
+Local try (Docker Postgres + properties + jar smoke): see `demo/postgres/README.md`.
+
+Aggregates store the `Aggregate` protobuf (`aggregate_bytes`) plus denormalized summary columns and delimited `SharedQueryText` bytes for query merge. Long query texts are truncated like Cassandra; full text lives in `full_query_text` keyed by sha1.
 
 ## Code layout
 
@@ -81,7 +86,7 @@ Aggregates store the `Aggregate` protobuf (`aggregate_bytes`) plus denormalized 
 | `central/.../storage/StorageType.java` | `cassandra` / `postgres` |
 | `central/.../storage/postgres/` | JDBC DAOs, Hikari factory, schema upgrade |
 | `central/.../repo/PostgresCentralAdminModule.java` | Wires admin `ConfigRepository`, metadata, v09, aggregate slice |
-| `central/.../CentralModule.java` | Startup branch; rejects incomplete Postgres boot |
+| `central/.../CentralModule.java` | Startup branch; Postgres via `PostgresCentralRepoModule` |
 
 Cassandra DAOs under `central/.../repo/` stay the default path. New Postgres work should mirror repository contracts and leave the Cassandra path untouched when `storage.type` is not `postgres`.
 
@@ -114,9 +119,9 @@ TTL data: store `expires_at` (see `PostgresExpires`). Do not block the shared JD
 
 ## Roadmap (high level)
 
-1. Harden aggregate rollup (child rollups, profiles, service calls, FQT) toward `AggregateDaoIT` parity.
-2. Traces, gauges, synthetics, full query text.
-3. Readiness/liveness parity, CLI tooling story, wiki + Compose example; only then lift the boot gate.
+1. Deepen traces, gauges, synthetics toward Cassandra parity.
+2. CLI tooling story + wiki; scheduled purge sweeper.
+3. Multi-node cache invalidation for Postgres path.
 
 ## Non-goals (v1)
 

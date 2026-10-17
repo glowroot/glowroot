@@ -34,11 +34,13 @@ import javax.sql.DataSource;
  * <li>v6: v09_agent_rollup</li>
  * <li>v7: aggregate_overall / aggregate_transaction / aggregate_query / aggregate_needs_rollup</li>
  * <li>v8: aggregate_needs_rollup_from_child</li>
+ * <li>v9: trace, gauge_value, synthetic_result</li>
+ * <li>v10: full_query_text + full_query_text_check</li>
  * </ul>
  */
 public final class PostgresSchemaUpgrade {
 
-    static final int CURRENT_VERSION = 8;
+    static final int CURRENT_VERSION = 10;
 
     private PostgresSchemaUpgrade() {}
 
@@ -90,6 +92,16 @@ public final class PostgresSchemaUpgrade {
                 if (version < 8) {
                     migrateToV8(connection);
                     writeVersion(connection, 8);
+                    version = 8;
+                }
+                if (version < 9) {
+                    migrateToV9(connection);
+                    writeVersion(connection, 9);
+                    version = 9;
+                }
+                if (version < 10) {
+                    migrateToV10(connection);
+                    writeVersion(connection, 10);
                 }
                 connection.commit();
             } catch (SQLException e) {
@@ -282,6 +294,76 @@ public final class PostgresSchemaUpgrade {
                     + "transaction_types text[] not null, "
                     + "expires_at timestamptz not null, "
                     + "primary key (agent_rollup, capture_time, uniqueness))");
+        }
+    }
+
+    private static void migrateToV9(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("create table if not exists trace ("
+                    + "agent_id varchar(512) not null, "
+                    + "trace_id varchar(64) not null, "
+                    + "capture_time timestamptz not null, "
+                    + "duration_nanos bigint not null, "
+                    + "slow boolean not null, "
+                    + "error boolean not null, "
+                    + "partial boolean not null, "
+                    + "transaction_type varchar(512) not null, "
+                    + "transaction_name varchar(1024) not null, "
+                    + "headline text not null, "
+                    + "user_col text not null, "
+                    + "error_message text, "
+                    + "header_bytes bytea not null, "
+                    + "entries_bytes bytea, "
+                    + "queries_bytes bytea, "
+                    + "shared_query_texts_bytes bytea, "
+                    + "main_profile_bytes bytea, "
+                    + "aux_profile_bytes bytea, "
+                    + "expires_at timestamptz not null, "
+                    + "primary key (agent_id, trace_id))");
+            statement.execute("create index if not exists trace_slow_idx "
+                    + "on trace (agent_id, transaction_type, capture_time) where slow");
+            statement.execute("create index if not exists trace_error_idx "
+                    + "on trace (agent_id, transaction_type, capture_time) where error");
+            statement.execute("create table if not exists gauge_value ("
+                    + "agent_rollup varchar(512) not null, "
+                    + "gauge_name varchar(1024) not null, "
+                    + "capture_time timestamptz not null, "
+                    + "value double precision not null, "
+                    + "weight bigint not null, "
+                    + "rollup_level int not null, "
+                    + "expires_at timestamptz not null, "
+                    + "primary key (agent_rollup, gauge_name, capture_time, rollup_level))");
+            statement.execute("create index if not exists gauge_value_range_idx "
+                    + "on gauge_value (agent_rollup, gauge_name, rollup_level, capture_time)");
+            statement.execute("create table if not exists synthetic_result ("
+                    + "agent_rollup varchar(512) not null, "
+                    + "synthetic_monitor_id varchar(512) not null, "
+                    + "capture_time timestamptz not null, "
+                    + "total_duration_nanos double precision not null, "
+                    + "execution_count bigint not null, "
+                    + "error_count bigint not null, "
+                    + "rollup_level int not null, "
+                    + "display text not null, "
+                    + "expires_at timestamptz not null, "
+                    + "primary key (agent_rollup, synthetic_monitor_id, capture_time, "
+                    + "rollup_level))");
+            statement.execute("create index if not exists synthetic_result_range_idx "
+                    + "on synthetic_result (agent_rollup, synthetic_monitor_id, rollup_level, "
+                    + "capture_time)");
+        }
+    }
+
+    private static void migrateToV10(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("create table if not exists full_query_text ("
+                    + "full_query_text_sha1 varchar(64) not null primary key, "
+                    + "full_query_text text not null, "
+                    + "expires_at timestamptz not null)");
+            statement.execute("create table if not exists full_query_text_check ("
+                    + "agent_rollup varchar(512) not null, "
+                    + "full_query_text_sha1 varchar(64) not null, "
+                    + "expires_at timestamptz not null, "
+                    + "primary key (agent_rollup, full_query_text_sha1))");
         }
     }
 

@@ -27,6 +27,8 @@ import javax.sql.DataSource;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.central.repo.EnvironmentStore;
+import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Environment;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -34,7 +36,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * Postgres port of Cassandra {@code EnvironmentDao}.
  */
-public class PostgresEnvironmentDao {
+public class PostgresEnvironmentDao implements EnvironmentStore {
 
     private final DataSource dataSource;
     private final Executor asyncExecutor;
@@ -61,6 +63,11 @@ public class PostgresEnvironmentDao {
             }
         }, asyncExecutor);
         return future;
+    }
+
+    @Override
+    public CompletionStage<Environment> read(String agentId, CassandraProfile profile) {
+        return read(agentId);
     }
 
     public CompletionStage<@Nullable Environment> read(String agentId) {

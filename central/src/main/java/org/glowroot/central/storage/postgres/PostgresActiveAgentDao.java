@@ -41,10 +41,10 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
+import org.glowroot.central.repo.ActiveAgentStore;
 import org.glowroot.central.repo.AgentRollupIds;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
-import org.glowroot.common2.repo.ActiveAgentRepository;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
@@ -59,7 +59,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 /**
  * Postgres port of Cassandra {@code ActiveAgentDao}.
  */
-public class PostgresActiveAgentDao implements ActiveAgentRepository {
+public class PostgresActiveAgentDao implements ActiveAgentStore {
 
     private final DataSource dataSource;
     private final PostgresAgentDisplayDao agentDisplayDao;

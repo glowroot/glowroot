@@ -40,12 +40,12 @@ public class RepoAdminImpl implements RepoAdmin {
     private static final Logger logger = LoggerFactory.getLogger(RepoAdminImpl.class);
 
     private final Session session;
-    private final ActiveAgentDao activeAgentDao;
+    private final ActiveAgentStore activeAgentDao;
     private final ConfigRepositoryImpl configRepository;
     private final CassandraWriteMetrics cassandraWriteMetrics;
     private final Clock clock;
 
-    public RepoAdminImpl(Session session, ActiveAgentDao activeAgentDao,
+    public RepoAdminImpl(Session session, ActiveAgentStore activeAgentDao,
             ConfigRepositoryImpl configRepository, CassandraWriteMetrics cassandraWriteMetrics,
             Clock clock) {
         this.session = session;

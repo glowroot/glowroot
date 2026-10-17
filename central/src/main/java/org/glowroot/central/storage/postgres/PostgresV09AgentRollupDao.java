@@ -26,12 +26,13 @@ import java.util.concurrent.Executor;
 import javax.sql.DataSource;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.glowroot.central.repo.V09AgentRollupStore;
 
 /**
  * Postgres port of Cassandra {@code V09AgentRollupDao}. Supports legacy v0.9 agent rollup id
  * mapping when old agents still connect. Not a no-op stub — full read/write.
  */
-public class PostgresV09AgentRollupDao {
+public class PostgresV09AgentRollupDao implements V09AgentRollupStore {
 
     private final DataSource dataSource;
     private final Executor asyncExecutor;

@@ -33,7 +33,7 @@ import org.glowroot.common2.repo.CassandraProfile;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 // this is needed as long as new v09 agents may connect in the future
-public class V09AgentRollupDao {
+public class V09AgentRollupDao implements V09AgentRollupStore {
 
     private static final String SINGLE_CACHE_KEY = "x";
 

@@ -28,14 +28,16 @@ import java.util.concurrent.Executor;
 import javax.sql.DataSource;
 
 import org.glowroot.central.repo.AgentRollupIds;
+import org.glowroot.central.repo.HeartbeatStore;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.CassandraProfile;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
 /**
  * Postgres port of Cassandra {@code HeartbeatDao}.
  */
-public class PostgresHeartbeatDao {
+public class PostgresHeartbeatDao implements HeartbeatStore {
 
     static final int EXPIRATION_HOURS = 24;
 
@@ -76,6 +78,12 @@ public class PostgresHeartbeatDao {
             }
         }, asyncExecutor);
         return future;
+    }
+
+    @Override
+    public CompletionStage<Boolean> exists(String agentRollupId, long centralCaptureFrom,
+            long centralCaptureTo, CassandraProfile profile) {
+        return exists(agentRollupId, centralCaptureFrom, centralCaptureTo);
     }
 
     public CompletionStage<Boolean> exists(String agentRollupId, long centralCaptureFrom,

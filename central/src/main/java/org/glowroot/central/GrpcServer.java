@@ -40,15 +40,14 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.central.repo.ActiveAgentDao;
-import org.glowroot.central.repo.AgentConfigDao;
-import org.glowroot.central.repo.AgentDisplayDao;
+import org.glowroot.central.repo.ActiveAgentStore;
+import org.glowroot.central.repo.AgentConfigStore;
 import org.glowroot.central.repo.AggregateDao;
-import org.glowroot.central.repo.EnvironmentDao;
+import org.glowroot.central.repo.EnvironmentStore;
 import org.glowroot.central.repo.GaugeValueDao;
-import org.glowroot.central.repo.HeartbeatDao;
+import org.glowroot.central.repo.HeartbeatStore;
 import org.glowroot.central.repo.TraceDao;
-import org.glowroot.central.repo.V09AgentRollupDao;
+import org.glowroot.central.repo.V09AgentRollupStore;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.MoreExecutors2;
 import org.glowroot.common.util.Clock;
@@ -75,10 +74,11 @@ class GrpcServer {
     private final @Nullable ExecutorService confDirWatchExecutor;
 
     GrpcServer(String bindAddress, @Nullable Integer httpPort, @Nullable Integer httpsPort,
-            File confDir, AgentDisplayDao agentDisplayDao, AgentConfigDao agentConfigDao,
-            ActiveAgentDao activeAgentDao, EnvironmentDao environmentDao, HeartbeatDao heartbeatDao,
+            File confDir, org.glowroot.common2.repo.AgentDisplayRepository agentDisplayDao,
+            AgentConfigStore agentConfigDao, ActiveAgentStore activeAgentDao,
+            EnvironmentStore environmentDao, HeartbeatStore heartbeatDao,
             AggregateDao aggregateDao, GaugeValueDao gaugeValueDao, TraceDao traceDao,
-            V09AgentRollupDao v09AgentRollupDao, CentralAlertingService centralAlertingService,
+            V09AgentRollupStore v09AgentRollupDao, CentralAlertingService centralAlertingService,
             ClusterManager clusterManager, Clock clock, String version) throws IOException {
 
         GrpcCommon grpcCommon = new GrpcCommon(v09AgentRollupDao);

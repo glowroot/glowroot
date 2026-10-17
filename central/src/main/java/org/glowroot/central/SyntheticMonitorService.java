@@ -54,8 +54,10 @@ import org.glowroot.common.util.Version;
 import org.glowroot.common2.config.HttpProxyConfig;
 import org.glowroot.common2.config.MoreConfigDefaults;
 import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
+import org.glowroot.common2.repo.AlertingDisabledRepository;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository.AgentConfigNotFoundException;
+import org.glowroot.common2.repo.IncidentRepository;
 import org.glowroot.common2.repo.util.AlertingService;
 import org.glowroot.common2.repo.util.Compilations;
 import org.glowroot.common2.repo.util.Encryption;
@@ -113,10 +115,10 @@ class SyntheticMonitorService implements Runnable {
         REQUEST_HEADERS = new RequestHeaders(headersTmp);
     }
 
-    private final ActiveAgentDao activeAgentDao;
+    private final ActiveAgentStore activeAgentDao;
     private final ConfigRepositoryImpl configRepository;
-    private final AlertingDisabledDao alertingDisabledDao;
-    private final IncidentDao incidentDao;
+    private final AlertingDisabledRepository alertingDisabledDao;
+    private final IncidentRepository incidentDao;
     private final AlertingService alertingService;
 
     private final SyntheticResultDao syntheticResponseDao;
@@ -144,9 +146,9 @@ class SyntheticMonitorService implements Runnable {
 
     private volatile boolean closed;
 
-    SyntheticMonitorService(ActiveAgentDao activeAgentDao, ConfigRepositoryImpl configRepository,
-                            AlertingDisabledDao alertingDisabledDao, IncidentDao incidentDao,
-                            AlertingService alertingService, SyntheticResultDao syntheticResponseDao,
+    SyntheticMonitorService(ActiveAgentStore activeAgentDao, ConfigRepositoryImpl configRepository,
+            AlertingDisabledRepository alertingDisabledDao, IncidentRepository incidentDao,
+            AlertingService alertingService, SyntheticResultDao syntheticResponseDao,
                             ClusterManager clusterManager, Ticker ticker, Clock clock, String version)
             throws Exception {
         this.activeAgentDao = activeAgentDao;

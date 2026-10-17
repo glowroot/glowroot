@@ -28,11 +28,13 @@ import javax.sql.DataSource;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.repo.AlertingDisabledRepository;
+import org.glowroot.common2.repo.CassandraProfile;
 
 /**
  * Postgres port of Cassandra {@code AlertingDisabledDao}.
  */
-public class PostgresAlertingDisabledDao {
+public class PostgresAlertingDisabledDao implements AlertingDisabledRepository {
 
     private final DataSource dataSource;
     private final Clock clock;
@@ -42,6 +44,12 @@ public class PostgresAlertingDisabledDao {
         this.dataSource = dataSource;
         this.clock = clock;
         this.asyncExecutor = asyncExecutor;
+    }
+
+    @Override
+    public CompletionStage<Long> getAlertingDisabledUntilTime(String agentRollupId,
+            CassandraProfile profile) {
+        return getAlertingDisabledUntilTime(agentRollupId);
     }
 
     public CompletionStage<@Nullable Long> getAlertingDisabledUntilTime(String agentRollupId) {
@@ -69,6 +77,12 @@ public class PostgresAlertingDisabledDao {
                 throw new RuntimeException(e);
             }
         }, asyncExecutor);
+    }
+
+    @Override
+    public CompletionStage<?> setAlertingDisabledUntilTime(String agentRollupId,
+            @Nullable Long disabledUntilTime, CassandraProfile profile) {
+        return setAlertingDisabledUntilTime(agentRollupId, disabledUntilTime);
     }
 
     public CompletionStage<?> setAlertingDisabledUntilTime(String agentRollupId,

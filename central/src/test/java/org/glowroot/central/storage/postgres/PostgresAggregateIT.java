@@ -25,8 +25,10 @@ import org.glowroot.common.live.ImmutableSummaryQuery;
 import org.glowroot.common.live.LiveAggregateRepository.AggregateQuery;
 import org.glowroot.common.live.LiveAggregateRepository.OverviewAggregate;
 import org.glowroot.common.live.LiveAggregateRepository.SummaryQuery;
+import org.glowroot.common.Constants;
 import org.glowroot.common.model.OverallSummaryCollector;
 import org.glowroot.common.model.OverallSummaryCollector.OverallSummary;
+import org.glowroot.common.model.QueryCollector;
 import org.glowroot.common.model.TransactionNameSummaryCollector;
 import org.glowroot.common.model.TransactionNameSummaryCollector.SummarySortOrder;
 import org.glowroot.common.model.TransactionNameSummaryCollector.TransactionNameSummary;
@@ -133,6 +135,19 @@ public class PostgresAggregateIT {
         OverallSummary rolledSummary = rolledCollector.getOverallSummary();
         assertThat(rolledSummary.transactionCount()).isEqualTo(6);
         assertThat(rolledSummary.totalDurationNanos()).isEqualTo(3579 * 2);
+
+        AggregateQuery rolledQueries = ImmutableAggregateQuery.builder()
+                .transactionType("tt1")
+                .from(0)
+                .to(300000)
+                .rollupLevel(1)
+                .build();
+        QueryCollector queryCollector = new QueryCollector(10);
+        aggregateDao.mergeQueriesInto("one", rolledQueries, queryCollector, CassandraProfile.web)
+                .toCompletableFuture().join();
+        assertThat(queryCollector.getSortedAndTruncatedQueries()).isNotEmpty();
+        assertThat(queryCollector.getSortedAndTruncatedQueries().get(0).getTruncatedText())
+                .isEqualTo("select 1");
     }
 
     @Test
@@ -140,6 +155,33 @@ public class PostgresAggregateIT {
         admin.getV09AgentRollupDao().store("old-a", "old-a/");
         assertThat(admin.getV09AgentRollupDao().getV09AgentRollupId("old-a")).isEqualTo("old-a/");
         assertThat(admin.getV09AgentRollupDao().getV09AgentRollupId("missing")).isNull();
+    }
+
+    @Test
+    public void storeTruncatesAndReadsFullQueryText() throws Exception {
+        StringBuilder longText = new StringBuilder();
+        for (int i = 0; i < Constants.AGGREGATE_QUERY_TEXT_TRUNCATE + 40; i++) {
+            longText.append('x');
+        }
+        String full = longText.toString();
+        List<Aggregate.SharedQueryText> shared = ImmutableList
+                .of(Aggregate.SharedQueryText.newBuilder().setFullText(full).build());
+        aggregateDao.store("one", 60000, createData(), shared).toCompletableFuture().join();
+
+        AggregateQuery aggregateQuery = ImmutableAggregateQuery.builder()
+                .transactionType("tt1")
+                .from(0)
+                .to(120000)
+                .rollupLevel(0)
+                .build();
+        QueryCollector collector = new QueryCollector(10);
+        aggregateDao.mergeQueriesInto("one", aggregateQuery, collector, CassandraProfile.web)
+                .toCompletableFuture().join();
+        assertThat(collector.getSortedAndTruncatedQueries()).isNotEmpty();
+        String sha1 = collector.getSortedAndTruncatedQueries().get(0).getFullTextSha1();
+        assertThat(sha1).isNotEmpty();
+        assertThat(aggregateDao.readFullQueryText("one", sha1, CassandraProfile.web)
+                .toCompletableFuture().join()).isEqualTo(full);
     }
 
     private static List<OldAggregatesByType> createData() {

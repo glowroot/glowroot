@@ -18,7 +18,7 @@ package org.glowroot.central;
 import com.google.common.base.Stopwatch;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.agent.api.Instrumentation.AlreadyInTransactionBehavior;
-import org.glowroot.central.repo.AlertingDisabledDao;
+import org.glowroot.common2.repo.AlertingDisabledRepository;
 import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.util.MoreExecutors2;
 import org.glowroot.common.util.Clock;
@@ -48,7 +48,7 @@ class CentralAlertingService {
     private final ConfigRepositoryImpl configRepository;
     private final AlertingService alertingService;
     private final HeartbeatAlertingService heartbeatAlertingService;
-    private final AlertingDisabledDao alertingDisabledDao;
+    private final AlertingDisabledRepository alertingDisabledDao;
     private final Clock clock;
 
     private final ExecutorService workerExecutor;
@@ -59,7 +59,7 @@ class CentralAlertingService {
 
     CentralAlertingService(ConfigRepositoryImpl configRepository, AlertingService alertingService,
                            HeartbeatAlertingService heartbeatAlertingService,
-                           AlertingDisabledDao alertingDisabledDao, Clock clock) {
+            AlertingDisabledRepository alertingDisabledDao, Clock clock) {
         this.configRepository = configRepository;
         this.alertingService = alertingService;
         this.heartbeatAlertingService = heartbeatAlertingService;

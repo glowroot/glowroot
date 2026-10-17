@@ -64,14 +64,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
+import org.glowroot.central.repo.CentralRepos;
 import org.glowroot.central.repo.CentralRepoModule;
 import org.glowroot.central.repo.ConfigRepositoryImpl.AgentConfigListener;
 import org.glowroot.central.repo.ConfigRepositoryImpl.LazySecretKeyImpl;
+import org.glowroot.central.repo.PostgresCentralRepoModule;
 import org.glowroot.central.repo.RepoAdminImpl;
 import org.glowroot.central.repo.SchemaUpgrade;
 import org.glowroot.central.repo.Tools;
-import org.glowroot.central.repo.PostgresCentralAdminModule;
 import org.glowroot.central.storage.StorageType;
+import org.glowroot.common2.repo.RepoAdmin;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.PropertiesFiles;
@@ -105,9 +107,9 @@ public class CentralModule {
 
     private final boolean servlet;
     private final ClusterManager clusterManager;
-    private final Session session;
+    private final @Nullable Session session;
     private final ExecutorService repoAsyncExecutor;
-    private final CentralRepoModule repos;
+    private final CentralRepos repos;
     private final AlertingService alertingService;
     private final CentralAlertingService centralAlertingService;
     private final GrpcServer grpcServer;
@@ -136,7 +138,7 @@ public class CentralModule {
         ClusterManager clusterManager = null;
         Session session = null;
         ExecutorService repoAsyncExecutor = null;
-        CentralRepoModule repos = null;
+        CentralRepos repos = null;
         AlertingService alertingService = null;
         CentralAlertingService centralAlertingService = null;
         GrpcServer grpcServer = null;
@@ -171,33 +173,54 @@ public class CentralModule {
             StreamWriteConstraints.overrideDefaultStreamWriteConstraints(
             StreamWriteConstraints.builder().maxNestingDepth(centralConfig.jacksonMaxNestingDepth()).build());
 
-            rejectIncompletePostgresStorage(centralConfig);
-
             clusterManager = ClusterManager.create(directories.getConfDir(),
                     centralConfig.jgroupsProperties());
-            session = connect(centralConfig);
 
-            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, centralConfig.cassandraGcGraceSeconds(), clock, servlet);
-            Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
-            if (initialSchemaVersion == null) {
-                startupLogger.info("creating glowroot central schema...");
+            final boolean postgres = centralConfig.storageType() == StorageType.POSTGRES;
+            RepoAdmin repoAdmin;
+            if (postgres) {
+                startupLogger.info("starting Glowroot Central with storage.type=postgres"
+                        + " (experimental)");
+                session = null;
+                repoAsyncExecutor = MoreExecutors2.newFixedThreadPool(
+                        centralConfig.threadPoolMaxSize(), "Repo-Async-Worker-%d");
+                PostgresCentralRepoModule postgresRepos = PostgresCentralRepoModule.create(
+                        centralConfig.postgresJdbcUrl(), centralConfig.postgresUsername(),
+                        centralConfig.postgresPassword(),
+                        centralConfig.postgresMaximumPoolSize(),
+                        centralConfig.cassandraSymmetricEncryptionKey(), clock);
+                repos = postgresRepos;
+                repoAdmin = postgresRepos.getRepoAdmin();
             } else {
-                schemaUpgrade.upgrade();
-            }
-            if (schemaUpgrade.reloadCentralConfiguration()) {
-                centralConfig = getCentralConfiguration(directories.getConfDir());
-            }
-            repoAsyncExecutor = MoreExecutors2.newFixedThreadPool(centralConfig.threadPoolMaxSize(), "Repo-Async-Worker-%d");
-            repos = new CentralRepoModule(clusterManager, session, directories.getConfDir(),
-                    centralConfig.cassandraSymmetricEncryptionKey(), centralConfig.cassandraGcGraceSeconds(), repoAsyncExecutor,
-                    TARGET_MAX_ACTIVE_AGENTS_IN_PAST_7_DAYS, TARGET_MAX_CENTRAL_UI_USERS, clock);
+                session = connect(centralConfig);
 
-            if (initialSchemaVersion == null) {
-                schemaUpgrade.updateSchemaVersionToCurent();
-                startupLogger.info("glowroot central schema created");
-            } else {
-                schemaUpgrade.updateToMoreRecentCassandraOptions(
-                        repos.getConfigRepository().getCentralStorageConfig().toCompletableFuture().join());
+                SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session,
+                        centralConfig.cassandraGcGraceSeconds(), clock, servlet);
+                Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
+                if (initialSchemaVersion == null) {
+                    startupLogger.info("creating glowroot central schema...");
+                } else {
+                    schemaUpgrade.upgrade();
+                }
+                if (schemaUpgrade.reloadCentralConfiguration()) {
+                    centralConfig = getCentralConfiguration(directories.getConfDir());
+                }
+                repoAsyncExecutor = MoreExecutors2.newFixedThreadPool(
+                        centralConfig.threadPoolMaxSize(), "Repo-Async-Worker-%d");
+                repos = new CentralRepoModule(clusterManager, session, directories.getConfDir(),
+                        centralConfig.cassandraSymmetricEncryptionKey(),
+                        centralConfig.cassandraGcGraceSeconds(), repoAsyncExecutor,
+                        TARGET_MAX_ACTIVE_AGENTS_IN_PAST_7_DAYS, TARGET_MAX_CENTRAL_UI_USERS, clock);
+
+                if (initialSchemaVersion == null) {
+                    schemaUpgrade.updateSchemaVersionToCurent();
+                    startupLogger.info("glowroot central schema created");
+                } else {
+                    schemaUpgrade.updateToMoreRecentCassandraOptions(repos.getConfigRepository()
+                            .getCentralStorageConfig().toCompletableFuture().join());
+                }
+                repoAdmin = new RepoAdminImpl(session, repos.getActiveAgentDao(),
+                        repos.getConfigRepository(), session.getCassandraWriteMetrics(), clock);
             }
 
             HttpClient httpClient = new HttpClient(repos.getConfigRepository());
@@ -271,8 +294,7 @@ public class CentralModule {
                     .gaugeValueRepository(repos.getGaugeValueDao())
                     .syntheticResultRepository(repos.getSyntheticResultDao())
                     .incidentRepository(repos.getIncidentDao())
-                    .repoAdmin(new RepoAdminImpl(session, repos.getActiveAgentDao(),
-                            repos.getConfigRepository(), session.getCassandraWriteMetrics(), clock))
+                    .repoAdmin(repoAdmin)
                     .rollupLevelService(repos.getRollupLevelService())
                     .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService))
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
@@ -835,44 +857,19 @@ public class CentralModule {
     }
 
     /**
-     * If {@code storage.type=postgres}, wire admin {@code ConfigRepository} against Postgres then
-     * refuse full Central boot until remaining DAOs (aggregates/traces/…) exist.
+     * CLI tools ({@code create-schema}, etc.) remain Cassandra-only. Full Central boot with
+     * {@code storage.type=postgres} is handled in the main constructor via
+     * {@link PostgresCentralRepoModule}.
      */
-    private static void rejectIncompletePostgresStorage(CentralConfiguration centralConfig)
-            throws Exception {
+    private static void rejectIncompletePostgresStorage(CentralConfiguration centralConfig) {
         if (centralConfig.storageType() != StorageType.POSTGRES) {
             return;
         }
-        try (PostgresCentralAdminModule admin = PostgresCentralAdminModule.create(
-                centralConfig.postgresJdbcUrl(), centralConfig.postgresUsername(),
-                centralConfig.postgresPassword(), centralConfig.postgresMaximumPoolSize(),
-                centralConfig.cassandraSymmetricEncryptionKey())) {
-            admin.getConfigRepository().getCentralWebConfig().toCompletableFuture().join();
-            admin.getConfigRepository().getUserConfigs().toCompletableFuture().join();
-            admin.getConfigRepository().getRoleConfigs().toCompletableFuture().join();
-            // read-only smoke — do not store (would leave postgres-boot-check heartbeat rows)
-            admin.getHeartbeatDao()
-                    .exists("postgres-boot-check", 0, System.currentTimeMillis())
-                    .toCompletableFuture().join();
-            admin.getIncidentDao().readAllOpenIncidents(CassandraProfile.web).toCompletableFuture()
-                    .join();
-            admin.getTransactionTypeDao().read("postgres-boot-check").toCompletableFuture().join();
-            admin.getV09AgentRollupDao().getV09AgentRollupId("postgres-boot-check");
-            // smoke-construct only — do not truncate (would wipe lab data on every rejected boot)
-            admin.getAggregateDao();
-            if (startupLogger != null) {
-                startupLogger.info(
-                        "PostgreSQL admin+metadata+aggregates-slice OK; boot still blocked "
-                                + "(traces/gauges/synthetics missing). See "
-                                + "docs/central-postgresql-storage.md");
-            }
-        }
         throw new UnsupportedOperationException(
-                "storage.type=postgres is experimental and incomplete"
-                        + " (admin/metadata/v09/aggregates-slice wired;"
-                        + " traces/gauges/synthetics and full boot still Cassandra-only)."
-                        + " See docs/central-postgresql-storage.md."
-                        + " Cassandra remains the supported Central backend.");
+                "This CLI command does not support storage.type=postgres yet."
+                        + " Use Cassandra for create-schema / tools, or start glowroot-central.jar"
+                        + " with storage.type=postgres for the experimental UI/gRPC path."
+                        + " See docs/central-postgresql-storage.md.");
     }
 
     @RequiresNonNull("startupLogger")

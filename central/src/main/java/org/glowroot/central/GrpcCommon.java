@@ -18,15 +18,15 @@ package org.glowroot.central;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.glowroot.central.repo.V09AgentRollupDao;
+import org.glowroot.central.repo.V09AgentRollupStore;
 
 class GrpcCommon {
 
     private static final Logger logger = LoggerFactory.getLogger(GrpcCommon.class);
 
-    private final V09AgentRollupDao v09AgentRollupDao;
+    private final V09AgentRollupStore v09AgentRollupDao;
 
-    GrpcCommon(V09AgentRollupDao v09AgentRollupDao) {
+    GrpcCommon(V09AgentRollupStore v09AgentRollupDao) {
         this.v09AgentRollupDao = v09AgentRollupDao;
     }
 

@@ -25,7 +25,7 @@ import org.glowroot.central.repo.AgentConfigDao.AgentConfigUpdater;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 
-interface AgentConfigStore {
+public interface AgentConfigStore {
 
     CompletionStage<AgentConfig> store(String agentId, AgentConfig agentConfig,
             boolean overwriteExisting);

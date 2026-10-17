@@ -56,15 +56,15 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
 
     private static final Logger logger = LoggerFactory.getLogger(CollectorServiceImpl.class);
 
-    private final AgentDisplayDao agentDisplayDao;
-    private final AgentConfigDao agentConfigDao;
-    private final ActiveAgentDao activeAgentDao;
-    private final EnvironmentDao environmentDao;
-    private final HeartbeatDao heartbeatDao;
+    private final org.glowroot.common2.repo.AgentDisplayRepository agentDisplayDao;
+    private final AgentConfigStore agentConfigDao;
+    private final ActiveAgentStore activeAgentDao;
+    private final EnvironmentStore environmentDao;
+    private final HeartbeatStore heartbeatDao;
     private final AggregateDao aggregateDao;
     private final GaugeValueDao gaugeValueDao;
     private final TraceDao traceDao;
-    private final V09AgentRollupDao v09AgentRollupDao;
+    private final V09AgentRollupStore v09AgentRollupDao;
     private final GrpcCommon grpcCommon;
     private final CentralAlertingService centralAlertingService;
     private final Clock clock;
@@ -73,11 +73,12 @@ class CollectorServiceImpl extends CollectorServiceGrpc.CollectorServiceImplBase
     private volatile long currentMinute;
     private final AtomicInteger nextDelay = new AtomicInteger();
 
-    CollectorServiceImpl(AgentDisplayDao agentDisplayDao, AgentConfigDao agentConfigDao,
-                         ActiveAgentDao activeAgentDao, EnvironmentDao environmentDao, HeartbeatDao heartbeatDao,
-                         AggregateDao aggregateDao, GaugeValueDao gaugeValueDao, TraceDao traceDao,
-                         V09AgentRollupDao v09AgentRollupDao, GrpcCommon grpcCommon,
-                         CentralAlertingService centralAlertingService, Clock clock, String version) {
+    CollectorServiceImpl(org.glowroot.common2.repo.AgentDisplayRepository agentDisplayDao,
+            AgentConfigStore agentConfigDao, ActiveAgentStore activeAgentDao,
+            EnvironmentStore environmentDao, HeartbeatStore heartbeatDao,
+            AggregateDao aggregateDao, GaugeValueDao gaugeValueDao, TraceDao traceDao,
+            V09AgentRollupStore v09AgentRollupDao, GrpcCommon grpcCommon,
+            CentralAlertingService centralAlertingService, Clock clock, String version) {
         this.agentDisplayDao = agentDisplayDao;
         this.agentConfigDao = agentConfigDao;
         this.activeAgentDao = activeAgentDao;

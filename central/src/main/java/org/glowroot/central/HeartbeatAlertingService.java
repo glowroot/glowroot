@@ -15,7 +15,7 @@
  */
 package org.glowroot.central;
 
-import org.glowroot.central.repo.HeartbeatDao;
+import org.glowroot.central.repo.HeartbeatStore;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.IncidentRepository;
@@ -32,12 +32,12 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 class HeartbeatAlertingService {
 
-    private final HeartbeatDao heartbeatDao;
+    private final HeartbeatStore heartbeatDao;
     private final IncidentRepository incidentRepository;
     private final AlertingService alertingService;
     private final ConfigRepository configRepository;
 
-    HeartbeatAlertingService(HeartbeatDao heartbeatDao, IncidentRepository incidentRepository,
+    HeartbeatAlertingService(HeartbeatStore heartbeatDao, IncidentRepository incidentRepository,
             AlertingService alertingService, ConfigRepository configRepository) {
         this.heartbeatDao = heartbeatDao;
         this.incidentRepository = incidentRepository;
