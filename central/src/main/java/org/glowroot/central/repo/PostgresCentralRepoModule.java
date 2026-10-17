@@ -15,6 +15,8 @@
  */
 package org.glowroot.central.repo;
 
+import javax.sql.DataSource;
+
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.AgentDisplayRepository;
 import org.glowroot.common2.repo.AlertingDisabledRepository;
@@ -51,6 +53,10 @@ public final class PostgresCentralRepoModule implements CentralRepos {
 
     public PostgresRepoAdmin getRepoAdmin() {
         return repoAdmin;
+    }
+
+    public DataSource getDataSource() {
+        return admin.getDataSource();
     }
 
     @Override

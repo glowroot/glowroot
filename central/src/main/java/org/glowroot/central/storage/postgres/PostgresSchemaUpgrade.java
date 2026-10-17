@@ -37,11 +37,12 @@ import javax.sql.DataSource;
  * <li>v9: trace, gauge_value, synthetic_result</li>
  * <li>v10: full_query_text + full_query_text_check</li>
  * <li>v11: trace_point (parent agent-rollup listing indexes)</li>
+ * <li>v12: expires_at indexes for purge performance</li>
  * </ul>
  */
 public final class PostgresSchemaUpgrade {
 
-    static final int CURRENT_VERSION = 11;
+    static final int CURRENT_VERSION = 12;
 
     private PostgresSchemaUpgrade() {}
 
@@ -108,6 +109,11 @@ public final class PostgresSchemaUpgrade {
                 if (version < 11) {
                     migrateToV11(connection);
                     writeVersion(connection, 11);
+                    version = 11;
+                }
+                if (version < 12) {
+                    migrateToV12(connection);
+                    writeVersion(connection, 12);
                 }
                 connection.commit();
             } catch (SQLException e) {
@@ -403,6 +409,16 @@ public final class PostgresSchemaUpgrade {
             statement.execute("create index if not exists trace_point_tn_error_idx "
                     + "on trace_point (agent_rollup, transaction_type, transaction_name, "
                     + "capture_time) where error");
+        }
+    }
+
+    private static void migrateToV12(Connection connection) throws SQLException {
+        // Support batched DELETE ... WHERE expires_at < now() without sequential scans.
+        try (Statement statement = connection.createStatement()) {
+            for (String table : PostgresPurge.TABLES) {
+                statement.execute("create index if not exists " + table + "_expires_at_idx "
+                        + "on " + table + " (expires_at)");
+            }
         }
     }
 

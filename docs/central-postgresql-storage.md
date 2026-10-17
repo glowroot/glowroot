@@ -11,7 +11,7 @@ Related: [Choosing Embedded vs Central](https://github.com/glowroot/glowroot/wik
 | Area | Postgres path |
 |------|----------------|
 | Config flag + JDBC pool (HikariCP) | Yes |
-| Schema migrator (`schema_version`) | Yes (v1–v11) |
+| Schema migrator (`schema_version`) | Yes (v1–v12) |
 | Central / user / role / agent config | Yes |
 | Heartbeat, environment, alerting disabled | Yes |
 | Incidents, active-agent rollups, transaction types, trace attribute names | Yes |
@@ -75,8 +75,9 @@ Migrations live in `org.glowroot.central.storage.postgres.PostgresSchemaUpgrade`
 | 9 | `trace`, `gauge_value`, `synthetic_result` |
 | 10 | `full_query_text`, `full_query_text_check` |
 | 11 | `trace_point` (listing indexes for leaf + parent agent rollups) |
+| 12 | `*_expires_at_idx` on all TTL tables (purge performance) |
 
-Cassandra TTLs are emulated with `expires_at` columns and filtered on read. Boot-time `PostgresPurge` deletes expired rows on admin-module create; a scheduled sweeper is not shipped yet. Schema upgrades lock `schema_version` with `SELECT … FOR UPDATE`.
+Cassandra TTLs are emulated with `expires_at` columns and filtered on read. `PostgresPurge` deletes expired rows in **batches** (default 5000) at boot and via `PostgresPurgeService` on an hourly schedule (first run ~5 minutes after start). Schema v12 adds `expires_at` indexes for purge. Schema upgrades lock `schema_version` with `SELECT … FOR UPDATE`.
 
 Local try (Docker Postgres + properties + jar smoke): see `demo/postgres/README.md`.
 
@@ -104,7 +105,7 @@ mvn test -pl :glowroot-central -Ppostgres-store -Dglowroot.ui.skip
 Or name classes explicitly (PowerShell: quote `-D*` arguments):
 
 ```bash
-mvn test -pl :glowroot-central "-Dtest=PostgresCentralConfigIT,PostgresUserRoleIT,PostgresAgentConfigIT,PostgresConfigRepositoryIT,PostgresMetadataIT,PostgresIncidentIT,PostgresActiveAgentIT,PostgresNameDaoIT,PostgresAggregateIT,PostgresGaugeValueIT,PostgresTraceIT,PostgresSyntheticResultIT,StorageTypeTest" "-Dglowroot.ui.skip"
+mvn test -pl :glowroot-central "-Dtest=PostgresCentralConfigIT,PostgresUserRoleIT,PostgresAgentConfigIT,PostgresConfigRepositoryIT,PostgresMetadataIT,PostgresIncidentIT,PostgresActiveAgentIT,PostgresNameDaoIT,PostgresAggregateIT,PostgresGaugeValueIT,PostgresTraceIT,PostgresSyntheticResultIT,PostgresPurgeIT,StorageTypeTest" "-Dglowroot.ui.skip"
 ```
 
 Without Docker, those ITs skip. That is not a green run.
@@ -123,7 +124,7 @@ TTL data: store `expires_at` (see `PostgresExpires`). Do not block the shared JD
 ## Roadmap (high level)
 
 1. Gauge/synthetic needs-queue parity; synthetic error-interval blobs.
-2. CLI tooling story + wiki; scheduled purge sweeper.
+2. CLI tooling story + wiki.
 3. Multi-node cache invalidation for Postgres path.
 
 ## Non-goals (v1)

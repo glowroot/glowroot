@@ -73,6 +73,7 @@ import org.glowroot.central.repo.RepoAdminImpl;
 import org.glowroot.central.repo.SchemaUpgrade;
 import org.glowroot.central.repo.Tools;
 import org.glowroot.central.storage.StorageType;
+import org.glowroot.central.storage.postgres.PostgresPurgeService;
 import org.glowroot.common2.repo.RepoAdmin;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.util.Clock;
@@ -116,6 +117,7 @@ public class CentralModule {
     private final UpdateAgentConfigIfNeededService updateAgentConfigIfNeededService;
     private final RollupService rollupService;
     private final SyntheticMonitorService syntheticMonitorService;
+    private final @Nullable PostgresPurgeService postgresPurgeService;
     private final UiModule uiModule;
 
     public static CentralModule create() throws Exception {
@@ -145,6 +147,7 @@ public class CentralModule {
         UpdateAgentConfigIfNeededService updateAgentConfigIfNeededService = null;
         RollupService rollupService = null;
         SyntheticMonitorService syntheticMonitorService = null;
+        PostgresPurgeService postgresPurgeServiceLocal = null;
         UiModule uiModule = null;
         try {
             Directories directories = new Directories(centralDir);
@@ -191,6 +194,7 @@ public class CentralModule {
                         centralConfig.cassandraSymmetricEncryptionKey(), clock);
                 repos = postgresRepos;
                 repoAdmin = postgresRepos.getRepoAdmin();
+                postgresPurgeServiceLocal = new PostgresPurgeService(postgresRepos.getDataSource());
             } else {
                 session = connect(centralConfig);
 
@@ -327,6 +331,9 @@ public class CentralModule {
             if (rollupService != null) {
                 rollupService.close();
             }
+            if (postgresPurgeServiceLocal != null) {
+                postgresPurgeServiceLocal.close();
+            }
             if (updateAgentConfigIfNeededService != null) {
                 updateAgentConfigIfNeededService.close();
             }
@@ -363,6 +370,7 @@ public class CentralModule {
         this.updateAgentConfigIfNeededService = updateAgentConfigIfNeededService;
         this.rollupService = rollupService;
         this.syntheticMonitorService = syntheticMonitorService;
+        this.postgresPurgeService = postgresPurgeServiceLocal;
         this.uiModule = uiModule;
     }
 
@@ -397,6 +405,9 @@ public class CentralModule {
             List<CompletableFuture<?>> backgroundFutures = new ArrayList<>();
             backgroundFutures.add(submit(executor, syntheticMonitorService::close));
             backgroundFutures.add(submit(executor, rollupService::close));
+            if (postgresPurgeService != null) {
+                backgroundFutures.add(submit(executor, postgresPurgeService::close));
+            }
             backgroundFutures.add(submit(executor, centralAlertingService::close));
             backgroundFutures.add(submit(executor, alertingService::close));
             backgroundFutures.add(submit(executor, repos::close));
@@ -405,7 +416,9 @@ public class CentralModule {
             MoreFutures.waitForAll(backgroundFutures);
 
             repoAsyncExecutor.shutdown();
-            session.close();
+            if (session != null) {
+                session.close();
+            }
             clusterManager.close();
             if (startupLogger != null) {
                 startupLogger.info("shutdown complete");

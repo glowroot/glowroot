@@ -111,6 +111,7 @@ Without Docker, those ITs skip — that is not a green validation.
 
 - Experimental; not Cassandra parity (CLI `create-schema`, multi-node cache, some rollup edge cases).
 - Synthetic error intervals not stored (counts only); rollup is simplified vs Cassandra.
+- Expired rows are purged in batches hourly (`PostgresPurgeService`); boot also runs a purge.
 - Secret encryption still uses property name `cassandra.symmetricEncryptionKey`.
 
 See `docs/central-postgresql-storage.md` for schema versions and roadmap.
