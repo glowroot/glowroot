@@ -38,6 +38,7 @@ import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import edu.umd.cs.findbugs.annotations.CheckReturnValue;
+import org.glowroot.central.repo.AgentRollupIds;
 import org.glowroot.central.repo.TraceDao;
 import org.glowroot.central.util.Messages;
 import org.glowroot.common.live.ImmutableEntries;
@@ -61,7 +62,8 @@ import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 /**
- * Minimal Postgres {@link TraceDao}: leaf {@code agent_id} rows only (no parent rollup indexes).
+ * Postgres {@link TraceDao}: full body on leaf {@code agent_id}; {@code trace_point} rows for leaf
+ * and parent agent rollups (listing / count queries).
  */
 public class PostgresTraceDao implements TraceDao {
 
@@ -100,10 +102,13 @@ public class PostgresTraceDao implements TraceDao {
                     trace.hasAuxThreadProfile() ? trace.getAuxThreadProfile().toByteArray() : null;
             String errorMessage =
                     header.hasError() ? header.getError().getMessage() : null;
+            List<String> agentRollupIds = AgentRollupIds.getAgentRollupIds(agentId);
             CompletableFuture<Void> future = new CompletableFuture<>();
             CompletableFuture.runAsync(() -> {
-                try (Connection connection = dataSource.getConnection();
-                        PreparedStatement ps = connection.prepareStatement(
+                try (Connection connection = dataSource.getConnection()) {
+                    connection.setAutoCommit(false);
+                    try {
+                        try (PreparedStatement ps = connection.prepareStatement(
                                 "insert into trace (agent_id, trace_id, capture_time, "
                                         + "duration_nanos, slow, error, partial, transaction_type, "
                                         + "transaction_name, headline, user_col, error_message, "
@@ -128,33 +133,43 @@ public class PostgresTraceDao implements TraceDao {
                                         + "main_profile_bytes = excluded.main_profile_bytes, "
                                         + "aux_profile_bytes = excluded.aux_profile_bytes, "
                                         + "expires_at = excluded.expires_at")) {
-                    int i = 1;
-                    ps.setString(i++, agentId);
-                    ps.setString(i++, trace.getId());
-                    ps.setTimestamp(i++, new Timestamp(header.getCaptureTime()));
-                    ps.setLong(i++, header.getDurationNanos());
-                    ps.setBoolean(i++, header.getSlow());
-                    ps.setBoolean(i++, header.hasError());
-                    ps.setBoolean(i++, header.getPartial());
-                    ps.setString(i++, header.getTransactionType());
-                    ps.setString(i++, header.getTransactionName());
-                    ps.setString(i++, header.getHeadline());
-                    ps.setString(i++, header.getUser());
-                    if (errorMessage == null) {
-                        ps.setNull(i++, Types.VARCHAR);
-                    } else {
-                        ps.setString(i++, errorMessage);
+                            int i = 1;
+                            ps.setString(i++, agentId);
+                            ps.setString(i++, trace.getId());
+                            ps.setTimestamp(i++, new Timestamp(header.getCaptureTime()));
+                            ps.setLong(i++, header.getDurationNanos());
+                            ps.setBoolean(i++, header.getSlow());
+                            ps.setBoolean(i++, header.hasError());
+                            ps.setBoolean(i++, header.getPartial());
+                            ps.setString(i++, header.getTransactionType());
+                            ps.setString(i++, header.getTransactionName());
+                            ps.setString(i++, header.getHeadline());
+                            ps.setString(i++, header.getUser());
+                            if (errorMessage == null) {
+                                ps.setNull(i++, Types.VARCHAR);
+                            } else {
+                                ps.setString(i++, errorMessage);
+                            }
+                            ps.setBytes(i++, headerBytes);
+                            setBytesOrNull(ps, i++, entriesBytes);
+                            setBytesOrNull(ps, i++, queriesBytes);
+                            setBytesOrNull(ps, i++, sharedBytes);
+                            setBytesOrNull(ps, i++, mainProfileBytes);
+                            setBytesOrNull(ps, i++, auxProfileBytes);
+                            ps.setTimestamp(i, expiresAt);
+                            ps.executeUpdate();
+                        }
+                        upsertTracePoints(connection, agentRollupIds, agentId, trace.getId(), header,
+                                errorMessage, expiresAt);
+                        connection.commit();
+                        future.complete(null);
+                    } catch (SQLException e) {
+                        connection.rollback();
+                        throw e;
+                    } finally {
+                        connection.setAutoCommit(true);
                     }
-                    ps.setBytes(i++, headerBytes);
-                    setBytesOrNull(ps, i++, entriesBytes);
-                    setBytesOrNull(ps, i++, queriesBytes);
-                    setBytesOrNull(ps, i++, sharedBytes);
-                    setBytesOrNull(ps, i++, mainProfileBytes);
-                    setBytesOrNull(ps, i++, auxProfileBytes);
-                    ps.setTimestamp(i, expiresAt);
-                    ps.executeUpdate();
-                    future.complete(null);
-                } catch (SQLException e) {
+                } catch (Exception e) {
                     future.completeExceptionally(e);
                 }
             }, asyncExecutor);
@@ -344,7 +359,52 @@ public class PostgresTraceDao implements TraceDao {
     public void truncateAll() throws Exception {
         try (Connection connection = dataSource.getConnection();
                 var st = connection.createStatement()) {
+            st.execute("truncate trace_point");
             st.execute("truncate trace");
+        }
+    }
+
+    private static void upsertTracePoints(Connection connection, List<String> agentRollupIds,
+            String agentId, String traceId, Trace.Header header, @Nullable String errorMessage,
+            Timestamp expiresAt) throws SQLException {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "insert into trace_point (agent_rollup, agent_id, trace_id, capture_time, "
+                        + "duration_nanos, slow, error, partial, transaction_type, "
+                        + "transaction_name, headline, user_col, error_message, expires_at) "
+                        + "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                        + "on conflict (agent_rollup, agent_id, trace_id) do update set "
+                        + "capture_time = excluded.capture_time, "
+                        + "duration_nanos = excluded.duration_nanos, "
+                        + "slow = excluded.slow, error = excluded.error, "
+                        + "partial = excluded.partial, "
+                        + "transaction_type = excluded.transaction_type, "
+                        + "transaction_name = excluded.transaction_name, "
+                        + "headline = excluded.headline, user_col = excluded.user_col, "
+                        + "error_message = excluded.error_message, "
+                        + "expires_at = excluded.expires_at")) {
+            for (String agentRollupId : agentRollupIds) {
+                int i = 1;
+                ps.setString(i++, agentRollupId);
+                ps.setString(i++, agentId);
+                ps.setString(i++, traceId);
+                ps.setTimestamp(i++, new Timestamp(header.getCaptureTime()));
+                ps.setLong(i++, header.getDurationNanos());
+                ps.setBoolean(i++, header.getSlow());
+                ps.setBoolean(i++, header.hasError());
+                ps.setBoolean(i++, header.getPartial());
+                ps.setString(i++, header.getTransactionType());
+                ps.setString(i++, header.getTransactionName());
+                ps.setString(i++, header.getHeadline());
+                ps.setString(i++, header.getUser());
+                if (errorMessage == null) {
+                    ps.setNull(i++, Types.VARCHAR);
+                } else {
+                    ps.setString(i++, errorMessage);
+                }
+                ps.setTimestamp(i, expiresAt);
+                ps.addBatch();
+            }
+            ps.executeBatch();
         }
     }
 
@@ -375,7 +435,8 @@ public class PostgresTraceDao implements TraceDao {
 
     private CompletionStage<Long> readCount(String agentRollupId, TraceQuery query, boolean slow) {
         return CompletableFuture.supplyAsync(() -> {
-            String sql = "select count(*) from trace where agent_id = ? and transaction_type = ? "
+            String sql = "select count(*) from trace_point where agent_rollup = ? "
+                    + "and transaction_type = ? "
                     + "and capture_time > ? and capture_time <= ? and expires_at > ? and "
                     + (slow ? "slow" : "error")
                     + (query.transactionName() == null ? "" : " and transaction_name = ?");
@@ -396,8 +457,8 @@ public class PostgresTraceDao implements TraceDao {
             TracePointFilter filter, int limit, boolean slow) {
         return CompletableFuture.supplyAsync(() -> {
             String sql = "select agent_id, trace_id, capture_time, duration_nanos, partial, error, "
-                    + "headline, user_col, error_message from trace "
-                    + "where agent_id = ? and transaction_type = ? "
+                    + "headline, user_col, error_message from trace_point "
+                    + "where agent_rollup = ? and transaction_type = ? "
                     + "and capture_time > ? and capture_time <= ? and expires_at > ? and "
                     + (slow ? "slow" : "error")
                     + (query.transactionName() == null ? "" : " and transaction_name = ?")

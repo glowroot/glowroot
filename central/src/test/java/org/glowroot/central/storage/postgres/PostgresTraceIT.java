@@ -19,7 +19,9 @@ import java.util.UUID;
 
 import org.glowroot.central.repo.PostgresCentralAdminModule;
 import org.glowroot.common2.repo.CassandraProfile;
+import org.glowroot.common2.repo.ImmutableTraceQuery;
 import org.glowroot.common2.repo.TraceRepository.HeaderPlus;
+import org.glowroot.common2.repo.TraceRepository.TraceQuery;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -88,5 +90,22 @@ public class PostgresTraceIT {
         // no entries stored — expect null
         assertThat(traceDao.readEntries("one", traceId, CassandraProfile.web)
                 .toCompletableFuture().join()).isNull();
+
+        TraceQuery query = ImmutableTraceQuery.builder()
+                .transactionType("unit test")
+                .from(0)
+                .to(100)
+                .build();
+        assertThat(traceDao.readSlowCount("one", query).toCompletableFuture().join())
+                .isEqualTo(1L);
+
+        // parent rollup id should also see the point
+        Trace nested = Trace.newBuilder().setId(UUID.randomUUID().toString())
+                .setHeader(header).build();
+        traceDao.store("parent::child::", nested).toCompletableFuture().join();
+        assertThat(traceDao.readSlowCount("parent::", query).toCompletableFuture().join())
+                .isEqualTo(1L);
+        assertThat(traceDao.readSlowCount("parent::child::", query).toCompletableFuture().join())
+                .isEqualTo(1L);
     }
 }

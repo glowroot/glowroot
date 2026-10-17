@@ -84,7 +84,7 @@ If you see `waiting for Cassandra`, the properties file was not picked up (wrong
 |-------|--------|
 | `GET /health` | 200, body `Glowroot OK` |
 | UI opens | Central layout, empty agent list OK |
-| Postgres `\dt` | ~23+ tables including `schema_version`, `aggregate_*`, `trace`, `gauge_value`, `full_query_text` |
+| Postgres `\dt` | tables including `schema_version`, `aggregate_*`, `trace`, `trace_point`, `gauge_value`, `full_query_text` |
 
 ```powershell
 docker compose -f demo\postgres\docker-compose.yml exec postgres `
@@ -110,8 +110,7 @@ Without Docker, those ITs skip — that is not a green validation.
 ## Known gaps (honest)
 
 - Experimental; not Cassandra parity (CLI `create-schema`, multi-node cache, some rollup edge cases).
-- Synthetic monitors: L0 store/read only.
-- Trace indexes are leaf-agent only (no parent-rollup trace indexes yet).
+- Synthetic error intervals not stored (counts only); rollup is simplified vs Cassandra.
 - Secret encryption still uses property name `cassandra.symmetricEncryptionKey`.
 
 See `docs/central-postgresql-storage.md` for schema versions and roadmap.

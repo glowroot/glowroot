@@ -11,15 +11,15 @@ Related: [Choosing Embedded vs Central](https://github.com/glowroot/glowroot/wik
 | Area | Postgres path |
 |------|----------------|
 | Config flag + JDBC pool (HikariCP) | Yes |
-| Schema migrator (`schema_version`) | Yes (v1–v10) |
+| Schema migrator (`schema_version`) | Yes (v1–v11) |
 | Central / user / role / agent config | Yes |
 | Heartbeat, environment, alerting disabled | Yes |
 | Incidents, active-agent rollups, transaction types, trace attribute names | Yes |
 | Legacy v0.9 agent rollup id map (`v09_agent_rollup`) | Yes |
 | Aggregates store + summary/overview/percentile/throughput reads + level rollup | **Partial** (queries/service-calls/profiles carried through rollup + from-child; not full Cassandra table-split parity) |
-| Traces (leaf agent store/read) | **Partial** (schema v9; no parent-rollup indexes) |
+| Traces (leaf body + parent `trace_point` indexes) | **Partial** (schema v9+v11; not full Cassandra table-split) |
 | Gauges (L0 + name discovery + simple level rollup / read fallback) | **Partial** (schema v9) |
-| Synthetics (L0 store/read) | **Partial** (schema v9; rollup stub) |
+| Synthetics (L0 store/read + simple level rollup / read fallback) | **Partial** (schema v9; no error-interval blobs) |
 | Full query text DAO | **Yes** (schema v10; truncate + sha1 body + per-agent check) |
 | Full Central boot (`glowroot-central.jar` serving UI + gRPC) | **Yes (experimental)** — UI default http://127.0.0.1:4000 |
 | Online migration Cassandra ↔ Postgres | **No** (not planned for v1) |
@@ -74,6 +74,7 @@ Migrations live in `org.glowroot.central.storage.postgres.PostgresSchemaUpgrade`
 | 8 | `aggregate_needs_rollup_from_child` |
 | 9 | `trace`, `gauge_value`, `synthetic_result` |
 | 10 | `full_query_text`, `full_query_text_check` |
+| 11 | `trace_point` (listing indexes for leaf + parent agent rollups) |
 
 Cassandra TTLs are emulated with `expires_at` columns and filtered on read. Boot-time `PostgresPurge` deletes expired rows on admin-module create; a scheduled sweeper is not shipped yet. Schema upgrades lock `schema_version` with `SELECT … FOR UPDATE`.
 
@@ -103,7 +104,7 @@ mvn test -pl :glowroot-central -Ppostgres-store -Dglowroot.ui.skip
 Or name classes explicitly (PowerShell: quote `-D*` arguments):
 
 ```bash
-mvn test -pl :glowroot-central "-Dtest=PostgresCentralConfigIT,PostgresUserRoleIT,PostgresAgentConfigIT,PostgresConfigRepositoryIT,PostgresMetadataIT,PostgresIncidentIT,PostgresActiveAgentIT,PostgresNameDaoIT,PostgresAggregateIT,PostgresGaugeValueIT,PostgresTraceIT,StorageTypeTest" "-Dglowroot.ui.skip"
+mvn test -pl :glowroot-central "-Dtest=PostgresCentralConfigIT,PostgresUserRoleIT,PostgresAgentConfigIT,PostgresConfigRepositoryIT,PostgresMetadataIT,PostgresIncidentIT,PostgresActiveAgentIT,PostgresNameDaoIT,PostgresAggregateIT,PostgresGaugeValueIT,PostgresTraceIT,PostgresSyntheticResultIT,StorageTypeTest" "-Dglowroot.ui.skip"
 ```
 
 Without Docker, those ITs skip. That is not a green run.
@@ -121,7 +122,7 @@ TTL data: store `expires_at` (see `PostgresExpires`). Do not block the shared JD
 
 ## Roadmap (high level)
 
-1. Trace parent-rollup indexes; synthetic rollup; gauge needs-queue parity with Cassandra.
+1. Gauge/synthetic needs-queue parity; synthetic error-interval blobs.
 2. CLI tooling story + wiki; scheduled purge sweeper.
 3. Multi-node cache invalidation for Postgres path.
 

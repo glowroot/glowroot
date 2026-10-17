@@ -36,11 +36,12 @@ import javax.sql.DataSource;
  * <li>v8: aggregate_needs_rollup_from_child</li>
  * <li>v9: trace, gauge_value, synthetic_result</li>
  * <li>v10: full_query_text + full_query_text_check</li>
+ * <li>v11: trace_point (parent agent-rollup listing indexes)</li>
  * </ul>
  */
 public final class PostgresSchemaUpgrade {
 
-    static final int CURRENT_VERSION = 10;
+    static final int CURRENT_VERSION = 11;
 
     private PostgresSchemaUpgrade() {}
 
@@ -102,6 +103,11 @@ public final class PostgresSchemaUpgrade {
                 if (version < 10) {
                     migrateToV10(connection);
                     writeVersion(connection, 10);
+                    version = 10;
+                }
+                if (version < 11) {
+                    migrateToV11(connection);
+                    writeVersion(connection, 11);
                 }
                 connection.commit();
             } catch (SQLException e) {
@@ -364,6 +370,39 @@ public final class PostgresSchemaUpgrade {
                     + "full_query_text_sha1 varchar(64) not null, "
                     + "expires_at timestamptz not null, "
                     + "primary key (agent_rollup, full_query_text_sha1))");
+        }
+    }
+
+    private static void migrateToV11(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            // Listing index for leaf + parent agent rollups (Cassandra trace_*_point parity).
+            // Full body stays in trace keyed by leaf agent_id.
+            statement.execute("create table if not exists trace_point ("
+                    + "agent_rollup varchar(512) not null, "
+                    + "agent_id varchar(512) not null, "
+                    + "trace_id varchar(64) not null, "
+                    + "capture_time timestamptz not null, "
+                    + "duration_nanos bigint not null, "
+                    + "slow boolean not null, "
+                    + "error boolean not null, "
+                    + "partial boolean not null, "
+                    + "transaction_type varchar(512) not null, "
+                    + "transaction_name varchar(1024) not null, "
+                    + "headline text not null, "
+                    + "user_col text not null, "
+                    + "error_message text, "
+                    + "expires_at timestamptz not null, "
+                    + "primary key (agent_rollup, agent_id, trace_id))");
+            statement.execute("create index if not exists trace_point_slow_idx "
+                    + "on trace_point (agent_rollup, transaction_type, capture_time) where slow");
+            statement.execute("create index if not exists trace_point_error_idx "
+                    + "on trace_point (agent_rollup, transaction_type, capture_time) where error");
+            statement.execute("create index if not exists trace_point_tn_slow_idx "
+                    + "on trace_point (agent_rollup, transaction_type, transaction_name, "
+                    + "capture_time) where slow");
+            statement.execute("create index if not exists trace_point_tn_error_idx "
+                    + "on trace_point (agent_rollup, transaction_type, transaction_name, "
+                    + "capture_time) where error");
         }
     }
 

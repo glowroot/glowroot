@@ -39,6 +39,7 @@ public final class PostgresPurge {
             "active_top_level_rollup",
             "active_child_rollup",
             "trace",
+            "trace_point",
             "gauge_value",
             "synthetic_result",
             "full_query_text",
