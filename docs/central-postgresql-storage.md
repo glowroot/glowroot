@@ -68,8 +68,9 @@ Migrations live in `org.glowroot.central.storage.postgres.PostgresSchemaUpgrade`
 | 5 | `open_incident`, `resolved_incident`, `active_top_level_rollup`, `active_child_rollup`, `transaction_type`, `trace_attribute_name` |
 | 6 | `v09_agent_rollup` |
 | 7 | `aggregate_overall`, `aggregate_transaction`, `aggregate_needs_rollup` |
+| 8 | `aggregate_needs_rollup_from_child` |
 
-Cassandra TTLs are emulated with `expires_at` columns and filtered on read. Scheduled purge jobs are not shipped yet.
+Cassandra TTLs are emulated with `expires_at` columns and filtered on read. Boot-time `PostgresPurge` deletes expired rows on admin-module create; a scheduled sweeper is not shipped yet. Schema upgrades lock `schema_version` with `SELECT … FOR UPDATE`.
 
 Aggregates store the `Aggregate` protobuf (`aggregate_bytes`) plus denormalized summary columns and delimited `SharedQueryText` bytes for query merge.
 

@@ -24,6 +24,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -128,6 +129,10 @@ public class PostgresAggregateDao implements AggregateDao {
                         }
                         insertNeedsRollup(connection, agentId, captureTime, transactionTypes,
                                 ttlSeconds);
+                        if (agentRollupIds.size() > 1) {
+                            insertNeedsRollupFromChild(connection, agentRollupIds.get(1), agentId,
+                                    captureTime, transactionTypes, ttlSeconds);
+                        }
                         connection.commit();
                         write.complete(null);
                     } catch (SQLException e) {
@@ -165,6 +170,12 @@ public class PostgresAggregateDao implements AggregateDao {
                 try (Connection connection = dataSource.getConnection()) {
                     connection.setAutoCommit(false);
                     try {
+                        // Parent rollups (id ends with "::") merge children L0 first — Cassandra
+                        // AggregateDaoImpl.rollupFromChildren parity.
+                        if (agentRollupId.endsWith("::")) {
+                            rollupFromChildren(connection, agentRollupId, rollupConfigs,
+                                    rollupExpirationHours);
+                        }
                         for (int level = 1; level < rollupConfigs.size(); level++) {
                             rollupLevel(connection, agentRollupId, level, rollupConfigs,
                                     rollupExpirationHours);
@@ -192,6 +203,7 @@ public class PostgresAggregateDao implements AggregateDao {
             st.execute("truncate aggregate_overall");
             st.execute("truncate aggregate_transaction");
             st.execute("truncate aggregate_needs_rollup");
+            st.execute("truncate aggregate_needs_rollup_from_child");
         }
     }
 
@@ -407,6 +419,182 @@ public class PostgresAggregateDao implements AggregateDao {
     public CompletionStage<Boolean> shouldHaveAuxThreadProfile(String agentRollupId,
             AggregateQuery query) {
         return CompletableFuture.completedFuture(false);
+    }
+
+    private void rollupFromChildren(Connection connection, String agentRollupId,
+            List<RollupConfig> rollupConfigs, List<Integer> rollupExpirationHours)
+            throws Exception {
+        int ttlSeconds = Ints.saturatedCast(HOURS.toSeconds(rollupExpirationHours.get(0)));
+        long currentTimeMillis = clock.currentTimeMillis();
+        String parentAgentRollupId = AgentRollupIds.getParent(agentRollupId);
+        Map<Long, NeedsRollupFromChildBatch> batches = new LinkedHashMap<>();
+        try (PreparedStatement readNeeds = connection.prepareStatement(
+                "select capture_time, uniqueness, child_agent_rollup, transaction_types "
+                        + "from aggregate_needs_rollup_from_child "
+                        + "where agent_rollup = ? and expires_at > ? order by capture_time")) {
+            readNeeds.setString(1, agentRollupId);
+            readNeeds.setTimestamp(2, new Timestamp(currentTimeMillis));
+            try (ResultSet needs = readNeeds.executeQuery()) {
+                while (needs.next()) {
+                    long captureTime = needs.getTimestamp(1).getTime();
+                    UUID uniqueness = (UUID) needs.getObject(2);
+                    String childAgentRollup = needs.getString(3);
+                    String[] transactionTypes = (String[]) needs.getArray(4).getArray();
+                    NeedsRollupFromChildBatch batch = batches.get(captureTime);
+                    if (batch == null) {
+                        batch = new NeedsRollupFromChildBatch(captureTime);
+                        batches.put(captureTime, batch);
+                    }
+                    batch.uniquenessKeys.add(uniqueness);
+                    for (String transactionType : transactionTypes) {
+                        batch.transactionTypes.add(transactionType);
+                        batch.childrenByType
+                                .computeIfAbsent(transactionType, k -> new HashSet<>())
+                                .add(childAgentRollup);
+                    }
+                }
+            }
+        }
+        try (PreparedStatement deleteNeeds = connection.prepareStatement(
+                "delete from aggregate_needs_rollup_from_child where agent_rollup = ? "
+                        + "and capture_time = ? and uniqueness = ?")) {
+            for (NeedsRollupFromChildBatch batch : batches.values()) {
+                for (Map.Entry<String, Set<String>> entry : batch.childrenByType.entrySet()) {
+                    mergeOverallFromChildren(connection, agentRollupId, entry.getKey(),
+                            entry.getValue(), batch.captureTime, ttlSeconds);
+                    mergeTransactionsFromChildren(connection, agentRollupId, entry.getKey(),
+                            entry.getValue(), batch.captureTime, ttlSeconds);
+                }
+                if (parentAgentRollupId != null) {
+                    insertNeedsRollupFromChild(connection, parentAgentRollupId, agentRollupId,
+                            batch.captureTime, batch.transactionTypes, ttlSeconds);
+                }
+                insertNeedsRollup(connection, agentRollupId, batch.captureTime,
+                        batch.transactionTypes, ttlSeconds);
+                for (UUID uniqueness : batch.uniquenessKeys) {
+                    deleteNeeds.setString(1, agentRollupId);
+                    deleteNeeds.setTimestamp(2, new Timestamp(batch.captureTime));
+                    deleteNeeds.setObject(3, uniqueness);
+                    deleteNeeds.executeUpdate();
+                }
+            }
+        }
+    }
+
+    private void mergeOverallFromChildren(Connection connection, String parentAgentRollupId,
+            String transactionType, Set<String> childAgentRollupIds, long captureTime,
+            int ttlSeconds) throws Exception {
+        MutableAggregate merged = new MutableAggregate(1000, 1000);
+        List<Aggregate.SharedQueryText> shared = null;
+        for (String childId : childAgentRollupIds) {
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "select aggregate_bytes, shared_query_texts_bytes from aggregate_overall "
+                            + "where agent_rollup_id = ? and rollup_level = 0 "
+                            + "and transaction_type = ? and capture_time = ? and expires_at > ?")) {
+                ps.setString(1, childId);
+                ps.setString(2, transactionType);
+                ps.setTimestamp(3, new Timestamp(captureTime));
+                ps.setTimestamp(4, new Timestamp(clock.currentTimeMillis()));
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        Aggregate aggregate = Aggregate.parseFrom(rs.getBytes(1));
+                        byte[] sharedBytes = rs.getBytes(2);
+                        if (shared == null && sharedBytes != null) {
+                            shared = deserializeSharedQueryTexts(sharedBytes);
+                        }
+                        mergeAggregate(merged, aggregate);
+                    }
+                }
+            }
+        }
+        if (merged.isEmpty()) {
+            return;
+        }
+        Aggregate aggregate = toAggregate(merged, shared);
+        byte[] sharedBytes = shared == null ? null : serializeSharedQueryTexts(shared);
+        Timestamp expiresAt = PostgresExpires.fromTtlSeconds(ttlSeconds, captureTime, clock);
+        upsertOverall(connection, parentAgentRollupId, 0, transactionType, captureTime, aggregate,
+                sharedBytes, expiresAt);
+    }
+
+    private void mergeTransactionsFromChildren(Connection connection, String parentAgentRollupId,
+            String transactionType, Set<String> childAgentRollupIds, long captureTime,
+            int ttlSeconds) throws Exception {
+        Set<String> names = new HashSet<>();
+        for (String childId : childAgentRollupIds) {
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "select distinct transaction_name from aggregate_transaction "
+                            + "where agent_rollup_id = ? and rollup_level = 0 "
+                            + "and transaction_type = ? and capture_time = ? and expires_at > ?")) {
+                ps.setString(1, childId);
+                ps.setString(2, transactionType);
+                ps.setTimestamp(3, new Timestamp(captureTime));
+                ps.setTimestamp(4, new Timestamp(clock.currentTimeMillis()));
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        names.add(rs.getString(1));
+                    }
+                }
+            }
+        }
+        for (String transactionName : names) {
+            MutableAggregate merged = new MutableAggregate(1000, 1000);
+            List<Aggregate.SharedQueryText> shared = null;
+            for (String childId : childAgentRollupIds) {
+                try (PreparedStatement ps = connection.prepareStatement(
+                        "select aggregate_bytes, shared_query_texts_bytes from "
+                                + "aggregate_transaction where agent_rollup_id = ? "
+                                + "and rollup_level = 0 and transaction_type = ? "
+                                + "and transaction_name = ? and capture_time = ? "
+                                + "and expires_at > ?")) {
+                    ps.setString(1, childId);
+                    ps.setString(2, transactionType);
+                    ps.setString(3, transactionName);
+                    ps.setTimestamp(4, new Timestamp(captureTime));
+                    ps.setTimestamp(5, new Timestamp(clock.currentTimeMillis()));
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            Aggregate aggregate = Aggregate.parseFrom(rs.getBytes(1));
+                            byte[] sharedBytes = rs.getBytes(2);
+                            if (shared == null && sharedBytes != null) {
+                                shared = deserializeSharedQueryTexts(sharedBytes);
+                            }
+                            mergeAggregate(merged, aggregate);
+                        }
+                    }
+                }
+            }
+            if (merged.isEmpty()) {
+                continue;
+            }
+            Aggregate aggregate = toAggregate(merged, shared);
+            byte[] sharedBytes = shared == null ? null : serializeSharedQueryTexts(shared);
+            Timestamp expiresAt = PostgresExpires.fromTtlSeconds(ttlSeconds, captureTime, clock);
+            upsertTransaction(connection, parentAgentRollupId, 0, transactionType, transactionName,
+                    captureTime, aggregate, sharedBytes, expiresAt);
+        }
+    }
+
+    private void insertNeedsRollupFromChild(Connection connection, String parentAgentRollupId,
+            String childAgentRollupId, long captureTime, Set<String> transactionTypes,
+            int dataTtlSeconds) throws SQLException {
+        List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
+        int needsTtlSeconds =
+                PostgresExpires.needsRollupAdjustedTtlSeconds(dataTtlSeconds, rollupConfigs);
+        Timestamp needsExpiresAt =
+                PostgresExpires.fromTtlSeconds(needsTtlSeconds, captureTime, clock);
+        try (PreparedStatement ps = connection.prepareStatement(
+                "insert into aggregate_needs_rollup_from_child (agent_rollup, capture_time, "
+                        + "uniqueness, child_agent_rollup, transaction_types, expires_at) "
+                        + "values (?, ?, ?, ?, ?, ?)")) {
+            ps.setString(1, parentAgentRollupId);
+            ps.setTimestamp(2, new Timestamp(captureTime));
+            ps.setObject(3, UUID.randomUUID());
+            ps.setString(4, childAgentRollupId);
+            ps.setArray(5, connection.createArrayOf("text", transactionTypes.toArray()));
+            ps.setTimestamp(6, needsExpiresAt);
+            ps.executeUpdate();
+        }
     }
 
     private void rollupLevel(Connection connection, String agentRollupId, int level,
@@ -894,6 +1082,18 @@ public class PostgresAggregateDao implements AggregateDao {
         final Set<UUID> uniquenessKeys = new HashSet<>();
 
         NeedsRollupBatch(long captureTime) {
+            this.captureTime = captureTime;
+        }
+    }
+
+    /** Coalesced from_child needs for one capture_time. */
+    private static final class NeedsRollupFromChildBatch {
+        final long captureTime;
+        final Set<String> transactionTypes = new HashSet<>();
+        final Set<UUID> uniquenessKeys = new HashSet<>();
+        final Map<String, Set<String>> childrenByType = new HashMap<>();
+
+        NeedsRollupFromChildBatch(long captureTime) {
             this.captureTime = captureTime;
         }
     }

@@ -30,6 +30,7 @@ import org.glowroot.central.storage.postgres.PostgresEnvironmentDao;
 import org.glowroot.central.storage.postgres.PostgresHeartbeatDao;
 import org.glowroot.central.storage.postgres.PostgresIncidentDao;
 import org.glowroot.central.storage.postgres.PostgresRoleDao;
+import org.glowroot.central.storage.postgres.PostgresPurge;
 import org.glowroot.central.storage.postgres.PostgresSchemaUpgrade;
 import org.glowroot.central.storage.postgres.PostgresTraceAttributeNameDao;
 import org.glowroot.central.storage.postgres.PostgresTransactionTypeDao;
@@ -95,6 +96,7 @@ public final class PostgresCentralAdminModule implements AutoCloseable {
         ExecutorService asyncExecutor = PostgresAsync.newExecutor(maximumPoolSize);
         try {
             PostgresSchemaUpgrade.upgrade(dataSource);
+            PostgresPurge.deleteExpired(dataSource);
             PostgresCentralConfigDao centralConfigDao =
                     new PostgresCentralConfigDao(dataSource, asyncExecutor);
             PostgresUserDao userDao = new PostgresUserDao(dataSource, asyncExecutor);

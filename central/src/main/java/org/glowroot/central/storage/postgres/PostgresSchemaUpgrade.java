@@ -33,11 +33,12 @@ import javax.sql.DataSource;
  * <li>v5: open/resolved_incident, active_*_rollup, transaction_type, trace_attribute_name</li>
  * <li>v6: v09_agent_rollup</li>
  * <li>v7: aggregate_overall / aggregate_transaction / aggregate_query / aggregate_needs_rollup</li>
+ * <li>v8: aggregate_needs_rollup_from_child</li>
  * </ul>
  */
 public final class PostgresSchemaUpgrade {
 
-    static final int CURRENT_VERSION = 7;
+    static final int CURRENT_VERSION = 8;
 
     private PostgresSchemaUpgrade() {}
 
@@ -84,6 +85,11 @@ public final class PostgresSchemaUpgrade {
                 if (version < 7) {
                     migrateToV7(connection);
                     writeVersion(connection, 7);
+                    version = 7;
+                }
+                if (version < 8) {
+                    migrateToV8(connection);
+                    writeVersion(connection, 8);
                 }
                 connection.commit();
             } catch (SQLException e) {
@@ -266,6 +272,19 @@ public final class PostgresSchemaUpgrade {
         }
     }
 
+    private static void migrateToV8(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("create table if not exists aggregate_needs_rollup_from_child ("
+                    + "agent_rollup varchar(512) not null, "
+                    + "capture_time timestamptz not null, "
+                    + "uniqueness uuid not null, "
+                    + "child_agent_rollup varchar(512) not null, "
+                    + "transaction_types text[] not null, "
+                    + "expires_at timestamptz not null, "
+                    + "primary key (agent_rollup, capture_time, uniqueness))");
+        }
+    }
+
     private static void ensureSchemaVersionTable(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             statement.execute("create table if not exists schema_version ("
@@ -280,8 +299,9 @@ public final class PostgresSchemaUpgrade {
     }
 
     private static int readVersion(Connection connection) throws SQLException {
+        // Row lock for the whole upgrade txn — concurrent Centrals cannot migrate in parallel.
         try (PreparedStatement ps = connection.prepareStatement(
-                "select version from schema_version where singleton = 1");
+                "select version from schema_version where singleton = 1 for update");
                 ResultSet rs = ps.executeQuery()) {
             if (!rs.next()) {
                 return 0;
