@@ -15,13 +15,14 @@
  */
 package org.glowroot.central.storage.postgres;
 
+import org.glowroot.central.repo.ConfigRepositoryImpl;
 import org.glowroot.central.repo.PostgresCentralAdminModule;
 import org.glowroot.common2.config.CentralWebConfig;
 import org.glowroot.common2.config.ImmutableCentralWebConfig;
 import org.glowroot.common2.config.ImmutableUserConfig;
 import org.glowroot.common2.config.UserConfig;
-import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.CassandraProfile;
+import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +46,7 @@ public class PostgresConfigRepositoryIT {
             new PostgreSQLContainer<>("postgres:16-alpine");
 
     private PostgresCentralAdminModule admin;
-    private ConfigRepository configRepository;
+    private ConfigRepositoryImpl configRepository;
 
     @BeforeEach
     public void before() throws Exception {

@@ -60,7 +60,7 @@ public class PostgresCentralConfigIT {
 
     @Test
     public void writeAndReadCentralConfig() throws Exception {
-        assertThat(dao.read("web")).isNull();
+        assertThat(dao.read("web").toCompletableFuture().join()).isNull();
 
         ImmutableCentralWebConfig written = ImmutableCentralWebConfig.builder()
                 .sessionTimeoutMinutes(31)
@@ -68,7 +68,7 @@ public class PostgresCentralConfigIT {
                 .build();
         dao.writeWithoutOptimisticLocking("web", written).toCompletableFuture().join();
 
-        Object read = dao.read("web").join();
+        Object read = dao.read("web").toCompletableFuture().join();
         assertThat(read).isInstanceOf(ImmutableCentralWebConfig.class);
         ImmutableCentralWebConfig web = (ImmutableCentralWebConfig) read;
         assertThat(web.sessionTimeoutMinutes()).isEqualTo(31);

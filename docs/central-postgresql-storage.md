@@ -17,7 +17,9 @@ Related: [Choosing Embedded vs Central](https://github.com/glowroot/glowroot/wik
 | Incidents, active-agent rollups, transaction types, trace attribute names | Yes |
 | Legacy v0.9 agent rollup id map (`v09_agent_rollup`) | Yes |
 | Aggregates store + summary/overview/percentile/throughput reads + level rollup | **Partial** (queries/service-calls/profiles carried through rollup + from-child; not full Cassandra table-split parity) |
-| Traces, gauges, synthetics (minimal store/read) | **Partial** (schema v9; not full Cassandra parity) |
+| Traces (leaf agent store/read) | **Partial** (schema v9; no parent-rollup indexes) |
+| Gauges (L0 + name discovery + simple level rollup / read fallback) | **Partial** (schema v9) |
+| Synthetics (L0 store/read) | **Partial** (schema v9; rollup stub) |
 | Full query text DAO | **Yes** (schema v10; truncate + sha1 body + per-agent check) |
 | Full Central boot (`glowroot-central.jar` serving UI + gRPC) | **Yes (experimental)** — UI default http://127.0.0.1:4000 |
 | Online migration Cassandra ↔ Postgres | **No** (not planned for v1) |
@@ -29,7 +31,7 @@ Embedded collector is unchanged (local H2). This option applies only to Central.
 
 With `storage.type=postgres`, Central skips Cassandra connect and boots via `PostgresCentralRepoModule` (UI + gRPC). Default UI port is **4000**.
 
-Cassandra remains the supported production backend. Postgres path is incomplete vs Cassandra (rollups, FQT, multi-node cache, CLI tools).
+Cassandra remains the supported production backend. Postgres path is incomplete vs Cassandra (multi-node cache, CLI tools, full gauge/synthetic rollup parity).
 
 ## v0.9 agent rollups
 
@@ -101,7 +103,7 @@ mvn test -pl :glowroot-central -Ppostgres-store -Dglowroot.ui.skip
 Or name classes explicitly (PowerShell: quote `-D*` arguments):
 
 ```bash
-mvn test -pl :glowroot-central "-Dtest=PostgresCentralConfigIT,PostgresUserRoleIT,PostgresAgentConfigIT,PostgresConfigRepositoryIT,PostgresMetadataIT,PostgresIncidentIT,PostgresActiveAgentIT,PostgresNameDaoIT,PostgresAggregateIT,StorageTypeTest" "-Dglowroot.ui.skip"
+mvn test -pl :glowroot-central "-Dtest=PostgresCentralConfigIT,PostgresUserRoleIT,PostgresAgentConfigIT,PostgresConfigRepositoryIT,PostgresMetadataIT,PostgresIncidentIT,PostgresActiveAgentIT,PostgresNameDaoIT,PostgresAggregateIT,PostgresGaugeValueIT,PostgresTraceIT,StorageTypeTest" "-Dglowroot.ui.skip"
 ```
 
 Without Docker, those ITs skip. That is not a green run.
@@ -119,7 +121,7 @@ TTL data: store `expires_at` (see `PostgresExpires`). Do not block the shared JD
 
 ## Roadmap (high level)
 
-1. Deepen traces, gauges, synthetics toward Cassandra parity.
+1. Trace parent-rollup indexes; synthetic rollup; gauge needs-queue parity with Cassandra.
 2. CLI tooling story + wiki; scheduled purge sweeper.
 3. Multi-node cache invalidation for Postgres path.
 
