@@ -234,7 +234,15 @@ public class PostgresSyntheticResultDao implements SyntheticResultDao {
             }
         }
         for (MonitorMeta monitor : monitors) {
-            List<RowAcc> source = readLevelRows(connection, agentRollupId, monitor.id, 0,
+            // Incremental: only fromLevel points after last closed toLevel bucket.
+            long from = maxCaptureTime(connection, agentRollupId, monitor.id, toLevel);
+            if (from > 0) {
+                from = from + 1;
+            }
+            if (from > safeRollupTime) {
+                continue;
+            }
+            List<RowAcc> source = readLevelRows(connection, agentRollupId, monitor.id, from,
                     safeRollupTime, fromLevel);
             if (source.isEmpty()) {
                 continue;
@@ -283,6 +291,27 @@ public class PostgresSyntheticResultDao implements SyntheticResultDao {
                 }
             }
         }
+    }
+
+    private static long maxCaptureTime(Connection connection, String agentRollupId,
+            String syntheticMonitorId, int rollupLevel) throws SQLException {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "select max(capture_time) from synthetic_result "
+                        + "where agent_rollup = ? and synthetic_monitor_id = ? "
+                        + "and rollup_level = ? and expires_at > now()")) {
+            ps.setString(1, agentRollupId);
+            ps.setString(2, syntheticMonitorId);
+            ps.setInt(3, rollupLevel);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Timestamp ts = rs.getTimestamp(1);
+                    if (ts != null) {
+                        return ts.getTime();
+                    }
+                }
+            }
+        }
+        return 0;
     }
 
     private List<SyntheticResult> readLevel(String agentRollupId, String syntheticMonitorId,

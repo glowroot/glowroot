@@ -109,7 +109,8 @@ public class CentralModule {
     private final boolean servlet;
     private final ClusterManager clusterManager;
     private final @Nullable Session session;
-    private final ExecutorService repoAsyncExecutor;
+    // Cassandra path only; Postgres uses PostgresAsync inside PostgresCentralAdminModule.
+    private final @Nullable ExecutorService repoAsyncExecutor;
     private final CentralRepos repos;
     private final AlertingService alertingService;
     private final CentralAlertingService centralAlertingService;
@@ -185,8 +186,8 @@ public class CentralModule {
                 startupLogger.info("starting Glowroot Central with storage.type=postgres"
                         + " (experimental)");
                 session = null;
-                repoAsyncExecutor = MoreExecutors2.newFixedThreadPool(
-                        centralConfig.threadPoolMaxSize(), "Repo-Async-Worker-%d");
+                // No Cassandra Repo-Async pool; JDBC work uses PostgresAsync sized to Hikari.
+                repoAsyncExecutor = null;
                 PostgresCentralRepoModule postgresRepos = PostgresCentralRepoModule.create(
                         centralConfig.postgresJdbcUrl(), centralConfig.postgresUsername(),
                         centralConfig.postgresPassword(),
@@ -415,7 +416,9 @@ public class CentralModule {
             MoreFutures.waitForAll(futures);
             MoreFutures.waitForAll(backgroundFutures);
 
-            repoAsyncExecutor.shutdown();
+            if (repoAsyncExecutor != null) {
+                repoAsyncExecutor.shutdown();
+            }
             if (session != null) {
                 session.close();
             }

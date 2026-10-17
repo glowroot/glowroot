@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Dedicated pool for blocking JDBC work. Do not use {@code ForkJoinPool.commonPool()}.
+ * Size should match Hikari {@code maximumPoolSize} (one in-flight JDBC task per connection).
  */
 public final class PostgresAsync {
 

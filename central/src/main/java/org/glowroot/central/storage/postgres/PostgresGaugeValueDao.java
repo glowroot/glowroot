@@ -240,8 +240,17 @@ public class PostgresGaugeValueDao implements GaugeValueDao {
             }
         }
         for (String gaugeName : gaugeNames) {
-            List<GaugeValue> source =
-                    readLevel(connection, agentRollupId, gaugeName, 0, safeRollupTime, fromLevel);
+            // Incremental: only fromLevel points after last closed toLevel bucket (avoid O(n)
+            // full-history rescan each rollup cycle). First catch-up still reads from 0 once.
+            long from = maxCaptureTime(connection, agentRollupId, gaugeName, toLevel);
+            if (from > 0) {
+                from = from + 1;
+            }
+            if (from > safeRollupTime) {
+                continue;
+            }
+            List<GaugeValue> source = readLevel(connection, agentRollupId, gaugeName, from,
+                    safeRollupTime, fromLevel);
             if (source.isEmpty()) {
                 continue;
             }
@@ -285,6 +294,27 @@ public class PostgresGaugeValueDao implements GaugeValueDao {
                 }
             }
         }
+    }
+
+    private static long maxCaptureTime(Connection connection, String agentRollupId,
+            String gaugeName, int rollupLevel) throws SQLException {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "select max(capture_time) from gauge_value "
+                        + "where agent_rollup = ? and gauge_name = ? and rollup_level = ? "
+                        + "and expires_at > now()")) {
+            ps.setString(1, agentRollupId);
+            ps.setString(2, gaugeName);
+            ps.setInt(3, rollupLevel);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Timestamp ts = rs.getTimestamp(1);
+                    if (ts != null) {
+                        return ts.getTime();
+                    }
+                }
+            }
+        }
+        return 0;
     }
 
     private List<GaugeValue> readLevel(String agentRollupId, String gaugeName, long from, long to,

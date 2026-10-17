@@ -18,8 +18,8 @@ Related: [Choosing Embedded vs Central](https://github.com/glowroot/glowroot/wik
 | Legacy v0.9 agent rollup id map (`v09_agent_rollup`) | Yes |
 | Aggregates store + summary/overview/percentile/throughput reads + level rollup | **Partial** (queries/service-calls/profiles carried through rollup + from-child; not full Cassandra table-split parity) |
 | Traces (leaf body + parent `trace_point` indexes) | **Partial** (schema v9+v11; not full Cassandra table-split) |
-| Gauges (L0 + name discovery + simple level rollup / read fallback) | **Partial** (schema v9) |
-| Synthetics (L0 store/read + simple level rollup / read fallback) | **Partial** (schema v9; no error-interval blobs) |
+| Gauges (L0 + name discovery + incremental level rollup / read fallback) | **Partial** (schema v9) |
+| Synthetics (L0 store/read + incremental level rollup / read fallback) | **Partial** (schema v9; no error-interval blobs) |
 | Full query text DAO | **Yes** (schema v10; truncate + sha1 body + per-agent check) |
 | Full Central boot (`glowroot-central.jar` serving UI + gRPC) | **Yes (experimental)** — UI default http://127.0.0.1:4000 |
 | Online migration Cassandra ↔ Postgres | **No** (not planned for v1) |
@@ -123,7 +123,8 @@ TTL data: store `expires_at` (see `PostgresExpires`). Do not block the shared JD
 
 ## Roadmap (high level)
 
-1. Gauge/synthetic needs-queue parity; synthetic error-interval blobs.
+1. Gauge/synthetic needs-queue parity (rollup is already incremental via `max(toLevel)`);
+   synthetic error-interval blobs.
 2. CLI tooling story + wiki.
 3. Multi-node cache invalidation for Postgres path.
 

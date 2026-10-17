@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.function.Predicate;
 
 import javax.annotation.Nullable;
 import javax.sql.DataSource;
@@ -458,54 +459,33 @@ public class PostgresAggregateDao implements AggregateDao {
     @Override
     public CompletionStage<Boolean> hasMainThreadProfile(String agentRollupId, AggregateQuery query,
             CassandraProfile profile) {
-        return CompletableFuture.supplyAsync(() -> {
-            for (RowAgg row : loadAggregateRows(agentRollupId, query)) {
-                if (row.aggregate.hasMainThreadProfile()) {
-                    return true;
-                }
-            }
-            return false;
-        }, asyncExecutor);
+        return CompletableFuture.supplyAsync(
+                () -> anyAggregate(agentRollupId, query, Aggregate::hasMainThreadProfile),
+                asyncExecutor);
     }
 
     @Override
     public CompletionStage<Boolean> hasAuxThreadProfile(String agentRollupId, AggregateQuery query,
             CassandraProfile profile) {
-        return CompletableFuture.supplyAsync(() -> {
-            for (RowAgg row : loadAggregateRows(agentRollupId, query)) {
-                if (row.aggregate.hasAuxThreadProfile()) {
-                    return true;
-                }
-            }
-            return false;
-        }, asyncExecutor);
+        return CompletableFuture.supplyAsync(
+                () -> anyAggregate(agentRollupId, query, Aggregate::hasAuxThreadProfile),
+                asyncExecutor);
     }
 
     @Override
     public CompletionStage<Boolean> shouldHaveQueries(String agentRollupId, AggregateQuery query) {
-        return CompletableFuture.supplyAsync(() -> {
-            for (RowAgg row : loadAggregateRows(agentRollupId, query)) {
-                if (!row.aggregate.getQueryList().isEmpty()
-                        || !row.aggregate.getOldQueriesByTypeList().isEmpty()) {
-                    return true;
-                }
-            }
-            return false;
-        }, asyncExecutor);
+        return CompletableFuture.supplyAsync(() -> anyAggregate(agentRollupId, query,
+                a -> !a.getQueryList().isEmpty() || !a.getOldQueriesByTypeList().isEmpty()),
+                asyncExecutor);
     }
 
     @Override
     public CompletionStage<Boolean> shouldHaveServiceCalls(String agentRollupId,
             AggregateQuery query) {
-        return CompletableFuture.supplyAsync(() -> {
-            for (RowAgg row : loadAggregateRows(agentRollupId, query)) {
-                if (!row.aggregate.getServiceCallList().isEmpty()
-                        || !row.aggregate.getOldServiceCallsByTypeList().isEmpty()) {
-                    return true;
-                }
-            }
-            return false;
-        }, asyncExecutor);
+        return CompletableFuture.supplyAsync(() -> anyAggregate(agentRollupId, query,
+                a -> !a.getServiceCallList().isEmpty()
+                        || !a.getOldServiceCallsByTypeList().isEmpty()),
+                asyncExecutor);
     }
 
     @Override
@@ -973,6 +953,39 @@ public class PostgresAggregateDao implements AggregateDao {
         return out;
     }
 
+    /**
+     * Stream aggregate_bytes only; stop on first match. Avoids loading every row + shared query
+     * texts into memory for shouldHave* / has*Profile UI probes.
+     */
+    private boolean anyAggregate(String agentRollupId, AggregateQuery query,
+            Predicate<Aggregate> match) {
+        boolean byName = query.transactionName() != null;
+        String sql = byName
+                ? "select aggregate_bytes from aggregate_transaction "
+                        + "where agent_rollup_id = ? and rollup_level = ? "
+                        + "and transaction_type = ? and transaction_name = ? "
+                        + "and capture_time >= ? and capture_time <= ? and expires_at > ? "
+                        + "order by capture_time"
+                : "select aggregate_bytes from aggregate_overall "
+                        + "where agent_rollup_id = ? and rollup_level = ? "
+                        + "and transaction_type = ? and capture_time >= ? and capture_time <= ? "
+                        + "and expires_at > ? order by capture_time";
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement ps = connection.prepareStatement(sql)) {
+            bindAggregateQuery(ps, agentRollupId, query, byName);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    if (match.test(Aggregate.parseFrom(rs.getBytes(1)))) {
+                        return true;
+                    }
+                }
+            }
+        } catch (SQLException | InvalidProtocolBufferException e) {
+            throw new RuntimeException(e);
+        }
+        return false;
+    }
+
     private List<RowAgg> loadAggregateRows(String agentRollupId, AggregateQuery query) {
         boolean byName = query.transactionName() != null;
         String sql = byName
@@ -988,16 +1001,7 @@ public class PostgresAggregateDao implements AggregateDao {
         List<RowAgg> rows = new ArrayList<>();
         try (Connection connection = dataSource.getConnection();
                 PreparedStatement ps = connection.prepareStatement(sql)) {
-            int i = 1;
-            ps.setString(i++, agentRollupId);
-            ps.setInt(i++, query.rollupLevel());
-            ps.setString(i++, query.transactionType());
-            if (byName) {
-                ps.setString(i++, query.transactionName());
-            }
-            ps.setTimestamp(i++, new Timestamp(query.from()));
-            ps.setTimestamp(i++, new Timestamp(query.to()));
-            ps.setTimestamp(i++, new Timestamp(clock.currentTimeMillis()));
+            bindAggregateQuery(ps, agentRollupId, query, byName);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     rows.add(new RowAgg(rs.getTimestamp(1).getTime(),
@@ -1008,6 +1012,20 @@ public class PostgresAggregateDao implements AggregateDao {
             throw new RuntimeException(e);
         }
         return rows;
+    }
+
+    private void bindAggregateQuery(PreparedStatement ps, String agentRollupId,
+            AggregateQuery query, boolean byName) throws SQLException {
+        int i = 1;
+        ps.setString(i++, agentRollupId);
+        ps.setInt(i++, query.rollupLevel());
+        ps.setString(i++, query.transactionType());
+        if (byName) {
+            ps.setString(i++, query.transactionName());
+        }
+        ps.setTimestamp(i++, new Timestamp(query.from()));
+        ps.setTimestamp(i++, new Timestamp(query.to()));
+        ps.setTimestamp(i, new Timestamp(clock.currentTimeMillis()));
     }
 
     private static void mergeAggregate(MutableAggregate m, Aggregate a) {
