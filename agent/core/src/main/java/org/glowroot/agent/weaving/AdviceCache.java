@@ -159,6 +159,38 @@ public class AdviceCache {
                 checkNotNull(instrumentation));
     }
 
+    // Force-load <init> @OnBefore advice while PointcutClassFileTransformer is registered so the
+    // enabled-boolean onBefore(Z...) bridge exists before initialReweave. Otherwise a reentrant
+    // load during retransform (JRebel native agent, #1084) skips the bridge and Thread.<init>
+    // hits NoSuchMethodError.
+    public void preloadConstructorOnBeforeAdviceClasses() {
+        for (Advice advice : allAdvisors) {
+            if (!isConstructorOnBeforeAdvice(advice)) {
+                continue;
+            }
+            String className = advice.adviceType().getClassName();
+            try {
+                // initialize=false: defining the class is enough for the bridge; avoid running
+                // advice <clinit> (e.g. ExecutorAspect Logger) this early
+                Class.forName(className, false, AdviceCache.class.getClassLoader());
+            } catch (ClassNotFoundException e) {
+                try {
+                    // plugin jars are on the bootstrap loader search path
+                    Class.forName(className, false, null);
+                } catch (ClassNotFoundException e2) {
+                    logger.debug("could not preload constructor OnBefore advice: {}", className,
+                            e2);
+                }
+            }
+        }
+    }
+
+    @VisibleForTesting
+    static boolean isConstructorOnBeforeAdvice(Advice advice) {
+        return "<init>".equals(advice.pointcut().methodName())
+                && advice.onBeforeAdvice() != null;
+    }
+
     public void updateAdvisors(List<InstrumentationConfig> reweavableConfigs) throws Exception {
         reweavableAdvisors =
                 createReweavableAdvisors(reweavableConfigs, instrumentation, tmpDir, false);
