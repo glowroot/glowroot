@@ -1,0 +1,15 @@
+<div style="margin: 10px; box-sizing: border-box; word-wrap: break-word; overflow-wrap: break-word;">
+  <div><strong>Chart navigation tips</strong></div>
+  <ul style="padding-left: 18px; margin: 6px 0 0 0;">
+    <li>drag or double click to zoom in</li>
+    <li>use ctrl + scroll wheel to zoom in and out</li>
+  </ul>
+  <div style="margin-top: 10px;"><strong>Sampling</strong></div>
+  <ul style="padding-left: 18px; margin: 6px 0 0 0;">
+    <li>gauge values are collected every 5 seconds by default</li>
+    <li>brief spikes between samples (or flattened by rollup averages on longer ranges) may not appear</li>
+    <li>for denser sampling in a test environment only, use
+      <code style="display: inline-block; max-width: 100%; white-space: normal; word-break: break-all;">-Dglowroot.internal.gaugeCollectionIntervalMillis=1000</code>
+      (unsupported for production; more overhead)</li>
+  </ul>
+</div>
