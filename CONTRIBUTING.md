@@ -1,21 +1,23 @@
 # Contributing to Glowroot
 
-Thank you for your interest in contributing. This file covers building from source, UI development, tests, and project conventions.
+Thank you for your interest in contributing. This file covers orientation,
+building from source, UI development, tests, pull-request docs, and project
+conventions.
 
 ## How Glowroot fits together
 
-If you are new to the tree, start here before digging into modules.
+If you are new to the tree, start with the **in-repo maps** under [`docs/`](docs/README.md)
+(readable on GitHub — Markdown + Mermaid):
 
-Open these two interactive maps **locally in a browser** (clone the repo, then open the `.html` file — GitHub’s web UI will not run them):
-
-1. **[Runtime architecture](docs/architecture/glowroot-runtime.architecture.html)** — components and trust boundaries: monitored app + agent + plugins, embedded collector + H2, Central + Cassandra, and the shared AngularJS UI. Use the guided views for the embedded path vs the Central path. ([JSON source](docs/architecture/glowroot-runtime.architecture.json))
-2. **[Agent → storage data flow](docs/architecture/glowroot-agent-storage.dataflow.html)** — what actually moves left to right: weaving / `@Pointcut` → agent aggregates → embedded H2 **or** gRPC to Central / Cassandra → UI reads. ([JSON source](docs/architecture/glowroot-agent-storage.dataflow.json))
-
-Static preview of the architecture map:
-
-![Glowroot runtime architecture](docs/reports/glowroot-runtime.architecture.share-card.png)
-
-Optional deeper cut: one instrumented HTTP request end-to-end — [sequence diagram](docs/architecture/glowroot-instrumented-request.sequence.html) ([JSON](docs/architecture/glowroot-instrumented-request.sequence.json)).
+| Doc | What it covers |
+|-----|----------------|
+| [Product map](docs/product-map.md) | Embedded vs Central, data path, entry points |
+| [Repository layout](docs/repository-layout.md) | Top-level directories |
+| [Agent modules](docs/agent-modules.md) | `agent/*` (APIs, core, shaded, dist) |
+| [Agent plugins](docs/agent-plugins.md) | Plugin catalog and `glowroot.plugin.json` |
+| [Central](docs/central.md) | gRPC, Cassandra `repo/`, util, live adapters |
+| [Wire API](docs/wire-api.md) | Protobuf / gRPC contracts |
+| [UI](docs/ui.md) | AngularJS SPA + `org.glowroot.ui` HTTP/JSON |
 
 Same topics in wiki prose (modules, package layout, plugin basics):
 
@@ -34,7 +36,7 @@ mvn clean install
 
 Binary distribution is built under `agent/dist/target`.
 
-Building requires Java 11+ and Maven 3.8.0+.
+Building requires Java 11+ and Maven 3.8.0+. Central requires Java 17+.
 
 ## Development setup
 
@@ -44,7 +46,7 @@ To work on the UI, run `org.glowroot.agent.ui.sandbox.UiSandboxMain` (module `ag
 
 Glowroot uses [Bower](http://bower.io) and [Grunt](http://gruntjs.com) to build its web assets (dependency management, Javascript concat/minify, LESS compile/uncss/minify, AngularJS template concat/minify, asset revving and more). The first time you run `mvn clean install`, Node, Bower and Grunt are installed locally under the `ui` directory (thanks to the [frontend-maven-plugin](https://github.com/eirslett/frontend-maven-plugin)).
 
-If you are modifying web assets, either run grunt to rebuild after each change, or (better) run `./grunt serve` from the `ui` directory and connect your browser to http://localhost:9000.
+If you are modifying web assets, either run grunt to rebuild after each change, or (better) run `./grunt serve` from the `ui` directory and connect your browser to http://localhost:9000. Do **not** use `-Dglowroot.ui.skip` when changing UI sources.
 
 `./grunt serve` serves up the Glowroot web assets without the concat/minify/rev step (easier testing/debugging). It reverse-proxies non-static requests to http://localhost:4000 and live-reloads assets in the browser.
 
@@ -85,9 +87,42 @@ Optional local nullness check (Checker Framework), same as `.github/scripts/buil
 
 All third party Java libraries used by the agent are shaded under the `org.glowroot.agent.shaded` package to avoid jar version conflicts with the application being monitored.
 
+## Pull requests and change documentation
+
+Every non-trivial fix or feature PR must include an in-repo note that explains
+**what** changed, **why**, **how**, and **which choices** were made (and why),
+so review and later maintenance stay cheap.
+
+### What to add
+
+1. Copy [docs/pr-change-template.md](docs/pr-change-template.md).
+2. Save as `docs/changes/<short-slug>.md` (create `docs/changes/` if needed),
+   **or** update a lasting topic page under `docs/` when the PR documents
+   enduring behavior (e.g. health endpoints, upgrade notes).
+3. Link that path in the PR description.
+
+Sections to fill (see the template): What · Why · How · Choices · Verification.
+
+### When you may skip
+
+- Typos, comment-only, or formatting-only changes with **no** behavior, API,
+  config, or operator-facing change.
+- Pure refactors that do not change externally observable behavior **and** do
+  not alter wire/storage contracts — still preferred to leave a short note if
+  the refactor is large.
+
+### PR description
+
+Keep the GitHub PR body short and concrete. Point to the change note for
+detail. Prefer titles like `[BUGFIX] …`, `[FEATURE] …`, `[DOCS] …` when that
+matches the change.
+
+If the change is Central-only or Embedded-only, say so (and test that mode).
+If you touch `wire-api` protos, call out compatibility explicitly in the note.
+
 ## Getting help
 
-- **How the runtime fits together:** [How Glowroot fits together](#how-glowroot-fits-together) (architecture + data-flow maps)
+- **In-repo maps:** [docs/README.md](docs/README.md)
 - **Code / module orientation:** [For contributors](https://github.com/glowroot/glowroot/wiki/For-contributors) · [Plugin and Pointcut basics](https://github.com/glowroot/glowroot/wiki/Plugin-and-Pointcut-basics)
 - **Questions about contributing or building:** [GitHub Discussions → Q&A](https://github.com/glowroot/glowroot/discussions/categories/q-a)
 - **Ideas for improvements:** [GitHub Discussions → Ideas](https://github.com/glowroot/glowroot/discussions/categories/ideas)

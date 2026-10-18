@@ -2,15 +2,34 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+For human contributor setup, PR change-doc policy, and the full in-repo map index, see [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/README.md](docs/README.md).
+
 ## Project Overview
 
 Glowroot is a Java APM (Application Performance Monitoring) tool. It has two deployment modes:
-- **Embedded**: Agent runs with the monitored application, stores data locally (H2 database)
-- **Central**: Agents send data via gRPC/Protobuf to a central collector backed by Cassandra
+
+- **Embedded**: Agent runs with the monitored application, stores data locally (H2 database), serves the UI in-process
+- **Central**: Agents send data via gRPC/Protobuf to a central collector backed by **Cassandra**; central serves the same UI
+
+## Documentation (in-repo)
+
+Prefer these over rediscovering the tree from scratch:
+
+| Doc | Use when |
+|-----|----------|
+| [docs/product-map.md](docs/product-map.md) | Deploy modes, data path, entry points |
+| [docs/repository-layout.md](docs/repository-layout.md) | Top-level directories |
+| [docs/agent-modules.md](docs/agent-modules.md) / [docs/agent-plugins.md](docs/agent-plugins.md) | Agent internals / plugins |
+| [docs/central.md](docs/central.md) | Central gRPC, `repo/`, util, live adapters |
+| [docs/wire-api.md](docs/wire-api.md) | Protobuf / gRPC contracts |
+| [docs/ui.md](docs/ui.md) | AngularJS SPA + `org.glowroot.ui` |
+| [docs/pr-change-template.md](docs/pr-change-template.md) | Required note for non-trivial PRs → `docs/changes/` |
+
+Operator install guides remain on the [wiki](https://github.com/glowroot/glowroot/wiki).
 
 ## Build Commands
 
-Building requires Java 11+ and Maven 3.8.0+. The agent targets Java 8+, the central module requires Java 17+.
+Building requires Java 11+ and Maven 3.8.0+. The agent targets Java 8+ (Animal Sniffer); the central module requires Java 17+.
 
 ```bash
 # Full build
@@ -55,10 +74,10 @@ git fetch upstream main
 cd ui
 npm install
 ./grunt serve          # Dev server on :9000, proxies API to :4000
-./grunt serve:demo     # Proxies API to demo.glowroot.org instead
+./grunt serve:demo     # Proxies API to demo.glowroot.org instead (host often down — #1102)
 ```
 
-Do **not** use `-Dglowroot.ui.skip` when changing UI (assets must rebuild).
+Do **not** use `-Dglowroot.ui.skip` when changing UI (assets must rebuild). Styles are **SCSS** (`ui/app/styles/*.scss`) via Grunt/sass.
 
 ### Local UI gates
 
@@ -95,33 +114,42 @@ Use Central when verifying Central-only pages (Cassandra storage TTL, agent roll
 
 ## Architecture
 
+Deep maps: [docs/product-map.md](docs/product-map.md) and linked pages. Summary below.
+
 ### Module Structure
 
-- **`agent/api`**, **`agent/plugin-api`**, **`agent/bytecode-api`** - Public APIs for agent and plugin development
-- **`agent/core`** - Agent implementation: bytecode weaving (ASM), trace collection, config management
-- **`agent/embedded`** - Embedded collector (all-in-one mode with local H2 storage)
-- **`agent/plugins/*`** - 30+ instrumentation plugins (Servlet, Spring, JDBC, Cassandra, etc.)
-- **`agent/shaded/*`** - Shaded JARs: all agent dependencies relocated under `org.glowroot.agent.shaded` to avoid classpath conflicts with monitored apps
-- **`agent/it-harness`** - Integration test harness (supports custom classloader or real `-javaagent` mode)
-- **`agent/dist`** - Distribution packaging (produces `glowroot-*-dist.zip`)
-- **`central/`** - Central collector: gRPC server, Cassandra persistence, metric rollups, UI serving (Java 17+)
-- **`common/`**, **`common2/`** - Shared config, model, and utility code
-- **`wire-api/`** - Protobuf definitions (Trace, Aggregate, AgentConfig, CollectorService, etc.)
-- **`ui/`** - AngularJS 1.x SPA with Grunt build pipeline (SCSS, concat, minify, asset revving)
-- **`webdriver-tests/`** - Selenium browser integration tests
+- **`agent/api`**, **`agent/plugin-api`**, **`agent/bytecode-api`** — Public APIs for agent and plugin development
+- **`agent/core`** — Agent runtime: bytecode weaving (ASM), trace collection, config
+- **`agent/embedded`** — Embedded collector (local H2 + UI in the app JVM)
+- **`agent/plugins/*`** — 27 instrumentation plugins on `main` (Servlet/Jakarta, Spring, JDBC, …); see [docs/agent-plugins.md](docs/agent-plugins.md)
+- **`agent/shaded/*`** — Shaded JARs under `org.glowroot.agent.shaded.*` (avoid app classpath clashes)
+- **`agent/it-harness`**, **`agent/integration-tests`** — Agent IT harness and suites
+- **`agent/dist`** — Distribution packaging (`glowroot-*-dist.zip`)
+- **`agent/ui-sandbox`** — Local sample-traffic UI sandbox
+- **`central/`** — Central collector: gRPC, Cassandra, rollups, alerts, UI serving (Java 17+)
+- **`common/`**, **`common2/`** — Shared config, model, utilities
+- **`wire-api/`** — Protobuf / gRPC (`CollectorService`, `DownstreamService`, Trace, Aggregate, …)
+- **`ui/`** — AngularJS 1.x SPA + Java `org.glowroot.ui` HTTP/JSON layer (Grunt/SCSS)
+- **`webdriver-tests/`** — Selenium browser integration tests
+- **`docs/`** — In-repo documentation maps and topic notes
+- **`build/`**, **`.github/`** — Build helpers and CI
 
 ### Data Flow
 
-Agent (bytecode weaving captures traces/metrics) → gRPC/Protobuf → Central (Cassandra storage + aggregation) → HTTP REST API → AngularJS UI
+- **Embedded:** weaving / plugins → embedded collector → H2 → HTTP UI (same JVM)
+- **Central:** weaving / plugins → gRPC (`wire-api`) → central → Cassandra (+ rollups) → HTTP UI
+
+UI JSON APIs live under `org.glowroot.ui` (`*JsonService` / `HttpService`). On central, live JVM/trace/weaving UI actions use gRPC **downstream** to the agent ([docs/central.md](docs/central.md), [docs/ui.md](docs/ui.md)).
 
 ### Key Entry Points
 
-- **Agent**: `agent/core/src/main/java/org/glowroot/agent/MainEntryPoint.java`
-- **Central**: `central/src/main/java/org/glowroot/central/Main.java`
+- **Agent (javaagent):** `org.glowroot.agent.MainEntryPoint`
+- **Central process:** `org.glowroot.central.Main`
+- **UI sandbox (dev):** `org.glowroot.agent.ui.sandbox.UiSandboxMain`
 
 ### Plugin System
 
-Plugins use `@Pointcut` annotations to intercept method calls. Key APIs: `ThreadContext`, `TraceEntry`, `Timer`, `QueryEntry`, `MessageSupplier`. See existing plugins in `agent/plugins/` for examples.
+Plugins use `@Pointcut` annotations and ship `META-INF/glowroot.plugin.json` (`id`, properties, aspects). Key APIs: `ThreadContext`, `TraceEntry`, `Timer`, `QueryEntry`, `MessageSupplier`. Catalog and conventions: [docs/agent-plugins.md](docs/agent-plugins.md).
 
 ### Code Generation and Quality
 
@@ -135,9 +163,13 @@ Plugins use `@Pointcut` annotations to intercept method calls. Key APIs: `Thread
 - Unit tests: `*Test.java` (JUnit 5, Mockito, AssertJ)
 - Integration tests: `*IT.java` (run during `verify` phase)
 - The IT harness supports two modes: custom weaving classloader (convenient for IDE debugging) and spawned JVM with `-javaagent` (realistic)
-- Multi-version testing via Maven profiles: `netty-4.x`, `spring-4.x`, `spring-5.1.x`, `mongodb-3.7.x`, `elasticsearch-2.x`, `play-2.x`, etc.
-- CI test phases are defined in `.github/scripts/build.sh` (test1 through test4, sonar, checker)
+- Multi-version testing via Maven profiles on plugins (e.g. `netty-4.x`, `spring-4.x`, `spring-5.1.x`, `mongodb-3.7.x`, `elasticsearch-2.x`, `play-2.x`, …)
+- CI phases in `.github/scripts/build.sh`: `test1`–`test4`, `sonar`, `checker`
 
 ### Dependency Shading
 
 All agent third-party dependencies are shaded under `org.glowroot.agent.shaded.*`. This is critical — the agent must not introduce classpath conflicts with monitored applications. The `agent/shaded/` modules handle this relocation.
+
+### Pull requests
+
+Non-trivial PRs need an in-repo change note (what / why / how / choices): see [CONTRIBUTING.md](CONTRIBUTING.md#pull-requests-and-change-documentation) and [docs/pr-change-template.md](docs/pr-change-template.md).
