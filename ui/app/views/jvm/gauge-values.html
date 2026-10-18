@@ -32,7 +32,8 @@
       </span>
     </button>
     <button class="gt-chart-button"
-            uib-popover-template="'template/help/chart.html'"
+            uib-popover-template="'template/help/gauge-chart.html'"
+            popover-class="gt-gauge-chart-popover"
             popover-placement="left"
             popover-trigger="'outsideClick'">
       <span title="Help"
@@ -40,6 +41,13 @@
       </span>
     </button>
   </div>
+</div>
+<div class="pl-5 mb-2" style="max-width: 720px;">
+  <em>
+    Gauge values are sampled every 5 seconds by default.
+    Short-lived spikes between samples may not appear on the chart
+    (see chart help for more detail).
+  </em>
 </div>
 <div class="gt-chart-container"
      style="margin-left: -10px;">
