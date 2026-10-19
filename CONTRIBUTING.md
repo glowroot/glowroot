@@ -60,6 +60,14 @@ The Glowroot agent has an [integration test harness](agent/it-harness) which mak
 
 Browser-based integration tests use WebDriver (Firefox by default).
 
+Test setup extracts downloaded archives (the Elasticsearch distribution in `elasticsearch-plugin`, geckodriver in `webdriver-tests`) with [compress4j](https://github.com/austek/compress4j), a test-scoped dependency that requires Java 17+. It supports tar.gz and zip, auto-detects compression, and rejects zip-slip paths, unsafe symlinks and oversized expansions. To extract another archive, use `TarArchiveExtractor` or `ZipArchiveExtractor`:
+
+```java
+try (TarArchiveExtractor extractor = TarArchiveExtractor.builder(archiveFile.toPath()).build()) {
+    extractor.extract(targetDir.toPath());
+}
+```
+
 ## Microbenchmarks
 
 Microbenchmarks use [JMH](http://openjdk.java.net/projects/code-tools/jmh/). From [agent/benchmarks](agent/benchmarks):
