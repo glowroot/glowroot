@@ -76,6 +76,7 @@ Central needs its own install — see [Agent Installation (for Central Collector
 | JBoss / WildFly `GeneratedMethodMeta` CNFE | See FAQ below (`jboss.modules.system.pkgs`) · [#1112](https://github.com/glowroot/glowroot/issues/1112) |
 | Storage (H2 / Cassandra TTL) | [Administration-Storage](https://github.com/glowroot/glowroot/wiki/Administration-Storage) |
 | HTTP `/health` vs `/readiness` (0.14.8+) | [docs/health-endpoints.md](docs/health-endpoints.md) · [0.14.8 upgrade notes](docs/0.14.8-upgrade-notes.md) |
+| Prometheus `/metrics` (embedded, opt-in) | [docs/prometheus-metrics.md](docs/prometheus-metrics.md) · [#1249](https://github.com/glowroot/glowroot/issues/1249) |
 | Embedded H2 1.x → 2.x upgrade | [docs/embedded-h2-upgrade.md](docs/embedded-h2-upgrade.md) |
 | Plugins / custom Instrumentation | [Plugins](https://github.com/glowroot/glowroot/wiki/Plugins) · [Instrumentation](https://github.com/glowroot/glowroot/wiki/Instrumentation) |
 | Empty Queries / Service Calls / Web? | [Plugin coverage gaps](https://github.com/glowroot/glowroot/wiki/Plugin-coverage-gaps) · [What Glowroot does not do](https://github.com/glowroot/glowroot/wiki/What-Glowroot-does-not-do) |
