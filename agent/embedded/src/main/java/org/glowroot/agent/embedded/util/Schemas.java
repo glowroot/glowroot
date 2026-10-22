@@ -208,6 +208,7 @@ public class Schemas {
             throws SQLException {
         ListMultimap</*@Untainted*/ String, /*@Untainted*/ String> indexColumns =
                 ArrayListMultimap.create();
+        Map</*@Untainted*/ String, Boolean> indexUnique = Maps.newHashMap();
         ResultSet resultSet = getMetaDataIndexInfo(connection, tableName);
         ResultSetCloser closer = new ResultSetCloser(resultSet);
         try {
@@ -217,7 +218,10 @@ public class Schemas {
                 // hack-ish to skip over primary key constraints which seem to be always
                 // prefixed in H2 by PRIMARY_KEY_
                 if (!indexName.startsWith("PRIMARY_KEY_")) {
-                    indexColumns.put(castUntainted(indexName), castUntainted(columnName));
+                    String key = castUntainted(indexName);
+                    indexColumns.put(key, castUntainted(columnName));
+                    // NON_UNIQUE is false for unique indexes
+                    indexUnique.put(key, !resultSet.getBoolean("NON_UNIQUE"));
                 }
             }
         } catch (Throwable t) {
@@ -233,7 +237,12 @@ public class Schemas {
             for (String column : entry.getValue()) {
                 columns.add(column.toLowerCase(Locale.ENGLISH));
             }
-            indexes.add(ImmutableIndex.of(name, columns));
+            boolean unique = Boolean.TRUE.equals(indexUnique.get(entry.getKey()));
+            indexes.add(ImmutableIndex.builder()
+                    .name(name)
+                    .columns(columns)
+                    .unique(unique)
+                    .build());
         }
         return indexes.build();
     }
@@ -241,7 +250,7 @@ public class Schemas {
     private static void createIndex(String tableName, Index index, Connection connection)
             throws SQLException {
         StringBuilder sql = new StringBuilder();
-        sql.append("create index ");
+        sql.append(index.unique() ? "create unique index " : "create index ");
         sql.append(index.name());
         sql.append(" on ");
         sql.append(tableName);
@@ -308,10 +317,15 @@ public class Schemas {
     }
 
     @Value.Immutable
-    @Styles.AllParameters
     public interface Index {
+        @Value.Parameter
         @Untainted
         String name();
+        @Value.Parameter
         ImmutableList</*@Untainted*/ String> columns();
+        @Value.Default
+        default boolean unique() {
+            return false;
+        }
     }
 }
