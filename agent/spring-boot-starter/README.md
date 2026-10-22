@@ -12,7 +12,7 @@ Embedded collector (UI on the app, default for local try-out):
 
 ```xml
 <properties>
-  <glowroot.version>0.14.8-beta.5-SNAPSHOT</glowroot.version>
+  <glowroot.version>0.14.8-beta.6</glowroot.version>
 </properties>
 
 <dependencies>
@@ -83,7 +83,7 @@ Add collector address (gRPC port, not the UI `:4000`):
 ## Gradle
 
 ```gradle
-ext.glowrootVersion = '0.14.8-beta.5-SNAPSHOT'
+ext.glowrootVersion = '0.14.8-beta.6'
 
 configurations {
   glowrootAgent
