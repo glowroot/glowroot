@@ -56,4 +56,4 @@ java -jar glowroot.jar h2 import-script <export.sql>
 
 ## Central
 
-This page is **embedded-only**. Central uses Cassandra; H2 file migration does not apply.
+This page is **embedded-only**. Central uses Cassandra by default (optional experimental Postgres: [central-postgresql-storage.md](central-postgresql-storage.md)). H2 file migration does not apply.

@@ -19,7 +19,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.spotify.futures.CompletableFutures;
 import org.glowroot.agent.api.Instrumentation;
-import org.glowroot.central.repo.ActiveAgentDao;
+import org.glowroot.central.repo.ActiveAgentStore;
 import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.SyntheticResultDao;
@@ -43,7 +43,7 @@ class RollupService implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(RollupService.class);
 
-    private final ActiveAgentDao activeAgentDao;
+    private final ActiveAgentStore activeAgentDao;
     private final AggregateDao aggregateDao;
     private final GaugeValueDao gaugeValueDao;
     private final SyntheticResultDao syntheticResultDao;
@@ -54,7 +54,7 @@ class RollupService implements Runnable {
 
     private volatile boolean closed;
 
-    RollupService(ActiveAgentDao activeAgentDao, AggregateDao aggregateDao,
+    RollupService(ActiveAgentStore activeAgentDao, AggregateDao aggregateDao,
                   GaugeValueDao gaugeValueDao, SyntheticResultDao syntheticResultDao,
                   CentralAlertingService centralAlertingService, Clock clock) {
         this.activeAgentDao = activeAgentDao;

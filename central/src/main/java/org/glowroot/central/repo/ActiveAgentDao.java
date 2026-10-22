@@ -52,7 +52,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 
-public class ActiveAgentDao implements ActiveAgentRepository {
+public class ActiveAgentDao implements ActiveAgentStore {
 
     private final Session session;
     private final AgentDisplayDao agentDisplayDao;

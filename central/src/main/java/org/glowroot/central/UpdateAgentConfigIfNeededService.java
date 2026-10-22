@@ -29,9 +29,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.glowroot.agent.api.Instrumentation;
-import org.glowroot.central.repo.ActiveAgentDao;
-import org.glowroot.central.repo.AgentConfigDao;
+import org.glowroot.central.repo.ActiveAgentStore;
 import org.glowroot.central.repo.AgentConfigDao.AgentConfigAndUpdateToken;
+import org.glowroot.central.repo.AgentConfigStore;
 import org.glowroot.central.util.MoreExecutors2;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
@@ -45,8 +45,8 @@ class UpdateAgentConfigIfNeededService implements Runnable {
     private static final Logger logger =
             LoggerFactory.getLogger(UpdateAgentConfigIfNeededService.class);
 
-    private final AgentConfigDao agentConfigDao;
-    private final ActiveAgentDao activeAgentDao;
+    private final AgentConfigStore agentConfigDao;
+    private final ActiveAgentStore activeAgentDao;
     private final DownstreamServiceImpl downstreamService;
     private final Clock clock;
 
@@ -55,7 +55,7 @@ class UpdateAgentConfigIfNeededService implements Runnable {
 
     private volatile boolean closed;
 
-    UpdateAgentConfigIfNeededService(AgentConfigDao agentConfigDao, ActiveAgentDao activeAgentDao,
+    UpdateAgentConfigIfNeededService(AgentConfigStore agentConfigDao, ActiveAgentStore activeAgentDao,
             DownstreamServiceImpl downstreamService, Clock clock) {
         this.agentConfigDao = agentConfigDao;
         this.activeAgentDao = activeAgentDao;

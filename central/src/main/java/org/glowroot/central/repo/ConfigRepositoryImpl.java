@@ -50,10 +50,10 @@ public class ConfigRepositoryImpl implements ConfigRepository {
     private static final long GAUGE_COLLECTION_INTERVAL_MILLIS =
             Long.getLong("glowroot.internal.gaugeCollectionIntervalMillis", 5000);
 
-    private final CentralConfigDao centralConfigDao;
-    private final AgentConfigDao agentConfigDao;
-    private final UserDao userDao;
-    private final RoleDao roleDao;
+    private final CentralConfigStore centralConfigDao;
+    private final AgentConfigStore agentConfigDao;
+    private final UserStore userDao;
+    private final RoleStore roleDao;
 
     private final ImmutableList<RollupConfig> rollupConfigs;
 
@@ -61,8 +61,8 @@ public class ConfigRepositoryImpl implements ConfigRepository {
 
     private final Set<AgentConfigListener> agentConfigListeners = Sets.newCopyOnWriteArraySet();
 
-    ConfigRepositoryImpl(CentralConfigDao centralConfigDao, AgentConfigDao agentConfigDao,
-                         UserDao userDao, RoleDao roleDao, String symmetricEncryptionKey) {
+    ConfigRepositoryImpl(CentralConfigStore centralConfigDao, AgentConfigStore agentConfigDao,
+                         UserStore userDao, RoleStore roleDao, String symmetricEncryptionKey) {
         this.centralConfigDao = centralConfigDao;
         this.agentConfigDao = agentConfigDao;
         this.userDao = userDao;

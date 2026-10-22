@@ -40,7 +40,7 @@ import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-class CentralConfigDao {
+class CentralConfigDao implements CentralConfigStore {
 
     private static final Logger logger = LoggerFactory.getLogger(CentralConfigDao.class);
 
@@ -76,11 +76,13 @@ class CentralConfigDao {
                 new CentralConfigCacheLoader());
     }
 
-    void addKeyType(String key, Class<?> clazz) {
+    @Override
+    public void addKeyType(String key, Class<?> clazz) {
         keyTypes.put(key, clazz);
     }
 
-    CompletionStage<?> write(String key, Object config, String priorVersion) {
+    @Override
+    public CompletionStage<?> write(String key, Object config, String priorVersion) {
         BoundStatement bdstmt = readPS.bind()
                 .setString(0, key);
         return session.readAsync(bdstmt, CassandraProfile.web).thenCompose(results -> {
@@ -121,7 +123,8 @@ class CentralConfigDao {
         });
     }
 
-    CompletionStage<?> writeWithoutOptimisticLocking(String key, Object config) {
+    @Override
+    public CompletionStage<?> writeWithoutOptimisticLocking(String key, Object config) {
         String json = null;
         try {
             json = mapper.writeValueAsString(config);
@@ -142,7 +145,8 @@ class CentralConfigDao {
         return ret.thenRun(() -> centralConfigCache.invalidate(key));
     }
 
-    CompletableFuture<Object> read(String key) {
+    @Override
+    public CompletableFuture<Object> read(String key) {
         return centralConfigCache.get(key).thenApply(opt -> opt.orElse(null));
     }
 

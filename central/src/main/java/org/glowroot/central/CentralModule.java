@@ -64,12 +64,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
+import org.glowroot.central.repo.CentralRepos;
 import org.glowroot.central.repo.CentralRepoModule;
 import org.glowroot.central.repo.ConfigRepositoryImpl.AgentConfigListener;
 import org.glowroot.central.repo.ConfigRepositoryImpl.LazySecretKeyImpl;
+import org.glowroot.central.repo.PostgresCentralRepoModule;
 import org.glowroot.central.repo.RepoAdminImpl;
 import org.glowroot.central.repo.SchemaUpgrade;
 import org.glowroot.central.repo.Tools;
+import org.glowroot.central.storage.StorageType;
+import org.glowroot.central.storage.postgres.PostgresPurgeService;
+import org.glowroot.common2.repo.RepoAdmin;
 import org.glowroot.common.live.LiveAggregateRepository.LiveAggregateRepositoryNop;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.PropertiesFiles;
@@ -103,15 +108,17 @@ public class CentralModule {
 
     private final boolean servlet;
     private final ClusterManager clusterManager;
-    private final Session session;
-    private final ExecutorService repoAsyncExecutor;
-    private final CentralRepoModule repos;
+    private final @Nullable Session session;
+    // Cassandra path only; Postgres uses PostgresAsync inside PostgresCentralAdminModule.
+    private final @Nullable ExecutorService repoAsyncExecutor;
+    private final CentralRepos repos;
     private final AlertingService alertingService;
     private final CentralAlertingService centralAlertingService;
     private final GrpcServer grpcServer;
     private final UpdateAgentConfigIfNeededService updateAgentConfigIfNeededService;
     private final RollupService rollupService;
     private final SyntheticMonitorService syntheticMonitorService;
+    private final @Nullable PostgresPurgeService postgresPurgeService;
     private final UiModule uiModule;
 
     public static CentralModule create() throws Exception {
@@ -134,13 +141,14 @@ public class CentralModule {
         ClusterManager clusterManager = null;
         Session session = null;
         ExecutorService repoAsyncExecutor = null;
-        CentralRepoModule repos = null;
+        CentralRepos repos = null;
         AlertingService alertingService = null;
         CentralAlertingService centralAlertingService = null;
         GrpcServer grpcServer = null;
         UpdateAgentConfigIfNeededService updateAgentConfigIfNeededService = null;
         RollupService rollupService = null;
         SyntheticMonitorService syntheticMonitorService = null;
+        PostgresPurgeService postgresPurgeServiceLocal = null;
         UiModule uiModule = null;
         try {
             Directories directories = new Directories(centralDir);
@@ -171,29 +179,53 @@ public class CentralModule {
 
             clusterManager = ClusterManager.create(directories.getConfDir(),
                     centralConfig.jgroupsProperties());
-            session = connect(centralConfig);
 
-            SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session, centralConfig.cassandraGcGraceSeconds(), clock, servlet);
-            Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
-            if (initialSchemaVersion == null) {
-                startupLogger.info("creating glowroot central schema...");
+            final boolean postgres = centralConfig.storageType() == StorageType.POSTGRES;
+            RepoAdmin repoAdmin;
+            if (postgres) {
+                startupLogger.info("starting Glowroot Central with storage.type=postgres"
+                        + " (experimental)");
+                session = null;
+                // No Cassandra Repo-Async pool; JDBC work uses PostgresAsync sized to Hikari.
+                repoAsyncExecutor = null;
+                PostgresCentralRepoModule postgresRepos = PostgresCentralRepoModule.create(
+                        centralConfig.postgresJdbcUrl(), centralConfig.postgresUsername(),
+                        centralConfig.postgresPassword(),
+                        centralConfig.postgresMaximumPoolSize(),
+                        centralConfig.cassandraSymmetricEncryptionKey(), clock);
+                repos = postgresRepos;
+                repoAdmin = postgresRepos.getRepoAdmin();
+                postgresPurgeServiceLocal = new PostgresPurgeService(postgresRepos.getDataSource());
             } else {
-                schemaUpgrade.upgrade();
-            }
-            if (schemaUpgrade.reloadCentralConfiguration()) {
-                centralConfig = getCentralConfiguration(directories.getConfDir());
-            }
-            repoAsyncExecutor = MoreExecutors2.newFixedThreadPool(centralConfig.threadPoolMaxSize(), "Repo-Async-Worker-%d");
-            repos = new CentralRepoModule(clusterManager, session, directories.getConfDir(),
-                    centralConfig.cassandraSymmetricEncryptionKey(), centralConfig.cassandraGcGraceSeconds(), repoAsyncExecutor,
-                    TARGET_MAX_ACTIVE_AGENTS_IN_PAST_7_DAYS, TARGET_MAX_CENTRAL_UI_USERS, clock);
+                session = connect(centralConfig);
 
-            if (initialSchemaVersion == null) {
-                schemaUpgrade.updateSchemaVersionToCurent();
-                startupLogger.info("glowroot central schema created");
-            } else {
-                schemaUpgrade.updateToMoreRecentCassandraOptions(
-                        repos.getConfigRepository().getCentralStorageConfig().toCompletableFuture().join());
+                SchemaUpgrade schemaUpgrade = new SchemaUpgrade(session,
+                        centralConfig.cassandraGcGraceSeconds(), clock, servlet);
+                Integer initialSchemaVersion = schemaUpgrade.getInitialSchemaVersion();
+                if (initialSchemaVersion == null) {
+                    startupLogger.info("creating glowroot central schema...");
+                } else {
+                    schemaUpgrade.upgrade();
+                }
+                if (schemaUpgrade.reloadCentralConfiguration()) {
+                    centralConfig = getCentralConfiguration(directories.getConfDir());
+                }
+                repoAsyncExecutor = MoreExecutors2.newFixedThreadPool(
+                        centralConfig.threadPoolMaxSize(), "Repo-Async-Worker-%d");
+                repos = new CentralRepoModule(clusterManager, session, directories.getConfDir(),
+                        centralConfig.cassandraSymmetricEncryptionKey(),
+                        centralConfig.cassandraGcGraceSeconds(), repoAsyncExecutor,
+                        TARGET_MAX_ACTIVE_AGENTS_IN_PAST_7_DAYS, TARGET_MAX_CENTRAL_UI_USERS, clock);
+
+                if (initialSchemaVersion == null) {
+                    schemaUpgrade.updateSchemaVersionToCurent();
+                    startupLogger.info("glowroot central schema created");
+                } else {
+                    schemaUpgrade.updateToMoreRecentCassandraOptions(repos.getConfigRepository()
+                            .getCentralStorageConfig().toCompletableFuture().join());
+                }
+                repoAdmin = new RepoAdminImpl(session, repos.getActiveAgentDao(),
+                        repos.getConfigRepository(), session.getCassandraWriteMetrics(), clock);
             }
 
             HttpClient httpClient = new HttpClient(repos.getConfigRepository());
@@ -267,8 +299,7 @@ public class CentralModule {
                     .gaugeValueRepository(repos.getGaugeValueDao())
                     .syntheticResultRepository(repos.getSyntheticResultDao())
                     .incidentRepository(repos.getIncidentDao())
-                    .repoAdmin(new RepoAdminImpl(session, repos.getActiveAgentDao(),
-                            repos.getConfigRepository(), session.getCassandraWriteMetrics(), clock))
+                    .repoAdmin(repoAdmin)
                     .rollupLevelService(repos.getRollupLevelService())
                     .liveTraceRepository(new LiveTraceRepositoryImpl(downstreamService))
                     .liveAggregateRepository(new LiveAggregateRepositoryNop())
@@ -300,6 +331,9 @@ public class CentralModule {
             }
             if (rollupService != null) {
                 rollupService.close();
+            }
+            if (postgresPurgeServiceLocal != null) {
+                postgresPurgeServiceLocal.close();
             }
             if (updateAgentConfigIfNeededService != null) {
                 updateAgentConfigIfNeededService.close();
@@ -337,6 +371,7 @@ public class CentralModule {
         this.updateAgentConfigIfNeededService = updateAgentConfigIfNeededService;
         this.rollupService = rollupService;
         this.syntheticMonitorService = syntheticMonitorService;
+        this.postgresPurgeService = postgresPurgeServiceLocal;
         this.uiModule = uiModule;
     }
 
@@ -371,6 +406,9 @@ public class CentralModule {
             List<CompletableFuture<?>> backgroundFutures = new ArrayList<>();
             backgroundFutures.add(submit(executor, syntheticMonitorService::close));
             backgroundFutures.add(submit(executor, rollupService::close));
+            if (postgresPurgeService != null) {
+                backgroundFutures.add(submit(executor, postgresPurgeService::close));
+            }
             backgroundFutures.add(submit(executor, centralAlertingService::close));
             backgroundFutures.add(submit(executor, alertingService::close));
             backgroundFutures.add(submit(executor, repos::close));
@@ -378,8 +416,12 @@ public class CentralModule {
             MoreFutures.waitForAll(futures);
             MoreFutures.waitForAll(backgroundFutures);
 
-            repoAsyncExecutor.shutdown();
-            session.close();
+            if (repoAsyncExecutor != null) {
+                repoAsyncExecutor.shutdown();
+            }
+            if (session != null) {
+                session.close();
+            }
             clusterManager.close();
             if (startupLogger != null) {
                 startupLogger.info("shutdown complete");
@@ -425,6 +467,7 @@ public class CentralModule {
         startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
 
         CentralConfiguration centralConfig = getCentralConfiguration(directories.getConfDir());
+        rejectIncompletePostgresStorage(centralConfig);
         Session session = null;
         ExecutorService repoAsyncExecutor = null;
         CentralRepoModule repos = null;
@@ -540,6 +583,7 @@ public class CentralModule {
         startupLogger.info("Java version: {}", StandardSystemProperty.JAVA_VERSION.value());
 
         CentralConfiguration centralConfig = getCentralConfiguration(directories.getConfDir());
+        rejectIncompletePostgresStorage(centralConfig);
         Session session = null;
         ExecutorService repoAsyncExecutor = null;
         CentralRepoModule repos = null;
@@ -587,6 +631,26 @@ public class CentralModule {
         Map<String, String> properties = getPropertiesFromConfigFile(confDir);
         properties = overlayAnySystemProperties(properties);
         ImmutableCentralConfiguration.Builder builder = ImmutableCentralConfiguration.builder();
+        String storageTypeText = properties.get("glowroot.storage.type");
+        if (!Strings.isNullOrEmpty(storageTypeText)) {
+            builder.storageType(StorageType.parse(storageTypeText));
+        }
+        String postgresJdbcUrl = properties.get("glowroot.postgres.jdbcUrl");
+        if (!Strings.isNullOrEmpty(postgresJdbcUrl)) {
+            builder.postgresJdbcUrl(postgresJdbcUrl);
+        }
+        String postgresUsername = properties.get("glowroot.postgres.username");
+        if (!Strings.isNullOrEmpty(postgresUsername)) {
+            builder.postgresUsername(postgresUsername);
+        }
+        String postgresPassword = properties.get("glowroot.postgres.password");
+        if (!Strings.isNullOrEmpty(postgresPassword)) {
+            builder.postgresPassword(postgresPassword);
+        }
+        String postgresMaximumPoolSize = properties.get("glowroot.postgres.maximumPoolSize");
+        if (!Strings.isNullOrEmpty(postgresMaximumPoolSize)) {
+            builder.postgresMaximumPoolSize(Integer.parseInt(postgresMaximumPoolSize));
+        }
         String cassandraContactPoints = properties.get("glowroot.cassandra.contactPoints");
         if (!Strings.isNullOrEmpty(cassandraContactPoints)) {
             builder.cassandraContactPoint(Splitter.on(',').trimResults().omitEmptyStrings()
@@ -808,6 +872,22 @@ public class CentralModule {
         return properties;
     }
 
+    /**
+     * CLI tools ({@code create-schema}, etc.) remain Cassandra-only. Full Central boot with
+     * {@code storage.type=postgres} is handled in the main constructor via
+     * {@link PostgresCentralRepoModule}.
+     */
+    private static void rejectIncompletePostgresStorage(CentralConfiguration centralConfig) {
+        if (centralConfig.storageType() != StorageType.POSTGRES) {
+            return;
+        }
+        throw new UnsupportedOperationException(
+                "This CLI command does not support storage.type=postgres yet."
+                        + " Use Cassandra for create-schema / tools, or start glowroot-central.jar"
+                        + " with storage.type=postgres for the experimental UI/gRPC path."
+                        + " See docs/central-postgresql-storage.md.");
+    }
+
     @RequiresNonNull("startupLogger")
     private static Session connect(CentralConfiguration centralConfig) throws Exception {
         Session session = null;
@@ -994,6 +1074,31 @@ public class CentralModule {
 
     @Value.Immutable
     abstract static class CentralConfiguration {
+
+        @Value.Default
+        StorageType storageType() {
+            return StorageType.CASSANDRA;
+        }
+
+        @Value.Default
+        String postgresJdbcUrl() {
+            return "";
+        }
+
+        @Value.Default
+        String postgresUsername() {
+            return "";
+        }
+
+        @Value.Default
+        String postgresPassword() {
+            return "";
+        }
+
+        @Value.Default
+        int postgresMaximumPoolSize() {
+            return 20;
+        }
 
         @Value.Default
         List<String> cassandraContactPoint() {

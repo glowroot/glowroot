@@ -38,7 +38,7 @@ import org.glowroot.common2.repo.ConfigRepository.DuplicateRoleNameException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-class RoleDao {
+class RoleDao implements RoleStore {
 
     private static final String ALL_ROLES_SINGLE_CACHE_KEY = "x";
 
@@ -90,16 +90,19 @@ class RoleDao {
                 new AllRolesCacheLoader());
     }
 
-    CompletionStage<List<RoleConfig>> read() {
+    @Override
+    public CompletionStage<List<RoleConfig>> read() {
         return allRoleConfigsCache.get(ALL_ROLES_SINGLE_CACHE_KEY);
     }
 
+    @Override
     @CheckReturnValue
-    CompletionStage<RoleConfig> read(String name) {
+    public CompletionStage<RoleConfig> read(String name) {
         return roleConfigCache.get(name).thenApply(opt -> opt.orElse(null));
     }
 
-    CompletionStage<?> delete(String name, CassandraProfile profile) {
+    @Override
+    public CompletionStage<?> delete(String name, CassandraProfile profile) {
         BoundStatement boundStatement = deletePS.bind()
             .setString(0, name);
         return session.writeAsync(boundStatement, profile).thenRun(() -> {
@@ -108,7 +111,8 @@ class RoleDao {
         });
     }
 
-    CompletionStage<?> insert(RoleConfig roleConfig, CassandraProfile profile) {
+    @Override
+    public CompletionStage<?> insert(RoleConfig roleConfig, CassandraProfile profile) {
         BoundStatement boundStatement = insertPS.bind();
         boundStatement = bindInsert(boundStatement, roleConfig);
         return session.writeAsync(boundStatement, profile).thenRun(() -> {
@@ -117,7 +121,8 @@ class RoleDao {
         });
     }
 
-    CompletionStage<?> insertIfNotExists(RoleConfig roleConfig, CassandraProfile profile) {
+    @Override
+    public CompletionStage<?> insertIfNotExists(RoleConfig roleConfig, CassandraProfile profile) {
         BoundStatement boundStatement = insertIfNotExistsPS.bind();
         boundStatement = bindInsert(boundStatement, roleConfig);
         // consistency level must be at least LOCAL_SERIAL

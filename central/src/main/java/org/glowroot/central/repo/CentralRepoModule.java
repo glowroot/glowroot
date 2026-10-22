@@ -46,7 +46,7 @@ import org.glowroot.common2.repo.util.RollupLevelService;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class CentralRepoModule {
+public class CentralRepoModule implements CentralRepos {
 
     private final AgentDisplayDao agentDisplayDao;
     private final AgentConfigDao agentConfigDao;
@@ -177,10 +177,12 @@ public class CentralRepoModule {
         v09AgentRollupDao = new V09AgentRollupDao(session, clusterManager);
     }
 
+    @Override
     public AgentDisplayDao getAgentDisplayDao() {
         return agentDisplayDao;
     }
 
+    @Override
     public AgentConfigDao getAgentConfigDao() {
         return agentConfigDao;
     }
@@ -193,62 +195,77 @@ public class CentralRepoModule {
         return roleDao;
     }
 
+    @Override
     public ConfigRepositoryImpl getConfigRepository() {
         return configRepository;
     }
 
+    @Override
     public AlertingDisabledDao getAlertingDisabledDao() {
         return alertingDisabledDao;
     }
 
+    @Override
     public RollupLevelService getRollupLevelService() {
         return rollupLevelService;
     }
 
+    @Override
     public ActiveAgentDao getActiveAgentDao() {
         return activeAgentDao;
     }
 
+    @Override
     public EnvironmentDao getEnvironmentDao() {
         return environmentDao;
     }
 
+    @Override
     public HeartbeatDao getHeartbeatDao() {
         return heartbeatDao;
     }
 
+    @Override
     public IncidentDao getIncidentDao() {
         return incidentDao;
     }
 
+    @Override
     public TransactionTypeDao getTransactionTypeDao() {
         return transactionTypeDao;
     }
 
+    @Override
     public TraceAttributeNameDao getTraceAttributeNameDao() {
         return traceAttributeNameDao;
     }
 
+    @Override
     public AggregateDao getAggregateDao() {
         return aggregateDao;
     }
 
+    @Override
     public TraceDao getTraceDao() {
         return traceDao;
     }
 
+    @Override
     public GaugeValueDao getGaugeValueDao() {
         return gaugeValueDao;
     }
 
+    @Override
     public SyntheticResultDao getSyntheticResultDao() {
         return syntheticResultDao;
     }
 
+    @Override
     public V09AgentRollupDao getV09AgentRollupDao() {
         return v09AgentRollupDao;
     }
 
+    @Override
     public void close() throws Exception {
         fullQueryTextDao.close();
     }

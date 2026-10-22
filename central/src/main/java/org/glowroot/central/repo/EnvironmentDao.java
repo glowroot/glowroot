@@ -32,7 +32,7 @@ import org.glowroot.wire.api.model.CollectorServiceOuterClass.InitMessage.Enviro
 import static com.google.common.base.Preconditions.checkNotNull;
 
 // TODO environment records never expire for abandoned agent ids
-public class EnvironmentDao implements EnvironmentRepository {
+public class EnvironmentDao implements EnvironmentStore {
 
     private final Session session;
 
