@@ -1,0 +1,20 @@
+<div class="gt-storage-help">
+  <div><strong>Lean defaults</strong></div>
+  <ul>
+    <li ng-if="!layout.central">
+      Fills shorter retention days and smaller capped database sizes on this
+      Storage page (all four rollup capped levels set to the same lean size).
+    </li>
+    <li ng-if="layout.central">
+      Fills shorter Cassandra TTL days for rollups, query/service-call rollups,
+      profile rollups, and traces on this Storage page.
+    </li>
+    <li>
+      Nothing is written until you click <strong>Save changes</strong>.
+    </li>
+    <li>
+      Transaction profiling and Advanced aggregate caps are unchanged — edit
+      those pages separately if you want them leaner too.
+    </li>
+  </ul>
+</div>
