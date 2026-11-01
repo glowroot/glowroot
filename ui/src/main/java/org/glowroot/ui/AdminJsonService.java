@@ -111,7 +111,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.PRECONDITION_FAILED
 @JsonService
 class AdminJsonService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ConfigJsonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(AdminJsonService.class);
     private static final ObjectMapper mapper = ObjectMappers.create();
 
     private static final Ordering<H2Table> orderingByBytesDesc = new Ordering<H2Table>() {
@@ -669,6 +669,25 @@ class AdminJsonService {
         liveAggregateRepository.clearInMemoryData();
     }
 
+    @POST(path = "/backend/admin/delete-agent-meta", permission = "admin:edit:storage")
+    void deleteAgentMeta(@BindRequest DeleteAgentMetaRequest request,
+            @BindAuthentication Authentication authentication) throws Exception {
+        if (!central) {
+            throw new JsonServiceException(HttpResponseStatus.NOT_FOUND);
+        }
+        String agentRollupId = request.agentRollupId();
+        if (agentRollupId == null || agentRollupId.trim().isEmpty()) {
+            throw new JsonServiceException(BAD_REQUEST, "agentRollupId is required");
+        }
+        String id = agentRollupId.trim();
+        repoAdmin.deleteAgentMeta(id);
+        // Username here (not in RepoAdmin): CLI has no user; Glowroot audit log also records
+        // POST body when -Dglowroot.log.auditOn=true.
+        logger.info("{} - deleted agent metadata for id={} (agent_config, agent_display, environment);"
+                + " a still-connected agent may recreate it via collectInit",
+                authentication.caseAmbiguousUsername(), id);
+    }
+
     @POST(path = "/backend/admin/update-cassandra-twcs-window-sizes",
             permission = "admin:edit:storage")
     String updateCassandraTwcsWindowSizes() throws Exception {
@@ -845,6 +864,12 @@ class AdminJsonService {
         @Nullable
         String transactionType();
         int limit();
+    }
+
+    @Value.Immutable
+    interface DeleteAgentMetaRequest {
+        @Nullable
+        String agentRollupId();
     }
 
     @Value.Immutable

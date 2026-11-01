@@ -42,6 +42,7 @@ import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
 import org.glowroot.common2.repo.ConfigRepository;
 import org.glowroot.common2.repo.ConfigRepository.CannotDeleteLastRoleException;
 import org.glowroot.common2.repo.ConfigRepository.DuplicateRoleNameException;
+import org.glowroot.ui.HttpSessionManager.Authentication;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -86,8 +87,13 @@ class RoleConfigJsonService {
         }
     }
 
-    @GET(path = "/backend/admin/all-active-agent-rollups", permission = "admin:edit:role")
-    String getAllAgentRollups() throws Exception {
+    @GET(path = "/backend/admin/all-active-agent-rollups", permission = "")
+    String getAllAgentRollups(@BindAuthentication Authentication authentication) throws Exception {
+        // Shared by Roles and Storage (delete agent metadata)
+        if (!authentication.isAdminPermitted("admin:edit:role")
+                && !authentication.isAdminPermitted("admin:edit:storage")) {
+            throw new JsonServiceException(HttpResponseStatus.FORBIDDEN);
+        }
         return mapper.writeValueAsString(getFlattenedAgentRollups());
     }
 
