@@ -54,6 +54,10 @@ Post-install details:
 
 **Central collector?** Start with [Agent Installation (for Central Collector)](https://github.com/glowroot/glowroot/wiki/Agent-Installation-(for-Central-Collector)) (agents on app JVMs, glowroot-central + Cassandra on a monitor host).
 
+## Spring Boot
+
+Glowroot still needs `-javaagent` (it is not activated by a classpath dependency alone). For Maven/Gradle copy-agent snippets (embedded UI by default, Central for production), see [agent/spring-boot-starter](agent/spring-boot-starter/README.md) (`org.glowroot:glowroot-spring-boot-starter`).
+
 ## Deployment
 
 | Mode | What you run | Typical use |
