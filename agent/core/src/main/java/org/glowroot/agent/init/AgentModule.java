@@ -147,6 +147,8 @@ public class AgentModule {
         adviceCache = new AdviceCache(pluginCache.pluginDescriptors(),
                 configService.getInstrumentationConfigs(), instrumentation, tmpDir);
         if (pointcutClassFileTransformer != null) {
+            // must run before removing PointcutClassFileTransformer (see AdviceCache)
+            adviceCache.preloadConstructorOnBeforeAdviceClasses();
             checkNotNull(instrumentation).removeTransformer(pointcutClassFileTransformer);
         }
         preloadSomeSuperTypesCache = new PreloadSomeSuperTypesCache(
