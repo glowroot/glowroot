@@ -43,19 +43,13 @@ public class TransactionProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionProcessor.class);
 
-    // back pressure on transaction collection
-    private static final int TRANSACTION_PENDING_LIMIT = 1000;
-    // back pressure on writing captured data to disk/network
-    private static final int AGGREGATE_PENDING_LIMIT = 5;
-
     final Object monitor = new Object();
 
     private volatile AggregateIntervalCollector activeIntervalCollector;
 
     // need to guarantee these are processed in order (at least when running embedded collector
     // due to rollups relying on not seeing old data after newer data has been seen)
-    private final BlockingQueue<AggregateIntervalCollector> pendingIntervalCollectors =
-            Queues.newLinkedBlockingQueue(AGGREGATE_PENDING_LIMIT);
+    private final BlockingQueue<AggregateIntervalCollector> pendingIntervalCollectors;
 
     private final ExecutorService processingExecutor;
     private final ExecutorService flushingExecutor;
@@ -75,6 +69,9 @@ public class TransactionProcessor {
     private int queueLength;
     private final Object queueLock = new Object();
 
+    private final int transactionPendingLimit;
+    private final int aggregatePendingLimit;
+
     private final RateLimitedLogger backPressureLogger =
             new RateLimitedLogger(TransactionProcessor.class);
 
@@ -87,6 +84,9 @@ public class TransactionProcessor {
         this.configService = configService;
         this.clock = clock;
         this.aggregateIntervalMillis = aggregateIntervalMillis;
+        this.transactionPendingLimit = transactionPendingLimit();
+        this.aggregatePendingLimit = aggregatePendingLimit();
+        this.pendingIntervalCollectors = Queues.newLinkedBlockingQueue(aggregatePendingLimit);
         processingExecutor = Executors
                 .newFixedThreadPool(1, ThreadFactories.create("Glowroot-Aggregate-Processing"));
         flushingExecutor = Executors
@@ -98,6 +98,16 @@ public class TransactionProcessor {
                         configService.getAdvancedConfig().maxServiceCallAggregates(), clock);
         processingExecutor.execute(new TransactionProcessorLoop());
         flushingExecutor.execute(new AggregateFlushingLoop());
+    }
+
+    // back pressure on transaction collection
+    static int transactionPendingLimit() {
+        return Integer.getInteger("glowroot.internal.transactionPendingLimit", 1000);
+    }
+
+    // back pressure on writing captured data to disk/network
+    static int aggregatePendingLimit() {
+        return Integer.getInteger("glowroot.internal.aggregatePendingLimit", 5);
     }
 
     public Set<String> getTransactionTypes() {
@@ -137,7 +147,7 @@ public class TransactionProcessor {
         boolean exceededLimit = false;
         boolean addedToQueue = false;
         synchronized (queueLock) {
-            if (queueLength < TRANSACTION_PENDING_LIMIT) {
+            if (queueLength < transactionPendingLimit) {
                 newTail.captureTime = clock.currentTimeMillis();
                 tail.next = newTail;
                 tail = newTail;
@@ -154,7 +164,7 @@ public class TransactionProcessor {
         }
         if (exceededLimit) {
             backPressureLogger.warn("not capturing a transaction because of an excessive backlog of"
-                    + " {} transactions already waiting to be captured", TRANSACTION_PENDING_LIMIT);
+                    + " {} transactions already waiting to be captured", transactionPendingLimit);
             transaction.setCaptureTime(clock.currentTimeMillis());
             transaction.removeFromActiveTransactions();
         }
@@ -285,7 +295,7 @@ public class TransactionProcessor {
             boolean accepted = pendingIntervalCollectors.offer(activeIntervalCollector);
             if (!accepted) {
                 logger.warn("not storing an aggregate because of an excessive backlog of {}"
-                        + " aggregates already waiting to be stored", AGGREGATE_PENDING_LIMIT);
+                        + " aggregates already waiting to be stored", aggregatePendingLimit);
             }
         }
     }
