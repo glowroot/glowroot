@@ -32,7 +32,7 @@ npx skills add ./skills/glowroot-ops --skill glowroot-ops --global --yes --copy
 
 ## Any tool (no install)
 
-Copy `PROMPT.md` into chat. Attach `SKILL.md` + `wiki-index.md` + your `ORG-CONTEXT.md` if you have one.
+Copy `PROMPT.md` into chat. Attach `SKILL.md` + `wiki-index.md` + `docs-index.md` + your `ORG-CONTEXT.md` if you have one.
 
 ## Per tool
 
