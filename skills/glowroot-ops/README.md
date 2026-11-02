@@ -39,9 +39,10 @@ npx skills add ./skills/glowroot-ops --skill glowroot-ops --global --yes --copy
 | Claude Code | skill `glowroot-ops` |
 | Any chat | paste `PROMPT.md` |
 
-## Wiki
+## Wiki + docs
 
-https://github.com/glowroot/glowroot/wiki — fetched live, not embedded.
+- Wiki (primary): https://github.com/glowroot/glowroot/wiki — fetched live
+- In-repo notes (second): `docs-index.md` → `docs/` on `main` (or raw GitHub URLs)
 
 ## Files
 
@@ -51,5 +52,7 @@ https://github.com/glowroot/glowroot/wiki — fetched live, not embedded.
 | `SKILL.md` | Core workflow |
 | `PROMPT.md` | Copy-paste invoke |
 | `INSTALL.md` | Per-tool setup |
+| `wiki-index.md` | Wiki URLs by topic |
+| `docs-index.md` | In-repo `docs/` notes after wiki |
 
 Apache 2.0 (same as Glowroot).
