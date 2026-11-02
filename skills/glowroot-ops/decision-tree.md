@@ -1,6 +1,6 @@
 # Decision tree — classify Glowroot requests
 
-Read this first. Then wiki. Then `issue-gate.md` for verdict.
+Read this first. Then wiki. Then `docs-index.md` if mapped. Then `issue-gate.md` for verdict.
 
 ```
                     User question
@@ -13,6 +13,7 @@ Read this first. Then wiki. Then `issue-gate.md` for verdict.
          ▼               ▼               ▼
   trace analysis   dev-setup.md    triage-patterns-dev.md
   + ORG-CONTEXT    + wiki          + wiki
+                   + docs-index    + docs-index
 ```
 
 ## 1. How-to / config
@@ -25,6 +26,8 @@ Read this first. Then wiki. Then `issue-gate.md` for verdict.
 | Find slow traces | Transactions → sort by time → open trace → Queries / Profile |
 | Filter errors | Errors tab = errors in **traced** transactions only; not container stdout |
 | JBoss/WildFly `GeneratedMethodMeta` CNFE | `-Djboss.modules.system.pkgs=org.glowroot` (append if set); `-javaagent` only — README FAQ / `#1112` |
+| K8s/LB/`HEALTHCHECK` after 0.14.8 | `/health` is **liveness** (not storage). Use `/readiness` for Cassandra/H2 → wiki Health-endpoints + `docs/health-endpoints.md` |
+| Central + Docker sizing | Wiki Central-Collector-with-Docker (+ Cassandra heap / limits) |
 
 **Verdict:** `wiki-only` or `no-issue`
 
@@ -50,8 +53,10 @@ Read this first. Then wiki. Then `issue-gate.md` for verdict.
 |---------|----------------|
 | How does heap work? | JMX heap used/max via Gauges; no built-in % of -Xmx (`#946`) |
 | p99 vs p95? | Check wiki Transaction tabs for aggregate type |
-| CPU spike after upgrade | Version path, embedded vs central, H2 upgrade `#1180` → [docs/embedded-h2-upgrade.md](../../docs/embedded-h2-upgrade.md) |
+| CPU spike after upgrade | Version path, embedded vs central; H2 1.x→2.x recreate `#1180` `#1243` → wiki Embedded-H2-upgrade + `docs/embedded-h2-upgrade.md` |
+| “Allocated memory” on JVM threads | UI column meaning → `docs/jvm-thread-stats-allocated-memory.md` |
 | JVM RAM vs OS | JMX heap ≠ process RSS |
+| Upgrading to 0.14.8 | Breaking/notable → `docs/0.14.8-upgrade-notes.md` (+ health probe change) |
 
 **Verdict:** `wiki-only` or `discussion`
 
