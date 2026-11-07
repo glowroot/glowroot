@@ -657,6 +657,44 @@ public class PreparedStatementIT {
     }
 
     @Test
+    public void testPreparedStatementWithArrayParameters() throws Exception {
+        // given
+        container.getConfigService().setPluginProperty(PLUGIN_ID, "captureBindParametersIncludes",
+                ImmutableList.of(".*"));
+
+        // when
+        Trace trace = container.execute(ExecutePreparedStatementWithArrayParameters.class);
+
+        // then
+        Iterator<Trace.Entry> i = trace.getEntryList().iterator();
+        List<Trace.SharedQueryText> sharedQueryTexts = trace.getSharedQueryTextList();
+
+        Trace.Entry entry = i.next();
+        assertThat(entry.getActive()).isFalse();
+        assertThat(entry.getDepth()).isEqualTo(0);
+        assertThat(entry.getMessage()).isEmpty();
+        assertThat(sharedQueryTexts.get(entry.getQueryEntryMessage().getSharedQueryTextIndex())
+                .getFullText()).isEqualTo(
+                        "select * from employee where name in (unnest(?))");
+        assertThat(entry.getQueryEntryMessage().getPrefix()).isEqualTo("jdbc query: ");
+        assertThat(entry.getQueryEntryMessage().getSuffix())
+                .isEqualTo(" [['john', NULL, 'jack']]");
+
+        assertThat(i.hasNext()).isFalse();
+
+        Iterator<Aggregate.Query> j = trace.getQueryList().iterator();
+
+        Aggregate.Query query = j.next();
+        assertThat(query.getType()).isEqualTo("SQL");
+        assertThat(sharedQueryTexts.get(query.getSharedQueryTextIndex()).getFullText())
+                .isEqualTo("select * from employee where name in (unnest(?))");
+        assertThat(query.getExecutionCount()).isEqualTo(1);
+        assertThat(query.hasTotalRows()).isFalse();
+
+        assertThat(j.hasNext()).isFalse();
+    }
+
+    @Test
     public void testPreparedStatementThatHasInternalGlowrootToken() throws Exception {
         // when
         Trace trace = container.execute(ExecutePreparedStatementThatHasInternalGlowrootToken.class);
@@ -1130,6 +1168,31 @@ public class PreparedStatementIT {
                 while (rs.next()) {
                     rs.getString(1);
                 }
+            } finally {
+                preparedStatement.close();
+            }
+        }
+    }
+
+    public static class ExecutePreparedStatementWithArrayParameters
+            implements AppUnderTest, TransactionMarker {
+        private Connection connection;
+        @Override
+        public void executeApp() throws Exception {
+            connection = Connections.createConnection();
+            try {
+                transactionMarker();
+            } finally {
+                Connections.closeConnection(connection);
+            }
+        }
+        @Override
+        public void transactionMarker() throws Exception {
+            PreparedStatement preparedStatement = connection.prepareStatement(
+                    "select * from employee where name in (unnest(?))");
+            try {
+                preparedStatement.setObject(1, new String[] {"john", null, "jack"});
+                preparedStatement.execute();
             } finally {
                 preparedStatement.close();
             }
