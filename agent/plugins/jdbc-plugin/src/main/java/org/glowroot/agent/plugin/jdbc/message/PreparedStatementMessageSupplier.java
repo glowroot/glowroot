@@ -113,15 +113,34 @@ public class PreparedStatementMessageSupplier extends QueryMessageSupplier {
             if (!first) {
                 sb.append(", ");
             }
-            if (parameter instanceof String) {
-                sb.append("\'");
-                sb.append((String) parameter);
-                sb.append("\'");
-            } else if (parameter == null) {
-                sb.append("NULL");
-            } else {
-                sb.append(String.valueOf(parameter));
+            appendParameter(sb, parameter);
+            first = false;
+        }
+        sb.append("]");
+    }
+
+    private static void appendParameter(StringBuilder sb, @Nullable Object parameter) {
+        if (parameter instanceof String) {
+            sb.append("\'");
+            sb.append((String) parameter);
+            sb.append("\'");
+        } else if (parameter == null) {
+            sb.append("NULL");
+        } else if (parameter instanceof Object[]) {
+            appendArrayParameter(sb, (Object[]) parameter);
+        } else {
+            sb.append(String.valueOf(parameter));
+        }
+    }
+
+    private static void appendArrayParameter(StringBuilder sb, @Nullable Object[] parameters) {
+        sb.append("[");
+        boolean first = true;
+        for (@Nullable Object parameter : parameters) {
+            if (!first) {
+                sb.append(", ");
             }
+            appendParameter(sb, parameter);
             first = false;
         }
         sb.append("]");
