@@ -378,6 +378,19 @@
             <option>
               -keep class org.glowroot.agent.shaded.io.netty.internal.tcnative.** { *; }
             </option>
+            <!-- needed since netty 4.2.17.Final -->
+            <option>
+              -keepclassmembers class org.glowroot.agent.shaded.io.netty.util.concurrent.ConcurrentSkipListIntObjMultimap {
+              void acquireFenceFallback();
+              }
+            </option>
+            <option>
+              <![CDATA[
+              -keepclassmembers class org.glowroot.agent.shaded.io.netty.util.internal.CleanerJava25$CleanableDirectBufferImpl {
+              <init>(...);
+              }
+              ]]>
+            </option>
             <!-- needed since grpc 1.54.0 -->
             <option>
               -keep class org.glowroot.agent.shaded.io.grpc.util.** { *; }
