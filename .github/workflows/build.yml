@@ -16,7 +16,7 @@ jobs:
     uses: ./.github/workflows/reusable-build.yml
 
 #  checker:
-#    runs-on: ubuntu-latest
+#    runs-on: ubuntu-26.04
 #    steps:
 #      - uses: actions/checkout@v6
 #        with:
@@ -42,7 +42,7 @@ jobs:
 #        if: runner.os == 'Linux'
 
 #  saucelabs:
-#    runs-on: ubuntu-latest
+#    runs-on: ubuntu-26.04
 #    strategy:
 #      matrix:
 #        testGroup: [ 1, 2, 3 ]
@@ -91,7 +91,7 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v6
         with:
