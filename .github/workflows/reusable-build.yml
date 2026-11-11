@@ -12,6 +12,12 @@ jobs:
         testGroup: [ 1, 2, 3, 4 ]
         testShaded: [ true, false ]
         glowrootHarness: [ javaagent, local ]
+        exclude:
+          # glowroot-central and glowroot-webdriver-tests require Java 17+
+          - java: 8
+            testGroup: 3
+          - java: 8
+            testGroup: 4
       fail-fast: false
     env:
       TEST_SHADED: ${{ matrix.testShaded }}

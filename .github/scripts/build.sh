@@ -18,8 +18,11 @@ if [[ "$TEST_SHADED" == "true" ]]
 then
   test_shaded_opt=-Dglowroot.test.shaded
 fi
-if [[ $test_jvm_version != 1.8* ]]
+if [[ $test_jvm_version == 1.8* ]]
 then
+  # mockito 5+ requires Java 11+
+  test_jvm_opt="$test_jvm_opt -Dmockito.version=4.11.0"
+else
   cassandra_jvm_opt=-Dcassandra.jvm=$(which java)
 fi
 
@@ -58,6 +61,11 @@ case "$1" in
                  exclude_modules="$exclude_modules,!:glowroot-central,!:glowroot-webdriver-tests"
                  # mongodb tests use testcontainers which requires Java 8+
                  activate_profiles="$activate_profiles,mongodb-3.7.x"
+                 if [[ $test_jvm_version == 1.8* ]]
+                 then
+                   # logback 1.5+ requires Java 11+
+                   activate_profiles="$activate_profiles,logback-1.2"
+                 fi
                  if [[ "$TEST_SHADED" == "true" ]]
                  then
                    # spring-5.1.x profile is cumulative on top of spring-4.x (tests new spring 5 features, e.g. webflux)
@@ -86,10 +94,17 @@ case "$1" in
                  if [[ $test_jvm_version == 1.6* || $test_jvm_version == 1.7* ]]
                  then
                    activate_profiles_opt="-P async-http-client-1.x,elasticsearch-2.x,play-2.2.x,play-2.x"
+                 elif [[ $test_jvm_version == 1.8* ]]
+                 then
+                   activate_profiles_opt="-P async-http-client-2.x,elasticsearch-5.x,play-2.4.x,play-2.x,logback-1.2"
                  else
                    # latest versions of async-http-client, elasticsearch and play all require Java 8+
                    activate_profiles_opt="-P async-http-client-2.x,elasticsearch-5.x,play-2.4.x,play-2.x"
                  fi
+               elif [[ $test_jvm_version == 1.8* ]]
+               then
+                 # logback 1.5+ requires Java 11+
+                 activate_profiles_opt="-P logback-1.2"
                fi
                # enforcer.skip is needed for async-http-client, elasticsearch and play
                mvn clean install -pl ${test1_excluded_plugin_modules//!:/:} \
@@ -145,7 +160,12 @@ case "$1" in
                                   -B
                  if [[ "$TEST_SHADED" == "true" ]]
                  then
+                   if [[ $test_jvm_version == 1.8* ]]
+                   then
+                     logback_profile_opt="-P logback-1.2"
+                   fi
                    mvn clean verify -pl :glowroot-agent-logger-plugin \
+                                    $logback_profile_opt \
                                     $test_jvm_opt \
                                     -DargLine="$test_jvm_args" \
                                     -Dglowroot.test.shaded \
