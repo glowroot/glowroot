@@ -15,7 +15,7 @@ jobs:
       - name: Set up JDK 17 for build
         uses: actions/setup-java@v5.2.0
         with:
-          distribution: adopt
+          distribution: temurin
           java-version: 17
 
       - name: Restore cache
