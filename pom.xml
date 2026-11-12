@@ -79,6 +79,7 @@
     <module>agent/plugins/spring-plugin</module>
     <module>agent/plugins/struts-plugin</module>
     <module>agent/benchmarks</module>
+    <module>agent/stress</module>
     <module>agent/ui-sandbox</module>
     <module>agent/dist-maven-plugin</module>
     <module>agent/dist</module>
