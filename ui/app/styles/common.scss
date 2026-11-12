@@ -112,6 +112,11 @@
   max-width: none;
 }
 
+// Gauge chart help includes a long JVM arg; keep the box wide enough to contain the text
+.popover.gt-gauge-chart-popover {
+  max-width: 520px;
+}
+
 .gt-button-message {
   display: inline-block;
   font-size: 1rem;
