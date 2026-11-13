@@ -16,6 +16,7 @@
 package org.glowroot.agent.embedded.repo;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -62,9 +63,10 @@ class ReaperRunnable extends ScheduledRunnable {
     protected void runInternal() throws Exception {
         List<String> failedSteps = new ArrayList<>();
         @Nullable
-        Exception firstException = null;
+        Throwable firstThrowable = null;
         long currentTime = clock.currentTimeMillis();
         boolean skipTrackerUpdate = false;
+        boolean completed = false;
         try {
             long minCaptureTime = Long.MAX_VALUE;
             EmbeddedStorageConfig storageConfig = configRepository.getEmbeddedStorageConfig();
@@ -77,55 +79,56 @@ class ReaperRunnable extends ScheduledRunnable {
                 }
                 final long captureTime = currentTime - HOURS.toMillis(expirationHours);
                 final int rollupLevel = i;
-                firstException = runStep("aggregate_tt_rollup_" + rollupLevel, failedSteps,
-                        firstException,
+                firstThrowable = runStep("aggregate_tt_rollup_" + rollupLevel, failedSteps,
+                        firstThrowable,
                         () -> aggregateDao.deleteOverallBefore(captureTime, rollupLevel));
-                firstException = runStep("aggregate_tn_rollup_" + rollupLevel, failedSteps,
-                        firstException,
+                firstThrowable = runStep("aggregate_tn_rollup_" + rollupLevel, failedSteps,
+                        firstThrowable,
                         () -> aggregateDao.deleteTransactionNameBefore(captureTime, rollupLevel));
                 if (rollupLevel == 0) {
-                    firstException = runStep("gauge_value_rollup_0", failedSteps, firstException,
+                    firstThrowable = runStep("gauge_value_rollup_0", failedSteps, firstThrowable,
                             () -> gaugeValueDao.deleteBefore(captureTime, 0));
                 }
                 final int gaugeLevel = rollupLevel + 1;
-                firstException = runStep("gauge_value_rollup_" + gaugeLevel, failedSteps,
-                        firstException, () -> gaugeValueDao.deleteBefore(captureTime, gaugeLevel));
+                firstThrowable = runStep("gauge_value_rollup_" + gaugeLevel, failedSteps,
+                        firstThrowable, () -> gaugeValueDao.deleteBefore(captureTime, gaugeLevel));
                 minCaptureTime = Math.min(minCaptureTime, captureTime);
             }
             if (minCaptureTime != 0) {
                 final long gaugeMetaCaptureTime = minCaptureTime;
-                firstException = runStep("gauge_id", failedSteps, firstException,
+                firstThrowable = runStep("gauge_id", failedSteps, firstThrowable,
                         () -> gaugeIdDao.deleteBefore(gaugeMetaCaptureTime));
-                firstException = runStep("gauge_name", failedSteps, firstException,
+                firstThrowable = runStep("gauge_name", failedSteps, firstThrowable,
                         () -> gaugeNameDao.deleteBefore(gaugeMetaCaptureTime));
             }
             int traceExpirationHours = storageConfig.traceExpirationHours();
             if (traceExpirationHours != 0) {
                 final long traceCaptureTime = currentTime - HOURS.toMillis(traceExpirationHours);
-                firstException = runStep("trace_attribute_name", failedSteps, firstException,
+                firstThrowable = runStep("trace_attribute_name", failedSteps, firstThrowable,
                         () -> traceDao.deleteAttributeNamesBefore(traceCaptureTime));
-                firstException = runStep("trace", failedSteps, firstException,
+                firstThrowable = runStep("trace", failedSteps, firstThrowable,
                         () -> traceDao.deleteTracesBefore(traceCaptureTime));
-                firstException = runStep("trace_attribute", failedSteps, firstException,
+                firstThrowable = runStep("trace_attribute", failedSteps, firstThrowable,
                         () -> traceDao.deleteTraceAttributesBefore(traceCaptureTime));
                 minCaptureTime = Math.min(minCaptureTime, traceCaptureTime);
             }
             if (minCaptureTime != 0) {
                 final long txnTypeCaptureTime = minCaptureTime;
-                firstException = runStep("transaction_types", failedSteps, firstException,
+                firstThrowable = runStep("transaction_types", failedSteps, firstThrowable,
                         () -> transactionTypeDao.deleteBefore(txnTypeCaptureTime));
             }
             int fullQueryTextExpirationHours = storageConfig.fullQueryTextExpirationHours();
             if (fullQueryTextExpirationHours != 0) {
                 long fullQueryTextCaptureTime =
                         currentTime - HOURS.toMillis(fullQueryTextExpirationHours);
-                firstException = runStep("full_query_text", failedSteps, firstException,
+                firstThrowable = runStep("full_query_text", failedSteps, firstThrowable,
                         () -> fullQueryTextDao.deleteBefore(fullQueryTextCaptureTime));
             }
             long incidentCaptureTime =
                     currentTime - HOURS.toMillis(Constants.RESOLVED_INCIDENT_EXPIRATION_HOURS);
-            firstException = runStep("incident", failedSteps, firstException,
+            firstThrowable = runStep("incident", failedSteps, firstThrowable,
                     () -> incidentDao.deleteResolvedIncidentsBefore(incidentCaptureTime));
+            completed = true;
         } catch (InterruptedException e) {
             // Do not treat shutdown/interrupt as a retention-table failure streak.
             skipTrackerUpdate = true;
@@ -134,31 +137,50 @@ class ReaperRunnable extends ScheduledRunnable {
         } catch (Exception e) {
             // Failures outside runStep (e.g. storage config read) still update the streak.
             failedSteps.add("reaper_cycle");
-            if (firstException == null) {
-                firstException = e;
+            if (firstThrowable == null) {
+                firstThrowable = e;
             }
+        } catch (Error e) {
+            // Must not fall through to recordCycleSuccess() in finally (OOM / linkage).
+            if (failedSteps.isEmpty()) {
+                failedSteps.add("reaper_cycle");
+            }
+            if (firstThrowable == null) {
+                firstThrowable = e;
+            }
+            throw e;
         } finally {
             if (!skipTrackerUpdate) {
-                if (failedSteps.isEmpty()) {
+                if (completed && failedSteps.isEmpty()) {
                     failureTracker.recordCycleSuccess();
-                } else if (firstException != null) {
-                    failureTracker.recordCycleFailure(failedSteps, firstException, currentTime);
+                } else if (firstThrowable != null) {
+                    failureTracker.recordCycleFailure(failedSteps, firstThrowable, currentTime);
+                } else if (!completed) {
+                    failureTracker.recordCycleFailure(failedSteps.isEmpty()
+                            ? Collections.singletonList("reaper_cycle")
+                            : failedSteps,
+                            new IllegalStateException("reaper cycle aborted abnormally"),
+                            currentTime);
                 }
             }
         }
     }
 
-    private static @Nullable Exception runStep(String stepName, List<String> failedSteps,
-            @Nullable Exception firstException, Step step) throws InterruptedException {
+    private static @Nullable Throwable runStep(String stepName, List<String> failedSteps,
+            @Nullable Throwable firstThrowable, Step step) throws InterruptedException {
         try {
             step.run();
-            return firstException;
+            return firstThrowable;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw e;
         } catch (Exception e) {
             failedSteps.add(stepName);
-            return firstException == null ? e : firstException;
+            return firstThrowable == null ? e : firstThrowable;
+        } catch (Error e) {
+            // Record the step name before the Error propagates to runInternal's catch (Error).
+            failedSteps.add(stepName);
+            throw e;
         }
     }
 

@@ -22,7 +22,8 @@ aborted the whole reaper cycle via `ScheduledRunnable`, so other retention never
 - `AggregateDao` splits overall vs transaction-name deletes; `TraceDao` splits attribute-name /
   trace / trace_attribute the same way.
 - `ReaperFailureTracker` records consecutive failed cycles; Admin storage GET and
-  `org.glowroot:type=H2Database` expose status; logs ERROR once then WARN periodically.
+  `org.glowroot:type=H2Database` expose status; logs ERROR once when a streak starts, then
+  WARN about every 12 cycles (~1 hour) while failures continue (not ERROR every cycle).
 - `RepoAdmin.runHealthCheck()` (embedded) runs a cheap `COUNT` on tt and tn for the last ~4
   hours (index range). That is **not** the reaper delete path on old pages — a corrupt old
   leaf can still leave readiness green. The operator signal for retention stalls is the reaper
