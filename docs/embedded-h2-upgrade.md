@@ -59,20 +59,24 @@ java -jar glowroot.jar h2 import-script <export.sql>
 Symptoms: repeating ERROR from the embedded retention reaper (`ReaperRunnable` /
 `delete from aggregate_*_rollup_* …`), often `JdbcSQLException: General error` with
 `ArrayIndexOutOfBoundsException` inside H2 `PageDataLeaf` / index code. The UI may still
-listen; `/readiness` fails if the probed rollup tables error.
+listen. `/readiness` only cheap-counts recent (~4h) rows on tt/tn — it may stay green while
+old-page deletes fail; watch reaper ERROR/WARN, Admin → Storage streak, or JMX instead.
 
 What it means: **page/index corruption** (or a store already outside the scale table above),
-not a bad Glowroot SQL shape. Retention for the failing table stops advancing → `data/` can
-grow without bound and pressure the **shared** application JVM.
+not a bad Glowroot SQL shape. Retention for the failing table stops advancing → that table
+(and thus `data/`) can still grow without bound and pressure the **shared** application JVM.
+Other tables continue to reap.
 
 Product behavior (current tree):
 
 - Reaper continues **other** tables/levels after a per-step failure (one corrupt table no
-  longer aborts the whole cycle).
+  longer aborts the whole cycle). The corrupt table itself is **not** auto-truncated or
+  capped — wipe or Central remains the recovery path.
 - Admin → Storage shows live **H2 data file size** and a warning when the reaper has a
   consecutive failure streak; JMX `org.glowroot:type=H2Database` exposes `FileSize` and
   `ReaperConsecutiveFailedCycles`.
-- `/readiness` probes both `aggregate_tt_rollup_0` and `aggregate_tn_rollup_0`.
+- `/readiness` probes recent tt+tn counts; if those queries fail, readiness stays `503`
+  (possible k8s restart loop until wipe). Streak counters do not gate readiness.
 
 Operator recovery:
 
