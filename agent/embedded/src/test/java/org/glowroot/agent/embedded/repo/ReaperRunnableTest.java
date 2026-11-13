@@ -84,11 +84,26 @@ public class ReaperRunnableTest {
         verify(aggregateDao).deleteTransactionNameBefore(anyLong(), eq(0));
         verify(gaugeValueDao).deleteBefore(anyLong(), eq(0));
         verify(gaugeValueDao).deleteBefore(anyLong(), eq(1));
-        verify(traceDao).deleteBefore(anyLong());
+        verify(traceDao).deleteAttributeNamesBefore(anyLong());
+        verify(traceDao).deleteTracesBefore(anyLong());
+        verify(traceDao).deleteTraceAttributesBefore(anyLong());
         verify(fullQueryTextDao).deleteBefore(anyLong());
         verify(incidentDao).deleteResolvedIncidentsBefore(anyLong());
         assertThat(failureTracker.getConsecutiveFailedCycles()).isEqualTo(1);
         assertThat(failureTracker.snapshot().lastFailedSteps()).containsExactly("aggregate_tn_rollup_0");
+    }
+
+    @Test
+    void continuesAfterTraceTableFails() throws Exception {
+        doThrow(new SQLException("corrupt trace")).when(traceDao).deleteTracesBefore(anyLong());
+
+        reaperRunnable.runInternal();
+
+        verify(traceDao).deleteAttributeNamesBefore(anyLong());
+        verify(traceDao).deleteTracesBefore(anyLong());
+        verify(traceDao).deleteTraceAttributesBefore(anyLong());
+        verify(fullQueryTextDao).deleteBefore(anyLong());
+        assertThat(failureTracker.snapshot().lastFailedSteps()).containsExactly("trace");
     }
 
     @Test
