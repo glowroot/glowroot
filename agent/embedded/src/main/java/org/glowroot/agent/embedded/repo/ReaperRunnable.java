@@ -62,84 +62,103 @@ class ReaperRunnable extends ScheduledRunnable {
     protected void runInternal() throws Exception {
         List<String> failedSteps = new ArrayList<>();
         @Nullable
-        Throwable firstThrowable = null;
-        long minCaptureTime = Long.MAX_VALUE;
+        Exception firstException = null;
         long currentTime = clock.currentTimeMillis();
-        EmbeddedStorageConfig storageConfig = configRepository.getEmbeddedStorageConfig();
-        for (int i = 0; i < storageConfig.rollupExpirationHours().size(); i++) {
-            int expirationHours = storageConfig.rollupExpirationHours().get(i);
-            if (expirationHours == 0) {
-                // zero value expiration means never expire
-                minCaptureTime = 0;
-                continue;
+        boolean skipTrackerUpdate = false;
+        try {
+            long minCaptureTime = Long.MAX_VALUE;
+            EmbeddedStorageConfig storageConfig = configRepository.getEmbeddedStorageConfig();
+            for (int i = 0; i < storageConfig.rollupExpirationHours().size(); i++) {
+                int expirationHours = storageConfig.rollupExpirationHours().get(i);
+                if (expirationHours == 0) {
+                    // zero value expiration means never expire
+                    minCaptureTime = 0;
+                    continue;
+                }
+                final long captureTime = currentTime - HOURS.toMillis(expirationHours);
+                final int rollupLevel = i;
+                firstException = runStep("aggregate_tt_rollup_" + rollupLevel, failedSteps,
+                        firstException,
+                        () -> aggregateDao.deleteOverallBefore(captureTime, rollupLevel));
+                firstException = runStep("aggregate_tn_rollup_" + rollupLevel, failedSteps,
+                        firstException,
+                        () -> aggregateDao.deleteTransactionNameBefore(captureTime, rollupLevel));
+                if (rollupLevel == 0) {
+                    firstException = runStep("gauge_value_rollup_0", failedSteps, firstException,
+                            () -> gaugeValueDao.deleteBefore(captureTime, 0));
+                }
+                final int gaugeLevel = rollupLevel + 1;
+                firstException = runStep("gauge_value_rollup_" + gaugeLevel, failedSteps,
+                        firstException, () -> gaugeValueDao.deleteBefore(captureTime, gaugeLevel));
+                minCaptureTime = Math.min(minCaptureTime, captureTime);
             }
-            final long captureTime = currentTime - HOURS.toMillis(expirationHours);
-            final int rollupLevel = i;
-            firstThrowable = runStep("aggregate_tt_rollup_" + rollupLevel, failedSteps,
-                    firstThrowable,
-                    () -> aggregateDao.deleteOverallBefore(captureTime, rollupLevel));
-            firstThrowable = runStep("aggregate_tn_rollup_" + rollupLevel, failedSteps,
-                    firstThrowable,
-                    () -> aggregateDao.deleteTransactionNameBefore(captureTime, rollupLevel));
-            if (rollupLevel == 0) {
-                firstThrowable = runStep("gauge_value_rollup_0", failedSteps, firstThrowable,
-                        () -> gaugeValueDao.deleteBefore(captureTime, 0));
+            if (minCaptureTime != 0) {
+                final long gaugeMetaCaptureTime = minCaptureTime;
+                firstException = runStep("gauge_id", failedSteps, firstException,
+                        () -> gaugeIdDao.deleteBefore(gaugeMetaCaptureTime));
+                firstException = runStep("gauge_name", failedSteps, firstException,
+                        () -> gaugeNameDao.deleteBefore(gaugeMetaCaptureTime));
             }
-            final int gaugeLevel = rollupLevel + 1;
-            firstThrowable = runStep("gauge_value_rollup_" + gaugeLevel, failedSteps, firstThrowable,
-                    () -> gaugeValueDao.deleteBefore(captureTime, gaugeLevel));
-            minCaptureTime = Math.min(minCaptureTime, captureTime);
-        }
-        if (minCaptureTime != 0) {
-            final long gaugeMetaCaptureTime = minCaptureTime;
-            firstThrowable = runStep("gauge_id", failedSteps, firstThrowable,
-                    () -> gaugeIdDao.deleteBefore(gaugeMetaCaptureTime));
-            firstThrowable = runStep("gauge_name", failedSteps, firstThrowable,
-                    () -> gaugeNameDao.deleteBefore(gaugeMetaCaptureTime));
-        }
-        int traceExpirationHours = storageConfig.traceExpirationHours();
-        if (traceExpirationHours != 0) {
-            final long traceCaptureTime = currentTime - HOURS.toMillis(traceExpirationHours);
-            firstThrowable = runStep("trace_attribute_name", failedSteps, firstThrowable,
-                    () -> traceDao.deleteAttributeNamesBefore(traceCaptureTime));
-            firstThrowable = runStep("trace", failedSteps, firstThrowable,
-                    () -> traceDao.deleteTracesBefore(traceCaptureTime));
-            firstThrowable = runStep("trace_attribute", failedSteps, firstThrowable,
-                    () -> traceDao.deleteTraceAttributesBefore(traceCaptureTime));
-            minCaptureTime = Math.min(minCaptureTime, traceCaptureTime);
-        }
-        if (minCaptureTime != 0) {
-            final long txnTypeCaptureTime = minCaptureTime;
-            firstThrowable = runStep("transaction_types", failedSteps, firstThrowable,
-                    () -> transactionTypeDao.deleteBefore(txnTypeCaptureTime));
-        }
-        int fullQueryTextExpirationHours = storageConfig.fullQueryTextExpirationHours();
-        if (fullQueryTextExpirationHours != 0) {
-            long fullQueryTextCaptureTime =
-                    currentTime - HOURS.toMillis(fullQueryTextExpirationHours);
-            firstThrowable = runStep("full_query_text", failedSteps, firstThrowable,
-                    () -> fullQueryTextDao.deleteBefore(fullQueryTextCaptureTime));
-        }
-        long incidentCaptureTime =
-                currentTime - HOURS.toMillis(Constants.RESOLVED_INCIDENT_EXPIRATION_HOURS);
-        firstThrowable = runStep("incident", failedSteps, firstThrowable,
-                () -> incidentDao.deleteResolvedIncidentsBefore(incidentCaptureTime));
-
-        if (failedSteps.isEmpty()) {
-            failureTracker.recordCycleSuccess();
-        } else if (firstThrowable != null) {
-            failureTracker.recordCycleFailure(failedSteps, firstThrowable, currentTime);
+            int traceExpirationHours = storageConfig.traceExpirationHours();
+            if (traceExpirationHours != 0) {
+                final long traceCaptureTime = currentTime - HOURS.toMillis(traceExpirationHours);
+                firstException = runStep("trace_attribute_name", failedSteps, firstException,
+                        () -> traceDao.deleteAttributeNamesBefore(traceCaptureTime));
+                firstException = runStep("trace", failedSteps, firstException,
+                        () -> traceDao.deleteTracesBefore(traceCaptureTime));
+                firstException = runStep("trace_attribute", failedSteps, firstException,
+                        () -> traceDao.deleteTraceAttributesBefore(traceCaptureTime));
+                minCaptureTime = Math.min(minCaptureTime, traceCaptureTime);
+            }
+            if (minCaptureTime != 0) {
+                final long txnTypeCaptureTime = minCaptureTime;
+                firstException = runStep("transaction_types", failedSteps, firstException,
+                        () -> transactionTypeDao.deleteBefore(txnTypeCaptureTime));
+            }
+            int fullQueryTextExpirationHours = storageConfig.fullQueryTextExpirationHours();
+            if (fullQueryTextExpirationHours != 0) {
+                long fullQueryTextCaptureTime =
+                        currentTime - HOURS.toMillis(fullQueryTextExpirationHours);
+                firstException = runStep("full_query_text", failedSteps, firstException,
+                        () -> fullQueryTextDao.deleteBefore(fullQueryTextCaptureTime));
+            }
+            long incidentCaptureTime =
+                    currentTime - HOURS.toMillis(Constants.RESOLVED_INCIDENT_EXPIRATION_HOURS);
+            firstException = runStep("incident", failedSteps, firstException,
+                    () -> incidentDao.deleteResolvedIncidentsBefore(incidentCaptureTime));
+        } catch (InterruptedException e) {
+            // Do not treat shutdown/interrupt as a retention-table failure streak.
+            skipTrackerUpdate = true;
+            Thread.currentThread().interrupt();
+            throw e;
+        } catch (Exception e) {
+            // Failures outside runStep (e.g. storage config read) still update the streak.
+            failedSteps.add("reaper_cycle");
+            if (firstException == null) {
+                firstException = e;
+            }
+        } finally {
+            if (!skipTrackerUpdate) {
+                if (failedSteps.isEmpty()) {
+                    failureTracker.recordCycleSuccess();
+                } else if (firstException != null) {
+                    failureTracker.recordCycleFailure(failedSteps, firstException, currentTime);
+                }
+            }
         }
     }
 
-    private static @Nullable Throwable runStep(String stepName, List<String> failedSteps,
-            @Nullable Throwable firstThrowable, Step step) {
+    private static @Nullable Exception runStep(String stepName, List<String> failedSteps,
+            @Nullable Exception firstException, Step step) throws InterruptedException {
         try {
             step.run();
-            return firstThrowable;
-        } catch (Throwable t) {
+            return firstException;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw e;
+        } catch (Exception e) {
             failedSteps.add(stepName);
-            return firstThrowable == null ? t : firstThrowable;
+            return firstException == null ? e : firstException;
         }
     }
 

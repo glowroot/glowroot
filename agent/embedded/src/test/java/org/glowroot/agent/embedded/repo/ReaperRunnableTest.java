@@ -25,6 +25,7 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.common2.config.ImmutableEmbeddedStorageConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -116,6 +117,29 @@ public class ReaperRunnableTest {
         // clear stub so next cycle succeeds
         org.mockito.Mockito.reset(aggregateDao);
         reaperRunnable.runInternal();
+        assertThat(failureTracker.getConsecutiveFailedCycles()).isEqualTo(0);
+    }
+
+    @Test
+    void recordsFailureWhenSetupThrowsOutsideStep() throws Exception {
+        when(configRepository.getEmbeddedStorageConfig())
+                .thenThrow(new RuntimeException("config boom"));
+
+        reaperRunnable.runInternal();
+
+        assertThat(failureTracker.getConsecutiveFailedCycles()).isEqualTo(1);
+        assertThat(failureTracker.snapshot().lastFailedSteps()).containsExactly("reaper_cycle");
+    }
+
+    @Test
+    void interruptDoesNotUpdateFailureStreak() throws Exception {
+        // IncidentDao declares throws Exception, so InterruptedException is a valid stub.
+        doThrow(new InterruptedException("shutdown")).when(incidentDao)
+                .deleteResolvedIncidentsBefore(anyLong());
+
+        assertThatThrownBy(() -> reaperRunnable.runInternal())
+                .isInstanceOf(InterruptedException.class);
+        assertThat(Thread.interrupted()).isTrue();
         assertThat(failureTracker.getConsecutiveFailedCycles()).isEqualTo(0);
     }
 }
