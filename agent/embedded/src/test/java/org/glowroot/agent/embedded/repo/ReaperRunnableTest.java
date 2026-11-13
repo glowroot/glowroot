@@ -166,5 +166,47 @@ public class ReaperRunnableTest {
         assertThat(failureTracker.getConsecutiveFailedCycles()).isEqualTo(1);
         assertThat(failureTracker.snapshot().lastFailedSteps())
                 .contains("aggregate_tn_rollup_0", "incident");
+        // First failure wins the stored message (SQLException), not the later OOM.
+        assertThat(failureTracker.snapshot().lastErrorMessage()).contains("corrupt tn");
+    }
+
+    @Test
+    void errorOutsideRunStepRecordsReaperCycle() {
+        when(configRepository.getEmbeddedStorageConfig())
+                .thenThrow(new OutOfMemoryError("oom-config"));
+
+        assertThatThrownBy(() -> reaperRunnable.runInternal())
+                .isInstanceOf(OutOfMemoryError.class);
+        assertThat(failureTracker.getConsecutiveFailedCycles()).isEqualTo(1);
+        assertThat(failureTracker.snapshot().lastFailedSteps()).containsExactly("reaper_cycle");
+    }
+
+    @Test
+    void interruptAfterPriorStepFailureDoesNotUpdateStreak() throws Exception {
+        doThrow(new SQLException("corrupt tn")).when(aggregateDao)
+                .deleteTransactionNameBefore(anyLong(), eq(0));
+        doThrow(new InterruptedException("shutdown")).when(incidentDao)
+                .deleteResolvedIncidentsBefore(anyLong());
+
+        assertThatThrownBy(() -> reaperRunnable.runInternal())
+                .isInstanceOf(InterruptedException.class);
+        assertThat(Thread.interrupted()).isTrue();
+        // Mid-cycle interrupt skips tracker update (including earlier step failures).
+        assertThat(failureTracker.getConsecutiveFailedCycles()).isEqualTo(0);
+    }
+
+    @Test
+    void errorIncrementsExistingStreak() throws Exception {
+        doThrow(new SQLException("corrupt tn")).when(aggregateDao)
+                .deleteTransactionNameBefore(anyLong(), eq(0));
+        reaperRunnable.runInternal();
+        assertThat(failureTracker.getConsecutiveFailedCycles()).isEqualTo(1);
+
+        org.mockito.Mockito.reset(aggregateDao);
+        doThrow(new OutOfMemoryError("oom")).when(incidentDao)
+                .deleteResolvedIncidentsBefore(anyLong());
+        assertThatThrownBy(() -> reaperRunnable.runInternal())
+                .isInstanceOf(OutOfMemoryError.class);
+        assertThat(failureTracker.getConsecutiveFailedCycles()).isEqualTo(2);
     }
 }

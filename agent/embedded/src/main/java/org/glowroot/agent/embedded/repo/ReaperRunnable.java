@@ -62,6 +62,7 @@ class ReaperRunnable extends ScheduledRunnable {
     @Override
     protected void runInternal() throws Exception {
         List<String> failedSteps = new ArrayList<>();
+        // First failure wins for lastErrorMessage; later steps still append to failedSteps.
         @Nullable
         Throwable firstThrowable = null;
         long currentTime = clock.currentTimeMillis();

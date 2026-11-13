@@ -16,9 +16,10 @@ aborted the whole reaper cycle via `ScheduledRunnable`, so other retention never
 
 ## How
 
-- `ReaperRunnable` catches per delete step (`Exception`, not `Error`); interrupts restore the
-  interrupt flag and abort the cycle without updating the failure streak. Failures outside a
-  step (e.g. storage config read) still update the streak.
+- `ReaperRunnable` isolates per delete step: `Exception` stays in-cycle; `Error` is recorded on
+  the streak then rethrown (so `finally` never calls success). Interrupts restore the interrupt
+  flag and abort without updating the streak. Failures outside a step (e.g. storage config)
+  still update the streak.
 - `AggregateDao` splits overall vs transaction-name deletes; `TraceDao` splits attribute-name /
   trace / trace_attribute the same way.
 - `ReaperFailureTracker` records consecutive failed cycles; Admin storage GET and
