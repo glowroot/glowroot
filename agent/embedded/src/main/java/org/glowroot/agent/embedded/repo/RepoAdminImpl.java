@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2023 the original author or authors.
+ * Copyright 2015-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ class RepoAdminImpl implements RepoAdmin {
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
     private final TraceAttributeNameDao traceAttributeNameDao;
+    private final ReaperFailureTracker reaperFailureTracker;
     private final Clock clock;
 
     RepoAdminImpl(DataSource dataSource, List<CappedDatabase> rollupCappedDatabases,
@@ -59,7 +60,8 @@ class RepoAdminImpl implements RepoAdmin {
             AlertingDisabledDao alertingDisabledDao, EnvironmentDao environmentDao,
             GaugeIdDao gaugeIdDao, GaugeNameDao gaugeNameDao, GaugeValueDao gaugeValueDao,
             TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
-            TraceAttributeNameDao traceAttributeNameDao, Clock clock) {
+            TraceAttributeNameDao traceAttributeNameDao, ReaperFailureTracker reaperFailureTracker,
+            Clock clock) {
         this.dataSource = dataSource;
         this.rollupCappedDatabases = rollupCappedDatabases;
         this.traceCappedDatabase = traceCappedDatabase;
@@ -72,14 +74,20 @@ class RepoAdminImpl implements RepoAdmin {
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
         this.traceAttributeNameDao = traceAttributeNameDao;
+        this.reaperFailureTracker = reaperFailureTracker;
         this.clock = clock;
     }
 
     @Override
     public void runHealthCheck() throws Exception {
         long now = clock.currentTimeMillis();
+        long from = now - HOURS.toMillis(4);
+        // Probe both overall and transaction-name rollup tables. A corrupt tn index can stall
+        // retention while tt alone still answers (#1284).
         dataSource.queryForLong("select count(*) from aggregate_tt_rollup_0 where capture_time > ?"
-                + " and capture_time < ?", now - HOURS.toMillis(4), now);
+                + " and capture_time < ?", from, now);
+        dataSource.queryForLong("select count(*) from aggregate_tn_rollup_0 where capture_time > ?"
+                + " and capture_time < ?", from, now);
     }
 
     @Override
@@ -112,6 +120,11 @@ class RepoAdminImpl implements RepoAdmin {
     @Override
     public long getH2DataFileSize() {
         return dataSource.getH2DataFileSize();
+    }
+
+    @Override
+    public ReaperStatus getReaperStatus() {
+        return reaperFailureTracker.snapshot();
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 package org.glowroot.agent.embedded.repo;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common.Constants;
 import org.glowroot.common.util.Clock;
@@ -33,12 +38,13 @@ class ReaperRunnable extends ScheduledRunnable {
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
     private final IncidentDao incidentDao;
+    private final ReaperFailureTracker failureTracker;
     private final Clock clock;
 
     ReaperRunnable(ConfigRepositoryImpl configService, AggregateDao aggregateDao, TraceDao traceDao,
             GaugeIdDao gaugeIdDao, GaugeNameDao gaugeNameDao, GaugeValueDao gaugeValueDao,
             TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
-            IncidentDao incidentDao, Clock clock) {
+            IncidentDao incidentDao, ReaperFailureTracker failureTracker, Clock clock) {
         this.configRepository = configService;
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
@@ -48,11 +54,15 @@ class ReaperRunnable extends ScheduledRunnable {
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
         this.incidentDao = incidentDao;
+        this.failureTracker = failureTracker;
         this.clock = clock;
     }
 
     @Override
     protected void runInternal() throws Exception {
+        List<String> failedSteps = new ArrayList<>();
+        @Nullable
+        Throwable firstThrowable = null;
         long minCaptureTime = Long.MAX_VALUE;
         long currentTime = clock.currentTimeMillis();
         EmbeddedStorageConfig storageConfig = configRepository.getEmbeddedStorageConfig();
@@ -63,33 +73,74 @@ class ReaperRunnable extends ScheduledRunnable {
                 minCaptureTime = 0;
                 continue;
             }
-            long captureTime = currentTime - HOURS.toMillis(expirationHours);
-            aggregateDao.deleteBefore(captureTime, i);
-            if (i == 0) {
-                gaugeValueDao.deleteBefore(captureTime, i);
+            final long captureTime = currentTime - HOURS.toMillis(expirationHours);
+            final int rollupLevel = i;
+            firstThrowable = runStep("aggregate_tt_rollup_" + rollupLevel, failedSteps,
+                    firstThrowable,
+                    () -> aggregateDao.deleteOverallBefore(captureTime, rollupLevel));
+            firstThrowable = runStep("aggregate_tn_rollup_" + rollupLevel, failedSteps,
+                    firstThrowable,
+                    () -> aggregateDao.deleteTransactionNameBefore(captureTime, rollupLevel));
+            if (rollupLevel == 0) {
+                firstThrowable = runStep("gauge_value_rollup_0", failedSteps, firstThrowable,
+                        () -> gaugeValueDao.deleteBefore(captureTime, 0));
             }
-            gaugeValueDao.deleteBefore(captureTime, i + 1);
+            final int gaugeLevel = rollupLevel + 1;
+            firstThrowable = runStep("gauge_value_rollup_" + gaugeLevel, failedSteps, firstThrowable,
+                    () -> gaugeValueDao.deleteBefore(captureTime, gaugeLevel));
             minCaptureTime = Math.min(minCaptureTime, captureTime);
         }
         if (minCaptureTime != 0) {
-            gaugeIdDao.deleteBefore(minCaptureTime);
-            gaugeNameDao.deleteBefore(minCaptureTime);
+            final long gaugeMetaCaptureTime = minCaptureTime;
+            firstThrowable = runStep("gauge_id", failedSteps, firstThrowable,
+                    () -> gaugeIdDao.deleteBefore(gaugeMetaCaptureTime));
+            firstThrowable = runStep("gauge_name", failedSteps, firstThrowable,
+                    () -> gaugeNameDao.deleteBefore(gaugeMetaCaptureTime));
         }
         int traceExpirationHours = storageConfig.traceExpirationHours();
         if (traceExpirationHours != 0) {
             long traceCaptureTime = currentTime - HOURS.toMillis(traceExpirationHours);
-            traceDao.deleteBefore(traceCaptureTime);
+            firstThrowable = runStep("trace", failedSteps, firstThrowable,
+                    () -> traceDao.deleteBefore(traceCaptureTime));
             minCaptureTime = Math.min(minCaptureTime, traceCaptureTime);
         }
         if (minCaptureTime != 0) {
-            transactionTypeDao.deleteBefore(minCaptureTime);
+            final long txnTypeCaptureTime = minCaptureTime;
+            firstThrowable = runStep("transaction_types", failedSteps, firstThrowable,
+                    () -> transactionTypeDao.deleteBefore(txnTypeCaptureTime));
         }
         int fullQueryTextExpirationHours = storageConfig.fullQueryTextExpirationHours();
         if (fullQueryTextExpirationHours != 0) {
-            fullQueryTextDao
-                    .deleteBefore(currentTime - HOURS.toMillis(fullQueryTextExpirationHours));
+            long fullQueryTextCaptureTime =
+                    currentTime - HOURS.toMillis(fullQueryTextExpirationHours);
+            firstThrowable = runStep("full_query_text", failedSteps, firstThrowable,
+                    () -> fullQueryTextDao.deleteBefore(fullQueryTextCaptureTime));
         }
-        incidentDao.deleteResolvedIncidentsBefore(
-                currentTime - HOURS.toMillis(Constants.RESOLVED_INCIDENT_EXPIRATION_HOURS));
+        long incidentCaptureTime =
+                currentTime - HOURS.toMillis(Constants.RESOLVED_INCIDENT_EXPIRATION_HOURS);
+        firstThrowable = runStep("incident", failedSteps, firstThrowable,
+                () -> incidentDao.deleteResolvedIncidentsBefore(incidentCaptureTime));
+
+        if (failedSteps.isEmpty()) {
+            failureTracker.recordCycleSuccess();
+        } else if (firstThrowable != null) {
+            failureTracker.recordCycleFailure(failedSteps, firstThrowable, currentTime);
+        }
+    }
+
+    private static @Nullable Throwable runStep(String stepName, List<String> failedSteps,
+            @Nullable Throwable firstThrowable, Step step) {
+        try {
+            step.run();
+            return firstThrowable;
+        } catch (Throwable t) {
+            failedSteps.add(stepName);
+            return firstThrowable == null ? t : firstThrowable;
+        }
+    }
+
+    @FunctionalInterface
+    private interface Step {
+        void run() throws Exception;
     }
 }

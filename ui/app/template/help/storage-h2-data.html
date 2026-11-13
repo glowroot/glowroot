@@ -6,4 +6,5 @@
     <li><strong>Full query text</strong> — days for full SQL text. Truncated text and query stats follow <code>*.capped.db</code> size limits.</li>
   </ul>
   <div>Large file? Use <strong>Maintenance</strong> → Analyze / Compact. Changing days only affects future expiry.</div>
+  <div style="margin-top: 0.5rem;">Repeating retention-reaper errors or a corrupt H2 index: wipe <code>data/</code> (history lost) or move to Central. Upgrade alone does not repair a broken file. See <code>docs/embedded-h2-upgrade.md</code>.</div>
 </div>

@@ -7,7 +7,7 @@ Applies to the Glowroot HTTP UI port (embedded agent UI and glowroot-central).
 | Path | Role | Behavior |
 |------|------|----------|
 | `/liveness`, `/healthz`, **`/health`** | **Liveness** | Always `200` + `Glowroot OK` if the HTTP process is up. Does **not** check Cassandra (Central) or H2. |
-| `/readiness`, `/ready` | **Readiness** | Runs storage health (`RepoAdmin.runHealthCheck()`). Central: Cassandra probe. Embedded: H2. Failure → `503` + plain-text error. |
+| `/readiness`, `/ready` | **Readiness** | Runs storage health (`RepoAdmin.runHealthCheck()`). Central: Cassandra probe. Embedded: H2 queries on `aggregate_tt_rollup_0` **and** `aggregate_tn_rollup_0` (so a corrupt transaction-name index is visible — see [#1284](https://github.com/glowroot/glowroot/issues/1284)). Failure → `503` + plain-text error. Readiness does **not** fail solely on reaper failure-streak counters; those are exposed via Admin → Storage and JMX. |
 
 ## Breaking change vs 0.14.7
 

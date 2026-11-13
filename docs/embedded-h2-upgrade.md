@@ -54,6 +54,36 @@ java -jar glowroot.jar h2 import-script <export.sql>
 
 `upgrade-check` reports whether `data.h2.db` / `data.mv.db` are present. `import-script` loads an **external** H2 1.x `SCRIPT` dump into a new `data.mv.db` via the bundled H2 2.x driver (export the dump yourself with H2 1.3.x first). Verify the UI before deleting backups. Large scripts (≥ 1 GiB) may OOM or run for hours.
 
+## Corrupt H2 / retention reaper stall (#1284)
+
+Symptoms: repeating ERROR from the embedded retention reaper (`ReaperRunnable` /
+`delete from aggregate_*_rollup_* …`), often `JdbcSQLException: General error` with
+`ArrayIndexOutOfBoundsException` inside H2 `PageDataLeaf` / index code. The UI may still
+listen; `/readiness` fails if the probed rollup tables error.
+
+What it means: **page/index corruption** (or a store already outside the scale table above),
+not a bad Glowroot SQL shape. Retention for the failing table stops advancing → `data/` can
+grow without bound and pressure the **shared** application JVM.
+
+Product behavior (current tree):
+
+- Reaper continues **other** tables/levels after a per-step failure (one corrupt table no
+  longer aborts the whole cycle).
+- Admin → Storage shows live **H2 data file size** and a warning when the reaper has a
+  consecutive failure streak; JMX `org.glowroot:type=H2Database` exposes `FileSize` and
+  `ReaperConsecutiveFailedCycles`.
+- `/readiness` probes both `aggregate_tt_rollup_0` and `aggregate_tn_rollup_0`.
+
+Operator recovery:
+
+1. Prefer **Central** (or much shorter retention) for high-volume hosts — embedded is not a
+   warehouse.
+2. If indexes are already broken: stop the app, **wipe** embedded H2 under `data/` (keep
+   `conf/`), restart — history in H2 is gone. A full multi‑10 GB backup is often impractical.
+3. Upgrading Glowroot / H2 major **does not repair** a corrupt `data.h2.db` / `data.mv.db`;
+   Layer 1 recreate still applies (see above).
+4. Alert on H2 file size growth and on repeating reaper errors (logs, Admin Storage, or JMX).
+
 ## Central
 
 This page is **embedded-only**. Central uses Cassandra; H2 file migration does not apply.
