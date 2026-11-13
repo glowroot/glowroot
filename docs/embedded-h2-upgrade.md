@@ -56,11 +56,12 @@ java -jar glowroot.jar h2 import-script <export.sql>
 
 ## Corrupt H2 / retention reaper stall (#1284)
 
-Symptoms: repeating ERROR from the embedded retention reaper (`ReaperRunnable` /
+Symptoms: retention-reaper failures (`ReaperRunnable` /
 `delete from aggregate_*_rollup_* …`), often `JdbcSQLException: General error` with
-`ArrayIndexOutOfBoundsException` inside H2 `PageDataLeaf` / index code. The UI may still
-listen. `/readiness` only cheap-counts recent (~4h) rows on tt/tn — it may stay green while
-old-page deletes fail; watch reaper ERROR/WARN, Admin → Storage streak, or JMX instead.
+`ArrayIndexOutOfBoundsException` inside H2 `PageDataLeaf` / index code. Logs show ERROR
+once when the streak starts, then periodic WARN (~hourly) while it continues. The UI may
+still listen. `/readiness` only cheap-counts recent (~4h) rows on tt/tn — it may stay green
+while old-page deletes fail; watch reaper ERROR/WARN, Admin → Storage streak, or JMX.
 
 What it means: **page/index corruption** (or a store already outside the scale table above),
 not a bad Glowroot SQL shape. Retention for the failing table stops advancing → that table
@@ -86,7 +87,9 @@ Operator recovery:
    `conf/`), restart — history in H2 is gone. A full multi‑10 GB backup is often impractical.
 3. Upgrading Glowroot / H2 major **does not repair** a corrupt `data.h2.db` / `data.mv.db`;
    Layer 1 recreate still applies (see above).
-4. Alert on H2 file size growth and on repeating reaper errors (logs, Admin Storage, or JMX).
+4. Alert on H2 file size growth and on reaper logs: one ERROR when a failure streak starts,
+   then WARN about every hour while it continues (not an ERROR every 5 minutes). Also watch
+   Admin → Storage streak and JMX `ReaperConsecutiveFailedCycles`.
 
 ## Central
 

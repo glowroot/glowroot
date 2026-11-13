@@ -142,4 +142,29 @@ public class ReaperRunnableTest {
         assertThat(Thread.interrupted()).isTrue();
         assertThat(failureTracker.getConsecutiveFailedCycles()).isEqualTo(0);
     }
+
+    @Test
+    void errorFromStepRecordsFailureNotSuccess() throws Exception {
+        doThrow(new OutOfMemoryError("oom")).when(incidentDao)
+                .deleteResolvedIncidentsBefore(anyLong());
+
+        assertThatThrownBy(() -> reaperRunnable.runInternal())
+                .isInstanceOf(OutOfMemoryError.class);
+        assertThat(failureTracker.getConsecutiveFailedCycles()).isEqualTo(1);
+        assertThat(failureTracker.snapshot().lastFailedSteps()).containsExactly("incident");
+    }
+
+    @Test
+    void errorAfterPriorStepFailureStillRecordsFailure() throws Exception {
+        doThrow(new SQLException("corrupt tn")).when(aggregateDao)
+                .deleteTransactionNameBefore(anyLong(), eq(0));
+        doThrow(new OutOfMemoryError("oom")).when(incidentDao)
+                .deleteResolvedIncidentsBefore(anyLong());
+
+        assertThatThrownBy(() -> reaperRunnable.runInternal())
+                .isInstanceOf(OutOfMemoryError.class);
+        assertThat(failureTracker.getConsecutiveFailedCycles()).isEqualTo(1);
+        assertThat(failureTracker.snapshot().lastFailedSteps())
+                .contains("aggregate_tn_rollup_0", "incident");
+    }
 }
