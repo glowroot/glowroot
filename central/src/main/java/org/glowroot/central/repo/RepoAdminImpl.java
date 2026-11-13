@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 the original author or authors.
+ * Copyright 2018-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.glowroot.central.util.Session;
 import org.glowroot.common.Constants;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.config.CentralStorageConfig;
+import org.glowroot.common2.repo.ImmutableReaperStatus;
 import org.glowroot.common2.repo.RepoAdmin;
 
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -80,6 +81,15 @@ public class RepoAdminImpl implements RepoAdmin {
     @Override
     public long getH2DataFileSize() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ReaperStatus getReaperStatus() {
+        return ImmutableReaperStatus.builder()
+                .consecutiveFailedCycles(0)
+                .lastErrorMessage("")
+                .lastFailureTimeMillis(0)
+                .build();
     }
 
     @Override

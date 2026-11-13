@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,12 @@ public interface RepoAdmin {
 
     long getH2DataFileSize();
 
+    /**
+     * Embedded: status of the scheduled retention reaper. Central: always zero failures
+     * (no H2 reaper).
+     */
+    ReaperStatus getReaperStatus();
+
     List<H2Table> analyzeH2DiskSpace() throws Exception;
 
     TraceCounts analyzeTraceCounts() throws Exception;
@@ -55,6 +61,14 @@ public interface RepoAdmin {
         String name();
         long bytes();
         long rows();
+    }
+
+    @Value.Immutable
+    interface ReaperStatus {
+        int consecutiveFailedCycles();
+        List<String> lastFailedSteps();
+        String lastErrorMessage();
+        long lastFailureTimeMillis();
     }
 
     @Value.Immutable

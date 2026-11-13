@@ -331,8 +331,20 @@ public class TraceDao implements TraceRepository {
     }
 
     void deleteBefore(long captureTime) throws SQLException {
+        deleteAttributeNamesBefore(captureTime);
+        deleteTracesBefore(captureTime);
+        deleteTraceAttributesBefore(captureTime);
+    }
+
+    void deleteAttributeNamesBefore(long captureTime) throws SQLException {
         traceAttributeNameDao.deleteBefore(captureTime);
+    }
+
+    void deleteTracesBefore(long captureTime) throws SQLException {
         dataSource.deleteBefore("trace", captureTime);
+    }
+
+    void deleteTraceAttributesBefore(long captureTime) throws SQLException {
         dataSource.deleteBefore("trace_attribute", captureTime);
     }
 

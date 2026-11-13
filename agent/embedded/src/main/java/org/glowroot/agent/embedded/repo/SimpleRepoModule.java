@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2023 the original author or authors.
+ * Copyright 2011-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,6 +71,7 @@ public class SimpleRepoModule {
     private final AlertingService alertingService;
     private final HttpClient httpClient;
     private final @Nullable ReaperRunnable reaperRunnable;
+    private final ReaperFailureTracker reaperFailureTracker;
 
     public SimpleRepoModule(DataSource dataSource, File dataDir, Clock clock, Ticker ticker,
             ConfigRepositoryImpl configRepository,
@@ -119,9 +120,11 @@ public class SimpleRepoModule {
             startupLogger.info("glowroot schema created");
         }
 
+        ReaperFailureTracker reaperFailureTracker = new ReaperFailureTracker();
         repoAdmin = new RepoAdminImpl(dataSource, rollupCappedDatabases, traceCappedDatabase,
                 configRepository, alertingDisabledDao, environmentDao, gaugeIdDao, gaugeNameDao,
-                gaugeValueDao, transactionTypeDao, fullQueryTextDao, traceAttributeNameDao, clock);
+                gaugeValueDao, transactionTypeDao, fullQueryTextDao, traceAttributeNameDao,
+                reaperFailureTracker, clock);
         // Apply H2 cache from admin storage config (overrides JDBC-open Auto default when set)
         repoAdmin.resizeIfNeeded();
 
@@ -135,10 +138,11 @@ public class SimpleRepoModule {
         } else {
             reaperRunnable = new ReaperRunnable(configRepository, aggregateDao, traceDao,
                     gaugeIdDao, gaugeNameDao, gaugeValueDao, transactionTypeDao, fullQueryTextDao,
-                    incidentDao, clock);
+                    incidentDao, reaperFailureTracker, clock);
             reaperRunnable.scheduleWithFixedDelay(backgroundExecutor, 0,
                     SNAPSHOT_REAPER_PERIOD_MINUTES, MINUTES);
         }
+        this.reaperFailureTracker = reaperFailureTracker;
     }
 
     public void registerMBeans(PlatformMBeanServerLifecycle platformMBeanServerLifecycle) {
@@ -150,7 +154,8 @@ public class SimpleRepoModule {
         platformMBeanServerLifecycle.lazyRegisterMBean(
                 new TraceCappedDatabaseStats(traceCappedDatabase),
                 "org.glowroot:type=TraceCappedDatabase");
-        platformMBeanServerLifecycle.lazyRegisterMBean(new H2DatabaseStats(dataSource),
+        platformMBeanServerLifecycle.lazyRegisterMBean(
+                new H2DatabaseStats(dataSource, reaperFailureTracker::getConsecutiveFailedCycles),
                 "org.glowroot:type=H2Database");
     }
 

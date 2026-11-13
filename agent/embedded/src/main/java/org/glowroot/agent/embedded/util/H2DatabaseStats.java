@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2015-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,25 @@
  */
 package org.glowroot.agent.embedded.util;
 
+import java.util.function.IntSupplier;
+
 public class H2DatabaseStats implements H2DatabaseStatsMXBean {
 
     private final DataSource dataSource;
+    private final IntSupplier reaperConsecutiveFailedCycles;
 
-    public H2DatabaseStats(DataSource dataSource) {
+    public H2DatabaseStats(DataSource dataSource, IntSupplier reaperConsecutiveFailedCycles) {
         this.dataSource = dataSource;
+        this.reaperConsecutiveFailedCycles = reaperConsecutiveFailedCycles;
     }
 
     @Override
     public long getFileSize() {
         return dataSource.getDbFileSize();
+    }
+
+    @Override
+    public int getReaperConsecutiveFailedCycles() {
+        return reaperConsecutiveFailedCycles.getAsInt();
     }
 }

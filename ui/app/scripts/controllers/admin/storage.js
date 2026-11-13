@@ -54,6 +54,8 @@ glowroot.controller('AdminStorageCtrl', [
       { value: 'fixed', label: 'Fixed MB' },
       { value: 'percent', label: '% of -Xmx' }
     ];
+    // Aligns with docs/embedded-h2-upgrade.md scale table (20 GB = start of limbo zone).
+    $scope.h2ComfortZoneMaxBytes = 20 * 1024 * 1024 * 1024;
 
     // close modal backdrop if open, this is needed if click on "see Configuration > Storage > Trace detail data" inside
     // of trace modal
