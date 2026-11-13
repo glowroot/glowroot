@@ -99,9 +99,13 @@ class ReaperRunnable extends ScheduledRunnable {
         }
         int traceExpirationHours = storageConfig.traceExpirationHours();
         if (traceExpirationHours != 0) {
-            long traceCaptureTime = currentTime - HOURS.toMillis(traceExpirationHours);
+            final long traceCaptureTime = currentTime - HOURS.toMillis(traceExpirationHours);
+            firstThrowable = runStep("trace_attribute_name", failedSteps, firstThrowable,
+                    () -> traceDao.deleteAttributeNamesBefore(traceCaptureTime));
             firstThrowable = runStep("trace", failedSteps, firstThrowable,
-                    () -> traceDao.deleteBefore(traceCaptureTime));
+                    () -> traceDao.deleteTracesBefore(traceCaptureTime));
+            firstThrowable = runStep("trace_attribute", failedSteps, firstThrowable,
+                    () -> traceDao.deleteTraceAttributesBefore(traceCaptureTime));
             minCaptureTime = Math.min(minCaptureTime, traceCaptureTime);
         }
         if (minCaptureTime != 0) {

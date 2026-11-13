@@ -17,7 +17,7 @@ aborted the whole reaper cycle via `ScheduledRunnable`, so other retention never
 ## How
 
 - `ReaperRunnable` catches per delete step; `AggregateDao` splits overall vs transaction-name
-  deletes so tt/tn isolate.
+  deletes so tt/tn isolate; `TraceDao` splits attribute-name / trace / trace_attribute the same way.
 - `ReaperFailureTracker` records consecutive failed cycles; Admin storage GET and
   `org.glowroot:type=H2Database` expose status; logs ERROR once then WARN periodically.
 - `RepoAdmin.runHealthCheck()` (embedded) queries tt and tn; streak alone does not trip

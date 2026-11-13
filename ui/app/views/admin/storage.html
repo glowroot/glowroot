@@ -52,7 +52,7 @@
              ng-if="config.h2DataFileSize > 0">
           H2 data file size: <strong>{{config.h2DataFileSize | gtBytes}}</strong>
           <span class="text-warning"
-                ng-if="config.h2DataFileSize >= 21474836480">
+                ng-if="config.h2DataFileSize >= h2ComfortZoneMaxBytes">
             — above typical embedded comfort zone; prefer shorter retention, Compact, or Central.
           </span>
         </div>
