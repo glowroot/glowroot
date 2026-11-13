@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.14.8</version>
+    <version>0.14.9-beta.1-SNAPSHOT</version>
     <relativePath>../../..</relativePath>
   </parent>
 
@@ -21,9 +21,9 @@
       <groupId>io.netty</groupId>
       <artifactId>netty-tcnative-boringssl-static</artifactId>
       <classifier>osx-x86_64</classifier>
-      <!-- need to stick to version known to work with gRPC 1.80.0,
+      <!-- need to stick to version known to work with gRPC 1.85.1,
         see table at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
-      <version>2.0.74.Final</version>
+      <version>2.0.81.Final</version>
     </dependency>
   </dependencies>
 

@@ -414,6 +414,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.ClassTooLargeException");
         types.add("org.objectweb.asm.ClassVisitor");
         types.add("org.objectweb.asm.ClassWriter");
+        types.add("org.objectweb.asm.ComputeLimits");
         types.add("org.objectweb.asm.ConstantDynamic");
         types.add("org.objectweb.asm.Constants");
         types.add("org.objectweb.asm.Context");
@@ -425,6 +426,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.Handle");
         types.add("org.objectweb.asm.Handler");
         types.add("org.objectweb.asm.Label");
+        types.add("org.objectweb.asm.LimitExceededException");
         types.add("org.objectweb.asm.MethodTooLargeException");
         types.add("org.objectweb.asm.MethodVisitor");
         types.add("org.objectweb.asm.MethodWriter");
@@ -441,6 +443,7 @@ public class PreInitializeWeavingClasses {
         types.add("org.objectweb.asm.TypePath");
         types.add("org.objectweb.asm.TypeReference");
         types.add("org.objectweb.asm.commons.AdviceAdapter");
+        types.add("org.objectweb.asm.commons.AdviceAdapter$StackFrame");
         types.add("org.objectweb.asm.commons.AnnotationRemapper");
         types.add("org.objectweb.asm.commons.ClassRemapper");
         types.add("org.objectweb.asm.commons.FieldRemapper");

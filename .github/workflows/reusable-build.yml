@@ -5,42 +5,48 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     strategy:
       matrix:
         java: [ 8, 17, 21, 25 ]
         testGroup: [ 1, 2, 3, 4 ]
         testShaded: [ true, false ]
         glowrootHarness: [ javaagent, local ]
+        exclude:
+          # glowroot-central and glowroot-webdriver-tests require Java 17+
+          - java: 8
+            testGroup: 3
+          - java: 8
+            testGroup: 4
       fail-fast: false
     env:
       TEST_SHADED: ${{ matrix.testShaded }}
       GLOWROOT_HARNESS: ${{ matrix.glowrootHarness }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up JDK ${{ matrix.java }} for tests
-        if: ${{ matrix.java != 8 && matrix.java != 11 }}
-        uses: actions/setup-java@v5.2.0
+        if: ${{ matrix.java != 17 }}
+        uses: actions/setup-java@v6.2.0
         with:
-          distribution: adopt
+          distribution: temurin
           java-version: ${{ matrix.java }}
 
       - name: Set up env var for java home for tests
-        if: ${{ matrix.java != 8 && matrix.java != 11 }}
+        if: ${{ matrix.java != 17 }}
         run: |
-          test_jvm_path_matches=(/opt/hostedtoolcache/Java_Adopt_jdk/${{ matrix.java }}.*/x64/bin/java)
+          test_jvm_path_matches=(/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/${{ matrix.java }}.*/x64/bin/java)
           echo "TEST_JVM_PATH=${test_jvm_path_matches[0]}" >> $GITHUB_ENV
           cat $GITHUB_ENV
 
       - name: Set up JDK 17 for build
-        uses: actions/setup-java@v5.2.0
+        uses: actions/setup-java@v6.2.0
         with:
-          distribution: adopt
+          distribution: temurin
           java-version: 17
 
       - name: Restore cache
-        uses: actions/cache@v5.0.3
+        uses: actions/cache@v6.1.0
         with:
           path: |
             ~/.m2/repository
@@ -56,7 +62,7 @@ jobs:
 
       - name: Upload webdriver screenshots
         if: failure()
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.2
         with:
           path: /tmp/glowroot-webdriver-test-*.png
           if-no-files-found: ignore

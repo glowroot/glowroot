@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.glowroot</groupId>
     <artifactId>glowroot-parent</artifactId>
-    <version>0.14.8</version>
+    <version>0.14.9-beta.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>glowroot-ui</artifactId>
@@ -17,6 +17,8 @@
 
   <properties>
     <sonar.sources>src/main/java,app</sonar.sources>
+    <logback.version>1.5.25</logback.version>
+    <slf4j.version>2.0.17</slf4j.version>
   </properties>
 
   <dependencies>
@@ -89,12 +91,12 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>2.0.17</version>
+      <version>${slf4j.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jul-to-slf4j</artifactId>
-      <version>2.0.17</version>
+      <version>${slf4j.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -136,13 +138,13 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.5.25</version>
+      <version>${logback.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.5.25</version>
+      <version>${logback.version}</version>
     </dependency>
     <dependency>
       <groupId>javax.annotation</groupId>
@@ -300,4 +302,15 @@
       </plugins>
     </pluginManagement>
   </build>
+
+  <profiles>
+    <profile>
+      <!-- test backward compatibility with Logback 1.2.x + SLF4J 1.7.x on Java 8 -->
+      <id>logback-1.2</id>
+      <properties>
+        <logback.version>1.2.13</logback.version>
+        <slf4j.version>1.7.36</slf4j.version>
+      </properties>
+    </profile>
+  </profiles>
 </project>
