@@ -41,7 +41,9 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import org.glowroot.agent.it.harness.AppUnderTest;
 import org.glowroot.agent.it.harness.Container;
+import org.glowroot.agent.it.harness.Containers;
 import org.glowroot.agent.it.harness.impl.JavaagentContainer;
+import org.glowroot.agent.util.JavaVersion;
 import org.glowroot.wire.api.model.TraceOuterClass.Trace;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,11 +54,15 @@ public class GrailsIT {
 
     @BeforeAll
     public static void setUp() throws Exception {
-        // Grails 3.3.10 / Spring 4.3.26 uses CGLIB which needs ClassLoader.defineClass() via
-        // reflection, requiring --add-opens java.base/java.lang=ALL-UNNAMED on Java 9+
-        container = JavaagentContainer
-                .createWithExtraJvmArgs(ImmutableList.of("--add-opens",
-                        "java.base/java.lang=ALL-UNNAMED"));
+        if (JavaVersion.isGreaterThanOrEqualToJava9()) {
+            // Grails 3.3.10 / Spring 4.3.26 uses CGLIB which needs ClassLoader.defineClass() via
+            // reflection, requiring --add-opens java.base/java.lang=ALL-UNNAMED on Java 9+
+            container = JavaagentContainer
+                    .createWithExtraJvmArgs(ImmutableList.of("--add-opens",
+                            "java.base/java.lang=ALL-UNNAMED"));
+        } else {
+            container = Containers.create();
+        }
     }
 
     @AfterAll
