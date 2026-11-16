@@ -4,7 +4,15 @@
  * Backend: GET /backend/{transaction|error}/points
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+} from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTransaction } from '../../contexts/TransactionContext'
 import { useAgent } from '../../contexts/AgentContext'
@@ -80,6 +88,21 @@ const filterControlClass =
   'h-7 rounded-none border-0 border-b border-gray-300 bg-transparent px-1 text-xs shadow-none ' +
   'hover:border-gray-400 focus-visible:border-b-blue-500 focus-visible:ring-0 focus-visible:outline-none'
 
+/** Native select: kill OS box; chevron via backgroundImage style (avoids twMerge bg-* clash) */
+const filterSelectClass =
+  filterControlClass + ' appearance-none cursor-pointer pr-5 bg-no-repeat'
+
+const FILTER_SELECT_CHEVRON =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")"
+
+const filterSelectChevronStyle = {
+  backgroundImage: FILTER_SELECT_CHEVRON,
+  backgroundPosition: 'right 1px center',
+  backgroundSize: '10px 10px',
+  backgroundColor: 'transparent',
+  backgroundRepeat: 'no-repeat',
+} as const
+
 function SlimFilterRow({
   label,
   htmlFor,
@@ -96,6 +119,20 @@ function SlimFilterRow({
       </label>
       <div className="min-w-0">{children}</div>
     </div>
+  )
+}
+
+function FilterSelect({
+  className,
+  style,
+  ...props
+}: ComponentProps<typeof Select>) {
+  return (
+    <Select
+      {...props}
+      className={cn(filterSelectClass, className)}
+      style={{ ...filterSelectChevronStyle, ...style }}
+    />
   )
 }
 
@@ -129,7 +166,7 @@ function TextComparatorField({
             {c.label}
           </option>
         ))}
-      </Select>
+      </FilterSelect>
       <Input
         id={id}
         className={cn(filterControlClass, 'min-w-0 flex-1')}
@@ -602,9 +639,9 @@ export function TransactionTracesPage({
           }
         >
           <div className="flex max-w-[32em] flex-wrap items-center gap-1.5">
-            <Select
+            <FilterSelect
               aria-label="Response time comparator"
-              className={cn(filterControlClass, 'w-[8.75rem] shrink-0')}
+              className="w-[8.75rem] shrink-0"
               value={draft.durationComparator}
               onChange={(e) => {
                 const nextComp = e.target.value as 'greater' | 'less' | 'between'
@@ -622,7 +659,7 @@ export function TransactionTracesPage({
                   {c.label}
                 </option>
               ))}
-            </Select>
+            </FilterSelect>
             {(draft.durationComparator === 'greater' ||
               draft.durationComparator === 'between') && (
               <Input
@@ -706,9 +743,9 @@ export function TransactionTracesPage({
         {(traceAttributeNames.length > 0 || draft.attributeName || draft.attributeValue) && (
           <>
             <SlimFilterRow label="Attribute name" htmlFor="searchAttributeName">
-              <Select
+              <FilterSelect
                 id="searchAttributeName"
-                className={cn(filterControlClass, 'max-w-[28em]')}
+                className="max-w-[28em]"
                 value={draft.attributeName}
                 onChange={(e) =>
                   setDraft((prev) => ({ ...prev, attributeName: e.target.value }))
@@ -723,7 +760,7 @@ export function TransactionTracesPage({
                     {name}
                   </option>
                 ))}
-              </Select>
+              </FilterSelect>
             </SlimFilterRow>
             <SlimFilterRow label="Attribute value" htmlFor="searchAttributeValue">
               <TextComparatorField
@@ -743,9 +780,9 @@ export function TransactionTracesPage({
         )}
 
         <SlimFilterRow label="Result limit" htmlFor="searchLimit">
-          <Select
+          <FilterSelect
             id="searchLimit"
-            className={cn(filterControlClass, 'w-24')}
+            className="w-24"
             value={draft.limit}
             onChange={(e) =>
               setDraft((prev) => ({ ...prev, limit: Number(e.target.value) || 500 }))
@@ -756,7 +793,7 @@ export function TransactionTracesPage({
                 {l.toLocaleString()}
               </option>
             ))}
-          </Select>
+          </FilterSelect>
         </SlimFilterRow>
 
         {filterError && (
