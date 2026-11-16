@@ -1464,10 +1464,10 @@ export function TraceModal({ agentId, traceId, checkLiveTraces, onClose }: Trace
         )}
 
         {!loading && !error && header && !header.expired && (
-          <div className="gt-trace-parent space-y-6 pr-8">
+          <div className="gt-trace-parent space-y-6">
             {/* Zone 1: Summary */}
             <section className="space-y-2">
-              <div className="flex items-start gap-4 flex-wrap">
+              <div className="flex items-start gap-4 flex-wrap pr-10">
                 <h2 className="text-lg font-semibold text-gray-900 break-words flex-1 min-w-[12rem]">
                   {header.headline}
                 </h2>
@@ -1631,60 +1631,67 @@ export function TraceModal({ agentId, traceId, checkLiveTraces, onClose }: Trace
             </section>
 
             {/* Zone 3: Detail panels (multi-open) */}
-            <section className="space-y-3 border-t border-[#e6dcc3] pt-4">
-              {header.entriesExistence === 'yes' && (
-                <TraceEntriesSection
-                  agentId={agentId}
-                  traceId={traceId}
-                  checkLiveTraces={checkLiveTraces}
-                  entryCount={header.entryCount}
-                  baseDurationNanos={effectiveDurationNanos}
-                  onDurationUpdate={setEffectiveDurationNanos}
-                  sharedTextCache={sharedTextCache}
-                  onCacheFullText={(sha1, val) =>
-                    setSharedTextCache((prev) => ({ ...prev, [sha1]: val }))
-                  }
-                />
-              )}
-              {header.queriesExistence === 'yes' && (
-                <TraceQueriesSection
-                  agentId={agentId}
-                  traceId={traceId}
-                  checkLiveTraces={checkLiveTraces}
-                  queryCount={header.queryCount}
-                  sharedTextCache={sharedTextCache}
-                  onCacheFullText={(sha1, val) =>
-                    setSharedTextCache((prev) => ({ ...prev, [sha1]: val }))
-                  }
-                />
-              )}
-              {header.profileExistence === 'yes' && header.mainThreadProfileSampleCount > 0 && (
-                <TraceProfileSection
-                  agentId={agentId}
-                  traceId={traceId}
-                  checkLiveTraces={checkLiveTraces}
-                  auxiliary={false}
-                  label={
-                    header.auxThreadProfileSampleCount > 0 ? 'Main Thread Profile' : 'Profile'
-                  }
-                  sampleCount={header.mainThreadProfileSampleCount}
-                />
-              )}
-              {header.profileExistence === 'yes' && header.auxThreadProfileSampleCount > 0 && (
-                <TraceProfileSection
-                  agentId={agentId}
-                  traceId={traceId}
-                  checkLiveTraces={checkLiveTraces}
-                  auxiliary={true}
-                  label="Auxiliary Threads Profile"
-                  sampleCount={header.auxThreadProfileSampleCount}
-                />
-              )}
+            {(header.entriesExistence === 'yes' ||
+              header.queriesExistence === 'yes' ||
+              (header.profileExistence === 'yes' &&
+                (header.mainThreadProfileSampleCount > 0 ||
+                  header.auxThreadProfileSampleCount > 0)) ||
+              Boolean(expiredNotice)) && (
+              <section className="space-y-3 border-t border-[#e6dcc3] pt-4">
+                {header.entriesExistence === 'yes' && (
+                  <TraceEntriesSection
+                    agentId={agentId}
+                    traceId={traceId}
+                    checkLiveTraces={checkLiveTraces}
+                    entryCount={header.entryCount}
+                    baseDurationNanos={effectiveDurationNanos}
+                    onDurationUpdate={setEffectiveDurationNanos}
+                    sharedTextCache={sharedTextCache}
+                    onCacheFullText={(sha1, val) =>
+                      setSharedTextCache((prev) => ({ ...prev, [sha1]: val }))
+                    }
+                  />
+                )}
+                {header.queriesExistence === 'yes' && (
+                  <TraceQueriesSection
+                    agentId={agentId}
+                    traceId={traceId}
+                    checkLiveTraces={checkLiveTraces}
+                    queryCount={header.queryCount}
+                    sharedTextCache={sharedTextCache}
+                    onCacheFullText={(sha1, val) =>
+                      setSharedTextCache((prev) => ({ ...prev, [sha1]: val }))
+                    }
+                  />
+                )}
+                {header.profileExistence === 'yes' && header.mainThreadProfileSampleCount > 0 && (
+                  <TraceProfileSection
+                    agentId={agentId}
+                    traceId={traceId}
+                    checkLiveTraces={checkLiveTraces}
+                    auxiliary={false}
+                    label={
+                      header.auxThreadProfileSampleCount > 0 ? 'Main Thread Profile' : 'Profile'
+                    }
+                    sampleCount={header.mainThreadProfileSampleCount}
+                  />
+                )}
+                {header.profileExistence === 'yes' && header.auxThreadProfileSampleCount > 0 && (
+                  <TraceProfileSection
+                    agentId={agentId}
+                    traceId={traceId}
+                    checkLiveTraces={checkLiveTraces}
+                    auxiliary={true}
+                    label="Auxiliary Threads Profile"
+                    sampleCount={header.auxThreadProfileSampleCount}
+                  />
+                )}
 
-              {expiredNotice && (
-                <div className="text-xs font-semibold text-gray-800">{expiredNotice}</div>
-              )}
-            </section>
+                {expiredNotice && (
+                  <div className="text-xs font-semibold text-gray-800">{expiredNotice}</div>
+                )}
+              </section>
+            )}
           </div>
         )}
       </div>
