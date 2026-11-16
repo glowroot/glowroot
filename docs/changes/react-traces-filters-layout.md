@@ -1,17 +1,17 @@
 # What
 
-React `/modern` Transaction → Traces filter form uses classic label +
-input-group layout (comparator prepended, milliseconds addon).
+React `/modern` Transaction → Traces filters use slim label rows with thin
+select/input controls (no fused input-group boxes).
 
 # Why
 
-The previous stacked/wrap row made Response time and text filters hard to
-scan (comparator, value, and units split awkwardly).
+Bulky boxed controls were hard to scan; keep classic field order with a
+lighter 2026 chrome.
 
 # How
 
-`TransactionTracesPage.tsx` uses `GtFormGroup` rows and compact input-groups;
-filter apply/clear/URL sync unchanged.
+`TransactionTracesPage.tsx`: `SlimFilterRow` + thin `h-7` controls; apply/clear
+logic unchanged.
 
 # Verification
 
