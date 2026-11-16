@@ -9,8 +9,8 @@ Boxed controls still felt heavy; keep classic field order with a light chrome.
 
 # How
 
-`TransactionTracesPage.tsx`: `SlimFilterRow` + `border-b` only controls;
-apply/clear logic unchanged.
+`TransactionTracesPage.tsx`: `SlimFilterRow` + `border-b` inputs; selects use
+`appearance-none` + light SVG chevron (no OS box); apply/clear unchanged.
 
 # Verification
 
