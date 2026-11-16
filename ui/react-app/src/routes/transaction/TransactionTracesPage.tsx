@@ -14,7 +14,6 @@ import { encodeObject } from '../../lib/query-strings'
 import { TracePointChart, type TracePoint } from '../../components/chart'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
-import { GtFormGroup } from '../../components/shared/GtFormGroup'
 import { TraceModal } from '../../components/trace/TraceModal'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -76,25 +75,27 @@ const DURATION_COMPARATORS: Array<{ value: 'greater' | 'less' | 'between'; label
 
 const LIMIT_OPTIONS = [100, 200, 500, 1000, 2000, 5000]
 
+/** Thin underline-ish controls — no fused input-group boxes */
 const filterControlClass =
-  'h-9 rounded-none border-gray-300 shadow-none focus-visible:z-10 focus-visible:ring-1'
+  'h-7 rounded-sm border border-gray-300 bg-white px-2 text-xs shadow-none ' +
+  'focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500/30'
 
-function FilterAddon({
+function SlimFilterRow({
+  label,
+  htmlFor,
   children,
-  trailing = false,
 }: {
+  label: string
+  htmlFor?: string
   children: ReactNode
-  trailing?: boolean
 }) {
   return (
-    <span
-      className={cn(
-        'inline-flex items-center whitespace-nowrap border border-l-0 border-gray-300 bg-[#f8f5ef] px-3 text-sm text-gray-700',
-        trailing && 'rounded-r-md'
-      )}
-    >
-      {children}
-    </span>
+    <div className="grid grid-cols-[8.5rem_minmax(0,1fr)] items-center gap-x-3 py-1">
+      <label htmlFor={htmlFor} className="text-right text-xs text-gray-600">
+        {label}
+      </label>
+      <div className="min-w-0">{children}</div>
+    </div>
   )
 }
 
@@ -116,7 +117,7 @@ function TextComparatorField({
   comparators?: Array<{ value: string; label: string }>
 }) {
   return (
-    <div className="flex w-full max-w-[25em]">
+    <div className="flex max-w-[28em] items-center gap-1.5">
       <Select
         aria-label={comparatorAriaLabel}
         className={cn(filterControlClass, 'w-[9.5rem] shrink-0 rounded-l-md border-r-0')}
@@ -131,7 +132,7 @@ function TextComparatorField({
       </Select>
       <Input
         id={id}
-        className={cn(filterControlClass, 'min-w-0 flex-1 rounded-r-md')}
+        className={cn(filterControlClass, 'min-w-0 flex-1')}
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
         data-lpignore="true"
@@ -583,16 +584,16 @@ export function TransactionTracesPage({
         )}
       </div>
 
-      {/* Filter form — classic label + input-group layout */}
+      {/* Filter form — slim controls, no fused boxes */}
       <form
         noValidate
-        className="mt-4 space-y-1"
+        className="mt-3 space-y-0.5"
         onSubmit={(e) => {
           e.preventDefault()
           applyFilters()
         }}
       >
-        <GtFormGroup
+        <SlimFilterRow
           label="Response time"
           htmlFor={
             draft.durationComparator !== 'less'
@@ -600,15 +601,10 @@ export function TransactionTracesPage({
               : 'filterDurationMillisHigh'
           }
         >
-          <div
-            className={cn(
-              'flex w-full',
-              draft.durationComparator === 'between' ? 'max-w-[30em]' : 'max-w-[25em]'
-            )}
-          >
+          <div className="flex max-w-[32em] flex-wrap items-center gap-1.5">
             <Select
               aria-label="Response time comparator"
-              className={cn(filterControlClass, 'w-[9.5rem] shrink-0 rounded-l-md border-r-0')}
+              className={cn(filterControlClass, 'w-[8.75rem] shrink-0')}
               value={draft.durationComparator}
               onChange={(e) => {
                 const nextComp = e.target.value as 'greater' | 'less' | 'between'
@@ -633,7 +629,7 @@ export function TransactionTracesPage({
                 id="filterDurationMillisLow"
                 type="text"
                 inputMode="numeric"
-                className={cn(filterControlClass, 'min-w-0 flex-1 border-r-0')}
+                className={cn(filterControlClass, 'w-24')}
                 value={draft.durationLow}
                 onChange={(e) => {
                   setFilterError(null)
@@ -642,18 +638,16 @@ export function TransactionTracesPage({
                 data-lpignore="true"
               />
             )}
-            {draft.durationComparator === 'between' && <FilterAddon>and</FilterAddon>}
+            {draft.durationComparator === 'between' && (
+              <span className="text-xs text-gray-500">and</span>
+            )}
             {(draft.durationComparator === 'less' ||
               draft.durationComparator === 'between') && (
               <Input
                 id="filterDurationMillisHigh"
                 type="text"
                 inputMode="numeric"
-                className={cn(
-                  filterControlClass,
-                  'min-w-0 flex-1 border-r-0',
-                  draft.durationComparator === 'between' && 'border-l-0'
-                )}
+                className={cn(filterControlClass, 'w-24')}
                 value={draft.durationHigh}
                 onChange={(e) => {
                   setFilterError(null)
@@ -662,11 +656,11 @@ export function TransactionTracesPage({
                 data-lpignore="true"
               />
             )}
-            <FilterAddon trailing>milliseconds</FilterAddon>
+            <span className="text-xs text-gray-500">ms</span>
           </div>
-        </GtFormGroup>
+        </SlimFilterRow>
 
-        <GtFormGroup label="Headline/URL" htmlFor="searchHeadline">
+        <SlimFilterRow label="Headline/URL" htmlFor="searchHeadline">
           <TextComparatorField
             id="searchHeadline"
             comparatorAriaLabel="Headline/URL comparator"
@@ -677,10 +671,10 @@ export function TransactionTracesPage({
             value={draft.headline}
             onValueChange={(headline) => setDraft((prev) => ({ ...prev, headline }))}
           />
-        </GtFormGroup>
+        </SlimFilterRow>
 
         {showErrorMessageFilter && (
-          <GtFormGroup label="Error" htmlFor="searchErrorMessage">
+          <SlimFilterRow label="Error" htmlFor="searchErrorMessage">
             <TextComparatorField
               id="searchErrorMessage"
               comparatorAriaLabel="Error message comparator"
@@ -693,10 +687,10 @@ export function TransactionTracesPage({
                 setDraft((prev) => ({ ...prev, errorMessage }))
               }
             />
-          </GtFormGroup>
+          </SlimFilterRow>
         )}
 
-        <GtFormGroup label="User" htmlFor="searchUser">
+        <SlimFilterRow label="User" htmlFor="searchUser">
           <TextComparatorField
             id="searchUser"
             comparatorAriaLabel="User comparator"
@@ -707,14 +701,14 @@ export function TransactionTracesPage({
             value={draft.user}
             onValueChange={(user) => setDraft((prev) => ({ ...prev, user }))}
           />
-        </GtFormGroup>
+        </SlimFilterRow>
 
         {(traceAttributeNames.length > 0 || draft.attributeName || draft.attributeValue) && (
           <>
-            <GtFormGroup label="Attribute name" htmlFor="searchAttributeName">
+            <SlimFilterRow label="Attribute name" htmlFor="searchAttributeName">
               <Select
                 id="searchAttributeName"
-                className="max-w-[25em]"
+                className={cn(filterControlClass, 'max-w-[28em]')}
                 value={draft.attributeName}
                 onChange={(e) =>
                   setDraft((prev) => ({ ...prev, attributeName: e.target.value }))
@@ -730,8 +724,8 @@ export function TransactionTracesPage({
                   </option>
                 ))}
               </Select>
-            </GtFormGroup>
-            <GtFormGroup label="Attribute value" htmlFor="searchAttributeValue">
+            </SlimFilterRow>
+            <SlimFilterRow label="Attribute value" htmlFor="searchAttributeValue">
               <TextComparatorField
                 id="searchAttributeValue"
                 comparatorAriaLabel="Attribute value comparator"
@@ -744,14 +738,14 @@ export function TransactionTracesPage({
                   setDraft((prev) => ({ ...prev, attributeValue }))
                 }
               />
-            </GtFormGroup>
+            </SlimFilterRow>
           </>
         )}
 
-        <GtFormGroup label="Result limit" htmlFor="searchLimit">
+        <SlimFilterRow label="Result limit" htmlFor="searchLimit">
           <Select
             id="searchLimit"
-            className="max-w-[8em]"
+            className={cn(filterControlClass, 'w-24')}
             value={draft.limit}
             onChange={(e) =>
               setDraft((prev) => ({ ...prev, limit: Number(e.target.value) || 500 }))
@@ -763,7 +757,7 @@ export function TransactionTracesPage({
               </option>
             ))}
           </Select>
-        </GtFormGroup>
+        </SlimFilterRow>
 
         {filterError && (
           <div className="grid grid-cols-3 gap-4">
@@ -773,10 +767,12 @@ export function TransactionTracesPage({
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-4 pt-3">
-          <div className="col-span-2 col-start-2 flex flex-wrap items-center gap-2">
-            <Button type="submit">Refresh</Button>
-            <Button type="button" variant="secondary" onClick={clearFilters}>
+        <div className="grid grid-cols-[8.5rem_minmax(0,1fr)] gap-x-3 pt-2">
+          <div className="col-start-2 flex flex-wrap items-center gap-2">
+            <Button type="submit" size="sm">
+              Refresh
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={clearFilters}>
               Clear criteria
             </Button>
           </div>
