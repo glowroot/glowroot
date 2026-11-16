@@ -75,10 +75,10 @@ const DURATION_COMPARATORS: Array<{ value: 'greater' | 'less' | 'between'; label
 
 const LIMIT_OPTIONS = [100, 200, 500, 1000, 2000, 5000]
 
-/** Thin underline-ish controls — no fused input-group boxes */
+/** Underline-only controls — no boxed borders */
 const filterControlClass =
-  'h-7 rounded-sm border border-gray-300 bg-white px-2 text-xs shadow-none ' +
-  'focus-visible:border-blue-500 focus-visible:ring-1 focus-visible:ring-blue-500/30'
+  'h-7 rounded-none border-0 border-b border-gray-300 bg-transparent px-1 text-xs shadow-none ' +
+  'hover:border-gray-400 focus-visible:border-b-blue-500 focus-visible:ring-0 focus-visible:outline-none'
 
 function SlimFilterRow({
   label,
