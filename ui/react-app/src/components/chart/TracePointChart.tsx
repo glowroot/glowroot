@@ -3,7 +3,7 @@
  *
  * Replaces the Flot scatter chart from traces.js.
  *
- * Three series: normal (blue), error (red), partial/active (yellow).
+ * Three series as circles (classic Flot parity): normal, error, partial/active.
  * Click on a point to open trace detail.
  */
 
@@ -234,45 +234,21 @@ export function TracePointChart({
     function drawPoints(
       points: TracePoint[],
       color: string,
-      shape: 'circle' | 'triangle' | 'diamond'
+      series: 'normal' | 'error' | 'partial'
     ) {
-      const group = chartArea.selectAll<SVGElement, TracePoint>('.trace-point-' + shape)
+      const group = chartArea.selectAll<SVGElement, TracePoint>('.trace-point-' + series)
         .data(points)
         .enter()
 
       const isHighlighted = (d: TracePoint) =>
         Boolean(highlightedTraceId && d.traceId === highlightedTraceId)
 
-      let elements: d3.Selection<SVGElement, TracePoint, SVGGElement, unknown>
-      if (shape === 'circle') {
-        elements = group
-          .append('circle')
-          .attr('cx', (d) => xScale(d.captureTime))
-          .attr('cy', (d) => yScale(d.durationMs))
-          .attr('r', (d) => (isHighlighted(d) ? 6 : 4)) as unknown as d3.Selection<
-            SVGElement,
-            TracePoint,
-            SVGGElement,
-            unknown
-          >
-      } else {
-        const symbolType = shape === 'triangle' ? d3.symbolTriangle : d3.symbolDiamond
-        elements = group
-          .append('path')
-          .attr('d', (d) =>
-            d3
-              .symbol()
-              .type(symbolType)
-              .size(isHighlighted(d) ? 90 : 50)() || ''
-          )
-          .attr(
-            'transform',
-            (d) => `translate(${xScale(d.captureTime)},${yScale(d.durationMs)})`
-          ) as unknown as d3.Selection<SVGElement, TracePoint, SVGGElement, unknown>
-      }
-
-      elements
-        .attr('class', 'trace-point-' + shape)
+      group
+        .append('circle')
+        .attr('class', 'trace-point-' + series)
+        .attr('cx', (d) => xScale(d.captureTime))
+        .attr('cy', (d) => yScale(d.durationMs))
+        .attr('r', (d) => (isHighlighted(d) ? 6 : 4))
         .attr('fill', color)
         .attr('fill-opacity', (d) => (isHighlighted(d) ? 1 : 0.7))
         .attr('stroke', (d) => (isHighlighted(d) ? '#1f2937' : color))
@@ -295,9 +271,9 @@ export function TracePointChart({
     }
 
     // Draw in order: normal (bottom), error, partial (top)
-    drawPoints(normalPoints, NORMAL_COLOR, 'circle')
-    drawPoints(errorPoints, ERROR_COLOR, 'triangle')
-    drawPoints(partialPoints, PARTIAL_COLOR, 'diamond')
+    drawPoints(normalPoints, NORMAL_COLOR, 'normal')
+    drawPoints(errorPoints, ERROR_COLOR, 'error')
+    drawPoints(partialPoints, PARTIAL_COLOR, 'partial')
   }, [
     clipId,
     containerWidth,
@@ -338,13 +314,13 @@ export function TracePointChart({
         )}
         {errorPoints.length > 0 && (
           <span className="flex items-center gap-1">
-            <span className="inline-block w-0 h-0 border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent" style={{ borderBottomColor: ERROR_COLOR }} />
+            <span className="inline-block w-3 h-3 rounded-full" style={{ background: ERROR_COLOR }} />
             Error
           </span>
         )}
         {partialPoints.length > 0 && (
           <span className="flex items-center gap-1">
-            <span className="inline-block w-3 h-3 rotate-45" style={{ background: PARTIAL_COLOR }} />
+            <span className="inline-block w-3 h-3 rounded-full" style={{ background: PARTIAL_COLOR }} />
             Active/Partial
           </span>
         )}

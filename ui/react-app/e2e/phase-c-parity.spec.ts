@@ -29,7 +29,7 @@ test.describe('Phase C UI & API parity', () => {
       (pointsJson.partialPoints?.length ?? 0)
     expect(totalPoints).toBeGreaterThan(0)
 
-    const firstPoint = page.locator('.trace-point-circle, .trace-point-triangle, .trace-point-diamond').first()
+    const firstPoint = page.locator('.trace-point-normal, .trace-point-error, .trace-point-partial').first()
     await expect(firstPoint).toBeVisible()
 
       const headerPromise = page.waitForResponse(
