@@ -1,17 +1,16 @@
 # What
 
-React `/modern` Transaction → Traces filters use slim label rows with thin
-select/input controls (no fused input-group boxes).
+React `/modern` Transaction → Traces filters use underline-only selects/inputs
+(no rectangular bordered boxes).
 
 # Why
 
-Bulky boxed controls were hard to scan; keep classic field order with a
-lighter 2026 chrome.
+Boxed controls still felt heavy; keep classic field order with a light chrome.
 
 # How
 
-`TransactionTracesPage.tsx`: `SlimFilterRow` + thin `h-7` controls; apply/clear
-logic unchanged.
+`TransactionTracesPage.tsx`: `SlimFilterRow` + `border-b` only controls;
+apply/clear logic unchanged.
 
 # Verification
 
