@@ -448,33 +448,66 @@ function ThreadStatsSection({ title, stats }: { title: string; stats: TraceThrea
   return (
     <div className="space-y-1 text-xs">
       <div className="text-sm font-semibold text-gray-800">{title}</div>
-      <div className="grid grid-cols-[140px_1fr] gap-y-0.5">
+      <div className="pl-4 space-y-0.5">
         {stats.totalCpuNanos !== undefined && stats.totalCpuNanos !== -1 && (
-          <>
-            <span className="text-gray-600">CPU time:</span>
+          <div>
+            <span className="text-gray-600">CPU time: </span>
             <span>{nanosToMillisStr(stats.totalCpuNanos)} milliseconds</span>
-          </>
+          </div>
         )}
         {stats.totalBlockedNanos !== undefined && stats.totalBlockedNanos !== -1 && (
-          <>
-            <span className="text-gray-600">Blocked time:</span>
+          <div>
+            <span className="text-gray-600">Blocked time: </span>
             <span>{nanosToMillisStr(stats.totalBlockedNanos)} milliseconds</span>
-          </>
+          </div>
         )}
         {stats.totalWaitedNanos !== undefined && stats.totalWaitedNanos !== -1 && (
-          <>
-            <span className="text-gray-600">Waited time:</span>
+          <div>
+            <span className="text-gray-600">Waited time: </span>
             <span>{nanosToMillisStr(stats.totalWaitedNanos)} milliseconds</span>
-          </>
+          </div>
         )}
         {stats.totalAllocatedBytes !== undefined && stats.totalAllocatedBytes !== -1 && (
-          <>
-            <span className="text-gray-600">Allocated memory:</span>
+          <div>
+            <span className="text-gray-600">Allocated memory: </span>
             <span>{formatBytes(stats.totalAllocatedBytes)}</span>
-          </>
+          </div>
         )}
       </div>
     </div>
+  )
+}
+
+function AttrRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="text-xs leading-relaxed break-words">
+      <span className="text-gray-600">{label}:&nbsp;</span>
+      <span className="text-gray-900 whitespace-pre-wrap">{children}</span>
+    </div>
+  )
+}
+
+function DetailToggle({
+  open,
+  loading,
+  onClick,
+  children,
+}: {
+  open: boolean
+  loading?: boolean
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      aria-expanded={open}
+      className="px-0 py-0.5 text-left text-sm text-blue-700 hover:underline disabled:opacity-50 bg-transparent border-0 cursor-pointer"
+    >
+      {children}
+    </button>
   )
 }
 
@@ -627,21 +660,16 @@ function TraceEntriesSection({
   const totalDuration = Math.max(1, baseDurationNanos)
 
   return (
-    <div className="space-y-2 pt-2">
-      <button
-        type="button"
-        onClick={toggleOpen}
-        disabled={loading}
-        className="rounded border border-[#ccc] bg-[#edeae4] px-3 py-1 text-sm font-medium text-[#212529] hover:bg-[#ded8cd] disabled:opacity-50"
-      >
+    <div className="space-y-2">
+      <DetailToggle open={open} loading={loading} onClick={toggleOpen}>
         Trace entries ({entryCount.toLocaleString()})
-      </button>
+      </DetailToggle>
       {loading && <PageSpinner />}
       {error && (
         <div className="text-sm text-red-600">An error occurred retrieving the trace entries</div>
       )}
       {open && data && (
-        <div className="space-y-0.5 font-mono text-xs overflow-x-auto">
+        <div className="ml-4 space-y-0.5 font-mono text-xs overflow-x-auto">
           {visibleEntries.slice(0, renderLimit).map(({ path, depth, entry, hasChildren }) => {
             const leftPct = Math.max(
               0,
@@ -939,15 +967,10 @@ function TraceQueriesSection({
     sortCol === col ? (sortAsc ? ' ▲' : ' ▼') : ''
 
   return (
-    <div className="space-y-2 pt-2">
-      <button
-        type="button"
-        onClick={toggleOpen}
-        disabled={loading}
-        className="rounded border border-[#ccc] bg-[#edeae4] px-3 py-1 text-sm font-medium text-[#212529] hover:bg-[#ded8cd] disabled:opacity-50"
-      >
+    <div className="space-y-2">
+      <DetailToggle open={open} loading={loading} onClick={toggleOpen}>
         Query stats ({queryCount.toLocaleString()})
-      </button>
+      </DetailToggle>
       {loading && <PageSpinner />}
       {error && (
         <div className="text-sm text-red-600">
@@ -955,7 +978,7 @@ function TraceQueriesSection({
         </div>
       )}
       {open && data && (
-        <div className="overflow-x-auto">
+        <div className="ml-4 overflow-x-auto">
           <table className="w-full text-xs border-collapse">
             <thead>
               <tr className="border-b text-gray-600 text-left">
@@ -1279,21 +1302,16 @@ function TraceProfileSection({
   const rootNode = useMemo(() => (data && data.rootNodes.length > 0 ? buildContractedRoot(data) : null), [data])
 
   return (
-    <div className="space-y-2 pt-2">
-      <div className="flex items-center gap-3 flex-wrap">
-        <button
-          type="button"
-          onClick={toggleOpen}
-          disabled={loading}
-          className="rounded border border-[#ccc] bg-[#edeae4] px-3 py-1 text-sm font-medium text-[#212529] hover:bg-[#ded8cd] disabled:opacity-50"
-        >
+    <div className="space-y-2">
+      <div className="flex items-center gap-6 flex-wrap">
+        <DetailToggle open={open} loading={loading} onClick={toggleOpen}>
           {label} ({sampleCount.toLocaleString()})
-        </button>
+        </DetailToggle>
         <a
           href={flameGraphHref}
           target="_blank"
           rel="noreferrer"
-          className="text-xs text-blue-600 hover:underline"
+          className="text-sm text-blue-700 hover:underline"
         >
           View flame graph
         </a>
@@ -1303,7 +1321,7 @@ function TraceProfileSection({
         <div className="text-sm text-red-600">An error occurred retrieving the profile</div>
       )}
       {open && data && (
-        <div className="rounded border border-gray-200 bg-gray-50/50 p-3 space-y-2 overflow-x-auto">
+        <div className="ml-4 space-y-2 overflow-x-auto">
           <div>
             <input
               type="text"
@@ -1446,265 +1464,233 @@ export function TraceModal({ agentId, traceId, checkLiveTraces, onClose }: Trace
         )}
 
         {!loading && !error && header && !header.expired && (
-          <div className="gt-trace-parent space-y-4">
-            {/* Headline & Download */}
-            <div className="flex items-start justify-between gap-4 pr-10">
-              <div className="space-y-1.5">
-                <h2 className="text-lg font-semibold text-gray-900 break-words">
+          <div className="gt-trace-parent space-y-6">
+            {/* Zone 1: Summary */}
+            <section className="space-y-2">
+              <div className="flex items-start gap-4 flex-wrap pr-10">
+                <h2 className="text-lg font-semibold text-gray-900 break-words flex-1 min-w-[12rem]">
                   {header.headline}
                 </h2>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {header.active ? (
-                    <span className="rounded bg-amber-100 border border-amber-300 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
-                      ACTIVE
-                    </span>
-                  ) : header.partial ? (
-                    <span className="rounded bg-amber-100 border border-amber-300 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
-                      PARTIAL
-                    </span>
-                  ) : null}
-                  {header.error && (
-                    <span className="rounded bg-red-100 border border-red-300 px-1.5 py-0.5 text-[11px] font-semibold text-red-700">
-                      ERROR
-                    </span>
-                  )}
-                  {header.async && (
-                    <span className="rounded bg-blue-100 border border-blue-300 px-1.5 py-0.5 text-[11px] font-semibold text-blue-700">
-                      ASYNC
-                    </span>
-                  )}
-                  {header.agent && (
-                    <span className="rounded bg-gray-100 border border-gray-300 px-1.5 py-0.5 text-[11px] font-medium text-gray-700">
-                      Agent: {header.agent}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <button
-                type="button"
-                title="Download trace"
-                aria-label="Download trace"
-                onClick={() => {
-                  window.location.href = exportUrl
-                }}
-                className="download-trace shrink-0 rounded border border-[#ccc] bg-[#edeae4] px-2.5 py-1 text-xs font-medium text-[#212529] hover:bg-[#ded8cd]"
-              >
-                Download trace
-              </button>
-            </div>
-
-            {/* Header key/value summary */}
-            <div className="space-y-1 text-xs">
-              <div>
-                <span className="text-gray-600">Transaction type: </span>
-                <span className="text-gray-900">{header.transactionType}</span>
-              </div>
-              <div>
-                <span className="text-gray-600">Transaction name: </span>
-                <span className="text-gray-900 break-words">{header.transactionName}</span>
+                <button
+                  type="button"
+                  title="Download trace"
+                  aria-label="Download trace"
+                  onClick={() => {
+                    window.location.href = exportUrl
+                  }}
+                  className="download-trace shrink-0 text-sm text-blue-700 hover:underline px-0 py-0.5 bg-transparent border-0 cursor-pointer"
+                >
+                  Download trace
+                </button>
               </div>
 
-              {header.locationStackTraceElements && header.locationStackTraceElements.length > 0 && (
-                <div>
-                  <span className="text-gray-600">Location stack trace: </span>
-                  <span
-                    className="font-mono text-blue-700 cursor-pointer hover:underline break-all"
-                    onClick={() => {
-                      if (!isDragSelection()) setLocationExpanded((v) => !v)
-                    }}
-                  >
-                    {header.locationStackTraceElements[0]}
-                  </span>
-                  <CopyButton text={header.locationStackTraceElements.join('\n')} />
-                  {locationExpanded && (
-                    <div className="mt-1 pl-4 font-mono whitespace-pre-wrap break-all text-gray-800">
-                      {header.locationStackTraceElements.join('\n')}
-                    </div>
-                  )}
-                </div>
-              )}
+              <div className="space-y-0.5 text-xs font-semibold text-gray-900">
+                {header.active ? (
+                  <div>ACTIVE</div>
+                ) : header.partial ? (
+                  <div>PARTIAL</div>
+                ) : null}
+                {header.error && <div>ERROR</div>}
+                {header.async && <div>ASYNC</div>}
+                {header.agent && <div>{header.agent}</div>}
+              </div>
 
-              {header.error && (
-                <div className="text-red-700 space-y-0.5">
-                  <div>
-                    <span className="font-semibold">Error: </span>
-                    <span className="break-words">{header.error.message}</span>
-                  </div>
-                  {header.error.exception && (
-                    <div>
+              <div className="space-y-0.5">
+                <AttrRow label="Transaction type">{header.transactionType}</AttrRow>
+                <AttrRow label="Transaction name">{header.transactionName}</AttrRow>
+
+                {header.locationStackTraceElements &&
+                  header.locationStackTraceElements.length > 0 && (
+                    <div className="text-xs leading-relaxed">
+                      <span className="text-gray-600">Location stack trace:&nbsp;</span>
                       <span
-                        className="font-mono cursor-pointer underline"
+                        className="font-mono text-blue-700 cursor-pointer hover:underline break-all"
                         onClick={() => {
-                          if (!isDragSelection()) setExceptionExpanded((v) => !v)
+                          if (!isDragSelection()) setLocationExpanded((v) => !v)
                         }}
                       >
-                        {header.error.exception.className}
-                        {header.error.exception.message
-                          ? `: ${header.error.exception.message}`
-                          : ''}
+                        {header.locationStackTraceElements[0]}
                       </span>
-                      <CopyButton text={formatThrowablePlainText(header.error.exception)} />
-                      {exceptionExpanded && (
-                        <div className="mt-1 pl-2 border-l border-red-200">
-                          <ThrowableChain throwable={header.error.exception} />
+                      <CopyButton text={header.locationStackTraceElements.join('\n')} />
+                      {locationExpanded && (
+                        <div className="mt-1 pl-4 font-mono whitespace-pre-wrap break-all text-gray-800">
+                          {header.locationStackTraceElements.join('\n')}
                         </div>
                       )}
                     </div>
                   )}
-                </div>
-              )}
 
-              <div>
-                <span className="text-gray-600">Start: </span>
-                <span className="text-gray-900">
-                  {dayjs(header.startTime).format('YYYY-MM-DD h:mm:ss.SSS A (Z)')}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-600">Duration: </span>
-                <span className="text-gray-900">
-                  {nanosToMillisStr(effectiveDurationNanos)}
-                  {header.active || header.partial ? '..' : ''} milliseconds
-                </span>
-              </div>
-              {header.user && (
-                <div>
-                  <span className="text-gray-600">User: </span>
-                  <span className="text-gray-900 break-words">{header.user}</span>
-                </div>
-              )}
-              {header.attributes && Object.keys(header.attributes).length > 0 && (
-                <div className="pt-1">
-                  <div className="text-gray-600 font-semibold">Attributes:</div>
-                  <div className="pl-4 space-y-0.5">
-                    {Object.entries(header.attributes).map(([attrName, values]) =>
-                      values.map((v, i) => (
-                        <div key={`${attrName}-${i}`} className="break-words">
-                          <span className="text-gray-600">{attrName}: </span>
-                          <span className="text-gray-900">{v}</span>
-                        </div>
-                      ))
+                {header.error && (
+                  <div className="text-xs space-y-0.5">
+                    <AttrRow label="Error">
+                      <span className="text-red-700">{header.error.message}</span>
+                    </AttrRow>
+                    {header.error.exception && (
+                      <div className="pl-4">
+                        <span
+                          className="font-mono text-blue-700 cursor-pointer hover:underline"
+                          onClick={() => {
+                            if (!isDragSelection()) setExceptionExpanded((v) => !v)
+                          }}
+                        >
+                          exception
+                        </span>
+                        <CopyButton text={formatThrowablePlainText(header.error.exception)} />
+                        {exceptionExpanded && (
+                          <div className="mt-1 pl-2">
+                            <ThrowableChain throwable={header.error.exception} />
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
-                </div>
-              )}
-              {header.detail && Object.keys(header.detail).length > 0 && (
-                <div className="pt-1">
-                  <DetailTree detail={header.detail} />
-                </div>
-              )}
-            </div>
+                )}
 
-            {/* Timer Breakdowns */}
-            <TraceBreakdownSection
-              title={hasAuxTimer ? 'Breakdown (Main Thread):' : 'Breakdown:'}
-              rootTimer={header.mainThreadRootTimer}
-            />
-            {header.auxThreadRootTimer && (
-              <TraceBreakdownSection
-                title="Breakdown (Auxiliary Threads):"
-                rootTimer={header.auxThreadRootTimer}
-              />
-            )}
-            {header.asyncTimers && header.asyncTimers.length > 0 && (
-              <div className="space-y-1">
-                <div className="text-sm font-semibold text-gray-800">
-                  Breakdown (Async Timers):
-                </div>
-                <table className="w-auto text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b text-gray-500 text-left">
-                      <th className="py-1 pr-6 font-medium">Timer</th>
-                      <th className="py-1 pr-6 font-medium text-right">Total (ms)</th>
-                      <th className="py-1 pr-4 font-medium text-right">Count</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {header.asyncTimers.map((t, i) => (
-                      <tr key={i} className="border-b border-gray-100">
-                        <td className="py-0.5 pr-6 text-gray-800">{t.name}</td>
-                        <td className="py-0.5 pr-6 text-right tabular-nums">
-                          {nanosToMillisStr(t.totalNanos)}
-                          {t.active ? '..' : ''}
-                        </td>
-                        <td className="py-0.5 pr-4 text-right tabular-nums">
-                          {t.count.toLocaleString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <AttrRow label="Start">
+                  {dayjs(header.startTime).format('YYYY-MM-DD h:mm:ss.SSS A (Z)')}
+                </AttrRow>
+                <AttrRow label="Duration">
+                  {nanosToMillisStr(effectiveDurationNanos)}
+                  {header.active || header.partial ? '..' : ''}
+                  &nbsp;milliseconds
+                </AttrRow>
+                {header.user && <AttrRow label="User">{header.user}</AttrRow>}
+                {header.attributes &&
+                  Object.entries(header.attributes).map(([attrName, values]) =>
+                    values.map((v, i) => (
+                      <AttrRow key={`${attrName}-${i}`} label={attrName}>
+                        {v}
+                      </AttrRow>
+                    ))
+                  )}
+                {header.detail && Object.keys(header.detail).length > 0 && (
+                  <div className="pt-1">
+                    <DetailTree detail={header.detail} />
+                  </div>
+                )}
               </div>
-            )}
+            </section>
 
-            {/* JVM Thread Stats */}
-            {hasAnyThreadStats(header.mainThreadStats) && (
-              <ThreadStatsSection
-                title={
-                  hasAuxTimer ? 'JVM Thread Stats (Main Thread):' : 'JVM Thread Stats:'
-                }
-                stats={header.mainThreadStats!}
+            {/* Zone 2: Breakdown + JVM */}
+            <section className="space-y-4 border-t border-[#e6dcc3] pt-4">
+              <TraceBreakdownSection
+                title={hasAuxTimer ? 'Breakdown (Main Thread):' : 'Breakdown:'}
+                rootTimer={header.mainThreadRootTimer}
               />
-            )}
-            {hasAnyThreadStats(header.auxThreadStats) && (
-              <ThreadStatsSection
-                title="JVM Thread Stats (Auxiliary Threads):"
-                stats={header.auxThreadStats!}
-              />
-            )}
+              {header.auxThreadRootTimer && (
+                <TraceBreakdownSection
+                  title="Breakdown (Auxiliary Threads):"
+                  rootTimer={header.auxThreadRootTimer}
+                />
+              )}
+              {header.asyncTimers && header.asyncTimers.length > 0 && (
+                <div className="space-y-1">
+                  <div className="text-sm font-semibold text-gray-800">
+                    Breakdown (Async Timers):
+                  </div>
+                  <table className="w-auto text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b text-gray-500 text-left">
+                        <th className="py-1 pr-6 font-medium">Timer</th>
+                        <th className="py-1 pr-6 font-medium text-right">Total (ms)</th>
+                        <th className="py-1 pr-4 font-medium text-right">Count</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {header.asyncTimers.map((t, i) => (
+                        <tr key={i} className="border-b border-gray-100">
+                          <td className="py-0.5 pr-6 text-gray-800">{t.name}</td>
+                          <td className="py-0.5 pr-6 text-right tabular-nums">
+                            {nanosToMillisStr(t.totalNanos)}
+                            {t.active ? '..' : ''}
+                          </td>
+                          <td className="py-0.5 pr-4 text-right tabular-nums">
+                            {t.count.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
-            {/* Lazy-loaded sections */}
-            {header.entriesExistence === 'yes' && (
-              <TraceEntriesSection
-                agentId={agentId}
-                traceId={traceId}
-                checkLiveTraces={checkLiveTraces}
-                entryCount={header.entryCount}
-                baseDurationNanos={effectiveDurationNanos}
-                onDurationUpdate={setEffectiveDurationNanos}
-                sharedTextCache={sharedTextCache}
-                onCacheFullText={(sha1, val) =>
-                  setSharedTextCache((prev) => ({ ...prev, [sha1]: val }))
-                }
-              />
-            )}
-            {header.queriesExistence === 'yes' && (
-              <TraceQueriesSection
-                agentId={agentId}
-                traceId={traceId}
-                checkLiveTraces={checkLiveTraces}
-                queryCount={header.queryCount}
-                sharedTextCache={sharedTextCache}
-                onCacheFullText={(sha1, val) =>
-                  setSharedTextCache((prev) => ({ ...prev, [sha1]: val }))
-                }
-              />
-            )}
-            {header.profileExistence === 'yes' && header.mainThreadProfileSampleCount > 0 && (
-              <TraceProfileSection
-                agentId={agentId}
-                traceId={traceId}
-                checkLiveTraces={checkLiveTraces}
-                auxiliary={false}
-                label={
-                  header.auxThreadProfileSampleCount > 0 ? 'Main Thread Profile' : 'Profile'
-                }
-                sampleCount={header.mainThreadProfileSampleCount}
-              />
-            )}
-            {header.profileExistence === 'yes' && header.auxThreadProfileSampleCount > 0 && (
-              <TraceProfileSection
-                agentId={agentId}
-                traceId={traceId}
-                checkLiveTraces={checkLiveTraces}
-                auxiliary={true}
-                label="Auxiliary Threads Profile"
-                sampleCount={header.auxThreadProfileSampleCount}
-              />
-            )}
+              {hasAnyThreadStats(header.mainThreadStats) && (
+                <ThreadStatsSection
+                  title={
+                    hasAuxTimer ? 'JVM Thread Stats (Main Thread):' : 'JVM Thread Stats:'
+                  }
+                  stats={header.mainThreadStats!}
+                />
+              )}
+              {hasAnyThreadStats(header.auxThreadStats) && (
+                <ThreadStatsSection
+                  title="JVM Thread Stats (Auxiliary Threads):"
+                  stats={header.auxThreadStats!}
+                />
+              )}
+            </section>
 
-            {expiredNotice && (
-              <div className="pt-2 text-xs text-gray-500 italic">{expiredNotice}</div>
+            {/* Zone 3: Detail panels (multi-open) */}
+            {(header.entriesExistence === 'yes' ||
+              header.queriesExistence === 'yes' ||
+              (header.profileExistence === 'yes' &&
+                (header.mainThreadProfileSampleCount > 0 ||
+                  header.auxThreadProfileSampleCount > 0)) ||
+              Boolean(expiredNotice)) && (
+              <section className="space-y-3 border-t border-[#e6dcc3] pt-4">
+                {header.entriesExistence === 'yes' && (
+                  <TraceEntriesSection
+                    agentId={agentId}
+                    traceId={traceId}
+                    checkLiveTraces={checkLiveTraces}
+                    entryCount={header.entryCount}
+                    baseDurationNanos={effectiveDurationNanos}
+                    onDurationUpdate={setEffectiveDurationNanos}
+                    sharedTextCache={sharedTextCache}
+                    onCacheFullText={(sha1, val) =>
+                      setSharedTextCache((prev) => ({ ...prev, [sha1]: val }))
+                    }
+                  />
+                )}
+                {header.queriesExistence === 'yes' && (
+                  <TraceQueriesSection
+                    agentId={agentId}
+                    traceId={traceId}
+                    checkLiveTraces={checkLiveTraces}
+                    queryCount={header.queryCount}
+                    sharedTextCache={sharedTextCache}
+                    onCacheFullText={(sha1, val) =>
+                      setSharedTextCache((prev) => ({ ...prev, [sha1]: val }))
+                    }
+                  />
+                )}
+                {header.profileExistence === 'yes' && header.mainThreadProfileSampleCount > 0 && (
+                  <TraceProfileSection
+                    agentId={agentId}
+                    traceId={traceId}
+                    checkLiveTraces={checkLiveTraces}
+                    auxiliary={false}
+                    label={
+                      header.auxThreadProfileSampleCount > 0 ? 'Main Thread Profile' : 'Profile'
+                    }
+                    sampleCount={header.mainThreadProfileSampleCount}
+                  />
+                )}
+                {header.profileExistence === 'yes' && header.auxThreadProfileSampleCount > 0 && (
+                  <TraceProfileSection
+                    agentId={agentId}
+                    traceId={traceId}
+                    checkLiveTraces={checkLiveTraces}
+                    auxiliary={true}
+                    label="Auxiliary Threads Profile"
+                    sampleCount={header.auxThreadProfileSampleCount}
+                  />
+                )}
+
+                {expiredNotice && (
+                  <div className="text-xs font-semibold text-gray-800">{expiredNotice}</div>
+                )}
+              </section>
             )}
           </div>
         )}
