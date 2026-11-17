@@ -117,7 +117,10 @@ export function ConfigInstrumentationPage() {
   const [showClassSuggestions, setShowClassSuggestions] = useState(false)
   const [showMethodSuggestions, setShowMethodSuggestions] = useState(false)
   const [showTransactionOverrides, setShowTransactionOverrides] = useState(false)
+  const [showPluginPropertyHooks, setShowPluginPropertyHooks] = useState(false)
+  const [transactionTypeCustomMode, setTransactionTypeCustomMode] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
+  const transactionTypes = agentRollup?.transactionTypes ?? []
 
   const [config, setConfig] = useState<InstrumentationConfig>({ ...NEW_CONFIG })
   const [originalConfig, setOriginalConfig] = useState<InstrumentationConfig>({ ...NEW_CONFIG })
@@ -128,6 +131,54 @@ export function ConfigInstrumentationPage() {
   const [error, setError] = useState<unknown>(null)
 
   const canEdit = agentRollup?.permissions?.config?.edit?.instrumentation ?? false
+
+  function renderTransactionTypeSelect(
+    value: string,
+    onChange: (next: string) => void,
+    opts?: { required?: boolean }
+  ) {
+    const inList = transactionTypes.includes(value)
+    const custom = transactionTypeCustomMode || (Boolean(value) && !inList)
+    const selectValue = custom ? '__custom__' : value
+    return (
+      <div className="space-y-1.5">
+        <select
+          className={selectClass}
+          value={selectValue}
+          onChange={(e) => {
+            const v = e.target.value
+            if (v === '__custom__') {
+              setTransactionTypeCustomMode(true)
+              if (inList) onChange('')
+            } else {
+              setTransactionTypeCustomMode(false)
+              onChange(v)
+            }
+          }}
+          disabled={!canEdit}
+          required={opts?.required && !custom}
+        >
+          <option value="">{opts?.required ? 'Select…' : '(none)'}</option>
+          {transactionTypes.map((tt) => (
+            <option key={tt} value={tt}>
+              {tt}
+            </option>
+          ))}
+          <option value="__custom__">Custom…</option>
+        </select>
+        {custom && (
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={!canEdit}
+            placeholder="New transaction type"
+            className="max-w-xs"
+            required={opts?.required}
+          />
+        )}
+      </div>
+    )
+  }
 
   function initMethodSignatures(methodName: string) {
     const defaultSig: MethodSignature = {
@@ -170,6 +221,15 @@ export function ConfigInstrumentationPage() {
             resp.config.transactionSlowThresholdMillis != null)
         ) {
           setShowTransactionOverrides(true)
+        }
+        if (resp.config.enabledProperty || resp.config.traceEntryEnabledProperty) {
+          setShowPluginPropertyHooks(true)
+        }
+        if (
+          resp.config.transactionType &&
+          !(agentRollup?.transactionTypes ?? []).includes(resp.config.transactionType)
+        ) {
+          setTransactionTypeCustomMode(true)
         }
         // Build method signatures
         const sigs: MethodSignature[] = [
@@ -326,7 +386,6 @@ export function ConfigInstrumentationPage() {
       title={isNew ? 'New' : config.className + '::' + config.methodName}
       description="Custom pointcut: which methods to weave and what to capture (transaction, entry, or timer)."
       back={{ to: '/modern/config/instrumentation-list' + agentQueryString(), label: 'Instrumentation' }}
-      wide
     >
         {agentNotConnected && (
           <p className="mb-3 text-sm text-amber-600">
@@ -342,7 +401,7 @@ export function ConfigInstrumentationPage() {
             value={config.className}
             layout="stack"
             compact
-            controlClassName="max-w-none"
+            controlClassName="max-w-md"
             helpText="Class or interface that owns the method(s)."
           >
         <div className="relative">
@@ -409,7 +468,7 @@ export function ConfigInstrumentationPage() {
         value={config.methodName}
         layout="stack"
         compact
-        controlClassName="max-w-none"
+        controlClassName="max-w-md"
         helpText="Also weaves overrides / interface implementations. Use * wildcards; separate several names with |."
       >
         <div className="relative">
@@ -476,7 +535,7 @@ export function ConfigInstrumentationPage() {
             label="Class annotation"
             layout="stack"
             compact
-            controlClassName="max-w-none"
+            controlClassName="max-w-xs"
             helpText="Optional: only classes with this annotation."
           >
             <Input
@@ -490,7 +549,7 @@ export function ConfigInstrumentationPage() {
             label="Method annotation"
             layout="stack"
             compact
-            controlClassName="max-w-none"
+            controlClassName="max-w-xs"
             helpText="Optional: only methods with this annotation."
           >
             <Input
@@ -504,7 +563,7 @@ export function ConfigInstrumentationPage() {
             label="Sub type restriction"
             layout="stack"
             compact
-            controlClassName="max-w-none"
+            controlClassName="max-w-xs"
             helpText="Optional: only subtypes of this class."
           >
             <Input
@@ -518,7 +577,7 @@ export function ConfigInstrumentationPage() {
             label="Super type restriction"
             layout="stack"
             compact
-            controlClassName="max-w-none"
+            controlClassName="max-w-xs"
             helpText="Optional: only classes with this supertype."
           >
             <Input
@@ -534,11 +593,11 @@ export function ConfigInstrumentationPage() {
             label="Method signature"
             layout="stack"
             compact
-            controlClassName="max-w-none"
+            controlClassName="max-w-xl"
             className="mt-2"
           >
             <select
-              className={cn(selectClass, 'max-w-full w-full')}
+              className={cn(selectClass, 'max-w-xl w-full')}
               value={selectedSigIndex}
               onChange={(e) => handleSignatureChange(Number(e.target.value))}
               disabled={!canEdit}
@@ -583,14 +642,14 @@ export function ConfigInstrumentationPage() {
               value={config.transactionType}
               layout="stack"
               compact
-              controlClassName="max-w-none"
+              controlClassName="max-w-xs"
               helpText="Aggregation / filter bucket."
             >
-              <Input
-                value={config.transactionType}
-                onChange={(e) => setConfig({ ...config, transactionType: e.target.value })}
-                disabled={!canEdit}
-              />
+              {renderTransactionTypeSelect(
+                config.transactionType,
+                (transactionType) => setConfig({ ...config, transactionType }),
+                { required: true }
+              )}
             </GtFormGroup>
 
             <GtFormGroup
@@ -599,7 +658,7 @@ export function ConfigInstrumentationPage() {
               value={config.transactionNameTemplate}
               layout="stack"
               compact
-              controlClassName="max-w-none"
+              controlClassName="max-w-sm"
               helpText="Template ({{0}}, {{this}}, … — wiki)."
             >
               <Input
@@ -613,7 +672,7 @@ export function ConfigInstrumentationPage() {
               label="Transaction user template"
               layout="stack"
               compact
-              controlClassName="max-w-none"
+              controlClassName="max-w-sm"
               helpText="Optional user attribute template."
             >
               <Input
@@ -627,11 +686,11 @@ export function ConfigInstrumentationPage() {
               label="Already in transaction"
               layout="stack"
               compact
-              controlClassName="max-w-none"
+              controlClassName="max-w-xs"
               helpText="Behavior when already inside a transaction."
             >
               <select
-                className={cn(selectClass, 'max-w-full w-full')}
+                className={selectClass}
                 value={config.alreadyInTransactionBehavior || 'capture-trace-entry'}
                 onChange={(e) => setConfig({ ...config, alreadyInTransactionBehavior: e.target.value })}
                 disabled={!canEdit}
@@ -642,7 +701,7 @@ export function ConfigInstrumentationPage() {
               </select>
             </GtFormGroup>
 
-            <GtFormGroup label="Transaction outer?" layout="stack" compact controlClassName="max-w-none">
+            <GtFormGroup label="Transaction outer?" layout="stack" compact controlClassName="max-w-xs">
               <label className="flex items-center gap-2 text-sm pt-1">
                 <Checkbox
                   checked={config.transactionOuter}
@@ -662,7 +721,7 @@ export function ConfigInstrumentationPage() {
             value={config.traceEntryMessageTemplate}
             layout="stack"
             compact
-            controlClassName="max-w-none"
+            controlClassName="max-w-md"
             className="mt-1"
             helpText="Template ({{0}}, {{this}}, {{_}}, … — wiki)."
           >
@@ -683,7 +742,7 @@ export function ConfigInstrumentationPage() {
                 value={config.traceEntryStackThresholdMillis ?? ''}
                 layout="stack"
                 compact
-                controlClassName="max-w-none"
+                controlClassName="max-w-xs"
                 helpText="Stack when entry exceeds this. Empty = never."
               >
                 <div className="flex items-center gap-2">
@@ -707,7 +766,7 @@ export function ConfigInstrumentationPage() {
                 label="Self nesting"
                 layout="stack"
                 compact
-                controlClassName="max-w-none"
+                controlClassName="max-w-xs"
                 helpText="Allow nested entries under the same rule/timer (can be noisy)."
               >
                 <label className="flex items-center gap-2 text-sm pt-1">
@@ -730,7 +789,7 @@ export function ConfigInstrumentationPage() {
                 invalidMessage="Only letters, numbers and spaces"
                 layout="stack"
                 compact
-                controlClassName="max-w-none"
+                controlClassName="max-w-xs"
                 helpText="Shared names aggregate in the breakdown."
               >
                 <Input
@@ -750,13 +809,14 @@ export function ConfigInstrumentationPage() {
             label="Nesting group"
             layout="stack"
             compact
-            controlClassName="max-w-none"
+            controlClassName="max-w-xs"
             helpText="Suppress nested entries that share this group."
           >
             <Input
               value={config.nestingGroup}
               onChange={(e) => setConfig({ ...config, nestingGroup: e.target.value })}
               disabled={!canEdit}
+              className="max-w-xs"
             />
           </GtFormGroup>
 
@@ -767,7 +827,7 @@ export function ConfigInstrumentationPage() {
             value={config.order}
             layout="stack"
             compact
-            controlClassName="max-w-none"
+            controlClassName="max-w-xs"
             helpText="Higher runs later among matching rules."
           >
             <Input
@@ -778,34 +838,50 @@ export function ConfigInstrumentationPage() {
               disabled={!canEdit}
             />
           </GtFormGroup>
+        </div>
 
-          <GtFormGroup
-            label="Enabled property"
-            layout="stack"
-            compact
-            controlClassName="max-w-none"
-            helpText="Plugin property that toggles this rule."
+        <div className="mt-3">
+          <button
+            type="button"
+            className="text-sm font-medium text-blue-600 hover:underline"
+            onClick={() => setShowPluginPropertyHooks((v) => !v)}
           >
-            <Input
-              value={config.enabledProperty}
-              onChange={(e) => setConfig({ ...config, enabledProperty: e.target.value })}
-              disabled={!canEdit}
-            />
-          </GtFormGroup>
-
-          <GtFormGroup
-            label="Trace entry enabled property"
-            layout="stack"
-            compact
-            controlClassName="max-w-none"
-            helpText="Plugin property that toggles entry capture."
-          >
-            <Input
-              value={config.traceEntryEnabledProperty}
-              onChange={(e) => setConfig({ ...config, traceEntryEnabledProperty: e.target.value })}
-              disabled={!canEdit}
-            />
-          </GtFormGroup>
+            {showPluginPropertyHooks ? 'Hide' : 'Show'} plugin property hooks
+          </button>
+          {showPluginPropertyHooks && (
+            <div className="mt-2 grid gap-x-6 gap-y-1 md:grid-cols-2">
+              <GtFormGroup
+                label="Enabled property name"
+                layout="stack"
+                compact
+                controlClassName="max-w-xs"
+                helpText="Rare — plugin boolean property name that gates this rule (not a local on/off)."
+              >
+                <Input
+                  value={config.enabledProperty}
+                  onChange={(e) => setConfig({ ...config, enabledProperty: e.target.value })}
+                  disabled={!canEdit}
+                  placeholder="e.g. myPlugin.enabled"
+                  className="max-w-xs font-mono text-xs"
+                />
+              </GtFormGroup>
+              <GtFormGroup
+                label="Trace entry enabled property name"
+                layout="stack"
+                compact
+                controlClassName="max-w-xs"
+                helpText="Rare — plugin boolean property name that gates entry capture."
+              >
+                <Input
+                  value={config.traceEntryEnabledProperty}
+                  onChange={(e) => setConfig({ ...config, traceEntryEnabledProperty: e.target.value })}
+                  disabled={!canEdit}
+                  placeholder="e.g. myPlugin.captureTraceEntry"
+                  className="max-w-xs font-mono text-xs"
+                />
+              </GtFormGroup>
+            </div>
+          )}
         </div>
       </SettingsSection>
 
@@ -824,20 +900,19 @@ export function ConfigInstrumentationPage() {
                 label="Transaction type"
                 layout="stack"
                 compact
-                controlClassName="max-w-none"
+                controlClassName="max-w-xs"
                 helpText="Override type on the containing transaction."
               >
-                <Input
-                  value={config.transactionType}
-                  onChange={(e) => setConfig({ ...config, transactionType: e.target.value })}
-                  disabled={!canEdit}
-                />
+                {renderTransactionTypeSelect(
+                  config.transactionType,
+                  (transactionType) => setConfig({ ...config, transactionType })
+                )}
               </GtFormGroup>
               <GtFormGroup
                 label="Transaction name"
                 layout="stack"
                 compact
-                controlClassName="max-w-none"
+                controlClassName="max-w-sm"
                 helpText="Override name template on the containing transaction."
               >
                 <Input
@@ -852,7 +927,7 @@ export function ConfigInstrumentationPage() {
                 value={config.transactionSlowThresholdMillis ?? ''}
                 layout="stack"
                 compact
-                controlClassName="max-w-none"
+                controlClassName="max-w-xs"
                 helpText="Override for containing transaction (smallest wins)."
               >
                 <div className="flex items-center gap-2">
