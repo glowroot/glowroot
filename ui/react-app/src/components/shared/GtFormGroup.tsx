@@ -13,6 +13,12 @@ interface GtFormGroupProps {
   invalid?: boolean
   children: ReactNode
   className?: string
+  /** Label above control — good inside multi-column grids */
+  layout?: 'row' | 'stack'
+  /** Tighter padding / narrower default control column */
+  compact?: boolean
+  /** Extra classes on the control wrapper (width caps, etc.) */
+  controlClassName?: string
 }
 
 function matchesPattern(pattern: RegExp, input: string): boolean {
@@ -33,6 +39,9 @@ export function GtFormGroup({
   invalid,
   children,
   className,
+  layout = 'row',
+  compact = false,
+  controlClassName,
 }: GtFormGroupProps) {
   let invalidReason: 'required' | 'other' | null = null
   if (value !== undefined) {
@@ -48,18 +57,41 @@ export function GtFormGroup({
     invalidReason = 'other'
   }
 
+  const stacked = layout === 'stack'
+
   return (
     <div
-      className={cn('flex flex-col gap-1.5 py-1.5 sm:flex-row sm:gap-4 sm:items-start', className)}
+      className={cn(
+        'flex',
+        stacked
+          ? cn('flex-col gap-1', compact ? 'py-1' : 'py-1.5')
+          : cn(
+              'flex-col sm:flex-row sm:items-start',
+              compact ? 'gap-1 py-1 sm:gap-3' : 'gap-1.5 py-1.5 sm:gap-4'
+            ),
+        className
+      )}
       data-gt-invalid={invalidReason ?? undefined}
     >
       <Label
         htmlFor={htmlFor}
-        className="shrink-0 pt-1.5 text-sm text-gray-700 sm:w-52 sm:text-right"
+        className={cn(
+          'shrink-0 text-sm text-gray-700',
+          stacked
+            ? 'pt-0 text-left'
+            : cn('pt-1.5 sm:text-right', compact ? 'sm:w-40' : 'sm:w-52')
+        )}
       >
         {label}
       </Label>
-      <div className="min-w-0 flex-1 max-w-[40em]">
+      <div
+        className={cn(
+          'min-w-0',
+          stacked ? 'w-full' : 'flex-1',
+          stacked ? undefined : compact ? 'max-w-[28em]' : 'max-w-[40em]',
+          controlClassName
+        )}
+      >
         {children}
         {required && (
           <div className="gt-invalid-required-feedback mt-1 text-xs text-red-600">
@@ -72,7 +104,14 @@ export function GtFormGroup({
           </div>
         )}
         {helpText && (
-          <p className="mt-1 text-xs text-gray-500 leading-relaxed">{helpText}</p>
+          <p
+            className={cn(
+              'text-gray-500 leading-snug',
+              compact ? 'mt-0.5 text-[11px]' : 'mt-1 text-xs leading-relaxed'
+            )}
+          >
+            {helpText}
+          </p>
         )}
       </div>
     </div>
