@@ -17,7 +17,7 @@ export function ConfigLayout() {
 
   const qs = agentQueryString()
 
-  // Classic item order; single nav block + json (no noisy section captions).
+  // Classic item order; separate boxes (no shouty captions — groups are visual only).
   const groups: SidebarGroup[] = [
     {
       items: [
@@ -26,6 +26,10 @@ export function ConfigLayout() {
           href: '/modern/config/general' + qs,
           hidden: !layout.central,
         },
+      ],
+    },
+    {
+      items: [
         {
           label: 'Transactions',
           href: '/modern/config/transaction' + qs,
@@ -42,6 +46,10 @@ export function ConfigLayout() {
           href: '/modern/config/jvm' + qs,
           hidden: isRollup,
         },
+      ],
+    },
+    {
+      items: [
         {
           label: 'Synthetic monitors',
           href: '/modern/config/synthetic-monitor-list' + qs,
@@ -57,6 +65,10 @@ export function ConfigLayout() {
           label: 'UI defaults',
           href: '/modern/config/ui-defaults' + qs,
         },
+      ],
+    },
+    {
+      items: [
         {
           label: 'Plugins',
           href: '/modern/config/plugin-list' + qs,
@@ -69,6 +81,10 @@ export function ConfigLayout() {
           active: path === '/modern/config/instrumentation-list' || path === '/modern/config/instrumentation',
           hidden: isRollup,
         },
+      ],
+    },
+    {
+      items: [
         {
           label: 'Advanced',
           href: '/modern/config/advanced' + qs,

@@ -14,7 +14,7 @@ Outer bordered cards, duplicate page titles, heavy shadowed inputs, and inconsis
 - Aligned `AdminLayout` header with Config; sidebar group captions (Access / Server / Delivery, Capture / Ops / Instrumentation).
 - Migrated all `routes/config/*` and `routes/admin/*` pages off outer `rounded-lg border` cards (Storage and LDAP use sections).
 - Detail pages use a chevron back control on `SettingsPage` (parent list name) instead of “Return to list”; titles are the item name (`New`, not `Alerts — <New>`).
-- Config sidebar stays a single classic-ordered list (no Capture/Ops captions); Admin keeps Access / Server / Delivery captions.
+- Config sidebar: classic order in separate boxes (no Capture/Ops captions); Admin keeps Access / Server / Delivery captions.
 
 # Choices
 
