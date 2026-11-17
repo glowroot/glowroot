@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAgent } from '../../contexts/AgentContext'
 import { useLayout } from '../../contexts/LayoutContext'
 import { apiGet, apiPost } from '../../lib/api'
@@ -11,6 +11,7 @@ import { Checkbox } from '../../components/ui/checkbox'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
 import { SettingsPage } from '../../components/shared/SettingsPage'
+import { SettingsSection } from '../../components/shared/SettingsSection'
 
 interface MetricOption {
   id: string
@@ -444,20 +445,15 @@ export function ConfigAlertPage() {
     }
   }
 
+  const pageTitle = isNew || heading === '<New>' ? 'New' : heading
+
   return (
-    <div>
-      <div className="mb-3">
-        <Link
-          to={'/modern/config/alert-list' + agentQueryString()}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          Return to list
-        </Link>
-      </div>
-      <SettingsPage title={`Alerts — ${heading}`}>
+    <SettingsPage
+      title={pageTitle}
+      back={{ to: '/modern/config/alert-list' + agentQueryString(), label: 'Alerts' }}
+    >
         {/* Condition */}
-        <fieldset className="mb-6">
-          <legend className="text-sm font-semibold text-gray-700 mb-3">Condition</legend>
+        <SettingsSection first title="Condition">
 
           {layout.central && (
             <GtFormGroup label="Based on">
@@ -752,11 +748,9 @@ export function ConfigAlertPage() {
               </GtFormGroup>
             </>
           )}
-        </fieldset>
+        </SettingsSection>
 
-        {/* Severity */}
-        <fieldset className="mb-6">
-          <legend className="text-sm font-semibold text-gray-700 mb-3">Severity</legend>
+        <SettingsSection title="Severity">
           <GtFormGroup label="Severity" required value={config.severity || ''}>
             <select
               className="rounded-md border border-gray-300 px-3 py-2 text-sm"
@@ -771,11 +765,9 @@ export function ConfigAlertPage() {
               <option value="low">Low</option>
             </select>
           </GtFormGroup>
-        </fieldset>
+        </SettingsSection>
 
-        {/* Email notification */}
-        <fieldset className="mb-6">
-          <legend className="text-sm font-semibold text-gray-700 mb-3">Email notification</legend>
+        <SettingsSection title="Email notification">
           <GtFormGroup label="Email addresses" helpText="Comma separated list of email addresses.">
             <textarea
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
@@ -785,12 +777,10 @@ export function ConfigAlertPage() {
               disabled={!canEdit}
             />
           </GtFormGroup>
-        </fieldset>
+        </SettingsSection>
 
-        {/* PagerDuty notification */}
         {pagerDutyIntegrationKeys.length > 0 && (
-          <fieldset className="mb-6">
-            <legend className="text-sm font-semibold text-gray-700 mb-3">PagerDuty notification</legend>
+          <SettingsSection title="PagerDuty notification">
             <GtFormGroup label="Integration key">
               <select
                 className="rounded-md border border-gray-300 px-3 py-2 text-sm"
@@ -815,13 +805,11 @@ export function ConfigAlertPage() {
                   )}
               </select>
             </GtFormGroup>
-          </fieldset>
+          </SettingsSection>
         )}
 
-        {/* Slack notification */}
         {slackWebhooks.length > 0 && (
-          <fieldset className="mb-6">
-            <legend className="text-sm font-semibold text-gray-700 mb-3">Slack notification</legend>
+          <SettingsSection title="Slack notification">
             <GtFormGroup label="Slack webhook">
               <select
                 className="rounded-md border border-gray-300 px-3 py-2 text-sm"
@@ -863,7 +851,7 @@ export function ConfigAlertPage() {
                 />
               </GtFormGroup>
             )}
-          </fieldset>
+          </SettingsSection>
         )}
 
         {canEdit && (
@@ -877,7 +865,6 @@ export function ConfigAlertPage() {
             deleteConfirmMessage="Are you sure you want to delete this alert?"
           />
         )}
-      </SettingsPage>
-    </div>
+    </SettingsPage>
   )
 }

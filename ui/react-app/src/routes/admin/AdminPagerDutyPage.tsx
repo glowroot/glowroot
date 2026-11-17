@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { Plus, Trash2 } from 'lucide-react'
 import { useLayout } from '../../contexts/LayoutContext'
 import { apiGet, apiPost } from '../../lib/api'
@@ -94,12 +93,10 @@ export function AdminPagerDutyPage() {
 
   return (
     <div>
-      <div className="mb-3">
-        <Link to="/modern/admin/integration-list" className="text-sm text-blue-600 hover:underline">
-          Return to list
-        </Link>
-      </div>
-      <SettingsPage title="Integrations — PagerDuty">
+      <SettingsPage
+        title="PagerDuty"
+        back={{ to: '/modern/admin/integration-list', label: 'Integrations' }}
+      >
         <h3 className="text-sm font-semibold text-gray-900 mb-4">Integration keys</h3>
         {(config.integrationKeys ?? []).map((ik, i) => (
           <div key={i} className="mb-4 rounded border p-4 bg-gray-50">

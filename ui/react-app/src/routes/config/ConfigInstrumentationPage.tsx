@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAgent } from '../../contexts/AgentContext'
 import { useLayout } from '../../contexts/LayoutContext'
 import { apiGet, apiPost } from '../../lib/api'
@@ -317,16 +317,10 @@ export function ConfigInstrumentationPage() {
   if (error) return <HttpError error={error} />
 
   return (
-    <div>
-      <div className="mb-3">
-        <Link
-          to={'/modern/config/instrumentation-list' + agentQueryString()}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          Return to list
-        </Link>
-      </div>
-      <SettingsPage title={`Instrumentation — ${isNew ? '<New>' : config.className + '::' + config.methodName}`}>
+    <SettingsPage
+      title={isNew ? 'New' : config.className + '::' + config.methodName}
+      back={{ to: '/modern/config/instrumentation-list' + agentQueryString(), label: 'Instrumentation' }}
+    >
         {agentNotConnected && (
           <p className="mb-4 text-sm text-amber-600">
             Agent is not connected. Auto-completion is not available.
@@ -813,7 +807,6 @@ export function ConfigInstrumentationPage() {
           </div>
         </div>
       )}
-      </SettingsPage>
-    </div>
+    </SettingsPage>
   )
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAgent } from '../../contexts/AgentContext'
 import { apiGet, apiPost, generateEncryptionKeyMessage } from '../../lib/api'
 import { GtFormGroup } from '../../components/shared/GtFormGroup'
@@ -149,16 +149,10 @@ export function ConfigSyntheticMonitorPage() {
   if (error) return <HttpError error={error} />
 
   return (
-    <div>
-      <div className="mb-3">
-        <Link
-          to={'/modern/config/synthetic-monitor-list' + agentQueryString()}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          Return to list
-        </Link>
-      </div>
-      <SettingsPage title={`Synthetic monitors — ${isNew ? '<New>' : (config.display || config.pingUrl || '')}`}>
+    <SettingsPage
+      title={isNew ? 'New' : (config.display || config.pingUrl || '')}
+      back={{ to: '/modern/config/synthetic-monitor-list' + agentQueryString(), label: 'Synthetic monitors' }}
+    >
         <GtFormGroup label="Synthetic monitor type">
           <div className="space-y-1">
             <label className="flex items-center gap-2 text-sm">
@@ -288,7 +282,6 @@ export function ConfigSyntheticMonitorPage() {
             deleteConfirmMessage="Are you sure you want to delete this synthetic monitor?"
           />
         )}
-      </SettingsPage>
-    </div>
+    </SettingsPage>
   )
 }
