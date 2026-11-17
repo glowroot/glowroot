@@ -267,7 +267,7 @@ export function ConfigInstrumentationPage() {
     } finally {
       setLoading(false)
     }
-  }, [agentId, isNew, version, layout.central])
+  }, [agentId, isNew, version, layout.central, agentRollup?.transactionTypes])
 
   useEffect(() => { load() }, [load])
 
