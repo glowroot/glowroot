@@ -8,10 +8,11 @@ import { GtFormGroup } from '../../components/shared/GtFormGroup'
 import { GtButtonGroup } from '../../components/shared/GtButtonGroup'
 import { Input } from '../../components/ui/input'
 import { Checkbox } from '../../components/ui/checkbox'
-import { Button } from '../../components/ui/button'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
 import { SettingsPage } from '../../components/shared/SettingsPage'
+import { SettingsSection } from '../../components/shared/SettingsSection'
+import { Select } from '../../components/ui/select'
 
 interface SlowThresholdOverride {
   transactionType: string
@@ -206,21 +207,22 @@ export function ConfigTransactionPage() {
         </p>
       </GtFormGroup>
 
-      <div className="mt-6 border-t pt-4">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Slow threshold overrides</h3>
+      <SettingsSection title="Slow threshold overrides">
         {config.slowThresholdOverrides.map((override, i) => (
-          <div key={i} className="mb-4 rounded border p-4 bg-gray-50">
+          <div
+            key={i}
+            className={i === 0 ? 'pb-4' : 'border-t border-gray-100 py-4'}
+          >
             <GtFormGroup
               label="Transaction type"
               required
               value={override.transactionType}
               helpText="The transaction type this override applies to."
             >
-              <select
+              <Select
                 value={override.transactionType}
                 onChange={(e) => updateOverride(i, 'transactionType', e.target.value)}
                 disabled={!canEdit}
-                className="flex h-9 w-full rounded-md border border-gray-300 bg-white px-3 py-1 text-sm"
               >
                 {override.transactionType && !data.allTransactionTypes.includes(override.transactionType) && (
                   <option value={override.transactionType} disabled>{override.transactionType}</option>
@@ -228,7 +230,7 @@ export function ConfigTransactionPage() {
                 {data.allTransactionTypes.map((tt) => (
                   <option key={tt} value={tt}>{tt}</option>
                 ))}
-              </select>
+              </Select>
             </GtFormGroup>
             <GtFormGroup
               label="Transaction name"
@@ -271,20 +273,30 @@ export function ConfigTransactionPage() {
               </div>
             </GtFormGroup>
             {canEdit && (
-              <div className="flex justify-end">
-                <Button variant="ghost" size="sm" onClick={() => removeOverride(i)}>
-                  <Trash2 className="h-4 w-4" /> Remove
-                </Button>
+              <div className="sm:ml-56 mt-1">
+                <button
+                  type="button"
+                  onClick={() => removeOverride(i)}
+                  className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-red-600"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Remove
+                </button>
               </div>
             )}
           </div>
         ))}
         {canEdit && (
-          <Button variant="outline" size="sm" onClick={addOverride}>
-            <Plus className="h-4 w-4" /> Add slow threshold override
-          </Button>
+          <button
+            type="button"
+            onClick={addOverride}
+            className="mt-1 inline-flex items-center gap-1 text-sm text-[#417998] hover:text-[#2f586e]"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add override
+          </button>
         )}
-      </div>
+      </SettingsSection>
 
       {canEdit && (
         <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />

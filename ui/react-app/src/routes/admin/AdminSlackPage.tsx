@@ -90,7 +90,7 @@ export function AdminSlackPage() {
       >
         <h3 className="text-sm font-semibold text-gray-900 mb-4">Slack webhooks</h3>
         {(config.webhooks ?? []).map((wh, i) => (
-          <div key={i} className="mb-4 rounded border p-4 bg-gray-50">
+          <div key={i} className={i === 0 ? 'pb-4' : 'border-t border-gray-100 py-4'}>
             <GtFormGroup label="Webhook URL" required value={wh.url}>
               <Input value={wh.url} onChange={(e) => updateWebhook(i, 'url', e.target.value)} disabled={!layout.adminEdit} />
             </GtFormGroup>
@@ -107,9 +107,14 @@ export function AdminSlackPage() {
           </div>
         ))}
         {layout.adminEdit && (
-          <Button variant="outline" size="sm" onClick={addWebhook}>
-            <Plus className="h-4 w-4" /> Add webhook
-          </Button>
+          <button
+            type="button"
+            onClick={addWebhook}
+            className="mt-1 inline-flex items-center gap-1 text-sm text-[#417998] hover:text-[#2f586e]"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add webhook
+          </button>
         )}
         {layout.adminEdit && (
           <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />
