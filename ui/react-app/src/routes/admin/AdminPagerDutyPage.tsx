@@ -99,7 +99,7 @@ export function AdminPagerDutyPage() {
       >
         <h3 className="text-sm font-semibold text-gray-900 mb-4">Integration keys</h3>
         {(config.integrationKeys ?? []).map((ik, i) => (
-          <div key={i} className="mb-4 rounded border p-4 bg-gray-50">
+          <div key={i} className={i === 0 ? 'pb-4' : 'border-t border-gray-100 py-4'}>
             <GtFormGroup label="Integration key" required value={ik.key}>
               <Input
                 value={ik.key}
@@ -124,9 +124,14 @@ export function AdminPagerDutyPage() {
           </div>
         ))}
         {layout.adminEdit && (
-          <Button variant="outline" size="sm" onClick={addKey}>
-            <Plus className="h-4 w-4" /> Add integration key
-          </Button>
+          <button
+            type="button"
+            onClick={addKey}
+            className="mt-1 inline-flex items-center gap-1 text-sm text-[#417998] hover:text-[#2f586e]"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add integration key
+          </button>
         )}
         {layout.adminEdit && (
           <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />

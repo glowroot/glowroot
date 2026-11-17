@@ -289,7 +289,7 @@ export function AdminLdapPage() {
 
       <SettingsSection title="Role mappings">
         {roleMappingBlocks.map((mapping, i) => (
-          <div key={i} className="mb-4 rounded border p-4 bg-gray-50">
+          <div key={i} className={i === 0 ? 'pb-4' : 'border-t border-gray-100 py-4'}>
             <GtFormGroup
               label="LDAP group DN"
               required
@@ -353,9 +353,14 @@ export function AdminLdapPage() {
           </div>
         ))}
         {layout.adminEdit && (
-          <Button variant="outline" size="sm" onClick={addRoleMapping}>
-            <Plus className="h-4 w-4" /> Add role mapping
-          </Button>
+          <button
+            type="button"
+            onClick={addRoleMapping}
+            className="mt-1 inline-flex items-center gap-1 text-sm text-[#417998] hover:text-[#2f586e]"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add role mapping
+          </button>
         )}
       </SettingsSection>
 
