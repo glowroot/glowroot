@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLayout } from '../../contexts/LayoutContext'
 import { apiGet, apiPost, ApiError } from '../../lib/api'
 import { GtFormGroup } from '../../components/shared/GtFormGroup'
@@ -443,12 +443,10 @@ export function AdminRolePage() {
 
   return (
     <div>
-      <div className="mb-3">
-        <Link to="/modern/admin/role-list" className="text-sm text-blue-600 hover:underline">
-          Return to list
-        </Link>
-      </div>
-      <SettingsPage title={`Roles — ${isNew ? '<New>' : config.name}`}>
+      <SettingsPage
+        title={isNew ? 'New' : config.name}
+        back={{ to: '/modern/admin/role-list', label: 'Roles' }}
+      >
 
         <GtFormGroup label="Name" required value={config.name}>
           <Input

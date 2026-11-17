@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { Plus, Trash2 } from 'lucide-react'
 import { useLayout } from '../../contexts/LayoutContext'
 import { apiGet, apiPost, generateEncryptionKeyMessage } from '../../lib/api'
@@ -198,13 +197,10 @@ export function AdminLdapPage() {
   const hostRequired = Boolean(config.host?.trim())
 
   return (
-    <div className="space-y-3">
-      <div>
-        <Link to="/modern/admin/integration-list" className="text-sm text-blue-600 hover:underline">
-          Return to list
-        </Link>
-      </div>
-      <SettingsPage title="Integrations — LDAP">
+    <SettingsPage
+      title="LDAP"
+      back={{ to: '/modern/admin/integration-list', label: 'Integrations' }}
+    >
       <SettingsSection first title="Connection">
         <GtFormGroup label="Host" helpText="LDAP server hostname or IP address.">
           <Input value={config.host ?? ''} onChange={(e) => setConfig({ ...config, host: e.target.value })} disabled={!layout.adminEdit} />
@@ -387,7 +383,6 @@ export function AdminLdapPage() {
           )}
         </SettingsSection>
       )}
-      </SettingsPage>
-    </div>
+    </SettingsPage>
   )
 }

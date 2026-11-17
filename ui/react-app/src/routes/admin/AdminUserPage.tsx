@@ -156,16 +156,14 @@ export function AdminUserPage() {
 
   const showPasswordFields = !isAnonymous && !config.ldap
   const passwordRequired = isNew || (originalConfig.ldap && !config.ldap)
-  const heading = isNew ? '<New>' : isAnonymous ? '<anonymous>' : config.username
+  const pageTitle = isNew ? 'New' : isAnonymous ? 'anonymous' : config.username
 
   return (
     <div>
-      <div className="mb-3">
-        <Link to="/modern/admin/user-list" className="text-sm text-blue-600 hover:underline">
-          Return to list
-        </Link>
-      </div>
-      <SettingsPage title={`Users — ${heading}`}>
+      <SettingsPage
+        title={pageTitle}
+        back={{ to: '/modern/admin/user-list', label: 'Users' }}
+      >
 
         <GtFormGroup label="Username" required={!isAnonymous} value={config.username}>
           <Input

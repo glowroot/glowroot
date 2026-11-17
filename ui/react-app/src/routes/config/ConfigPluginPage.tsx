@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { useAgent } from '../../contexts/AgentContext'
 import { PATTERNS } from '../../lib/validation'
 import { apiGet, apiPost } from '../../lib/api'
@@ -138,16 +138,10 @@ export function ConfigPluginPage() {
   if (!config) return null
 
   return (
-    <div>
-      <div className="mb-3">
-        <Link
-          to={'/modern/config/plugin-list' + agentQueryString()}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          Return to list
-        </Link>
-      </div>
-      <SettingsPage title={`Plugins — ${config.name}`}>
+    <SettingsPage
+      title={config.name}
+      back={{ to: '/modern/config/plugin-list' + agentQueryString(), label: 'Plugins' }}
+    >
         {config.properties.map((prop, i) => {
           const propType = prop.type.toLowerCase()
           if (propType === 'boolean') {
@@ -227,7 +221,6 @@ export function ConfigPluginPage() {
         {canEdit && (
           <GtButtonGroup onSave={handleSave} hasChanges={hasChanges()} />
         )}
-      </SettingsPage>
-    </div>
+    </SettingsPage>
   )
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAgent } from '../../contexts/AgentContext'
 import { apiGet, apiPost, ApiError } from '../../lib/api'
 import { GtFormGroup } from '../../components/shared/GtFormGroup'
@@ -251,16 +251,10 @@ export function ConfigGaugePage() {
   if (error) return <HttpError error={error} />
 
   return (
-    <div>
-      <div className="mb-3">
-        <Link
-          to={'/modern/config/gauge-list' + agentQueryString()}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          Return to list
-        </Link>
-      </div>
-      <SettingsPage title={`Gauges — ${isNew ? '<New>' : (config.display || config.mbeanObjectName)}`}>
+    <SettingsPage
+      title={isNew ? 'New' : (config.display || config.mbeanObjectName)}
+      back={{ to: '/modern/config/gauge-list' + agentQueryString(), label: 'Gauges' }}
+    >
         {agentNotConnected && (
           <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-800">
             Limited functionality since agent is not currently connected
@@ -414,7 +408,6 @@ export function ConfigGaugePage() {
             deleteConfirmMessage="Are you sure you want to delete this gauge?"
           />
         )}
-      </SettingsPage>
-    </div>
+    </SettingsPage>
   )
 }
