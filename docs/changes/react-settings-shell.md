@@ -17,6 +17,7 @@ Outer bordered cards, duplicate page titles, heavy shadowed inputs, and inconsis
 - Config sidebar: classic order in separate boxes (no Capture/Ops captions); Admin keeps Access / Server / Delivery captions.
 - Advanced: short per-field help + footer wiki link (`Advanced-and-config.json`), same pattern as Storage.
 - Instrumentation New/edit: short help + footer wiki link (`Instrumentation`); denser 2-col Target/Capture/Advanced layout (`GtFormGroup` stack/compact).
+- Alerts New/edit: same dense stack/2-col pattern; severity+notification merged; wiki footer (`Alerts-and-incidents`).
 
 # Choices
 
