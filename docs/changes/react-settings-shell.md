@@ -16,6 +16,7 @@ Outer bordered cards, duplicate page titles, heavy shadowed inputs, and inconsis
 - Detail pages use a chevron back control on `SettingsPage` (parent list name) instead of “Return to list”; titles are the item name (`New`, not `Alerts — <New>`).
 - Config sidebar: classic order in separate boxes (no Capture/Ops captions); Admin keeps Access / Server / Delivery captions.
 - Advanced: short per-field help + footer wiki link (`Advanced-and-config.json`), same pattern as Storage.
+- Instrumentation New/edit: short help + footer wiki link (`Instrumentation`).
 
 # Choices
 

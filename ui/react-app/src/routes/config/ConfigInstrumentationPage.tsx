@@ -319,6 +319,7 @@ export function ConfigInstrumentationPage() {
   return (
     <SettingsPage
       title={isNew ? 'New' : config.className + '::' + config.methodName}
+      description="Custom pointcut: which methods to weave and what to capture (transaction, entry, or timer)."
       back={{ to: '/modern/config/instrumentation-list' + agentQueryString(), label: 'Instrumentation' }}
     >
         {agentNotConnected && (
@@ -331,7 +332,7 @@ export function ConfigInstrumentationPage() {
           label="Class name"
           required={!config.classAnnotation}
           value={config.className}
-          helpText="The class or interface containing the method(s) to instrument."
+          helpText="Class or interface that owns the method(s)."
         >
         <div className="relative">
           <Input
@@ -391,7 +392,7 @@ export function ConfigInstrumentationPage() {
         </div>
       </GtFormGroup>
 
-      <GtFormGroup label="Class annotation" helpText="Optional. Only applies to classes with this annotation.">
+      <GtFormGroup label="Class annotation" helpText="Optional filter: only classes with this annotation.">
         <Input
           value={config.classAnnotation}
           onChange={(e) => setConfig({ ...config, classAnnotation: e.target.value })}
@@ -399,7 +400,7 @@ export function ConfigInstrumentationPage() {
         />
       </GtFormGroup>
 
-      <GtFormGroup label="Sub type restriction" helpText="Optional. Only applies to subtypes of this class.">
+      <GtFormGroup label="Sub type restriction" helpText="Optional filter: only subtypes of this class.">
         <Input
           value={config.subTypeRestriction}
           onChange={(e) => setConfig({ ...config, subTypeRestriction: e.target.value })}
@@ -407,7 +408,7 @@ export function ConfigInstrumentationPage() {
         />
       </GtFormGroup>
 
-      <GtFormGroup label="Super type restriction" helpText="Optional. Only applies to classes with this supertype.">
+      <GtFormGroup label="Super type restriction" helpText="Optional filter: only classes with this supertype.">
         <Input
           value={config.superTypeRestriction}
           onChange={(e) => setConfig({ ...config, superTypeRestriction: e.target.value })}
@@ -419,7 +420,7 @@ export function ConfigInstrumentationPage() {
         label="Method name"
         required={!config.methodAnnotation}
         value={config.methodName}
-        helpText="The method(s) to instrument. All overriding methods will also be instrumented (including all implementations of the method if the class above is an interface). The wildcard * is supported anywhere in the method name. Multiple method names can be listed with the | separator between them."
+        helpText="Also weaves overrides / interface implementations. Use * wildcards; separate several names with |."
       >
         <div className="relative">
           <Input
@@ -481,7 +482,7 @@ export function ConfigInstrumentationPage() {
         </div>
       </GtFormGroup>
 
-      <GtFormGroup label="Method annotation" helpText="Optional. Only applies to methods with this annotation.">
+      <GtFormGroup label="Method annotation" helpText="Optional filter: only methods with this annotation.">
         <Input
           value={config.methodAnnotation}
           onChange={(e) => setConfig({ ...config, methodAnnotation: e.target.value })}
@@ -507,7 +508,10 @@ export function ConfigInstrumentationPage() {
         </GtFormGroup>
       )}
 
-      <GtFormGroup label="Capture kind">
+      <GtFormGroup
+        label="Capture kind"
+        helpText="Transaction = request boundary; Trace entry = timeline detail; Timer = breakdown timing; Other = optional overrides only."
+      >
         <select
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           value={config.captureKind}
@@ -527,6 +531,7 @@ export function ConfigInstrumentationPage() {
             label="Transaction type"
             required={showTransaction}
             value={config.transactionType}
+            helpText="Aggregation / filter bucket (existing type or a new name)."
           >
             <Input
               value={config.transactionType}
@@ -539,6 +544,7 @@ export function ConfigInstrumentationPage() {
             label="Transaction name template"
             required={showTransaction}
             value={config.transactionNameTemplate}
+            helpText="Template for the name (params {{0}}, {{this}}, … — see wiki)."
           >
             <Input
               value={config.transactionNameTemplate}
@@ -547,7 +553,7 @@ export function ConfigInstrumentationPage() {
             />
           </GtFormGroup>
 
-          <GtFormGroup label="Transaction user template">
+          <GtFormGroup label="Transaction user template" helpText="Optional template for the user attribute.">
             <Input
               value={config.transactionUserTemplate}
               onChange={(e) => setConfig({ ...config, transactionUserTemplate: e.target.value })}
@@ -555,7 +561,7 @@ export function ConfigInstrumentationPage() {
             />
           </GtFormGroup>
 
-          <GtFormGroup label="Transaction outer?">
+          <GtFormGroup label="Transaction outer?" helpText="Mark this as the outer transaction when nesting.">
             <label className="flex items-center gap-2 text-sm">
               <Checkbox
                 checked={config.transactionOuter}
@@ -566,7 +572,10 @@ export function ConfigInstrumentationPage() {
             </label>
           </GtFormGroup>
 
-          <GtFormGroup label="Already in transaction behavior">
+          <GtFormGroup
+            label="Already in transaction behavior"
+            helpText="What to do if this method runs inside an existing transaction."
+          >
             <select
               className="rounded-md border border-gray-300 px-3 py-2 text-sm"
               value={config.alreadyInTransactionBehavior || 'capture-trace-entry'}
@@ -586,6 +595,7 @@ export function ConfigInstrumentationPage() {
           label="Trace entry message template"
           required={showTraceEntry}
           value={config.traceEntryMessageTemplate}
+          helpText="Template for the entry message ({{0}}, {{this}}, {{_}}, … — see wiki)."
         >
           <Input
             value={config.traceEntryMessageTemplate}
@@ -600,22 +610,29 @@ export function ConfigInstrumentationPage() {
           label="Trace entry stack threshold"
           pattern={PATTERNS.integer}
           value={config.traceEntryStackThresholdMillis ?? ''}
-          helpText="milliseconds"
+          helpText="Attach a stack when the entry exceeds this duration. Empty = never."
         >
-          <Input
-            type="number"
-            value={config.traceEntryStackThresholdMillis ?? ''}
-            onChange={(e) => setConfig({
-              ...config,
-              traceEntryStackThresholdMillis: e.target.value === '' ? null : Number(e.target.value),
-            })}
-            disabled={!canEdit}
-          />
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              value={config.traceEntryStackThresholdMillis ?? ''}
+              onChange={(e) => setConfig({
+                ...config,
+                traceEntryStackThresholdMillis: e.target.value === '' ? null : Number(e.target.value),
+              })}
+              className="w-24"
+              disabled={!canEdit}
+            />
+            <span className="text-sm text-gray-500">milliseconds</span>
+          </div>
         </GtFormGroup>
       )}
 
       {showTraceEntryCaptureSelfNested && (
-        <GtFormGroup label="Capture self nested?">
+        <GtFormGroup
+          label="Capture self nested?"
+          helpText="Allow nested entries when this rule (or same timer name) appears under itself — can be noisy."
+        >
           <label className="flex items-center gap-2 text-sm">
             <Checkbox
               checked={config.traceEntryCaptureSelfNested}
@@ -634,6 +651,7 @@ export function ConfigInstrumentationPage() {
           pattern={/^[a-zA-Z0-9 ]*$/}
           value={config.timerName}
           invalidMessage="This is not a valid timer name, only letters, numbers and spaces are allowed"
+          helpText="Shared names aggregate together in the breakdown."
         >
           <Input
             value={config.timerName}
@@ -643,7 +661,7 @@ export function ConfigInstrumentationPage() {
         </GtFormGroup>
       )}
 
-      <GtFormGroup label="Nesting group" helpText="Optional. Used to suppress nested entries from the same nesting group.">
+      <GtFormGroup label="Nesting group" helpText="Optional: suppress nested entries that share this group.">
         <Input
           value={config.nestingGroup}
           onChange={(e) => setConfig({ ...config, nestingGroup: e.target.value })}
@@ -656,7 +674,7 @@ export function ConfigInstrumentationPage() {
         required
         pattern={PATTERNS.integer}
         value={config.order}
-        helpText="Priority relative to other matching instrumentation (higher is later)."
+        helpText="Tie-break vs other matching rules (higher runs later)."
       >
         <Input
           type="number"
@@ -666,7 +684,7 @@ export function ConfigInstrumentationPage() {
         />
       </GtFormGroup>
 
-      <GtFormGroup label="Enabled property" helpText="Optional. Plugin property name to control whether this instrumentation is enabled.">
+      <GtFormGroup label="Enabled property" helpText="Optional plugin property that toggles this rule on/off.">
         <Input
           value={config.enabledProperty}
           onChange={(e) => setConfig({ ...config, enabledProperty: e.target.value })}
@@ -674,7 +692,10 @@ export function ConfigInstrumentationPage() {
         />
       </GtFormGroup>
 
-      <GtFormGroup label="Trace entry enabled property" helpText="Optional. Plugin property name to control whether trace entry capture is enabled.">
+      <GtFormGroup
+        label="Trace entry enabled property"
+        helpText="Optional plugin property that toggles entry capture for this rule."
+      >
         <Input
           value={config.traceEntryEnabledProperty}
           onChange={(e) => setConfig({ ...config, traceEntryEnabledProperty: e.target.value })}
@@ -693,14 +714,14 @@ export function ConfigInstrumentationPage() {
           </button>
           {showTransactionOverrides && (
             <div className="mt-4">
-              <GtFormGroup label="Transaction type" helpText="Transaction type override (optional)">
+              <GtFormGroup label="Transaction type" helpText="Override type on the containing transaction.">
                 <Input
                   value={config.transactionType}
                   onChange={(e) => setConfig({ ...config, transactionType: e.target.value })}
                   disabled={!canEdit}
                 />
               </GtFormGroup>
-              <GtFormGroup label="Transaction name" helpText="Transaction name override template (optional)">
+              <GtFormGroup label="Transaction name" helpText="Override name template on the containing transaction.">
                 <Input
                   value={config.transactionNameTemplate}
                   onChange={(e) => setConfig({ ...config, transactionNameTemplate: e.target.value })}
@@ -711,20 +732,24 @@ export function ConfigInstrumentationPage() {
                 label="Slow trace threshold"
                 pattern={PATTERNS.integer}
                 value={config.transactionSlowThresholdMillis ?? ''}
-                helpText="Slow trace threshold override in milliseconds (optional)"
+                helpText="Override slow threshold for the containing transaction (smallest wins if several)."
               >
-                <Input
-                  type="number"
-                  value={config.transactionSlowThresholdMillis ?? ''}
-                  onChange={(e) =>
-                    setConfig({
-                      ...config,
-                      transactionSlowThresholdMillis:
-                        e.target.value === '' ? null : parseInt(e.target.value, 10),
-                    })
-                  }
-                  disabled={!canEdit}
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={config.transactionSlowThresholdMillis ?? ''}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        transactionSlowThresholdMillis:
+                          e.target.value === '' ? null : parseInt(e.target.value, 10),
+                      })
+                    }
+                    className="w-24"
+                    disabled={!canEdit}
+                  />
+                  <span className="text-sm text-gray-500">milliseconds</span>
+                </div>
               </GtFormGroup>
             </div>
           )}
@@ -759,6 +784,18 @@ export function ConfigInstrumentationPage() {
           </button>
         </div>
       )}
+      <div className="mt-6 text-xs text-gray-500">
+        For more information and configuration details, see the{' '}
+        <a
+          href="https://github.com/glowroot/glowroot/wiki/Instrumentation"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline"
+        >
+          Glowroot wiki
+        </a>
+        .
+      </div>
       {showExportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl">
