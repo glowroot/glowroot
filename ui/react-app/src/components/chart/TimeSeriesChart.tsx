@@ -18,6 +18,7 @@ import {
   useCallback,
   useState,
   type CSSProperties,
+  type ReactNode,
 } from 'react'
 import * as d3 from 'd3'
 import type { DataSeries, DeploymentMarking } from '../../hooks/useChartData'
@@ -63,6 +64,8 @@ export interface TimeSeriesChartProps {
   onSelection?: (from: number, to: number) => void
   /** External color pool (for preserving colors across refreshes) */
   colorPool?: KeyedColorPool
+  /** Optional control rendered after the legend (e.g. customize percentiles) */
+  legendTrailing?: ReactNode
   /** Container style override */
   style?: CSSProperties
 }
@@ -93,6 +96,7 @@ export function TimeSeriesChart({
   onZoom,
   onSelection,
   colorPool: externalColorPool,
+  legendTrailing,
   style,
 }: TimeSeriesChartProps) {
   const clipId = `chart-clip-${useId().replace(/:/g, '')}`
@@ -565,8 +569,8 @@ export function TimeSeriesChart({
         />
       </div>
       {/* Legend */}
-      {seriesLabels.length >= 1 && (
-        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 px-2">
+      {(seriesLabels.length >= 1 || legendTrailing) && (
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-2 px-2">
           {seriesLabels.map((label) => (
             <div key={label.name} className="flex items-center gap-1 text-xs">
               <span
@@ -576,6 +580,7 @@ export function TimeSeriesChart({
               <span className="text-gray-700">{label.text}</span>
             </div>
           ))}
+          {legendTrailing}
         </div>
       )}
     </div>
