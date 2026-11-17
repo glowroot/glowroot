@@ -6,6 +6,7 @@ import { apiGet, apiPost } from '../../lib/api'
 import { formatDuration } from '../../lib/formatting'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface AlertSummary {
   version: string
@@ -127,36 +128,33 @@ export function ConfigAlertListPage() {
     !layout?.offlineViewer && disabledForNextMillis != null && disabledForNextMillis > 0
 
   return (
-    <div>
+    <SettingsPage title="Alerts" wide>
       {isTemporarilyDisabled && disabledForNextMillis != null && (
-        <p className="mb-4 text-sm text-amber-600">
+        <p className="text-sm text-amber-600">
           Alerting is disabled for the next {formatDuration(disabledForNextMillis)}
         </p>
       )}
       {actionError && !showDisableModal && (
-        <div className="mb-4 rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700">
+        <div className="rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700">
           {actionError}
         </div>
       )}
-      <div className="rounded-lg border bg-white">
-        <div className="border-b px-4 py-3">
-          <h2 className="text-lg font-semibold text-gray-900">Alerts</h2>
-        </div>
+      <div className="divide-y divide-gray-100 border-t border-gray-100">
         {data.alerts.map((alert) => (
           <Link
             key={alert.version}
             to={`/modern/config/alert${qs}${qs ? '&' : '?'}v=${encodeURIComponent(alert.version)}`}
-            className="flex items-center px-4 py-3 text-sm text-gray-900 border-b last:border-b-0 no-underline hover:bg-gray-50"
+            className="flex items-center py-3 text-sm text-gray-900 no-underline hover:bg-gray-50/80 -mx-1 px-1 rounded"
           >
             {alert.display}
           </Link>
         ))}
         {data.alerts.length === 0 && (
-          <p className="px-4 py-3 text-sm text-gray-500">No alerts configured.</p>
+          <p className="py-3 text-sm text-gray-500">No alerts configured.</p>
         )}
       </div>
       {canEdit && (
-        <div className="mt-4 flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Link
             to={`/modern/config/alert${qs}${qs ? '&' : '?'}new`}
             className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 no-underline"
@@ -237,6 +235,6 @@ export function ConfigAlertListPage() {
           </div>
         </div>
       )}
-    </div>
+    </SettingsPage>
   )
 }

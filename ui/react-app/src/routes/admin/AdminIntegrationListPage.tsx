@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 export function AdminIntegrationListPage() {
   const items = [
@@ -9,19 +10,18 @@ export function AdminIntegrationListPage() {
   ]
 
   return (
-    <div className="rounded-lg border bg-white p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Integrations</h2>
-      <div className="rounded-md border">
+    <SettingsPage title="Integrations" wide>
+      <div className="divide-y divide-gray-100 border-t border-gray-100">
         {items.map((item) => (
           <Link
             key={item.href}
             to={item.href}
-            className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b last:border-b-0 no-underline"
+            className="flex items-center py-3 text-sm text-gray-700 no-underline hover:bg-gray-50/80 -mx-1 px-1 rounded"
           >
             {item.label}
           </Link>
         ))}
       </div>
-    </div>
+    </SettingsPage>
   )
 }

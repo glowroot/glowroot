@@ -6,6 +6,7 @@ import { GtButtonGroup } from '../../components/shared/GtButtonGroup'
 import { Input } from '../../components/ui/input'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface GeneralConfig {
   agentDisplayName?: string
@@ -71,8 +72,7 @@ export function AdminGeneralPage() {
   if (!data) return null
 
   return (
-    <div className="rounded-lg border bg-white p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">General</h2>
+    <SettingsPage title="General">
       {!layout.central && (
         <GtFormGroup
           label="Agent display name"
@@ -101,6 +101,6 @@ export function AdminGeneralPage() {
       {layout.adminEdit && (
         <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />
       )}
-    </div>
+    </SettingsPage>
   )
 }

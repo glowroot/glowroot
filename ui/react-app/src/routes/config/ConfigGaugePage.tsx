@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/input'
 import { Checkbox } from '../../components/ui/checkbox'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface MBeanAttribute {
   name: string
@@ -259,10 +260,7 @@ export function ConfigGaugePage() {
           Return to list
         </Link>
       </div>
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Gauges &mdash; {isNew ? '<New>' : (config.display || config.mbeanObjectName)}
-        </h2>
+      <SettingsPage title={`Gauges — ${isNew ? '<New>' : (config.display || config.mbeanObjectName)}`}>
         {agentNotConnected && (
           <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-800">
             Limited functionality since agent is not currently connected
@@ -416,7 +414,7 @@ export function ConfigGaugePage() {
             deleteConfirmMessage="Are you sure you want to delete this gauge?"
           />
         )}
-      </div>
+      </SettingsPage>
     </div>
   )
 }

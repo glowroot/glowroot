@@ -4,6 +4,7 @@ import { apiGetText, apiPostText } from '../../lib/api'
 import { GtButtonGroup } from '../../components/shared/GtButtonGroup'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 export function AdminJsonPage() {
   const { layout } = useLayout()
@@ -54,8 +55,7 @@ export function AdminJsonPage() {
   const lines = Math.max((adminJson.match(/\n/g) || []).length + 1, 10)
 
   return (
-    <div className="rounded-lg border bg-white p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">admin.json</h2>
+    <SettingsPage title="admin.json">
       <textarea
         className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono"
         rows={lines}
@@ -84,6 +84,6 @@ export function AdminJsonPage() {
         )}
       </p>
       {canEdit && <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />}
-    </div>
+    </SettingsPage>
   )
 }

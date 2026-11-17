@@ -10,6 +10,7 @@ import { Button } from '../../components/ui/button'
 import { Dialog, DialogFooter, DialogTitle } from '../../components/ui/dialog'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface UserConfig {
   username: string
@@ -164,10 +165,7 @@ export function AdminUserPage() {
           Return to list
         </Link>
       </div>
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Users &mdash; {heading}
-        </h2>
+      <SettingsPage title={`Users — ${heading}`}>
 
         <GtFormGroup label="Username" required={!isAnonymous} value={config.username}>
           <Input
@@ -273,7 +271,7 @@ export function AdminUserPage() {
             deleteConfirmMessage="Are you sure you want to delete this user?"
           />
         )}
-      </div>
+      </SettingsPage>
 
       <Dialog open={showNoRolesConfirm} onClose={() => resolveNoRolesConfirmation(false)}>
         <DialogTitle>User has no role assignments</DialogTitle>

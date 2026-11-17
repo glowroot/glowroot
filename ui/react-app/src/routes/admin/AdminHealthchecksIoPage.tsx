@@ -7,6 +7,7 @@ import { GtButtonGroup } from '../../components/shared/GtButtonGroup'
 import { Input } from '../../components/ui/input'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface HealthchecksIoConfig {
   pingUrl?: string
@@ -57,17 +58,14 @@ export function AdminHealthchecksIoPage() {
             Return to list
           </Link>
         </div>
-        <div className="rounded-lg border bg-white p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Integrations &mdash; Healthchecks.io
-          </h2>
+        <SettingsPage title="Integrations — Healthchecks.io">
           <div
             role="alert"
             className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800"
           >
             Use glowroot agent (with embedded database and UI, not pointing to central) to monitor glowroot central itself.
           </div>
-        </div>
+        </SettingsPage>
       </div>
     )
   }
@@ -79,10 +77,7 @@ export function AdminHealthchecksIoPage() {
           Return to list
         </Link>
       </div>
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Integrations &mdash; Healthchecks.io
-        </h2>
+      <SettingsPage title="Integrations — Healthchecks.io">
         <GtFormGroup label="Ping URL">
           <Input
             value={config.pingUrl ?? ''}
@@ -93,7 +88,7 @@ export function AdminHealthchecksIoPage() {
         {layout.adminEdit && (
           <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />
         )}
-      </div>
+      </SettingsPage>
     </div>
   )
 }

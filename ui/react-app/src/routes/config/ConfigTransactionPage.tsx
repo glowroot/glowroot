@@ -11,6 +11,7 @@ import { Checkbox } from '../../components/ui/checkbox'
 import { Button } from '../../components/ui/button'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface SlowThresholdOverride {
   transactionType: string
@@ -135,9 +136,8 @@ export function ConfigTransactionPage() {
   if (!config || !data) return null
 
   return (
-    <div className="rounded-lg border bg-white p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Transactions</h2>
-      <GtFormGroup
+    <SettingsPage title="Transactions">
+<GtFormGroup
         label="Slow threshold"
         required
         pattern={PATTERNS.integer}
@@ -289,6 +289,6 @@ export function ConfigTransactionPage() {
       {canEdit && (
         <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />
       )}
-    </div>
+    </SettingsPage>
   )
 }

@@ -9,6 +9,7 @@ import { Input } from '../../components/ui/input'
 import { Checkbox } from '../../components/ui/checkbox'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface PluginProperty {
   name: string
@@ -146,8 +147,7 @@ export function ConfigPluginPage() {
           Return to list
         </Link>
       </div>
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Plugins &mdash; {config.name}</h2>
+      <SettingsPage title={`Plugins — ${config.name}`}>
         {config.properties.map((prop, i) => {
           const propType = prop.type.toLowerCase()
           if (propType === 'boolean') {
@@ -227,7 +227,7 @@ export function ConfigPluginPage() {
         {canEdit && (
           <GtButtonGroup onSave={handleSave} hasChanges={hasChanges()} />
         )}
-      </div>
+      </SettingsPage>
     </div>
   )
 }

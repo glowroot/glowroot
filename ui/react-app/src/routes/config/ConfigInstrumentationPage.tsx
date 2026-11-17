@@ -10,6 +10,7 @@ import { Input } from '../../components/ui/input'
 import { Checkbox } from '../../components/ui/checkbox'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface MethodSignature {
   name: string
@@ -325,10 +326,7 @@ export function ConfigInstrumentationPage() {
           Return to list
         </Link>
       </div>
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 break-words">
-          Instrumentation &mdash; {isNew ? '<New>' : `${config.className}::${config.methodName}`}
-        </h2>
+      <SettingsPage title={`Instrumentation — ${isNew ? '<New>' : config.className + '::' + config.methodName}`}>
         {agentNotConnected && (
           <p className="mb-4 text-sm text-amber-600">
             Agent is not connected. Auto-completion is not available.
@@ -815,7 +813,7 @@ export function ConfigInstrumentationPage() {
           </div>
         </div>
       )}
-      </div>
+      </SettingsPage>
     </div>
   )
 }
