@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Label } from '../ui/label'
+import { cn } from '../../lib/utils'
 
 interface GtFormGroupProps {
   label: string
@@ -11,6 +12,7 @@ interface GtFormGroupProps {
   invalidMessage?: string
   invalid?: boolean
   children: ReactNode
+  className?: string
 }
 
 function matchesPattern(pattern: RegExp, input: string): boolean {
@@ -30,6 +32,7 @@ export function GtFormGroup({
   invalidMessage,
   invalid,
   children,
+  className,
 }: GtFormGroupProps) {
   let invalidReason: 'required' | 'other' | null = null
   if (value !== undefined) {
@@ -47,13 +50,16 @@ export function GtFormGroup({
 
   return (
     <div
-      className="grid grid-cols-3 gap-4 items-start py-2"
+      className={cn('flex flex-col gap-1.5 py-1.5 sm:flex-row sm:gap-4 sm:items-start', className)}
       data-gt-invalid={invalidReason ?? undefined}
     >
-      <Label htmlFor={htmlFor} className="pt-2 text-right text-gray-700">
+      <Label
+        htmlFor={htmlFor}
+        className="shrink-0 pt-1.5 text-sm text-gray-700 sm:w-52 sm:text-right"
+      >
         {label}
       </Label>
-      <div className="col-span-2">
+      <div className="min-w-0 flex-1 max-w-[40em]">
         {children}
         {required && (
           <div className="gt-invalid-required-feedback mt-1 text-xs text-red-600">
@@ -66,7 +72,7 @@ export function GtFormGroup({
           </div>
         )}
         {helpText && (
-          <p className="mt-1 text-xs text-gray-500">{helpText}</p>
+          <p className="mt-1 text-xs text-gray-500 leading-relaxed">{helpText}</p>
         )}
       </div>
     </div>

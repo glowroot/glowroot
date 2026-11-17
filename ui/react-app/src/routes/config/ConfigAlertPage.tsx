@@ -10,6 +10,7 @@ import { Input } from '../../components/ui/input'
 import { Checkbox } from '../../components/ui/checkbox'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface MetricOption {
   id: string
@@ -453,10 +454,7 @@ export function ConfigAlertPage() {
           Return to list
         </Link>
       </div>
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Alerts &mdash; {heading}
-        </h2>
+      <SettingsPage title={`Alerts — ${heading}`}>
         {/* Condition */}
         <fieldset className="mb-6">
           <legend className="text-sm font-semibold text-gray-700 mb-3">Condition</legend>
@@ -879,7 +877,7 @@ export function ConfigAlertPage() {
             deleteConfirmMessage="Are you sure you want to delete this alert?"
           />
         )}
-      </div>
+      </SettingsPage>
     </div>
   )
 }

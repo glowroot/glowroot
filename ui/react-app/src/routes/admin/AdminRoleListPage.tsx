@@ -4,6 +4,7 @@ import { useLayout } from '../../contexts/LayoutContext'
 import { apiGet } from '../../lib/api'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface Role {
   name: string
@@ -32,17 +33,16 @@ export function AdminRoleListPage() {
   if (error) return <HttpError error={error} />
 
   return (
-    <div className="rounded-lg border bg-white p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Roles</h2>
-      <div className="rounded-md border">
+    <SettingsPage title="Roles" wide>
+      <div className="divide-y divide-gray-100 border-t border-gray-100">
         {roles.length === 0 ? (
-          <div className="px-4 py-3 text-sm text-gray-500 italic">There are no roles</div>
+          <div className="py-3 text-sm text-gray-500 italic">There are no roles</div>
         ) : (
           roles.map((role) => (
             <Link
               key={role.name}
               to={`/modern/admin/role?name=${encodeURIComponent(role.name)}`}
-              className="flex items-center px-4 py-3 text-sm text-gray-900 border-b last:border-b-0 no-underline hover:bg-gray-50"
+              className="flex items-center py-3 text-sm text-gray-900 no-underline hover:bg-gray-50/80 -mx-1 px-1 rounded"
             >
               {role.name}
             </Link>
@@ -59,6 +59,6 @@ export function AdminRoleListPage() {
           </Link>
         </div>
       )}
-    </div>
+    </SettingsPage>
   )
 }

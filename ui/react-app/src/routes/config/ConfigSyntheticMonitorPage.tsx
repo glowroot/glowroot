@@ -7,6 +7,7 @@ import { GtButtonGroup } from '../../components/shared/GtButtonGroup'
 import { Input } from '../../components/ui/input'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 const DEFAULT_JAVA_SOURCE = `import org.apache.http.impl.client.*;
 import org.apache.http.client.methods.*;
@@ -157,10 +158,7 @@ export function ConfigSyntheticMonitorPage() {
           Return to list
         </Link>
       </div>
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Synthetic monitors &mdash; {isNew ? '<New>' : (config.display || config.pingUrl || '')}
-        </h2>
+      <SettingsPage title={`Synthetic monitors — ${isNew ? '<New>' : (config.display || config.pingUrl || '')}`}>
         <GtFormGroup label="Synthetic monitor type">
           <div className="space-y-1">
             <label className="flex items-center gap-2 text-sm">
@@ -290,7 +288,7 @@ export function ConfigSyntheticMonitorPage() {
             deleteConfirmMessage="Are you sure you want to delete this synthetic monitor?"
           />
         )}
-      </div>
+      </SettingsPage>
     </div>
   )
 }

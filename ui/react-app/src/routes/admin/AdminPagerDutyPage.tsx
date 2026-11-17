@@ -9,6 +9,7 @@ import { Input } from '../../components/ui/input'
 import { Button } from '../../components/ui/button'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface IntegrationKey {
   key: string
@@ -98,8 +99,7 @@ export function AdminPagerDutyPage() {
           Return to list
         </Link>
       </div>
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Integrations &mdash; PagerDuty</h2>
+      <SettingsPage title="Integrations — PagerDuty">
         <h3 className="text-sm font-semibold text-gray-900 mb-4">Integration keys</h3>
         {(config.integrationKeys ?? []).map((ik, i) => (
           <div key={i} className="mb-4 rounded border p-4 bg-gray-50">
@@ -134,7 +134,7 @@ export function AdminPagerDutyPage() {
         {layout.adminEdit && (
           <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />
         )}
-      </div>
+      </SettingsPage>
     </div>
   )
 }

@@ -6,6 +6,7 @@ import { GtButtonGroup } from '../../components/shared/GtButtonGroup'
 import { Input } from '../../components/ui/input'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 import { PATTERNS } from '../../lib/validation'
 
 interface UiDefaultsConfig {
@@ -107,9 +108,8 @@ export function ConfigUiDefaultsPage() {
   if (!config || !data) return null
 
   return (
-    <div className="rounded-lg border bg-white p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">UI Defaults</h2>
-      <GtFormGroup
+    <SettingsPage title="UI Defaults">
+<GtFormGroup
         label="Default transaction type"
         required
         value={config.defaultTransactionType}
@@ -180,6 +180,6 @@ export function ConfigUiDefaultsPage() {
       {canEdit && (
         <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />
       )}
-    </div>
+    </SettingsPage>
   )
 }

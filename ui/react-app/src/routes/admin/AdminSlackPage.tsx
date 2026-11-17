@@ -9,6 +9,7 @@ import { Input } from '../../components/ui/input'
 import { Button } from '../../components/ui/button'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface Webhook {
   url: string
@@ -89,8 +90,7 @@ export function AdminSlackPage() {
           Return to list
         </Link>
       </div>
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Integrations &mdash; Slack</h2>
+      <SettingsPage title="Integrations — Slack">
         <h3 className="text-sm font-semibold text-gray-900 mb-4">Slack webhooks</h3>
         {(config.webhooks ?? []).map((wh, i) => (
           <div key={i} className="mb-4 rounded border p-4 bg-gray-50">
@@ -117,7 +117,7 @@ export function AdminSlackPage() {
         {layout.adminEdit && (
           <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />
         )}
-      </div>
+      </SettingsPage>
     </div>
   )
 }

@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/input'
 import { Checkbox } from '../../components/ui/checkbox'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface WebConfig {
   port?: number
@@ -126,8 +127,7 @@ export function AdminWebPage() {
             : 'the glowroot directory'
 
   return (
-    <div className="rounded-lg border bg-white p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Web</h2>
+    <SettingsPage title="Web">
       {!layout.central && (
         <>
           <GtFormGroup
@@ -268,6 +268,6 @@ export function AdminWebPage() {
       {layout.adminEdit && (
         <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />
       )}
-    </div>
+    </SettingsPage>
   )
 }

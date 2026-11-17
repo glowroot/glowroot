@@ -11,8 +11,11 @@ export function AdminLayout() {
 
   const groups: SidebarGroup[] = [
     {
+      items: [{ label: 'General', href: '/modern/admin/general' }],
+    },
+    {
+      label: 'Access',
       items: [
-        { label: 'General', href: '/modern/admin/general' },
         {
           label: 'Users',
           href: '/modern/admin/user-list',
@@ -23,8 +26,18 @@ export function AdminLayout() {
           href: '/modern/admin/role-list',
           active: path === '/modern/admin/role-list' || path === '/modern/admin/role',
         },
+      ],
+    },
+    {
+      label: 'Server',
+      items: [
         { label: 'Web', href: '/modern/admin/web' },
         { label: 'Storage', href: '/modern/admin/storage' },
+      ],
+    },
+    {
+      label: 'Delivery',
+      items: [
         { label: 'SMTP', href: '/modern/admin/smtp' },
         { label: 'HTTP proxy', href: '/modern/admin/http-proxy' },
         {
@@ -37,26 +50,39 @@ export function AdminLayout() {
       ],
     },
     {
-      items: [
-        { label: 'admin.json', href: '/modern/admin/json' },
-      ],
+      items: [{ label: 'admin.json', href: '/modern/admin/json' }],
     },
   ]
 
+  const displayName = layout.embeddedAgentRollup?.lastDisplayPart || ''
+
   return (
     <div>
-      <div className="mb-4">
-        {layout.embeddedAgentRollup?.lastDisplayPart ? (
-          <h1 className="gt-header-text text-2xl font-bold text-[#8e6c15]">
-            {layout.embeddedAgentRollup.lastDisplayPart}
-            <span className="mx-2 text-gray-400">|</span>
-            Administration
-          </h1>
-        ) : (
-          <h1 className="gt-header-text text-2xl font-bold text-[#8e6c15]">Administration</h1>
-        )}
+      <div className="gt-header pt-5 pb-12">
+        <div className="gt-header-lhs flex flex-wrap items-center gap-1">
+          {displayName ? (
+            <>
+              <div className="gt-header-text text-[2.25rem] font-bold leading-none text-[#785b12]">
+                {displayName}
+              </div>
+              <div
+                aria-hidden="true"
+                className="gt-header-text gt-separator mx-1.5 -mt-2 select-none text-[3.25rem] font-normal leading-none text-[#785b12]"
+              >
+                |
+              </div>
+              <h1 className="gt-header-text m-0 text-[2.25rem] font-bold leading-none text-[#785b12]">
+                Administration
+              </h1>
+            </>
+          ) : (
+            <h1 className="gt-header-text m-0 text-[2.25rem] font-bold leading-none text-[#785b12]">
+              Administration
+            </h1>
+          )}
+        </div>
       </div>
-      <div className="flex gap-6">
+      <div className="flex gap-8">
         <Sidebar groups={groups} />
         <div className="flex-1 min-w-0">
           <Outlet />

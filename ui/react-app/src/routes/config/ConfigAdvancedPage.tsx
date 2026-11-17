@@ -7,6 +7,7 @@ import { Input } from '../../components/ui/input'
 import { Checkbox } from '../../components/ui/checkbox'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 import { PATTERNS } from '../../lib/validation'
 
 interface AdvancedConfig {
@@ -90,9 +91,8 @@ export function ConfigAdvancedPage() {
   }
 
   return (
-    <div className="rounded-lg border bg-white p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Advanced</h2>
-      {!isRollup && (
+    <SettingsPage title="Advanced">
+{!isRollup && (
         <GtFormGroup
           label="Immediate partial trace store threshold"
           required
@@ -226,6 +226,6 @@ export function ConfigAdvancedPage() {
       {canEdit && (
         <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />
       )}
-    </div>
+    </SettingsPage>
   )
 }
