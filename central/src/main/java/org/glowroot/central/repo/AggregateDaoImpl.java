@@ -32,6 +32,8 @@ import edu.umd.cs.findbugs.annotations.CheckReturnValue;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.central.repo.Common.NeedsRollup;
 import org.glowroot.central.repo.Common.NeedsRollupFromChildren;
+import org.glowroot.central.repo.Common.NeedsRollupKey;
+import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Messages;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
@@ -64,6 +66,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -74,6 +77,7 @@ import java.util.stream.Collectors;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.glowroot.common2.repo.CassandraProfile.collector;
 import static org.glowroot.common2.repo.CassandraProfile.rollup;
 
@@ -215,11 +219,16 @@ public class AggregateDaoImpl implements AggregateDao {
     private final PreparedStatement readNeedsRollupFromChild;
     private final PreparedStatement deleteNeedsRollupFromChild;
 
+    // needs rollup caches are only to reduce pressure on the needs rollup tables by reducing
+    // duplicate entries
+    private final ConcurrentMap<NeedsRollupKey, ImmutableSet<String>> needsRollupCache1;
+
     private final ImmutableList<Table> allTables;
 
     AggregateDaoImpl(Session session, ActiveAgentDao activeAgentDao,
                      TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
-                     ConfigRepositoryImpl configRepository, Executor asyncExecutor, int cassandraGcGraceSeconds, Clock clock)
+                     ConfigRepositoryImpl configRepository, ClusterManager clusterManager,
+                     Executor asyncExecutor, int cassandraGcGraceSeconds, Clock clock)
             throws Exception {
         this.session = session;
         this.activeAgentDao = activeAgentDao;
@@ -381,6 +390,9 @@ public class AggregateDaoImpl implements AggregateDao {
                 + " where agent_rollup = ?");
         deleteNeedsRollupFromChild = session.prepare("delete from aggregate_needs_rollup_from_child"
                 + " where agent_rollup = ? and capture_time = ? and uniqueness = ?");
+
+        needsRollupCache1 =
+                clusterManager.createReplicatedMap("aggregateNeedsRollupCache1", 5, MINUTES);
     }
 
     @CheckReturnValue
@@ -484,15 +496,49 @@ public class AggregateDaoImpl implements AggregateDao {
                 // insert into aggregate_needs_rollup_1
                 long intervalMillis = rollupConfigs.get(1).intervalMillis();
                 long rollupCaptureTime = CaptureTimes.getRollup(captureTime, intervalMillis);
-                int i = 0;
-                BoundStatement boundStatement = insertNeedsRollup.get(0).bind()
-                        .setString(i++, agentId)
-                        .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
-                        .setUuid(i++, Uuids.timeBased())
-                        .setSet(i++, transactionTypes, String.class)
-                        .setInt(i++, needsRollupAdjustedTTL);
-                futures.add(session.writeAsync(boundStatement, collector));
-                return CompletableFutures.allAsList(futures);
+                NeedsRollupKey needsRollupKey =
+                        ImmutableNeedsRollupKey.of(agentId, rollupCaptureTime);
+                ImmutableSet<String> needsRollupTransactionTypes =
+                        needsRollupCache1.get(needsRollupKey);
+                ImmutableSet<String> updatedNeedsRollupTransactionTypes = null;
+                boolean insertNeedsRollup1 = true;
+                if (needsRollupTransactionTypes == null) {
+                    // first insert for this key
+                    updatedNeedsRollupTransactionTypes = ImmutableSet.copyOf(transactionTypes);
+                } else if (needsRollupTransactionTypes.containsAll(transactionTypes)) {
+                    // capture current time after getting data from cache to prevent race condition
+                    // with reading the data in Common.getNeedsRollupList()
+                    if (!Common.isOldEnoughToRollup(rollupCaptureTime, clock.currentTimeMillis(),
+                            intervalMillis)) {
+                        // completely covered by prior inserts that haven't been rolled up yet so no
+                        // need to re-insert same data
+                        insertNeedsRollup1 = false;
+                    }
+                } else {
+                    // merge will maybe help prevent a few subsequent inserts
+                    Set<String> combined = new HashSet<>(needsRollupTransactionTypes);
+                    combined.addAll(transactionTypes);
+                    updatedNeedsRollupTransactionTypes = ImmutableSet.copyOf(combined);
+                }
+                if (insertNeedsRollup1) {
+                    int i = 0;
+                    BoundStatement boundStatement = insertNeedsRollup.get(0).bind()
+                            .setString(i++, agentId)
+                            .setInstant(i++, Instant.ofEpochMilli(rollupCaptureTime))
+                            .setUuid(i++, Uuids.timeBased())
+                            .setSet(i++, transactionTypes, String.class)
+                            .setInt(i++, needsRollupAdjustedTTL);
+                    futures.add(session.writeAsync(boundStatement, collector));
+                }
+                ImmutableSet<String> finalUpdatedNeedsRollupTransactionTypes =
+                        updatedNeedsRollupTransactionTypes;
+                return CompletableFutures.allAsList(futures).thenAccept(ignore -> {
+                    // update the cache now that the above inserts were successful
+                    if (finalUpdatedNeedsRollupTransactionTypes != null) {
+                        needsRollupCache1.put(needsRollupKey,
+                                finalUpdatedNeedsRollupTransactionTypes);
+                    }
+                });
             });
         });
     }
@@ -916,6 +962,7 @@ public class AggregateDaoImpl implements AggregateDao {
             session.updateSchemaWithRetry("truncate aggregate_needs_rollup_" + i);
         }
         session.updateSchemaWithRetry("truncate aggregate_needs_rollup_from_child");
+        needsRollupCache1.clear();
     }
 
     private CompletionStage<?> rollupFromChildren(String agentRollupId, String agentRollupIdForMeta,

@@ -148,7 +148,8 @@ public class CentralRepoModule {
         }
         fullQueryTextDao = new FullQueryTextDao(session, configRepository);
         AggregateDaoImpl aggregateDaoImpl = new AggregateDaoImpl(session, activeAgentDao,
-                transactionTypeDao, fullQueryTextDao, configRepository, asyncExecutor, cassandraGcGraceSeconds, clock);
+                transactionTypeDao, fullQueryTextDao, configRepository, clusterManager,
+                asyncExecutor, cassandraGcGraceSeconds, clock);
         GaugeValueDaoImpl gaugeValueDaoImpl = new GaugeValueDaoImpl(session, configRepository,
                 clusterManager, asyncExecutor, cassandraGcGraceSeconds, clock);
         SyntheticResultDaoImpl syntheticResultDaoImpl = new SyntheticResultDaoImpl(session,

@@ -26,21 +26,22 @@ import com.spotify.futures.CompletableFutures;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.central.repo.Common.NeedsRollup;
 import org.glowroot.central.repo.Common.NeedsRollupFromChildren;
+import org.glowroot.central.repo.Common.NeedsRollupKey;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common.util.OnlyUsedByTests;
-import org.glowroot.common.util.Styles;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 import org.glowroot.common2.repo.util.Gauges;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 import org.immutables.serial.Serial;
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -231,7 +232,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                         Set<String> combined = new HashSet<>(needsRollupGaugeNames);
                         combined.addAll(gaugeNames);
                         updatesForNeedsRollupCache1.put(needsRollupKey,
-                                ImmutableSet.copyOf(gaugeNames));
+                                ImmutableSet.copyOf(combined));
                     }
                     BoundStatement boundStatement = insertNeedsRollup.get(0).bind();
                     int adjustedTTL = Common.getAdjustedTTL(ttl, captureTime, clock);
@@ -596,14 +597,6 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         }
         session.updateSchemaWithRetry("truncate gauge_name");
         session.updateSchemaWithRetry("truncate gauge_needs_rollup_from_child");
-    }
-
-    @Value.Immutable
-    @Serial.Structural
-    @Styles.AllParameters
-    interface NeedsRollupKey extends Serializable {
-        String agentRollupId();
-
-        long captureTime();
+        needsRollupCache1.clear();
     }
 }

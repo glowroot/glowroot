@@ -15,6 +15,7 @@
  */
 package org.glowroot.central.repo;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,8 +42,11 @@ import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common.util.Styles;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
+import org.immutables.serial.Serial;
+import org.immutables.value.Value;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -100,13 +104,13 @@ class Common {
                         // assumes when it finds rolled up data, it doesn't check for non-rolled up data for
                         // same interval
                         //
-                        // and now another reason: optimization for gauge_needs_rollup_1 relies on it being
-                        // safe to not re-insert the same data up until rollupIntervalMillis after the
-                        // rollup capture time
+                        // and now another reason: optimization for *_needs_rollup_1 relies on it
+                        // being safe to not re-insert the same data up until rollupIntervalMillis
+                        // after the rollup capture time
                         //
-                        // safe to "break" instead of just "continue" since results are ordered by
-                        // capture_time
-                        break;
+                        // safe to return immediately instead of "continue" since results are ordered
+                        // by capture_time (and doing so avoids fetching any remaining pages)
+                        return CompletableFuture.completedFuture(needsRollupMap);
                     }
                     UUID uniqueness = row.getUuid(i++);
                     Set<String> keys = checkNotNull(row.getSet(i++, String.class));
@@ -267,5 +271,14 @@ class Common {
         Set<UUID> getUniquenessKeysForDeletion() {
             return uniquenessKeysForDeletion;
         }
+    }
+
+    @Value.Immutable
+    @Serial.Structural
+    @Styles.AllParameters
+    interface NeedsRollupKey extends Serializable {
+        String agentRollupId();
+
+        long captureTime();
     }
 }

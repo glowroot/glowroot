@@ -128,7 +128,7 @@ public class AggregateDaoIT {
                 configRepository, rollupLevelService, Clock.systemClock());
         aggregateDao = new AggregateDaoWithV09Support(ImmutableSet.of(), 0, 0, Clock.systemClock(),
                 new AggregateDaoImpl(session, activeAgentDao, transactionTypeDao, fullQueryTextDao,
-                        configRepository, asyncExecutor, 0, Clock.systemClock()));
+                        configRepository, clusterManager, asyncExecutor, 0, Clock.systemClock()));
 
         session.updateSchemaWithRetry("truncate agent_config");
     }
