@@ -27,6 +27,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.central.repo.Common.NeedsRollup;
 import org.glowroot.central.repo.Common.NeedsRollupFromChildren;
 import org.glowroot.central.util.ClusterManager;
+import org.glowroot.central.util.MoreFutures;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
@@ -503,9 +504,12 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                             + " records found for agentRollupId={}, gaugeName={}, captureTime={}, level={}",
                     childAgentRollupId, gaugeName, captureTime, rollupLevel).toCompletableFuture());
         }
-        return CompletableFutures.allAsList(futures).thenCompose(rows -> {
-            return rollupOneFromRows(rollupLevel, agentRollupId, gaugeName, captureTime,
-                    adjustedTTL, rows, profile);
+        return MoreFutures.rollupAsync(futures, asyncExecutor, new MoreFutures.DoRollupList() {
+            @Override
+            public CompletableFuture<?> execute(List<AsyncResultSet> rows) {
+                return rollupOneFromRows(rollupLevel, agentRollupId, gaugeName, captureTime,
+                        adjustedTTL, rows, profile);
+            }
         });
     }
 
@@ -522,14 +526,17 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                 "no gauge value table records found for agentRollupId={}, gaugeName={}, from={},"
                         + " to={}, level={}",
                 agentRollupId, gaugeName, from, to, rollupLevel).toCompletableFuture();
-        return future.thenCompose(rows -> {
-            return rollupOneFromRows(rollupLevel, agentRollupId, gaugeName, to, adjustedTTL,
-                    Lists.newArrayList(rows), profile);
+        return MoreFutures.rollupAsync(future, asyncExecutor, new MoreFutures.DoRollup() {
+            @Override
+            public CompletableFuture<?> execute(AsyncResultSet rows) {
+                return rollupOneFromRows(rollupLevel, agentRollupId, gaugeName, to, adjustedTTL,
+                        Lists.newArrayList(rows), profile);
+            }
         });
     }
 
-    private CompletionStage<?> rollupOneFromRows(int rollupLevel, String agentRollupId,
-                                                 String gaugeName, long to, int adjustedTTL, List<AsyncResultSet> results, CassandraProfile profile) {
+    private CompletableFuture<?> rollupOneFromRows(int rollupLevel, String agentRollupId,
+                                                   String gaugeName, long to, int adjustedTTL, List<AsyncResultSet> results, CassandraProfile profile) {
         DoubleAccumulator totalWeightedValue = new DoubleAccumulator(Double::sum, 0.0);
         AtomicLong totalWeight = new AtomicLong(0);
 
@@ -561,7 +568,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                     boundStatement = boundStatement.setDouble(i++, totalWeightedValue.get() / totalWeight.get())
                             .setLong(i++, totalWeight.get())
                             .setInt(i++, adjustedTTL);
-                    return session.writeAsync(boundStatement, profile);
+                    return session.writeAsync(boundStatement, profile).toCompletableFuture();
                 });
     }
 

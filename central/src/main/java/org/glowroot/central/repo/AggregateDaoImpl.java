@@ -1136,8 +1136,11 @@ public class AggregateDaoImpl implements AggregateDao {
                                                                 AggregateQuery query, Collection<String> childAgentRollupIds) {
         List<CompletionStage<AsyncResultSet>> futures =
                 getRowsForRollupFromChildren(query, childAgentRollupIds, summaryTable, true);
-        return CompletableFutures.allAsList(futures).thenCompose(rows -> {
-            return rollupOverallSummaryFromRows(rollup, query, rows);
+        return MoreFutures.rollupAsync(futures, asyncExecutor, new MoreFutures.DoRollupList() {
+            @Override
+            public CompletableFuture<?> execute(List<AsyncResultSet> rows) {
+                return rollupOverallSummaryFromRows(rollup, query, rows);
+            }
         });
     }
 
@@ -1198,8 +1201,11 @@ public class AggregateDaoImpl implements AggregateDao {
                                                               AggregateQuery query, Collection<String> childAgentRollupIds) {
         List<CompletionStage<AsyncResultSet>> futures =
                 getRowsForRollupFromChildren(query, childAgentRollupIds, errorSummaryTable, false);
-        return CompletableFutures.allAsList(futures).thenCompose(rows -> {
-            return rollupErrorSummaryFromRows(rollup, query, rows);
+        return MoreFutures.rollupAsync(futures, asyncExecutor, new MoreFutures.DoRollupList() {
+            @Override
+            public CompletableFuture<?> execute(List<AsyncResultSet> rows) {
+                return rollupErrorSummaryFromRows(rollup, query, rows);
+            }
         });
     }
 
@@ -1342,8 +1348,11 @@ public class AggregateDaoImpl implements AggregateDao {
         Map<String, CompletionStage<AsyncResultSet>> futures = getRowsForSummaryRollupFromChildren(
                 query, childAgentRollupIds, errorSummaryTable, false);
 
-        return CompletableFutures.allAsList(new ArrayList<>(futures.values())).thenCompose(rows -> {
-            return rollupTransactionErrorSummaryFromRows(rollup, query, rows);
+        return MoreFutures.rollupAsync(futures.values(), asyncExecutor, new MoreFutures.DoRollupList() {
+            @Override
+            public CompletableFuture<?> execute(List<AsyncResultSet> rows) {
+                return rollupTransactionErrorSummaryFromRows(rollup, query, rows);
+            }
         });
     }
 
@@ -1411,8 +1420,11 @@ public class AggregateDaoImpl implements AggregateDao {
                                                             AggregateQuery query, Collection<String> childAgentRollupIds) {
         List<CompletionStage<AsyncResultSet>> futures =
                 getRowsForRollupFromChildren(query, childAgentRollupIds, overviewTable, true);
-        return CompletableFutures.allAsList(futures).thenCompose(rows -> {
-            return rollupOverviewFromRows(rollup, query, rows);
+        return MoreFutures.rollupAsync(futures, asyncExecutor, new MoreFutures.DoRollupList() {
+            @Override
+            public CompletableFuture<?> execute(List<AsyncResultSet> rows) {
+                return rollupOverviewFromRows(rollup, query, rows);
+            }
         });
     }
 
@@ -1548,8 +1560,11 @@ public class AggregateDaoImpl implements AggregateDao {
                                                            ScratchBuffer scratchBuffer) {
         List<CompletionStage<AsyncResultSet>> futures =
                 getRowsForRollupFromChildren(query, childAgentRollupIds, histogramTable, true);
-        return CompletableFutures.allAsList(futures).thenCompose(rows -> {
-            return rollupHistogramFromRows(rollup, query, rows, scratchBuffer);
+        return MoreFutures.rollupAsync(futures, asyncExecutor, new MoreFutures.DoRollupList() {
+            @Override
+            public CompletableFuture<?> execute(List<AsyncResultSet> rows) {
+                return rollupHistogramFromRows(rollup, query, rows, scratchBuffer);
+            }
         });
     }
 
@@ -1620,8 +1635,11 @@ public class AggregateDaoImpl implements AggregateDao {
                                                             AggregateQuery query, Collection<String> childAgentRollupIds) {
         List<CompletionStage<AsyncResultSet>> futures =
                 getRowsForRollupFromChildren(query, childAgentRollupIds, throughputTable, true);
-        return CompletableFutures.allAsList(futures).thenCompose(rows -> {
-            return rollupThroughputFromRows(rollup, query, rows);
+        return MoreFutures.rollupAsync(futures, asyncExecutor, new MoreFutures.DoRollupList() {
+            @Override
+            public CompletableFuture<?> execute(List<AsyncResultSet> rows) {
+                return rollupThroughputFromRows(rollup, query, rows);
+            }
         });
     }
 
@@ -1683,8 +1701,11 @@ public class AggregateDaoImpl implements AggregateDao {
     private CompletionStage<?> rollupQueries(RollupParams rollup, AggregateQuery query) {
         CompletableFuture<AsyncResultSet> future =
                 executeQueryForRollup(rollup.agentRollupId(), query, queryTable, false);
-        return future.thenCompose(rows -> {
-            return rollupQueriesFromRows(rollup, query, Lists.newArrayList(rows));
+        return MoreFutures.rollupAsync(future, asyncExecutor, new MoreFutures.DoRollup() {
+            @Override
+            public CompletableFuture<?> execute(AsyncResultSet rows) {
+                return rollupQueriesFromRows(rollup, query, Lists.newArrayList(rows));
+            }
         });
     }
 
@@ -1692,8 +1713,11 @@ public class AggregateDaoImpl implements AggregateDao {
                                                          AggregateQuery query, Collection<String> childAgentRollupIds) {
         List<CompletionStage<AsyncResultSet>> futures =
                 getRowsForRollupFromChildren(query, childAgentRollupIds, queryTable, false);
-        return CompletableFutures.allAsList(futures).thenCompose(rows -> {
-            return rollupQueriesFromRows(rollup, query, rows);
+        return MoreFutures.rollupAsync(futures, asyncExecutor, new MoreFutures.DoRollupList() {
+            @Override
+            public CompletableFuture<?> execute(List<AsyncResultSet> rows) {
+                return rollupQueriesFromRows(rollup, query, rows);
+            }
         });
     }
 
@@ -1734,8 +1758,13 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private CompletionStage<?> rollupServiceCalls(RollupParams rollup, AggregateQuery query) {
-        return executeQueryForRollup(rollup.agentRollupId(), query, serviceCallTable, false).thenCompose(rows -> {
-            return rollupServiceCallsFromRows(rollup, query, Lists.newArrayList(rows));
+        CompletableFuture<AsyncResultSet> future =
+                executeQueryForRollup(rollup.agentRollupId(), query, serviceCallTable, false);
+        return MoreFutures.rollupAsync(future, asyncExecutor, new MoreFutures.DoRollup() {
+            @Override
+            public CompletableFuture<?> execute(AsyncResultSet rows) {
+                return rollupServiceCallsFromRows(rollup, query, Lists.newArrayList(rows));
+            }
         });
     }
 
@@ -1743,8 +1772,11 @@ public class AggregateDaoImpl implements AggregateDao {
                                                               AggregateQuery query, Collection<String> childAgentRollupIds) {
         List<CompletionStage<AsyncResultSet>> futures =
                 getRowsForRollupFromChildren(query, childAgentRollupIds, serviceCallTable, false);
-        return CompletableFutures.allAsList(futures).thenCompose(rows -> {
-            return rollupServiceCallsFromRows(rollup, query, rows);
+        return MoreFutures.rollupAsync(futures, asyncExecutor, new MoreFutures.DoRollupList() {
+            @Override
+            public CompletableFuture<?> execute(List<AsyncResultSet> rows) {
+                return rollupServiceCallsFromRows(rollup, query, rows);
+            }
         });
     }
 
@@ -1796,8 +1828,11 @@ public class AggregateDaoImpl implements AggregateDao {
                                                                AggregateQuery query, Collection<String> childAgentRollupIds, Table table) {
         List<CompletionStage<AsyncResultSet>> futures =
                 getRowsForRollupFromChildren(query, childAgentRollupIds, table, false);
-        return CompletableFutures.allAsList(futures).thenCompose(rows -> {
-            return rollupThreadProfileFromRows(rollup, query, rows, table);
+        return MoreFutures.rollupAsync(futures, asyncExecutor, new MoreFutures.DoRollupList() {
+            @Override
+            public CompletableFuture<?> execute(List<AsyncResultSet> rows) {
+                return rollupThreadProfileFromRows(rollup, query, rows, table);
+            }
         });
     }
 
@@ -2139,7 +2174,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 boundStatement = boundStatement.setToNull(i++);
             }
             boundStatement = boundStatement.setInt(i++, adjustedTTL.queryTTL());
-            futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, rollup).toCompletableFuture());
         }
         return CompletableFutures.allAsList(futures);
     }
@@ -2197,7 +2232,7 @@ public class AggregateDaoImpl implements AggregateDao {
                     .setDouble(i++, serviceCall.getTotalDurationNanos())
                     .setLong(i++, serviceCall.getExecutionCount())
                     .setInt(i++, adjustedTTL.serviceCallTTL());
-            futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
+            futures.add(session.writeAsync(boundStatement, rollup).toCompletableFuture());
         }
         return CompletableFutures.allAsList(futures);
     }

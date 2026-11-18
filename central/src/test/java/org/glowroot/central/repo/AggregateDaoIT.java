@@ -420,6 +420,10 @@ public class AggregateDaoIT {
             assertThat(query.hasTotalRows()).isTrue();
             assertThat(query.getTotalRows()).isEqualTo(10);
             assertThat(query.getExecutionCount()).isEqualTo(4);
+            assertThat(aggregateDao.hasMainThreadProfile("the parent::", aggregateQuery, web)
+                    .toCompletableFuture().join()).isFalse();
+            assertThat(aggregateDao.hasAuxThreadProfile("the parent::", aggregateQuery, web)
+                    .toCompletableFuture().join()).isFalse();
 
             // check rolled-up data after rollup
             summaryQuery = ImmutableSummaryQuery.builder()
@@ -492,6 +496,10 @@ public class AggregateDaoIT {
             assertThat(query.hasTotalRows()).isTrue();
             assertThat(query.getTotalRows()).isEqualTo(10);
             assertThat(query.getExecutionCount()).isEqualTo(4);
+            assertThat(aggregateDao.hasMainThreadProfile("the parent::", aggregateQuery, web)
+                    .toCompletableFuture().join()).isFalse();
+            assertThat(aggregateDao.hasAuxThreadProfile("the parent::", aggregateQuery, web)
+                    .toCompletableFuture().join()).isFalse();
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -607,6 +615,10 @@ public class AggregateDaoIT {
             assertThat(query.hasTotalRows()).isTrue();
             assertThat(query.getTotalRows()).isEqualTo(10);
             assertThat(query.getExecutionCount()).isEqualTo(4);
+            assertThat(aggregateDao.hasMainThreadProfile("the gp::", aggregateQuery, web)
+                    .toCompletableFuture().join()).isFalse();
+            assertThat(aggregateDao.hasAuxThreadProfile("the gp::", aggregateQuery, web)
+                    .toCompletableFuture().join()).isFalse();
 
             // check rolled-up data after rollup
             summaryQuery = ImmutableSummaryQuery.builder()
@@ -682,6 +694,10 @@ public class AggregateDaoIT {
             assertThat(query.hasTotalRows()).isTrue();
             assertThat(query.getTotalRows()).isEqualTo(10);
             assertThat(query.getExecutionCount()).isEqualTo(4);
+            assertThat(aggregateDao.hasMainThreadProfile("the gp::", aggregateQuery, web)
+                    .toCompletableFuture().join()).isFalse();
+            assertThat(aggregateDao.hasAuxThreadProfile("the gp::", aggregateQuery, web)
+                    .toCompletableFuture().join()).isFalse();
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {

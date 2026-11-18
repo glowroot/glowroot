@@ -15,6 +15,7 @@
  */
 package org.glowroot.central.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.*;
@@ -52,8 +53,18 @@ public class MoreFutures {
                 );
     }
 
-    public static CompletableFuture<?> rollupAsync(List<CompletableFuture<AsyncResultSet>> futures) {
-        return CompletableFutures.allAsList(futures);
+    public static CompletableFuture<?> rollupAsync(
+            Collection<? extends CompletionStage<AsyncResultSet>> futures,
+            Executor asyncExecutor, DoRollupList function) {
+        return transformAsync(CompletableFutures.allAsList(new ArrayList<>(futures)), asyncExecutor,
+                (list) -> {
+                    for (AsyncResultSet results : list) {
+                        if (results.currentPage().iterator().hasNext()) {
+                            return function.execute(list);
+                        }
+                    }
+                    return CompletableFuture.completedFuture(null);
+                });
     }
 
     private static <V, R> CompletableFuture<R> transformAsync(CompletableFuture<V> future,
