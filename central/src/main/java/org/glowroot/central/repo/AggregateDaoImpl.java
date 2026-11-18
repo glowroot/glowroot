@@ -79,6 +79,8 @@ import static org.glowroot.common2.repo.CassandraProfile.rollup;
 
 public class AggregateDaoImpl implements AggregateDao {
 
+    private static final int MAX_CONCURRENT_PER_TRANSACTION_ROLLUPS = 16;
+
     @SuppressWarnings("deprecation")
     private static final HashFunction SHA_1 = Hashing.sha1();
 
@@ -884,19 +886,18 @@ public class AggregateDaoImpl implements AggregateDao {
                 future = rollupFromChildren(agentRollupId, agentRollupIdForMeta, parentAgentRollupId,
                         ttls.get(0));
             }
-            return future.thenCompose(ignored -> {
-
-                List<CompletionStage<?>> futures = new ArrayList<>();
-                int rollupLevel = 1;
-                while (rollupLevel < configRepository.getRollupConfigs().size()) {
+            Function<Integer, CompletionStage<?>> lambda = new Function<Integer, CompletionStage<?>>() {
+                @Override
+                public CompletionStage<?> apply(Integer rollupLevel) {
+                    if (rollupLevel >= configRepository.getRollupConfigs().size()) {
+                        return CompletableFuture.completedFuture(null);
+                    }
                     TTL ttl = ttls.get(rollupLevel);
-                    futures.add(rollup(agentRollupId, agentRollupIdForMeta, rollupLevel, ttl));
-                    rollupLevel++;
+                    return rollup(agentRollupId, agentRollupIdForMeta, rollupLevel, ttl)
+                            .thenCompose(ignored -> apply(rollupLevel + 1));
                 }
-                return CompletableFuture.allOf(futures.stream()
-                        .map(CompletionStage::toCompletableFuture)
-                        .toArray(CompletableFuture<?>[]::new));
-            });
+            };
+            return future.thenCompose(ignored -> lambda.apply(1));
         });
     }
 
@@ -1056,12 +1057,11 @@ public class AggregateDaoImpl implements AggregateDao {
         }).thenCompose(ignored -> {
             return CompletableFutures.allAsList(rollupOtherPartsFromChildren(rollup, query, childAgentRollupIds));
         }).thenCompose(ignored -> {
-            List<CompletionStage<?>> futures = new ArrayList<>();
-            for (Map.Entry<String, Collection<String>> entry : transactionNames.asMap().entrySet()) {
-                futures.addAll(rollupOtherPartsFromChildren(rollup,
-                        query.withTransactionName(entry.getKey()), entry.getValue()));
-            }
-            return CompletableFutures.allAsList(futures);
+            return MoreFutures.runWithBoundedConcurrency(transactionNames.asMap().entrySet(),
+                    MAX_CONCURRENT_PER_TRANSACTION_ROLLUPS,
+                    entry -> CompletableFutures.allAsList(
+                            rollupOtherPartsFromChildren(rollup,
+                                    query.withTransactionName(entry.getKey()), entry.getValue())));
         });
     }
 
@@ -1085,12 +1085,10 @@ public class AggregateDaoImpl implements AggregateDao {
         futures.addAll(rollupOtherParts(rollup, query));
 
         return CompletableFutures.allAsList(futures).thenCompose(ignored -> {
-            List<CompletionStage<?>> perTransactionFutures = new ArrayList<>();
-            for (String transactionName : transactionNames) {
-                perTransactionFutures.addAll(rollupOtherParts(rollup,
-                        query.withTransactionName(transactionName)));
-            }
-            return CompletableFutures.allAsList(perTransactionFutures);
+            return MoreFutures.runWithBoundedConcurrency(transactionNames,
+                    MAX_CONCURRENT_PER_TRANSACTION_ROLLUPS,
+                    transactionName -> CompletableFutures.allAsList(
+                            rollupOtherParts(rollup, query.withTransactionName(transactionName))));
         });
     }
 

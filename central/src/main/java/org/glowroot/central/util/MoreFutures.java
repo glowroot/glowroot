@@ -18,6 +18,7 @@ package org.glowroot.central.util;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.function.Function;
 
@@ -65,6 +66,42 @@ public class MoreFutures {
                     }
                     return CompletableFuture.completedFuture(null);
                 });
+    }
+
+    public static <T> CompletableFuture<?> runWithBoundedConcurrency(Collection<T> items,
+            int maxConcurrency, Function<T, CompletionStage<?>> task) {
+        if (items.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        Queue<T> queue = new ConcurrentLinkedQueue<>(items);
+        int workers = Math.min(maxConcurrency, items.size());
+        List<CompletableFuture<?>> workerFutures = new ArrayList<>(workers);
+        for (int i = 0; i < workers; i++) {
+            workerFutures.add(drainQueue(queue, task));
+        }
+        return CompletableFutures.allAsList(workerFutures);
+    }
+
+    private static <T> CompletableFuture<?> drainQueue(Queue<T> queue,
+            Function<T, CompletionStage<?>> task) {
+        while (true) {
+            T item = queue.poll();
+            if (item == null) {
+                return CompletableFuture.completedFuture(null);
+            }
+            CompletableFuture<?> future;
+            try {
+                future = task.apply(item).toCompletableFuture();
+            } catch (Throwable t) {
+                return CompletableFuture.failedFuture(t);
+            }
+            if (!future.isDone()) {
+                return future.thenCompose(ignored -> drainQueue(queue, task));
+            }
+            if (future.isCompletedExceptionally()) {
+                return future;
+            }
+        }
     }
 
     private static <V, R> CompletableFuture<R> transformAsync(CompletableFuture<V> future,

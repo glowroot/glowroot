@@ -17,13 +17,13 @@ package org.glowroot.central;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
-import com.spotify.futures.CompletableFutures;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.central.repo.ActiveAgentDao;
 import org.glowroot.central.repo.AggregateDao;
 import org.glowroot.central.repo.GaugeValueDao;
 import org.glowroot.central.repo.SyntheticResultDao;
 import org.glowroot.central.util.MoreExecutors2;
+import org.glowroot.central.util.MoreFutures;
 import org.glowroot.common.util.Clock;
 import org.glowroot.common2.repo.ActiveAgentRepository.AgentRollup;
 import org.glowroot.common2.repo.CassandraProfile;
@@ -42,6 +42,8 @@ import static java.util.concurrent.TimeUnit.*;
 class RollupService implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(RollupService.class);
+
+    private static final int MAX_CONCURRENT_AGENT_ROLLUPS = 4;
 
     private final ActiveAgentDao activeAgentDao;
     private final AggregateDao aggregateDao;
@@ -100,79 +102,74 @@ class RollupService implements Runnable {
         }
     }
 
+    @VisibleForTesting
     @Instrumentation.Transaction(transactionType = "Background",
             transactionName = "Outer rollup loop", traceHeadline = "Outer rollup loop",
             timer = "outer rollup loop")
-    private void runInternal(List<AgentRollup> agentRollups) {
-        List<CompletableFuture<?>> futures = new ArrayList<>();
+    void runInternal(List<AgentRollup> agentRollups) {
         // randomize order so that multiple central collector nodes will be less likely to perform
         // duplicative work
-        for (AgentRollup agentRollup : shuffle(agentRollups)) {
-            // run aggregate, gauge, and synthetic monitor rollups independently so that a
-            // failure in one type does not prevent the others from completing, and so that an
-            // async exception from one agent does not cause allAsList to fail-fast and abandon
-            // rollups for all other agents
-            CompletableFuture<?> aggregateFut = rollupAggregates(agentRollup)
-                    .exceptionally(t -> {
-                        logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
-                        return null;
-                    })
-                    .toCompletableFuture();
-            CompletableFuture<?> gaugeFut = rollupGauges(agentRollup)
-                    .exceptionally(t -> {
-                        logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
-                        return null;
-                    })
-                    .toCompletableFuture();
-            CompletableFuture<?> syntheticFut = rollupSyntheticMonitors(agentRollup)
-                    .exceptionally(t -> {
-                        logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
-                        return null;
-                    })
-                    .toCompletableFuture();
-            // checking aggregate and gauge alerts after rollup since their calculation can depend
-            // on rollups depending on time period length (and alerts on rollups are not checked
-            // anywhere else)
-            //
-            // agent (not rollup) alerts are also checked right after receiving the respective data
-            // (aggregate/gauge/heartbeat) from the agent, but need to also check these once a
-            // minute in case no data has been received from the agent recently
-            CompletableFuture<?> fut = CompletableFuture.allOf(
-                            aggregateFut, gaugeFut, syntheticFut)
-                    .thenCompose(ignore -> {
-                        return checkAggregateAndGaugeAndHeartbeatAlertsAsync(agentRollup);
-                    })
-                    .exceptionally(t -> {
-                        logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
-                        return null;
-                    });
-            futures.add(fut);
-        }
-        CompletableFutures.allAsList(futures).thenCompose(ignore -> {
-            return centralAlertingService.checkForAllDeletedAlerts(CassandraProfile.rollup);
-        }).exceptionally(t -> {
-            logger.error(t.getMessage(), t);
-            return null;
-        }).toCompletableFuture().join();
+        MoreFutures.runWithBoundedConcurrency(shuffle(agentRollups), MAX_CONCURRENT_AGENT_ROLLUPS,
+                this::rollupOneAgent)
+                .thenCompose(ignore -> {
+                    return centralAlertingService.checkForAllDeletedAlerts(CassandraProfile.rollup);
+                }).exceptionally(t -> {
+                    logger.error(t.getMessage(), t);
+                    return null;
+                }).toCompletableFuture().join();
+    }
+
+    private CompletionStage<?> rollupOneAgent(AgentRollup agentRollup) {
+        // run aggregate, gauge, and synthetic monitor rollups sequentially per agent to avoid
+        // multiplying concurrent Cassandra queries, while catching errors after each stage so a
+        // failure in one type does not prevent the others from completing
+        return rollupAggregates(agentRollup)
+                .exceptionally(t -> {
+                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                    return null;
+                })
+                .thenCompose(ignore -> rollupGauges(agentRollup))
+                .exceptionally(t -> {
+                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                    return null;
+                })
+                .thenCompose(ignore -> rollupSyntheticMonitors(agentRollup))
+                .exceptionally(t -> {
+                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                    return null;
+                })
+                .thenCompose(ignore -> {
+                    // checking aggregate and gauge alerts after rollup since their calculation can
+                    // depend on rollups depending on time period length (and alerts on rollups are
+                    // not checked anywhere else)
+                    //
+                    // agent (not rollup) alerts are also checked right after receiving the
+                    // respective data (aggregate/gauge/heartbeat) from the agent, but need to also
+                    // check these once a minute in case no data has been received from the agent
+                    // recently
+                    return checkAggregateAndGaugeAndHeartbeatAlertsAsync(agentRollup);
+                })
+                .exceptionally(t -> {
+                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                    return null;
+                });
     }
 
     private CompletionStage<?> rollupAggregates(AgentRollup agentRollup) {
-        List<CompletableFuture<?>> futures = new ArrayList<>();
         // randomize order so that multiple central collector nodes will be less likely to perform
         // duplicative work
-        for (AgentRollup childAgentRollup : shuffle(agentRollup.children())) {
-            futures.add(rollupAggregates(childAgentRollup).toCompletableFuture());
-        }
-        return CompletableFutures.allAsList(futures).thenCompose(ignored -> {
-            try {
-                return aggregateDao.rollup(agentRollup.id());
-            } catch (InterruptedException e) {
-                // probably shutdown requested (see close method above)
-            } catch (Throwable t) {
-                logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
-            }
-            return CompletableFuture.completedFuture(null);
-        });
+        return MoreFutures.runWithBoundedConcurrency(shuffle(agentRollup.children()),
+                MAX_CONCURRENT_AGENT_ROLLUPS, this::rollupAggregates)
+                .thenCompose(ignored -> {
+                    try {
+                        return aggregateDao.rollup(agentRollup.id());
+                    } catch (InterruptedException e) {
+                        // probably shutdown requested (see close method above)
+                    } catch (Throwable t) {
+                        logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                    }
+                    return CompletableFuture.completedFuture(null);
+                });
     }
 
     private CompletionStage<?> rollupGauges(AgentRollup agentRollup) {
@@ -191,14 +188,11 @@ class RollupService implements Runnable {
         }
         // need to roll up children first, since gauge values initial roll up from children is
         // done on the 1-min aggregates of the children
-        List<CompletionStage<?>> futures = new ArrayList<>();
-        for (AgentRollup childAgentRollup : shuffle(childAgentRollups)) {
-            futures.add(rollupGauges(childAgentRollup));
-        }
-        // using _allAsList_ because need to _not_ roll up parent if exception occurs while
-        // rolling up a child, since gauge values initial roll up from children is done on the 1-min
-        // aggregates of the children
-        return CompletableFutures.allAsList(futures)
+        // using runWithBoundedConcurrency without swallowing child exceptions because need to
+        // _not_ roll up parent if exception occurs while rolling up a child, since gauge values
+        // initial roll up from children is done on the 1-min aggregates of the children
+        return MoreFutures.runWithBoundedConcurrency(shuffle(childAgentRollups),
+                MAX_CONCURRENT_AGENT_ROLLUPS, this::rollupGauges)
                 .thenCompose(ignored -> {
                     try {
                         return gaugeValueDao.rollup(agentRollup.id());
@@ -212,36 +206,32 @@ class RollupService implements Runnable {
     }
 
     private CompletionStage<?> rollupSyntheticMonitors(AgentRollup agentRollup) {
-        List<CompletionStage<?>> futures = new ArrayList<>();
-        for (AgentRollup childAgentRollup : shuffle(agentRollup.children())) {
-            futures.add(rollupSyntheticMonitors(childAgentRollup));
-        }
-        return CompletableFutures.allAsList(futures).thenCompose(ignored -> {
-            try {
-                return syntheticResultDao.rollup(agentRollup.id());
-            } catch (InterruptedException e) {
-                // probably shutdown requested (see close method above)
-            } catch (Throwable t) {
-                logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
-            }
-            return CompletableFuture.completedFuture(null);
-        });
+        return MoreFutures.runWithBoundedConcurrency(shuffle(agentRollup.children()),
+                MAX_CONCURRENT_AGENT_ROLLUPS, this::rollupSyntheticMonitors)
+                .thenCompose(ignored -> {
+                    try {
+                        return syntheticResultDao.rollup(agentRollup.id());
+                    } catch (InterruptedException e) {
+                        // probably shutdown requested (see close method above)
+                    } catch (Throwable t) {
+                        logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                    }
+                    return CompletableFuture.completedFuture(null);
+                });
     }
 
     private CompletionStage<?> checkAggregateAndGaugeAndHeartbeatAlertsAsync(AgentRollup agentRollup) {
-        List<CompletionStage<?>> futures = new ArrayList<>();
-        for (AgentRollup childAgentRollup : agentRollup.children()) {
-            futures.add(checkAggregateAndGaugeAndHeartbeatAlertsAsync(childAgentRollup));
-        }
-        return CompletableFutures.allAsList(futures).thenCompose(ignored -> {
-            try {
-                return centralAlertingService.checkAggregateAndGaugeAndHeartbeatAlertsAsync(
-                        agentRollup.id(), agentRollup.display(), clock.currentTimeMillis(), CassandraProfile.rollup);
-            } catch (Throwable t) {
-                logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
-            }
-            return CompletableFuture.completedFuture(null);
-        });
+        return MoreFutures.runWithBoundedConcurrency(agentRollup.children(),
+                MAX_CONCURRENT_AGENT_ROLLUPS, this::checkAggregateAndGaugeAndHeartbeatAlertsAsync)
+                .thenCompose(ignored -> {
+                    try {
+                        return centralAlertingService.checkAggregateAndGaugeAndHeartbeatAlertsAsync(
+                                agentRollup.id(), agentRollup.display(), clock.currentTimeMillis(), CassandraProfile.rollup);
+                    } catch (Throwable t) {
+                        logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                    }
+                    return CompletableFuture.completedFuture(null);
+                });
     }
 
     private static <T> List<T> shuffle(List<T> agentRollups) {
