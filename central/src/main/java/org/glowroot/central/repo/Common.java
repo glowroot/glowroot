@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -223,6 +224,14 @@ class Common {
     static boolean isOldEnoughToRollup(long captureTime, long currentTimeMillis,
             long intervalMillis) {
         return captureTime < currentTimeMillis - intervalMillis;
+    }
+
+    static Throwable unwrapCompletionException(Throwable throwable) {
+        Throwable cause = throwable;
+        while (cause instanceof CompletionException && cause.getCause() != null) {
+            cause = cause.getCause();
+        }
+        return cause;
     }
 
     static class NeedsRollup {

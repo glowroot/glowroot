@@ -39,6 +39,8 @@ import org.glowroot.common2.repo.ImmutableErrorInterval;
 import org.glowroot.common2.repo.ImmutableSyntheticResult;
 import org.glowroot.common2.repo.SyntheticResult;
 import org.glowroot.common2.repo.SyntheticResult.ErrorInterval;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -58,6 +60,8 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static org.glowroot.common2.repo.CassandraProfile.*;
 
 public class SyntheticResultDaoImpl implements SyntheticResultDao {
+
+    private static final Logger logger = LoggerFactory.getLogger(SyntheticResultDaoImpl.class);
 
     private final Session session;
     private final ConfigRepositoryImpl configRepository;
@@ -353,10 +357,11 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
                                 PreparedStatement deleteNeedsRollup = SyntheticResultDaoImpl.this.deleteNeedsRollup.get(rollupLevel - 1);
                                 return Common.postRollup(agentRollupId, needsRollup.getCaptureTime(), syntheticMonitorIds,
                                                 needsRollup.getUniquenessKeysForDeletion(), finalNextRollupIntervalMillis,
-                                                insertNeedsRollup, deleteNeedsRollup, needsRollupAdjustedTTL, session, rollup)
-                                        .thenCompose(ignore -> apply(indexNeedsRollup + 1));
-
-                            });
+                                                insertNeedsRollup, deleteNeedsRollup, needsRollupAdjustedTTL, session, rollup);
+                            }).exceptionally(t -> {
+                                logger.error("{} - {}", agentRollupId, t.getMessage(), t);
+                                return null;
+                            }).thenCompose(ignore -> apply(indexNeedsRollup + 1));
                         }
                     };
 

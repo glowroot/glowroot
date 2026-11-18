@@ -59,6 +59,8 @@ import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
 import org.glowroot.wire.api.model.AggregateOuterClass.OldTransactionAggregate;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -70,6 +72,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.DoubleAccumulator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -82,6 +85,8 @@ import static org.glowroot.common2.repo.CassandraProfile.collector;
 import static org.glowroot.common2.repo.CassandraProfile.rollup;
 
 public class AggregateDaoImpl implements AggregateDao {
+
+    private static final Logger logger = LoggerFactory.getLogger(AggregateDaoImpl.class);
 
     private static final int MAX_CONCURRENT_PER_TRANSACTION_ROLLUPS = 16;
 
@@ -927,10 +932,11 @@ public class AggregateDaoImpl implements AggregateDao {
     public CompletionStage<?> rollup(String agentRollupId, String agentRollupIdForMeta,
                                      @Nullable String parentAgentRollupId, boolean leaf) {
         return getTTLs().thenCompose(ttls -> {
+            AtomicReference<@Nullable Throwable> parentRollupFailure = new AtomicReference<>();
             CompletionStage<?> future = CompletableFuture.completedFuture(null);
             if (!leaf) {
                 future = rollupFromChildren(agentRollupId, agentRollupIdForMeta, parentAgentRollupId,
-                        ttls.get(0));
+                        ttls.get(0), parentRollupFailure);
             }
             Function<Integer, CompletionStage<?>> lambda = new Function<Integer, CompletionStage<?>>() {
                 @Override
@@ -943,7 +949,14 @@ public class AggregateDaoImpl implements AggregateDao {
                             .thenCompose(ignored -> apply(rollupLevel + 1));
                 }
             };
-            return future.thenCompose(ignored -> lambda.apply(1));
+            return future.thenCompose(ignored -> lambda.apply(1))
+                    .thenCompose(ignored -> {
+                        Throwable failure = parentRollupFailure.get();
+                        if (failure != null) {
+                            return CompletableFuture.failedFuture(failure);
+                        }
+                        return CompletableFuture.completedFuture(null);
+                    });
         });
     }
 
@@ -966,7 +979,8 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private CompletionStage<?> rollupFromChildren(String agentRollupId, String agentRollupIdForMeta,
-                                                  @Nullable String parentAgentRollupId, TTL ttl) {
+                                                  @Nullable String parentAgentRollupId, TTL ttl,
+                                                  AtomicReference<@Nullable Throwable> parentRollupFailure) {
         final int rollupLevel = 0;
         return Common.getNeedsRollupFromChildrenList(agentRollupId, readNeedsRollupFromChild, session, rollup)
                 .thenCompose(needsRollupFromChildrenList -> {
@@ -1014,6 +1028,13 @@ public class AggregateDaoImpl implements AggregateDao {
                                             nextRollupIntervalMillis, insertNeedsRollup.get(rollupLevel),
                                             deleteNeedsRollupFromChild, needsRollupAdjustedTTL, session, rollup);
                                 });
+                            }).exceptionally(t -> {
+                                logger.error("{} - {}", agentRollupId, t.getMessage(), t);
+                                if (parentAgentRollupId != null) {
+                                    parentRollupFailure.compareAndSet(null,
+                                            Common.unwrapCompletionException(t));
+                                }
+                                return null;
                             }).thenCompose(ignored2 -> apply(indexNeedsRollupFromChildrenList + 1));
                         }
                     };
@@ -1073,6 +1094,9 @@ public class AggregateDaoImpl implements AggregateDao {
                                             needsRollup.getUniquenessKeysForDeletion(), finalNextRollupIntervalMillis,
                                             insertNeedsRollup, deleteNeedsRollup, needsRollupAdjustedTTL, session, rollup).thenApply(ignored2 -> indexNeedsRollupList + 1);
                                 });
+                            }).exceptionally(t -> {
+                                logger.error("{} - {}", agentRollupId, t.getMessage(), t);
+                                return indexNeedsRollupList + 1;
                             }).thenCompose(this::apply);
                 }
             };

@@ -44,6 +44,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -196,6 +197,123 @@ public class RollupServiceTest {
             assertThat(stages).containsExactly("aggregate", "gauge", "synthetic", "alert");
         }
         verify(centralAlertingService).checkForAllDeletedAlerts(any());
+    }
+
+    @Test
+    public void rollupGaugesSkipsParentWhenChildGaugeRollupFails() throws Exception {
+        ActiveAgentDao activeAgentDao = mock(ActiveAgentDao.class);
+        AggregateDao aggregateDao = mock(AggregateDao.class);
+        GaugeValueDao gaugeValueDao = mock(GaugeValueDao.class);
+        SyntheticResultDao syntheticResultDao = mock(SyntheticResultDao.class);
+        CentralAlertingService centralAlertingService = mock(CentralAlertingService.class);
+        Clock clock = fixedClock();
+
+        when(aggregateDao.rollup(anyString()))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(gaugeValueDao.rollup("parent::childA"))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(gaugeValueDao.rollup("parent::childB"))
+                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("child gauge fail")));
+        when(syntheticResultDao.rollup(anyString()))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(centralAlertingService.checkAggregateAndGaugeAndHeartbeatAlertsAsync(
+                anyString(), anyString(), anyLong(), eq(CassandraProfile.rollup)))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(centralAlertingService.checkForAllDeletedAlerts(CassandraProfile.rollup))
+                .thenReturn(CompletableFuture.completedFuture(null));
+
+        AgentRollup childA = ImmutableAgentRollup.builder()
+                .id("parent::childA")
+                .display("childA")
+                .lastDisplayPart("childA")
+                .build();
+        AgentRollup childB = ImmutableAgentRollup.builder()
+                .id("parent::childB")
+                .display("childB")
+                .lastDisplayPart("childB")
+                .build();
+        AgentRollup parent = ImmutableAgentRollup.builder()
+                .id("parent::")
+                .display("parent")
+                .lastDisplayPart("parent")
+                .addChildren(childA, childB)
+                .build();
+
+        RollupService rollupService = new RollupService(activeAgentDao, aggregateDao, gaugeValueDao,
+                syntheticResultDao, centralAlertingService, clock);
+        try {
+            rollupService.runInternal(List.of(parent));
+        } finally {
+            rollupService.close();
+        }
+
+        verify(gaugeValueDao).rollup("parent::childA");
+        verify(gaugeValueDao).rollup("parent::childB");
+        verify(gaugeValueDao, never()).rollup("parent::");
+        verify(aggregateDao).rollup("parent::");
+        verify(syntheticResultDao).rollup("parent::");
+        verify(centralAlertingService).checkAggregateAndGaugeAndHeartbeatAlertsAsync(
+                eq("parent::"), eq("parent"), anyLong(), eq(CassandraProfile.rollup));
+    }
+
+    @Test
+    public void rollupAggregatesSkipsGrandparentWhenIntermediateParentRollupFails()
+            throws Exception {
+        ActiveAgentDao activeAgentDao = mock(ActiveAgentDao.class);
+        AggregateDao aggregateDao = mock(AggregateDao.class);
+        GaugeValueDao gaugeValueDao = mock(GaugeValueDao.class);
+        SyntheticResultDao syntheticResultDao = mock(SyntheticResultDao.class);
+        CentralAlertingService centralAlertingService = mock(CentralAlertingService.class);
+        Clock clock = fixedClock();
+
+        when(aggregateDao.rollup("gp::parent1::child1"))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(aggregateDao.rollup("gp::parent1::"))
+                .thenReturn(CompletableFuture.failedFuture(
+                        new RuntimeException("intermediate aggregate fail")));
+        when(gaugeValueDao.rollup(anyString()))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(syntheticResultDao.rollup(anyString()))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(centralAlertingService.checkAggregateAndGaugeAndHeartbeatAlertsAsync(
+                anyString(), anyString(), anyLong(), eq(CassandraProfile.rollup)))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(centralAlertingService.checkForAllDeletedAlerts(CassandraProfile.rollup))
+                .thenReturn(CompletableFuture.completedFuture(null));
+
+        AgentRollup child = ImmutableAgentRollup.builder()
+                .id("gp::parent1::child1")
+                .display("child1")
+                .lastDisplayPart("child1")
+                .build();
+        AgentRollup parent1 = ImmutableAgentRollup.builder()
+                .id("gp::parent1::")
+                .display("parent1")
+                .lastDisplayPart("parent1")
+                .addChildren(child)
+                .build();
+        AgentRollup gp = ImmutableAgentRollup.builder()
+                .id("gp::")
+                .display("gp")
+                .lastDisplayPart("gp")
+                .addChildren(parent1)
+                .build();
+
+        RollupService rollupService = new RollupService(activeAgentDao, aggregateDao, gaugeValueDao,
+                syntheticResultDao, centralAlertingService, clock);
+        try {
+            rollupService.runInternal(List.of(gp));
+        } finally {
+            rollupService.close();
+        }
+
+        verify(aggregateDao).rollup("gp::parent1::child1");
+        verify(aggregateDao).rollup("gp::parent1::");
+        verify(aggregateDao, never()).rollup("gp::");
+        verify(gaugeValueDao).rollup("gp::");
+        verify(syntheticResultDao).rollup("gp::");
+        verify(centralAlertingService).checkAggregateAndGaugeAndHeartbeatAlertsAsync(
+                eq("gp::"), eq("gp"), anyLong(), eq(CassandraProfile.rollup));
     }
 
     private static Clock fixedClock() {

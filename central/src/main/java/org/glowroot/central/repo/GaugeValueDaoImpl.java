@@ -49,6 +49,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.DoubleAccumulator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -58,6 +59,8 @@ import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.*;
 
 public class GaugeValueDaoImpl implements GaugeValueDao {
+
+    private static final Logger logger = LoggerFactory.getLogger(GaugeValueDaoImpl.class);
 
     private final Session session;
     private final ConfigRepositoryImpl configRepository;
@@ -329,12 +332,14 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     public CompletionStage<?> rollup(String agentRollupId, @Nullable String parentAgentRollupId, boolean leaf, CassandraProfile profile) {
 
         return getTTLs().thenCompose(ttls -> {
+            AtomicReference<@Nullable Throwable> parentRollupFailure = new AtomicReference<>();
             int rollupLevel;
             CompletionStage<?> starting = CompletableFuture.completedFuture(null);
             if (leaf) {
                 rollupLevel = 1;
             } else {
-                starting = rollupFromChildren(agentRollupId, parentAgentRollupId, ttls.get(1), profile);
+                starting = rollupFromChildren(agentRollupId, parentAgentRollupId, ttls.get(1),
+                        profile, parentRollupFailure);
                 rollupLevel = 2;
             }
 
@@ -342,7 +347,8 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                 @Override
                 public CompletionStage<Integer> apply(Integer rollupLevelInner) {
                     if (rollupLevelInner <= configRepository.getRollupConfigs().size()) {
-                        return rollup(agentRollupId, parentAgentRollupId, rollupLevelInner, ttls.get(rollupLevelInner), profile)
+                        return rollup(agentRollupId, parentAgentRollupId, rollupLevelInner,
+                                ttls.get(rollupLevelInner), profile, parentRollupFailure)
                                 .thenApply(ignored -> rollupLevelInner + 1)
                                 .thenCompose(this);
                     } else {
@@ -350,7 +356,14 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                     }
                 }
             };
-            return starting.thenApply(ignored -> rollupLevel).thenCompose(lambda);
+            return starting.thenApply(ignored -> rollupLevel).thenCompose(lambda)
+                    .thenCompose(ignored -> {
+                        Throwable failure = parentRollupFailure.get();
+                        if (failure != null) {
+                            return CompletableFuture.failedFuture(failure);
+                        }
+                        return CompletableFuture.completedFuture(null);
+                    });
         });
     }
 
@@ -368,7 +381,8 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     }
 
     private CompletionStage<?> rollupFromChildren(String agentRollupId, @Nullable String parentAgentRollupId,
-                                                  int ttl, CassandraProfile profile) {
+                                                  int ttl, CassandraProfile profile,
+                                                  AtomicReference<@Nullable Throwable> parentRollupFailure) {
         final int rollupLevel = 1;
         return Common.getNeedsRollupFromChildrenList(agentRollupId, readNeedsRollupFromChild, session, profile).thenCompose(needsRollupFromChildrenList -> {
 
@@ -413,6 +427,13 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                                 nextRollupIntervalMillis, insertNeedsRollup.get(rollupLevel),
                                 deleteNeedsRollupFromChild, needsRollupAdjustedTTL, session, profile));
 
+                    }).exceptionally(t -> {
+                        logger.error("{} - {}", agentRollupId, t.getMessage(), t);
+                        if (parentAgentRollupId != null) {
+                            parentRollupFailure.compareAndSet(null,
+                                    Common.unwrapCompletionException(t));
+                        }
+                        return null;
                     }).thenCompose(ignored -> apply(indexNeedsRollupFromChildren + 1));
 
                 }
@@ -423,7 +444,8 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
     }
 
     private CompletionStage<?> rollup(String agentRollupId, @Nullable String parentAgentRollupId, int rollupLevel,
-                                      int ttl, CassandraProfile profile) {
+                                      int ttl, CassandraProfile profile,
+                                      AtomicReference<@Nullable Throwable> parentRollupFailure) {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         long rollupIntervalMillis = rollupConfigs.get(rollupLevel - 1).intervalMillis();
         return Common.getNeedsRollupList(agentRollupId,
@@ -459,7 +481,12 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                         // processed (also prior to 0.9.6), and when the corresponding old data has expired
                         return Common.postRollup(agentRollupId, needsRollup.getCaptureTime(), gaugeNames,
                                 needsRollup.getUniquenessKeysForDeletion(), null, null,
-                                deleteNeedsRollup.get(rollupLevel - 1), -1, session, profile).thenApply(ignored -> indexNeedsRollup + 1);
+                                deleteNeedsRollup.get(rollupLevel - 1), -1, session, profile)
+                                .exceptionally(t -> {
+                                    logger.error("{} - {}", agentRollupId, t.getMessage(), t);
+                                    return null;
+                                })
+                                .thenCompose(ignored -> apply(indexNeedsRollup + 1));
                     }
                     return CompletableFutures.allAsList(futures).thenCompose(ignored -> {
                         int needsRollupAdjustedTTL =
@@ -483,8 +510,15 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                         PreparedStatement deleteNeedsRollup = GaugeValueDaoImpl.this.deleteNeedsRollup.get(rollupLevel - 1);
                         return starting.thenCompose(ignored2 -> Common.postRollup(agentRollupId, needsRollup.getCaptureTime(), gaugeNames,
                                 needsRollup.getUniquenessKeysForDeletion(), finalNextRollupIntervalMillis,
-                                insertNeedsRollup, deleteNeedsRollup, needsRollupAdjustedTTL, session, profile)).thenCompose(ignored3 -> apply(indexNeedsRollup + 1));
-                    });
+                                insertNeedsRollup, deleteNeedsRollup, needsRollupAdjustedTTL, session, profile));
+                    }).exceptionally(t -> {
+                        logger.error("{} - {}", agentRollupId, t.getMessage(), t);
+                        if (rollupLevel == 1 && parentAgentRollupId != null) {
+                            parentRollupFailure.compareAndSet(null,
+                                    Common.unwrapCompletionException(t));
+                        }
+                        return null;
+                    }).thenCompose(ignored3 -> apply(indexNeedsRollup + 1));
                 }
             };
             return lambda.apply(0);
