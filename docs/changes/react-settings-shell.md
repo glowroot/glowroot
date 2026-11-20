@@ -26,4 +26,6 @@ Modern-but-dense (2B): typography and hairline sections instead of classic Boots
 # Verification
 
 - `npx tsc --noEmit` in `ui/react-app`
-- Manual Vite + sandbox: Config General / list pages; Admin General / Storage / Users / LDAP sections
+- Manual Vite + sandbox: Config General / list pages; Admin General / Storage / Users / LDAP
+- Manual: Instrumentation New (2-col + type select); Alerts New (condition + severity/notification); Advanced wiki footer
+- Classic Angular UI unchanged (modern `/modern/*` only)
