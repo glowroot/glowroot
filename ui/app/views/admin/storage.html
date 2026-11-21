@@ -48,6 +48,30 @@
           Time retention (<strong>days</strong>) for response-time / gauge charts, traces, and full query text in the main H2 file.
           Click <span class="fas fa-question-circle"></span> above for details.
         </div>
+        <div class="help-block"
+             ng-if="config.h2DataFileSize > 0">
+          H2 data file size: <strong>{{config.h2DataFileSize | gtBytes}}</strong>
+          <span class="text-warning"
+                ng-if="config.h2DataFileSize >= h2ComfortZoneMaxBytes">
+            — above typical embedded comfort zone; prefer shorter retention, Compact, or Central.
+          </span>
+        </div>
+        <div class="alert alert-warning"
+             ng-if="config.reaperConsecutiveFailedCycles > 0">
+          Retention reaper failing for
+          <strong>{{config.reaperConsecutiveFailedCycles}}</strong>
+          consecutive cycle(s)
+          <span ng-if="config.reaperLastFailedSteps.length">
+            ({{config.reaperLastFailedSteps.join(', ')}})
+          </span>.
+          Other tables still reap; the failed table(s) may grow until H2 is repaired.
+          Corrupt PageStore/MVStore usually needs a wipe of <code>data/</code> (history lost) or Central.
+          See embedded H2 upgrade docs.
+          <div class="small text-muted"
+               ng-if="config.reaperLastErrorMessage">
+            Last error: {{config.reaperLastErrorMessage}}
+          </div>
+        </div>
         <div gt-form-group
              gt-label="1&nbsp;minute&nbsp;aggregates"
              gt-model="page.rollupExpirationDays[0]"

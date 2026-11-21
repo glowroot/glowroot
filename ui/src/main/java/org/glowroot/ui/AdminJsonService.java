@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -201,7 +201,7 @@ class AdminJsonService {
             return mapper.writeValueAsString(CentralStorageConfigDto.create(config));
         } else {
             EmbeddedStorageConfig config = configRepository.getEmbeddedStorageConfig();
-            return mapper.writeValueAsString(EmbeddedStorageConfigDto.create(config));
+            return mapper.writeValueAsString(EmbeddedStorageConfigDto.create(config, repoAdmin));
         }
     }
 
@@ -968,6 +968,27 @@ class AdminJsonService {
         boolean h2CacheSystemPropertyOverride() {
             return false;
         }
+        // response-only: live H2 file size + retention reaper health (#1284)
+        @Value.Default
+        long h2DataFileSize() {
+            return 0;
+        }
+        @Value.Default
+        int reaperConsecutiveFailedCycles() {
+            return 0;
+        }
+        @Value.Default
+        ImmutableList<String> reaperLastFailedSteps() {
+            return ImmutableList.of();
+        }
+        @Value.Default
+        String reaperLastErrorMessage() {
+            return "";
+        }
+        @Value.Default
+        long reaperLastFailureTimeMillis() {
+            return 0;
+        }
         abstract String version();
 
         private EmbeddedStorageConfig convert() {
@@ -982,11 +1003,13 @@ class AdminJsonService {
                     .build();
         }
 
-        private static EmbeddedStorageConfigDto create(EmbeddedStorageConfig config) {
+        private static EmbeddedStorageConfigDto create(EmbeddedStorageConfig config,
+                RepoAdmin repoAdmin) {
             long maxMemory = Runtime.getRuntime().maxMemory();
             String sysProp = System.getProperty(H2CacheSize.SYSTEM_PROPERTY);
             int effectiveMb = H2CacheSize.effectiveMb(config.h2CacheMode(), config.h2CacheValue(),
                     maxMemory, sysProp);
+            RepoAdmin.ReaperStatus reaperStatus = repoAdmin.getReaperStatus();
             return ImmutableEmbeddedStorageConfigDto.builder()
                     .addAllRollupExpirationHours(config.rollupExpirationHours())
                     .traceExpirationHours(config.traceExpirationHours())
@@ -998,6 +1021,11 @@ class AdminJsonService {
                     .effectiveH2CacheMb(effectiveMb)
                     .maxHeapMb(maxMemory / (1024L * 1024L))
                     .h2CacheSystemPropertyOverride(sysProp != null && !sysProp.isEmpty())
+                    .h2DataFileSize(repoAdmin.getH2DataFileSize())
+                    .reaperConsecutiveFailedCycles(reaperStatus.consecutiveFailedCycles())
+                    .addAllReaperLastFailedSteps(reaperStatus.lastFailedSteps())
+                    .reaperLastErrorMessage(reaperStatus.lastErrorMessage())
+                    .reaperLastFailureTimeMillis(reaperStatus.lastFailureTimeMillis())
                     .version(config.version())
                     .build();
         }

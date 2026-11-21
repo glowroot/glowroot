@@ -54,6 +54,43 @@ java -jar glowroot.jar h2 import-script <export.sql>
 
 `upgrade-check` reports whether `data.h2.db` / `data.mv.db` are present. `import-script` loads an **external** H2 1.x `SCRIPT` dump into a new `data.mv.db` via the bundled H2 2.x driver (export the dump yourself with H2 1.3.x first). Verify the UI before deleting backups. Large scripts (≥ 1 GiB) may OOM or run for hours.
 
+## Corrupt H2 / retention reaper stall (#1284)
+
+Symptoms: retention-reaper failures (`ReaperRunnable` /
+`delete from aggregate_*_rollup_* …`), often `JdbcSQLException: General error` with
+`ArrayIndexOutOfBoundsException` inside H2 `PageDataLeaf` / index code. Logs show ERROR
+once when the streak starts, then periodic WARN (~hourly) while it continues. The UI may
+still listen. `/readiness` only cheap-counts recent (~4h) rows on tt/tn — it may stay green
+while old-page deletes fail; watch reaper ERROR/WARN, Admin → Storage streak, or JMX.
+
+What it means: **page/index corruption** (or a store already outside the scale table above),
+not a bad Glowroot SQL shape. Retention for the failing table stops advancing → that table
+(and thus `data/`) can still grow without bound and pressure the **shared** application JVM.
+Other tables continue to reap.
+
+Product behavior (current tree):
+
+- Reaper continues **other** tables/levels after a per-step failure (one corrupt table no
+  longer aborts the whole cycle). The corrupt table itself is **not** auto-truncated or
+  capped — wipe or Central remains the recovery path.
+- Admin → Storage shows live **H2 data file size** and a warning when the reaper has a
+  consecutive failure streak; JMX `org.glowroot:type=H2Database` exposes `FileSize` and
+  `ReaperConsecutiveFailedCycles`.
+- `/readiness` probes recent tt+tn counts; if those queries fail, readiness stays `503`
+  (possible k8s restart loop until wipe). Streak counters do not gate readiness.
+
+Operator recovery:
+
+1. Prefer **Central** (or much shorter retention) for high-volume hosts — embedded is not a
+   warehouse.
+2. If indexes are already broken: stop the app, **wipe** embedded H2 under `data/` (keep
+   `conf/`), restart — history in H2 is gone. A full multi‑10 GB backup is often impractical.
+3. Upgrading Glowroot / H2 major **does not repair** a corrupt `data.h2.db` / `data.mv.db`;
+   Layer 1 recreate still applies (see above).
+4. Alert on H2 file size growth and on reaper logs: one ERROR when a failure streak starts,
+   then WARN about every hour while it continues (not an ERROR every 5 minutes). Also watch
+   Admin → Storage streak and JMX `ReaperConsecutiveFailedCycles`.
+
 ## Central
 
 This page is **embedded-only**. Central uses Cassandra; H2 file migration does not apply.
