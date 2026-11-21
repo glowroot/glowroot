@@ -1,0 +1,120 @@
+{{- if and (not .Values.cassandra.existingSecret) (eq .Values.cassandra.contactPoints "") }}
+{{- fail "Set cassandra.contactPoints or cassandra.existingSecret" }}
+{{- end }}
+{{- if and (not .Values.cassandra.existingSecret) (eq .Values.cassandra.symmetricEncryptionKey "") }}
+{{- fail "Set cassandra.symmetricEncryptionKey (32-char hex) or cassandra.existingSecret" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "glowroot-central.fullname" . }}
+  labels:
+    {{- include "glowroot-central.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "glowroot-central.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "glowroot-central.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "glowroot-central.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: glowroot-central
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: ui
+              containerPort: 4000
+              protocol: TCP
+            - name: collector
+              containerPort: 8181
+              protocol: TCP
+          env:
+            - name: CASSANDRA_CONTACT_POINTS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "glowroot-central.secretName" . }}
+                  key: contactPoints
+            - name: CASSANDRA_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "glowroot-central.secretName" . }}
+                  key: username
+                  optional: true
+            - name: CASSANDRA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "glowroot-central.secretName" . }}
+                  key: password
+                  optional: true
+            - name: CASSANDRA_KEYSPACE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "glowroot-central.secretName" . }}
+                  key: keyspace
+                  optional: true
+            - name: CASSANDRA_LOCALDATACENTER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "glowroot-central.secretName" . }}
+                  key: localDatacenter
+                  optional: true
+            - name: CASSANDRA_SYMMETRIC_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "glowroot-central.secretName" . }}
+                  key: symmetricEncryptionKey
+            {{- if .Values.ui.contextPath }}
+            - name: UI_CONTEXT_PATH
+              value: {{ .Values.ui.contextPath | quote }}
+            {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if and .Values.adminDefault.enabled .Values.adminDefault.json }}
+          volumeMounts:
+            - name: admin-default
+              mountPath: /usr/share/glowroot-central/admin-default.json
+              subPath: admin-default.json
+              readOnly: true
+          {{- end }}
+      {{- if and .Values.adminDefault.enabled .Values.adminDefault.json }}
+      volumes:
+        - name: admin-default
+          secret:
+            secretName: {{ include "glowroot-central.fullname" . }}-admin-default
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
