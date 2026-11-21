@@ -7,6 +7,7 @@ import { Input } from '../../components/ui/input'
 import { Checkbox } from '../../components/ui/checkbox'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 import { PATTERNS } from '../../lib/validation'
 
 interface AdvancedConfig {
@@ -20,6 +21,9 @@ interface AdvancedConfig {
   weavingTimer?: boolean
   version: string
 }
+
+const WIKI_ADVANCED =
+  'https://github.com/glowroot/glowroot/wiki/Advanced-and-config.json'
 
 export function ConfigAdvancedPage() {
   const { agentRollupId, agentRollup, isRollup } = useAgent()
@@ -90,15 +94,17 @@ export function ConfigAdvancedPage() {
   }
 
   return (
-    <div className="rounded-lg border bg-white p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Advanced</h2>
+    <SettingsPage
+      title="Advanced"
+      description="Capture limits and low-level agent behavior. Prefer small changes — these affect memory, trace size, and storage."
+    >
       {!isRollup && (
         <GtFormGroup
           label="Immediate partial trace store threshold"
           required
           pattern={PATTERNS.integer}
           value={config.immediatePartialStoreThresholdSeconds ?? ''}
-          helpText="Any transaction that exceeds this amount of time will have its partial trace stored to disk immediately (prior to its completion). This is to guard against transactions which never complete (or at least run long enough and do enough harm to hang the jvm). In the case where some transactions have been configured with a very long slow threshold, the immediate partial trace store threshold does not take effect on those transactions until they have exceeded their slow threshold."
+          helpText="Store a partial trace once a transaction runs this long (guards hung/never-finishing work). If that transaction has a longer slow threshold, this waits until the slow threshold is also exceeded."
         >
           <div className="flex items-center gap-2">
             <Input
@@ -118,7 +124,7 @@ export function ConfigAdvancedPage() {
           required
           pattern={PATTERNS.integer}
           value={config.maxTransactionAggregates ?? ''}
-          helpText={'The maximum number of transaction aggregates (aggregated by transaction name) that are stored per transaction type for any given minute. This is used to limit memory and storage when there are lots of distinct transaction names. Any transactions that do not make the cut are still aggregated and stored in the "Overall" transaction aggregate. This limit is applied per transaction type.'}
+          helpText='Cap distinct transaction names stored per type per minute. Names that miss the cut still roll into the "Overall" aggregate.'
         >
           <Input
             type="number"
@@ -134,7 +140,7 @@ export function ConfigAdvancedPage() {
         required
         pattern={PATTERNS.integer}
         value={config.maxQueryAggregates ?? ''}
-        helpText={'The maximum number of query aggregates (aggregated by query text) that are stored per transaction aggregate for any given minute. This is used to limit memory and storage when there are lots of distinct queries. During any given minute, up to ten times this number of query aggregates are stored in memory for the overall transaction aggregate and up to two times this number are stored in memory for named transaction aggregates. At the end of each minute, up to this number of query aggregates are stored to disk per transaction aggregate. Any queries / query aggregates that do not make the cut are aggregated and stored under the query text "LIMIT EXCEEDED BUCKET" (for their respective query type). In addition to this limit being applied during initial collection, it is also applied during rollups and when displaying query aggregates in the UI (over still larger time spans).'}
+        helpText='Cap distinct queries kept per transaction aggregate per minute. Overflow lands in "LIMIT EXCEEDED BUCKET"; the same cap applies on rollups and in the UI.'
       >
         <Input
           type="number"
@@ -149,7 +155,7 @@ export function ConfigAdvancedPage() {
         required
         pattern={PATTERNS.integer}
         value={config.maxServiceCallAggregates ?? ''}
-        helpText={'The maximum number of service call aggregates (aggregated by service call text) that are stored per transaction aggregate for any given minute. This is used to limit memory and storage when there are lots of distinct service calls. During any given minute, up to ten times this number of service call aggregates are stored in memory for the overall transaction aggregate and up to two times this number are stored in memory for named transaction aggregates. At the end of each minute, up to this number of service call aggregates are stored to disk per transaction aggregate. Any service calls / service call aggregates that do not make the cut are aggregated and stored under the service call text "LIMIT EXCEEDED BUCKET" (for their respective service call type). In addition to this limit being applied during initial collection, it is also applied during rollups and when displaying service call aggregates in the UI (over still larger time spans).'}
+        helpText='Cap distinct service calls kept per transaction aggregate per minute. Overflow lands in "LIMIT EXCEEDED BUCKET"; the same cap applies on rollups and in the UI.'
       >
         <Input
           type="number"
@@ -165,7 +171,7 @@ export function ConfigAdvancedPage() {
           required
           pattern={PATTERNS.integer}
           value={config.maxTraceEntriesPerTransaction ?? ''}
-          helpText="Maximum number of trace entries collected for any given transaction. This is used to limit the memory of very long transactions that would capture potentially hundreds of thousands of trace entries (e.g. large batch or background operations). Also, the UI is not really optimized for viewing super large numbers of trace entries."
+          helpText="Cap entries on one transaction to bound memory for huge batch or background work."
         >
           <Input
             type="number"
@@ -182,7 +188,7 @@ export function ConfigAdvancedPage() {
           required
           pattern={PATTERNS.integer}
           value={config.maxProfileSamplesPerTransaction ?? ''}
-          helpText="Maximum number of profile samples collected for any given transaction. This is used to limit the memory of very long transactions that would capture potentially hundreds of thousands of profile samples (e.g. large batch or background operations). Profile samples are merged where possible so this can generally be quite large."
+          helpText="Cap profile samples per transaction. Samples merge when possible, so this can stay fairly high."
         >
           <Input
             type="number"
@@ -198,6 +204,7 @@ export function ConfigAdvancedPage() {
           label="MBean gauge not found delay"
           pattern={PATTERNS.integer}
           value={config.mbeanGaugeNotFoundDelaySeconds ?? ''}
+          helpText="Wait this long before retrying a configured gauge whose MBean is missing."
         >
           <div className="flex items-center gap-2">
             <Input
@@ -212,7 +219,10 @@ export function ConfigAdvancedPage() {
         </GtFormGroup>
       )}
       {!isRollup && config.weavingTimer !== undefined && (
-        <GtFormGroup label="Weaving timer">
+        <GtFormGroup
+          label="Weaving timer"
+          helpText="Record time spent weaving classes (diagnostic)."
+        >
           <label className="flex items-center gap-2 text-sm">
             <Checkbox
               checked={config.weavingTimer}
@@ -226,6 +236,18 @@ export function ConfigAdvancedPage() {
       {canEdit && (
         <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />
       )}
-    </div>
+      <div className="mt-6 text-xs text-gray-500">
+        For more information and configuration details, see the{' '}
+        <a
+          href={WIKI_ADVANCED}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline"
+        >
+          Glowroot wiki
+        </a>
+        .
+      </div>
+    </SettingsPage>
   )
 }

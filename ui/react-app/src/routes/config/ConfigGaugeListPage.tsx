@@ -4,6 +4,7 @@ import { useAgent } from '../../contexts/AgentContext'
 import { apiGet } from '../../lib/api'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface GaugeListItem {
   config: {
@@ -41,19 +42,16 @@ export function ConfigGaugeListPage() {
   if (error) return <HttpError error={error} />
 
   return (
-    <div>
-      <div className="rounded-lg border bg-white">
-        <div className="border-b px-4 py-3">
-          <h2 className="text-lg font-semibold text-gray-900">Gauges</h2>
-        </div>
+    <SettingsPage title="Gauges" wide>
+      <div className="divide-y divide-gray-100 border-t border-gray-100">
         {gauges.length === 0 ? (
-          <div className="px-4 py-3 text-sm text-gray-500 italic">There are no configured gauges</div>
+          <div className="py-3 text-sm text-gray-500 italic">There are no configured gauges</div>
         ) : (
           gauges.map((gauge) => (
             <Link
               key={gauge.config.version}
               to={`/modern/config/gauge?agent-id=${encodeURIComponent(agentId!)}&v=${encodeURIComponent(gauge.config.version)}`}
-              className="block px-4 py-3 text-sm text-gray-900 border-b last:border-b-0 no-underline hover:bg-gray-50"
+              className="block py-3 text-sm text-gray-900 no-underline hover:bg-gray-50/80 -mx-1 px-1 rounded"
             >
               <div>{gauge.config.display}</div>
               {gauge.config.mbeanAttributes && gauge.config.mbeanAttributes.length > 0 && (
@@ -75,6 +73,6 @@ export function ConfigGaugeListPage() {
           </Link>
         </div>
       )}
-    </div>
+    </SettingsPage>
   )
 }

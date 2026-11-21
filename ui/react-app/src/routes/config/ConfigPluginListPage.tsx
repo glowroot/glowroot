@@ -4,6 +4,7 @@ import { useAgent } from '../../contexts/AgentContext'
 import { apiGet } from '../../lib/api'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface PluginSummary {
   id: string
@@ -40,26 +41,26 @@ export function ConfigPluginListPage() {
   const notConfigurable = plugins.filter((p) => !p.hasConfig)
 
   return (
-    <div>
-      <div className="rounded-lg border bg-white">
-        <div className="border-b px-4 py-3">
-          <h2 className="text-lg font-semibold text-gray-900">Plugins</h2>
-        </div>
+    <SettingsPage title="Plugins" wide>
+      <div className="divide-y divide-gray-100 border-t border-gray-100">
         {configurable.map((plugin) => (
           <Link
             key={plugin.id}
             to={`/modern/config/plugin?agent-id=${encodeURIComponent(agentId!)}&plugin-id=${encodeURIComponent(plugin.id)}`}
-            className="flex items-center px-4 py-3 text-sm text-gray-900 border-b last:border-b-0 no-underline hover:bg-gray-50"
+            className="flex items-center py-3 text-sm text-gray-900 no-underline hover:bg-gray-50/80 -mx-1 px-1 rounded"
           >
             {plugin.name}
           </Link>
         ))}
+        {configurable.length === 0 && (
+          <p className="py-3 text-sm text-gray-500">No configurable plugins.</p>
+        )}
       </div>
       {notConfigurable.length > 0 && (
-        <p className="mt-4 text-sm text-gray-500">
+        <p className="text-sm text-gray-500">
           Plugins installed with no configuration: {notConfigurable.map((p) => p.name).join(', ')}
         </p>
       )}
-    </div>
+    </SettingsPage>
   )
 }

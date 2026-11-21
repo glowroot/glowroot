@@ -9,6 +9,7 @@ import { Select } from '../../components/ui/select'
 import { Button } from '../../components/ui/button'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface SmtpConfig {
   host?: string
@@ -113,8 +114,7 @@ export function AdminSmtpPage() {
   if (error) return <HttpError error={error} />
 
   return (
-    <div className="rounded-lg border bg-white p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">SMTP</h2>
+    <SettingsPage title="SMTP">
       <GtFormGroup label="Host" helpText="SMTP server hostname or IP address.">
         <Input
           value={config.host ?? ''}
@@ -225,6 +225,6 @@ export function AdminSmtpPage() {
           </div>
         </div>
       )}
-    </div>
+    </SettingsPage>
   )
 }

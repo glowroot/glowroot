@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAgent } from '../../contexts/AgentContext'
 import { useLayout } from '../../contexts/LayoutContext'
 import { apiGet, apiPost } from '../../lib/api'
@@ -10,6 +10,12 @@ import { Input } from '../../components/ui/input'
 import { Checkbox } from '../../components/ui/checkbox'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
+import { SettingsSection } from '../../components/shared/SettingsSection'
+import { cn } from '../../lib/utils'
+
+const selectClass =
+  'h-8 max-w-xs rounded-md border border-gray-300 bg-white px-2.5 text-sm focus-visible:outline-none focus-visible:border-[#417998] focus-visible:ring-1 focus-visible:ring-[#417998] disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-60'
 
 interface MethodSignature {
   name: string
@@ -111,7 +117,10 @@ export function ConfigInstrumentationPage() {
   const [showClassSuggestions, setShowClassSuggestions] = useState(false)
   const [showMethodSuggestions, setShowMethodSuggestions] = useState(false)
   const [showTransactionOverrides, setShowTransactionOverrides] = useState(false)
+  const [showPluginPropertyHooks, setShowPluginPropertyHooks] = useState(false)
+  const [transactionTypeCustomMode, setTransactionTypeCustomMode] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
+  const transactionTypes = agentRollup?.transactionTypes ?? []
 
   const [config, setConfig] = useState<InstrumentationConfig>({ ...NEW_CONFIG })
   const [originalConfig, setOriginalConfig] = useState<InstrumentationConfig>({ ...NEW_CONFIG })
@@ -122,6 +131,54 @@ export function ConfigInstrumentationPage() {
   const [error, setError] = useState<unknown>(null)
 
   const canEdit = agentRollup?.permissions?.config?.edit?.instrumentation ?? false
+
+  function renderTransactionTypeSelect(
+    value: string,
+    onChange: (next: string) => void,
+    opts?: { required?: boolean }
+  ) {
+    const inList = transactionTypes.includes(value)
+    const custom = transactionTypeCustomMode || (Boolean(value) && !inList)
+    const selectValue = custom ? '__custom__' : value
+    return (
+      <div className="space-y-1.5">
+        <select
+          className={selectClass}
+          value={selectValue}
+          onChange={(e) => {
+            const v = e.target.value
+            if (v === '__custom__') {
+              setTransactionTypeCustomMode(true)
+              if (inList) onChange('')
+            } else {
+              setTransactionTypeCustomMode(false)
+              onChange(v)
+            }
+          }}
+          disabled={!canEdit}
+          required={opts?.required && !custom}
+        >
+          <option value="">{opts?.required ? 'Select…' : '(none)'}</option>
+          {transactionTypes.map((tt) => (
+            <option key={tt} value={tt}>
+              {tt}
+            </option>
+          ))}
+          <option value="__custom__">Custom…</option>
+        </select>
+        {custom && (
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={!canEdit}
+            placeholder="New transaction type"
+            className="max-w-xs"
+            required={opts?.required}
+          />
+        )}
+      </div>
+    )
+  }
 
   function initMethodSignatures(methodName: string) {
     const defaultSig: MethodSignature = {
@@ -165,6 +222,15 @@ export function ConfigInstrumentationPage() {
         ) {
           setShowTransactionOverrides(true)
         }
+        if (resp.config.enabledProperty || resp.config.traceEntryEnabledProperty) {
+          setShowPluginPropertyHooks(true)
+        }
+        if (
+          resp.config.transactionType &&
+          !(agentRollup?.transactionTypes ?? []).includes(resp.config.transactionType)
+        ) {
+          setTransactionTypeCustomMode(true)
+        }
         // Build method signatures
         const sigs: MethodSignature[] = [
           { name: resp.config.methodName, parameterTypes: ['..'], returnType: '', modifiers: [] },
@@ -201,7 +267,7 @@ export function ConfigInstrumentationPage() {
     } finally {
       setLoading(false)
     }
-  }, [agentId, isNew, version, layout.central])
+  }, [agentId, isNew, version, layout.central, agentRollup?.transactionTypes])
 
   useEffect(() => { load() }, [load])
 
@@ -316,31 +382,28 @@ export function ConfigInstrumentationPage() {
   if (error) return <HttpError error={error} />
 
   return (
-    <div>
-      <div className="mb-3">
-        <Link
-          to={'/modern/config/instrumentation-list' + agentQueryString()}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          Return to list
-        </Link>
-      </div>
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 break-words">
-          Instrumentation &mdash; {isNew ? '<New>' : `${config.className}::${config.methodName}`}
-        </h2>
+    <SettingsPage
+      title={isNew ? 'New' : config.className + '::' + config.methodName}
+      description="Custom pointcut: which methods to weave and what to capture (transaction, entry, or timer)."
+      back={{ to: '/modern/config/instrumentation-list' + agentQueryString(), label: 'Instrumentation' }}
+    >
         {agentNotConnected && (
-          <p className="mb-4 text-sm text-amber-600">
+          <p className="mb-3 text-sm text-amber-600">
             Agent is not connected. Auto-completion is not available.
           </p>
         )}
 
-        <GtFormGroup
-          label="Class name"
-          required={!config.classAnnotation}
-          value={config.className}
-          helpText="The class or interface containing the method(s) to instrument."
-        >
+      <SettingsSection first title="Target" className="mt-0 border-0 pt-0">
+        <div className="grid gap-x-6 gap-y-1 md:grid-cols-2">
+          <GtFormGroup
+            label="Class name"
+            required={!config.classAnnotation}
+            value={config.className}
+            layout="stack"
+            compact
+            controlClassName="max-w-md"
+            helpText="Class or interface that owns the method(s)."
+          >
         <div className="relative">
           <Input
             value={config.className}
@@ -399,35 +462,14 @@ export function ConfigInstrumentationPage() {
         </div>
       </GtFormGroup>
 
-      <GtFormGroup label="Class annotation" helpText="Optional. Only applies to classes with this annotation.">
-        <Input
-          value={config.classAnnotation}
-          onChange={(e) => setConfig({ ...config, classAnnotation: e.target.value })}
-          disabled={!canEdit}
-        />
-      </GtFormGroup>
-
-      <GtFormGroup label="Sub type restriction" helpText="Optional. Only applies to subtypes of this class.">
-        <Input
-          value={config.subTypeRestriction}
-          onChange={(e) => setConfig({ ...config, subTypeRestriction: e.target.value })}
-          disabled={!canEdit}
-        />
-      </GtFormGroup>
-
-      <GtFormGroup label="Super type restriction" helpText="Optional. Only applies to classes with this supertype.">
-        <Input
-          value={config.superTypeRestriction}
-          onChange={(e) => setConfig({ ...config, superTypeRestriction: e.target.value })}
-          disabled={!canEdit}
-        />
-      </GtFormGroup>
-
       <GtFormGroup
         label="Method name"
         required={!config.methodAnnotation}
         value={config.methodName}
-        helpText="The method(s) to instrument. All overriding methods will also be instrumented (including all implementations of the method if the class above is an interface). The wildcard * is supported anywhere in the method name. Multiple method names can be listed with the | separator between them."
+        layout="stack"
+        compact
+        controlClassName="max-w-md"
+        helpText="Also weaves overrides / interface implementations. Use * wildcards; separate several names with |."
       >
         <div className="relative">
           <Input
@@ -489,226 +531,390 @@ export function ConfigInstrumentationPage() {
         </div>
       </GtFormGroup>
 
-      <GtFormGroup label="Method annotation" helpText="Optional. Only applies to methods with this annotation.">
-        <Input
-          value={config.methodAnnotation}
-          onChange={(e) => setConfig({ ...config, methodAnnotation: e.target.value })}
-          disabled={!canEdit}
-        />
-      </GtFormGroup>
-
-      {methodSignatures.length > 0 && Boolean(config.methodName) && (
-        <GtFormGroup label="Method signature">
-          <select
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-            value={selectedSigIndex}
-            onChange={(e) => handleSignatureChange(Number(e.target.value))}
-            disabled={!canEdit}
-          >
-            {methodSignatures.map((sig, i) => (
-              <option key={i} value={i}>
-                {signatureText(sig)}
-                {sig.notAvailable ? ' (not available)' : ''}
-              </option>
-            ))}
-          </select>
-        </GtFormGroup>
-      )}
-
-      <GtFormGroup label="Capture kind">
-        <select
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-          value={config.captureKind}
-          onChange={(e) => handleCaptureKindChange(e.target.value)}
-          disabled={!canEdit}
-        >
-          <option value="transaction">Transaction</option>
-          <option value="trace-entry">Trace entry</option>
-          <option value="timer">Timer</option>
-          <option value="other">Other</option>
-        </select>
-      </GtFormGroup>
-
-      {showTransaction && (
-        <>
           <GtFormGroup
-            label="Transaction type"
-            required={showTransaction}
-            value={config.transactionType}
+            label="Class annotation"
+            layout="stack"
+            compact
+            controlClassName="max-w-xs"
+            helpText="Optional: only classes with this annotation."
           >
             <Input
-              value={config.transactionType}
-              onChange={(e) => setConfig({ ...config, transactionType: e.target.value })}
+              value={config.classAnnotation}
+              onChange={(e) => setConfig({ ...config, classAnnotation: e.target.value })}
               disabled={!canEdit}
             />
           </GtFormGroup>
 
           <GtFormGroup
-            label="Transaction name template"
-            required={showTransaction}
-            value={config.transactionNameTemplate}
+            label="Method annotation"
+            layout="stack"
+            compact
+            controlClassName="max-w-xs"
+            helpText="Optional: only methods with this annotation."
           >
             <Input
-              value={config.transactionNameTemplate}
-              onChange={(e) => setConfig({ ...config, transactionNameTemplate: e.target.value })}
+              value={config.methodAnnotation}
+              onChange={(e) => setConfig({ ...config, methodAnnotation: e.target.value })}
               disabled={!canEdit}
             />
           </GtFormGroup>
 
-          <GtFormGroup label="Transaction user template">
+          <GtFormGroup
+            label="Sub type restriction"
+            layout="stack"
+            compact
+            controlClassName="max-w-xs"
+            helpText="Optional: only subtypes of this class."
+          >
             <Input
-              value={config.transactionUserTemplate}
-              onChange={(e) => setConfig({ ...config, transactionUserTemplate: e.target.value })}
+              value={config.subTypeRestriction}
+              onChange={(e) => setConfig({ ...config, subTypeRestriction: e.target.value })}
               disabled={!canEdit}
             />
           </GtFormGroup>
 
-          <GtFormGroup label="Transaction outer?">
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={config.transactionOuter}
-                onCheckedChange={(c) => setConfig({ ...config, transactionOuter: !!c })}
-                disabled={!canEdit}
-              />
-              Set transaction as outer transaction
-            </label>
+          <GtFormGroup
+            label="Super type restriction"
+            layout="stack"
+            compact
+            controlClassName="max-w-xs"
+            helpText="Optional: only classes with this supertype."
+          >
+            <Input
+              value={config.superTypeRestriction}
+              onChange={(e) => setConfig({ ...config, superTypeRestriction: e.target.value })}
+              disabled={!canEdit}
+            />
           </GtFormGroup>
+        </div>
 
-          <GtFormGroup label="Already in transaction behavior">
+        {methodSignatures.length > 0 && Boolean(config.methodName) && (
+          <GtFormGroup
+            label="Method signature"
+            layout="stack"
+            compact
+            controlClassName="max-w-xl"
+            className="mt-2"
+          >
             <select
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-              value={config.alreadyInTransactionBehavior || 'capture-trace-entry'}
-              onChange={(e) => setConfig({ ...config, alreadyInTransactionBehavior: e.target.value })}
+              className={cn(selectClass, 'max-w-xl w-full')}
+              value={selectedSigIndex}
+              onChange={(e) => handleSignatureChange(Number(e.target.value))}
               disabled={!canEdit}
             >
-              <option value="capture-trace-entry">Capture trace entry</option>
-              <option value="capture-new-transaction">Capture new transaction</option>
-              <option value="do-nothing">Do nothing</option>
+              {methodSignatures.map((sig, i) => (
+                <option key={i} value={i}>
+                  {signatureText(sig)}
+                  {sig.notAvailable ? ' (not available)' : ''}
+                </option>
+              ))}
             </select>
           </GtFormGroup>
-        </>
-      )}
+        )}
+      </SettingsSection>
 
-      {showTraceEntry && (
+      <SettingsSection title="Capture" className="mt-5 border-t border-gray-200 pt-5">
         <GtFormGroup
-          label="Trace entry message template"
-          required={showTraceEntry}
-          value={config.traceEntryMessageTemplate}
+          label="Capture kind"
+          layout="stack"
+          compact
+          controlClassName="max-w-xs"
+          helpText="Transaction = boundary · Trace entry = timeline · Timer = breakdown · Other = overrides only."
         >
-          <Input
+          <select
+            className={selectClass}
+            value={config.captureKind}
+            onChange={(e) => handleCaptureKindChange(e.target.value)}
+            disabled={!canEdit}
+          >
+            <option value="transaction">Transaction</option>
+            <option value="trace-entry">Trace entry</option>
+            <option value="timer">Timer</option>
+            <option value="other">Other</option>
+          </select>
+        </GtFormGroup>
+
+        {showTransaction && (
+          <div className="mt-1 grid gap-x-6 gap-y-1 md:grid-cols-2">
+            <GtFormGroup
+              label="Transaction type"
+              required={showTransaction}
+              value={config.transactionType}
+              layout="stack"
+              compact
+              controlClassName="max-w-xs"
+              helpText="Aggregation / filter bucket."
+            >
+              {renderTransactionTypeSelect(
+                config.transactionType,
+                (transactionType) => setConfig({ ...config, transactionType }),
+                { required: true }
+              )}
+            </GtFormGroup>
+
+            <GtFormGroup
+              label="Transaction name template"
+              required={showTransaction}
+              value={config.transactionNameTemplate}
+              layout="stack"
+              compact
+              controlClassName="max-w-sm"
+              helpText="Template ({{0}}, {{this}}, … — wiki)."
+            >
+              <Input
+                value={config.transactionNameTemplate}
+                onChange={(e) => setConfig({ ...config, transactionNameTemplate: e.target.value })}
+                disabled={!canEdit}
+              />
+            </GtFormGroup>
+
+            <GtFormGroup
+              label="Transaction user template"
+              layout="stack"
+              compact
+              controlClassName="max-w-sm"
+              helpText="Optional user attribute template."
+            >
+              <Input
+                value={config.transactionUserTemplate}
+                onChange={(e) => setConfig({ ...config, transactionUserTemplate: e.target.value })}
+                disabled={!canEdit}
+              />
+            </GtFormGroup>
+
+            <GtFormGroup
+              label="Already in transaction"
+              layout="stack"
+              compact
+              controlClassName="max-w-xs"
+              helpText="Behavior when already inside a transaction."
+            >
+              <select
+                className={selectClass}
+                value={config.alreadyInTransactionBehavior || 'capture-trace-entry'}
+                onChange={(e) => setConfig({ ...config, alreadyInTransactionBehavior: e.target.value })}
+                disabled={!canEdit}
+              >
+                <option value="capture-trace-entry">Capture trace entry</option>
+                <option value="capture-new-transaction">Capture new transaction</option>
+                <option value="do-nothing">Do nothing</option>
+              </select>
+            </GtFormGroup>
+
+            <GtFormGroup label="Transaction outer?" layout="stack" compact controlClassName="max-w-xs">
+              <label className="flex items-center gap-2 text-sm pt-1">
+                <Checkbox
+                  checked={config.transactionOuter}
+                  onCheckedChange={(c) => setConfig({ ...config, transactionOuter: !!c })}
+                  disabled={!canEdit}
+                />
+                Set as outer transaction
+              </label>
+            </GtFormGroup>
+          </div>
+        )}
+
+        {showTraceEntry && (
+          <GtFormGroup
+            label="Trace entry message template"
+            required={showTraceEntry}
             value={config.traceEntryMessageTemplate}
-            onChange={(e) => setConfig({ ...config, traceEntryMessageTemplate: e.target.value })}
-            disabled={!canEdit}
-          />
-        </GtFormGroup>
-      )}
-
-      {showTraceEntryStackThreshold && (
-        <GtFormGroup
-          label="Trace entry stack threshold"
-          pattern={PATTERNS.integer}
-          value={config.traceEntryStackThresholdMillis ?? ''}
-          helpText="milliseconds"
-        >
-          <Input
-            type="number"
-            value={config.traceEntryStackThresholdMillis ?? ''}
-            onChange={(e) => setConfig({
-              ...config,
-              traceEntryStackThresholdMillis: e.target.value === '' ? null : Number(e.target.value),
-            })}
-            disabled={!canEdit}
-          />
-        </GtFormGroup>
-      )}
-
-      {showTraceEntryCaptureSelfNested && (
-        <GtFormGroup label="Capture self nested?">
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox
-              checked={config.traceEntryCaptureSelfNested}
-              onCheckedChange={(c) => setConfig({ ...config, traceEntryCaptureSelfNested: !!c })}
+            layout="stack"
+            compact
+            controlClassName="max-w-md"
+            className="mt-1"
+            helpText="Template ({{0}}, {{this}}, {{_}}, … — wiki)."
+          >
+            <Input
+              value={config.traceEntryMessageTemplate}
+              onChange={(e) => setConfig({ ...config, traceEntryMessageTemplate: e.target.value })}
               disabled={!canEdit}
             />
-            Capture self nested entries
-          </label>
-        </GtFormGroup>
-      )}
+          </GtFormGroup>
+        )}
 
-      {showTimer && (
-        <GtFormGroup
-          label="Timer name"
-          required={showTimer}
-          pattern={/^[a-zA-Z0-9 ]*$/}
-          value={config.timerName}
-          invalidMessage="This is not a valid timer name, only letters, numbers and spaces are allowed"
-        >
-          <Input
-            value={config.timerName}
-            onChange={(e) => setConfig({ ...config, timerName: e.target.value })}
-            disabled={!canEdit}
-          />
-        </GtFormGroup>
-      )}
+        {(showTraceEntryStackThreshold || showTraceEntryCaptureSelfNested || showTimer) && (
+          <div className="mt-1 grid gap-x-6 gap-y-1 md:grid-cols-2">
+            {showTraceEntryStackThreshold && (
+              <GtFormGroup
+                label="Stack threshold"
+                pattern={PATTERNS.integer}
+                value={config.traceEntryStackThresholdMillis ?? ''}
+                layout="stack"
+                compact
+                controlClassName="max-w-xs"
+                helpText="Stack when entry exceeds this. Empty = never."
+              >
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={config.traceEntryStackThresholdMillis ?? ''}
+                    onChange={(e) => setConfig({
+                      ...config,
+                      traceEntryStackThresholdMillis: e.target.value === '' ? null : Number(e.target.value),
+                    })}
+                    className="w-24"
+                    disabled={!canEdit}
+                  />
+                  <span className="text-sm text-gray-500">ms</span>
+                </div>
+              </GtFormGroup>
+            )}
 
-      <GtFormGroup label="Nesting group" helpText="Optional. Used to suppress nested entries from the same nesting group.">
-        <Input
-          value={config.nestingGroup}
-          onChange={(e) => setConfig({ ...config, nestingGroup: e.target.value })}
-          disabled={!canEdit}
-        />
-      </GtFormGroup>
+            {showTraceEntryCaptureSelfNested && (
+              <GtFormGroup
+                label="Self nesting"
+                layout="stack"
+                compact
+                controlClassName="max-w-xs"
+                helpText="Allow nested entries under the same rule/timer (can be noisy)."
+              >
+                <label className="flex items-center gap-2 text-sm pt-1">
+                  <Checkbox
+                    checked={config.traceEntryCaptureSelfNested}
+                    onCheckedChange={(c) => setConfig({ ...config, traceEntryCaptureSelfNested: !!c })}
+                    disabled={!canEdit}
+                  />
+                  Capture self nested entries
+                </label>
+              </GtFormGroup>
+            )}
 
-      <GtFormGroup
-        label="Order"
-        required
-        pattern={PATTERNS.integer}
-        value={config.order}
-        helpText="Priority relative to other matching instrumentation (higher is later)."
-      >
-        <Input
-          type="number"
-          value={config.order}
-          onChange={(e) => setConfig({ ...config, order: Number(e.target.value) || 0 })}
-          disabled={!canEdit}
-        />
-      </GtFormGroup>
+            {showTimer && (
+              <GtFormGroup
+                label="Timer name"
+                required={showTimer}
+                pattern={/^[a-zA-Z0-9 ]*$/}
+                value={config.timerName}
+                invalidMessage="Only letters, numbers and spaces"
+                layout="stack"
+                compact
+                controlClassName="max-w-xs"
+                helpText="Shared names aggregate in the breakdown."
+              >
+                <Input
+                  value={config.timerName}
+                  onChange={(e) => setConfig({ ...config, timerName: e.target.value })}
+                  disabled={!canEdit}
+                />
+              </GtFormGroup>
+            )}
+          </div>
+        )}
+      </SettingsSection>
 
-      <GtFormGroup label="Enabled property" helpText="Optional. Plugin property name to control whether this instrumentation is enabled.">
-        <Input
-          value={config.enabledProperty}
-          onChange={(e) => setConfig({ ...config, enabledProperty: e.target.value })}
-          disabled={!canEdit}
-        />
-      </GtFormGroup>
+      <SettingsSection title="Advanced" className="mt-5 border-t border-gray-200 pt-5">
+        <div className="grid gap-x-6 gap-y-1 md:grid-cols-2">
+          <GtFormGroup
+            label="Nesting group"
+            layout="stack"
+            compact
+            controlClassName="max-w-xs"
+            helpText="Suppress nested entries that share this group."
+          >
+            <Input
+              value={config.nestingGroup}
+              onChange={(e) => setConfig({ ...config, nestingGroup: e.target.value })}
+              disabled={!canEdit}
+              className="max-w-xs"
+            />
+          </GtFormGroup>
 
-      <GtFormGroup label="Trace entry enabled property" helpText="Optional. Plugin property name to control whether trace entry capture is enabled.">
-        <Input
-          value={config.traceEntryEnabledProperty}
-          onChange={(e) => setConfig({ ...config, traceEntryEnabledProperty: e.target.value })}
-          disabled={!canEdit}
-        />
-      </GtFormGroup>
+          <GtFormGroup
+            label="Order"
+            required
+            pattern={PATTERNS.integer}
+            value={config.order}
+            layout="stack"
+            compact
+            controlClassName="max-w-xs"
+            helpText="Higher runs later among matching rules."
+          >
+            <Input
+              type="number"
+              value={config.order}
+              onChange={(e) => setConfig({ ...config, order: Number(e.target.value) || 0 })}
+              className="w-24"
+              disabled={!canEdit}
+            />
+          </GtFormGroup>
+        </div>
+
+        <div className="mt-3">
+          <button
+            type="button"
+            className="text-sm font-medium text-blue-600 hover:underline"
+            onClick={() => setShowPluginPropertyHooks((v) => !v)}
+          >
+            {showPluginPropertyHooks ? 'Hide' : 'Show'} plugin property hooks
+          </button>
+          {showPluginPropertyHooks && (
+            <div className="mt-2 grid gap-x-6 gap-y-1 md:grid-cols-2">
+              <GtFormGroup
+                label="Enabled property name"
+                layout="stack"
+                compact
+                controlClassName="max-w-xs"
+                helpText="Rare — plugin boolean property name that gates this rule (not a local on/off)."
+              >
+                <Input
+                  value={config.enabledProperty}
+                  onChange={(e) => setConfig({ ...config, enabledProperty: e.target.value })}
+                  disabled={!canEdit}
+                  placeholder="e.g. myPlugin.enabled"
+                  className="max-w-xs font-mono text-xs"
+                />
+              </GtFormGroup>
+              <GtFormGroup
+                label="Trace entry enabled property name"
+                layout="stack"
+                compact
+                controlClassName="max-w-xs"
+                helpText="Rare — plugin boolean property name that gates entry capture."
+              >
+                <Input
+                  value={config.traceEntryEnabledProperty}
+                  onChange={(e) => setConfig({ ...config, traceEntryEnabledProperty: e.target.value })}
+                  disabled={!canEdit}
+                  placeholder="e.g. myPlugin.captureTraceEntry"
+                  className="max-w-xs font-mono text-xs"
+                />
+              </GtFormGroup>
+            </div>
+          )}
+        </div>
+      </SettingsSection>
 
       {!showTransaction && (
-        <div className="mb-4 rounded-md border border-gray-200 p-4">
+        <SettingsSection title="Optional overrides" className="mt-5 border-t border-gray-200 pt-5">
           <button
             type="button"
             className="text-sm font-medium text-blue-600 hover:underline"
             onClick={() => setShowTransactionOverrides((v) => !v)}
           >
-            {showTransactionOverrides ? 'Hide' : 'Show'} optional transaction overrides
+            {showTransactionOverrides ? 'Hide' : 'Show'} transaction overrides
           </button>
           {showTransactionOverrides && (
-            <div className="mt-4">
-              <GtFormGroup label="Transaction type" helpText="Transaction type override (optional)">
-                <Input
-                  value={config.transactionType}
-                  onChange={(e) => setConfig({ ...config, transactionType: e.target.value })}
-                  disabled={!canEdit}
-                />
+            <div className="mt-2 grid gap-x-6 gap-y-1 md:grid-cols-2">
+              <GtFormGroup
+                label="Transaction type"
+                layout="stack"
+                compact
+                controlClassName="max-w-xs"
+                helpText="Override type on the containing transaction."
+              >
+                {renderTransactionTypeSelect(
+                  config.transactionType,
+                  (transactionType) => setConfig({ ...config, transactionType })
+                )}
               </GtFormGroup>
-              <GtFormGroup label="Transaction name" helpText="Transaction name override template (optional)">
+              <GtFormGroup
+                label="Transaction name"
+                layout="stack"
+                compact
+                controlClassName="max-w-sm"
+                helpText="Override name template on the containing transaction."
+              >
                 <Input
                   value={config.transactionNameTemplate}
                   onChange={(e) => setConfig({ ...config, transactionNameTemplate: e.target.value })}
@@ -719,24 +925,31 @@ export function ConfigInstrumentationPage() {
                 label="Slow trace threshold"
                 pattern={PATTERNS.integer}
                 value={config.transactionSlowThresholdMillis ?? ''}
-                helpText="Slow trace threshold override in milliseconds (optional)"
+                layout="stack"
+                compact
+                controlClassName="max-w-xs"
+                helpText="Override for containing transaction (smallest wins)."
               >
-                <Input
-                  type="number"
-                  value={config.transactionSlowThresholdMillis ?? ''}
-                  onChange={(e) =>
-                    setConfig({
-                      ...config,
-                      transactionSlowThresholdMillis:
-                        e.target.value === '' ? null : parseInt(e.target.value, 10),
-                    })
-                  }
-                  disabled={!canEdit}
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={config.transactionSlowThresholdMillis ?? ''}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        transactionSlowThresholdMillis:
+                          e.target.value === '' ? null : parseInt(e.target.value, 10),
+                      })
+                    }
+                    className="w-24"
+                    disabled={!canEdit}
+                  />
+                  <span className="text-sm text-gray-500">ms</span>
+                </div>
               </GtFormGroup>
             </div>
           )}
-        </div>
+        </SettingsSection>
       )}
       {canEdit ? (
         <GtButtonGroup
@@ -767,6 +980,18 @@ export function ConfigInstrumentationPage() {
           </button>
         </div>
       )}
+      <div className="mt-6 text-xs text-gray-500">
+        For more information and configuration details, see the{' '}
+        <a
+          href="https://github.com/glowroot/glowroot/wiki/Instrumentation"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline"
+        >
+          Glowroot wiki
+        </a>
+        .
+      </div>
       {showExportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl">
@@ -815,7 +1040,6 @@ export function ConfigInstrumentationPage() {
           </div>
         </div>
       )}
-      </div>
-    </div>
+    </SettingsPage>
   )
 }

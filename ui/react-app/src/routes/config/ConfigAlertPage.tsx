@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAgent } from '../../contexts/AgentContext'
 import { useLayout } from '../../contexts/LayoutContext'
 import { apiGet, apiPost } from '../../lib/api'
@@ -10,6 +10,14 @@ import { Input } from '../../components/ui/input'
 import { Checkbox } from '../../components/ui/checkbox'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
+import { SettingsSection } from '../../components/shared/SettingsSection'
+import { cn } from '../../lib/utils'
+
+const selectClass =
+  'h-8 max-w-xs rounded-md border border-gray-300 bg-white px-2.5 text-sm focus-visible:outline-none focus-visible:border-[#417998] focus-visible:ring-1 focus-visible:ring-[#417998] disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-60'
+
+const WIKI_ALERTS = 'https://github.com/glowroot/glowroot/wiki/Alerts-and-incidents'
 
 interface MetricOption {
   id: string
@@ -443,116 +451,120 @@ export function ConfigAlertPage() {
     }
   }
 
+  const pageTitle = isNew || heading === '<New>' ? 'New' : heading
+
   return (
-    <div>
-      <div className="mb-3">
-        <Link
-          to={'/modern/config/alert-list' + agentQueryString()}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          Return to list
-        </Link>
-      </div>
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Alerts &mdash; {heading}
-        </h2>
-        {/* Condition */}
-        <fieldset className="mb-6">
-          <legend className="text-sm font-semibold text-gray-700 mb-3">Condition</legend>
+    <SettingsPage
+      title={pageTitle}
+      description="When the condition fires, notify by email (and PagerDuty / Slack if configured)."
+      back={{ to: '/modern/config/alert-list' + agentQueryString(), label: 'Alerts' }}
+    >
+      <SettingsSection first title="Condition" className="mt-0 border-0 pt-0">
+        {layout.central && (
+          <GtFormGroup label="Based on" layout="stack" compact controlClassName="max-w-md">
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              {(['metric', 'synthetic-monitor', 'heartbeat'] as const).map((type) => (
+                <label key={type} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="conditionType"
+                    value={type}
+                    checked={config.condition.conditionType === type}
+                    onChange={() => handleConditionTypeChange(type)}
+                    disabled={!canEdit}
+                  />
+                  {type === 'metric' ? 'Metric' : type === 'synthetic-monitor' ? 'Synthetic monitor' : 'Heartbeat'}
+                </label>
+              ))}
+            </div>
+          </GtFormGroup>
+        )}
 
-          {layout.central && (
-            <GtFormGroup label="Based on">
-              <div className="space-y-1">
-                {(['metric', 'synthetic-monitor', 'heartbeat'] as const).map((type) => (
-                  <label key={type} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="radio"
-                      name="conditionType"
-                      value={type}
-                      checked={config.condition.conditionType === type}
-                      onChange={() => handleConditionTypeChange(type)}
-                      disabled={!canEdit}
-                    />
-                    {type === 'metric' ? 'Metric' : type === 'synthetic-monitor' ? 'Synthetic monitor' : 'Heartbeat'}
-                  </label>
-                ))}
-              </div>
-            </GtFormGroup>
-          )}
-
-          {/* Metric condition */}
-          {config.condition.conditionType === 'metric' && (
-            <>
-              <GtFormGroup
-                label="Metric"
-                required
+        {config.condition.conditionType === 'metric' && (
+          <>
+            <GtFormGroup
+              label="Metric"
+              required
+              value={metric || ''}
+              layout="stack"
+              compact
+              controlClassName="max-w-md"
+              helpText="What this alert watches."
+            >
+              <select
+                className={cn(selectClass, 'max-w-md w-full')}
                 value={metric || ''}
-                helpText="The metric that this alert monitors."
+                onChange={(e) => handleMetricChange(e.target.value)}
+                disabled={!canEdit}
               >
-                <select
-                  className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-                  value={metric || ''}
-                  onChange={(e) => handleMetricChange(e.target.value)}
-                  disabled={!canEdit}
-                >
-                  <option value=""></option>
-                  {metrics.map((m) => (
-                    <option
-                      key={m.id}
-                      value={m.id}
-                      disabled={m.disabled}
-                      style={m.heading ? { fontWeight: 'bold' } : undefined}
-                    >
-                      {m.display}
-                    </option>
-                  ))}
-                </select>
-              </GtFormGroup>
-
-              {showTransactionTypeAndName(metric) && (
-                <>
-                  <GtFormGroup
-                    label="Transaction type"
-                    required
-                    value={config.condition.transactionType || ''}
-                    helpText="The transaction type that this alert monitors."
+                <option value=""></option>
+                {metrics.map((m) => (
+                  <option
+                    key={m.id}
+                    value={m.id}
+                    disabled={m.disabled}
+                    style={m.heading ? { fontWeight: 'bold' } : undefined}
                   >
-                    <select
-                      className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-                      value={config.condition.transactionType || ''}
-                      onChange={(e) => updateCondition({ transactionType: e.target.value })}
-                      disabled={!canEdit}
-                    >
-                      {(agentRollup?.transactionTypes || []).map((tt) => (
-                        <option key={tt} value={tt}>{tt}</option>
-                      ))}
-                      {config.condition.transactionType &&
-                        !(agentRollup?.transactionTypes || []).includes(config.condition.transactionType) && (
-                          <option value={config.condition.transactionType} disabled>
-                            {config.condition.transactionType} (not available)
-                          </option>
-                        )}
-                    </select>
-                  </GtFormGroup>
+                    {m.display}
+                  </option>
+                ))}
+              </select>
+            </GtFormGroup>
 
-                  <GtFormGroup label="Transaction name" helpText="(Optional) The transaction name that this alert monitors.">
-                    <Input
-                      value={config.condition.transactionName || ''}
-                      onChange={(e) => updateCondition({ transactionName: e.target.value })}
-                      disabled={!canEdit}
-                    />
-                  </GtFormGroup>
-                </>
-              )}
+            {showTransactionTypeAndName(metric) && (
+              <div className="mt-1 grid gap-x-6 gap-y-1 md:grid-cols-2">
+                <GtFormGroup
+                  label="Transaction type"
+                  required
+                  value={config.condition.transactionType || ''}
+                  layout="stack"
+                  compact
+                  controlClassName="max-w-xs"
+                >
+                  <select
+                    className={selectClass}
+                    value={config.condition.transactionType || ''}
+                    onChange={(e) => updateCondition({ transactionType: e.target.value })}
+                    disabled={!canEdit}
+                  >
+                    {(agentRollup?.transactionTypes || []).map((tt) => (
+                      <option key={tt} value={tt}>{tt}</option>
+                    ))}
+                    {config.condition.transactionType &&
+                      !(agentRollup?.transactionTypes || []).includes(config.condition.transactionType) && (
+                        <option value={config.condition.transactionType} disabled>
+                          {config.condition.transactionType} (not available)
+                        </option>
+                      )}
+                  </select>
+                </GtFormGroup>
 
+                <GtFormGroup
+                  label="Transaction name"
+                  layout="stack"
+                  compact
+                  controlClassName="max-w-sm"
+                  helpText="Optional filter."
+                >
+                  <Input
+                    value={config.condition.transactionName || ''}
+                    onChange={(e) => updateCondition({ transactionName: e.target.value })}
+                    disabled={!canEdit}
+                  />
+                </GtFormGroup>
+              </div>
+            )}
+
+            <div className="mt-1 grid gap-x-6 gap-y-1 md:grid-cols-2">
               {metric === 'transaction:x-percentile' && (
                 <GtFormGroup
                   label="Percentile"
                   required
                   pattern={PATTERNS.percentage}
                   value={config.condition.percentile ?? ''}
-                  helpText="The transaction response time percentile to use for alerting."
+                  layout="stack"
+                  compact
+                  controlClassName="max-w-xs"
                 >
                   <div className="flex items-center gap-2">
                     <Input
@@ -562,13 +574,20 @@ export function ConfigAlertPage() {
                       onChange={(e) => updateCondition({ percentile: e.target.value === '' ? undefined : Number(e.target.value) })}
                       disabled={!canEdit}
                     />
-                    <span className="text-sm text-gray-500">percentile</span>
+                    <span className="text-sm text-gray-500">th</span>
                   </div>
                 </GtFormGroup>
               )}
 
               {metric === 'error:count' && (
-                <GtFormGroup label="Error message filter" helpText="(Optional) Count errors that contain this text. Enclose in forward slashes for regex.">
+                <GtFormGroup
+                  label="Error message filter"
+                  layout="stack"
+                  compact
+                  controlClassName="max-w-sm"
+                  helpText="Optional substring; /regex/ for regex."
+                  className="md:col-span-2"
+                >
                   <Input
                     value={config.condition.errorMessageFilter || ''}
                     onChange={(e) => updateCondition({ errorMessageFilter: e.target.value })}
@@ -582,19 +601,22 @@ export function ConfigAlertPage() {
                 required
                 pattern={PATTERNS.double}
                 value={displayThreshold ?? ''}
-                helpText={`If the ${phraseForValue(metric)} over the given time period is greater than or equal to this threshold, then alert will be triggered.`}
+                layout="stack"
+                compact
+                controlClassName="max-w-xs"
+                helpText={`Fire when ${phraseForValue(metric)} ≥ this over the time period.`}
               >
                 <div className="flex items-center gap-2">
                   <Input
                     type="number"
-                    className="w-28"
+                    className="w-24"
                     value={displayThreshold ?? ''}
                     onChange={(e) => handleDisplayThresholdChange(e.target.value)}
                     disabled={!canEdit}
                   />
                   {isByteUnit ? (
                     <select
-                      className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+                      className={selectClass}
                       value={byteUnit}
                       onChange={(e) => handleByteUnitChange(e.target.value)}
                       disabled={!canEdit}
@@ -604,16 +626,41 @@ export function ConfigAlertPage() {
                       ))}
                     </select>
                   ) : unit ? (
-                    <span className="text-sm text-gray-500">{unit}</span>
+                    <span className="text-sm text-gray-500">{unit.trim()}</span>
                   ) : null}
                 </div>
               </GtFormGroup>
 
               <GtFormGroup
-                label="Lower bound threshold?"
-                helpText={`Alert if the ${phraseForValue(metric)} is less than or equal to the threshold, instead of alerting if the ${phraseForValue(metric)} is greater than or equal to the threshold.`}
+                label="Time period"
+                required
+                pattern={PATTERNS.integer}
+                value={timePeriodMinutes ?? ''}
+                layout="stack"
+                compact
+                controlClassName="max-w-xs"
+                helpText={`Window used to compute ${phraseForValue(metric)}.`}
               >
-                <label className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    className="w-24"
+                    value={timePeriodMinutes ?? ''}
+                    onChange={(e) => handleTimePeriodMinutesChange(e.target.value)}
+                    disabled={!canEdit}
+                  />
+                  <span className="text-sm text-gray-500">minutes</span>
+                </div>
+              </GtFormGroup>
+
+              <GtFormGroup
+                label="Lower bound?"
+                layout="stack"
+                compact
+                controlClassName="max-w-xs"
+                helpText={`Alert when ${phraseForValue(metric)} ≤ threshold instead of ≥.`}
+              >
+                <label className="flex items-center gap-2 text-sm pt-1">
                   <Checkbox
                     checked={!!config.condition.lowerBoundThreshold}
                     onCheckedChange={(c) => updateCondition({ lowerBoundThreshold: !!c })}
@@ -623,36 +670,20 @@ export function ConfigAlertPage() {
                 </label>
               </GtFormGroup>
 
-              <GtFormGroup
-                label="Time period"
-                required
-                pattern={PATTERNS.integer}
-                value={timePeriodMinutes ?? ''}
-                helpText={`The time period over which the ${phraseForValue(metric)} is calculated.`}
-              >
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    className="w-28"
-                    value={timePeriodMinutes ?? ''}
-                    onChange={(e) => handleTimePeriodMinutesChange(e.target.value)}
-                    disabled={!canEdit}
-                  />
-                  <span className="text-sm text-gray-500">minutes</span>
-                </div>
-              </GtFormGroup>
-
               {showMinTransactionCount(metric) && (
                 <GtFormGroup
                   label="Minimum transaction count"
                   required
                   pattern={PATTERNS.integer}
                   value={config.condition.minTransactionCount ?? ''}
-                  helpText="Time periods with very few transactions have much less meaningful metrics, so this can be used to suppress alerts from being generated unless the time period has a minimum transaction count."
+                  layout="stack"
+                  compact
+                  controlClassName="max-w-xs"
+                  helpText="Skip quiet windows with too few transactions."
                 >
                   <Input
                     type="number"
-                    className="w-28"
+                    className="w-24"
                     value={config.condition.minTransactionCount ?? ''}
                     onChange={(e) => updateCondition({
                       minTransactionCount: e.target.value === '' ? undefined : Number(e.target.value),
@@ -661,107 +692,124 @@ export function ConfigAlertPage() {
                   />
                 </GtFormGroup>
               )}
-            </>
-          )}
+            </div>
+          </>
+        )}
 
-          {/* Heartbeat condition */}
-          {config.condition.conditionType === 'heartbeat' && (
+        {config.condition.conditionType === 'heartbeat' && (
+          <GtFormGroup
+            label="Time period"
+            required
+            pattern={PATTERNS.integer}
+            value={config.condition.timePeriodSeconds ?? ''}
+            layout="stack"
+            compact
+            controlClassName="max-w-xs"
+            helpText="Fire if no heartbeat in this window (heartbeats ~every 5s)."
+          >
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                className="w-24"
+                value={config.condition.timePeriodSeconds ?? ''}
+                onChange={(e) => updateCondition({
+                  timePeriodSeconds: e.target.value === '' ? undefined : Number(e.target.value),
+                })}
+                disabled={!canEdit}
+              />
+              <span className="text-sm text-gray-500">seconds</span>
+            </div>
+          </GtFormGroup>
+        )}
+
+        {config.condition.conditionType === 'synthetic-monitor' && (
+          <div className="grid gap-x-6 gap-y-1 md:grid-cols-2">
             <GtFormGroup
-              label="Time period"
+              label="Synthetic monitor"
+              required
+              value={config.condition.syntheticMonitorId || ''}
+              layout="stack"
+              compact
+              controlClassName="max-w-sm"
+              className="md:col-span-2"
+            >
+              <select
+                className={cn(selectClass, 'max-w-sm w-full')}
+                value={config.condition.syntheticMonitorId || ''}
+                onChange={(e) => updateCondition({ syntheticMonitorId: e.target.value })}
+                disabled={!canEdit}
+              >
+                {syntheticMonitors.length === 0 ? (
+                  <option value="" disabled>(no synthetic monitors)</option>
+                ) : (
+                  <option value=""></option>
+                )}
+                {syntheticMonitors.map((sm) => (
+                  <option key={sm.id} value={sm.id}>{sm.display}</option>
+                ))}
+              </select>
+            </GtFormGroup>
+
+            <GtFormGroup
+              label="Duration threshold"
               required
               pattern={PATTERNS.integer}
-              value={config.condition.timePeriodSeconds ?? ''}
-              helpText="The time period after which the alert is triggered if no heartbeat has been received from the agent. Heartbeats are normally received every 5 seconds."
+              value={config.condition.thresholdMillis ?? ''}
+              layout="stack"
+              compact
+              controlClassName="max-w-xs"
+              helpText="Duration at/above this counts as failure."
             >
               <div className="flex items-center gap-2">
                 <Input
                   type="number"
-                  className="w-28"
-                  value={config.condition.timePeriodSeconds ?? ''}
+                  className="w-24"
+                  value={config.condition.thresholdMillis ?? ''}
                   onChange={(e) => updateCondition({
-                    timePeriodSeconds: e.target.value === '' ? undefined : Number(e.target.value),
+                    thresholdMillis: e.target.value === '' ? undefined : Number(e.target.value),
                   })}
                   disabled={!canEdit}
                 />
-                <span className="text-sm text-gray-500">seconds</span>
+                <span className="text-sm text-gray-500">ms</span>
               </div>
             </GtFormGroup>
-          )}
 
-          {/* Synthetic monitor condition */}
-          {config.condition.conditionType === 'synthetic-monitor' && (
-            <>
-              <GtFormGroup
-                label="Synthetic monitor"
-                required
-                value={config.condition.syntheticMonitorId || ''}
-                helpText="The synthetic monitor that this alert is based on."
-              >
-                <select
-                  className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-                  value={config.condition.syntheticMonitorId || ''}
-                  onChange={(e) => updateCondition({ syntheticMonitorId: e.target.value })}
-                  disabled={!canEdit}
-                >
-                  {syntheticMonitors.length === 0 ? (
-                    <option value="" disabled>(there are no synthetic monitors available)</option>
-                  ) : (
-                    <option value=""></option>
-                  )}
-                  {syntheticMonitors.map((sm) => (
-                    <option key={sm.id} value={sm.id}>{sm.display}</option>
-                  ))}
-                </select>
-              </GtFormGroup>
-
-              <GtFormGroup
-                label="Duration threshold"
-                required
-                pattern={PATTERNS.integer}
-                value={config.condition.thresholdMillis ?? ''}
-                helpText="If the synthetic monitor duration meets this, it is considered a failure."
-              >
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    className="w-28"
-                    value={config.condition.thresholdMillis ?? ''}
-                    onChange={(e) => updateCondition({
-                      thresholdMillis: e.target.value === '' ? undefined : Number(e.target.value),
-                    })}
-                    disabled={!canEdit}
-                  />
-                  <span className="text-sm text-gray-500">milliseconds</span>
-                </div>
-              </GtFormGroup>
-
-              <GtFormGroup
-                label="Consecutive count"
-                required
-                pattern={PATTERNS.integer}
+            <GtFormGroup
+              label="Consecutive count"
+              required
+              pattern={PATTERNS.integer}
+              value={config.condition.consecutiveCount ?? ''}
+              layout="stack"
+              compact
+              controlClassName="max-w-xs"
+              helpText="Failures in a row before alert."
+            >
+              <Input
+                type="number"
+                className="w-24"
                 value={config.condition.consecutiveCount ?? ''}
-                helpText="Number of consecutive failures before alert is triggered."
-              >
-                <Input
-                  type="number"
-                  className="w-28"
-                  value={config.condition.consecutiveCount ?? ''}
-                  onChange={(e) => updateCondition({
-                    consecutiveCount: e.target.value === '' ? undefined : Number(e.target.value),
-                  })}
-                  disabled={!canEdit}
-                />
-              </GtFormGroup>
-            </>
-          )}
-        </fieldset>
+                onChange={(e) => updateCondition({
+                  consecutiveCount: e.target.value === '' ? undefined : Number(e.target.value),
+                })}
+                disabled={!canEdit}
+              />
+            </GtFormGroup>
+          </div>
+        )}
+      </SettingsSection>
 
-        {/* Severity */}
-        <fieldset className="mb-6">
-          <legend className="text-sm font-semibold text-gray-700 mb-3">Severity</legend>
-          <GtFormGroup label="Severity" required value={config.severity || ''}>
+      <SettingsSection title="Severity & notification" className="mt-5 border-t border-gray-200 pt-5">
+        <div className="grid gap-x-6 gap-y-1 md:grid-cols-2">
+          <GtFormGroup
+            label="Severity"
+            required
+            value={config.severity || ''}
+            layout="stack"
+            compact
+            controlClassName="max-w-xs"
+          >
             <select
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className={selectClass}
               value={config.severity || ''}
               onChange={(e) => updateConfig((c) => ({ ...c, severity: e.target.value }))}
               disabled={!canEdit}
@@ -773,29 +821,29 @@ export function ConfigAlertPage() {
               <option value="low">Low</option>
             </select>
           </GtFormGroup>
-        </fieldset>
 
-        {/* Email notification */}
-        <fieldset className="mb-6">
-          <legend className="text-sm font-semibold text-gray-700 mb-3">Email notification</legend>
-          <GtFormGroup label="Email addresses" helpText="Comma separated list of email addresses.">
+          <GtFormGroup
+            label="Email addresses"
+            layout="stack"
+            compact
+            controlClassName="max-w-md"
+            helpText="Comma-separated."
+            className="md:col-span-2"
+          >
             <textarea
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="max-w-md w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus-visible:outline-none focus-visible:border-[#417998] focus-visible:ring-1 focus-visible:ring-[#417998] disabled:bg-gray-50"
               rows={2}
               value={emailAddressesStr}
               onChange={(e) => handleEmailAddressesChange(e.target.value)}
               disabled={!canEdit}
+              placeholder="ops@example.com, oncall@example.com"
             />
           </GtFormGroup>
-        </fieldset>
 
-        {/* PagerDuty notification */}
-        {pagerDutyIntegrationKeys.length > 0 && (
-          <fieldset className="mb-6">
-            <legend className="text-sm font-semibold text-gray-700 mb-3">PagerDuty notification</legend>
-            <GtFormGroup label="Integration key">
+          {pagerDutyIntegrationKeys.length > 0 && (
+            <GtFormGroup label="PagerDuty key" layout="stack" compact controlClassName="max-w-sm">
               <select
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+                className={cn(selectClass, 'max-w-sm w-full')}
                 value={config.pagerDutyNotification?.pagerDutyIntegrationKey || ''}
                 onChange={(e) => updateConfig((c) => ({
                   ...c,
@@ -817,69 +865,84 @@ export function ConfigAlertPage() {
                   )}
               </select>
             </GtFormGroup>
-          </fieldset>
-        )}
+          )}
 
-        {/* Slack notification */}
-        {slackWebhooks.length > 0 && (
-          <fieldset className="mb-6">
-            <legend className="text-sm font-semibold text-gray-700 mb-3">Slack notification</legend>
-            <GtFormGroup label="Slack webhook">
-              <select
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-                value={config.slackNotification?.slackWebhookId || ''}
-                onChange={(e) => {
-                  const newId = e.target.value
-                  updateConfig((c) => ({
-                    ...c,
-                    slackNotification: { ...c.slackNotification!, slackWebhookId: newId },
-                  }))
-                  if (!newId) setSlackChannelsStr('')
-                }}
-                disabled={!canEdit}
-              >
-                <option value=""></option>
-                {slackWebhooks.map((w) => (
-                  <option key={w.id} value={w.id}>{w.display}</option>
-                ))}
-                {config.slackNotification?.slackWebhookId &&
-                  !slackWebhooks.find((w) => w.id === config.slackNotification!.slackWebhookId) && (
-                    <option value={config.slackNotification.slackWebhookId} disabled>
-                      {config.slackNotification.slackWebhookId} (not available)
-                    </option>
-                  )}
-              </select>
-            </GtFormGroup>
-
-            {config.slackNotification?.slackWebhookId && (
-              <GtFormGroup
-                label="Slack channels"
-                required
-                value={slackChannelsStr}
-                helpText="Comma separated list of channels, e.g. #alerts"
-              >
-                <Input
-                  value={slackChannelsStr}
-                  onChange={(e) => handleSlackChannelsChange(e.target.value)}
+          {slackWebhooks.length > 0 && (
+            <>
+              <GtFormGroup label="Slack webhook" layout="stack" compact controlClassName="max-w-sm">
+                <select
+                  className={cn(selectClass, 'max-w-sm w-full')}
+                  value={config.slackNotification?.slackWebhookId || ''}
+                  onChange={(e) => {
+                    const newId = e.target.value
+                    updateConfig((c) => ({
+                      ...c,
+                      slackNotification: { ...c.slackNotification!, slackWebhookId: newId },
+                    }))
+                    if (!newId) setSlackChannelsStr('')
+                  }}
                   disabled={!canEdit}
-                />
+                >
+                  <option value=""></option>
+                  {slackWebhooks.map((w) => (
+                    <option key={w.id} value={w.id}>{w.display}</option>
+                  ))}
+                  {config.slackNotification?.slackWebhookId &&
+                    !slackWebhooks.find((w) => w.id === config.slackNotification!.slackWebhookId) && (
+                      <option value={config.slackNotification.slackWebhookId} disabled>
+                        {config.slackNotification.slackWebhookId} (not available)
+                      </option>
+                    )}
+                </select>
               </GtFormGroup>
-            )}
-          </fieldset>
-        )}
 
-        {canEdit && (
-          <GtButtonGroup
-            onSave={handleSave}
-            hasChanges={!!hasChanges}
-            saveLabel={isNew ? 'Add' : 'Save changes'}
-            onDelete={!isNew ? handleDelete : undefined}
-            showDelete={!isNew}
-            deleteConfirmHeader="Delete alert"
-            deleteConfirmMessage="Are you sure you want to delete this alert?"
-          />
-        )}
+              {config.slackNotification?.slackWebhookId && (
+                <GtFormGroup
+                  label="Slack channels"
+                  required
+                  value={slackChannelsStr}
+                  layout="stack"
+                  compact
+                  controlClassName="max-w-sm"
+                  helpText="Comma-separated, e.g. #alerts"
+                >
+                  <Input
+                    value={slackChannelsStr}
+                    onChange={(e) => handleSlackChannelsChange(e.target.value)}
+                    disabled={!canEdit}
+                    className="max-w-sm"
+                  />
+                </GtFormGroup>
+              )}
+            </>
+          )}
+        </div>
+      </SettingsSection>
+
+      {canEdit && (
+        <GtButtonGroup
+          onSave={handleSave}
+          hasChanges={!!hasChanges}
+          saveLabel={isNew ? 'Add' : 'Save changes'}
+          onDelete={!isNew ? handleDelete : undefined}
+          showDelete={!isNew}
+          deleteConfirmHeader="Delete alert"
+          deleteConfirmMessage="Are you sure you want to delete this alert?"
+        />
+      )}
+
+      <div className="mt-6 text-xs text-gray-500">
+        For more information and configuration details, see the{' '}
+        <a
+          href={WIKI_ALERTS}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline"
+        >
+          Glowroot wiki
+        </a>
+        .
       </div>
-    </div>
+    </SettingsPage>
   )
 }

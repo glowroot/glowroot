@@ -4,6 +4,7 @@ import { useLayout } from '../../contexts/LayoutContext'
 import { apiGet } from '../../lib/api'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface User {
   username: string
@@ -39,11 +40,10 @@ export function AdminUserListPage() {
   if (error) return <HttpError error={error} />
 
   return (
-    <div className="rounded-lg border bg-white p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Users</h2>
-      <div className="rounded-md border">
+    <SettingsPage title="Users" wide>
+      <div className="divide-y divide-gray-100 border-t border-gray-100">
         {users.length === 0 ? (
-          <div className="px-4 py-3 text-sm text-gray-500 italic">There are no users</div>
+          <div className="py-3 text-sm text-gray-500 italic">There are no users</div>
         ) : (
           users.map((user) => {
             const displayName = user.username.toLowerCase() === 'anonymous'
@@ -53,7 +53,7 @@ export function AdminUserListPage() {
               <Link
                 key={user.username}
                 to={`/modern/admin/user?username=${encodeURIComponent(user.username)}`}
-                className="flex items-center justify-between px-4 py-3 text-sm border-b last:border-b-0 no-underline hover:bg-gray-50"
+                className="flex items-center justify-between py-3 text-sm no-underline hover:bg-gray-50/80 -mx-1 px-1 rounded"
               >
                 <span className="text-gray-900">{displayName}</span>
                 <span className="text-xs text-gray-500">{user.roles.join(', ')}</span>
@@ -72,6 +72,6 @@ export function AdminUserListPage() {
           </Link>
         </div>
       )}
-    </div>
+    </SettingsPage>
   )
 }

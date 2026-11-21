@@ -10,6 +10,7 @@ import { Button } from '../../components/ui/button'
 import { Dialog, DialogFooter, DialogTitle } from '../../components/ui/dialog'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface UserConfig {
   username: string
@@ -155,19 +156,14 @@ export function AdminUserPage() {
 
   const showPasswordFields = !isAnonymous && !config.ldap
   const passwordRequired = isNew || (originalConfig.ldap && !config.ldap)
-  const heading = isNew ? '<New>' : isAnonymous ? '<anonymous>' : config.username
+  const pageTitle = isNew ? 'New' : isAnonymous ? 'anonymous' : config.username
 
   return (
     <div>
-      <div className="mb-3">
-        <Link to="/modern/admin/user-list" className="text-sm text-blue-600 hover:underline">
-          Return to list
-        </Link>
-      </div>
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Users &mdash; {heading}
-        </h2>
+      <SettingsPage
+        title={pageTitle}
+        back={{ to: '/modern/admin/user-list', label: 'Users' }}
+      >
 
         <GtFormGroup label="Username" required={!isAnonymous} value={config.username}>
           <Input
@@ -273,7 +269,7 @@ export function AdminUserPage() {
             deleteConfirmMessage="Are you sure you want to delete this user?"
           />
         )}
-      </div>
+      </SettingsPage>
 
       <Dialog open={showNoRolesConfirm} onClose={() => resolveNoRolesConfirmation(false)}>
         <DialogTitle>User has no role assignments</DialogTitle>

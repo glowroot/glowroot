@@ -9,6 +9,7 @@ import { Textarea } from '../../components/ui/textarea'
 import { Button } from '../../components/ui/button'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface HttpProxyConfig {
   host?: string
@@ -107,8 +108,7 @@ export function AdminHttpProxyPage() {
   if (error) return <HttpError error={error} />
 
   return (
-    <div className="rounded-lg border bg-white p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">HTTP proxy</h2>
+    <SettingsPage title="HTTP proxy">
       <GtFormGroup label="Host" helpText="HTTP Proxy server hostname or IP address.">
         <Input
           value={config.host ?? ''}
@@ -199,6 +199,6 @@ export function AdminHttpProxyPage() {
           )}
         </div>
       )}
-    </div>
+    </SettingsPage>
   )
 }

@@ -6,6 +6,7 @@ import { GtButtonGroup } from '../../components/shared/GtButtonGroup'
 import { Input } from '../../components/ui/input'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface GeneralConfig {
   display: string
@@ -59,9 +60,8 @@ export function ConfigGeneralPage() {
   if (!config) return null
 
   return (
-    <div className="rounded-lg border bg-white p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">General</h2>
-      <GtFormGroup
+    <SettingsPage title="General">
+<GtFormGroup
         label={isRollup ? 'Agent rollup ID' : 'Agent ID'}
         helpText={`Cannot be changed, used for storing and querying the agent${isRollup ? ' rollup' : ''}'s data.`}
       >
@@ -79,13 +79,13 @@ export function ConfigGeneralPage() {
         />
       </GtFormGroup>
       {isRollup && (
-        <div className="mb-4 text-xs text-gray-500 italic sm:ml-[26%]">
+        <div className="mb-4 text-xs text-gray-500 italic sm:ml-56">
           NOTE: the agent rollup configuration (synthetic monitors, alerts, UI and advanced) applies directly to the agent rollup data. This configuration has no affect on individual agents under the rollup.
         </div>
       )}
       {canEdit && (
         <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />
       )}
-    </div>
+    </SettingsPage>
   )
 }

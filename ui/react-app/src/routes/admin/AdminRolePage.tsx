@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLayout } from '../../contexts/LayoutContext'
 import { apiGet, apiPost, ApiError } from '../../lib/api'
 import { GtFormGroup } from '../../components/shared/GtFormGroup'
@@ -10,6 +10,7 @@ import { Checkbox } from '../../components/ui/checkbox'
 import { Button } from '../../components/ui/button'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface PermNode {
   key: string
@@ -442,15 +443,10 @@ export function AdminRolePage() {
 
   return (
     <div>
-      <div className="mb-3">
-        <Link to="/modern/admin/role-list" className="text-sm text-blue-600 hover:underline">
-          Return to list
-        </Link>
-      </div>
-      <div className="rounded-lg border bg-white p-6 space-y-6">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Roles &mdash; {isNew ? '<New>' : config.name}
-        </h2>
+      <SettingsPage
+        title={isNew ? 'New' : config.name}
+        back={{ to: '/modern/admin/role-list', label: 'Roles' }}
+      >
 
         <GtFormGroup label="Name" required value={config.name}>
           <Input
@@ -566,7 +562,7 @@ export function AdminRolePage() {
             deleteConfirmMessage={`Are you sure you want to delete role '${config.name}'?`}
           />
         )}
-      </div>
+      </SettingsPage>
     </div>
   )
 }

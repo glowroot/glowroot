@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { Plus, Trash2 } from 'lucide-react'
 import { useLayout } from '../../contexts/LayoutContext'
 import { apiGet, apiPost, generateEncryptionKeyMessage } from '../../lib/api'
@@ -11,6 +10,8 @@ import { Checkbox } from '../../components/ui/checkbox'
 import { Button } from '../../components/ui/button'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
+import { SettingsSection } from '../../components/shared/SettingsSection'
 
 interface RoleMapping {
   ldapGroupDn: string
@@ -196,15 +197,11 @@ export function AdminLdapPage() {
   const hostRequired = Boolean(config.host?.trim())
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link to="/modern/admin/integration-list" className="text-sm text-blue-600 hover:underline">
-          Return to list
-        </Link>
-      </div>
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Integrations &mdash; LDAP</h2>
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Connection</h3>
+    <SettingsPage
+      title="LDAP"
+      back={{ to: '/modern/admin/integration-list', label: 'Integrations' }}
+    >
+      <SettingsSection first title="Connection">
         <GtFormGroup label="Host" helpText="LDAP server hostname or IP address.">
           <Input value={config.host ?? ''} onChange={(e) => setConfig({ ...config, host: e.target.value })} disabled={!layout.adminEdit} />
         </GtFormGroup>
@@ -253,10 +250,9 @@ export function AdminLdapPage() {
             disabled={!layout.adminEdit}
           />
         </GtFormGroup>
-      </div>
+      </SettingsSection>
 
-      <div className="rounded-lg border bg-white p-6">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">User DN structure</h3>
+      <SettingsSection title="User DN structure">
         <GtFormGroup
           label="User base DN"
           required={hostRequired}
@@ -289,12 +285,11 @@ export function AdminLdapPage() {
         >
           <Input value={config.groupSearchFilter ?? ''} onChange={(e) => setConfig({ ...config, groupSearchFilter: e.target.value })} disabled={!layout.adminEdit} />
         </GtFormGroup>
-      </div>
+      </SettingsSection>
 
-      <div className="rounded-lg border bg-white p-6">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Role mappings</h3>
+      <SettingsSection title="Role mappings">
         {roleMappingBlocks.map((mapping, i) => (
-          <div key={i} className="mb-4 rounded border p-4 bg-gray-50">
+          <div key={i} className={i === 0 ? 'pb-4' : 'border-t border-gray-100 py-4'}>
             <GtFormGroup
               label="LDAP group DN"
               required
@@ -358,37 +353,41 @@ export function AdminLdapPage() {
           </div>
         ))}
         {layout.adminEdit && (
-          <Button variant="outline" size="sm" onClick={addRoleMapping}>
-            <Plus className="h-4 w-4" /> Add role mapping
-          </Button>
+          <button
+            type="button"
+            onClick={addRoleMapping}
+            className="mt-1 inline-flex items-center gap-1 text-sm text-[#417998] hover:text-[#2f586e]"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add role mapping
+          </button>
         )}
-      </div>
+      </SettingsSection>
 
       {layout.adminEdit && (
         <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />
       )}
 
       {layout.adminEdit && (
-        <div className="rounded-lg border bg-white p-6">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Test LDAP</h3>
+        <SettingsSection title="Test LDAP">
           <GtFormGroup label="Username">
             <Input value={testUsername} onChange={(e) => setTestUsername(e.target.value)} />
           </GtFormGroup>
           <GtFormGroup label="Password">
             <Input type="password" value={testPassword} onChange={(e) => setTestPassword(e.target.value)} />
           </GtFormGroup>
-          <div className="flex items-center gap-3 pl-[33.333%]">
+          <div className="flex items-center gap-3 sm:ml-56">
             <Button variant="secondary" onClick={handleTest} loading={testing}>
               Test
             </Button>
           </div>
           {testResult && (
-            <div className={`mt-3 pl-[33.333%] text-sm font-medium whitespace-pre-line ${testResult.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`mt-3 sm:ml-56 text-sm font-medium whitespace-pre-line ${testResult.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
               {testResult.text}
             </div>
           )}
-        </div>
+        </SettingsSection>
       )}
-    </div>
+    </SettingsPage>
   )
 }

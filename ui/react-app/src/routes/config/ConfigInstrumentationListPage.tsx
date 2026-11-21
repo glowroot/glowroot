@@ -4,6 +4,7 @@ import { useAgent } from '../../contexts/AgentContext'
 import { apiGet, apiPost } from '../../lib/api'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 import { Button } from '../../components/ui/button'
 import { Dialog, DialogTitle, DialogFooter } from '../../components/ui/dialog'
 
@@ -200,9 +201,9 @@ export function ConfigInstrumentationListPage() {
   const jsonExport = JSON.stringify(data.configs.map(cleanForExport), null, 2)
 
   return (
-    <div>
+    <SettingsPage title="Instrumentation" wide>
       {data.jvmOutOfSync && (
-        <div className="mb-4 flex items-center gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="flex items-center gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <span>
             {data.jvmRetransformClassesSupported
               ? 'Instrumentation has been updated but not yet applied to the running JVM.'
@@ -219,27 +220,24 @@ export function ConfigInstrumentationListPage() {
         </div>
       )}
 
-      <div className="rounded-lg border bg-white">
-        <div className="border-b px-4 py-3">
-          <h2 className="text-lg font-semibold text-gray-900">Instrumentation</h2>
-        </div>
+      <div className="divide-y divide-gray-100 border-t border-gray-100">
         {data.configs.map((config) => (
           <Link
             key={config.version}
             to={`/modern/config/instrumentation?agent-id=${encodeURIComponent(agentId!)}&v=${encodeURIComponent(config.version)}`}
-            className="flex items-center justify-between px-4 py-3 text-sm text-gray-900 border-b last:border-b-0 no-underline hover:bg-gray-50"
+            className="flex items-center justify-between py-3 text-sm text-gray-900 no-underline hover:bg-gray-50/80 -mx-1 px-1 rounded"
           >
             <span>{config.className}::{config.methodName}</span>
             <span className="text-xs text-gray-500">{captureKindDisplay(config.captureKind)}</span>
           </Link>
         ))}
         {data.configs.length === 0 && (
-          <p className="px-4 py-3 text-sm text-gray-500">No custom instrumentation configured.</p>
+          <p className="py-3 text-sm text-gray-500">No custom instrumentation configured.</p>
         )}
       </div>
 
       {canEdit && (
-        <div className="mt-4 flex items-center gap-3">
+        <div className="flex items-center gap-3">
           <Link
             to={`/modern/config/instrumentation?agent-id=${encodeURIComponent(agentId!)}&new`}
             className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 no-underline"
@@ -338,6 +336,6 @@ export function ConfigInstrumentationListPage() {
           </Button>
         </DialogFooter>
       </Dialog>
-    </div>
+    </SettingsPage>
   )
 }

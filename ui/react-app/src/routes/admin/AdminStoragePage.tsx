@@ -10,6 +10,8 @@ import { Input } from '../../components/ui/input'
 import { Button } from '../../components/ui/button'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
+import { SettingsSection } from '../../components/shared/SettingsSection'
 
 interface StorageConfig {
   rollupExpirationHours: number[]
@@ -275,13 +277,11 @@ export function AdminStoragePage() {
   })()
 
   return (
-    <div className="space-y-6">
-      {/* Aggregate data */}
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Storage</h2>
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">
-          {layout.central ? 'Response time and JVM gauge data' : 'Aggregate data (data.mv.db)'}
-        </h3>
+    <SettingsPage title="Storage" wide>
+      <SettingsSection
+        first
+        title={layout.central ? 'Response time and JVM gauge data' : 'Aggregate data (data.mv.db)'}
+      >
         {rollupDays.map((days, i) => (
           <GtFormGroup
             key={i}
@@ -396,12 +396,11 @@ export function AdminStoragePage() {
             </div>
           </GtFormGroup>
         )}
-      </div>
+      </SettingsSection>
 
       {/* Capped database sizes (embedded only) */}
       {!layout.central && config.rollupCappedDatabaseSizesMb && (
-        <div className="rounded-lg border bg-white p-6">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Capped database sizes (*.capped.db)</h3>
+        <SettingsSection title="Capped database sizes (*.capped.db)">
           {rollupCappedSizes.map((size, i) => (
             <GtFormGroup
               key={i}
@@ -443,16 +442,15 @@ export function AdminStoragePage() {
               <span className="text-sm text-gray-500">MB</span>
             </div>
           </GtFormGroup>
-        </div>
+        </SettingsSection>
       )}
 
       {/* H2 cache (embedded only) */}
       {!layout.central && (
-        <div className="rounded-lg border bg-white p-6">
-          <h3 className="text-sm font-semibold text-gray-900 mb-2">H2 cache</h3>
-          <p className="text-xs text-gray-500 mb-4">
-            In-memory H2 page cache (same JVM heap as the app), not disk.
-          </p>
+        <SettingsSection
+          title="H2 cache"
+          description="In-memory H2 page cache (same JVM heap as the app), not disk."
+        >
           <GtFormGroup
             label="Cache size"
             htmlFor="h2CacheMode"
@@ -508,11 +506,11 @@ export function AdminStoragePage() {
               </p>
             )}
           </GtFormGroup>
-        </div>
+        </SettingsSection>
       )}
 
       {layout.adminEdit && (
-        <div className="rounded-lg border bg-white px-6 pb-6 pt-2">
+        <SettingsSection>
           <GtButtonGroup onSave={handleSave} hasChanges={hasChanges}>
             {layout.central && (
               <Button
@@ -534,13 +532,12 @@ export function AdminStoragePage() {
               Note: Changing TTL only affects data written going forward.
             </p>
           )}
-        </div>
+        </SettingsSection>
       )}
 
       {/* Actions (embedded H2 only) */}
       {!layout.central && (layout.adminEdit || layout.offlineViewer) && (
-        <div className="rounded-lg border bg-white p-6">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Actions</h3>
+        <SettingsSection title="Actions">
           <div className="flex flex-wrap gap-3">
             {!layout.central && (
               <>
@@ -717,9 +714,9 @@ export function AdminStoragePage() {
               )}
             </div>
           )}
-        </div>
+        </SettingsSection>
       )}
-      <div className="mt-4 text-xs text-gray-500">
+      <div className="text-xs text-gray-500">
         For more information and configuration details, see the{' '}
         <a
           href="https://github.com/glowroot/glowroot/wiki/Administration-Storage"
@@ -731,6 +728,6 @@ export function AdminStoragePage() {
         </a>
         .
       </div>
-    </div>
+    </SettingsPage>
   )
 }
