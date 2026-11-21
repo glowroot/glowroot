@@ -501,6 +501,68 @@ public class MoreFuturesTest {
         assertThat(processed.get()).isEqualTo(5000);
     }
 
+    @Test
+    public void asyncLimiterBoundsConcurrencyAndDrainsQueuedWaitersWithoutStackOverflow()
+            throws Exception {
+        assertThatThrownBy(() -> new MoreFutures.AsyncLimiter(0))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        MoreFutures.AsyncLimiter limiter = new MoreFutures.AsyncLimiter(2);
+        AtomicInteger active = new AtomicInteger();
+        AtomicInteger maxActive = new AtomicInteger();
+
+        CompletableFuture<Void> gate0 = new CompletableFuture<>();
+        CompletableFuture<Void> gate1 = new CompletableFuture<>();
+
+        CompletableFuture<Void> f0 = limiter.runAsync(() -> {
+            int c = active.incrementAndGet();
+            maxActive.accumulateAndGet(c, Math::max);
+            return gate0.whenComplete((r, t) -> active.decrementAndGet());
+        });
+        CompletableFuture<Void> f1 = limiter.runAsync(() -> {
+            int c = active.incrementAndGet();
+            maxActive.accumulateAndGet(c, Math::max);
+            return gate1.whenComplete((r, t) -> active.decrementAndGet());
+        });
+
+        List<CompletableFuture<Integer>> queued = new ArrayList<>(5000);
+        RuntimeException syncThrow = new RuntimeException("sync throw");
+        RuntimeException asyncFail = new RuntimeException("async fail");
+        for (int i = 0; i < 5000; i++) {
+            final int idx = i;
+            queued.add(limiter.runAsync(() -> {
+                int c = active.incrementAndGet();
+                maxActive.accumulateAndGet(c, Math::max);
+                active.decrementAndGet();
+                if (idx == 0) {
+                    throw syncThrow;
+                }
+                if (idx == 1) {
+                    return CompletableFuture.failedFuture(asyncFail);
+                }
+                return CompletableFuture.completedFuture(idx);
+            }));
+        }
+
+        assertThat(active.get()).isEqualTo(2);
+        assertThat(queued.get(0).isDone()).isFalse();
+
+        gate0.complete(null);
+        gate1.complete(null);
+
+        f0.get(2, TimeUnit.SECONDS);
+        f1.get(2, TimeUnit.SECONDS);
+        assertThatThrownBy(() -> queued.get(0).get(2, TimeUnit.SECONDS))
+                .isInstanceOf(ExecutionException.class)
+                .hasCause(syncThrow);
+        assertThatThrownBy(() -> queued.get(1).get(2, TimeUnit.SECONDS))
+                .isInstanceOf(ExecutionException.class)
+                .hasCause(asyncFail);
+        assertThat(queued.get(4999).get(2, TimeUnit.SECONDS)).isEqualTo(4999);
+        assertThat(maxActive.get()).isEqualTo(2);
+        assertThat(active.get()).isEqualTo(0);
+    }
+
     private static AsyncResultSet emptyResultSet() {
         AsyncResultSet resultSet = mock(AsyncResultSet.class);
         when(resultSet.currentPage()).thenReturn(Collections.emptyList());

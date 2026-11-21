@@ -562,6 +562,85 @@ public class RollupServiceTest {
         verify(centralAlertingService).checkForAllDeletedAlerts(CassandraProfile.rollup);
     }
 
+    @Test
+    public void runInternalCapsGlobalNodeConcurrencyAcrossMultiLevelRollupTrees()
+            throws Exception {
+        ActiveAgentDao activeAgentDao = mock(ActiveAgentDao.class);
+        AggregateDao aggregateDao = mock(AggregateDao.class);
+        GaugeValueDao gaugeValueDao = mock(GaugeValueDao.class);
+        SyntheticResultDao syntheticResultDao = mock(SyntheticResultDao.class);
+        CentralAlertingService centralAlertingService = mock(CentralAlertingService.class);
+        Clock clock = fixedClock();
+
+        AtomicInteger activeRollups = new AtomicInteger();
+        AtomicInteger maxActiveRollups = new AtomicInteger();
+        Set<String> completedAggregates = ConcurrentHashMap.newKeySet();
+
+        ExecutorService asyncPool = Executors.newFixedThreadPool(8);
+        when(aggregateDao.rollup(anyString())).thenAnswer(invocation -> {
+            String id = invocation.getArgument(0);
+            int current = activeRollups.incrementAndGet();
+            maxActiveRollups.accumulateAndGet(current, Math::max);
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            asyncPool.execute(() -> {
+                try {
+                    Thread.sleep(15);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } finally {
+                    completedAggregates.add(id);
+                    activeRollups.decrementAndGet();
+                    future.complete(null);
+                }
+            });
+            return future;
+        });
+        when(gaugeValueDao.rollup(anyString()))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(syntheticResultDao.rollup(anyString()))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(centralAlertingService.checkAggregateAndGaugeAndHeartbeatAlertsAsync(
+                anyString(), anyString(), anyLong(), eq(CassandraProfile.rollup)))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(centralAlertingService.checkForAllDeletedAlerts(CassandraProfile.rollup))
+                .thenReturn(CompletableFuture.completedFuture(null));
+
+        // 4 top-level parents x 4 children each = 16 leaf nodes + 4 parents (20 total nodes)
+        List<AgentRollup> parents = new ArrayList<>();
+        for (int p = 0; p < 4; p++) {
+            String parentId = "parent" + p + "::";
+            List<AgentRollup> children = new ArrayList<>();
+            for (int c = 0; c < 4; c++) {
+                String childId = parentId + "child" + c;
+                children.add(ImmutableAgentRollup.builder()
+                        .id(childId)
+                        .display("child" + c)
+                        .lastDisplayPart("child" + c)
+                        .build());
+            }
+            parents.add(ImmutableAgentRollup.builder()
+                    .id(parentId)
+                    .display("parent" + p)
+                    .lastDisplayPart("parent" + p)
+                    .addAllChildren(children)
+                    .build());
+        }
+
+        RollupService rollupService = new RollupService(activeAgentDao, aggregateDao, gaugeValueDao,
+                syntheticResultDao, centralAlertingService, clock);
+        try {
+            rollupService.runInternal(parents);
+        } finally {
+            rollupService.close();
+            asyncPool.shutdownNow();
+        }
+
+        assertThat(maxActiveRollups.get()).isLessThanOrEqualTo(4);
+        assertThat(activeRollups.get()).isEqualTo(0);
+        assertThat(completedAggregates).hasSize(20);
+        verify(centralAlertingService).checkForAllDeletedAlerts(CassandraProfile.rollup);
+    }
+
     private static Clock fixedClock() {
         return new Clock() {
             @Override

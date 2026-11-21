@@ -15,6 +15,7 @@
  */
 package org.glowroot.central.util;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -22,6 +23,7 @@ import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.datastax.oss.driver.api.core.DriverException;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
@@ -236,5 +238,96 @@ public class MoreFutures {
 
     public interface DoRollupList {
         CompletableFuture<?> execute(List<AsyncResultSet> results);
+    }
+
+    public static final class AsyncLimiter {
+
+        private final Queue<Runnable> waiters = new ArrayDeque<>();
+        private final ThreadLocal<Boolean> inReleaseLoop = new ThreadLocal<>();
+        private int availablePermits;
+
+        public AsyncLimiter(int maxConcurrency) {
+            if (maxConcurrency <= 0) {
+                throw new IllegalArgumentException(
+                        "maxConcurrency must be positive: " + maxConcurrency);
+            }
+            this.availablePermits = maxConcurrency;
+        }
+
+        public <T> CompletableFuture<T> runAsync(Supplier<? extends CompletionStage<T>> task) {
+            CompletableFuture<T> result = new CompletableFuture<>();
+            boolean acquired = false;
+            synchronized (this) {
+                if (availablePermits > 0 && waiters.isEmpty()) {
+                    availablePermits--;
+                    acquired = true;
+                } else {
+                    waiters.add(() -> startTask(task, result));
+                }
+            }
+            if (acquired) {
+                startTask(task, result);
+            }
+            return result;
+        }
+
+        private <T> void startTask(Supplier<? extends CompletionStage<T>> task,
+                CompletableFuture<T> result) {
+            CompletionStage<T> stage;
+            try {
+                stage = task.get();
+            } catch (Throwable t) {
+                try {
+                    result.completeExceptionally(t);
+                } finally {
+                    release();
+                }
+                return;
+            }
+            stage.whenComplete((value, t) -> {
+                try {
+                    if (t != null) {
+                        result.completeExceptionally(unwrapCompletionException(t));
+                    } else {
+                        result.complete(value);
+                    }
+                } finally {
+                    release();
+                }
+            });
+        }
+
+        private void release() {
+            if (Boolean.TRUE.equals(inReleaseLoop.get())) {
+                synchronized (this) {
+                    availablePermits++;
+                }
+                return;
+            }
+            inReleaseLoop.set(Boolean.TRUE);
+            try {
+                boolean returnedPermit = false;
+                while (true) {
+                    Runnable next;
+                    synchronized (this) {
+                        if (!returnedPermit) {
+                            availablePermits++;
+                            returnedPermit = true;
+                        }
+                        if (availablePermits <= 0) {
+                            return;
+                        }
+                        next = waiters.poll();
+                        if (next == null) {
+                            return;
+                        }
+                        availablePermits--;
+                    }
+                    next.run();
+                }
+            } finally {
+                inReleaseLoop.remove();
+            }
+        }
     }
 }

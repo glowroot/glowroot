@@ -42,7 +42,6 @@ import org.apache.http.ssl.SSLContextBuilder;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.glowroot.agent.api.Instrumentation;
 import org.glowroot.agent.api.Instrumentation.AlreadyInTransactionBehavior;
-import org.glowroot.central.RollupService.AgentRollupComposer;
 import org.glowroot.central.repo.*;
 import org.glowroot.central.repo.SyntheticResultDao.SyntheticResultRollup0;
 import org.glowroot.central.util.ClusterManager;
@@ -865,5 +864,10 @@ class SyntheticMonitorService implements Runnable {
                     .throwable(new RuntimeException("Unexpected cancellation"))
                     .build());
         }
+    }
+
+    @FunctionalInterface
+    private interface AgentRollupComposer {
+        CompletionStage<?> accept(AgentRollup agentRollup);
     }
 }
