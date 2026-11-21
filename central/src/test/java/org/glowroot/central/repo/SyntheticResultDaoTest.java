@@ -146,6 +146,66 @@ public class SyntheticResultDaoTest {
         verify(deleteNeedsRollup1BS).setUuid(2, uuid2);
     }
 
+    @Test
+    public void rollupContinuesHigherLevelsWhenNeedsRollup1ReadFails() throws Exception {
+        Session session = mock(Session.class);
+        ConfigRepositoryImpl configRepository = mock(ConfigRepositoryImpl.class);
+        when(configRepository.getRollupConfigs())
+                .thenReturn(ImmutableList.copyOf(RollupConfig.buildRollupConfigs()));
+        when(configRepository.getCentralStorageConfig()).thenReturn(
+                CompletableFuture.completedFuture(ImmutableCentralStorageConfig.builder().build()));
+
+        Map<PreparedStatement, String> sqlByPS = new HashMap<>();
+        when(session.prepare(anyString())).thenAnswer(invocation -> {
+            String sql = invocation.getArgument(0);
+            PreparedStatement ps = mock(PreparedStatement.class);
+            sqlByPS.put(ps, sql);
+            when(ps.bind()).thenAnswer(bindInvocation -> mock(BoundStatement.class, bsInvocation -> {
+                if ("getPreparedStatement".equals(bsInvocation.getMethod().getName())) {
+                    return ps;
+                }
+                if (bsInvocation.getMethod().getReturnType()
+                        .isAssignableFrom(BoundStatement.class)) {
+                    return bsInvocation.getMock();
+                }
+                return Mockito.RETURNS_DEFAULTS.answer(bsInvocation);
+            }));
+            return ps;
+        });
+
+        AsyncResultSet emptyResults = resultSet(Collections.emptyList());
+        when(session.readAsync(any(BoundStatement.class), eq(CassandraProfile.rollup)))
+                .thenAnswer(invocation -> {
+                    BoundStatement bs = invocation.getArgument(0);
+                    String sql = sqlByPS.get(bs.getPreparedStatement());
+                    if (sql != null && sql.contains("synthetic_needs_rollup_1")) {
+                        return CompletableFuture.failedFuture(
+                                new RuntimeException("needs_rollup_1 read timeout"));
+                    }
+                    return CompletableFuture.completedFuture(emptyResults);
+                });
+
+        Clock clock = new Clock() {
+            @Override
+            public long currentTimeMillis() {
+                return 1_000_000L;
+            }
+        };
+
+        SyntheticResultDaoImpl dao = new SyntheticResultDaoImpl(session, configRepository,
+                Runnable::run, 0, clock);
+
+        dao.rollup("agent1").toCompletableFuture().get(2, TimeUnit.SECONDS);
+
+        ArgumentCaptor<BoundStatement> readCaptor = ArgumentCaptor.forClass(BoundStatement.class);
+        verify(session, Mockito.atLeastOnce()).readAsync(readCaptor.capture(),
+                eq(CassandraProfile.rollup));
+        assertThat(readCaptor.getAllValues()).anyMatch(bs -> {
+            String sql = sqlByPS.get(bs.getPreparedStatement());
+            return sql != null && sql.contains("from synthetic_needs_rollup_2 ");
+        });
+    }
+
     private static Row mockNeedsRollupRow(long captureTime, UUID uniqueness, Set<String> keys) {
         Row row = mock(Row.class);
         when(row.getInstant(0)).thenReturn(Instant.ofEpochMilli(captureTime));

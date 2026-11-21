@@ -326,6 +326,35 @@ public class GaugeValueDaoTest {
         verify(deletes.get(0)).setUuid(2, uuid1);
     }
 
+    @Test
+    public void rollupContinuesHigherLevelsAndPropagatesFailureWhenNeedsRollup1ReadFailsForChild()
+            throws Exception {
+        TestContext ctx = createContext("gauge_needs_rollup_1", Collections.emptyList());
+        AsyncResultSet emptyResults = resultSet(Collections.emptyList());
+
+        when(ctx.session.readAsync(any(BoundStatement.class), eq(CassandraProfile.rollup)))
+                .thenAnswer(invocation -> {
+                    BoundStatement bs = invocation.getArgument(0);
+                    if (ctx.sql(bs).contains("from gauge_needs_rollup_1 ")) {
+                        return CompletableFuture.failedFuture(
+                                new RuntimeException("needs_rollup_1 read timeout"));
+                    }
+                    return CompletableFuture.completedFuture(emptyResults);
+                });
+
+        assertThatThrownBy(() -> ctx.dao.rollup("parent::child1").toCompletableFuture()
+                .get(2, TimeUnit.SECONDS))
+                .isInstanceOf(ExecutionException.class)
+                .hasCauseInstanceOf(RuntimeException.class)
+                .hasRootCauseMessage("needs_rollup_1 read timeout");
+
+        List<BoundStatement> readStatements = captureReadStatements(ctx.session);
+        assertThat(readStatements).anyMatch(bs ->
+                ctx.sql(bs).contains("from gauge_needs_rollup_2 "));
+        assertThat(readStatements).anyMatch(bs ->
+                ctx.sql(bs).contains("from gauge_needs_rollup_3 "));
+    }
+
     private static TestContext createContext(String needsRollupTableFragment,
             List<Row> needsRollupRows) throws Exception {
         Session session = mock(Session.class);

@@ -182,6 +182,30 @@ public class AggregateDaoTest {
         verify(deletes.get(0), never()).setUuid(2, uuid1);
     }
 
+    @Test
+    public void rollupLeafContinuesHigherLevelsAndCompletesNormallyWhenNeedsRollup1ReadFails()
+            throws Exception {
+        TestContext ctx = createContext("aggregate_needs_rollup_1", Collections.emptyList());
+
+        when(ctx.session.readAsync(any(BoundStatement.class), eq(CassandraProfile.rollup)))
+                .thenAnswer(invocation -> {
+                    BoundStatement bs = invocation.getArgument(0);
+                    if (ctx.sql(bs).contains("from aggregate_needs_rollup_1 ")) {
+                        return CompletableFuture.failedFuture(
+                                new RuntimeException("needs_rollup_1 read timeout"));
+                    }
+                    return CompletableFuture.completedFuture(ctx.emptyResults);
+                });
+
+        ctx.dao.rollup("parent::child1").toCompletableFuture().get(2, TimeUnit.SECONDS);
+
+        List<BoundStatement> readStatements = captureReadStatements(ctx.session);
+        assertThat(readStatements).anyMatch(bs ->
+                ctx.sql(bs).contains("from aggregate_needs_rollup_2 "));
+        assertThat(readStatements).anyMatch(bs ->
+                ctx.sql(bs).contains("from aggregate_needs_rollup_3 "));
+    }
+
     private static TestContext createContext(String needsRollupTableFragment,
             List<Row> needsRollupRows) throws Exception {
         Session session = mock(Session.class);

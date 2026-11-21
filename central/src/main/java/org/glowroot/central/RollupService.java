@@ -211,7 +211,11 @@ class RollupService implements Runnable {
                 MAX_CONCURRENT_AGENT_ROLLUPS, this::rollupSyntheticMonitors)
                 .thenCompose(ignored -> {
                     try {
-                        return syntheticResultDao.rollup(agentRollup.id());
+                        return syntheticResultDao.rollup(agentRollup.id())
+                                .exceptionally(t -> {
+                                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                                    return null;
+                                });
                     } catch (InterruptedException e) {
                         // probably shutdown requested (see close method above)
                     } catch (Throwable t) {
@@ -227,7 +231,11 @@ class RollupService implements Runnable {
                 .thenCompose(ignored -> {
                     try {
                         return centralAlertingService.checkAggregateAndGaugeAndHeartbeatAlertsAsync(
-                                agentRollup.id(), agentRollup.display(), clock.currentTimeMillis(), CassandraProfile.rollup);
+                                agentRollup.id(), agentRollup.display(), clock.currentTimeMillis(), CassandraProfile.rollup)
+                                .exceptionally(t -> {
+                                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+                                    return null;
+                                });
                     } catch (Throwable t) {
                         logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
                     }

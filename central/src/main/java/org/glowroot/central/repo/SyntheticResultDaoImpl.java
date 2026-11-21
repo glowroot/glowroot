@@ -307,6 +307,10 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
                     if (rollupLevelInner < configRepository.getRollupConfigs().size()) {
                         int ttl = ttls.get(rollupLevelInner);
                         return rollup(agentRollupId, rollupLevelInner, ttl)
+                                .exceptionally(t -> {
+                                    logger.error("{} - {}", agentRollupId, t.getMessage(), t);
+                                    return null;
+                                })
                                 .thenApply(ignored -> rollupLevelInner + 1)
                                 .thenCompose(this);
                     } else {

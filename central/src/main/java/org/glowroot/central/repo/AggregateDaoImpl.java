@@ -931,12 +931,20 @@ public class AggregateDaoImpl implements AggregateDao {
 
     public CompletionStage<?> rollup(String agentRollupId, String agentRollupIdForMeta,
                                      @Nullable String parentAgentRollupId, boolean leaf) {
+        AtomicReference<@Nullable Throwable> parentRollupFailure = new AtomicReference<>();
         return getTTLs().thenCompose(ttls -> {
-            AtomicReference<@Nullable Throwable> parentRollupFailure = new AtomicReference<>();
             CompletionStage<?> future = CompletableFuture.completedFuture(null);
             if (!leaf) {
                 future = rollupFromChildren(agentRollupId, agentRollupIdForMeta, parentAgentRollupId,
-                        ttls.get(0), parentRollupFailure);
+                        ttls.get(0), parentRollupFailure)
+                        .exceptionally(t -> {
+                            logger.error("{} - {}", agentRollupId, t.getMessage(), t);
+                            if (parentAgentRollupId != null) {
+                                parentRollupFailure.compareAndSet(null,
+                                        MoreFutures.unwrapCompletionException(t));
+                            }
+                            return null;
+                        });
             }
             Function<Integer, CompletionStage<?>> lambda = new Function<Integer, CompletionStage<?>>() {
                 @Override
@@ -946,17 +954,27 @@ public class AggregateDaoImpl implements AggregateDao {
                     }
                     TTL ttl = ttls.get(rollupLevel);
                     return rollup(agentRollupId, agentRollupIdForMeta, rollupLevel, ttl)
+                            .exceptionally(t -> {
+                                logger.error("{} - {}", agentRollupId, t.getMessage(), t);
+                                return null;
+                            })
                             .thenCompose(ignored -> apply(rollupLevel + 1));
                 }
             };
-            return future.thenCompose(ignored -> lambda.apply(1))
-                    .thenCompose(ignored -> {
-                        Throwable failure = parentRollupFailure.get();
-                        if (failure != null) {
-                            return CompletableFuture.failedFuture(failure);
-                        }
-                        return CompletableFuture.completedFuture(null);
-                    });
+            return future.thenCompose(ignored -> lambda.apply(1));
+        }).exceptionally(t -> {
+            logger.error("{} - {}", agentRollupId, t.getMessage(), t);
+            if (!leaf && parentAgentRollupId != null) {
+                parentRollupFailure.compareAndSet(null,
+                        MoreFutures.unwrapCompletionException(t));
+            }
+            return null;
+        }).thenCompose(ignored -> {
+            Throwable failure = parentRollupFailure.get();
+            if (failure != null) {
+                return CompletableFuture.failedFuture(failure);
+            }
+            return CompletableFuture.completedFuture(null);
         });
     }
 
@@ -1032,7 +1050,7 @@ public class AggregateDaoImpl implements AggregateDao {
                                 logger.error("{} - {}", agentRollupId, t.getMessage(), t);
                                 if (parentAgentRollupId != null) {
                                     parentRollupFailure.compareAndSet(null,
-                                            Common.unwrapCompletionException(t));
+                                            MoreFutures.unwrapCompletionException(t));
                                 }
                                 return null;
                             }).thenCompose(ignored2 -> apply(indexNeedsRollupFromChildrenList + 1));
