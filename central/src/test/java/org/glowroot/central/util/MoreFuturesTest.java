@@ -125,6 +125,159 @@ public class MoreFuturesTest {
     }
 
     @Test
+    public void rollupAsyncAdvancesPastEmptyLeadingPagesToInvokeCallback() throws Exception {
+        AsyncResultSet page3 = nonEmptyResultSet();
+        AsyncResultSet page2 = emptyResultSetWithNextPage(CompletableFuture.completedFuture(page3));
+        CompletableFuture<AsyncResultSet> page2Future = new CompletableFuture<>();
+        AsyncResultSet page1 = emptyResultSetWithNextPage(page2Future);
+
+        AtomicBoolean ranOnAsyncExecutor = new AtomicBoolean(false);
+        Executor trackingExecutor = command -> {
+            ranOnAsyncExecutor.set(true);
+            command.run();
+        };
+        AtomicReference<AsyncResultSet> received = new AtomicReference<>();
+
+        CompletableFuture<?> resultFuture = MoreFutures.rollupAsync(
+                CompletableFuture.completedFuture(page1),
+                trackingExecutor,
+                rows -> {
+                    received.set(rows);
+                    return CompletableFuture.completedFuture(null);
+                });
+
+        assertThat(resultFuture.isDone()).isFalse();
+        assertThat(received.get()).isNull();
+
+        page2Future.complete(page2);
+
+        assertThat(resultFuture.get(2, TimeUnit.SECONDS)).isNull();
+        assertThat(ranOnAsyncExecutor.get()).isTrue();
+        assertThat(received.get()).isSameAs(page3);
+    }
+
+    @Test
+    public void rollupAsyncSkipsCallbackWhenAllPagesAreEmpty() throws Exception {
+        AsyncResultSet page2 = emptyResultSet();
+        AsyncResultSet page1 = emptyResultSetWithNextPage(CompletableFuture.completedFuture(page2));
+        AtomicBoolean invoked = new AtomicBoolean(false);
+
+        Object result = MoreFutures.rollupAsync(
+                        CompletableFuture.completedFuture(page1),
+                        DIRECT_EXECUTOR,
+                        rows -> {
+                            invoked.set(true);
+                            return CompletableFuture.completedFuture("executed");
+                        })
+                .get(2, TimeUnit.SECONDS);
+
+        assertThat(invoked.get()).isFalse();
+        assertThat(result).isNull();
+    }
+
+    @Test
+    public void rollupAsyncPropagatesFetchNextPageFailure() {
+        RuntimeException failure = new RuntimeException("page fetch failed");
+        AsyncResultSet page1 = emptyResultSetWithNextPage(CompletableFuture.failedFuture(failure));
+        AtomicBoolean invoked = new AtomicBoolean(false);
+
+        CompletableFuture<?> resultFuture = MoreFutures.rollupAsync(
+                CompletableFuture.completedFuture(page1),
+                DIRECT_EXECUTOR,
+                rows -> {
+                    invoked.set(true);
+                    return CompletableFuture.completedFuture(null);
+                });
+
+        assertThatThrownBy(() -> resultFuture.get(2, TimeUnit.SECONDS))
+                .isInstanceOf(ExecutionException.class)
+                .hasCause(failure);
+        assertThat(invoked.get()).isFalse();
+    }
+
+    @Test
+    public void rollupAsyncHandlesManyConsecutiveEmptyPagesWithoutStackOverflow()
+            throws Exception {
+        AsyncResultSet lastPage = nonEmptyResultSet();
+        AtomicInteger remainingEmptyPages = new AtomicInteger(5000);
+        AsyncResultSet emptyPage = mock(AsyncResultSet.class);
+        when(emptyPage.currentPage()).thenReturn(Collections.emptyList());
+        when(emptyPage.hasMorePages()).thenReturn(true);
+        when(emptyPage.fetchNextPage()).thenAnswer(invocation ->
+                CompletableFuture.completedFuture(
+                        remainingEmptyPages.decrementAndGet() > 0 ? emptyPage : lastPage));
+        AtomicReference<AsyncResultSet> received = new AtomicReference<>();
+
+        CompletableFuture<?> resultFuture = MoreFutures.rollupAsync(
+                CompletableFuture.completedFuture(emptyPage),
+                DIRECT_EXECUTOR,
+                rows -> {
+                    received.set(rows);
+                    return CompletableFuture.completedFuture(null);
+                });
+
+        assertThat(resultFuture.get(2, TimeUnit.SECONDS)).isNull();
+        assertThat(remainingEmptyPages.get()).isEqualTo(0);
+        assertThat(received.get()).isSameAs(lastPage);
+    }
+
+    @Test
+    public void rollupAsyncListAdvancesPastEmptyLeadingPagesToInvokeCallback() throws Exception {
+        AsyncResultSet emptyNoMore = emptyResultSet();
+        AsyncResultSet page2 = nonEmptyResultSet();
+        CompletableFuture<AsyncResultSet> nextPageFuture = new CompletableFuture<>();
+        AsyncResultSet emptyWithMore = emptyResultSetWithNextPage(nextPageFuture);
+
+        AtomicBoolean ranOnAsyncExecutor = new AtomicBoolean(false);
+        Executor trackingExecutor = command -> {
+            ranOnAsyncExecutor.set(true);
+            command.run();
+        };
+        AtomicReference<List<AsyncResultSet>> received = new AtomicReference<>();
+
+        CompletableFuture<?> resultFuture = MoreFutures.rollupAsync(
+                List.of(CompletableFuture.completedFuture(emptyNoMore),
+                        CompletableFuture.completedFuture(emptyWithMore)),
+                trackingExecutor,
+                rows -> {
+                    received.set(rows);
+                    return CompletableFuture.completedFuture(null);
+                });
+
+        assertThat(resultFuture.isDone()).isFalse();
+        assertThat(received.get()).isNull();
+
+        nextPageFuture.complete(page2);
+
+        assertThat(resultFuture.get(2, TimeUnit.SECONDS)).isNull();
+        assertThat(ranOnAsyncExecutor.get()).isTrue();
+        assertThat(received.get()).containsExactly(emptyNoMore, page2);
+    }
+
+    @Test
+    public void rollupAsyncListSkipsCallbackWhenAllResultSetsHaveOnlyEmptyPages()
+            throws Exception {
+        AsyncResultSet rs1 = emptyResultSetWithNextPage(
+                CompletableFuture.completedFuture(emptyResultSet()));
+        AsyncResultSet rs2 = emptyResultSetWithNextPage(
+                CompletableFuture.completedFuture(emptyResultSet()));
+        AtomicBoolean invoked = new AtomicBoolean(false);
+
+        Object result = MoreFutures.rollupAsync(
+                        List.of(CompletableFuture.completedFuture(rs1),
+                                CompletableFuture.completedFuture(rs2)),
+                        DIRECT_EXECUTOR,
+                        rows -> {
+                            invoked.set(true);
+                            return CompletableFuture.completedFuture("executed");
+                        })
+                .get(2, TimeUnit.SECONDS);
+
+        assertThat(invoked.get()).isFalse();
+        assertThat(result).isNull();
+    }
+
+    @Test
     public void runWithBoundedConcurrencyRespectsLimitAndProcessesAllItems() throws Exception {
         List<Integer> items = List.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
         List<CompletableFuture<Void>> pending = new ArrayList<>();
@@ -351,6 +504,15 @@ public class MoreFuturesTest {
     private static AsyncResultSet emptyResultSet() {
         AsyncResultSet resultSet = mock(AsyncResultSet.class);
         when(resultSet.currentPage()).thenReturn(Collections.emptyList());
+        return resultSet;
+    }
+
+    private static AsyncResultSet emptyResultSetWithNextPage(
+            CompletionStage<AsyncResultSet> nextPage) {
+        AsyncResultSet resultSet = mock(AsyncResultSet.class);
+        when(resultSet.currentPage()).thenReturn(Collections.emptyList());
+        when(resultSet.hasMorePages()).thenReturn(true);
+        when(resultSet.fetchNextPage()).thenReturn(nextPage);
         return resultSet;
     }
 

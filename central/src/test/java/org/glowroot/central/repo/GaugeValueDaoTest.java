@@ -253,6 +253,77 @@ public class GaugeValueDaoTest {
         verify(deletes.get(0), never()).setUuid(2, uuid1);
     }
 
+    @Test
+    public void rollupPagesPastEmptyFirstPageWithMorePagesAndWritesRollupValue() throws Exception {
+        UUID uuid1 = Uuids.timeBased();
+        long t1 = 60_000L;
+
+        TestContext ctx = createContext(
+                "gauge_needs_rollup_1",
+                List.of(mockNeedsRollupRow(t1, uuid1, Set.of("gauge1"))));
+
+        AsyncResultSet secondPage = resultSet(List.of(mockGaugeRow(42.0, 2L)));
+        AsyncResultSet firstPage = mock(AsyncResultSet.class);
+        when(firstPage.currentPage()).thenReturn(Collections.emptyList());
+        when(firstPage.hasMorePages()).thenReturn(true);
+        when(firstPage.fetchNextPage())
+                .thenReturn(CompletableFuture.completedFuture(secondPage));
+
+        when(ctx.session.readAsyncWarnIfNoRows(any(BoundStatement.class),
+                eq(CassandraProfile.rollup), anyString(), eq("agent1"), eq("gauge1"),
+                anyLong(), anyLong(), eq(1)))
+                .thenReturn(CompletableFuture.completedFuture(firstPage));
+
+        ctx.dao.rollup("agent1").toCompletableFuture().get(2, TimeUnit.SECONDS);
+
+        List<BoundStatement> writes = captureWriteStatements(ctx.session);
+        BoundStatement insert = findStatement(writes, ctx, "insert into gauge_value_rollup_1 ");
+        assertThat(insert).isNotNull();
+        verify(insert).setDouble(3, 42.0);
+        verify(insert).setLong(4, 2L);
+
+        List<BoundStatement> deletes = findStatements(writes, ctx,
+                "delete from gauge_needs_rollup_1 ");
+        assertThat(deletes).hasSize(1);
+        verify(deletes.get(0)).setInstant(1, Instant.ofEpochMilli(t1));
+        verify(deletes.get(0)).setUuid(2, uuid1);
+    }
+
+    @Test
+    public void rollupSkipsWriteWithoutIllegalStateExceptionWhenAllPagesAreEmpty()
+            throws Exception {
+        UUID uuid1 = Uuids.timeBased();
+        long t1 = 60_000L;
+
+        TestContext ctx = createContext(
+                "gauge_needs_rollup_1",
+                List.of(mockNeedsRollupRow(t1, uuid1, Set.of("gauge1"))));
+
+        AsyncResultSet secondPage = resultSet(Collections.emptyList());
+        AsyncResultSet firstPage = mock(AsyncResultSet.class);
+        when(firstPage.currentPage()).thenReturn(Collections.emptyList());
+        when(firstPage.hasMorePages()).thenReturn(true);
+        when(firstPage.fetchNextPage())
+                .thenReturn(CompletableFuture.completedFuture(secondPage));
+
+        when(ctx.session.readAsyncWarnIfNoRows(any(BoundStatement.class),
+                eq(CassandraProfile.rollup), anyString(), eq("agent1"), eq("gauge1"),
+                anyLong(), anyLong(), eq(1)))
+                .thenReturn(CompletableFuture.completedFuture(firstPage));
+
+        ctx.dao.rollup("agent1").toCompletableFuture().get(2, TimeUnit.SECONDS);
+
+        List<BoundStatement> writes = captureWriteStatements(ctx.session);
+        assertThat(writes).noneMatch(bs ->
+                ctx.sql(bs).startsWith("insert into gauge_value_rollup_1 "));
+
+        List<BoundStatement> deletes = findStatements(writes, ctx,
+                "delete from gauge_needs_rollup_1 ");
+        assertThat(deletes).hasSize(1);
+        verify(deletes.get(0)).setInstant(1, Instant.ofEpochMilli(t1));
+        verify(deletes.get(0)).setUuid(2, uuid1);
+    }
+
     private static TestContext createContext(String needsRollupTableFragment,
             List<Row> needsRollupRows) throws Exception {
         Session session = mock(Session.class);

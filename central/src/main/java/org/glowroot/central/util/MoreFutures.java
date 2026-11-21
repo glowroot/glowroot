@@ -46,20 +46,22 @@ public class MoreFutures {
 
     public static CompletableFuture<?> rollupAsync(CompletableFuture<AsyncResultSet> input,
                                                    Executor asyncExecutor, DoRollup function) {
-        return transformAsync(input, asyncExecutor,
+        return transformAsync(input.thenCompose(MoreFutures::skipEmptyLeadingPages), asyncExecutor,
                 (results) -> {
-                        if (!results.currentPage().iterator().hasNext()) {
-                            return CompletableFuture.completedFuture(null);
-                        }
-                        return function.execute(results);
+                    if (!results.currentPage().iterator().hasNext()) {
+                        return CompletableFuture.completedFuture(null);
                     }
-                );
+                    return function.execute(results);
+                });
     }
 
     public static CompletableFuture<?> rollupAsync(
             Collection<? extends CompletionStage<AsyncResultSet>> futures,
             Executor asyncExecutor, DoRollupList function) {
-        return transformAsync(CompletableFutures.allAsList(new ArrayList<>(futures)), asyncExecutor,
+        return transformAsync(
+                CompletableFutures.allAsList(new ArrayList<>(futures))
+                        .thenCompose(MoreFutures::skipEmptyLeadingPagesIfNeeded),
+                asyncExecutor,
                 (list) -> {
                     for (AsyncResultSet results : list) {
                         if (results.currentPage().iterator().hasNext()) {
@@ -68,6 +70,48 @@ public class MoreFutures {
                     }
                     return CompletableFuture.completedFuture(null);
                 });
+    }
+
+    private static CompletableFuture<AsyncResultSet> skipEmptyLeadingPages(
+            AsyncResultSet results) {
+        AsyncResultSet current = results;
+        while (!current.currentPage().iterator().hasNext() && current.hasMorePages()) {
+            CompletableFuture<AsyncResultSet> nextPage;
+            try {
+                nextPage = current.fetchNextPage().toCompletableFuture();
+            } catch (Throwable t) {
+                return CompletableFuture.failedFuture(t);
+            }
+            if (!nextPage.isDone()) {
+                return nextPage.thenCompose(MoreFutures::skipEmptyLeadingPages);
+            }
+            if (nextPage.isCompletedExceptionally()) {
+                return nextPage;
+            }
+            current = nextPage.join();
+        }
+        return CompletableFuture.completedFuture(current);
+    }
+
+    private static CompletableFuture<List<AsyncResultSet>> skipEmptyLeadingPagesIfNeeded(
+            List<AsyncResultSet> list) {
+        boolean anyHasMorePages = false;
+        for (AsyncResultSet results : list) {
+            if (results.currentPage().iterator().hasNext()) {
+                return CompletableFuture.completedFuture(list);
+            }
+            if (results.hasMorePages()) {
+                anyHasMorePages = true;
+            }
+        }
+        if (!anyHasMorePages) {
+            return CompletableFuture.completedFuture(list);
+        }
+        List<CompletableFuture<AsyncResultSet>> advanced = new ArrayList<>(list.size());
+        for (AsyncResultSet results : list) {
+            advanced.add(skipEmptyLeadingPages(results));
+        }
+        return CompletableFutures.allAsList(advanced);
     }
 
     public static <T> CompletableFuture<?> runWithBoundedConcurrency(Collection<T> items,
