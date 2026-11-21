@@ -2,8 +2,9 @@
 name: glowroot-ops
 description: >-
   Portable Glowroot analysis assistant. Invoke explicitly (not auto). Fetches
-  live wiki from github.com/glowroot/glowroot/wiki. Works in Cursor, Claude Code,
-  Copilot, ChatGPT, or any agent that can read files and fetch URLs.
+  live wiki from github.com/glowroot/glowroot/wiki; then in-repo docs/ notes
+  when listed in docs-index.md. Works in Cursor, Claude Code, Copilot, ChatGPT,
+  or any agent that can read files and fetch URLs.
 disable-model-invocation: true
 ---
 
@@ -16,18 +17,15 @@ Portable skill — see `INSTALL.md`. Invoke via slash command, skill name, or `P
 - Analysis only — no config edits, no issues, no deploy commands
 - No @mentions · upstream links only · match the user's language
 
-## Wiki (live — do not guess)
+## Sources (do not guess)
 
-**Source of truth:** https://github.com/glowroot/glowroot/wiki
-
-Before any verdict:
-
-1. Pick URL from `wiki-index.md`
-2. Fetch with browser / HTTP / curl (whatever the environment provides)
-3. Answer from fetched content + local patterns
-4. If fetch fails, say so and link the URL
-
-Fetch **1–2 pages max** per question.
+1. **Wiki (primary):** https://github.com/glowroot/glowroot/wiki  
+   Pick URL from `wiki-index.md` → fetch (browser / HTTP / curl) → answer from content.  
+   Fetch **1–2 wiki pages max** per question. If fetch fails, say so and link the URL.
+2. **In-repo docs (second):** if topic is in `docs-index.md`, read that file  
+   (clone: `docs/<file>`; skill-only: raw.githubusercontent.com URL in the index).  
+   Do not invent docs text.
+3. **Org / patterns:** `ORG-CONTEXT.md` if present; `triage-patterns-dev.md` / `decision-tree.md` as needed.
 
 ## Organization context
 
@@ -39,6 +37,7 @@ If missing, tell the user to copy `ORG-CONTEXT.md.template` and fill placeholder
 ```
 classify     → decision-tree.md (if needed)
 wiki         → live fetch from github.com/glowroot/glowroot/wiki
+docs         → docs-index.md → docs/<file> or raw URL (if mapped)
 org          → ORG-CONTEXT.md (if present)
 local        → triage-patterns-dev.md
 trace export → brief orientation → dedicated trace analysis if available
@@ -53,6 +52,7 @@ uncertain    → GitHub Discussion Q&A
 ## Likely cause (+ issue # if known)
 ## Actions (read-only)
 ## Wiki (URLs fetched)
+## Docs (paths/URLs read)
 ## Verdict (suggestion): wiki-only | expected-behavior | no-issue | discussion | needs-repro | possible-bug
 ```
 
@@ -62,6 +62,7 @@ uncertain    → GitHub Discussion Q&A
 |------|------|
 | `ORG-CONTEXT.md` | Org-specific paths and stack |
 | `wiki-index.md` | Wiki URL to fetch |
+| `docs-index.md` | In-repo `docs/` note (after wiki) |
 | `PROMPT.md` | Copy-paste invoke |
 | `INSTALL.md` | Per-tool setup |
 | `dev-setup.md` | Generic install |

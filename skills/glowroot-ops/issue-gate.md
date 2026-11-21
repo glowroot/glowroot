@@ -2,7 +2,7 @@
 
 This skill **never opens issues**. It suggests a verdict only after the checklist is satisfied.
 
-**Rule:** read the relevant **wiki page** before assigning any verdict.
+**Rule:** read the relevant **wiki page** before assigning any verdict. If the topic is in `docs-index.md`, read that in-repo note too.
 
 ## Mandatory fields
 
@@ -21,6 +21,7 @@ Collect (or ask for) before `possible-bug`:
 □ Log: "UI listening on …"  present | absent
 □ Pattern match        searched TRIAGE-KNOWLEDGE / triage-patterns-dev.md
 □ Wiki page read       URL of page consulted
+□ Docs note read       path/URL from docs-index.md (if mapped) | n/a
 ```
 
 ## Verdicts (suggestion only)

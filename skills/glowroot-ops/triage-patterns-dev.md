@@ -48,6 +48,15 @@ Org paths and stack: `ORG-CONTEXT.md`.
 - Raising retention does not keep old data retroactively
 - Not a log archive
 
+## Upgrade / health (in-repo docs)
+
+| Pattern | Reality | Where |
+|---------|---------|-------|
+| H2 1.x → 2.x (≤0.14.4 → ≥0.14.5) | No auto-migrate SQL store; backup, archive old H2, fresh `data.mv.db` | wiki Embedded-H2-upgrade + `docs/embedded-h2-upgrade.md` (`#1243` `#1180`) |
+| `/health` after 0.14.8 | Liveness only; storage check → `/readiness` or `/ready` | wiki Health-endpoints + `docs/health-endpoints.md` |
+| 0.14.8 upgrade | Read release notes before changing probes / deps | `docs/0.14.8-upgrade-notes.md` |
+| JVM “Allocated memory” | Column meaning ≠ process RSS | `docs/jvm-thread-stats-allocated-memory.md` |
+
 ## Common issue refs
 
 | ID | Topic |
@@ -60,6 +69,8 @@ Org paths and stack: `ORG-CONTEXT.md`.
 | `#1003` | H2 locked — shared data.dir |
 | `#710` | `-javaagent` before `-jar` |
 | `#1124` | Classes loaded before agent |
+| `#1112` | WildFly/EAP — `jboss.modules.system.pkgs=org.glowroot` |
+| `#1180` `#1243` | Embedded H2 upgrade / recreate path |
 
 ## Five-minute first exercise
 
