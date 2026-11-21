@@ -150,12 +150,14 @@ public class Session implements AutoCloseable {
 
     public CompletionStage<AsyncResultSet> readAsyncWarnIfNoRows(Statement<?> statement, CassandraProfile profile,
                                                                  String warningMessage, Object... warningArguments) {
-        return readAsync(statement, profile).thenApply(results -> {
-            if (!results.currentPage().iterator().hasNext()) {
-                logger.warn(warningMessage, warningArguments);
-            }
-            return results;
-        });
+        return readAsync(statement, profile)
+                .thenCompose(MoreFutures::skipEmptyLeadingPages)
+                .thenApply(results -> {
+                    if (!results.currentPage().iterator().hasNext()) {
+                        logger.warn(warningMessage, warningArguments);
+                    }
+                    return results;
+                });
     }
 
     public CompletionStage<AsyncResultSet> readAsync(Statement<?> statement, CassandraProfile profile) {

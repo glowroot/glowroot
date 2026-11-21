@@ -72,7 +72,7 @@ public class MoreFutures {
                 });
     }
 
-    private static CompletableFuture<AsyncResultSet> skipEmptyLeadingPages(
+    static CompletableFuture<AsyncResultSet> skipEmptyLeadingPages(
             AsyncResultSet results) {
         AsyncResultSet current = results;
         while (!current.currentPage().iterator().hasNext() && current.hasMorePages()) {
