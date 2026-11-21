@@ -29,11 +29,8 @@ import java.util.concurrent.Executors;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
+import com.hominux.compress4j.archivers.tar.TarArchiveExtractor;
 import org.elasticsearch.client.transport.TransportClient;
-import org.rauschig.jarchivelib.ArchiveFormat;
-import org.rauschig.jarchivelib.Archiver;
-import org.rauschig.jarchivelib.ArchiverFactory;
-import org.rauschig.jarchivelib.CompressionType;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -113,8 +110,9 @@ class ElasticsearchWrapper {
                 File.createTempFile("elasticsearch-" + ELASTICSEARCH_VERSION + "-", ".tar.gz");
         Files.asByteSink(archiveFile).writeFrom(in);
         in.close();
-        Archiver archiver = ArchiverFactory.createArchiver(ArchiveFormat.TAR, CompressionType.GZIP);
-        archiver.extract(archiveFile, baseDir);
+        try (TarArchiveExtractor extractor = TarArchiveExtractor.builder(archiveFile.toPath()).build()) {
+            extractor.extract(baseDir.toPath());
+        }
         archiveFile.delete();
         System.out.println(" OK");
 

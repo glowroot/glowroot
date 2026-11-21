@@ -26,6 +26,8 @@ import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.machinepublishers.jbrowserdriver.JBrowserDriver;
+import com.hominux.compress4j.archivers.tar.TarArchiveExtractor;
+import com.hominux.compress4j.archivers.zip.ZipArchiveExtractor;
 import com.saucelabs.common.SauceOnDemandAuthentication;
 import com.saucelabs.common.SauceOnDemandSessionIdProvider;
 import com.saucelabs.junit.SauceOnDemandTestWatcher;
@@ -50,10 +52,6 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.firefox.FirefoxProfile;
 import org.openqa.selenium.remote.RemoteWebDriver;
-import org.rauschig.jarchivelib.ArchiveFormat;
-import org.rauschig.jarchivelib.Archiver;
-import org.rauschig.jarchivelib.ArchiverFactory;
-import org.rauschig.jarchivelib.CompressionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.cassandra.CassandraContainer;
@@ -373,22 +371,18 @@ public class WebDriverSetup {
         String optionalExt;
         String downloadFilenameSuffix;
         String downloadFilenameExt;
-        Archiver archiver;
         if (osDetectedName.equals("linux")) {
             optionalExt = "";
             downloadFilenameSuffix = "linux" + bits;
             downloadFilenameExt = "tar.gz";
-            archiver = ArchiverFactory.createArchiver(ArchiveFormat.TAR, CompressionType.GZIP);
         } else if (osDetectedName.equals("osx")) {
             optionalExt = "";
             downloadFilenameSuffix = "macos";
             downloadFilenameExt = "tar.gz";
-            archiver = ArchiverFactory.createArchiver(ArchiveFormat.TAR, CompressionType.GZIP);
         } else if (osDetectedName.equals("windows")) {
             optionalExt = ".exe";
             downloadFilenameSuffix = "win" + bits;
             downloadFilenameExt = "zip";
-            archiver = ArchiverFactory.createArchiver(ArchiveFormat.ZIP);
         } else {
             throw new IllegalStateException(
                     "Unsupported OS for running geckodriver: " + osDetectedName);
@@ -400,21 +394,34 @@ public class WebDriverSetup {
         if (!geckoDriverExecutable.exists()) {
             try {
                 downloadAndExtractGeckoDriver(targetDir, downloadFilenameSuffix,
-                        downloadFilenameExt,
-                        optionalExt, archiver);
+                        downloadFilenameExt, optionalExt);
             } catch (EOFException e) {
                 // partial download, try again
                 System.out.println("Retrying...");
                 downloadAndExtractGeckoDriver(targetDir, downloadFilenameSuffix,
-                        downloadFilenameExt, optionalExt, archiver);
+                        downloadFilenameExt, optionalExt);
             }
 
         }
         return geckoDriverExecutable;
     }
 
+    private static void extract(File archiveFile, File directory, String ext) throws IOException {
+        if (ext.equals("zip")) {
+            try (ZipArchiveExtractor extractor =
+                    ZipArchiveExtractor.builder(archiveFile.toPath()).build()) {
+                extractor.extract(directory.toPath());
+            }
+        } else {
+            try (TarArchiveExtractor extractor =
+                    TarArchiveExtractor.builder(archiveFile.toPath()).build()) {
+                extractor.extract(directory.toPath());
+            }
+        }
+    }
+
     private static void downloadAndExtractGeckoDriver(File directory, String downloadFilenameSuffix,
-                                                      String downloadFilenameExt, String optionalExt, Archiver archiver) throws IOException {
+                                                      String downloadFilenameExt, String optionalExt) throws IOException {
         // using System.out to make sure user sees why there is a delay here
         System.out.print("Downloading Mozilla geckodriver " + GECKO_DRIVER_VERSION + "...");
         URL url = new URL("https://github.com/mozilla/geckodriver/releases/download/v"
@@ -425,7 +432,7 @@ public class WebDriverSetup {
                 '.' + downloadFilenameExt);
         Files.asByteSink(archiveFile).writeFrom(in);
         in.close();
-        archiver.extract(archiveFile, directory);
+        extract(archiveFile, directory, downloadFilenameExt);
         Files.move(new File(directory, "geckodriver" + optionalExt),
                 new File(directory, "geckodriver-" + GECKO_DRIVER_VERSION + optionalExt));
         archiveFile.delete();
