@@ -29,7 +29,7 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class TraceEntryWorthyAspect {
 
-    @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TraceEntryWorthy",
+    @Pointcut(className = "org.glowroot.microbenchmarks.support.TraceEntryWorthy",
             methodName = "doSomethingTraceEntryWorthy", methodParameterTypes = {},
             timerName = "trace entry worthy")
     public static class TraceEntryWorthyAdvice {
