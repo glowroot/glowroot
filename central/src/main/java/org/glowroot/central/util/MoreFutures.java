@@ -20,11 +20,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.DriverException;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.spotify.futures.CompletableFutures;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,21 +72,46 @@ public class MoreFutures {
 
     public static <T> CompletableFuture<?> runWithBoundedConcurrency(Collection<T> items,
             int maxConcurrency, Function<T, CompletionStage<?>> task) {
+        return runWithBoundedConcurrency(items, maxConcurrency, task, true);
+    }
+
+    public static <T> CompletableFuture<?> runAllWithBoundedConcurrency(Collection<T> items,
+            int maxConcurrency, Function<T, CompletionStage<?>> task) {
+        return runWithBoundedConcurrency(items, maxConcurrency, task, false);
+    }
+
+    private static <T> CompletableFuture<?> runWithBoundedConcurrency(Collection<T> items,
+            int maxConcurrency, Function<T, CompletionStage<?>> task, boolean failFast) {
+        if (maxConcurrency <= 0) {
+            throw new IllegalArgumentException(
+                    "maxConcurrency must be positive: " + maxConcurrency);
+        }
         if (items.isEmpty()) {
             return CompletableFuture.completedFuture(null);
         }
         Queue<T> queue = new ConcurrentLinkedQueue<>(items);
         int workers = Math.min(maxConcurrency, items.size());
-        List<CompletableFuture<?>> workerFutures = new ArrayList<>(workers);
+        AtomicReference<@Nullable Throwable> firstFailure = new AtomicReference<>();
+        CompletableFuture<?>[] workerFutures = new CompletableFuture<?>[workers];
         for (int i = 0; i < workers; i++) {
-            workerFutures.add(drainQueue(queue, task));
+            workerFutures[i] = drainQueue(queue, task, failFast, firstFailure);
         }
-        return CompletableFutures.allAsList(workerFutures);
+        return CompletableFuture.allOf(workerFutures).thenCompose(ignored -> {
+            Throwable failure = firstFailure.get();
+            if (failure != null) {
+                return CompletableFuture.failedFuture(failure);
+            }
+            return CompletableFuture.completedFuture(null);
+        });
     }
 
-    private static <T> CompletableFuture<?> drainQueue(Queue<T> queue,
-            Function<T, CompletionStage<?>> task) {
+    private static <T> CompletableFuture<Void> drainQueue(Queue<T> queue,
+            Function<T, CompletionStage<?>> task, boolean failFast,
+            AtomicReference<@Nullable Throwable> firstFailure) {
         while (true) {
+            if (failFast && firstFailure.get() != null) {
+                return CompletableFuture.completedFuture(null);
+            }
             T item = queue.poll();
             if (item == null) {
                 return CompletableFuture.completedFuture(null);
@@ -93,15 +120,49 @@ public class MoreFutures {
             try {
                 future = task.apply(item).toCompletableFuture();
             } catch (Throwable t) {
-                return CompletableFuture.failedFuture(t);
+                recordFailure(firstFailure, t);
+                if (failFast) {
+                    return CompletableFuture.completedFuture(null);
+                }
+                continue;
             }
             if (!future.isDone()) {
-                return future.thenCompose(ignored -> drainQueue(queue, task));
+                return future.handle((ignored, t) -> {
+                    if (t != null) {
+                        recordFailure(firstFailure, t);
+                    }
+                    return null;
+                }).thenCompose(ignored -> drainQueue(queue, task, failFast, firstFailure));
             }
             if (future.isCompletedExceptionally()) {
-                return future;
+                recordFailure(firstFailure, extractFailure(future));
+                if (failFast) {
+                    return CompletableFuture.completedFuture(null);
+                }
             }
         }
+    }
+
+    private static void recordFailure(AtomicReference<@Nullable Throwable> firstFailure,
+            Throwable throwable) {
+        firstFailure.compareAndSet(null, unwrapCompletionException(throwable));
+    }
+
+    private static Throwable extractFailure(CompletableFuture<?> future) {
+        try {
+            future.join();
+        } catch (Throwable t) {
+            return unwrapCompletionException(t);
+        }
+        return new IllegalStateException("Future completed exceptionally without an exception");
+    }
+
+    public static Throwable unwrapCompletionException(Throwable throwable) {
+        Throwable cause = throwable;
+        while (cause instanceof CompletionException && cause.getCause() != null) {
+            cause = cause.getCause();
+        }
+        return cause;
     }
 
     private static <V, R> CompletableFuture<R> transformAsync(CompletableFuture<V> future,

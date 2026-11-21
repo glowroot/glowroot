@@ -18,6 +18,7 @@ package org.glowroot.central;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -314,6 +315,194 @@ public class RollupServiceTest {
         verify(syntheticResultDao).rollup("gp::");
         verify(centralAlertingService).checkAggregateAndGaugeAndHeartbeatAlertsAsync(
                 eq("gp::"), eq("gp"), anyLong(), eq(CassandraProfile.rollup));
+    }
+
+    @Test
+    public void rollupGaugesRollsUpRemainingHealthySiblingsWhenFourChildrenFailAsynchronously()
+            throws Exception {
+        ActiveAgentDao activeAgentDao = mock(ActiveAgentDao.class);
+        AggregateDao aggregateDao = mock(AggregateDao.class);
+        GaugeValueDao gaugeValueDao = mock(GaugeValueDao.class);
+        SyntheticResultDao syntheticResultDao = mock(SyntheticResultDao.class);
+        CentralAlertingService centralAlertingService = mock(CentralAlertingService.class);
+        Clock clock = fixedClock();
+
+        AtomicInteger childCalls = new AtomicInteger();
+        CountDownLatch firstFourStarted = new CountDownLatch(4);
+        List<CompletableFuture<Void>> firstFourFutures = new ArrayList<>();
+        Set<String> attemptedChildren = ConcurrentHashMap.newKeySet();
+        Set<String> healthyChildren = ConcurrentHashMap.newKeySet();
+
+        when(aggregateDao.rollup(anyString()))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(gaugeValueDao.rollup(anyString())).thenAnswer(invocation -> {
+            String id = invocation.getArgument(0);
+            if ("parent::".equals(id)) {
+                return CompletableFuture.completedFuture(null);
+            }
+            attemptedChildren.add(id);
+            if (childCalls.incrementAndGet() <= 4) {
+                CompletableFuture<Void> future = new CompletableFuture<>();
+                synchronized (firstFourFutures) {
+                    firstFourFutures.add(future);
+                }
+                firstFourStarted.countDown();
+                return future;
+            }
+            healthyChildren.add(id);
+            return CompletableFuture.completedFuture(null);
+        });
+        when(syntheticResultDao.rollup(anyString()))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(centralAlertingService.checkAggregateAndGaugeAndHeartbeatAlertsAsync(
+                anyString(), anyString(), anyLong(), eq(CassandraProfile.rollup)))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(centralAlertingService.checkForAllDeletedAlerts(CassandraProfile.rollup))
+                .thenReturn(CompletableFuture.completedFuture(null));
+
+        List<AgentRollup> children = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            String id = "parent::child" + i;
+            children.add(ImmutableAgentRollup.builder()
+                    .id(id)
+                    .display("child" + i)
+                    .lastDisplayPart("child" + i)
+                    .build());
+        }
+        AgentRollup parent = ImmutableAgentRollup.builder()
+                .id("parent::")
+                .display("parent")
+                .lastDisplayPart("parent")
+                .addAllChildren(children)
+                .build();
+
+        ExecutorService releaser = Executors.newSingleThreadExecutor();
+        RollupService rollupService = new RollupService(activeAgentDao, aggregateDao, gaugeValueDao,
+                syntheticResultDao, centralAlertingService, clock);
+        try {
+            CompletableFuture<Void> releaseFuture = CompletableFuture.runAsync(() -> {
+                try {
+                    firstFourStarted.await(2, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } finally {
+                    synchronized (firstFourFutures) {
+                        for (CompletableFuture<Void> f : firstFourFutures) {
+                            f.completeExceptionally(new RuntimeException("child gauge fail"));
+                        }
+                    }
+                }
+            }, releaser);
+
+            rollupService.runInternal(List.of(parent));
+            releaseFuture.get(2, TimeUnit.SECONDS);
+        } finally {
+            rollupService.close();
+            releaser.shutdownNow();
+        }
+
+        assertThat(attemptedChildren).hasSize(6);
+        assertThat(healthyChildren).hasSize(2);
+        verify(gaugeValueDao, never()).rollup("parent::");
+        verify(aggregateDao).rollup("parent::");
+        verify(syntheticResultDao).rollup("parent::");
+        verify(centralAlertingService).checkAggregateAndGaugeAndHeartbeatAlertsAsync(
+                eq("parent::"), eq("parent"), anyLong(), eq(CassandraProfile.rollup));
+        verify(centralAlertingService).checkForAllDeletedAlerts(CassandraProfile.rollup);
+    }
+
+    @Test
+    public void rollupAggregatesRollsUpRemainingHealthySiblingsWhenFourChildrenFailAsynchronously()
+            throws Exception {
+        ActiveAgentDao activeAgentDao = mock(ActiveAgentDao.class);
+        AggregateDao aggregateDao = mock(AggregateDao.class);
+        GaugeValueDao gaugeValueDao = mock(GaugeValueDao.class);
+        SyntheticResultDao syntheticResultDao = mock(SyntheticResultDao.class);
+        CentralAlertingService centralAlertingService = mock(CentralAlertingService.class);
+        Clock clock = fixedClock();
+
+        AtomicInteger childCalls = new AtomicInteger();
+        CountDownLatch firstFourStarted = new CountDownLatch(4);
+        List<CompletableFuture<Void>> firstFourFutures = new ArrayList<>();
+        Set<String> attemptedChildren = ConcurrentHashMap.newKeySet();
+        Set<String> healthyChildren = ConcurrentHashMap.newKeySet();
+
+        when(aggregateDao.rollup(anyString())).thenAnswer(invocation -> {
+            String id = invocation.getArgument(0);
+            if ("parent::".equals(id)) {
+                return CompletableFuture.completedFuture(null);
+            }
+            attemptedChildren.add(id);
+            if (childCalls.incrementAndGet() <= 4) {
+                CompletableFuture<Void> future = new CompletableFuture<>();
+                synchronized (firstFourFutures) {
+                    firstFourFutures.add(future);
+                }
+                firstFourStarted.countDown();
+                return future;
+            }
+            healthyChildren.add(id);
+            return CompletableFuture.completedFuture(null);
+        });
+        when(gaugeValueDao.rollup(anyString()))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(syntheticResultDao.rollup(anyString()))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(centralAlertingService.checkAggregateAndGaugeAndHeartbeatAlertsAsync(
+                anyString(), anyString(), anyLong(), eq(CassandraProfile.rollup)))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(centralAlertingService.checkForAllDeletedAlerts(CassandraProfile.rollup))
+                .thenReturn(CompletableFuture.completedFuture(null));
+
+        List<AgentRollup> children = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            String id = "parent::child" + i;
+            children.add(ImmutableAgentRollup.builder()
+                    .id(id)
+                    .display("child" + i)
+                    .lastDisplayPart("child" + i)
+                    .build());
+        }
+        AgentRollup parent = ImmutableAgentRollup.builder()
+                .id("parent::")
+                .display("parent")
+                .lastDisplayPart("parent")
+                .addAllChildren(children)
+                .build();
+
+        ExecutorService releaser = Executors.newSingleThreadExecutor();
+        RollupService rollupService = new RollupService(activeAgentDao, aggregateDao, gaugeValueDao,
+                syntheticResultDao, centralAlertingService, clock);
+        try {
+            CompletableFuture<Void> releaseFuture = CompletableFuture.runAsync(() -> {
+                try {
+                    firstFourStarted.await(2, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } finally {
+                    synchronized (firstFourFutures) {
+                        for (CompletableFuture<Void> f : firstFourFutures) {
+                            f.completeExceptionally(new RuntimeException("child aggregate fail"));
+                        }
+                    }
+                }
+            }, releaser);
+
+            rollupService.runInternal(List.of(parent));
+            releaseFuture.get(2, TimeUnit.SECONDS);
+        } finally {
+            rollupService.close();
+            releaser.shutdownNow();
+        }
+
+        assertThat(attemptedChildren).hasSize(6);
+        assertThat(healthyChildren).hasSize(2);
+        verify(aggregateDao, never()).rollup("parent::");
+        verify(gaugeValueDao).rollup("parent::");
+        verify(syntheticResultDao).rollup("parent::");
+        verify(centralAlertingService).checkAggregateAndGaugeAndHeartbeatAlertsAsync(
+                eq("parent::"), eq("parent"), anyLong(), eq(CassandraProfile.rollup));
+        verify(centralAlertingService).checkForAllDeletedAlerts(CassandraProfile.rollup);
     }
 
     private static Clock fixedClock() {

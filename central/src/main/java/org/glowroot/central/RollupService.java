@@ -109,7 +109,7 @@ class RollupService implements Runnable {
     void runInternal(List<AgentRollup> agentRollups) {
         // randomize order so that multiple central collector nodes will be less likely to perform
         // duplicative work
-        MoreFutures.runWithBoundedConcurrency(shuffle(agentRollups), MAX_CONCURRENT_AGENT_ROLLUPS,
+        MoreFutures.runAllWithBoundedConcurrency(shuffle(agentRollups), MAX_CONCURRENT_AGENT_ROLLUPS,
                 this::rollupOneAgent)
                 .thenCompose(ignore -> {
                     return centralAlertingService.checkForAllDeletedAlerts(CassandraProfile.rollup);
@@ -158,7 +158,7 @@ class RollupService implements Runnable {
     private CompletionStage<?> rollupAggregates(AgentRollup agentRollup) {
         // randomize order so that multiple central collector nodes will be less likely to perform
         // duplicative work
-        return MoreFutures.runWithBoundedConcurrency(shuffle(agentRollup.children()),
+        return MoreFutures.runAllWithBoundedConcurrency(shuffle(agentRollup.children()),
                 MAX_CONCURRENT_AGENT_ROLLUPS, this::rollupAggregates)
                 .thenCompose(ignored -> {
                     try {
@@ -188,10 +188,11 @@ class RollupService implements Runnable {
         }
         // need to roll up children first, since gauge values initial roll up from children is
         // done on the 1-min aggregates of the children
-        // using runWithBoundedConcurrency without swallowing child exceptions because need to
+        // using runAllWithBoundedConcurrency without swallowing child exceptions because need to
         // _not_ roll up parent if exception occurs while rolling up a child, since gauge values
-        // initial roll up from children is done on the 1-min aggregates of the children
-        return MoreFutures.runWithBoundedConcurrency(shuffle(childAgentRollups),
+        // initial roll up from children is done on the 1-min aggregates of the children, while
+        // still rolling up all remaining sibling children
+        return MoreFutures.runAllWithBoundedConcurrency(shuffle(childAgentRollups),
                 MAX_CONCURRENT_AGENT_ROLLUPS, this::rollupGauges)
                 .thenCompose(ignored -> {
                     try {
@@ -206,7 +207,7 @@ class RollupService implements Runnable {
     }
 
     private CompletionStage<?> rollupSyntheticMonitors(AgentRollup agentRollup) {
-        return MoreFutures.runWithBoundedConcurrency(shuffle(agentRollup.children()),
+        return MoreFutures.runAllWithBoundedConcurrency(shuffle(agentRollup.children()),
                 MAX_CONCURRENT_AGENT_ROLLUPS, this::rollupSyntheticMonitors)
                 .thenCompose(ignored -> {
                     try {
@@ -221,7 +222,7 @@ class RollupService implements Runnable {
     }
 
     private CompletionStage<?> checkAggregateAndGaugeAndHeartbeatAlertsAsync(AgentRollup agentRollup) {
-        return MoreFutures.runWithBoundedConcurrency(agentRollup.children(),
+        return MoreFutures.runAllWithBoundedConcurrency(agentRollup.children(),
                 MAX_CONCURRENT_AGENT_ROLLUPS, this::checkAggregateAndGaugeAndHeartbeatAlertsAsync)
                 .thenCompose(ignored -> {
                     try {

@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
@@ -190,6 +191,161 @@ public class MoreFuturesTest {
         assertThatThrownBy(() -> result.get(2, TimeUnit.SECONDS))
                 .isInstanceOf(ExecutionException.class)
                 .hasCause(failure);
+    }
+
+    @Test
+    public void runWithBoundedConcurrencyRejectsNonPositiveMaxConcurrency() {
+        assertThatThrownBy(() -> MoreFutures.runWithBoundedConcurrency(
+                List.of(1), 0, item -> CompletableFuture.completedFuture(null)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> MoreFutures.runWithBoundedConcurrency(
+                Collections.emptyList(), 0, item -> CompletableFuture.completedFuture(null)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> MoreFutures.runAllWithBoundedConcurrency(
+                List.of(1), -1, item -> CompletableFuture.completedFuture(null)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void runWithBoundedConcurrencyStopsPollingNewItemsAfterAsyncFailure()
+            throws Exception {
+        List<Integer> items = List.of(0, 1, 2, 3, 4, 5);
+        List<CompletableFuture<Void>> pending = new ArrayList<>();
+        List<Integer> started = new ArrayList<>();
+
+        CompletableFuture<?> allDone = MoreFutures.runWithBoundedConcurrency(items, 2, item -> {
+            started.add(item);
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            pending.add(future);
+            return future;
+        });
+
+        assertThat(started).containsExactly(0, 1);
+
+        RuntimeException failure = new RuntimeException("boom");
+        pending.get(0).completeExceptionally(failure);
+
+        assertThat(allDone.isDone()).isFalse();
+
+        pending.get(1).complete(null);
+
+        assertThatThrownBy(() -> allDone.get(2, TimeUnit.SECONDS))
+                .isInstanceOf(ExecutionException.class)
+                .hasCause(failure);
+        assertThat(started).containsExactly(0, 1);
+    }
+
+    @Test
+    public void runWithBoundedConcurrencyPropagatesSynchronousThrow() {
+        RuntimeException failure = new RuntimeException("sync boom");
+        List<Integer> started = new ArrayList<>();
+
+        CompletableFuture<?> result = MoreFutures.runWithBoundedConcurrency(
+                List.of(1, 2, 3), 2, item -> {
+                    started.add(item);
+                    if (item == 1) {
+                        throw failure;
+                    }
+                    return CompletableFuture.completedFuture(null);
+                });
+
+        assertThatThrownBy(() -> result.get(2, TimeUnit.SECONDS))
+                .isInstanceOf(ExecutionException.class)
+                .hasCause(failure);
+        assertThat(started).containsExactly(1);
+    }
+
+    @Test
+    public void runAllWithBoundedConcurrencyDrainsAllItemsAfterAllWorkersFailAsynchronously()
+            throws Exception {
+        List<Integer> items = List.of(0, 1, 2, 3, 4, 5);
+        AtomicInteger active = new AtomicInteger();
+        AtomicInteger maxActive = new AtomicInteger();
+        List<Integer> started = new ArrayList<>();
+        CompletableFuture<Void> f0 = new CompletableFuture<>();
+        CompletableFuture<Void> f1 = new CompletableFuture<>();
+        CompletableFuture<Void> f4 = new CompletableFuture<>();
+        CompletableFuture<Void> f5 = new CompletableFuture<>();
+
+        CompletableFuture<?> allDone = MoreFutures.runAllWithBoundedConcurrency(items, 2, item -> {
+            int current = active.incrementAndGet();
+            maxActive.accumulateAndGet(current, Math::max);
+            started.add(item);
+            switch (item) {
+                case 0:
+                    return f0.thenApply(Function.identity());
+                case 1:
+                    return f1;
+                case 2:
+                    active.decrementAndGet();
+                    throw new RuntimeException("sync throw");
+                case 3:
+                    active.decrementAndGet();
+                    return CompletableFuture.failedFuture(new RuntimeException("sync fail"));
+                case 4:
+                    return f4;
+                case 5:
+                    return f5;
+                default:
+                    throw new AssertionError("Unexpected item: " + item);
+            }
+        });
+
+        assertThat(started).containsExactly(0, 1);
+        assertThat(active.get()).isEqualTo(2);
+        assertThat(allDone.isDone()).isFalse();
+
+        RuntimeException failure0 = new RuntimeException("async fail 0");
+        active.decrementAndGet();
+        f0.completeExceptionally(failure0);
+
+        RuntimeException failure1 = new RuntimeException("async fail 1");
+        active.decrementAndGet();
+        f1.completeExceptionally(failure1);
+
+        assertThat(started).containsExactly(0, 1, 2, 3, 4, 5);
+        assertThat(active.get()).isEqualTo(2);
+        assertThat(allDone.isDone()).isFalse();
+
+        active.decrementAndGet();
+        f4.complete(null);
+        assertThat(allDone.isDone()).isFalse();
+
+        active.decrementAndGet();
+        f5.complete(null);
+
+        assertThatThrownBy(() -> allDone.get(2, TimeUnit.SECONDS))
+                .isInstanceOf(ExecutionException.class)
+                .hasCause(failure0);
+        assertThat(maxActive.get()).isEqualTo(2);
+        assertThat(active.get()).isEqualTo(0);
+    }
+
+    @Test
+    public void runAllWithBoundedConcurrencyHandlesSynchronousFailuresWithoutStackOverflow()
+            throws Exception {
+        assertThat(MoreFutures.runAllWithBoundedConcurrency(Collections.emptyList(), 3,
+                item -> CompletableFuture.completedFuture(null)).get(2, TimeUnit.SECONDS))
+                .isNull();
+
+        List<Integer> largeItems = new ArrayList<>(5000);
+        for (int i = 0; i < 5000; i++) {
+            largeItems.add(i);
+        }
+        AtomicInteger processed = new AtomicInteger();
+        RuntimeException firstItemFailure = new RuntimeException("fail-0");
+
+        CompletableFuture<?> result = MoreFutures.runAllWithBoundedConcurrency(
+                largeItems, 4, item -> {
+                    processed.incrementAndGet();
+                    return CompletableFuture.failedFuture(
+                            item == 0 ? firstItemFailure : new RuntimeException("fail-" + item));
+                });
+
+        assertThatThrownBy(() -> result.get(2, TimeUnit.SECONDS))
+                .isInstanceOf(ExecutionException.class)
+                .hasCause(firstItemFailure);
+        assertThat(processed.get()).isEqualTo(5000);
     }
 
     private static AsyncResultSet emptyResultSet() {
