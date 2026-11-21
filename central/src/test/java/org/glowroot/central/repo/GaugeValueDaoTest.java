@@ -107,6 +107,8 @@ public class GaugeValueDaoTest {
         verify(needsChildInsert).setString(0, "parent::");
         verify(needsChildInsert).setInstant(1, Instant.ofEpochMilli(t2));
         verify(needsChildInsert).setString(3, "parent::child1");
+        verify(ctx.session, never()).writeAsync(any(BoundStatement.class),
+                eq(CassandraProfile.collector));
 
         assertThat(writes).anyMatch(bs ->
                 ctx.sql(bs).startsWith("insert into gauge_needs_rollup_2 "));
@@ -369,7 +371,7 @@ public class GaugeValueDaoTest {
                     return CompletableFuture.completedFuture(emptyResults);
                 });
 
-        when(session.writeAsync(any(BoundStatement.class), any(CassandraProfile.class)))
+        when(session.writeAsync(any(BoundStatement.class), eq(CassandraProfile.rollup)))
                 .thenAnswer(ignored -> CompletableFuture.completedFuture(emptyResults));
 
         Clock clock = new Clock() {
@@ -394,7 +396,7 @@ public class GaugeValueDaoTest {
     private static List<BoundStatement> captureWriteStatements(Session session) {
         ArgumentCaptor<BoundStatement> captor = ArgumentCaptor.forClass(BoundStatement.class);
         verify(session, Mockito.atLeastOnce()).writeAsync(captor.capture(),
-                any(CassandraProfile.class));
+                eq(CassandraProfile.rollup));
         return captor.getAllValues();
     }
 

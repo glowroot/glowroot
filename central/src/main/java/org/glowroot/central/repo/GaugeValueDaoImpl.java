@@ -503,7 +503,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                                     .setString(i++, agentRollupId)
                                     .setSet(i++, gaugeNames, String.class)
                                     .setInt(i++, needsRollupAdjustedTTL);
-                            starting = session.writeAsync(boundStatement, CassandraProfile.collector);
+                            starting = session.writeAsync(boundStatement, profile);
                         }
                         PreparedStatement insertNeedsRollup = finalNextRollupIntervalMillis == null ? null
                                 : GaugeValueDaoImpl.this.insertNeedsRollup.get(rollupLevel);
