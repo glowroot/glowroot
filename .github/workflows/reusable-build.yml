@@ -30,15 +30,47 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Set up JDK 8 for tests
+        if: ${{ matrix.java == 8 }}
+        run: |
+          meta=$(curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors \
+            "https://api.adoptium.net/v3/assets/feature_releases/8/ga?architecture=x64&heap_size=normal&image_type=jdk&jvm_impl=hotspot&os=linux&page=0&page_size=1&project=jdk&vendor=eclipse")
+          url=$(jq -r '.[0].binaries[0].package.link' <<< "$meta")
+          sha256=$(jq -r '.[0].binaries[0].package.checksum' <<< "$meta")
+          if [[ -z "$url" || "$url" == "null" || ! "$sha256" =~ ^[0-9a-fA-F]{64}$ ]]; then
+            echo "Failed to resolve Adoptium JDK 8 download metadata" >&2
+            exit 1
+          fi
+          tarball="$RUNNER_TEMP/temurin-8.tar.gz"
+          for attempt in 1 2 3 4 5; do
+            if curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o "$tarball" "$url" \
+                && echo "$sha256  $tarball" | sha256sum -c -; then
+              break
+            fi
+            echo "Attempt $attempt failed JDK 8 download/checksum; retrying..." >&2
+            rm -f "$tarball"
+            if [[ $attempt -eq 5 ]]; then
+              exit 1
+            fi
+            sleep 5
+          done
+          jdk_dir="$RUNNER_TEMP/temurin-8"
+          mkdir -p "$jdk_dir"
+          tar -xzf "$tarball" -C "$jdk_dir" --strip-components=1
+          rm -f "$tarball"
+          "$jdk_dir/bin/java" -version
+          echo "TEST_JVM_PATH=$jdk_dir/bin/java" >> "$GITHUB_ENV"
+          cat "$GITHUB_ENV"
+
       - name: Set up JDK ${{ matrix.java }} for tests
-        if: ${{ matrix.java != 17 }}
+        if: ${{ matrix.java != 17 && matrix.java != 8 }}
         uses: actions/setup-java@v6.2.0
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
 
       - name: Set up env var for java home for tests
-        if: ${{ matrix.java != 17 }}
+        if: ${{ matrix.java != 17 && matrix.java != 8 }}
         run: |
           test_jvm_path_matches=(/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/${{ matrix.java }}.*/x64/bin/java)
           echo "TEST_JVM_PATH=${test_jvm_path_matches[0]}" >> $GITHUB_ENV
