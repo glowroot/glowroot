@@ -29,7 +29,6 @@ import org.glowroot.agent.it.harness.TempDirs;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.InstrumentationConfig.CaptureKind;
 import org.glowroot.wire.api.model.Proto.OptionalInt32;
-import org.junitpioneer.jupiter.RetryingTest;
 
 public class FileInstrumentationPresentAtStartupIT {
 
@@ -43,13 +42,13 @@ public class FileInstrumentationPresentAtStartupIT {
         container.getConfigService().updateInstrumentationConfigs(ImmutableList.of(
                 InstrumentationConfig.newBuilder()
                         .setClassName("java.io.File")
-                        .setMethodName("getPath")
+                        .setMethodName("getName")
                         .setMethodReturnType("")
                         .setCaptureKind(CaptureKind.TRANSACTION)
-                        .setTimerName("get path")
-                        .setTraceEntryMessageTemplate("getPath() => {{_}}")
+                        .setTimerName("get name")
+                        .setTraceEntryMessageTemplate("getName() => {{_}}")
                         .setTransactionType("FILE")
-                        .setTransactionNameTemplate("getPath")
+                        .setTransactionNameTemplate("getName")
                         .setTransactionSlowThresholdMillis(OptionalInt32.newBuilder()
                                 .setValue(1000))
                         .build()));
@@ -69,7 +68,7 @@ public class FileInstrumentationPresentAtStartupIT {
         container.checkAndReset();
     }
 
-    @RetryingTest(maxAttempts = 3) // this test may randomly fail on CI, retry 3 times before giving up
+    @Test
     public void shouldExecute1() throws Exception {
         // just verify that set up / tear down doesn't fail
     }
