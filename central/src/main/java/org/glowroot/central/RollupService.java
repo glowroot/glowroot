@@ -111,36 +111,35 @@ class RollupService implements Runnable {
                 new MoreFutures.AsyncLimiter(MAX_CONCURRENT_AGENT_ROLLUPS);
         // randomize order so that multiple central collector nodes will be less likely to perform
         // duplicative work
-        MoreFutures.runAllWithBoundedConcurrency(shuffle(agentRollups), MAX_CONCURRENT_AGENT_ROLLUPS,
-                agentRollup -> rollupOneAgent(agentRollup, limiter))
-                .thenCompose(ignore -> {
-                    return centralAlertingService.checkForAllDeletedAlerts(CassandraProfile.rollup);
-                }).exceptionally(t -> {
-                    logger.error(t.getMessage(), t);
-                    return null;
-                }).toCompletableFuture().join();
+        try {
+            MoreFutures.runAllWithBoundedConcurrency(shuffle(agentRollups),
+                    MAX_CONCURRENT_AGENT_ROLLUPS,
+                    agentRollup -> rollupOneAgent(agentRollup, limiter))
+                    .thenCompose(ignore -> centralAlertingService.checkForAllDeletedAlerts(
+                            CassandraProfile.rollup))
+                    .toCompletableFuture()
+                    .join();
+        } catch (Throwable t) {
+            Throwable cause = MoreFutures.unwrapCompletionException(t);
+            if (cause instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+                logger.debug(cause.getMessage(), cause);
+            } else {
+                logger.error(t.getMessage(), t);
+            }
+        }
     }
 
     private CompletionStage<?> rollupOneAgent(AgentRollup agentRollup,
             MoreFutures.AsyncLimiter limiter) {
         // run aggregate, gauge, and synthetic monitor rollups sequentially per agent to avoid
-        // multiplying concurrent Cassandra queries, while catching errors after each stage so a
-        // failure in one type does not prevent the others from completing
-        return rollupAggregates(agentRollup, limiter)
-                .exceptionally(t -> {
-                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
-                    return null;
-                })
-                .thenCompose(ignore -> rollupGauges(agentRollup, limiter))
-                .exceptionally(t -> {
-                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
-                    return null;
-                })
-                .thenCompose(ignore -> rollupSyntheticMonitors(agentRollup, limiter))
-                .exceptionally(t -> {
-                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
-                    return null;
-                })
+        // multiplying concurrent Cassandra queries, while catching non-interrupt errors after each
+        // stage so a failure in one type does not prevent the others from completing
+        return recoverStage(agentRollup, rollupAggregates(agentRollup, limiter))
+                .thenCompose(ignore -> recoverStage(agentRollup,
+                        rollupGauges(agentRollup, limiter)))
+                .thenCompose(ignore -> recoverStage(agentRollup,
+                        rollupSyntheticMonitors(agentRollup, limiter)))
                 .thenCompose(ignore -> {
                     // checking aggregate and gauge alerts after rollup since their calculation can
                     // depend on rollups depending on time period length (and alerts on rollups are
@@ -150,11 +149,8 @@ class RollupService implements Runnable {
                     // respective data (aggregate/gauge/heartbeat) from the agent, but need to also
                     // check these once a minute in case no data has been received from the agent
                     // recently
-                    return checkAggregateAndGaugeAndHeartbeatAlertsAsync(agentRollup, limiter);
-                })
-                .exceptionally(t -> {
-                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
-                    return null;
+                    return recoverStage(agentRollup,
+                            checkAggregateAndGaugeAndHeartbeatAlertsAsync(agentRollup, limiter));
                 });
     }
 
@@ -164,7 +160,7 @@ class RollupService implements Runnable {
         // duplicative work
         return MoreFutures.runAllWithBoundedConcurrency(shuffle(agentRollup.children()),
                 MAX_CONCURRENT_AGENT_ROLLUPS, child -> rollupAggregates(child, limiter))
-                .thenCompose(ignored -> runNodeStep(limiter, agentRollup,
+                .thenCompose(ignored -> runNodeStep(limiter,
                         () -> aggregateDao.rollup(agentRollup.id())));
     }
 
@@ -173,8 +169,7 @@ class RollupService implements Runnable {
         List<AgentRollup> childAgentRollups = agentRollup.children();
         if (childAgentRollups.isEmpty()) {
             // optimization of common case
-            return runNodeStep(limiter, agentRollup,
-                    () -> gaugeValueDao.rollup(agentRollup.id()));
+            return runNodeStep(limiter, () -> gaugeValueDao.rollup(agentRollup.id()));
         }
         // need to roll up children first, since gauge values initial roll up from children is
         // done on the 1-min aggregates of the children
@@ -184,7 +179,7 @@ class RollupService implements Runnable {
         // still rolling up all remaining sibling children
         return MoreFutures.runAllWithBoundedConcurrency(shuffle(childAgentRollups),
                 MAX_CONCURRENT_AGENT_ROLLUPS, child -> rollupGauges(child, limiter))
-                .thenCompose(ignored -> runNodeStep(limiter, agentRollup,
+                .thenCompose(ignored -> runNodeStep(limiter,
                         () -> gaugeValueDao.rollup(agentRollup.id())));
     }
 
@@ -192,12 +187,8 @@ class RollupService implements Runnable {
             MoreFutures.AsyncLimiter limiter) {
         return MoreFutures.runAllWithBoundedConcurrency(shuffle(agentRollup.children()),
                 MAX_CONCURRENT_AGENT_ROLLUPS, child -> rollupSyntheticMonitors(child, limiter))
-                .thenCompose(ignored -> runNodeStep(limiter, agentRollup,
-                        () -> syntheticResultDao.rollup(agentRollup.id())
-                                .exceptionally(t -> {
-                                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
-                                    return null;
-                                })));
+                .thenCompose(ignored -> runIsolatedNodeStep(limiter, agentRollup,
+                        () -> syntheticResultDao.rollup(agentRollup.id())));
     }
 
     private CompletionStage<?> checkAggregateAndGaugeAndHeartbeatAlertsAsync(
@@ -205,30 +196,47 @@ class RollupService implements Runnable {
         return MoreFutures.runAllWithBoundedConcurrency(agentRollup.children(),
                 MAX_CONCURRENT_AGENT_ROLLUPS,
                 child -> checkAggregateAndGaugeAndHeartbeatAlertsAsync(child, limiter))
-                .thenCompose(ignored -> runNodeStep(limiter, agentRollup,
+                .thenCompose(ignored -> runIsolatedNodeStep(limiter, agentRollup,
                         () -> centralAlertingService.checkAggregateAndGaugeAndHeartbeatAlertsAsync(
                                 agentRollup.id(), agentRollup.display(), clock.currentTimeMillis(),
-                                CassandraProfile.rollup)
-                                .exceptionally(t -> {
-                                    logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
-                                    return null;
-                                })));
+                                CassandraProfile.rollup)));
     }
 
-    private static CompletionStage<?> runNodeStep(MoreFutures.AsyncLimiter limiter,
-            AgentRollup agentRollup, NodeStep step) {
+    private CompletionStage<?> runNodeStep(MoreFutures.AsyncLimiter limiter, NodeStep step) {
         // acquire permit only around this node's DAO/alert execution (never while waiting on
         // children) so global concurrency across multi-level trees stays bounded without deadlock
         return limiter.runAsync(() -> {
+            if (closed || Thread.currentThread().isInterrupted()) {
+                return CompletableFuture.failedFuture(new InterruptedException());
+            }
             try {
                 return step.execute();
             } catch (InterruptedException e) {
                 // probably shutdown requested (see close method above)
-                return CompletableFuture.completedFuture(null);
+                Thread.currentThread().interrupt();
+                return CompletableFuture.failedFuture(e);
             } catch (Throwable t) {
-                logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
-                return CompletableFuture.completedFuture(null);
+                return CompletableFuture.failedFuture(t);
             }
+        });
+    }
+
+    private CompletionStage<?> runIsolatedNodeStep(MoreFutures.AsyncLimiter limiter,
+            AgentRollup agentRollup, NodeStep step) {
+        return recoverStage(agentRollup, runNodeStep(limiter, step));
+    }
+
+    private static <T> CompletionStage<T> recoverStage(AgentRollup agentRollup,
+            CompletionStage<T> stage) {
+        return stage.exceptionallyCompose(t -> {
+            Throwable cause = MoreFutures.unwrapCompletionException(t);
+            if (cause instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+                logger.debug("{} - {}", agentRollup.id(), cause.getMessage(), cause);
+                return CompletableFuture.failedFuture(cause);
+            }
+            logger.error("{} - {}", agentRollup.id(), t.getMessage(), t);
+            return CompletableFuture.completedFuture(null);
         });
     }
 
