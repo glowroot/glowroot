@@ -22,6 +22,11 @@ jobs:
     env:
       TEST_SHADED: ${{ matrix.testShaded }}
       GLOWROOT_HARNESS: ${{ matrix.glowrootHarness }}
+      MAVEN_OPTS: >-
+        -Daether.transport.http.retryHandler.count=8
+        -Daether.transport.http.retryHandler.interval=5000
+        -Daether.connector.http.retryHandler.count=8
+        -Daether.connector.http.retryHandler.interval=5000
     steps:
       - uses: actions/checkout@v7
 
@@ -45,20 +50,42 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Configure Maven settings
+        run: |
+          mkdir -p ~/.m2
+          cp .github/scripts/settings.xml ~/.m2/settings.xml
+
       - name: Restore cache
-        uses: actions/cache@v6.1.0
+        id: cache-restore
+        uses: actions/cache/restore@v6.1.0
         with:
           path: |
             ~/.m2/repository
             ~/.cache/bower
-          key: build-test${{ matrix.testGroup }}-${{ hashFiles('**/pom.xml') }}
+          key: build-v2-test${{ matrix.testGroup }}-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
+            build-v2-test${{ matrix.testGroup }}-
+            build-test${{ matrix.testGroup }}-
             build-
 
       - name: Build
         shell: bash
         run: xvfb-run .github/scripts/build.sh test${{ matrix.testGroup }}
         if: runner.os == 'Linux'
+
+      - name: Save cache
+        if: >-
+          runner.os == 'Linux' &&
+          matrix.java == 17 &&
+          matrix.testShaded == true &&
+          matrix.glowrootHarness == 'javaagent' &&
+          steps.cache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.cache/bower
+          key: ${{ steps.cache-restore.outputs.cache-primary-key }}
 
       - name: Upload webdriver screenshots
         if: failure()

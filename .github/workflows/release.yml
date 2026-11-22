@@ -9,6 +9,12 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-26.04
+    env:
+      MAVEN_OPTS: >-
+        -Daether.transport.http.retryHandler.count=8
+        -Daether.transport.http.retryHandler.interval=5000
+        -Daether.connector.http.retryHandler.count=8
+        -Daether.connector.http.retryHandler.interval=5000
     steps:
       - uses: actions/checkout@v7
 
@@ -17,6 +23,11 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+
+      - name: Configure Maven settings
+        run: |
+          mkdir -p ~/.m2
+          cp .github/scripts/settings.xml ~/.m2/settings.xml
 
       - name: Restore cache
         uses: actions/cache@v6.1.0
