@@ -166,7 +166,7 @@ function TextComparatorField({
             {c.label}
           </option>
         ))}
-      </FilterSelect>
+      </Select>
       <Input
         id={id}
         className={cn(filterControlClass, 'min-w-0 flex-1')}
