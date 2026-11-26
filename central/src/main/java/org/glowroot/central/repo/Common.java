@@ -51,6 +51,7 @@ import org.immutables.value.Value;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 class Common {
 
@@ -86,14 +87,33 @@ class Common {
         return Math.max(needsRollupAdjustedTTL, 60);
     }
 
+    static int getEffectiveRollupTTL(int sourceTTL, int targetTTL) {
+        if (sourceTTL == 0) {
+            return targetTTL;
+        }
+        if (targetTTL == 0) {
+            return sourceTTL;
+        }
+        return Math.min(sourceTTL, targetTTL);
+    }
+
+    static Instant getCaptureTimeLowerBound(long currentTimeMillis, int effectiveTTL) {
+        if (effectiveTTL == 0) {
+            return Instant.EPOCH;
+        }
+        return Instant.ofEpochMilli(
+                Math.max(0L, currentTimeMillis - SECONDS.toMillis(effectiveTTL)));
+    }
+
     static CompletionStage<Collection<NeedsRollup>> getNeedsRollupList(String agentRollupId, int rollupLevel,
                                                                        long rollupIntervalMillis, List<PreparedStatement> readNeedsRollup, Session session,
-                                                                       Clock clock, CassandraProfile profile) {
+                                                                       Clock clock, CassandraProfile profile, int effectiveTTL) {
         // capture current time before reading data to prevent race condition with optimization
         // that prevents duplicate needs rollup data which is also based on current time
         long currentTimeMillis = clock.currentTimeMillis();
         BoundStatement boundStatement = readNeedsRollup.get(rollupLevel - 1).bind()
-            .setString(0, agentRollupId);
+                .setString(0, agentRollupId)
+                .setInstant(1, getCaptureTimeLowerBound(currentTimeMillis, effectiveTTL));
         Map<Long, NeedsRollup> needsRollupMap = new LinkedHashMap<>();
         Function<AsyncResultSet, CompletableFuture<Map<Long, NeedsRollup>>> compute = new Function<AsyncResultSet, CompletableFuture<Map<Long, NeedsRollup>>>() {
             @Override
@@ -139,9 +159,11 @@ class Common {
 
     static CompletionStage<List<NeedsRollupFromChildren>> getNeedsRollupFromChildrenList(
             String agentRollupId,
-            PreparedStatement readNeedsRollupFromChild, Session session, CassandraProfile profile) {
+            PreparedStatement readNeedsRollupFromChild, Session session, Clock clock,
+            CassandraProfile profile, int effectiveTTL) {
         BoundStatement boundStatement = readNeedsRollupFromChild.bind()
-            .setString(0, agentRollupId);
+                .setString(0, agentRollupId)
+                .setInstant(1, getCaptureTimeLowerBound(clock.currentTimeMillis(), effectiveTTL));
         Map<Long, NeedsRollupFromChildren> needsRollupFromChildrenMap = new LinkedHashMap<>();
         Function<AsyncResultSet, CompletableFuture<Map<Long, NeedsRollupFromChildren>>> compute = new Function<AsyncResultSet, CompletableFuture<Map<Long, NeedsRollupFromChildren>>>() {
             @Override

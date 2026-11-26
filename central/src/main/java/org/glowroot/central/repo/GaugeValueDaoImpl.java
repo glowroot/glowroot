@@ -147,7 +147,8 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                     + " (agent_rollup, capture_time, uniqueness, gauge_names) values (?, ?, ?, ?)"
                     + " using TTL ?"));
             readNeedsRollup.add(session.prepare("select capture_time, uniqueness, gauge_names from"
-                    + " gauge_needs_rollup_" + i + " where agent_rollup = ?"));
+                    + " gauge_needs_rollup_" + i
+                    + " where agent_rollup = ? and capture_time > ?"));
             deleteNeedsRollup.add(session.prepare("delete from gauge_needs_rollup_" + i + " where"
                     + " agent_rollup = ? and capture_time = ? and uniqueness = ?"));
         }
@@ -165,7 +166,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                 + " values (?, ?, ?, ?, ?) using TTL ?");
         readNeedsRollupFromChild = session.prepare("select capture_time, uniqueness,"
                 + " child_agent_rollup, gauge_names from gauge_needs_rollup_from_child where"
-                + " agent_rollup = ?");
+                + " agent_rollup = ? and capture_time > ?");
         deleteNeedsRollupFromChild = session.prepare("delete from gauge_needs_rollup_from_child"
                 + " where agent_rollup = ? and capture_time = ? and uniqueness = ?");
 
@@ -356,7 +357,8 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                 public CompletionStage<Integer> apply(Integer rollupLevelInner) {
                     if (rollupLevelInner <= configRepository.getRollupConfigs().size()) {
                         return rollup(agentRollupId, parentAgentRollupId, rollupLevelInner,
-                                ttls.get(rollupLevelInner), profile, parentRollupFailure)
+                                ttls.get(rollupLevelInner - 1), ttls.get(rollupLevelInner), profile,
+                                parentRollupFailure)
                                 .exceptionally(t -> {
                                     logger.error("{} - {}", agentRollupId, t.getMessage(), t);
                                     if (rollupLevelInner == 1 && parentAgentRollupId != null) {
@@ -406,7 +408,8 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
                                                   int ttl, CassandraProfile profile,
                                                   AtomicReference<@Nullable Throwable> parentRollupFailure) {
         final int rollupLevel = 1;
-        return Common.getNeedsRollupFromChildrenList(agentRollupId, readNeedsRollupFromChild, session, profile).thenCompose(needsRollupFromChildrenList -> {
+        return Common.getNeedsRollupFromChildrenList(agentRollupId, readNeedsRollupFromChild,
+                session, clock, profile, ttl).thenCompose(needsRollupFromChildrenList -> {
 
             List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
             long nextRollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
@@ -465,13 +468,15 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
         });
     }
 
-    private CompletionStage<?> rollup(String agentRollupId, @Nullable String parentAgentRollupId, int rollupLevel,
-                                      int ttl, CassandraProfile profile,
-                                      AtomicReference<@Nullable Throwable> parentRollupFailure) {
+    private CompletionStage<?> rollup(String agentRollupId, @Nullable String parentAgentRollupId,
+            int rollupLevel, int sourceTTL, int ttl, CassandraProfile profile,
+            AtomicReference<@Nullable Throwable> parentRollupFailure) {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         long rollupIntervalMillis = rollupConfigs.get(rollupLevel - 1).intervalMillis();
-        return Common.getNeedsRollupList(agentRollupId,
-                rollupLevel, rollupIntervalMillis, readNeedsRollup, session, clock, profile).thenCompose(needsRollupCollection -> {
+        int effectiveTTL = Common.getEffectiveRollupTTL(sourceTTL, ttl);
+        return Common.getNeedsRollupList(agentRollupId, rollupLevel, rollupIntervalMillis,
+                readNeedsRollup, session, clock, profile, effectiveTTL)
+                .thenCompose(needsRollupCollection -> {
             List<NeedsRollup> needsRollupList = ImmutableList.copyOf(needsRollupCollection);
             Long nextRollupIntervalMillis = null;
             if (rollupLevel < rollupConfigs.size()) {

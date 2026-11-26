@@ -104,7 +104,7 @@ public class CommonTest {
 
         Collection<NeedsRollup> result = Common.getNeedsRollupList("agent1", 1,
                 rollupIntervalMillis, List.of(readNeedsRollup1), session, clock,
-                CassandraProfile.rollup).toCompletableFuture().get();
+                CassandraProfile.rollup, 3600).toCompletableFuture().get();
 
         assertThat(result).extracting(NeedsRollup::getCaptureTime)
                 .containsExactly(600_000L, 660_000L);
@@ -324,6 +324,61 @@ public class CommonTest {
             totalDeletedRows += size;
         }
         assertThat(totalDeletedRows).isEqualTo(100);
+    }
+
+    @Test
+    public void needsRollupReadsBindCaptureTimeLowerBoundFromEffectiveTtl() throws Exception {
+        assertThat(Common.getEffectiveRollupTTL(172_800, 1_209_600)).isEqualTo(172_800);
+        assertThat(Common.getEffectiveRollupTTL(1_209_600, 604_800)).isEqualTo(604_800);
+        assertThat(Common.getEffectiveRollupTTL(0, 604_800)).isEqualTo(604_800);
+        assertThat(Common.getEffectiveRollupTTL(172_800, 0)).isEqualTo(172_800);
+        assertThat(Common.getEffectiveRollupTTL(0, 0)).isEqualTo(0);
+
+        long now = 10_000_000L;
+        Clock clock = new Clock() {
+            @Override
+            public long currentTimeMillis() {
+                return now;
+            }
+        };
+        AsyncResultSet emptyResults = mock(AsyncResultSet.class);
+        when(emptyResults.currentPage()).thenReturn(List.of());
+        when(emptyResults.hasMorePages()).thenReturn(false);
+
+        PreparedStatement readNeedsRollup1 = mock(PreparedStatement.class);
+        BoundStatement needsRollupBS = mock(BoundStatement.class, Answers.RETURNS_SELF);
+        when(readNeedsRollup1.bind()).thenReturn(needsRollupBS);
+
+        PreparedStatement readNeedsRollupFromChild = mock(PreparedStatement.class);
+        BoundStatement fromChildBS = mock(BoundStatement.class, Answers.RETURNS_SELF);
+        when(readNeedsRollupFromChild.bind()).thenReturn(fromChildBS);
+
+        Session session = mock(Session.class);
+        when(session.readAsync(any(BoundStatement.class), any()))
+                .thenReturn(CompletableFuture.completedFuture(emptyResults));
+
+        Common.getNeedsRollupList("agent1", 1, 300_000L, List.of(readNeedsRollup1), session, clock,
+                CassandraProfile.rollup, 3600).toCompletableFuture().get();
+        verify(needsRollupBS).setString(0, "agent1");
+        verify(needsRollupBS).setInstant(1, Instant.ofEpochMilli(now - 3_600_000L));
+
+        Common.getNeedsRollupFromChildrenList("parent::", readNeedsRollupFromChild, session, clock,
+                CassandraProfile.rollup, 3600).toCompletableFuture().get();
+        verify(fromChildBS).setString(0, "parent::");
+        verify(fromChildBS).setInstant(1, Instant.ofEpochMilli(now - 3_600_000L));
+
+        // Zero TTL (infinite retention) and TTL exceeding current epoch clamp to Instant.EPOCH
+        BoundStatement zeroTtlBS = mock(BoundStatement.class, Answers.RETURNS_SELF);
+        when(readNeedsRollup1.bind()).thenReturn(zeroTtlBS);
+        Common.getNeedsRollupList("agent1", 1, 300_000L, List.of(readNeedsRollup1), session, clock,
+                CassandraProfile.rollup, 0).toCompletableFuture().get();
+        verify(zeroTtlBS).setInstant(1, Instant.EPOCH);
+
+        BoundStatement clampedBS = mock(BoundStatement.class, Answers.RETURNS_SELF);
+        when(readNeedsRollup1.bind()).thenReturn(clampedBS);
+        Common.getNeedsRollupList("agent1", 1, 300_000L, List.of(readNeedsRollup1), session, clock,
+                CassandraProfile.rollup, 100_000).toCompletableFuture().get();
+        verify(clampedBS).setInstant(1, Instant.EPOCH);
     }
 
     private static Row mockRow(long captureTime, Set<String> keys) {

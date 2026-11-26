@@ -134,7 +134,7 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
                     + " (?, ?, ?, ?) using TTL ?"));
             readNeedsRollup.add(session.prepare("select capture_time, uniqueness,"
                     + " synthetic_config_ids from synthetic_needs_rollup_" + i + " where"
-                    + " agent_rollup_id = ?"));
+                    + " agent_rollup_id = ? and capture_time > ?"));
             deleteNeedsRollup.add(session.prepare("delete from synthetic_needs_rollup_" + i
                     + " where agent_rollup_id = ? and capture_time = ? and uniqueness = ?"));
         }
@@ -305,8 +305,9 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
                 @Override
                 public CompletionStage<Integer> apply(Integer rollupLevelInner) {
                     if (rollupLevelInner < configRepository.getRollupConfigs().size()) {
+                        int sourceTTL = ttls.get(rollupLevelInner - 1);
                         int ttl = ttls.get(rollupLevelInner);
-                        return rollup(agentRollupId, rollupLevelInner, ttl)
+                        return rollup(agentRollupId, rollupLevelInner, sourceTTL, ttl)
                                 .exceptionally(t -> {
                                     logger.error("{} - {}", agentRollupId, t.getMessage(), t);
                                     return null;
@@ -322,11 +323,13 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         });
     }
 
-    private CompletionStage<?> rollup(String agentRollupId, int rollupLevel, int ttl) {
+    private CompletionStage<?> rollup(String agentRollupId, int rollupLevel, int sourceTTL,
+            int ttl) {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         long rollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
-        return Common.getNeedsRollupList(agentRollupId,
-                        rollupLevel, rollupIntervalMillis, readNeedsRollup, session, clock, rollup)
+        int effectiveTTL = Common.getEffectiveRollupTTL(sourceTTL, ttl);
+        return Common.getNeedsRollupList(agentRollupId, rollupLevel, rollupIntervalMillis,
+                readNeedsRollup, session, clock, rollup, effectiveTTL)
                 .thenCompose(needsRollupCollection -> {
                     Long nextRollupIntervalMillis = null;
                     if (rollupLevel + 1 < rollupConfigs.size()) {

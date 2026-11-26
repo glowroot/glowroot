@@ -358,7 +358,7 @@ public class AggregateDaoTest {
         long captureTime = TimeUnit.DAYS.toMillis(2);
 
         CentralStorageConfig storageConfig = ImmutableCentralStorageConfig.builder()
-                .rollupExpirationHours(ImmutableList.of(48, 24 * 14, 24 * 90, 24 * 365))
+                .rollupExpirationHours(ImmutableList.of(24 * 14, 24 * 14, 24 * 90, 24 * 365))
                 .queryAndServiceCallRollupExpirationHours(
                         ImmutableList.of(48, 24 * 7, 24 * 30, 24 * 30))
                 .profileRollupExpirationHours(ImmutableList.of(48, 24 * 14, 24 * 30, 24 * 30))
@@ -639,6 +639,43 @@ public class AggregateDaoTest {
         assertThat(collectorServiceCallBatches.get(0).getBatchType())
                 .isEqualTo(DefaultBatchType.UNLOGGED);
         assertThat(Iterables.size(collectorServiceCallBatches.get(0))).isEqualTo(2);
+    }
+
+    @Test
+    public void rollupQueriesNeedsRollupWithCaptureTimeLowerBoundPerLevel() throws Exception {
+        long now = TimeUnit.DAYS.toMillis(200);
+        TestContext ctx = createContext(
+                "aggregate_needs_rollup_from_child",
+                Collections.emptyList(),
+                ImmutableCentralStorageConfig.builder().build(),
+                now);
+
+        ctx.dao.rollup("parent::").toCompletableFuture().get(2, TimeUnit.SECONDS);
+
+        List<BoundStatement> reads = captureReadStatements(ctx.session);
+        BoundStatement fromChildRead = findStatement(reads, ctx,
+                "select capture_time, uniqueness, child_agent_rollup, transaction_types from "
+                        + "aggregate_needs_rollup_from_child where agent_rollup = ? and "
+                        + "capture_time > ?");
+        BoundStatement level1Read = findStatement(reads, ctx,
+                "select capture_time, uniqueness, transaction_types from aggregate_needs_rollup_1 "
+                        + "where agent_rollup = ? and capture_time > ?");
+        BoundStatement level2Read = findStatement(reads, ctx,
+                "select capture_time, uniqueness, transaction_types from aggregate_needs_rollup_2 "
+                        + "where agent_rollup = ? and capture_time > ?");
+        BoundStatement level3Read = findStatement(reads, ctx,
+                "select capture_time, uniqueness, transaction_types from aggregate_needs_rollup_3 "
+                        + "where agent_rollup = ? and capture_time > ?");
+
+        assertThat(fromChildRead).isNotNull();
+        assertThat(level1Read).isNotNull();
+        assertThat(level2Read).isNotNull();
+        assertThat(level3Read).isNotNull();
+
+        verify(fromChildRead).setInstant(1, Instant.ofEpochMilli(now - TimeUnit.DAYS.toMillis(2)));
+        verify(level1Read).setInstant(1, Instant.ofEpochMilli(now - TimeUnit.DAYS.toMillis(2)));
+        verify(level2Read).setInstant(1, Instant.ofEpochMilli(now - TimeUnit.DAYS.toMillis(14)));
+        verify(level3Read).setInstant(1, Instant.ofEpochMilli(now - TimeUnit.DAYS.toMillis(90)));
     }
 
     private static TestContext createContext(String needsRollupTableFragment,

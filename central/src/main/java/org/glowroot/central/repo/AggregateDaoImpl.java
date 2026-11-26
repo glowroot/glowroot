@@ -375,7 +375,8 @@ public class AggregateDaoImpl implements AggregateDao {
                     + " (agent_rollup, capture_time, uniqueness, transaction_types) values"
                     + " (?, ?, ?, ?) using TTL ?"));
             readNeedsRollup.add(session.prepare("select capture_time, uniqueness, transaction_types"
-                    + " from aggregate_needs_rollup_" + i + " where agent_rollup = ?"));
+                    + " from aggregate_needs_rollup_" + i
+                    + " where agent_rollup = ? and capture_time > ?"));
             deleteNeedsRollup.add(session.prepare("delete from aggregate_needs_rollup_" + i
                     + " where agent_rollup = ? and capture_time = ? and uniqueness = ?"));
         }
@@ -395,7 +396,7 @@ public class AggregateDaoImpl implements AggregateDao {
                 + " values (?, ?, ?, ?, ?) using TTL ?");
         readNeedsRollupFromChild = session.prepare("select capture_time, uniqueness,"
                 + " child_agent_rollup, transaction_types from aggregate_needs_rollup_from_child"
-                + " where agent_rollup = ?");
+                + " where agent_rollup = ? and capture_time > ?");
         deleteNeedsRollupFromChild = session.prepare("delete from aggregate_needs_rollup_from_child"
                 + " where agent_rollup = ? and capture_time = ? and uniqueness = ?");
 
@@ -955,8 +956,10 @@ public class AggregateDaoImpl implements AggregateDao {
                     if (rollupLevel >= configRepository.getRollupConfigs().size()) {
                         return CompletableFuture.completedFuture(null);
                     }
+                    int sourceGeneralTTL = ttls.get(rollupLevel - 1).generalTTL();
                     TTL ttl = ttls.get(rollupLevel);
-                    return rollup(agentRollupId, agentRollupIdForMeta, rollupLevel, ttl)
+                    return rollup(agentRollupId, agentRollupIdForMeta, rollupLevel,
+                            sourceGeneralTTL, ttl)
                             .exceptionally(t -> {
                                 logger.error("{} - {}", agentRollupId, t.getMessage(), t);
                                 return null;
@@ -1003,7 +1006,8 @@ public class AggregateDaoImpl implements AggregateDao {
                                                   @Nullable String parentAgentRollupId, TTL ttl,
                                                   AtomicReference<@Nullable Throwable> parentRollupFailure) {
         final int rollupLevel = 0;
-        return Common.getNeedsRollupFromChildrenList(agentRollupId, readNeedsRollupFromChild, session, rollup)
+        return Common.getNeedsRollupFromChildrenList(agentRollupId, readNeedsRollupFromChild,
+                session, clock, rollup, ttl.generalTTL())
                 .thenCompose(needsRollupFromChildrenList -> {
 
                     List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
@@ -1065,11 +1069,14 @@ public class AggregateDaoImpl implements AggregateDao {
                 });
     }
 
-    private CompletionStage<?> rollup(String agentRollupId, String agentRollupIdForMeta, int rollupLevel, TTL ttl) {
+    private CompletionStage<?> rollup(String agentRollupId, String agentRollupIdForMeta,
+            int rollupLevel, int sourceGeneralTTL, TTL ttl) {
         List<RollupConfig> rollupConfigs = configRepository.getRollupConfigs();
         long rollupIntervalMillis = rollupConfigs.get(rollupLevel).intervalMillis();
-        return Common.getNeedsRollupList(agentRollupId,
-                rollupLevel, rollupIntervalMillis, readNeedsRollup, session, clock, rollup).thenCompose(needsRollupCollection -> {
+        int effectiveTTL = Common.getEffectiveRollupTTL(sourceGeneralTTL, ttl.generalTTL());
+        return Common.getNeedsRollupList(agentRollupId, rollupLevel, rollupIntervalMillis,
+                readNeedsRollup, session, clock, rollup, effectiveTTL)
+                .thenCompose(needsRollupCollection -> {
             List<NeedsRollup> needsRollupList = new ArrayList<>(needsRollupCollection);
             Long nextRollupIntervalMillis = null;
             if (rollupLevel + 1 < rollupConfigs.size()) {
