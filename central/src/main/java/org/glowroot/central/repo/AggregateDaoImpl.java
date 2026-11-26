@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.collect.*;
 import com.google.common.hash.HashFunction;
@@ -80,6 +81,7 @@ import java.util.stream.Collectors;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.glowroot.common2.repo.CassandraProfile.collector;
 import static org.glowroot.common2.repo.CassandraProfile.rollup;
@@ -88,7 +90,8 @@ public class AggregateDaoImpl implements AggregateDao {
 
     private static final Logger logger = LoggerFactory.getLogger(AggregateDaoImpl.class);
 
-    private static final int MAX_CONCURRENT_PER_TRANSACTION_ROLLUPS = 16;
+    @VisibleForTesting
+    static final int MAX_CONCURRENT_PER_TRANSACTION_ROLLUPS = 4;
 
     @SuppressWarnings("deprecation")
     private static final HashFunction SHA_1 = Hashing.sha1();
@@ -1017,7 +1020,8 @@ public class AggregateDaoImpl implements AggregateDao {
                             long captureTime = needsRollupFromChildren.getCaptureTime();
                             TTL adjustedTTL = getAdjustedTTL(ttl, captureTime, clock);
 
-                            return getRollupParams(agentRollupId, agentRollupIdForMeta, rollupLevel, adjustedTTL).thenCompose(rollupParams -> {
+                            return getRollupParams(agentRollupId, agentRollupIdForMeta, rollupLevel,
+                                    ttl, adjustedTTL, captureTime).thenCompose(rollupParams -> {
                                 List<CompletionStage<?>> futures = new ArrayList<>();
                                 for (Map.Entry<String, Collection<String>> entry : needsRollupFromChildren.getKeys()
                                         .asMap()
@@ -1086,7 +1090,8 @@ public class AggregateDaoImpl implements AggregateDao {
                     int needsRollupAdjustedTTL =
                             Common.getNeedsRollupAdjustedTTL(adjustedTTL.generalTTL(), rollupConfigs);
 
-                    return getRollupParams(agentRollupId, agentRollupIdForMeta, rollupLevel, adjustedTTL)
+                    return getRollupParams(agentRollupId, agentRollupIdForMeta, rollupLevel, ttl,
+                            adjustedTTL, captureTime)
                             .thenCompose(rollupParams -> {
                                 long from = captureTime - rollupIntervalMillis;
                                 Set<String> transactionTypes = needsRollup.getKeys();
@@ -1135,6 +1140,7 @@ public class AggregateDaoImpl implements AggregateDao {
 
         // key is transaction name, value child agent rollup id
         Multimap<String, String> transactionNames = ArrayListMultimap.create();
+        PresentOptionalParts presentOptionalParts = new PresentOptionalParts();
 
         return rollupOverallSummaryFromChildren(rollup, query, childAgentRollupIds).thenCompose(ignored -> {
             return rollupErrorSummaryFromChildren(rollup, query, childAgentRollupIds);
@@ -1144,13 +1150,16 @@ public class AggregateDaoImpl implements AggregateDao {
         }).thenCompose(ignored -> {
             return rollupTransactionErrorSummaryFromChildren(rollup, query, childAgentRollupIds);
         }).thenCompose(ignored -> {
-            return CompletableFutures.allAsList(rollupOtherPartsFromChildren(rollup, query, childAgentRollupIds));
+            return CompletableFutures.allAsList(
+                    rollupOverallOtherPartsFromChildren(rollup, query, childAgentRollupIds,
+                            presentOptionalParts));
         }).thenCompose(ignored -> {
             return MoreFutures.runWithBoundedConcurrency(transactionNames.asMap().entrySet(),
                     MAX_CONCURRENT_PER_TRANSACTION_ROLLUPS,
                     entry -> CompletableFutures.allAsList(
-                            rollupOtherPartsFromChildren(rollup,
-                                    query.withTransactionName(entry.getKey()), entry.getValue())));
+                            rollupTransactionOtherPartsFromChildren(rollup,
+                                    query.withTransactionName(entry.getKey()), entry.getValue(),
+                                    presentOptionalParts)));
         });
     }
 
@@ -1165,46 +1174,112 @@ public class AggregateDaoImpl implements AggregateDao {
                 .build();
 
         Set<String> transactionNames = new HashSet<>();
+        PresentOptionalParts presentOptionalParts = new PresentOptionalParts();
 
         List<CompletionStage<?>> futures = new ArrayList<>();
         futures.add(rollupOverallSummary(rollup, query));
         futures.add(rollupErrorSummary(rollup, query));
         futures.add(rollupTransactionSummary(rollup, query, transactionNames));
         futures.add(rollupTransactionErrorSummary(rollup, query));
-        futures.addAll(rollupOtherParts(rollup, query));
+        futures.addAll(rollupOverallOtherParts(rollup, query, presentOptionalParts));
 
         return CompletableFutures.allAsList(futures).thenCompose(ignored -> {
             return MoreFutures.runWithBoundedConcurrency(transactionNames,
                     MAX_CONCURRENT_PER_TRANSACTION_ROLLUPS,
                     transactionName -> CompletableFutures.allAsList(
-                            rollupOtherParts(rollup, query.withTransactionName(transactionName))));
+                            rollupTransactionOtherParts(rollup,
+                                    query.withTransactionName(transactionName),
+                                    presentOptionalParts)));
         });
     }
 
-    private List<CompletionStage<?>> rollupOtherParts(RollupParams rollup, AggregateQuery query) {
+    private List<CompletionStage<?>> rollupOverallOtherParts(RollupParams rollup,
+            AggregateQuery query, PresentOptionalParts presentOptionalParts) {
         List<CompletionStage<?>> futures = new ArrayList<>();
         futures.add(rollupOverview(rollup, query));
         futures.add(rollupHistogram(rollup, query, new ScratchBuffer()));
         futures.add(rollupThroughput(rollup, query));
-        futures.add(rollupQueries(rollup, query));
-        futures.add(rollupServiceCalls(rollup, query));
-        futures.add(rollupThreadProfile(rollup, query, mainThreadProfileTable));
-        futures.add(rollupThreadProfile(rollup, query, auxThreadProfileTable));
+        if (rollup.rollUpQueries()) {
+            futures.add(rollupQueries(rollup, query, presentOptionalParts));
+        }
+        if (rollup.rollUpServiceCalls()) {
+            futures.add(rollupServiceCalls(rollup, query, presentOptionalParts));
+        }
+        if (rollup.rollUpProfiles()) {
+            futures.add(
+                    rollupThreadProfile(rollup, query, mainThreadProfileTable, presentOptionalParts));
+            futures.add(
+                    rollupThreadProfile(rollup, query, auxThreadProfileTable, presentOptionalParts));
+        }
         return futures;
     }
 
-    private List<CompletionStage<?>> rollupOtherPartsFromChildren(RollupParams rollup,
-                                                                  AggregateQuery query, Collection<String> childAgentRollupIds) {
+    private List<CompletionStage<?>> rollupTransactionOtherParts(RollupParams rollup,
+            AggregateQuery query, PresentOptionalParts presentOptionalParts) {
+        List<CompletionStage<?>> futures = new ArrayList<>();
+        futures.add(rollupOverview(rollup, query));
+        futures.add(rollupHistogram(rollup, query, new ScratchBuffer()));
+        futures.add(rollupThroughput(rollup, query));
+        if (presentOptionalParts.queries) {
+            futures.add(rollupQueries(rollup, query, null));
+        }
+        if (presentOptionalParts.serviceCalls) {
+            futures.add(rollupServiceCalls(rollup, query, null));
+        }
+        if (presentOptionalParts.mainThreadProfile) {
+            futures.add(rollupThreadProfile(rollup, query, mainThreadProfileTable, null));
+        }
+        if (presentOptionalParts.auxThreadProfile) {
+            futures.add(rollupThreadProfile(rollup, query, auxThreadProfileTable, null));
+        }
+        return futures;
+    }
+
+    private List<CompletionStage<?>> rollupOverallOtherPartsFromChildren(RollupParams rollup,
+            AggregateQuery query, Collection<String> childAgentRollupIds,
+            PresentOptionalParts presentOptionalParts) {
         List<CompletionStage<?>> futures = new ArrayList<>();
         futures.add(rollupOverviewFromChildren(rollup, query, childAgentRollupIds));
         futures.add(rollupHistogramFromChildren(rollup, query, childAgentRollupIds, new ScratchBuffer()));
         futures.add(rollupThroughputFromChildren(rollup, query, childAgentRollupIds));
-        futures.add(rollupQueriesFromChildren(rollup, query, childAgentRollupIds));
-        futures.add(rollupServiceCallsFromChildren(rollup, query, childAgentRollupIds));
-        futures.add(rollupThreadProfileFromChildren(rollup, query, childAgentRollupIds,
-                mainThreadProfileTable));
-        futures.add(rollupThreadProfileFromChildren(rollup, query, childAgentRollupIds,
-                auxThreadProfileTable));
+        if (rollup.rollUpQueries()) {
+            futures.add(rollupQueriesFromChildren(rollup, query, childAgentRollupIds,
+                    presentOptionalParts));
+        }
+        if (rollup.rollUpServiceCalls()) {
+            futures.add(rollupServiceCallsFromChildren(rollup, query, childAgentRollupIds,
+                    presentOptionalParts));
+        }
+        if (rollup.rollUpProfiles()) {
+            futures.add(rollupThreadProfileFromChildren(rollup, query, childAgentRollupIds,
+                    mainThreadProfileTable, presentOptionalParts));
+            futures.add(rollupThreadProfileFromChildren(rollup, query, childAgentRollupIds,
+                    auxThreadProfileTable, presentOptionalParts));
+        }
+        return futures;
+    }
+
+    private List<CompletionStage<?>> rollupTransactionOtherPartsFromChildren(RollupParams rollup,
+            AggregateQuery query, Collection<String> childAgentRollupIds,
+            PresentOptionalParts presentOptionalParts) {
+        List<CompletionStage<?>> futures = new ArrayList<>();
+        futures.add(rollupOverviewFromChildren(rollup, query, childAgentRollupIds));
+        futures.add(rollupHistogramFromChildren(rollup, query, childAgentRollupIds, new ScratchBuffer()));
+        futures.add(rollupThroughputFromChildren(rollup, query, childAgentRollupIds));
+        if (presentOptionalParts.queries) {
+            futures.add(rollupQueriesFromChildren(rollup, query, childAgentRollupIds, null));
+        }
+        if (presentOptionalParts.serviceCalls) {
+            futures.add(rollupServiceCallsFromChildren(rollup, query, childAgentRollupIds, null));
+        }
+        if (presentOptionalParts.mainThreadProfile) {
+            futures.add(rollupThreadProfileFromChildren(rollup, query, childAgentRollupIds,
+                    mainThreadProfileTable, null));
+        }
+        if (presentOptionalParts.auxThreadProfile) {
+            futures.add(rollupThreadProfileFromChildren(rollup, query, childAgentRollupIds,
+                    auxThreadProfileTable, null));
+        }
         return futures;
     }
 
@@ -1785,24 +1860,32 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     @CheckReturnValue
-    private CompletionStage<?> rollupQueries(RollupParams rollup, AggregateQuery query) {
+    private CompletionStage<?> rollupQueries(RollupParams rollup, AggregateQuery query,
+            @Nullable PresentOptionalParts presentOptionalParts) {
         CompletableFuture<AsyncResultSet> future =
                 executeQueryForRollup(rollup.agentRollupId(), query, queryTable, false);
         return MoreFutures.rollupAsync(future, asyncExecutor, new MoreFutures.DoRollup() {
             @Override
             public CompletableFuture<?> execute(AsyncResultSet rows) {
+                if (presentOptionalParts != null) {
+                    presentOptionalParts.queries = true;
+                }
                 return rollupQueriesFromRows(rollup, query, Lists.newArrayList(rows));
             }
         });
     }
 
     private CompletionStage<?> rollupQueriesFromChildren(RollupParams rollup,
-                                                         AggregateQuery query, Collection<String> childAgentRollupIds) {
+            AggregateQuery query, Collection<String> childAgentRollupIds,
+            @Nullable PresentOptionalParts presentOptionalParts) {
         List<CompletionStage<AsyncResultSet>> futures =
                 getRowsForRollupFromChildren(query, childAgentRollupIds, queryTable, false);
         return MoreFutures.rollupAsync(futures, asyncExecutor, new MoreFutures.DoRollupList() {
             @Override
             public CompletableFuture<?> execute(List<AsyncResultSet> rows) {
+                if (presentOptionalParts != null) {
+                    presentOptionalParts.queries = true;
+                }
                 return rollupQueriesFromRows(rollup, query, rows);
             }
         });
@@ -1844,24 +1927,32 @@ public class AggregateDaoImpl implements AggregateDao {
                         query.to(), rollup.adjustedTTL()));
     }
 
-    private CompletionStage<?> rollupServiceCalls(RollupParams rollup, AggregateQuery query) {
+    private CompletionStage<?> rollupServiceCalls(RollupParams rollup, AggregateQuery query,
+            @Nullable PresentOptionalParts presentOptionalParts) {
         CompletableFuture<AsyncResultSet> future =
                 executeQueryForRollup(rollup.agentRollupId(), query, serviceCallTable, false);
         return MoreFutures.rollupAsync(future, asyncExecutor, new MoreFutures.DoRollup() {
             @Override
             public CompletableFuture<?> execute(AsyncResultSet rows) {
+                if (presentOptionalParts != null) {
+                    presentOptionalParts.serviceCalls = true;
+                }
                 return rollupServiceCallsFromRows(rollup, query, Lists.newArrayList(rows));
             }
         });
     }
 
     private CompletionStage<?> rollupServiceCallsFromChildren(RollupParams rollup,
-                                                              AggregateQuery query, Collection<String> childAgentRollupIds) {
+            AggregateQuery query, Collection<String> childAgentRollupIds,
+            @Nullable PresentOptionalParts presentOptionalParts) {
         List<CompletionStage<AsyncResultSet>> futures =
                 getRowsForRollupFromChildren(query, childAgentRollupIds, serviceCallTable, false);
         return MoreFutures.rollupAsync(futures, asyncExecutor, new MoreFutures.DoRollupList() {
             @Override
             public CompletableFuture<?> execute(List<AsyncResultSet> rows) {
+                if (presentOptionalParts != null) {
+                    presentOptionalParts.serviceCalls = true;
+                }
                 return rollupServiceCallsFromRows(rollup, query, rows);
             }
         });
@@ -1900,24 +1991,39 @@ public class AggregateDaoImpl implements AggregateDao {
     }
 
     private CompletableFuture<?> rollupThreadProfile(RollupParams rollup, AggregateQuery query,
-                                                     Table table) {
+            Table table, @Nullable PresentOptionalParts presentOptionalParts) {
         CompletableFuture<AsyncResultSet> future =
                 executeQueryForRollup(rollup.agentRollupId(), query, table, false);
         return MoreFutures.rollupAsync(future, asyncExecutor, new MoreFutures.DoRollup() {
             @Override
             public CompletableFuture<?> execute(AsyncResultSet rows) {
+                if (presentOptionalParts != null) {
+                    if (table == mainThreadProfileTable) {
+                        presentOptionalParts.mainThreadProfile = true;
+                    } else {
+                        presentOptionalParts.auxThreadProfile = true;
+                    }
+                }
                 return rollupThreadProfileFromRows(rollup, query, Lists.newArrayList(rows), table);
             }
         });
     }
 
     private CompletionStage<?> rollupThreadProfileFromChildren(RollupParams rollup,
-                                                               AggregateQuery query, Collection<String> childAgentRollupIds, Table table) {
+            AggregateQuery query, Collection<String> childAgentRollupIds, Table table,
+            @Nullable PresentOptionalParts presentOptionalParts) {
         List<CompletionStage<AsyncResultSet>> futures =
                 getRowsForRollupFromChildren(query, childAgentRollupIds, table, false);
         return MoreFutures.rollupAsync(futures, asyncExecutor, new MoreFutures.DoRollupList() {
             @Override
             public CompletableFuture<?> execute(List<AsyncResultSet> rows) {
+                if (presentOptionalParts != null) {
+                    if (table == mainThreadProfileTable) {
+                        presentOptionalParts.mainThreadProfile = true;
+                    } else {
+                        presentOptionalParts.auxThreadProfile = true;
+                    }
+                }
                 return rollupThreadProfileFromRows(rollup, query, rows, table);
             }
         });
@@ -2443,20 +2549,40 @@ public class AggregateDaoImpl implements AggregateDao {
         });
     }
 
-    private CompletionStage<RollupParams> getRollupParams(String agentRollupId, String agentRollupIdForMeta,
-                                                          int rollupLevel, TTL adjustedTTL) {
+    private CompletionStage<RollupParams> getRollupParams(String agentRollupId,
+            String agentRollupIdForMeta, int rollupLevel, TTL ttl, TTL adjustedTTL,
+            long captureTime) {
+        long currentTimeMillis = clock.currentTimeMillis();
+        boolean rollUpQueries = !isExpired(ttl.queryTTL(), captureTime, currentTimeMillis);
+        boolean rollUpServiceCalls =
+                !isExpired(ttl.serviceCallTTL(), captureTime, currentTimeMillis);
+        boolean rollUpProfiles = !isExpired(ttl.profileTTL(), captureTime, currentTimeMillis);
+        CompletionStage<Integer> maxQueryAggregatesFuture = rollUpQueries
+                ? getMaxQueryAggregatesPerTransactionAggregate(agentRollupIdForMeta)
+                : CompletableFuture.completedFuture(0);
+        CompletionStage<Integer> maxServiceCallAggregatesFuture = rollUpServiceCalls
+                ? getMaxServiceCallAggregatesPerTransactionAggregate(agentRollupIdForMeta)
+                : CompletableFuture.completedFuture(0);
+        return maxQueryAggregatesFuture.thenCombine(maxServiceCallAggregatesFuture,
+                (maxQueryAggregatesPerTransactionAggregate,
+                        maxServiceCallAggregatesPerTransactionAggregate) -> ImmutableRollupParams
+                                .builder()
+                                .agentRollupId(agentRollupId)
+                                .rollupLevel(rollupLevel)
+                                .adjustedTTL(adjustedTTL)
+                                .maxQueryAggregatesPerTransactionAggregate(
+                                        maxQueryAggregatesPerTransactionAggregate)
+                                .maxServiceCallAggregatesPerTransactionAggregate(
+                                        maxServiceCallAggregatesPerTransactionAggregate)
+                                .rollUpQueries(rollUpQueries)
+                                .rollUpServiceCalls(rollUpServiceCalls)
+                                .rollUpProfiles(rollUpProfiles)
+                                .build());
+    }
 
-        return getMaxQueryAggregatesPerTransactionAggregate(agentRollupIdForMeta)
-                .thenCombine(getMaxServiceCallAggregatesPerTransactionAggregate(agentRollupIdForMeta),
-                        (maxQueryAggregatesPerTransactionAggregate, maxServiceCallAggregatesPerTransactionAggregate) -> {
-                            return ImmutableRollupParams.builder()
-                                    .agentRollupId(agentRollupId)
-                                    .rollupLevel(rollupLevel)
-                                    .adjustedTTL(adjustedTTL)
-                                    .maxQueryAggregatesPerTransactionAggregate(maxQueryAggregatesPerTransactionAggregate)
-                                    .maxServiceCallAggregatesPerTransactionAggregate(maxServiceCallAggregatesPerTransactionAggregate)
-                                    .build();
-                        });
+    private static boolean isExpired(int ttlSeconds, long captureTime, long currentTimeMillis) {
+        return ttlSeconds != 0
+                && MILLISECONDS.toSeconds(currentTimeMillis - captureTime) >= ttlSeconds;
     }
 
     private static String mergeRowIntoSummaries(Row row, Map<String, MutableSummary> summaries) {
@@ -2959,6 +3085,21 @@ public class AggregateDaoImpl implements AggregateDao {
         int maxQueryAggregatesPerTransactionAggregate();
 
         int maxServiceCallAggregatesPerTransactionAggregate();
+
+        @Value.Default
+        default boolean rollUpQueries() {
+            return true;
+        }
+
+        @Value.Default
+        default boolean rollUpServiceCalls() {
+            return true;
+        }
+
+        @Value.Default
+        default boolean rollUpProfiles() {
+            return true;
+        }
     }
 
     @Value.Immutable
@@ -2970,6 +3111,13 @@ public class AggregateDaoImpl implements AggregateDao {
         int serviceCallTTL();
 
         int profileTTL();
+    }
+
+    private static class PresentOptionalParts {
+        private volatile boolean queries;
+        private volatile boolean serviceCalls;
+        private volatile boolean mainThreadProfile;
+        private volatile boolean auxThreadProfile;
     }
 
     private static class MutableSummary {

@@ -15,18 +15,22 @@
  */
 package org.glowroot.central.repo;
 
+import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
@@ -43,10 +47,12 @@ import org.glowroot.central.repo.Common.NeedsRollupKey;
 import org.glowroot.central.util.ClusterManager;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common2.config.CentralStorageConfig;
 import org.glowroot.common2.config.ImmutableCentralStorageConfig;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -206,8 +212,302 @@ public class AggregateDaoTest {
                 ctx.sql(bs).contains("from aggregate_needs_rollup_3 "));
     }
 
+    @Test
+    public void rollupLeafSkipsEmptyOptionalPerTransactionTablesAndRollsUpPresentOnes()
+            throws Exception {
+        UUID uuid1 = Uuids.timeBased();
+        long t1 = 300_000L;
+
+        TestContext ctx = createContext(
+                "aggregate_needs_rollup_1",
+                List.of(mockNeedsRollupRow(t1, uuid1, Set.of("Web"))));
+
+        AsyncResultSet txSummaryResults = resultSet(List.of(
+                mockTransactionSummaryRow("/txn1"),
+                mockTransactionSummaryRow("/txn2")));
+        AsyncResultSet queryResults = resultSet(List.of(mockQueryRow()));
+
+        when(ctx.session.readAsyncWarnIfNoRows(any(BoundStatement.class),
+                eq(CassandraProfile.rollup), anyString(), any(), any(), any()))
+                .thenReturn(CompletableFuture.completedFuture(ctx.emptyResults));
+        when(ctx.session.readAsync(any(BoundStatement.class), eq(CassandraProfile.rollup)))
+                .thenAnswer(invocation -> {
+                    String sql = ctx.sql(invocation.getArgument(0));
+                    if (sql.contains("from aggregate_needs_rollup_1 ")) {
+                        return CompletableFuture.completedFuture(
+                                resultSet(List.of(mockNeedsRollupRow(t1, uuid1, Set.of("Web")))));
+                    }
+                    if (sql.contains("from aggregate_tn_summary_rollup_0 ")) {
+                        return CompletableFuture.completedFuture(txSummaryResults);
+                    }
+                    if (sql.contains("from aggregate_tt_query_rollup_0 ")
+                            || sql.contains("from aggregate_tn_query_rollup_0 ")) {
+                        return CompletableFuture.completedFuture(queryResults);
+                    }
+                    return CompletableFuture.completedFuture(ctx.emptyResults);
+                });
+
+        ctx.dao.rollup("parent::child1").toCompletableFuture().get(2, TimeUnit.SECONDS);
+
+        List<BoundStatement> reads = captureReadStatements(ctx.session);
+        assertThat(reads).anyMatch(bs -> ctx.sql(bs).contains("from aggregate_tt_query_rollup_0 "));
+        assertThat(reads).anyMatch(bs ->
+                ctx.sql(bs).contains("from aggregate_tt_service_call_rollup_0 "));
+        assertThat(reads).anyMatch(bs ->
+                ctx.sql(bs).contains("from aggregate_tt_main_thread_profile_rollup_0 "));
+        assertThat(reads).anyMatch(bs ->
+                ctx.sql(bs).contains("from aggregate_tt_aux_thread_profile_rollup_0 "));
+
+        assertThat(reads.stream()
+                .filter(bs -> ctx.sql(bs).contains("from aggregate_tn_query_rollup_0 "))
+                .count()).isEqualTo(2);
+        assertThat(reads).noneMatch(bs ->
+                ctx.sql(bs).contains("from aggregate_tn_service_call_rollup_0 "));
+        assertThat(reads).noneMatch(bs ->
+                ctx.sql(bs).contains("from aggregate_tn_main_thread_profile_rollup_0 "));
+        assertThat(reads).noneMatch(bs ->
+                ctx.sql(bs).contains("from aggregate_tn_aux_thread_profile_rollup_0 "));
+
+        List<BoundStatement> writes = captureWriteStatements(ctx.session);
+        assertThat(writes).anyMatch(bs ->
+                ctx.sql(bs).startsWith("insert into aggregate_tt_query_rollup_1 "));
+        assertThat(writes.stream()
+                .filter(bs -> ctx.sql(bs).startsWith("insert into aggregate_tn_query_rollup_1 "))
+                .count()).isEqualTo(2);
+    }
+
+    @Test
+    public void rollupFromChildrenSkipsEmptyOptionalPerTransactionTablesAndRollsUpPresentOnes()
+            throws Exception {
+        UUID uuid1 = Uuids.timeBased();
+        long t1 = 60_000L;
+
+        TestContext ctx = createContext(
+                "aggregate_needs_rollup_from_child",
+                List.of(mockNeedsRollupFromChildRow(t1, uuid1, "parent::child1", Set.of("Web"))));
+
+        AsyncResultSet txSummaryResults = resultSet(List.of(
+                mockTransactionSummaryRow("/txn1"),
+                mockTransactionSummaryRow("/txn2")));
+        AsyncResultSet profileResults = resultSet(List.of(mockProfileRow()));
+
+        when(ctx.session.readAsyncWarnIfNoRows(any(BoundStatement.class),
+                eq(CassandraProfile.rollup), anyString(), any(), any(), any()))
+                .thenReturn(CompletableFuture.completedFuture(ctx.emptyResults));
+        when(ctx.session.readAsyncWarnIfNoRows(any(BoundStatement.class),
+                eq(CassandraProfile.rollup), anyString(), any(), any()))
+                .thenAnswer(invocation -> {
+                    String sql = ctx.sql(invocation.getArgument(0));
+                    if (sql.contains("from aggregate_tn_summary_rollup_0 ")) {
+                        return CompletableFuture.completedFuture(txSummaryResults);
+                    }
+                    return CompletableFuture.completedFuture(ctx.emptyResults);
+                });
+        when(ctx.session.readAsync(any(BoundStatement.class), eq(CassandraProfile.rollup)))
+                .thenAnswer(invocation -> {
+                    String sql = ctx.sql(invocation.getArgument(0));
+                    if (sql.contains("from aggregate_needs_rollup_from_child")) {
+                        return CompletableFuture.completedFuture(resultSet(List.of(
+                                mockNeedsRollupFromChildRow(t1, uuid1, "parent::child1",
+                                        Set.of("Web")))));
+                    }
+                    if (sql.contains("from aggregate_tt_main_thread_profile_rollup_0 ")
+                            || sql.contains("from aggregate_tn_main_thread_profile_rollup_0 ")) {
+                        return CompletableFuture.completedFuture(profileResults);
+                    }
+                    return CompletableFuture.completedFuture(ctx.emptyResults);
+                });
+
+        ctx.dao.rollup("parent::").toCompletableFuture().get(2, TimeUnit.SECONDS);
+
+        List<BoundStatement> reads = captureReadStatements(ctx.session);
+        assertThat(reads.stream()
+                .filter(bs -> ctx.sql(bs)
+                        .contains("from aggregate_tn_main_thread_profile_rollup_0 "))
+                .count()).isEqualTo(2);
+        assertThat(reads).noneMatch(bs ->
+                ctx.sql(bs).contains("from aggregate_tn_query_rollup_0 "));
+        assertThat(reads).noneMatch(bs ->
+                ctx.sql(bs).contains("from aggregate_tn_service_call_rollup_0 "));
+        assertThat(reads).noneMatch(bs ->
+                ctx.sql(bs).contains("from aggregate_tn_aux_thread_profile_rollup_0 "));
+
+        List<BoundStatement> writes = captureWriteStatements(ctx.session);
+        assertThat(writes).anyMatch(bs ->
+                ctx.sql(bs).startsWith("insert into aggregate_tt_main_thread_profile_rollup_0 "));
+        assertThat(writes.stream()
+                .filter(bs -> ctx.sql(bs)
+                        .startsWith("insert into aggregate_tn_main_thread_profile_rollup_0 "))
+                .count()).isEqualTo(2);
+    }
+
+    @Test
+    public void rollupSkipsExpiredDetailTablesWhilePreservingGeneralRollupsAndZeroTtl()
+            throws Exception {
+        UUID uuid1 = Uuids.timeBased();
+        long currentTimeMillis = TimeUnit.DAYS.toMillis(10);
+        // 8 days ago: expired for 7-day level-1 query/serviceCall TTL, still live for 14-day
+        // general TTL and 14-day profile TTL
+        long captureTime = TimeUnit.DAYS.toMillis(2);
+
+        CentralStorageConfig storageConfig = ImmutableCentralStorageConfig.builder()
+                .rollupExpirationHours(ImmutableList.of(48, 24 * 14, 24 * 90, 24 * 365))
+                .queryAndServiceCallRollupExpirationHours(
+                        ImmutableList.of(48, 24 * 7, 24 * 30, 24 * 30))
+                .profileRollupExpirationHours(ImmutableList.of(48, 24 * 14, 24 * 30, 24 * 30))
+                .build();
+
+        TestContext expiredCtx = createContext(
+                "aggregate_needs_rollup_1",
+                List.of(mockNeedsRollupRow(captureTime, uuid1, Set.of("Web"))),
+                storageConfig,
+                currentTimeMillis);
+
+        AsyncResultSet overallSummaryResults = resultSet(List.of(mockOverallSummaryRow()));
+        AsyncResultSet txSummaryResults = resultSet(List.of(mockTransactionSummaryRow("/txn1")));
+
+        when(expiredCtx.session.readAsyncWarnIfNoRows(any(BoundStatement.class),
+                eq(CassandraProfile.rollup), anyString(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+                    String sql = expiredCtx.sql(invocation.getArgument(0));
+                    if (sql.contains("from aggregate_tt_summary_rollup_0 ")) {
+                        return CompletableFuture.completedFuture(overallSummaryResults);
+                    }
+                    return CompletableFuture.completedFuture(expiredCtx.emptyResults);
+                });
+        when(expiredCtx.session.readAsync(any(BoundStatement.class), eq(CassandraProfile.rollup)))
+                .thenAnswer(invocation -> {
+                    String sql = expiredCtx.sql(invocation.getArgument(0));
+                    if (sql.contains("from aggregate_needs_rollup_1 ")) {
+                        return CompletableFuture.completedFuture(resultSet(
+                                List.of(mockNeedsRollupRow(captureTime, uuid1, Set.of("Web")))));
+                    }
+                    if (sql.contains("from aggregate_tn_summary_rollup_0 ")) {
+                        return CompletableFuture.completedFuture(txSummaryResults);
+                    }
+                    return CompletableFuture.completedFuture(expiredCtx.emptyResults);
+                });
+
+        expiredCtx.dao.rollup("parent::child1").toCompletableFuture().get(2, TimeUnit.SECONDS);
+
+        List<BoundStatement> expiredReads = captureReadStatements(expiredCtx.session);
+        assertThat(expiredReads).noneMatch(bs ->
+                expiredCtx.sql(bs).contains("from aggregate_tt_query_rollup_0 ")
+                        || expiredCtx.sql(bs).contains("from aggregate_tn_query_rollup_0 ")
+                        || expiredCtx.sql(bs).contains("from aggregate_tt_service_call_rollup_0 ")
+                        || expiredCtx.sql(bs).contains("from aggregate_tn_service_call_rollup_0 "));
+        // 14-day profile TTL has not expired at 8 days old, so overall profile tables are still
+        // checked (and tn_ profile tables skipped because overall had no rows)
+        assertThat(expiredReads).anyMatch(bs ->
+                expiredCtx.sql(bs).contains("from aggregate_tt_main_thread_profile_rollup_0 "));
+        assertThat(expiredReads).noneMatch(bs ->
+                expiredCtx.sql(bs).contains("from aggregate_tn_main_thread_profile_rollup_0 "));
+
+        List<BoundStatement> expiredWrites = captureWriteStatements(expiredCtx.session);
+        assertThat(expiredWrites).anyMatch(bs ->
+                expiredCtx.sql(bs).startsWith("insert into aggregate_tt_summary_rollup_1 "));
+        assertThat(expiredWrites).anyMatch(bs ->
+                expiredCtx.sql(bs).startsWith("insert into aggregate_tn_summary_rollup_1 "));
+
+        // Verify expirationHours = 0 (infinite retention) never skips detail tables
+        CentralStorageConfig zeroTtlConfig = ImmutableCentralStorageConfig.builder()
+                .rollupExpirationHours(ImmutableList.of(0, 0, 0, 0))
+                .queryAndServiceCallRollupExpirationHours(ImmutableList.of(0, 0, 0, 0))
+                .profileRollupExpirationHours(ImmutableList.of(0, 0, 0, 0))
+                .build();
+        TestContext zeroTtlCtx = createContext(
+                "aggregate_needs_rollup_1",
+                List.of(mockNeedsRollupRow(captureTime, uuid1, Set.of("Web"))),
+                zeroTtlConfig,
+                TimeUnit.DAYS.toMillis(400));
+        when(zeroTtlCtx.session.readAsyncWarnIfNoRows(any(BoundStatement.class),
+                eq(CassandraProfile.rollup), anyString(), any(), any(), any()))
+                .thenReturn(CompletableFuture.completedFuture(zeroTtlCtx.emptyResults));
+
+        zeroTtlCtx.dao.rollup("parent::child1").toCompletableFuture().get(2, TimeUnit.SECONDS);
+
+        List<BoundStatement> zeroTtlReads = captureReadStatements(zeroTtlCtx.session);
+        assertThat(zeroTtlReads).anyMatch(bs ->
+                zeroTtlCtx.sql(bs).contains("from aggregate_tt_query_rollup_0 "));
+        assertThat(zeroTtlReads).anyMatch(bs ->
+                zeroTtlCtx.sql(bs).contains("from aggregate_tt_service_call_rollup_0 "));
+        assertThat(zeroTtlReads).anyMatch(bs ->
+                zeroTtlCtx.sql(bs).contains("from aggregate_tt_main_thread_profile_rollup_0 "));
+        assertThat(zeroTtlReads).anyMatch(bs ->
+                zeroTtlCtx.sql(bs).contains("from aggregate_tt_aux_thread_profile_rollup_0 "));
+    }
+
+    @Test
+    public void rollupBoundsPerTransactionConcurrencyToFour() throws Exception {
+        assertThat(AggregateDaoImpl.MAX_CONCURRENT_PER_TRANSACTION_ROLLUPS).isEqualTo(4);
+
+        UUID uuid1 = Uuids.timeBased();
+        long t1 = 300_000L;
+        List<Row> summaryRows = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            summaryRows.add(mockTransactionSummaryRow("/txn" + i));
+        }
+
+        TestContext ctx = createContext(
+                "aggregate_needs_rollup_1",
+                List.of(mockNeedsRollupRow(t1, uuid1, Set.of("Web"))));
+
+        AtomicInteger inFlightTransactions = new AtomicInteger();
+        AtomicInteger maxInFlightTransactions = new AtomicInteger();
+        AtomicInteger totalTransactionOverviewReads = new AtomicInteger();
+        Queue<CompletableFuture<AsyncResultSet>> pendingOverviewReads = new ArrayDeque<>();
+
+        when(ctx.session.readAsyncWarnIfNoRows(any(BoundStatement.class),
+                eq(CassandraProfile.rollup), anyString(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+                    String sql = ctx.sql(invocation.getArgument(0));
+                    if (sql.contains("from aggregate_tn_overview_rollup_0 ")) {
+                        int active = inFlightTransactions.incrementAndGet();
+                        maxInFlightTransactions.accumulateAndGet(active, Math::max);
+                        totalTransactionOverviewReads.incrementAndGet();
+                        CompletableFuture<AsyncResultSet> pending = new CompletableFuture<>();
+                        pendingOverviewReads.add(pending);
+                        return pending;
+                    }
+                    return CompletableFuture.completedFuture(ctx.emptyResults);
+                });
+        when(ctx.session.readAsync(any(BoundStatement.class), eq(CassandraProfile.rollup)))
+                .thenAnswer(invocation -> {
+                    String sql = ctx.sql(invocation.getArgument(0));
+                    if (sql.contains("from aggregate_needs_rollup_1 ")) {
+                        return CompletableFuture.completedFuture(
+                                resultSet(List.of(mockNeedsRollupRow(t1, uuid1, Set.of("Web")))));
+                    }
+                    if (sql.contains("from aggregate_tn_summary_rollup_0 ")) {
+                        return CompletableFuture.completedFuture(resultSet(summaryRows));
+                    }
+                    return CompletableFuture.completedFuture(ctx.emptyResults);
+                });
+
+        CompletableFuture<?> rollupFuture = ctx.dao.rollup("parent::child1").toCompletableFuture();
+        assertThat(pendingOverviewReads).hasSize(4);
+        assertThat(inFlightTransactions.get()).isEqualTo(4);
+
+        while (!pendingOverviewReads.isEmpty()) {
+            CompletableFuture<AsyncResultSet> next = pendingOverviewReads.poll();
+            inFlightTransactions.decrementAndGet();
+            next.complete(ctx.emptyResults);
+        }
+
+        rollupFuture.get(2, TimeUnit.SECONDS);
+        assertThat(totalTransactionOverviewReads.get()).isEqualTo(10);
+        assertThat(maxInFlightTransactions.get()).isEqualTo(4);
+    }
+
     private static TestContext createContext(String needsRollupTableFragment,
             List<Row> needsRollupRows) throws Exception {
+        return createContext(needsRollupTableFragment, needsRollupRows,
+                ImmutableCentralStorageConfig.builder().build(), 1_000_000L);
+    }
+
+    private static TestContext createContext(String needsRollupTableFragment,
+            List<Row> needsRollupRows, CentralStorageConfig storageConfig, long currentTimeMillis)
+            throws Exception {
         Session session = mock(Session.class);
         ActiveAgentDao activeAgentDao = mock(ActiveAgentDao.class);
         TransactionTypeDao transactionTypeDao = mock(TransactionTypeDao.class);
@@ -217,7 +517,7 @@ public class AggregateDaoTest {
         when(configRepository.getRollupConfigs())
                 .thenReturn(ImmutableList.copyOf(RollupConfig.buildRollupConfigs()));
         when(configRepository.getCentralStorageConfig()).thenAnswer(ignored ->
-                CompletableFuture.completedFuture(ImmutableCentralStorageConfig.builder().build()));
+                CompletableFuture.completedFuture(storageConfig));
         when(configRepository.getAdvancedConfig(anyString())).thenAnswer(ignored ->
                 CompletableFuture.completedFuture(AdvancedConfig.getDefaultInstance()));
 
@@ -263,7 +563,7 @@ public class AggregateDaoTest {
         Clock clock = new Clock() {
             @Override
             public long currentTimeMillis() {
-                return 1_000_000L;
+                return currentTimeMillis;
             }
         };
 
@@ -322,6 +622,44 @@ public class AggregateDaoTest {
         when(row.getUuid(1)).thenReturn(uniqueness);
         when(row.getString(2)).thenReturn(childAgentRollupId);
         when(row.getSet(3, String.class)).thenReturn(keys);
+        return row;
+    }
+
+    private static Row mockOverallSummaryRow() {
+        Row row = mock(Row.class);
+        when(row.getDouble(0)).thenReturn(1000.0);
+        when(row.getDouble(1)).thenReturn(200.0);
+        when(row.getDouble(2)).thenReturn(512.0);
+        when(row.getLong(3)).thenReturn(5L);
+        return row;
+    }
+
+    private static Row mockTransactionSummaryRow(String transactionName) {
+        Row row = mock(Row.class);
+        when(row.getString(0)).thenReturn(transactionName);
+        when(row.getDouble(1)).thenReturn(1000.0);
+        when(row.getDouble(2)).thenReturn(200.0);
+        when(row.getDouble(3)).thenReturn(512.0);
+        when(row.getLong(4)).thenReturn(5L);
+        return row;
+    }
+
+    private static Row mockQueryRow() {
+        Row row = mock(Row.class);
+        when(row.getString(0)).thenReturn("SQL");
+        when(row.getString(1)).thenReturn("select 1");
+        when(row.getString(2)).thenReturn("");
+        when(row.getDouble(3)).thenReturn(1000.0);
+        when(row.getLong(4)).thenReturn(2L);
+        when(row.isNull(5)).thenReturn(true);
+        when(row.getLong(5)).thenReturn(0L);
+        return row;
+    }
+
+    private static Row mockProfileRow() {
+        byte[] bytes = Profile.getDefaultInstance().toByteArray();
+        Row row = mock(Row.class);
+        when(row.getByteBuffer(0)).thenAnswer(ignored -> ByteBuffer.wrap(bytes));
         return row;
     }
 
