@@ -960,19 +960,37 @@ public class CentralModule {
         }
         String prior = System.getProperty("glowroot.log.dir");
         System.setProperty("glowroot.log.dir", logDir.getPath());
+        String priorConsoleOff = normalizeBooleanSystemProperty("glowroot.log.consoleOff");
+        String priorAuditOn = normalizeBooleanSystemProperty("glowroot.log.auditOn");
         try {
             startupLogger = LoggerFactory.getLogger("org.glowroot");
         } finally {
             System.clearProperty("logback.configurationFile");
-            if (prior == null) {
-                System.clearProperty("glowroot.log.dir");
-            } else {
-                System.setProperty("glowroot.log.dir", prior);
-            }
+            restoreSystemProperty("glowroot.log.dir", prior);
+            restoreSystemProperty("glowroot.log.consoleOff", priorConsoleOff);
+            restoreSystemProperty("glowroot.log.auditOn", priorAuditOn);
         }
         // install jul-to-slf4j bridge for guava/grpc/protobuf which log to jul
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
+    }
+
+    @VisibleForTesting
+    static @Nullable String normalizeBooleanSystemProperty(String name) {
+        String prior = System.getProperty(name);
+        if (prior != null) {
+            System.setProperty(name, prior.toLowerCase(Locale.ROOT));
+        }
+        return prior;
+    }
+
+    @VisibleForTesting
+    static void restoreSystemProperty(String name, @Nullable String prior) {
+        if (prior == null) {
+            System.clearProperty(name);
+        } else {
+            System.setProperty(name, prior);
+        }
     }
 
     private static CompletableFuture<?> submit(ExecutorService executor, ShutdownFunction fn) {
