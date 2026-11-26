@@ -31,6 +31,7 @@ import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.cql.*;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -52,6 +53,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class Common {
+
+    // stay below Cassandra's default 5 KiB batch_size_warn_threshold_in_kb
+    @VisibleForTesting
+    static final int MAX_SINGLE_PARTITION_BATCH_BYTES = 4096;
 
     private Common() {}
 
@@ -207,17 +212,80 @@ class Common {
             starting = session.writeAsync(boundStatement, profile);
         }
         return starting.thenCompose(ignored -> {
-            List<CompletableFuture<?>> futures = new ArrayList<>();
+            SinglePartitionBatcher batcher = new SinglePartitionBatcher(
+                    32 + estimatedUtf8Bytes(agentRollupId), session, profile);
+            Instant captureTimeInstant = Instant.ofEpochMilli(captureTime);
             for (UUID uniqueness : uniquenessKeysForDeletion) {
                 int i = 0;
                 BoundStatement boundStatement = deleteNeedsRollup.bind()
-                    .setString(i++, agentRollupId)
-                    .setInstant(i++, Instant.ofEpochMilli(captureTime))
-                    .setUuid(i++, uniqueness);
-                futures.add(session.writeAsync(boundStatement, profile).toCompletableFuture());
+                        .setString(i++, agentRollupId)
+                        .setInstant(i++, captureTimeInstant)
+                        .setUuid(i++, uniqueness);
+                batcher.add(boundStatement, 64);
             }
+            List<CompletableFuture<?>> futures = batcher.finish();
             return CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]));
         });
+    }
+
+    static int estimatedUtf8Bytes(@Nullable String s) {
+        if (s == null) {
+            return 0;
+        }
+        int bytes = 0;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c < 0x80) {
+                bytes += 1;
+            } else if (c < 0x800) {
+                bytes += 2;
+            } else {
+                bytes += 3;
+            }
+        }
+        return bytes;
+    }
+
+    static class SinglePartitionBatcher {
+
+        private final int partitionKeyBytes;
+        private final Session session;
+        private final CassandraProfile profile;
+        private final List<CompletableFuture<?>> futures = new ArrayList<>();
+        private final List<BatchableStatement<?>> currentChunk = new ArrayList<>();
+        private int currentChunkBytes;
+
+        SinglePartitionBatcher(int partitionKeyBytes, Session session, CassandraProfile profile) {
+            this.partitionKeyBytes = partitionKeyBytes;
+            this.session = session;
+            this.profile = profile;
+            this.currentChunkBytes = partitionKeyBytes;
+        }
+
+        void add(BoundStatement statement, int estimatedRowBytes) {
+            if (!currentChunk.isEmpty()
+                    && currentChunkBytes + estimatedRowBytes > MAX_SINGLE_PARTITION_BATCH_BYTES) {
+                flushChunk();
+            }
+            currentChunk.add(statement);
+            currentChunkBytes += estimatedRowBytes;
+        }
+
+        List<CompletableFuture<?>> finish() {
+            if (!currentChunk.isEmpty()) {
+                flushChunk();
+            }
+            return futures;
+        }
+
+        private void flushChunk() {
+            Statement<?> statement = currentChunk.size() == 1
+                    ? currentChunk.get(0)
+                    : BatchStatement.newInstance(DefaultBatchType.UNLOGGED, currentChunk);
+            futures.add(session.writeAsync(statement, profile).toCompletableFuture());
+            currentChunk.clear();
+            currentChunkBytes = partitionKeyBytes;
+        }
     }
 
     static boolean isOldEnoughToRollup(long captureTime, long currentTimeMillis,

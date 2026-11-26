@@ -16,11 +16,17 @@
 package org.glowroot.central.repo;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BatchStatement;
+import com.datastax.oss.driver.api.core.cql.BatchableStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.DefaultBatchType;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.Statement;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import org.glowroot.central.repo.Common.NeedsRollup;
 import org.glowroot.central.repo.Common.NeedsRollupKey;
 import org.glowroot.central.util.ClusterManager;
@@ -35,9 +41,12 @@ import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
 import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -260,6 +269,61 @@ public class CommonTest {
         gaugeValueDao.truncateAll();
         gaugeValueDao.store("agent1", List.of(gauge("g1", 10_000L))).toCompletableFuture().get();
         verify(session, times(3)).writeAsync(insertNeedsRollup1BS, CassandraProfile.collector);
+    }
+
+    @Test
+    public void postRollupUsesSingleBoundStatementForOneDeleteAndUnloggedBatchesForMultipleDeletes()
+            throws Exception {
+        PreparedStatement insertNeedsRollupPS = mock(PreparedStatement.class);
+        BoundStatement insertNeedsRollupBS = mock(BoundStatement.class, Answers.RETURNS_SELF);
+        when(insertNeedsRollupPS.bind()).thenReturn(insertNeedsRollupBS);
+
+        PreparedStatement deleteNeedsRollupPS = mock(PreparedStatement.class);
+        when(deleteNeedsRollupPS.bind()).thenAnswer(
+                ignored -> mock(BoundStatement.class, Answers.RETURNS_SELF));
+
+        Session singleSession = mock(Session.class);
+        when(singleSession.writeAsync(any(), any()))
+                .thenAnswer(ignored -> CompletableFuture.completedFuture(null));
+
+        UUID singleUuid = Uuids.timeBased();
+        Common.postRollup("agent1", 60_000L, Set.of("Web"), Set.of(singleUuid), 300_000L,
+                insertNeedsRollupPS, deleteNeedsRollupPS, 3600, singleSession,
+                CassandraProfile.rollup).toCompletableFuture().get();
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Statement<?>> singleCaptor = ArgumentCaptor.forClass(Statement.class);
+        verify(singleSession, times(2)).writeAsync(singleCaptor.capture(), any());
+        assertThat(singleCaptor.getAllValues().get(0)).isSameAs(insertNeedsRollupBS);
+        assertThat(singleCaptor.getAllValues().get(1)).isInstanceOf(BoundStatement.class);
+
+        // Multiple deletes in same partition are grouped into UNLOGGED batches and chunked
+        // below MAX_SINGLE_PARTITION_BATCH_BYTES
+        Session batchSession = mock(Session.class);
+        when(batchSession.writeAsync(any(), any()))
+                .thenAnswer(ignored -> CompletableFuture.completedFuture(null));
+
+        Set<UUID> hundredUuids = new LinkedHashSet<>();
+        for (int i = 0; i < 100; i++) {
+            hundredUuids.add(Uuids.timeBased());
+        }
+        Common.postRollup("agent1", 60_000L, Set.of("Web"), hundredUuids, null, null,
+                deleteNeedsRollupPS, -1, batchSession, CassandraProfile.rollup)
+                .toCompletableFuture().get();
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Statement<?>> batchCaptor = ArgumentCaptor.forClass(Statement.class);
+        verify(batchSession, times(2)).writeAsync(batchCaptor.capture(), any());
+        int totalDeletedRows = 0;
+        for (Statement<?> stmt : batchCaptor.getAllValues()) {
+            assertThat(stmt).isInstanceOf(BatchStatement.class);
+            BatchStatement batch = (BatchStatement) stmt;
+            assertThat(batch.getBatchType()).isEqualTo(DefaultBatchType.UNLOGGED);
+            int size = Iterables.size(batch);
+            assertThat(size).isGreaterThan(1);
+            totalDeletedRows += size;
+        }
+        assertThat(totalDeletedRows).isEqualTo(100);
     }
 
     private static Row mockRow(long captureTime, Set<String> keys) {

@@ -33,12 +33,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BatchStatement;
+import com.datastax.oss.driver.api.core.cql.BatchableStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.DefaultBatchType;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -52,6 +57,8 @@ import org.glowroot.common2.config.ImmutableCentralStorageConfig;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
 import org.glowroot.wire.api.model.AgentConfigOuterClass.AgentConfig.AdvancedConfig;
+import org.glowroot.wire.api.model.AggregateOuterClass.Aggregate;
+import org.glowroot.wire.api.model.AggregateOuterClass.OldAggregatesByType;
 import org.glowroot.wire.api.model.ProfileOuterClass.Profile;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -499,6 +506,141 @@ public class AggregateDaoTest {
         assertThat(maxInFlightTransactions.get()).isEqualTo(4);
     }
 
+    @Test
+    public void rollupAndStoreBatchSamePartitionQueriesAndServiceCallsAndChunkLargeBatches()
+            throws Exception {
+        UUID uuid1 = Uuids.timeBased();
+        UUID uuid2 = Uuids.timeBased();
+        long t1 = 300_000L;
+
+        // 2 needs_rollup uniqueness rows for the same interval t1
+        TestContext ctx = createContext(
+                "aggregate_needs_rollup_1",
+                List.of(mockNeedsRollupRow(t1, uuid1, Set.of("Web")),
+                        mockNeedsRollupRow(t1, uuid2, Set.of("Background"))));
+
+        List<Row> thirtyQueryRows = new ArrayList<>();
+        for (int i = 0; i < 30; i++) {
+            thirtyQueryRows.add(mockQueryRow("select col from tbl_" + i + " where id = ? and "
+                    + "padding_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx = ?"));
+        }
+        AsyncResultSet queryResults = resultSet(thirtyQueryRows);
+        AsyncResultSet serviceCallResults = resultSet(List.of(
+                mockServiceCallRow("HTTP", "GET https://svc-a/items"),
+                mockServiceCallRow("HTTP", "POST https://svc-b/orders"),
+                mockServiceCallRow("HTTP", "GET https://svc-c/users")));
+
+        when(ctx.session.readAsyncWarnIfNoRows(any(BoundStatement.class),
+                eq(CassandraProfile.rollup), anyString(), any(), any(), any()))
+                .thenReturn(CompletableFuture.completedFuture(ctx.emptyResults));
+        when(ctx.session.readAsync(any(BoundStatement.class), eq(CassandraProfile.rollup)))
+                .thenAnswer(invocation -> {
+                    String sql = ctx.sql(invocation.getArgument(0));
+                    if (sql.contains("from aggregate_needs_rollup_1 ")) {
+                        return CompletableFuture.completedFuture(resultSet(List.of(
+                                mockNeedsRollupRow(t1, uuid1, Set.of("Web")),
+                                mockNeedsRollupRow(t1, uuid2, Set.of("Background")))));
+                    }
+                    if (sql.contains("from aggregate_tt_query_rollup_0 ")) {
+                        return CompletableFuture.completedFuture(queryResults);
+                    }
+                    if (sql.contains("from aggregate_tt_service_call_rollup_0 ")) {
+                        return CompletableFuture.completedFuture(serviceCallResults);
+                    }
+                    return CompletableFuture.completedFuture(ctx.emptyResults);
+                });
+
+        ctx.dao.rollup("parent::child1").toCompletableFuture().get(2, TimeUnit.SECONDS);
+
+        List<Statement<?>> rawRollupWrites =
+                captureRawWriteStatements(ctx.session, CassandraProfile.rollup);
+
+        // 30 large queries per transactionType (2 transactionTypes = 60 rows) are chunked into
+        // multiple UNLOGGED batches (fewer writes than 60 individual statements, more than 2)
+        List<BatchStatement> queryBatches = findBatchStatements(rawRollupWrites, ctx,
+                "insert into aggregate_tt_query_rollup_1 ");
+        assertThat(queryBatches.size()).isGreaterThan(2).isLessThan(10);
+        int totalQueryStatements = 0;
+        for (BatchStatement batch : queryBatches) {
+            assertThat(batch.getBatchType()).isEqualTo(DefaultBatchType.UNLOGGED);
+            totalQueryStatements += Iterables.size(batch);
+        }
+        assertThat(totalQueryStatements).isEqualTo(60);
+
+        // 3 service calls per transactionType fit in 1 UNLOGGED batch per transactionType
+        List<BatchStatement> serviceCallBatches = findBatchStatements(rawRollupWrites, ctx,
+                "insert into aggregate_tt_service_call_rollup_1 ");
+        assertThat(serviceCallBatches).hasSize(2);
+        for (BatchStatement batch : serviceCallBatches) {
+            assertThat(batch.getBatchType()).isEqualTo(DefaultBatchType.UNLOGGED);
+            assertThat(Iterables.size(batch)).isEqualTo(3);
+        }
+
+        // 2 needs_rollup_1 deletes at t1 are batched into 1 UNLOGGED batch
+        List<BatchStatement> deleteBatches = findBatchStatements(rawRollupWrites, ctx,
+                "delete from aggregate_needs_rollup_1 ");
+        assertThat(deleteBatches).hasSize(1);
+        assertThat(deleteBatches.get(0).getBatchType()).isEqualTo(DefaultBatchType.UNLOGGED);
+        assertThat(Iterables.size(deleteBatches.get(0))).isEqualTo(2);
+
+        // Also verify collector store() batches multiple queries and service calls
+        when(ctx.activeAgentDao.insert(anyString(), anyLong()))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(ctx.transactionTypeDao.store(any(), anyString()))
+                .thenReturn(CompletableFuture.completedFuture(null));
+
+        Aggregate overallAggregate = Aggregate.newBuilder()
+                .setTotalDurationNanos(1000.0)
+                .setTransactionCount(2)
+                .addQuery(Aggregate.Query.newBuilder()
+                        .setType("SQL")
+                        .setSharedQueryTextIndex(0)
+                        .setTotalDurationNanos(500.0)
+                        .setExecutionCount(1))
+                .addQuery(Aggregate.Query.newBuilder()
+                        .setType("SQL")
+                        .setSharedQueryTextIndex(1)
+                        .setTotalDurationNanos(300.0)
+                        .setExecutionCount(1))
+                .addServiceCall(Aggregate.ServiceCall.newBuilder()
+                        .setType("HTTP")
+                        .setText("GET /a")
+                        .setTotalDurationNanos(200.0)
+                        .setExecutionCount(1))
+                .addServiceCall(Aggregate.ServiceCall.newBuilder()
+                        .setType("HTTP")
+                        .setText("GET /b")
+                        .setTotalDurationNanos(100.0)
+                        .setExecutionCount(1))
+                .build();
+        List<Aggregate.SharedQueryText> sharedQueryTexts = List.of(
+                Aggregate.SharedQueryText.newBuilder().setFullText("select 1").build(),
+                Aggregate.SharedQueryText.newBuilder().setFullText("select 2").build());
+        OldAggregatesByType aggregatesByType = OldAggregatesByType.newBuilder()
+                .setTransactionType("Web")
+                .setOverallAggregate(overallAggregate)
+                .build();
+
+        ctx.dao.store("agent1", 60_000L, List.of(aggregatesByType), sharedQueryTexts)
+                .toCompletableFuture().get(2, TimeUnit.SECONDS);
+
+        List<Statement<?>> rawCollectorWrites =
+                captureRawWriteStatements(ctx.session, CassandraProfile.collector);
+        List<BatchStatement> collectorQueryBatches = findBatchStatements(rawCollectorWrites, ctx,
+                "insert into aggregate_tt_query_rollup_0 ");
+        assertThat(collectorQueryBatches).hasSize(1);
+        assertThat(collectorQueryBatches.get(0).getBatchType())
+                .isEqualTo(DefaultBatchType.UNLOGGED);
+        assertThat(Iterables.size(collectorQueryBatches.get(0))).isEqualTo(2);
+
+        List<BatchStatement> collectorServiceCallBatches = findBatchStatements(rawCollectorWrites,
+                ctx, "insert into aggregate_tt_service_call_rollup_0 ");
+        assertThat(collectorServiceCallBatches).hasSize(1);
+        assertThat(collectorServiceCallBatches.get(0).getBatchType())
+                .isEqualTo(DefaultBatchType.UNLOGGED);
+        assertThat(Iterables.size(collectorServiceCallBatches.get(0))).isEqualTo(2);
+    }
+
     private static TestContext createContext(String needsRollupTableFragment,
             List<Row> needsRollupRows) throws Exception {
         return createContext(needsRollupTableFragment, needsRollupRows,
@@ -557,7 +699,9 @@ public class AggregateDaoTest {
                     return CompletableFuture.completedFuture(emptyResults);
                 });
 
-        when(session.writeAsync(any(BoundStatement.class), eq(CassandraProfile.rollup)))
+        when(session.writeAsync(any(Statement.class), eq(CassandraProfile.rollup)))
+                .thenAnswer(ignored -> CompletableFuture.completedFuture(emptyResults));
+        when(session.writeAsync(any(Statement.class), eq(CassandraProfile.collector)))
                 .thenAnswer(ignored -> CompletableFuture.completedFuture(emptyResults));
 
         Clock clock = new Clock() {
@@ -569,7 +713,8 @@ public class AggregateDaoTest {
 
         AggregateDaoImpl dao = new AggregateDaoImpl(session, activeAgentDao, transactionTypeDao,
                 fullQueryTextDao, configRepository, clusterManager, Runnable::run, 0, clock);
-        return new TestContext(dao, session, sqlByPS, emptyResults);
+        return new TestContext(dao, session, activeAgentDao, transactionTypeDao, sqlByPS,
+                emptyResults);
     }
 
     private static List<BoundStatement> captureReadStatements(Session session) {
@@ -580,10 +725,43 @@ public class AggregateDaoTest {
     }
 
     private static List<BoundStatement> captureWriteStatements(Session session) {
-        ArgumentCaptor<BoundStatement> captor = ArgumentCaptor.forClass(BoundStatement.class);
-        verify(session, Mockito.atLeastOnce()).writeAsync(captor.capture(),
-                eq(CassandraProfile.rollup));
+        List<BoundStatement> flattened = new ArrayList<>();
+        for (Statement<?> stmt : captureRawWriteStatements(session, CassandraProfile.rollup)) {
+            if (stmt instanceof BoundStatement) {
+                flattened.add((BoundStatement) stmt);
+            } else if (stmt instanceof BatchStatement) {
+                for (BatchableStatement<?> child : (BatchStatement) stmt) {
+                    if (child instanceof BoundStatement) {
+                        flattened.add((BoundStatement) child);
+                    }
+                }
+            }
+        }
+        return flattened;
+    }
+
+    private static List<Statement<?>> captureRawWriteStatements(Session session,
+            CassandraProfile profile) {
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Statement<?>> captor = ArgumentCaptor.forClass(Statement.class);
+        verify(session, Mockito.atLeastOnce()).writeAsync(captor.capture(), eq(profile));
         return captor.getAllValues();
+    }
+
+    private static List<BatchStatement> findBatchStatements(List<Statement<?>> statements,
+            TestContext ctx, String sqlPrefix) {
+        List<BatchStatement> matching = new ArrayList<>();
+        for (Statement<?> stmt : statements) {
+            if (stmt instanceof BatchStatement) {
+                BatchStatement batch = (BatchStatement) stmt;
+                BatchableStatement<?> first = Iterables.getFirst(batch, null);
+                if (first instanceof BoundStatement
+                        && ctx.sql((BoundStatement) first).startsWith(sqlPrefix)) {
+                    matching.add(batch);
+                }
+            }
+        }
+        return matching;
     }
 
     private static BoundStatement findStatement(List<BoundStatement> statements, TestContext ctx,
@@ -645,14 +823,27 @@ public class AggregateDaoTest {
     }
 
     private static Row mockQueryRow() {
+        return mockQueryRow("select 1");
+    }
+
+    private static Row mockQueryRow(String truncatedText) {
         Row row = mock(Row.class);
         when(row.getString(0)).thenReturn("SQL");
-        when(row.getString(1)).thenReturn("select 1");
+        when(row.getString(1)).thenReturn(truncatedText);
         when(row.getString(2)).thenReturn("");
         when(row.getDouble(3)).thenReturn(1000.0);
         when(row.getLong(4)).thenReturn(2L);
         when(row.isNull(5)).thenReturn(true);
         when(row.getLong(5)).thenReturn(0L);
+        return row;
+    }
+
+    private static Row mockServiceCallRow(String type, String text) {
+        Row row = mock(Row.class);
+        when(row.getString(0)).thenReturn(type);
+        when(row.getString(1)).thenReturn(text);
+        when(row.getDouble(2)).thenReturn(500.0);
+        when(row.getLong(3)).thenReturn(1L);
         return row;
     }
 
@@ -673,13 +864,18 @@ public class AggregateDaoTest {
     private static final class TestContext {
         private final AggregateDaoImpl dao;
         private final Session session;
+        private final ActiveAgentDao activeAgentDao;
+        private final TransactionTypeDao transactionTypeDao;
         private final Map<PreparedStatement, String> sqlByPS;
         private final AsyncResultSet emptyResults;
 
-        private TestContext(AggregateDaoImpl dao, Session session,
-                Map<PreparedStatement, String> sqlByPS, AsyncResultSet emptyResults) {
+        private TestContext(AggregateDaoImpl dao, Session session, ActiveAgentDao activeAgentDao,
+                TransactionTypeDao transactionTypeDao, Map<PreparedStatement, String> sqlByPS,
+                AsyncResultSet emptyResults) {
             this.dao = dao;
             this.session = session;
+            this.activeAgentDao = activeAgentDao;
+            this.transactionTypeDao = transactionTypeDao;
             this.sqlByPS = sqlByPS;
             this.emptyResults = emptyResults;
         }

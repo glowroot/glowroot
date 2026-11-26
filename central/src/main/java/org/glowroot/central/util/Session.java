@@ -113,17 +113,26 @@ public class Session implements AutoCloseable {
 
     public void write(Statement<?> statement, CassandraProfile profile) throws Exception {
         if (statement instanceof BoundStatement) {
-            BoundStatement boundStatement = (BoundStatement) statement;
-            PreparedStatement preparedStatement = boundStatement.getPreparedStatement();
-            String queryString = preparedStatement.getQuery();
-            if (!queryString.startsWith("insert ") && !queryString.startsWith("delete ")) {
-                throw new IllegalStateException("Unexpected write query: " + queryString);
+            validateWriteStatement((BoundStatement) statement);
+        } else if (statement instanceof BatchStatement) {
+            for (BatchableStatement<?> batchableStatement : (BatchStatement) statement) {
+                if (batchableStatement instanceof BoundStatement) {
+                    validateWriteStatement((BoundStatement) batchableStatement);
+                }
             }
         }
         // do not use session.execute() because that calls getUninterruptibly() which can cause
         // central shutdown to timeout while waiting for executor service to shutdown
         statement = statement.setExecutionProfileName(profile.name());
         writeAsync(statement, profile).toCompletableFuture().get();
+    }
+
+    private static void validateWriteStatement(BoundStatement boundStatement) {
+        PreparedStatement preparedStatement = boundStatement.getPreparedStatement();
+        String queryString = preparedStatement.getQuery();
+        if (!queryString.startsWith("insert ") && !queryString.startsWith("delete ")) {
+            throw new IllegalStateException("Unexpected write query: " + queryString);
+        }
     }
 
     public AsyncResultSet update(Statement<?> statement, CassandraProfile profile) throws Exception {

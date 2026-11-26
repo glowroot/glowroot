@@ -137,7 +137,7 @@ public class CassandraWriteMetrics {
         return getCassandraDataWritten(perTableMetrics.nestedWriteMetricsMap, limit);
     }
 
-    void recordMetrics(Statement statement) {
+    void recordMetrics(Statement<?> statement) {
         try {
             recordMetricsInternal(statement);
         } catch (Exception e) {
@@ -154,7 +154,13 @@ public class CassandraWriteMetrics {
         }
     }
 
-    private void recordMetricsInternal(Statement statement) {
+    private void recordMetricsInternal(Statement<?> statement) {
+        if (statement instanceof BatchStatement) {
+            for (BatchableStatement<?> batchableStatement : (BatchStatement) statement) {
+                recordMetricsInternal(batchableStatement);
+            }
+            return;
+        }
         if (!(statement instanceof BoundStatement)) {
             return;
         }
@@ -319,11 +325,11 @@ public class CassandraWriteMetrics {
     }
 
     private static int getNumBytes(BoundStatement boundStatement, int i, DataType dataType) {
-        switch (dataType.toString()) {
-            case "VARCHAR":
+        switch (dataType.getProtocolCode()) {
+            case VARCHAR:
                 String s = boundStatement.getString(i);
                 return s == null ? 0 : s.length();
-            case "BLOB":
+            case BLOB:
                 ByteBuffer bb = boundStatement.getByteBuffer(i);
                 return bb == null ? 0 : bb.limit();
             default:

@@ -2295,34 +2295,37 @@ public class AggregateDaoImpl implements AggregateDao {
                                                      List<Aggregate.SharedQueryText> sharedQueryTexts, int rollupLevel, String agentRollupId,
                                                      String transactionType, @Nullable String transactionName, long captureTime,
                                                      TTL adjustedTTL) {
-        List<CompletableFuture<?>> futures = new ArrayList<>();
+        if (queries.isEmpty()) {
+            return ImmutableList.of();
+        }
+        PreparedStatement preparedStatement = transactionName == null
+                ? getInsertOverallPS(queryTable, rollupLevel)
+                : getInsertTransactionPS(queryTable, rollupLevel);
+        Instant captureTimeInstant = Instant.ofEpochMilli(captureTime);
+        Common.SinglePartitionBatcher batcher = new Common.SinglePartitionBatcher(
+                aggregatePartitionKeyBytes(agentRollupId, transactionType, transactionName),
+                session, collector);
         for (Aggregate.Query query : queries) {
             Aggregate.SharedQueryText sharedQueryText =
                     sharedQueryTexts.get(query.getSharedQueryTextIndex());
-            BoundStatement boundStatement;
-            if (transactionName == null) {
-                boundStatement = getInsertOverallPS(queryTable, rollupLevel).bind();
-            } else {
-                boundStatement = getInsertTransactionPS(queryTable, rollupLevel).bind();
-            }
+            String queryType = query.getType();
+            String fullTextSha1 = sharedQueryText.getFullTextSha1();
+            String queryText = fullTextSha1.isEmpty()
+                    ? sharedQueryText.getFullText()
+                    : sharedQueryText.getTruncatedText();
             int i = 0;
-            boundStatement = boundStatement.setString(i++, agentRollupId)
+            BoundStatement boundStatement = preparedStatement.bind()
+                    .setString(i++, agentRollupId)
                     .setString(i++, transactionType);
             if (transactionName != null) {
                 boundStatement = boundStatement.setString(i++, transactionName);
             }
-            boundStatement = boundStatement.setInstant(i++, Instant.ofEpochMilli(captureTime))
-                    .setString(i++, query.getType());
-            String fullTextSha1 = sharedQueryText.getFullTextSha1();
-            if (fullTextSha1.isEmpty()) {
-                boundStatement = boundStatement.setString(i++, sharedQueryText.getFullText())
-                        // full_query_text_sha1 cannot be null since it is used in clustering key
-                        .setString(i++, "");
-            } else {
-                boundStatement = boundStatement.setString(i++, sharedQueryText.getTruncatedText())
-                        .setString(i++, fullTextSha1);
-            }
-            boundStatement = boundStatement.setDouble(i++, query.getTotalDurationNanos())
+            // full_query_text_sha1 cannot be null since it is used in clustering key
+            boundStatement = boundStatement.setInstant(i++, captureTimeInstant)
+                    .setString(i++, queryType)
+                    .setString(i++, queryText)
+                    .setString(i++, fullTextSha1)
+                    .setDouble(i++, query.getTotalDurationNanos())
                     .setLong(i++, query.getExecutionCount());
             if (query.hasTotalRows()) {
                 boundStatement = boundStatement.setLong(i++, query.getTotalRows().getValue());
@@ -2330,35 +2333,42 @@ public class AggregateDaoImpl implements AggregateDao {
                 boundStatement = boundStatement.setToNull(i++);
             }
             boundStatement = boundStatement.setInt(i++, adjustedTTL.queryTTL());
-            futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
+            batcher.add(boundStatement,
+                    estimatedQueryRowBytes(queryType, queryText, fullTextSha1));
         }
-        return futures;
+        return batcher.finish();
     }
 
     @CheckReturnValue
     private CompletableFuture<?> insertQueries(List<MutableQuery> queries, int rollupLevel,
                                                String agentRollupId, String transactionType, @Nullable String transactionName,
                                                long captureTime, TTL adjustedTTL) {
-        List<CompletableFuture<?>> futures = new ArrayList<>();
+        if (queries.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        PreparedStatement preparedStatement = transactionName == null
+                ? getInsertOverallPS(queryTable, rollupLevel)
+                : getInsertTransactionPS(queryTable, rollupLevel);
+        Instant captureTimeInstant = Instant.ofEpochMilli(captureTime);
+        Common.SinglePartitionBatcher batcher = new Common.SinglePartitionBatcher(
+                aggregatePartitionKeyBytes(agentRollupId, transactionType, transactionName),
+                session, rollup);
         for (MutableQuery query : queries) {
-            BoundStatement boundStatement;
-            if (transactionName == null) {
-                boundStatement = getInsertOverallPS(queryTable, rollupLevel).bind();
-            } else {
-                boundStatement = getInsertTransactionPS(queryTable, rollupLevel).bind();
-            }
-            String fullTextSha1 = query.getFullTextSha1();
+            String queryType = query.getType();
+            String truncatedText = query.getTruncatedText();
+            // full_query_text_sha1 cannot be null since it is used in clustering key
+            String fullTextSha1 = Strings.nullToEmpty(query.getFullTextSha1());
             int i = 0;
-            boundStatement = boundStatement.setString(i++, agentRollupId)
+            BoundStatement boundStatement = preparedStatement.bind()
+                    .setString(i++, agentRollupId)
                     .setString(i++, transactionType);
             if (transactionName != null) {
                 boundStatement = boundStatement.setString(i++, transactionName);
             }
-            boundStatement = boundStatement.setInstant(i++, Instant.ofEpochMilli(captureTime))
-                    .setString(i++, query.getType())
-                    .setString(i++, query.getTruncatedText())
-                    // full_query_text_sha1 cannot be null since it is used in clustering key
-                    .setString(i++, Strings.nullToEmpty(fullTextSha1))
+            boundStatement = boundStatement.setInstant(i++, captureTimeInstant)
+                    .setString(i++, queryType)
+                    .setString(i++, truncatedText)
+                    .setString(i++, fullTextSha1)
                     .setDouble(i++, query.getTotalDurationNanos())
                     .setLong(i++, query.getExecutionCount());
             if (query.hasTotalRows()) {
@@ -2367,9 +2377,10 @@ public class AggregateDaoImpl implements AggregateDao {
                 boundStatement = boundStatement.setToNull(i++);
             }
             boundStatement = boundStatement.setInt(i++, adjustedTTL.queryTTL());
-            futures.add(session.writeAsync(boundStatement, rollup).toCompletableFuture());
+            batcher.add(boundStatement,
+                    estimatedQueryRowBytes(queryType, truncatedText, fullTextSha1));
         }
-        return CompletableFutures.allAsList(futures);
+        return CompletableFutures.allAsList(batcher.finish());
     }
 
     @CheckReturnValue
@@ -2377,57 +2388,90 @@ public class AggregateDaoImpl implements AggregateDao {
             List<Aggregate.ServiceCall> serviceCalls, int rollupLevel, String agentRollupId,
             String transactionType, @Nullable String transactionName, long captureTime,
             TTL adjustedTTL) {
-        List<CompletableFuture<?>> futures = new ArrayList<>();
+        if (serviceCalls.isEmpty()) {
+            return ImmutableList.of();
+        }
+        PreparedStatement preparedStatement = transactionName == null
+                ? getInsertOverallPS(serviceCallTable, rollupLevel)
+                : getInsertTransactionPS(serviceCallTable, rollupLevel);
+        Instant captureTimeInstant = Instant.ofEpochMilli(captureTime);
+        Common.SinglePartitionBatcher batcher = new Common.SinglePartitionBatcher(
+                aggregatePartitionKeyBytes(agentRollupId, transactionType, transactionName),
+                session, collector);
         for (Aggregate.ServiceCall serviceCall : serviceCalls) {
-            BoundStatement boundStatement;
-            if (transactionName == null) {
-                boundStatement = getInsertOverallPS(serviceCallTable, rollupLevel).bind();
-            } else {
-                boundStatement = getInsertTransactionPS(serviceCallTable, rollupLevel).bind();
-            }
+            String serviceCallType = serviceCall.getType();
+            String serviceCallText = serviceCall.getText();
             int i = 0;
-            boundStatement = boundStatement.setString(i++, agentRollupId)
+            BoundStatement boundStatement = preparedStatement.bind()
+                    .setString(i++, agentRollupId)
                     .setString(i++, transactionType);
             if (transactionName != null) {
                 boundStatement = boundStatement.setString(i++, transactionName);
             }
-            boundStatement = boundStatement.setInstant(i++, Instant.ofEpochMilli(captureTime))
-                    .setString(i++, serviceCall.getType())
-                    .setString(i++, serviceCall.getText())
+            boundStatement = boundStatement.setInstant(i++, captureTimeInstant)
+                    .setString(i++, serviceCallType)
+                    .setString(i++, serviceCallText)
                     .setDouble(i++, serviceCall.getTotalDurationNanos())
                     .setLong(i++, serviceCall.getExecutionCount())
                     .setInt(i++, adjustedTTL.serviceCallTTL());
-            futures.add(session.writeAsync(boundStatement, collector).toCompletableFuture());
+            batcher.add(boundStatement,
+                    estimatedServiceCallRowBytes(serviceCallType, serviceCallText));
         }
-        return futures;
+        return batcher.finish();
     }
 
     private CompletableFuture<?> insertServiceCalls(List<MutableServiceCall> serviceCalls,
                                                     int rollupLevel, String agentRollupId, String transactionType,
                                                     @Nullable String transactionName, long captureTime, TTL adjustedTTL) {
-        List<CompletableFuture<?>> futures = new ArrayList<>();
+        if (serviceCalls.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        PreparedStatement preparedStatement = transactionName == null
+                ? getInsertOverallPS(serviceCallTable, rollupLevel)
+                : getInsertTransactionPS(serviceCallTable, rollupLevel);
+        Instant captureTimeInstant = Instant.ofEpochMilli(captureTime);
+        Common.SinglePartitionBatcher batcher = new Common.SinglePartitionBatcher(
+                aggregatePartitionKeyBytes(agentRollupId, transactionType, transactionName),
+                session, rollup);
         for (MutableServiceCall serviceCall : serviceCalls) {
-            BoundStatement boundStatement;
-            if (transactionName == null) {
-                boundStatement = getInsertOverallPS(serviceCallTable, rollupLevel).bind();
-            } else {
-                boundStatement = getInsertTransactionPS(serviceCallTable, rollupLevel).bind();
-            }
+            String serviceCallType = serviceCall.getType();
+            String serviceCallText = serviceCall.getText();
             int i = 0;
-            boundStatement = boundStatement.setString(i++, agentRollupId)
+            BoundStatement boundStatement = preparedStatement.bind()
+                    .setString(i++, agentRollupId)
                     .setString(i++, transactionType);
             if (transactionName != null) {
                 boundStatement = boundStatement.setString(i++, transactionName);
             }
-            boundStatement = boundStatement.setInstant(i++, Instant.ofEpochMilli(captureTime))
-                    .setString(i++, serviceCall.getType())
-                    .setString(i++, serviceCall.getText())
+            boundStatement = boundStatement.setInstant(i++, captureTimeInstant)
+                    .setString(i++, serviceCallType)
+                    .setString(i++, serviceCallText)
                     .setDouble(i++, serviceCall.getTotalDurationNanos())
                     .setLong(i++, serviceCall.getExecutionCount())
                     .setInt(i++, adjustedTTL.serviceCallTTL());
-            futures.add(session.writeAsync(boundStatement, rollup).toCompletableFuture());
+            batcher.add(boundStatement,
+                    estimatedServiceCallRowBytes(serviceCallType, serviceCallText));
         }
-        return CompletableFutures.allAsList(futures);
+        return CompletableFutures.allAsList(batcher.finish());
+    }
+
+    private static int aggregatePartitionKeyBytes(String agentRollupId, String transactionType,
+            @Nullable String transactionName) {
+        return 32 + Common.estimatedUtf8Bytes(agentRollupId)
+                + Common.estimatedUtf8Bytes(transactionType)
+                + Common.estimatedUtf8Bytes(transactionName);
+    }
+
+    private static int estimatedQueryRowBytes(String queryType, String queryText,
+            String fullTextSha1) {
+        return 128 + Common.estimatedUtf8Bytes(queryType) + Common.estimatedUtf8Bytes(queryText)
+                + Common.estimatedUtf8Bytes(fullTextSha1);
+    }
+
+    private static int estimatedServiceCallRowBytes(String serviceCallType,
+            String serviceCallText) {
+        return 96 + Common.estimatedUtf8Bytes(serviceCallType)
+                + Common.estimatedUtf8Bytes(serviceCallText);
     }
 
     private PreparedStatement getInsertOverallPS(Table table, int rollupLevel) {
