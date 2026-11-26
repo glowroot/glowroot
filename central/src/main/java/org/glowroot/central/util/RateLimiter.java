@@ -57,6 +57,10 @@ public class RateLimiter<T extends /*@NonNull*/ Object> {
         acquiredRecently.invalidate(key);
     }
 
+    public void invalidateAll() {
+        acquiredRecently.invalidateAll();
+    }
+
     public LocalCacheStats getLocalCacheStats() {
         return new LocalCacheStats(acquiredRecently);
     }

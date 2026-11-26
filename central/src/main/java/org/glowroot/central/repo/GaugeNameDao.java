@@ -17,20 +17,20 @@ package org.glowroot.central.repo;
 
 import java.time.Instant;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.cql.*;
-import com.google.common.collect.ImmutableList;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
+import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common.util.Styles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -44,6 +44,8 @@ class GaugeNameDao {
 
     private final PreparedStatement insertPS;
     private final PreparedStatement readPS;
+
+    private final RateLimiter<GaugeKey> rateLimiter = new RateLimiter<>();
 
     GaugeNameDao(Session session, ConfigRepositoryImpl configRepository, Clock clock)
             throws Exception {
@@ -88,6 +90,10 @@ class GaugeNameDao {
 
     CompletionStage<?> insert(String agentRollupId, long captureTime, String gaugeName) {
         long rollupCaptureTime = CaptureTimes.getRollup(captureTime, DAYS.toMillis(1));
+        GaugeKey rateLimiterKey = ImmutableGaugeKey.of(agentRollupId, rollupCaptureTime, gaugeName);
+        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
+            return CompletableFuture.completedFuture(null);
+        }
         return configRepository.getCentralStorageConfig().thenCompose(centralStorageConfig -> {
             int maxRollupTTL = centralStorageConfig.getMaxRollupTTL();
             int i = 0;
@@ -97,7 +103,16 @@ class GaugeNameDao {
                     .setString(i++, gaugeName)
                     .setInt(i++, Common.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
             return session.writeAsync(boundStatement, CassandraProfile.collector);
+        }).whenComplete((results, throwable) -> {
+            if (throwable != null) {
+                rateLimiter.release(rateLimiterKey);
+            }
         });
+    }
+
+    @OnlyUsedByTests
+    void invalidateCache() {
+        rateLimiter.invalidateAll();
     }
 
     @Value.Immutable

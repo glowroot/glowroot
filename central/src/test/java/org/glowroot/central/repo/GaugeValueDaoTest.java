@@ -47,6 +47,7 @@ import org.glowroot.common.util.Clock;
 import org.glowroot.common2.config.ImmutableCentralStorageConfig;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.glowroot.common2.repo.ConfigRepository.RollupConfig;
+import org.glowroot.wire.api.model.CollectorServiceOuterClass.GaugeValueMessage.GaugeValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -355,6 +356,90 @@ public class GaugeValueDaoTest {
                 ctx.sql(bs).contains("from gauge_needs_rollup_3 "));
     }
 
+    @Test
+    public void storeRateLimitsGaugeNameInsertsPerDayReleasesOnFailureAndResetsOnTruncate()
+            throws Exception {
+        TestContext ctx = createContext("gauge_needs_rollup_1", Collections.emptyList());
+        AsyncResultSet emptyResults = resultSet(Collections.emptyList());
+        java.util.concurrent.atomic.AtomicBoolean failNextGaugeNameWrite =
+                new java.util.concurrent.atomic.AtomicBoolean();
+
+        when(ctx.session.writeAsync(any(BoundStatement.class), eq(CassandraProfile.collector)))
+                .thenAnswer(invocation -> {
+                    BoundStatement bs = invocation.getArgument(0);
+                    if (ctx.sql(bs).startsWith("insert into gauge_name ")
+                            && failNextGaugeNameWrite.compareAndSet(true, false)) {
+                        return CompletableFuture.failedFuture(
+                                new RuntimeException("simulated gauge_name write failure"));
+                    }
+                    return CompletableFuture.completedFuture(emptyResults);
+                });
+
+        GaugeValue g1Sample1 = GaugeValue.newBuilder()
+                .setGaugeName("g1")
+                .setCaptureTime(10_000L)
+                .setValue(1.0)
+                .setWeight(1)
+                .build();
+        GaugeValue g1Sample2 = GaugeValue.newBuilder()
+                .setGaugeName("g1")
+                .setCaptureTime(20_000L)
+                .setValue(2.0)
+                .setWeight(1)
+                .build();
+
+        // First store writes gauge_name for both leaf and parent rollup IDs (2 inserts)
+        ctx.dao.store("parent::child1", List.of(g1Sample1)).toCompletableFuture()
+                .get(2, TimeUnit.SECONDS);
+        assertThat(findStatements(captureCollectorWriteStatements(ctx.session), ctx,
+                "insert into gauge_name ")).hasSize(2);
+
+        // Second store on the same UTC day is suppressed by RateLimiter (still 2 inserts total)
+        ctx.dao.store("parent::child1", List.of(g1Sample2)).toCompletableFuture()
+                .get(2, TimeUnit.SECONDS);
+        assertThat(findStatements(captureCollectorWriteStatements(ctx.session), ctx,
+                "insert into gauge_name ")).hasSize(2);
+
+        // Next UTC day produces a new rollupCaptureTime key and inserts again (+2 = 4 inserts)
+        GaugeValue g1NextDay = GaugeValue.newBuilder()
+                .setGaugeName("g1")
+                .setCaptureTime(TimeUnit.DAYS.toMillis(1) + 10_000L)
+                .setValue(3.0)
+                .setWeight(1)
+                .build();
+        ctx.dao.store("parent::child1", List.of(g1NextDay)).toCompletableFuture()
+                .get(2, TimeUnit.SECONDS);
+        assertThat(findStatements(captureCollectorWriteStatements(ctx.session), ctx,
+                "insert into gauge_name ")).hasSize(4);
+
+        // Failed gauge_name write releases rateLimiter key so subsequent retry succeeds
+        GaugeValue g2Sample = GaugeValue.newBuilder()
+                .setGaugeName("g2")
+                .setCaptureTime(30_000L)
+                .setValue(1.0)
+                .setWeight(1)
+                .build();
+        failNextGaugeNameWrite.set(true);
+        assertThatThrownBy(() -> ctx.dao.store("agentOnly", List.of(g2Sample))
+                .toCompletableFuture().get(2, TimeUnit.SECONDS))
+                .isInstanceOf(ExecutionException.class)
+                .hasRootCauseMessage("simulated gauge_name write failure");
+        assertThat(findStatements(captureCollectorWriteStatements(ctx.session), ctx,
+                "insert into gauge_name ")).hasSize(5);
+
+        ctx.dao.store("agentOnly", List.of(g2Sample)).toCompletableFuture()
+                .get(2, TimeUnit.SECONDS);
+        assertThat(findStatements(captureCollectorWriteStatements(ctx.session), ctx,
+                "insert into gauge_name ")).hasSize(6);
+
+        // truncateAll clears GaugeNameDao RateLimiter
+        ctx.dao.truncateAll();
+        ctx.dao.store("parent::child1", List.of(g1Sample1)).toCompletableFuture()
+                .get(2, TimeUnit.SECONDS);
+        assertThat(findStatements(captureCollectorWriteStatements(ctx.session), ctx,
+                "insert into gauge_name ")).hasSize(8);
+    }
+
     private static TestContext createContext(String needsRollupTableFragment,
             List<Row> needsRollupRows) throws Exception {
         Session session = mock(Session.class);
@@ -426,6 +511,13 @@ public class GaugeValueDaoTest {
         ArgumentCaptor<BoundStatement> captor = ArgumentCaptor.forClass(BoundStatement.class);
         verify(session, Mockito.atLeastOnce()).writeAsync(captor.capture(),
                 eq(CassandraProfile.rollup));
+        return captor.getAllValues();
+    }
+
+    private static List<BoundStatement> captureCollectorWriteStatements(Session session) {
+        ArgumentCaptor<BoundStatement> captor = ArgumentCaptor.forClass(BoundStatement.class);
+        verify(session, Mockito.atLeastOnce()).writeAsync(captor.capture(),
+                eq(CassandraProfile.collector));
         return captor.getAllValues();
     }
 

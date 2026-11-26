@@ -24,6 +24,7 @@ import org.glowroot.central.util.RateLimiter;
 import org.glowroot.central.util.Session;
 import org.glowroot.common.util.CaptureTimes;
 import org.glowroot.common.util.Clock;
+import org.glowroot.common.util.OnlyUsedByTests;
 import org.glowroot.common2.repo.CassandraProfile;
 import org.immutables.value.Value;
 
@@ -95,6 +96,15 @@ class SyntheticMonitorIdDao {
     CompletionStage<?> insert(String agentRollupId, long captureTime, String syntheticMonitorId,
                               String syntheticMonitorDisplay) {
         long rollupCaptureTime = CaptureTimes.getRollup(captureTime, DAYS.toMillis(1));
+        SyntheticMonitorKey rateLimiterKey = ImmutableSyntheticMonitorKey.builder()
+                .agentRollupId(agentRollupId)
+                .captureTime(rollupCaptureTime)
+                .syntheticMonitorId(syntheticMonitorId)
+                .syntheticMonitorDisplay(syntheticMonitorDisplay)
+                .build();
+        if (!rateLimiter.tryAcquire(rateLimiterKey)) {
+            return CompletableFuture.completedFuture(null);
+        }
         return configRepository.getCentralStorageConfig().thenCompose(centralStorageConfig -> {
             int i = 0;
             BoundStatement boundStatement = insertPS.bind()
@@ -105,7 +115,16 @@ class SyntheticMonitorIdDao {
             int maxRollupTTL = centralStorageConfig.getMaxRollupTTL();
             boundStatement = boundStatement.setInt(i++, Common.getAdjustedTTL(maxRollupTTL, rollupCaptureTime, clock));
             return session.writeAsync(boundStatement, CassandraProfile.collector);
+        }).whenComplete((results, throwable) -> {
+            if (throwable != null) {
+                rateLimiter.release(rateLimiterKey);
+            }
         });
+    }
+
+    @OnlyUsedByTests
+    void invalidateCache() {
+        rateLimiter.invalidateAll();
     }
 
     @Value.Immutable

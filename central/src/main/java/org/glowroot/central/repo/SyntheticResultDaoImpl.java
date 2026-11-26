@@ -465,6 +465,8 @@ public class SyntheticResultDaoImpl implements SyntheticResultDao {
         for (int i = 1; i < configRepository.getRollupConfigs().size(); i++) {
             session.updateSchemaWithRetry("truncate synthetic_needs_rollup_" + i);
         }
+        session.updateSchemaWithRetry("truncate synthetic_monitor_id");
+        syntheticMonitorIdDao.invalidateCache();
     }
 
     private static List<ErrorInterval> fromProto(List<Stored.ErrorInterval> storedErrorIntervals) {

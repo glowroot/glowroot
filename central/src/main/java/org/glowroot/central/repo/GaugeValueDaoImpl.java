@@ -657,6 +657,7 @@ public class GaugeValueDaoImpl implements GaugeValueDao {
             session.updateSchemaWithRetry("truncate gauge_needs_rollup_" + i);
         }
         session.updateSchemaWithRetry("truncate gauge_name");
+        gaugeNameDao.invalidateCache();
         session.updateSchemaWithRetry("truncate gauge_needs_rollup_from_child");
         needsRollupCache1.clear();
     }
