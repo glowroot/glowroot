@@ -18,6 +18,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Disable outbound IPv6
+        if: runner.os == 'Linux'
+        run: |
+          sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
+          for iface in /proc/sys/net/ipv6/conf/*; do
+            name=$(basename "$iface")
+            if [[ "$name" != "all" && "$name" != "default" && "$name" != "lo" ]]; then
+              sudo sysctl -w "net.ipv6.conf.$name.disable_ipv6=1"
+            fi
+          done
+
       - name: Set up JDK 17 for build
         uses: actions/setup-java@v6.2.0
         with:

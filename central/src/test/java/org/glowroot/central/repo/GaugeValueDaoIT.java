@@ -35,11 +35,19 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static java.util.concurrent.TimeUnit.DAYS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class GaugeValueDaoIT {
     public static final CassandraContainer cassandra
             = new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
+
+    private static final Clock TEST_CLOCK = new Clock() {
+        @Override
+        public long currentTimeMillis() {
+            return DAYS.toMillis(1);
+        }
+    };
 
     private ClusterManager clusterManager;
     private Session session;
@@ -72,9 +80,9 @@ public class GaugeValueDaoIT {
         RoleDao roleDao = new RoleDao(session, clusterManager);
         ConfigRepositoryImpl configRepository = new ConfigRepositoryImpl(centralConfigDao,
                 agentConfigDao, userDao, roleDao, "");
-        gaugeValueDao = new GaugeValueDaoWithV09Support(ImmutableSet.of(), 0, Clock.systemClock(),
+        gaugeValueDao = new GaugeValueDaoWithV09Support(ImmutableSet.of(), 0, TEST_CLOCK,
                 new GaugeValueDaoImpl(session, configRepository, clusterManager, asyncExecutor, 0,
-                        Clock.systemClock()));
+                        TEST_CLOCK));
     }
 
     @AfterAll

@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,6 +39,13 @@ public class SyntheticResultDaoIT {
 
     public static final CassandraContainer cassandra
             = new CassandraContainer("cassandra:3.11.16").withExposedPorts(9042);
+
+    private static final Clock TEST_CLOCK = new Clock() {
+        @Override
+        public long currentTimeMillis() {
+            return DAYS.toMillis(1);
+        }
+    };
 
     private ClusterManager clusterManager;
     private CqlSessionBuilder cqlSessionBuilder;
@@ -70,7 +78,7 @@ public class SyntheticResultDaoIT {
         ConfigRepositoryImpl configRepository =
                 new ConfigRepositoryImpl(centralConfigDao, agentConfigDao, userDao, roleDao, "");
         syntheticResultDao = new SyntheticResultDaoImpl(session, configRepository, asyncExecutor, 0,
-                Clock.systemClock());
+                TEST_CLOCK);
     }
 
     @AfterAll

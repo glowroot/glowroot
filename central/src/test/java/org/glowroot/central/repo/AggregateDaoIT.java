@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static java.util.concurrent.TimeUnit.DAYS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.glowroot.common2.repo.CassandraProfile.web;
 
@@ -70,6 +71,13 @@ public class AggregateDaoIT {
             .setMaxServiceCallAggregates(OptionalInt32.newBuilder()
                     .setValue(ConfigDefaults.ADVANCED_MAX_SERVICE_CALL_AGGREGATES))
             .build();
+
+    private static final Clock TEST_CLOCK = new Clock() {
+        @Override
+        public long currentTimeMillis() {
+            return DAYS.toMillis(1);
+        }
+    };
 
     private ClusterManager clusterManager;
     private CqlSessionBuilder cqlSessionBuilder;
@@ -123,12 +131,12 @@ public class AggregateDaoIT {
                 new TransactionTypeDao(session, configRepository, clusterManager, 10);
         fullQueryTextDao = new FullQueryTextDao(session, configRepository);
         RollupLevelService rollupLevelService =
-                new RollupLevelService(configRepository, Clock.systemClock());
+                new RollupLevelService(configRepository, TEST_CLOCK);
         activeAgentDao = new ActiveAgentDao(session, agentDisplayDao, agentConfigDao,
-                configRepository, rollupLevelService, Clock.systemClock());
-        aggregateDao = new AggregateDaoWithV09Support(ImmutableSet.of(), 0, 0, Clock.systemClock(),
+                configRepository, rollupLevelService, TEST_CLOCK);
+        aggregateDao = new AggregateDaoWithV09Support(ImmutableSet.of(), 0, 0, TEST_CLOCK,
                 new AggregateDaoImpl(session, activeAgentDao, transactionTypeDao, fullQueryTextDao,
-                        configRepository, clusterManager, asyncExecutor, 0, Clock.systemClock()));
+                        configRepository, clusterManager, asyncExecutor, 0, TEST_CLOCK));
 
         session.updateSchemaWithRetry("truncate agent_config");
     }
