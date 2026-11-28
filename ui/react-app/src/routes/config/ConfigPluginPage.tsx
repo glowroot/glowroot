@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { useAgent } from '../../contexts/AgentContext'
 import { PATTERNS } from '../../lib/validation'
 import { apiGet, apiPost } from '../../lib/api'
@@ -9,6 +9,7 @@ import { Input } from '../../components/ui/input'
 import { Checkbox } from '../../components/ui/checkbox'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface PluginProperty {
   name: string
@@ -137,17 +138,10 @@ export function ConfigPluginPage() {
   if (!config) return null
 
   return (
-    <div>
-      <div className="mb-3">
-        <Link
-          to={'/modern/config/plugin-list' + agentQueryString()}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          Return to list
-        </Link>
-      </div>
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Plugins &mdash; {config.name}</h2>
+    <SettingsPage
+      title={config.name}
+      back={{ to: '/modern/config/plugin-list' + agentQueryString(), label: 'Plugins' }}
+    >
         {config.properties.map((prop, i) => {
           const propType = prop.type.toLowerCase()
           if (propType === 'boolean') {
@@ -227,7 +221,6 @@ export function ConfigPluginPage() {
         {canEdit && (
           <GtButtonGroup onSave={handleSave} hasChanges={hasChanges()} />
         )}
-      </div>
-    </div>
+    </SettingsPage>
   )
 }

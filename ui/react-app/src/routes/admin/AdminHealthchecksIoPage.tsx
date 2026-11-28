@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useLayout } from '../../contexts/LayoutContext'
 import { apiGet, apiPost } from '../../lib/api'
 import { GtFormGroup } from '../../components/shared/GtFormGroup'
@@ -7,6 +6,7 @@ import { GtButtonGroup } from '../../components/shared/GtButtonGroup'
 import { Input } from '../../components/ui/input'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface HealthchecksIoConfig {
   pingUrl?: string
@@ -51,38 +51,25 @@ export function AdminHealthchecksIoPage() {
 
   if (layout.central) {
     return (
-      <div>
-        <div className="mb-3">
-          <Link to="/modern/admin/integration-list" className="text-sm text-blue-600 hover:underline">
-            Return to list
-          </Link>
-        </div>
-        <div className="rounded-lg border bg-white p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Integrations &mdash; Healthchecks.io
-          </h2>
+      <SettingsPage
+        title="Healthchecks.io"
+        back={{ to: '/modern/admin/integration-list', label: 'Integrations' }}
+      >
           <div
             role="alert"
             className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800"
           >
             Use glowroot agent (with embedded database and UI, not pointing to central) to monitor glowroot central itself.
           </div>
-        </div>
-      </div>
+      </SettingsPage>
     )
   }
 
   return (
-    <div>
-      <div className="mb-3">
-        <Link to="/modern/admin/integration-list" className="text-sm text-blue-600 hover:underline">
-          Return to list
-        </Link>
-      </div>
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Integrations &mdash; Healthchecks.io
-        </h2>
+    <SettingsPage
+      title="Healthchecks.io"
+      back={{ to: '/modern/admin/integration-list', label: 'Integrations' }}
+    >
         <GtFormGroup label="Ping URL">
           <Input
             value={config.pingUrl ?? ''}
@@ -93,7 +80,6 @@ export function AdminHealthchecksIoPage() {
         {layout.adminEdit && (
           <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />
         )}
-      </div>
-    </div>
+    </SettingsPage>
   )
 }

@@ -17,6 +17,7 @@ export function ConfigLayout() {
 
   const qs = agentQueryString()
 
+  // Classic item order; separate boxes (no shouty captions — groups are visual only).
   const groups: SidebarGroup[] = [
     {
       items: [
@@ -25,6 +26,10 @@ export function ConfigLayout() {
           href: '/modern/config/general' + qs,
           hidden: !layout.central,
         },
+      ],
+    },
+    {
+      items: [
         {
           label: 'Transactions',
           href: '/modern/config/transaction' + qs,
@@ -41,6 +46,10 @@ export function ConfigLayout() {
           href: '/modern/config/jvm' + qs,
           hidden: isRollup,
         },
+      ],
+    },
+    {
+      items: [
         {
           label: 'Synthetic monitors',
           href: '/modern/config/synthetic-monitor-list' + qs,
@@ -56,6 +65,10 @@ export function ConfigLayout() {
           label: 'UI defaults',
           href: '/modern/config/ui-defaults' + qs,
         },
+      ],
+    },
+    {
+      items: [
         {
           label: 'Plugins',
           href: '/modern/config/plugin-list' + qs,
@@ -68,6 +81,10 @@ export function ConfigLayout() {
           active: path === '/modern/config/instrumentation-list' || path === '/modern/config/instrumentation',
           hidden: isRollup,
         },
+      ],
+    },
+    {
+      items: [
         {
           label: 'Advanced',
           href: '/modern/config/advanced' + qs,
@@ -122,7 +139,7 @@ export function ConfigLayout() {
           )}
         </div>
       </div>
-      <div className="flex gap-6">
+      <div className="flex gap-8">
         {!needsAgent && <Sidebar groups={groups} />}
         <div className="flex-1 min-w-0">
           {needsAgent ? (

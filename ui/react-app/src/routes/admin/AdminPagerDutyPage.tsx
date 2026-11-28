@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { Plus, Trash2 } from 'lucide-react'
 import { useLayout } from '../../contexts/LayoutContext'
 import { apiGet, apiPost } from '../../lib/api'
@@ -9,6 +8,7 @@ import { Input } from '../../components/ui/input'
 import { Button } from '../../components/ui/button'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface IntegrationKey {
   key: string
@@ -93,16 +93,13 @@ export function AdminPagerDutyPage() {
 
   return (
     <div>
-      <div className="mb-3">
-        <Link to="/modern/admin/integration-list" className="text-sm text-blue-600 hover:underline">
-          Return to list
-        </Link>
-      </div>
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Integrations &mdash; PagerDuty</h2>
+      <SettingsPage
+        title="PagerDuty"
+        back={{ to: '/modern/admin/integration-list', label: 'Integrations' }}
+      >
         <h3 className="text-sm font-semibold text-gray-900 mb-4">Integration keys</h3>
         {(config.integrationKeys ?? []).map((ik, i) => (
-          <div key={i} className="mb-4 rounded border p-4 bg-gray-50">
+          <div key={i} className={i === 0 ? 'pb-4' : 'border-t border-gray-100 py-4'}>
             <GtFormGroup label="Integration key" required value={ik.key}>
               <Input
                 value={ik.key}
@@ -127,14 +124,19 @@ export function AdminPagerDutyPage() {
           </div>
         ))}
         {layout.adminEdit && (
-          <Button variant="outline" size="sm" onClick={addKey}>
-            <Plus className="h-4 w-4" /> Add integration key
-          </Button>
+          <button
+            type="button"
+            onClick={addKey}
+            className="mt-1 inline-flex items-center gap-1 text-sm text-[#417998] hover:text-[#2f586e]"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add integration key
+          </button>
         )}
         {layout.adminEdit && (
           <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />
         )}
-      </div>
+      </SettingsPage>
     </div>
   )
 }

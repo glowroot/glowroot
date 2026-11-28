@@ -6,6 +6,7 @@ import { GtButtonGroup } from '../../components/shared/GtButtonGroup'
 import { Input } from '../../components/ui/input'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
+import { SettingsPage } from '../../components/shared/SettingsPage'
 
 interface JvmConfig {
   maskSystemProperties: string[]
@@ -78,9 +79,8 @@ export function ConfigJvmPage() {
   if (!config) return null
 
   return (
-    <div className="rounded-lg border bg-white p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">JVM</h2>
-      <GtFormGroup
+    <SettingsPage title="JVM">
+<GtFormGroup
         label="Mask system properties"
         helpText="Comma-separated list of sensitive system properties to mask, e.g. passwords. The wildcard '*' is supported anywhere in the property name."
       >
@@ -107,6 +107,6 @@ export function ConfigJvmPage() {
       {canEdit && (
         <GtButtonGroup onSave={handleSave} hasChanges={hasChanges} />
       )}
-    </div>
+    </SettingsPage>
   )
 }
