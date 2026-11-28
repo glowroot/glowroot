@@ -475,7 +475,15 @@ public class AggregateDao implements AggregateRepository {
     }
 
     void deleteBefore(long captureTime, int rollupLevel) throws SQLException {
+        deleteOverallBefore(captureTime, rollupLevel);
+        deleteTransactionNameBefore(captureTime, rollupLevel);
+    }
+
+    void deleteOverallBefore(long captureTime, int rollupLevel) throws SQLException {
         dataSource.deleteBefore("aggregate_tt_rollup_" + castUntainted(rollupLevel), captureTime);
+    }
+
+    void deleteTransactionNameBefore(long captureTime, int rollupLevel) throws SQLException {
         dataSource.deleteBefore("aggregate_tn_rollup_" + castUntainted(rollupLevel), captureTime);
     }
 

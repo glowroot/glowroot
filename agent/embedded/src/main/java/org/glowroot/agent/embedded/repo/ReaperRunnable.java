@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2018 the original author or authors.
+ * Copyright 2012-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 package org.glowroot.agent.embedded.repo;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import org.glowroot.common.Constants;
 import org.glowroot.common.util.Clock;
@@ -33,12 +39,13 @@ class ReaperRunnable extends ScheduledRunnable {
     private final TransactionTypeDao transactionTypeDao;
     private final FullQueryTextDao fullQueryTextDao;
     private final IncidentDao incidentDao;
+    private final ReaperFailureTracker failureTracker;
     private final Clock clock;
 
     ReaperRunnable(ConfigRepositoryImpl configService, AggregateDao aggregateDao, TraceDao traceDao,
             GaugeIdDao gaugeIdDao, GaugeNameDao gaugeNameDao, GaugeValueDao gaugeValueDao,
             TransactionTypeDao transactionTypeDao, FullQueryTextDao fullQueryTextDao,
-            IncidentDao incidentDao, Clock clock) {
+            IncidentDao incidentDao, ReaperFailureTracker failureTracker, Clock clock) {
         this.configRepository = configService;
         this.aggregateDao = aggregateDao;
         this.traceDao = traceDao;
@@ -48,48 +55,138 @@ class ReaperRunnable extends ScheduledRunnable {
         this.transactionTypeDao = transactionTypeDao;
         this.fullQueryTextDao = fullQueryTextDao;
         this.incidentDao = incidentDao;
+        this.failureTracker = failureTracker;
         this.clock = clock;
     }
 
     @Override
     protected void runInternal() throws Exception {
-        long minCaptureTime = Long.MAX_VALUE;
+        List<String> failedSteps = new ArrayList<>();
+        // First failure wins for lastErrorMessage; later steps still append to failedSteps.
+        @Nullable
+        Throwable firstThrowable = null;
         long currentTime = clock.currentTimeMillis();
-        EmbeddedStorageConfig storageConfig = configRepository.getEmbeddedStorageConfig();
-        for (int i = 0; i < storageConfig.rollupExpirationHours().size(); i++) {
-            int expirationHours = storageConfig.rollupExpirationHours().get(i);
-            if (expirationHours == 0) {
-                // zero value expiration means never expire
-                minCaptureTime = 0;
-                continue;
+        boolean skipTrackerUpdate = false;
+        boolean completed = false;
+        try {
+            long minCaptureTime = Long.MAX_VALUE;
+            EmbeddedStorageConfig storageConfig = configRepository.getEmbeddedStorageConfig();
+            for (int i = 0; i < storageConfig.rollupExpirationHours().size(); i++) {
+                int expirationHours = storageConfig.rollupExpirationHours().get(i);
+                if (expirationHours == 0) {
+                    // zero value expiration means never expire
+                    minCaptureTime = 0;
+                    continue;
+                }
+                final long captureTime = currentTime - HOURS.toMillis(expirationHours);
+                final int rollupLevel = i;
+                firstThrowable = runStep("aggregate_tt_rollup_" + rollupLevel, failedSteps,
+                        firstThrowable,
+                        () -> aggregateDao.deleteOverallBefore(captureTime, rollupLevel));
+                firstThrowable = runStep("aggregate_tn_rollup_" + rollupLevel, failedSteps,
+                        firstThrowable,
+                        () -> aggregateDao.deleteTransactionNameBefore(captureTime, rollupLevel));
+                if (rollupLevel == 0) {
+                    firstThrowable = runStep("gauge_value_rollup_0", failedSteps, firstThrowable,
+                            () -> gaugeValueDao.deleteBefore(captureTime, 0));
+                }
+                final int gaugeLevel = rollupLevel + 1;
+                firstThrowable = runStep("gauge_value_rollup_" + gaugeLevel, failedSteps,
+                        firstThrowable, () -> gaugeValueDao.deleteBefore(captureTime, gaugeLevel));
+                minCaptureTime = Math.min(minCaptureTime, captureTime);
             }
-            long captureTime = currentTime - HOURS.toMillis(expirationHours);
-            aggregateDao.deleteBefore(captureTime, i);
-            if (i == 0) {
-                gaugeValueDao.deleteBefore(captureTime, i);
+            if (minCaptureTime != 0) {
+                final long gaugeMetaCaptureTime = minCaptureTime;
+                firstThrowable = runStep("gauge_id", failedSteps, firstThrowable,
+                        () -> gaugeIdDao.deleteBefore(gaugeMetaCaptureTime));
+                firstThrowable = runStep("gauge_name", failedSteps, firstThrowable,
+                        () -> gaugeNameDao.deleteBefore(gaugeMetaCaptureTime));
             }
-            gaugeValueDao.deleteBefore(captureTime, i + 1);
-            minCaptureTime = Math.min(minCaptureTime, captureTime);
+            int traceExpirationHours = storageConfig.traceExpirationHours();
+            if (traceExpirationHours != 0) {
+                final long traceCaptureTime = currentTime - HOURS.toMillis(traceExpirationHours);
+                firstThrowable = runStep("trace_attribute_name", failedSteps, firstThrowable,
+                        () -> traceDao.deleteAttributeNamesBefore(traceCaptureTime));
+                firstThrowable = runStep("trace", failedSteps, firstThrowable,
+                        () -> traceDao.deleteTracesBefore(traceCaptureTime));
+                firstThrowable = runStep("trace_attribute", failedSteps, firstThrowable,
+                        () -> traceDao.deleteTraceAttributesBefore(traceCaptureTime));
+                minCaptureTime = Math.min(minCaptureTime, traceCaptureTime);
+            }
+            if (minCaptureTime != 0) {
+                final long txnTypeCaptureTime = minCaptureTime;
+                firstThrowable = runStep("transaction_types", failedSteps, firstThrowable,
+                        () -> transactionTypeDao.deleteBefore(txnTypeCaptureTime));
+            }
+            int fullQueryTextExpirationHours = storageConfig.fullQueryTextExpirationHours();
+            if (fullQueryTextExpirationHours != 0) {
+                long fullQueryTextCaptureTime =
+                        currentTime - HOURS.toMillis(fullQueryTextExpirationHours);
+                firstThrowable = runStep("full_query_text", failedSteps, firstThrowable,
+                        () -> fullQueryTextDao.deleteBefore(fullQueryTextCaptureTime));
+            }
+            long incidentCaptureTime =
+                    currentTime - HOURS.toMillis(Constants.RESOLVED_INCIDENT_EXPIRATION_HOURS);
+            firstThrowable = runStep("incident", failedSteps, firstThrowable,
+                    () -> incidentDao.deleteResolvedIncidentsBefore(incidentCaptureTime));
+            completed = true;
+        } catch (InterruptedException e) {
+            // Do not treat shutdown/interrupt as a retention-table failure streak.
+            skipTrackerUpdate = true;
+            Thread.currentThread().interrupt();
+            throw e;
+        } catch (Exception e) {
+            // Failures outside runStep (e.g. storage config read) still update the streak.
+            failedSteps.add("reaper_cycle");
+            if (firstThrowable == null) {
+                firstThrowable = e;
+            }
+        } catch (Error e) {
+            // Must not fall through to recordCycleSuccess() in finally (OOM / linkage).
+            if (failedSteps.isEmpty()) {
+                failedSteps.add("reaper_cycle");
+            }
+            if (firstThrowable == null) {
+                firstThrowable = e;
+            }
+            throw e;
+        } finally {
+            if (!skipTrackerUpdate) {
+                if (completed && failedSteps.isEmpty()) {
+                    failureTracker.recordCycleSuccess();
+                } else if (firstThrowable != null) {
+                    failureTracker.recordCycleFailure(failedSteps, firstThrowable, currentTime);
+                } else if (!completed) {
+                    failureTracker.recordCycleFailure(failedSteps.isEmpty()
+                            ? Collections.singletonList("reaper_cycle")
+                            : failedSteps,
+                            new IllegalStateException("reaper cycle aborted abnormally"),
+                            currentTime);
+                }
+            }
         }
-        if (minCaptureTime != 0) {
-            gaugeIdDao.deleteBefore(minCaptureTime);
-            gaugeNameDao.deleteBefore(minCaptureTime);
+    }
+
+    private static @Nullable Throwable runStep(String stepName, List<String> failedSteps,
+            @Nullable Throwable firstThrowable, Step step) throws InterruptedException {
+        try {
+            step.run();
+            return firstThrowable;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw e;
+        } catch (Exception e) {
+            failedSteps.add(stepName);
+            return firstThrowable == null ? e : firstThrowable;
+        } catch (Error e) {
+            // Record the step name before the Error propagates to runInternal's catch (Error).
+            failedSteps.add(stepName);
+            throw e;
         }
-        int traceExpirationHours = storageConfig.traceExpirationHours();
-        if (traceExpirationHours != 0) {
-            long traceCaptureTime = currentTime - HOURS.toMillis(traceExpirationHours);
-            traceDao.deleteBefore(traceCaptureTime);
-            minCaptureTime = Math.min(minCaptureTime, traceCaptureTime);
-        }
-        if (minCaptureTime != 0) {
-            transactionTypeDao.deleteBefore(minCaptureTime);
-        }
-        int fullQueryTextExpirationHours = storageConfig.fullQueryTextExpirationHours();
-        if (fullQueryTextExpirationHours != 0) {
-            fullQueryTextDao
-                    .deleteBefore(currentTime - HOURS.toMillis(fullQueryTextExpirationHours));
-        }
-        incidentDao.deleteResolvedIncidentsBefore(
-                currentTime - HOURS.toMillis(Constants.RESOLVED_INCIDENT_EXPIRATION_HOURS));
+    }
+
+    @FunctionalInterface
+    private interface Step {
+        void run() throws Exception;
     }
 }
