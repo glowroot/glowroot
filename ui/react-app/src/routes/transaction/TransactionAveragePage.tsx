@@ -6,8 +6,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { RefreshCw, ZoomOut } from 'lucide-react'
 import { useTransaction } from '../../contexts/TransactionContext'
 import { useChartData } from '../../hooks/useChartData'
 import { TimeSeriesChart, type PlotSeries } from '../../components/chart'
@@ -15,6 +13,7 @@ import { HelpPopover } from '../../components/shared/HelpPopover'
 import { PageSpinner } from '../../components/shared/Spinner'
 import { HttpError } from '../../components/shared/HttpError'
 import { formatBytes, formatMillis } from '../../lib/formatting'
+import { ResponseTimeSubNav } from './ResponseTimeSubNav'
 
 // --- Types ---
 
@@ -293,65 +292,31 @@ export function TransactionAveragePage() {
 
   return (
     <div className="space-y-4">
-      {/* Response time sub-nav */}
-      <div className="flex items-center justify-between gap-4 text-sm flex-wrap">
-        <div className="flex gap-4 items-center">
-          <Link
-            to={`${basePath}/average${qs}`}
-            onClick={(e) => {
-              e.preventDefault()
-              txn.rangeActions.refresh()
-            }}
-            className="font-medium text-blue-600 no-underline"
-          >
-            Average
-          </Link>
-          <Link to={`${basePath}/percentiles${qs}`} className="text-gray-500 hover:text-gray-700">
-            Percentiles
-          </Link>
-          <Link to={`${basePath}/throughput${qs}`} className="text-gray-500 hover:text-gray-700">
-            Throughput
-          </Link>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={txn.rangeActions.zoomOut}
-            title="Zoom out"
-            aria-label="Zoom out"
-            className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-          >
-            <ZoomOut className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={txn.rangeActions.refresh}
-            title="Refresh"
-            aria-label="Refresh"
-            className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-          >
-            <RefreshCw className="h-4 w-4" />
-          </button>
-          <HelpPopover title="Chart navigation" align="right">
-            <div className="space-y-2 text-xs">
-              <div>
-                <div className="font-semibold">Chart navigation tips</div>
-                <ul className="list-disc pl-4 space-y-0.5 mt-1">
-                  <li>Drag or double click to zoom in</li>
-                  <li>Use Ctrl + scroll wheel to zoom in and out</li>
-                </ul>
-              </div>
-              <div>
-                <div className="font-semibold">Chart vs breakdown</div>
-                <ul className="list-disc pl-4 space-y-0.5 mt-1">
-                  <li>Chart stacks <em>self time</em> (exclusive); stack height is average response time</li>
-                  <li>Breakdown <em>total</em> is inclusive; use <em>self</em> to compare with chart segments</li>
-                </ul>
-              </div>
+      <ResponseTimeSubNav
+        active="average"
+        basePath={basePath}
+        qs={qs}
+        onRefreshActive={txn.rangeActions.refresh}
+        onZoomOut={txn.rangeActions.zoomOut}
+        help={
+          <div className="space-y-2 text-xs">
+            <div>
+              <div className="font-semibold">Chart navigation tips</div>
+              <ul className="list-disc pl-4 space-y-0.5 mt-1">
+                <li>Drag or double click to zoom in</li>
+                <li>Use Ctrl + scroll wheel to zoom in and out</li>
+              </ul>
             </div>
-          </HelpPopover>
-        </div>
-      </div>
+            <div>
+              <div className="font-semibold">Chart vs breakdown</div>
+              <ul className="list-disc pl-4 space-y-0.5 mt-1">
+                <li>Chart stacks <em>self time</em> (exclusive); stack height is average response time</li>
+                <li>Breakdown <em>total</em> is inclusive; use <em>self</em> to compare with chart segments</li>
+              </ul>
+            </div>
+          </div>
+        }
+      />
 
       {/* Chart */}
       <div className="rounded-lg border bg-white p-4">
