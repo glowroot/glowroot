@@ -79,6 +79,16 @@ public class Tools {
         return true;
     }
 
+    public boolean deleteAgentMeta(List<String> args) throws Exception {
+        String agentRollupId = args.get(0);
+        repos.getAgentConfigDao().delete(agentRollupId).toCompletableFuture().get();
+        repos.getAgentDisplayDao().delete(agentRollupId).toCompletableFuture().get();
+        repos.getEnvironmentDao().delete(agentRollupId).toCompletableFuture().get();
+        startupLogger.info("deleted agent metadata for {} (agent_config, agent_display, environment);"
+                + " a still-connected agent may recreate it via collectInit", agentRollupId);
+        return true;
+    }
+
     public boolean truncateAllData(@SuppressWarnings("unused") List<String> args) throws Exception {
         for (String tableName : session.getAllTableNames()) {
             if (!keepTableNames.contains(tableName)) {
