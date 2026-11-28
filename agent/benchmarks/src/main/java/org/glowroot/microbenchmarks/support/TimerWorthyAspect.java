@@ -26,7 +26,7 @@ import org.glowroot.agent.plugin.api.weaving.Pointcut;
 
 public class TimerWorthyAspect {
 
-    @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TimerWorthy",
+    @Pointcut(className = "org.glowroot.microbenchmarks.support.TimerWorthy",
             methodName = "doSomethingTimerWorthy", methodParameterTypes = {},
             timerName = "timer worthy")
     public static class TimerWorthyAdvice {
@@ -44,7 +44,7 @@ public class TimerWorthyAspect {
         }
     }
 
-    @Pointcut(className = "org.glowroot.microbenchmarks.core.support.TimerWorthy",
+    @Pointcut(className = "org.glowroot.microbenchmarks.support.TimerWorthy",
             methodName = "doSomethingTimerWorthyB", methodParameterTypes = {},
             timerName = "timer worthy B")
     public static class TimerWorthyAdviceB {

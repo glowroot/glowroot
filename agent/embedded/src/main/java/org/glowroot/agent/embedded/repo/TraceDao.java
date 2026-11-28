@@ -104,8 +104,8 @@ public class TraceDao implements TraceRepository {
                     ImmutableColumn.of("capture_time", ColumnType.BIGINT));
 
     private static final ImmutableList<Index> traceIndexes = ImmutableList.<Index>of(
-            // duration_nanos, id and error columns are included so database can return the
-            // result set directly from the index without having to reference the table for each row
+            // duration_nanos / error / id support covering reads for point listings; SELECT also
+            // needs partial (not indexed) so H2 still touches the table for that column
             //
             // trace_overall_slow_idx is for readSlowCount() and readSlowPoints()
             ImmutableIndex.of("trace_overall_slow_idx",
@@ -115,7 +115,7 @@ public class TraceDao implements TraceRepository {
             ImmutableIndex.of("trace_transaction_slow_idx",
                     ImmutableList.of("transaction_type", "transaction_name", "slow", "capture_time",
                             "duration_nanos", "error", "id")),
-            // trace_overall_error_idx is for readErrorCount() and readErrorPoints()
+            // trace_error_idx is for readErrorCount() and readErrorPoints()
             ImmutableIndex.of("trace_error_idx",
                     ImmutableList.of("transaction_type", "error", "capture_time", "duration_nanos",
                             "error", "id")),
@@ -123,6 +123,13 @@ public class TraceDao implements TraceRepository {
             ImmutableIndex.of("trace_transaction_error_idx",
                     ImmutableList.of("transaction_type", "transaction_name", "error",
                             "capture_time", "duration_nanos", "id")),
+            // covering-ish for ErrorMessageCountQuery (GROUP BY error_message) and error-message
+            // filters on ErrorPointQuery. Kept separate so point queries retain leaner indexes.
+            ImmutableIndex.of("trace_error_message_idx",
+                    ImmutableList.of("transaction_type", "error", "capture_time", "error_message")),
+            ImmutableIndex.of("trace_transaction_error_message_idx",
+                    ImmutableList.of("transaction_type", "transaction_name", "error", "capture_time",
+                            "error_message")),
             // trace_capture_time_idx is for reaper, this is very important when trace table is huge
             // e.g. after leaving slow threshold at 0 for a while
             ImmutableIndex.of("trace_capture_time_idx", ImmutableList.of("capture_time")),
